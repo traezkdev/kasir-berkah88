@@ -6,6 +6,8 @@ import TransactionFilters from './components/TransactionFilters';
 import TransactionTable from './components/TransactionTable';
 import BulkActions from './components/BulkActions';
 
+const apiUrl = import.meta.env.VITE_API_URL;
+
 const TransactionHistory = () => {
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
@@ -37,7 +39,7 @@ const TransactionHistory = () => {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const response = await fetch('http://localhost:4000/api/transactions');
+        const response = await fetch(`${apiUrl}/api/transactions`);
         const data = await response.json();
         if (data.message === 'success') {
           const parsedTransactions = data.data.map(t => ({
@@ -159,7 +161,7 @@ const TransactionHistory = () => {
 
   const handleDeleteTransaction = async (transactionId) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/transactions/${transactionId}`, {
+      const response = await fetch(`${apiUrl}/api/transactions/${transactionId}`, {
         method: 'DELETE',
       });
       const data = await response.json();
@@ -175,7 +177,7 @@ const TransactionHistory = () => {
 
   const handleClearAllTransactions = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/transactions', {
+      const response = await fetch(`${apiUrl}/api/transactions`, {
         method: 'DELETE',
       });
       const data = await response.json();
@@ -207,7 +209,8 @@ const TransactionHistory = () => {
             t?.total,
             t?.isEmployeeMeal ? 'Makan Karyawan' : 'Regular'
           ]?.join(','))
-        ]?.join('\n');
+        ]?.join('
+');
         
         const blob = new Blob([csvContent], { type: 'text/csv' });
         const url = window.URL?.createObjectURL(blob);

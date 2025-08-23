@@ -9,6 +9,8 @@ import MenuItemsTable from './components/MenuItemsTable';
 import MenuSummaryCards from './components/MenuSummaryCards';
 import MenuSearchAndFilter from './components/MenuSearchAndFilter';
 
+const apiUrl = import.meta.env.VITE_API_URL;
+
 const MenuManagement = () => {
   const [menuItems, setMenuItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -18,7 +20,7 @@ const MenuManagement = () => {
     const fetchMenuItems = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch('http://localhost:4000/api/menu-items');
+        const response = await fetch(`${apiUrl}/api/menu-items`);
         const data = await response.json();
         if (data.message === 'success') {
           setMenuItems(data.data);
@@ -40,7 +42,7 @@ const MenuManagement = () => {
 
   const handleAddItem = async (newItem) => {
     try {
-      const response = await fetch('http://localhost:4000/api/menu-items', {
+      const response = await fetch(`${apiUrl}/api/menu-items`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -60,7 +62,7 @@ const MenuManagement = () => {
 
   const handleUpdateItem = async (id, updatedItem) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/menu-items/${id}`, {
+      const response = await fetch(`${apiUrl}/api/menu-items/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -82,7 +84,7 @@ const MenuManagement = () => {
 
   const handleDeleteItem = async (id) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/menu-items/${id}`, {
+      const response = await fetch(`${apiUrl}/api/menu-items/${id}`, {
         method: 'DELETE',
       });
       const result = await response.json();
@@ -99,7 +101,7 @@ const MenuManagement = () => {
   const handleBulkDelete = async (ids) => {
     try {
       const deletePromises = ids.map(id => 
-        fetch(`http://localhost:4000/api/menu-items/${id}`, {
+        fetch(`${apiUrl}/api/menu-items/${id}`, {
           method: 'DELETE',
         })
       );

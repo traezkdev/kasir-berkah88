@@ -12,6 +12,8 @@ import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 
+const apiUrl = import.meta.env.VITE_API_URL;
+
 const BusinessReports = () => {
   const [selectedDateRange, setSelectedDateRange] = useState({
     startDate: new Date(),
@@ -28,8 +30,8 @@ const BusinessReports = () => {
     const fetchData = async () => {
       try {
         const [transRes, menuRes] = await Promise.all([
-          fetch('http://localhost:4000/api/transactions'),
-          fetch('http://localhost:4000/api/menu-items')
+          fetch(`${apiUrl}/api/transactions`),
+          fetch(`${apiUrl}/api/menu-items`)
         ]);
 
         const transData = await transRes.json();
@@ -162,7 +164,7 @@ const BusinessReports = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:4000/api/transactions', { method: 'DELETE' });
+      const response = await fetch(`${apiUrl}/api/transactions`, { method: 'DELETE' });
       const result = await response.json();
       if (result.message === 'all deleted') {
         setTransactions([]);

@@ -9,6 +9,8 @@ import ExpenseHistoryTable from './components/ExpenseHistoryTable';
 import ExpenseAnalytics from './components/ExpenseAnalytics';
 import * as XLSX from 'xlsx';
 
+const apiUrl = import.meta.env.VITE_API_URL;
+
 const ExpenseTracking = () => {
   const [expenses, setExpenses] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
@@ -38,7 +40,7 @@ const ExpenseTracking = () => {
   useEffect(() => {
     const fetchMenuItems = async () => {
       try {
-        const response = await fetch('http://localhost:4000/api/menu-items');
+        const response = await fetch(`${apiUrl}/api/menu-items`);
         const data = await response.json();
         if (data.message === 'success') {
           setMenuItems(data.data);
@@ -57,7 +59,7 @@ const ExpenseTracking = () => {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const response = await fetch('http://localhost:4000/api/transactions');
+        const response = await fetch(`${apiUrl}/api/transactions`);
         const data = await response.json();
         if (data.message === 'success') {
           setTransactions(data.data);

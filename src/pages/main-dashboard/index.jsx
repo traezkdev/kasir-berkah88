@@ -11,6 +11,8 @@ import BusinessSummaryCard from './components/BusinessSummaryCard';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 
+const apiUrl = import.meta.env.VITE_API_URL;
+
 const MainDashboard = () => {
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
@@ -19,8 +21,8 @@ const MainDashboard = () => {
     const fetchData = async () => {
       try {
         const [transRes, menuRes] = await Promise.all([
-          fetch('http://localhost:4000/api/transactions'),
-          fetch('http://localhost:4000/api/menu-items')
+          fetch(`${apiUrl}/api/transactions`),
+          fetch(`${apiUrl}/api/menu-items`)
         ]);
 
         const transactions = await transRes.json();
