@@ -209,8 +209,7 @@ const TransactionHistory = () => {
             t?.total,
             t?.isEmployeeMeal ? 'Makan Karyawan' : 'Regular'
           ]?.join(','))
-        ]?.join('
-');
+        ]?.join('\n');
         
         const blob = new Blob([csvContent], { type: 'text/csv' });
         const url = window.URL?.createObjectURL(blob);
