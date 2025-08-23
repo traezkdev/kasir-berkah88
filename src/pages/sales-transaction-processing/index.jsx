@@ -6,6 +6,8 @@ import QuickActionPanel from '../../components/ui/QuickActionPanel';
 import SalesForm from './components/SalesForm';
 import OrderSummary from './components/OrderSummary';
 
+const apiUrl = import.meta.env.VITE_API_URL;
+
 const SalesTransactionProcessing = () => {
   const [cart, setCart] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
@@ -17,7 +19,7 @@ const SalesTransactionProcessing = () => {
   useEffect(() => {
     const fetchMenuItems = async () => {
       try {
-        const response = await fetch('http://localhost:4000/api/menu-items');
+        const response = await fetch(`${apiUrl}/api/menu-items`);
         const data = await response.json();
         if (data.message === 'success') {
           setMenuItems(data.data);
@@ -36,7 +38,7 @@ const SalesTransactionProcessing = () => {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const response = await fetch('http://localhost:4000/api/transactions');
+        const response = await fetch(`${apiUrl}/api/transactions`);
         const data = await response.json();
         if (data.message === 'success') {
           setTransactions(data.data);
@@ -119,7 +121,7 @@ const SalesTransactionProcessing = () => {
     };
 
     try {
-      const response = await fetch('http://localhost:4000/api/transactions', {
+      const response = await fetch(`${apiUrl}/api/transactions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

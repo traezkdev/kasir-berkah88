@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
 
+const apiUrl = import.meta.env.VITE_API_URL;
+
 const OrderSummary = ({ cart, onUpdateQuantity, onRemoveFromCart, onClearCart, onProcessPayment, isLoading }) => {
   const [ppnRate, setPpnRate] = useState(0.11); // Default PPN rate
 
   useEffect(() => {
     const fetchPpn = async () => {
       try {
-        const response = await fetch('http://localhost:4000/api/settings/ppn');
+        const response = await fetch(`${apiUrl}/api/settings/ppn`);
         const data = await response.json();
         if (data.message === 'success') {
           setPpnRate(data.data);
@@ -33,7 +35,7 @@ const OrderSummary = ({ cart, onUpdateQuantity, onRemoveFromCart, onClearCart, o
 
   const handleSavePpn = async () => {
     try {
-      await fetch('http://localhost:4000/api/settings/ppn', {
+      await fetch(`${apiUrl}/api/settings/ppn`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
