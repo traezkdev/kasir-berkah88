@@ -86,17 +86,12 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading = false }) => {
     }
 
     const numericAmount = parseInt(formData?.amount?.replace(/[^\d]/g, ''));
-    const categoryLabel = categoryOptions?.find(opt => opt?.value === formData?.category)?.label || formData?.category;
 
     const expenseData = {
-      id: Date.now()?.toString(),
-      category: formData?.category,
-      categoryLabel,
-      description: formData?.description?.trim(),
+      name: formData?.description?.trim(),
       amount: numericAmount,
-      notes: formData?.notes?.trim(),
-      date: new Date()?.toISOString(),
-      timestamp: new Date()
+      category: formData?.category,
+      date: new Date().toISOString(),
     };
 
     onAddExpense(expenseData);

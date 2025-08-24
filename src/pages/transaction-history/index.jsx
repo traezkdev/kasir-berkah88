@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
-import QuickActionPanel from '../../components/ui/QuickActionPanel';
+
 import TransactionFilters from './components/TransactionFilters';
 import TransactionTable from './components/TransactionTable';
 import BulkActions from './components/BulkActions';
@@ -137,7 +137,7 @@ const TransactionHistory = () => {
   // Calculate summary statistics
   const summaryStats = useMemo(() => {
     const totalTransactions = filteredTransactions?.length;
-    const totalRevenue = filteredTransactions?.filter(t => !t?.isEmployeeMeal)?.reduce((sum, t) => sum + t?.total, 0);
+    const totalRevenue = filteredTransactions?.filter(t => !t?.isEmployeeMeal)?.reduce((sum, t) => sum + parseFloat(t?.total || 0), 0);
     const employeeMealCount = filteredTransactions?.filter(t => t?.isEmployeeMeal)?.length;
 
     return {
@@ -273,7 +273,7 @@ const TransactionHistory = () => {
           </div>
         </div>
       </main>
-      <QuickActionPanel />
+      
     </div>
   );
 };

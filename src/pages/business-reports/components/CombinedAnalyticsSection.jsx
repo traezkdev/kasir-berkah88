@@ -4,11 +4,12 @@ import Icon from '../../../components/AppIcon';
 
 const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
 
-const CombinedAnalyticsSection = ({ salesData, stockData, onExportCombined }) => {
-  if (!salesData || !stockData) return null;
+const CombinedAnalyticsSection = ({ salesData, stockData, expensesData, onExportCombined }) => {
+  if (!salesData || !stockData || !expensesData || !expensesData.summary) return null;
 
-  const netProfit = salesData.totalRevenue; // No expenses tracked yet
-  const profitMargin = salesData.totalRevenue > 0 ? 100 : 0; // Simplified
+  const totalExpenses = expensesData.summary.totalExpenses; // Get total expenses
+  const netProfit = salesData.totalRevenue - totalExpenses;
+  const profitMargin = salesData.totalRevenue > 0 ? (netProfit / salesData.totalRevenue) * 100 : 0;
 
   const analyticsMetrics = [
     { label: 'Laba Bersih (Revenue)', value: formatCurrency(netProfit) },
@@ -17,7 +18,7 @@ const CombinedAnalyticsSection = ({ salesData, stockData, onExportCombined }) =>
 
   const cashFlowSummary = [
     { type: 'Pemasukan', amount: formatCurrency(salesData.totalRevenue), icon: 'TrendingUp', color: 'text-success', bgColor: 'bg-success/10' },
-    { type: 'Pengeluaran', amount: formatCurrency(0), icon: 'TrendingDown', color: 'text-destructive', bgColor: 'bg-destructive/10' },
+    { type: 'Pengeluaran', amount: formatCurrency(totalExpenses), icon: 'TrendingDown', color: 'text-destructive', bgColor: 'bg-destructive/10' }, // Use totalExpenses
     { type: 'Laba Bersih', amount: formatCurrency(netProfit), icon: 'DollarSign', color: 'text-primary', bgColor: 'bg-primary/10' }
   ];
 
@@ -29,7 +30,7 @@ const CombinedAnalyticsSection = ({ salesData, stockData, onExportCombined }) =>
       iconColor="text-accent"
       iconBgColor="bg-accent/10"
       metrics={analyticsMetrics}
-      onExport={onExportCombined} // This is still a mock function
+      onExport={onExportCombined}
       exportLabel="Export Lengkap"
     >
       <div className="space-y-6">
@@ -52,9 +53,6 @@ const CombinedAnalyticsSection = ({ salesData, stockData, onExportCombined }) =>
               </div>
             ))}
           </div>
-        </div>
-         <div className="text-center py-8">
-            <p className="text-text-secondary">Analisis lebih lanjut akan tersedia saat fitur pelacakan pengeluaran ditambahkan.</p>
         </div>
       </div>
     </ReportCard>

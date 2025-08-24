@@ -30,13 +30,16 @@ const ExpenseHistoryTable = ({
     { value: 'other', label: 'Lain-lain' }
   ];
 
+  const categoryLabelMap = new Map(categoryOptions.map(opt => [opt.value, opt.label]));
+
   const formatCurrency = (amount) => {
+    const numericAmount = parseFloat(amount || 0);
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-    })?.format(amount);
+    })?.format(numericAmount);
   };
 
   const formatDate = (dateString) => {
@@ -57,12 +60,9 @@ const ExpenseHistoryTable = ({
   };
 
   const filteredExpenses = expenses?.filter(expense => {
-    const matchesSearch = expense?.description?.toLowerCase()?.includes(searchTerm?.toLowerCase()) ||
-                         expense?.categoryLabel?.toLowerCase()?.includes(searchTerm?.toLowerCase()) ||
-                         (expense?.notes && expense?.notes?.toLowerCase()?.includes(searchTerm?.toLowerCase()));
-    
+    const lowercasedSearchTerm = searchTerm?.toLowerCase() || '';
+    const matchesSearch = expense?.name?.toLowerCase()?.includes(lowercasedSearchTerm);
     const matchesCategory = !categoryFilter || expense?.category === categoryFilter;
-    
     return matchesSearch && matchesCategory;
   });
 
@@ -98,7 +98,7 @@ const ExpenseHistoryTable = ({
     setShowBulkDeleteConfirm(false);
   };
 
-  if (expenses?.length === 0) {
+  if (expenses?.length === 0 && !isLoading) {
     return (
       <div className="bg-white rounded-lg shadow-elevation-2 border border-slate-200">
         <div className="p-8 text-center">
@@ -212,12 +212,12 @@ const ExpenseHistoryTable = ({
                 </td>
                 <td className="p-4">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-accent/10 text-accent">
-                    {expense?.categoryLabel}
+                    {categoryLabelMap.get(expense?.category) || expense?.category}
                   </span>
                 </td>
                 <td className="p-4">
                   <div className="text-sm text-text-primary font-medium">
-                    {expense?.description}
+                    {expense?.name}
                   </div>
                   {expense?.notes && (
                     <div className="text-xs text-text-secondary mt-1">
@@ -259,7 +259,7 @@ const ExpenseHistoryTable = ({
                 />
                 <div>
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-accent/10 text-accent">
-                    {expense?.categoryLabel}
+                    {categoryLabelMap.get(expense?.category) || expense?.category}
                   </span>
                   <div className="text-xs text-text-secondary mt-1">
                     {formatDate(expense?.date)} • {formatTime(expense?.date)}
@@ -279,7 +279,7 @@ const ExpenseHistoryTable = ({
 
             <div className="mb-3">
               <h4 className="text-sm font-medium text-text-primary mb-1">
-                {expense?.description}
+                {expense?.name}
               </h4>
               {expense?.notes && (
                 <p className="text-xs text-text-secondary">

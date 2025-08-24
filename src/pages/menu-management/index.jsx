@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
-import QuickActionPanel from '../../components/ui/QuickActionPanel';
+
 import AddMenuItemForm from './components/AddMenuItemForm';
 import MenuItemsTable from './components/MenuItemsTable';
 import MenuSummaryCards from './components/MenuSummaryCards';
@@ -221,7 +221,7 @@ const MenuManagement = () => {
         </main>
 
         {/* Quick Action Panel */}
-        <QuickActionPanel />
+        
       </div>
     </div>
   );

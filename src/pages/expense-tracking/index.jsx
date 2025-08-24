@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import DashboardMetricsBar from '../../components/ui/DashboardMetricsBar';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
-import QuickActionPanel from '../../components/ui/QuickActionPanel';
+
 import ExpenseEntryForm from './components/ExpenseEntryForm';
 import ExpenseSummaryCard from './components/ExpenseSummaryCard';
 import ExpenseHistoryTable from './components/ExpenseHistoryTable';
@@ -19,23 +19,28 @@ const ExpenseTracking = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Load expenses from localStorage on component mount
-  useEffect(() => {
-    const savedExpenses = localStorage.getItem('kasir_expenses');
-    if (savedExpenses) {
-      try {
-        const parsedExpenses = JSON.parse(savedExpenses);
-        setExpenses(parsedExpenses);
-      } catch (error) {
-        console.error('Error loading expenses from localStorage:', error);
+  const fetchExpenses = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${apiUrl}/api/expenses`);
+      const data = await response.json();
+      if (data.message === 'success') {
+        setExpenses(data.data);
+      } else {
+        console.error('Failed to fetch expenses:', data.error);
+        setExpenses([]);
       }
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+      setExpenses([]);
+    } finally {
+      setIsLoading(false);
     }
-  }, []);
+  };
 
-  // Save expenses to localStorage whenever expenses change
   useEffect(() => {
-    localStorage.setItem('kasir_expenses', JSON.stringify(expenses));
-  }, [expenses]);
+    fetchExpenses();
+  }, []);
 
   useEffect(() => {
     const fetchMenuItems = async () => {
@@ -79,8 +84,8 @@ const ExpenseTracking = () => {
     if (transactions.length > 0 && menuItems.length > 0) {
       const today = new Date().toDateString();
       const todayTransactions = transactions.filter(t => new Date(t.timestamp).toDateString() === today);
-      const todaySales = todayTransactions.reduce((sum, t) => sum + t.total, 0);
-      const averageOrderToday = todayTransactions.length > 0 ? todayTransactions.reduce((sum, t) => sum + t.total, 0) / todayTransactions.length : 0;
+      const todaySales = todayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+      const averageOrderToday = todayTransactions.length > 0 ? todaySales / todayTransactions.length : 0;
       const lowStockItems = menuItems.filter(item => item.stock <= 5 && item.stock > 0).length;
 
       const formatCurrency = (amount) => {
@@ -103,20 +108,59 @@ const ExpenseTracking = () => {
 
   const handleAddExpense = async (expenseData) => {
     setIsLoading(true);
-    
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    setExpenses(prev => [expenseData, ...prev]);
-    setIsLoading(false);
+    try {
+      const response = await fetch(`${apiUrl}/api/expenses`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(expenseData),
+      });
+      const result = await response.json();
+      if (result.message === 'success') {
+        fetchExpenses(); // Refetch to get the latest list
+      } else {
+        console.error('Failed to add expense:', result.error);
+      }
+    } catch (error) {
+      console.error('Error adding expense:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDeleteExpense = (expenseId) => {
-    setExpenses(prev => prev?.filter(expense => expense?.id !== expenseId));
+  const handleDeleteExpense = async (expenseId) => {
+    try {
+      const response = await fetch(`${apiUrl}/api/expenses/${expenseId}`, {
+        method: 'DELETE',
+      });
+      const result = await response.json();
+      if (result.message === 'deleted') {
+        fetchExpenses(); // Refetch to update the list
+      } else {
+        console.error('Failed to delete expense:', result.error);
+      }
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+    }
   };
 
-  const handleBulkDelete = () => {
-    setExpenses([]);
+  const handleBulkDelete = async () => {
+    if (confirm('Apakah Anda yakin ingin menghapus semua data pengeluaran? Aksi ini tidak dapat dibatalkan.')) {
+      try {
+        const response = await fetch(`${apiUrl}/api/expenses`, {
+          method: 'DELETE',
+        });
+        const result = await response.json();
+        if (result.message === 'all deleted') {
+          fetchExpenses(); // Refetch to show an empty list
+        } else {
+          console.error('Failed to bulk delete expenses:', result.error);
+        }
+      } catch (error) {
+        console.error('Error bulk deleting expenses:', error);
+      }
+    }
   };
 
   const handleExportData = () => {
@@ -155,21 +199,21 @@ const ExpenseTracking = () => {
 
   // Calculate summary metrics
   const calculateSummaryMetrics = () => {
-    const totalExpenses = expenses?.reduce((sum, expense) => sum + expense?.amount, 0);
+    const totalExpenses = expenses?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
     const expenseCount = expenses?.length;
 
     const today = new Date();
     const todayExpenses = expenses?.filter(expense => {
         const expenseDate = new Date(expense.date);
         return expenseDate?.toDateString() === today?.toDateString();
-      })?.reduce((sum, expense) => sum + expense?.amount, 0);
+      })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
 
     const currentMonth = today?.getMonth();
     const currentYear = today?.getFullYear();
     const monthlyExpenses = expenses?.filter(expense => {
         const expenseDate = new Date(expense.date);
         return expenseDate?.getMonth() === currentMonth && expenseDate?.getFullYear() === currentYear;
-      })?.reduce((sum, expense) => sum + expense?.amount, 0);
+      })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
 
     return {
       totalExpenses,
@@ -235,7 +279,7 @@ const ExpenseTracking = () => {
           </div>
         </main>
         {/* Quick Action Panel */}
-        <QuickActionPanel />
+        
       </div>
     </div>
   );

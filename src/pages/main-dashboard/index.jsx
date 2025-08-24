@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import DashboardMetricsBar from '../../components/ui/DashboardMetricsBar';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
-import QuickActionPanel from '../../components/ui/QuickActionPanel';
+
 import MetricsCard from './components/MetricsCard';
 import QuickActionCard from './components/QuickActionCard';
 import RecentTransactionsList from './components/RecentTransactionsList';
@@ -20,16 +20,18 @@ const MainDashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [transRes, menuRes] = await Promise.all([
+        const [transRes, menuRes, expenseRes] = await Promise.all([
           fetch(`${apiUrl}/api/transactions`),
-          fetch(`${apiUrl}/api/menu-items`)
+          fetch(`${apiUrl}/api/menu-items`),
+          fetch(`${apiUrl}/api/expenses`)
         ]);
 
         const transactions = await transRes.json();
         const menuItems = await menuRes.json();
+        const expenses = await expenseRes.json();
 
-        if (transactions.message === 'success' && menuItems.message === 'success') {
-          processDashboardData(transactions.data, menuItems.data);
+        if (transactions.message === 'success' && menuItems.message === 'success' && expenses.message === 'success') {
+          processDashboardData(transactions.data, menuItems.data, expenses.data);
         }
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
@@ -39,19 +41,20 @@ const MainDashboard = () => {
     fetchData();
   }, []);
 
-  const processDashboardData = (transactions, menuItems) => {
+  const processDashboardData = (transactions, menuItems, expenses) => {
     const today = new Date().toDateString();
 
     // Overall Metrics
-    const totalRevenue = transactions.reduce((sum, t) => sum + t.total, 0);
-    const stockValue = menuItems.reduce((sum, i) => sum + (i.stock * i.price), 0);
-    const netProfit = totalRevenue; // Assuming no expenses for now
+    const totalRevenue = transactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+    const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+    const stockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
+    const netProfit = totalRevenue - totalExpenses;
 
     // Today's Stats
     const todayTransactions = transactions.filter(t => new Date(t.timestamp).toDateString() === today);
-    const todaySales = todayTransactions.reduce((sum, t) => sum + t.total, 0);
+    const todaySales = todayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
     const itemsSoldToday = todayTransactions.flatMap(t => t.items).reduce((sum, i) => sum + i.quantity, 0);
-    const averageOrderToday = todayTransactions.length > 0 ? todayTransactions.reduce((sum, t) => sum + t.total, 0) / todayTransactions.length : 0;
+    const averageOrderToday = todayTransactions.length > 0 ? todaySales / todayTransactions.length : 0;
 
     // Low Stock
     const lowStockItems = menuItems.filter(item => item.stock <= 5 && item.stock > 0).length;
@@ -62,7 +65,7 @@ const MainDashboard = () => {
     setDashboardData({
       metrics: {
         totalRevenue,
-        totalExpenses: 0, // Placeholder
+        totalExpenses,
         stockValue,
         netProfit
       },
@@ -278,7 +281,7 @@ const MainDashboard = () => {
             </div>
           </div>
         </main>
-        <QuickActionPanel />
+        
       </div>
     </div>
   );

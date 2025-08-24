@@ -4,7 +4,7 @@ import Icon from '../../../components/AppIcon';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-const OrderSummary = ({ cart, onUpdateQuantity, onRemoveFromCart, onClearCart, onProcessPayment, isLoading }) => {
+const OrderSummary = ({ cart, menuItems, onUpdateQuantity, onRemoveFromCart, onClearCart, onProcessPayment, isLoading }) => {
   const [ppnRate, setPpnRate] = useState(0.11); // Default PPN rate
 
   useEffect(() => {
@@ -22,14 +22,26 @@ const OrderSummary = ({ cart, onUpdateQuantity, onRemoveFromCart, onClearCart, o
     fetchPpn();
   }, []);
 
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = cart.reduce((sum, item) => {
+    const itemPrice = parseFloat(item?.price || 0);
+    const itemQuantity = Number(item?.quantity || 0);
+    if (isNaN(itemPrice) || isNaN(itemQuantity)) {
+        return sum; // Skip invalid items
+    }
+    return sum + (itemPrice * itemQuantity);
+  }, 0);
   const tax = subtotal * ppnRate;
   const total = subtotal + tax;
 
   const handlePpnChange = (e) => {
-    const newRate = parseFloat(e.target.value);
-    if (!isNaN(newRate)) {
-      setPpnRate(newRate / 100);
+    const inputValue = e.target.value;
+    if (inputValue === '') {
+      setPpnRate(0); // Allow clearing the input to set PPN to 0
+    } else {
+      const newRate = parseFloat(inputValue);
+      if (!isNaN(newRate)) {
+        setPpnRate(newRate / 100);
+      }
     }
   };
 
@@ -47,6 +59,20 @@ const OrderSummary = ({ cart, onUpdateQuantity, onRemoveFromCart, onClearCart, o
       console.error('Error saving PPN:', error);
     }
   };
+
+  const isCartValid = () => {
+    if (cart.length === 0) return false; // Cannot process empty cart
+
+    for (const cartItem of cart) {
+      const correspondingMenuItem = menuItems.find(item => item.id === cartItem.id);
+      if (!correspondingMenuItem || cartItem.quantity > correspondingMenuItem.stock) {
+        return false; // Item not found or insufficient stock
+      }
+    }
+    return true;
+  };
+
+  const disablePaymentButton = isLoading || !isCartValid();
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
@@ -92,7 +118,7 @@ const OrderSummary = ({ cart, onUpdateQuantity, onRemoveFromCart, onClearCart, o
               <div className="flex items-center gap-2">
                 <input
                   type="number"
-                  value={(ppnRate * 100).toFixed(0)}
+                  value={ppnRate * 100}
                   onChange={handlePpnChange}
                   className="w-16 text-center border rounded-md"
                 />
@@ -116,7 +142,8 @@ const OrderSummary = ({ cart, onUpdateQuantity, onRemoveFromCart, onClearCart, o
             <Button 
               onClick={() => onProcessPayment({ total, method: 'Tunai', ppn: ppnRate })} 
               className="w-full"
-              isLoading={isLoading}
+              loading={isLoading}
+              disabled={disablePaymentButton}
             >
               Bayar
             </Button>

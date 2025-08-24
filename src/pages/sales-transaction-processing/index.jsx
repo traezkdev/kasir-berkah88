@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import DashboardMetricsBar from '../../components/ui/DashboardMetricsBar';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
-import QuickActionPanel from '../../components/ui/QuickActionPanel';
+
 import SalesForm from './components/SalesForm';
 import OrderSummary from './components/OrderSummary';
 
@@ -58,8 +58,8 @@ const SalesTransactionProcessing = () => {
     if (transactions.length > 0 && menuItems.length > 0) {
       const today = new Date().toDateString();
       const todayTransactions = transactions.filter(t => new Date(t.timestamp).toDateString() === today);
-      const todaySales = todayTransactions.reduce((sum, t) => sum + t.total, 0);
-      const averageOrderToday = todayTransactions.length > 0 ? todayTransactions.reduce((sum, t) => sum + t.total, 0) / todayTransactions.length : 0;
+      const todaySales = todayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+      const averageOrderToday = todayTransactions.length > 0 ? todaySales / todayTransactions.length : 0;
       const lowStockItems = menuItems.filter(item => item.stock <= 5 && item.stock > 0).length;
 
       const formatCurrency = (amount) => {
@@ -121,7 +121,7 @@ const SalesTransactionProcessing = () => {
     };
 
     try {
-      const response = await fetch(`${apiUrl}/api/transactions`, {
+      const response = await fetch(`${apiUrl}/api/transactions/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -173,6 +173,7 @@ const SalesTransactionProcessing = () => {
               <div className="lg:col-span-1">
                 <OrderSummary
                   cart={cart}
+                  menuItems={menuItems} // Add this prop
                   onUpdateQuantity={handleUpdateQuantity}
                   onRemoveFromCart={handleRemoveFromCart}
                   onClearCart={handleClearCart}
@@ -183,8 +184,6 @@ const SalesTransactionProcessing = () => {
             </div>
           </div>
         </main>
-        <QuickActionPanel isMobile className="lg:hidden" />
-        <QuickActionPanel className="hidden lg:block" />
       </div>
     </div>
   );

@@ -18,13 +18,15 @@ const ExpenseAnalytics = ({ expenses = [], className = "" }) => {
     
     expenses?.forEach(expense => {
       const category = expense?.categoryLabel || expense?.category;
-      categoryTotals[category] = (categoryTotals?.[category] || 0) + expense?.amount;
+      categoryTotals[category] = (categoryTotals?.[category] || 0) + parseFloat(expense?.amount || 0);
     });
+
+    const totalExpensesSum = expenses?.reduce((sum, exp) => sum + parseFloat(exp?.amount || 0), 0);
 
     return Object.entries(categoryTotals)?.map(([category, amount]) => ({
         category,
         amount,
-        percentage: ((amount / expenses?.reduce((sum, exp) => sum + exp?.amount, 0)) * 100)?.toFixed(1)
+        percentage: ((amount / totalExpensesSum) * 100)?.toFixed(1)
       }))?.sort((a, b) => b?.amount - a?.amount);
   };
 
@@ -42,7 +44,7 @@ const ExpenseAnalytics = ({ expenses = [], className = "" }) => {
         return expenseDate?.toDateString() === date?.toDateString();
       });
 
-      const totalAmount = dayExpenses?.reduce((sum, expense) => sum + expense?.amount, 0);
+      const totalAmount = dayExpenses?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
       
       last7Days?.push({
         date: date?.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit' }),
