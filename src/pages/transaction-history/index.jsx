@@ -6,6 +6,8 @@ import TransactionFilters from './components/TransactionFilters';
 import TransactionTable from './components/TransactionTable';
 import BulkActions from './components/BulkActions';
 
+import authFetch from '../../utils/authFetch'; // Add this import
+
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const TransactionHistory = () => {
@@ -36,28 +38,30 @@ const TransactionHistory = () => {
   
 
   // Load transactions from API
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/api/transactions`);
-        const data = await response.json();
-        if (data.message === 'success') {
-          const parsedTransactions = data.data.map(t => ({
-            ...t,
-            timestamp: new Date(t.timestamp),
-            items: Array.isArray(t.items) ? t.items : JSON.parse(t.items || '[]')
-          }));
-          setTransactions(parsedTransactions);
-        } else {
-          console.error('Failed to fetch transactions:', data.error);
-          setTransactions([]); // Set to empty array on failure
-        }
-      } catch (error) {
-        console.error('Error fetching transactions:', error);
-        setTransactions([]); // Set to empty array on network error
+  const fetchTransactions = async () => { // Moved outside useEffect
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const response = await authFetch(`${apiUrl}/api/transactions`);
+      const data = await response.json();
+      if (data.message === 'success') {
+        const parsedTransactions = data.data.map(t => ({
+          ...t,
+          timestamp: new Date(t.timestamp),
+          items: Array.isArray(t.items) ? t.items : JSON.parse(t.items || '[]')
+        }));
+        setTransactions(parsedTransactions);
+      } else {
+        console.error('Failed to fetch transactions:', data.error);
+        setTransactions([]); // Set to empty array on failure
       }
-    };
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      setTransactions([]); // Set to empty array on network error
+    }
+  };
 
+  useEffect(() => {
     fetchTransactions();
   }, []);
 
@@ -161,7 +165,7 @@ const TransactionHistory = () => {
 
   const handleDeleteTransaction = async (transactionId) => {
     try {
-      const response = await fetch(`${apiUrl}/api/transactions/${transactionId}`, {
+      const response = await authFetch(`${apiUrl}/api/transactions/${transactionId}`, {
         method: 'DELETE',
       });
       const data = await response.json();
@@ -177,7 +181,7 @@ const TransactionHistory = () => {
 
   const handleClearAllTransactions = async () => {
     try {
-      const response = await fetch(`${apiUrl}/api/transactions`, {
+      const response = await authFetch(`${apiUrl}/api/transactions`, {
         method: 'DELETE',
       });
       const data = await response.json();

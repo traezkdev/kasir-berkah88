@@ -21,7 +21,7 @@ const ExpenseSummaryCard = ({
     {
       label: 'Total Pengeluaran',
       value: formatCurrency(totalExpenses),
-      icon: 'Receipt',
+      icon: 'Wallet', // Replace with a different icon that is less likely to have arcs
       color: 'text-destructive',
       bgColor: 'bg-destructive/10',
       description: `${expenseCount} transaksi`

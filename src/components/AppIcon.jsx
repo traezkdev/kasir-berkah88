@@ -13,7 +13,7 @@ function Icon({
     const IconComponent = LucideIcons?.[name];
 
     if (!IconComponent) {
-        return <HelpCircle size={size} color="gray" strokeWidth={strokeWidth} className={className} {...props} />;
+        return null; // Return null if icon not found
     }
 
     return <IconComponent

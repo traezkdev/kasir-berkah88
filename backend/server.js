@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const db = require('./database.js'); // db is now the promisePool
+const bcrypt = require('bcryptjs'); // Import bcryptjs
+const jwt = require('jsonwebtoken'); // Import jsonwebtoken
 
 const app = express();
 app.use(cors());
@@ -11,12 +13,28 @@ app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
 
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey'; // Fallback for development
+
+// Auth Middleware
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (token == null) return res.status(401).json({ error: "Authentication token required" });
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) return res.status(403).json({ error: "Invalid or expired token" });
+        req.user = user; // Attach user payload to request
+        next();
+    });
+};
+
 // API Endpoints
 
 // --- Menu Items Endpoints ---
 
 // Get all menu items
-app.get("/api/menu-items", async (req, res, next) => {
+app.get("/api/menu-items", authenticateToken, async (req, res, next) => {
     try {
         const sql = "select * from menu_items";
         const [rows] = await db.query(sql);
@@ -30,7 +48,7 @@ app.get("/api/menu-items", async (req, res, next) => {
 });
 
 // Add a new menu item
-app.post("/api/menu-items", async (req, res, next) => {
+app.post("/api/menu-items", authenticateToken, async (req, res, next) => {
     try {
         const { id, name, price, stock, category, image_url } = req.body;
         const sql = 'INSERT INTO menu_items (id, name, price, stock, category, image_url) VALUES (?,?,?,?,?,?)';
@@ -47,7 +65,7 @@ app.post("/api/menu-items", async (req, res, next) => {
 });
 
 // Update a menu item
-app.put("/api/menu-items/:id", async (req, res, next) => {
+app.put("/api/menu-items/:id", authenticateToken, async (req, res, next) => {
     try {
         const { name, price, stock, category, image_url } = req.body;
         const sql = `UPDATE menu_items set 
@@ -66,7 +84,7 @@ app.put("/api/menu-items/:id", async (req, res, next) => {
 });
 
 // Delete a menu item
-app.delete("/api/menu-items/:id", async (req, res, next) => {
+app.delete("/api/menu-items/:id", authenticateToken, async (req, res, next) => {
     try {
         const sql = 'DELETE FROM menu_items WHERE id = ?';
         const [result] = await db.query(sql, [req.params.id]);
@@ -79,7 +97,7 @@ app.delete("/api/menu-items/:id", async (req, res, next) => {
 // --- Settings Endpoints ---
 
 // Get PPN setting
-app.get('/api/settings/ppn', async (req, res) => {
+app.get('/api/settings/ppn', authenticateToken, async (req, res) => {
     try {
         const sql = "SELECT value FROM settings WHERE `key` = ?";
         const [rows] = await db.query(sql, ['ppn']);
@@ -100,7 +118,7 @@ app.get('/api/settings/ppn', async (req, res) => {
 });
 
 // Update PPN setting
-app.put('/api/settings/ppn', async (req, res) => {
+app.put('/api/settings/ppn', authenticateToken, async (req, res) => {
     try {
         const { value } = req.body;
         if (value === undefined) {
@@ -131,7 +149,7 @@ app.put('/api/settings/ppn', async (req, res) => {
 // --- Transaction Endpoints ---
 
 // Get all transactions
-app.get("/api/transactions", async (req, res, next) => {
+app.get("/api/transactions", authenticateToken, async (req, res, next) => {
     try {
         const sql = "select * from transactions ORDER BY timestamp DESC";
         const [rows] = await db.query(sql);
@@ -150,7 +168,7 @@ app.get("/api/transactions", async (req, res, next) => {
 });
 
 // Get a single transaction by id
-app.get("/api/transactions/:id", async (req, res, next) => {
+app.get("/api/transactions/:id", authenticateToken, async (req, res, next) => {
     try {
         const sql = "select * from transactions where id = ?";
         const params = [req.params.id];
@@ -174,7 +192,7 @@ app.get("/api/transactions/:id", async (req, res, next) => {
 
 
 // Create a new transaction
-app.post("/api/transactions/", async (req, res, next) => {
+app.post("/api/transactions/", authenticateToken, async (req, res, next) => {
     try {
         const errors = [];
         if (!req.body.items) {
@@ -184,10 +202,7 @@ app.post("/api/transactions/", async (req, res, next) => {
             res.status(400).json({ "error": errors.join(",") });
             return;
         }
-        if (errors.length) {
-            res.status(400).json({"error":errors.join(",")});
-            return;
-        }
+        
 
         // --- STOCK VALIDATION BEFORE TRANSACTION ---
         for (const cartItem of req.body.items) {
@@ -233,7 +248,7 @@ app.post("/api/transactions/", async (req, res, next) => {
 });
 
 // Delete a transaction
-app.delete("/api/transactions/:id", async (req, res, next) => {
+app.delete("/api/transactions/:id", authenticateToken, async (req, res, next) => {
     try {
         const sql = 'DELETE FROM transactions WHERE id = ?';
         const [result] = await db.query(sql, [req.params.id]);
@@ -244,7 +259,7 @@ app.delete("/api/transactions/:id", async (req, res, next) => {
 });
 
 // Delete all transactions
-app.delete("/api/transactions", async (req, res, next) => {
+app.delete("/api/transactions", authenticateToken, async (req, res, next) => {
     try {
         const sql = 'DELETE FROM transactions';
         const [result] = await db.query(sql);
@@ -258,7 +273,7 @@ app.delete("/api/transactions", async (req, res, next) => {
 // --- Expense Endpoints ---
 
 // Get all expenses
-app.get("/api/expenses", async (req, res, next) => {
+app.get("/api/expenses", authenticateToken, async (req, res, next) => {
     try {
         const sql = "SELECT * FROM expenses ORDER BY date DESC";
         const [rows] = await db.query(sql);
@@ -272,7 +287,7 @@ app.get("/api/expenses", async (req, res, next) => {
 });
 
 // Add a new expense
-app.post("/api/expenses", async (req, res, next) => {
+app.post("/api/expenses", authenticateToken, async (req, res, next) => {
     try {
         const { name, amount, category, date } = req.body;
         if (!name || !amount || !date) {
@@ -291,7 +306,7 @@ app.post("/api/expenses", async (req, res, next) => {
 });
 
 // Delete an expense
-app.delete("/api/expenses/:id", async (req, res, next) => {
+app.delete("/api/expenses/:id", authenticateToken, async (req, res, next) => {
     try {
         const sql = 'DELETE FROM expenses WHERE id = ?';
         const [result] = await db.query(sql, [req.params.id]);
@@ -305,13 +320,67 @@ app.delete("/api/expenses/:id", async (req, res, next) => {
 });
 
 // Delete all expenses
-app.delete("/api/expenses", async (req, res, next) => {
+app.delete("/api/expenses", authenticateToken, async (req, res, next) => {
     try {
         const sql = 'TRUNCATE TABLE expenses';
         await db.query(sql);
         res.json({ "message": "all deleted" });
     } catch (err) {
         res.status(400).json({ "error": err.message });
+    }
+});
+
+
+// --- Auth Endpoints ---
+
+// Register User
+app.post("/api/register", async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        if (!username || !password) {
+            return res.status(400).json({ error: "Username and password are required" });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10); // Hash password
+        const sql = 'INSERT INTO users (username, password) VALUES (?, ?)';
+        const [result] = await db.query(sql, [username, hashedPassword]);
+
+        res.status(201).json({ message: "User registered successfully", userId: result.insertId });
+    } catch (err) {
+        if (err.code === 'ER_DUP_ENTRY') { // MySQL error code for duplicate entry
+            return res.status(409).json({ error: "Username already exists" });
+        }
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// Login User
+app.post("/api/login", async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        if (!username || !password) {
+            return res.status(400).json({ error: "Username and password are required" });
+        }
+
+        const sql = 'SELECT id, username, password FROM users WHERE username = ?';
+        const [rows] = await db.query(sql, [username]);
+
+        if (rows.length === 0) {
+            return res.status(401).json({ error: "Invalid credentials" });
+        }
+
+        const user = rows[0];
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+
+        if (!isPasswordValid) {
+            return res.status(401).json({ error: "Invalid credentials" });
+        }
+
+        const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '1h' });
+
+        res.json({ message: "Login successful", token });
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
     }
 });
 

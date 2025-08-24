@@ -8,6 +8,7 @@ import ExpenseSummaryCard from './components/ExpenseSummaryCard';
 import ExpenseHistoryTable from './components/ExpenseHistoryTable';
 import ExpenseAnalytics from './components/ExpenseAnalytics';
 import * as XLSX from 'xlsx';
+import authFetch from '../../utils/authFetch';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -19,10 +20,13 @@ const ExpenseTracking = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Define fetch functions outside useEffects
   const fetchExpenses = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return; // Exit if no token
     setIsLoading(true);
     try {
-      const response = await fetch(`${apiUrl}/api/expenses`);
+      const response = await authFetch(`${apiUrl}/api/expenses`);
       const data = await response.json();
       if (data.message === 'success') {
         setExpenses(data.data);
@@ -38,45 +42,52 @@ const ExpenseTracking = () => {
     }
   };
 
+  const fetchMenuItems = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return; // Exit if no token
+    try {
+      const response = await authFetch(`${apiUrl}/api/menu-items`);
+      const data = await response.json();
+      if (data.message === 'success') {
+        setMenuItems(data.data);
+      } else {
+        console.error('Failed to fetch menu items:', data.error);
+        setMenuItems([]);
+      }
+    } catch (error) {
+      console.error('Error fetching menu items:', error);
+      setMenuItems([]);
+    }
+  };
+
+  const fetchTransactions = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return; // Exit if no token
+    try {
+      const response = await authFetch(`${apiUrl}/api/transactions`);
+      const data = await response.json();
+      if (data.message === 'success') {
+        setTransactions(data.data);
+      } else {
+        console.error('Failed to fetch transactions:', data.error);
+        setTransactions([]);
+      }
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      setTransactions([]);
+    }
+  };
+
+  // Call fetch functions inside useEffects
   useEffect(() => {
     fetchExpenses();
   }, []);
 
   useEffect(() => {
-    const fetchMenuItems = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/api/menu-items`);
-        const data = await response.json();
-        if (data.message === 'success') {
-          setMenuItems(data.data);
-        } else {
-          console.error('Failed to fetch menu items:', data.error);
-          setMenuItems([]);
-        }
-      } catch (error) {
-        console.error('Error fetching menu items:', error);
-        setMenuItems([]);
-      }
-    };
     fetchMenuItems();
   }, []);
 
   useEffect(() => {
-    const fetchTransactions = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/api/transactions`);
-        const data = await response.json();
-        if (data.message === 'success') {
-          setTransactions(data.data);
-        } else {
-          console.error('Failed to fetch transactions:', data.error);
-          setTransactions([]);
-        }
-      } catch (error) {
-        console.error('Error fetching transactions:', error);
-        setTransactions([]);
-      }
-    };
     fetchTransactions();
   }, []);
 
@@ -109,7 +120,7 @@ const ExpenseTracking = () => {
   const handleAddExpense = async (expenseData) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${apiUrl}/api/expenses`, {
+      const response = await authFetch(`${apiUrl}/api/expenses`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -131,7 +142,7 @@ const ExpenseTracking = () => {
 
   const handleDeleteExpense = async (expenseId) => {
     try {
-      const response = await fetch(`${apiUrl}/api/expenses/${expenseId}`, {
+      const response = await authFetch(`${apiUrl}/api/expenses/${expenseId}`, {
         method: 'DELETE',
       });
       const result = await response.json();
@@ -148,7 +159,7 @@ const ExpenseTracking = () => {
   const handleBulkDelete = async () => {
     if (confirm('Apakah Anda yakin ingin menghapus semua data pengeluaran? Aksi ini tidak dapat dibatalkan.')) {
       try {
-        const response = await fetch(`${apiUrl}/api/expenses`, {
+        const response = await authFetch(`${apiUrl}/api/expenses`, {
           method: 'DELETE',
         });
         const result = await response.json();
@@ -163,7 +174,7 @@ const ExpenseTracking = () => {
     }
   };
 
-  const handleExportData = () => {
+  const handleExportData = (format) => {
     if (expenses?.length === 0) {
       alert('Tidak ada data pengeluaran untuk diekspor');
       return;
@@ -231,9 +242,9 @@ const ExpenseTracking = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <NavigationHeader onToggleSidebar={handleToggleSidebar} />
+      <NavigationHeader onToggleSidebar={() => {}} /> 
       <div className="pt-16">
-        <DashboardMetricsBar metrics={dashboardMetrics} showOnAllPages />
+        <DashboardMetricsBar metrics={dashboardMetrics} showOnAllPages /> 
         <main className="pt-6 lg:pt-8 pb-20 lg:pb-8">
           <div className="max-w-7xl mx-auto px-4 lg:px-6 space-y-6">
             {/* Breadcrumb */}
@@ -243,7 +254,7 @@ const ExpenseTracking = () => {
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
                 <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">Tracking Pengeluaran</h1>
-                <p className="text-text-secondary mt-1">
+                <p className="text-sm text-text-secondary mt-1">
                   Kelola dan pantau pengeluaran bisnis untuk analisis keuangan yang akurat
                 </p>
               </div>
@@ -278,7 +289,6 @@ const ExpenseTracking = () => {
             />
           </div>
         </main>
-        {/* Quick Action Panel */}
         
       </div>
     </div>

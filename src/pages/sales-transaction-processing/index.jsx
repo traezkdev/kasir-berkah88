@@ -6,6 +6,8 @@ import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import SalesForm from './components/SalesForm';
 import OrderSummary from './components/OrderSummary';
 
+import authFetch from '../../utils/authFetch'; // Add this import
+
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const SalesTransactionProcessing = () => {
@@ -16,41 +18,47 @@ const SalesTransactionProcessing = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchMenuItems = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/api/menu-items`);
-        const data = await response.json();
-        if (data.message === 'success') {
-          setMenuItems(data.data);
-        } else {
-          console.error('Failed to fetch menu items:', data.error);
-          setMenuItems([]);
-        }
-      } catch (error) {
-        console.error('Error fetching menu items:', error);
+  const fetchMenuItems = async () => { // Moved outside useEffect
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const response = await authFetch(`${apiUrl}/api/menu-items`);
+      const data = await response.json();
+      if (data.message === 'success') {
+        setMenuItems(data.data);
+      } else {
+        console.error('Failed to fetch menu items:', data.error);
         setMenuItems([]);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching menu items:', error);
+      setMenuItems([]);
+    }
+  };
+
+  const fetchTransactions = async () => { // Moved outside useEffect
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const response = await authFetch(`${apiUrl}/api/transactions`);
+      const data = await response.json();
+      if (data.message === 'success') {
+        setTransactions(data.data);
+      } else {
+        console.error('Failed to fetch transactions:', data.error);
+        setTransactions([]);
+      }
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      setTransactions([]);
+    }
+  };
+
+  useEffect(() => {
     fetchMenuItems();
   }, []);
 
   useEffect(() => {
-    const fetchTransactions = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/api/transactions`);
-        const data = await response.json();
-        if (data.message === 'success') {
-          setTransactions(data.data);
-        } else {
-          console.error('Failed to fetch transactions:', data.error);
-          setTransactions([]);
-        }
-      } catch (error) {
-        console.error('Error fetching transactions:', error);
-        setTransactions([]);
-      }
-    };
     fetchTransactions();
   }, []);
 
@@ -121,7 +129,7 @@ const SalesTransactionProcessing = () => {
     };
 
     try {
-      const response = await fetch(`${apiUrl}/api/transactions/`, {
+      const response = await authFetch(`${apiUrl}/api/transactions/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

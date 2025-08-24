@@ -59,6 +59,14 @@ const setupDatabase = async () => {
       );
     `;
 
+    const createUsersTable = `
+      CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(255) NOT NULL UNIQUE,
+        password VARCHAR(255) NOT NULL
+      );
+    `;
+
     // Execute the create table statements
     await connection.query(createMenuItemsTable);
     console.log('menu_items table is ready.');
@@ -68,6 +76,8 @@ const setupDatabase = async () => {
     console.log('transactions table is ready.');
     await connection.query(createExpensesTable);
     console.log('expenses table is ready.');
+    await connection.query(createUsersTable);
+    console.log('users table is ready.');
 
     connection.release();
 

@@ -11,6 +11,7 @@ import CombinedAnalyticsSection from './components/CombinedAnalyticsSection';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import authFetch from '../../utils/authFetch';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -26,139 +27,146 @@ const BusinessReports = () => {
   const [menuItems, setMenuItems] = useState([]);
   const [reportData, setReportData] = useState(null);
 
+  const fetchData = async () => { // Moved outside useEffect
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const [transRes, menuRes, expenseRes] = await Promise.all([
+        authFetch(`${apiUrl}/api/transactions`),
+        authFetch(`${apiUrl}/api/menu-items`),
+        authFetch(`${apiUrl}/api/expenses`)
+      ]);
+
+      const transData = await transRes.json();
+      const menuData = await menuRes.json();
+      const expenseData = await expenseRes.json();
+
+      if (transData.message === 'success') {
+        setTransactions(transData.data.map(t => ({...t, timestamp: new Date(t.timestamp)})));
+      }
+
+      if (menuData.message === 'success') {
+        setMenuItems(menuData.data);
+      }
+
+      // We will process expenses inside the other useEffect
+      if (expenseData.message === 'success') {
+        // Storing expenses in a state separate from transactions
+        // This assumes you might want to use the full expense list elsewhere
+        // For now, we'll just pass it to processReportData
+      }
+
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [transRes, menuRes, expenseRes] = await Promise.all([
-          fetch(`${apiUrl}/api/transactions`),
-          fetch(`${apiUrl}/api/menu-items`),
-          fetch(`${apiUrl}/api/expenses`)
-        ]);
+    fetchData(); // Call the function
+  }, []);
 
-        const transData = await transRes.json();
-        const menuData = await menuRes.json();
-        const expenseData = await expenseRes.json();
+  const processReportData = async () => { // Moved outside useEffect
+    const token = localStorage.getItem('token');
+    if (!token) return;
 
-        if (transData.message === 'success') {
-          setTransactions(transData.data.map(t => ({...t, timestamp: new Date(t.timestamp)})));
-        }
+    if (!transactions || !menuItems) return; // Keep this check
 
-        if (menuData.message === 'success') {
-          setMenuItems(menuData.data);
-        }
+    // Fetch expenses inside this useEffect to ensure it runs when date range changes
+    const expenseRes = await authFetch(`${apiUrl}/api/expenses`);
+    const expenseData = await expenseRes.json();
+    const allExpenses = expenseData.message === 'success' ? expenseData.data : [];
 
-        // We will process expenses inside the other useEffect
-        if (expenseData.message === 'success') {
-          // Storing expenses in a state separate from transactions
-          // This assumes you might want to use the full expense list elsewhere
-          // For now, we'll just pass it to processReportData
-        }
+    // Filter transactions and expenses based on selectedDateRange
+    const filterByDate = (item) => {
+      const itemDate = new Date(item.timestamp || item.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+      const weekAgo = new Date(today);
+      weekAgo.setDate(today.getDate() - 7);
+      const monthAgo = new Date(today);
+      monthAgo.setDate(today.getDate() - 30);
 
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
+      switch (selectedDateRange.range) {
+        case 'today':
+          return itemDate.toDateString() === today.toDateString();
+        case 'yesterday':
+          return itemDate.toDateString() === yesterday.toDateString();
+        case 'week':
+          return itemDate >= weekAgo;
+        case 'month':
+          return itemDate >= monthAgo;
+        default:
+          const startDate = new Date(selectedDateRange.startDate);
+          startDate.setHours(0, 0, 0, 0);
+          const endDate = new Date(selectedDateRange.endDate);
+          endDate.setHours(23, 59, 59, 999);
+          return itemDate >= startDate && itemDate <= endDate;
       }
     };
-    fetchData();
-  }, []);
+
+    const filteredTransactions = transactions.filter(filterByDate);
+    const filteredExpenses = allExpenses.filter(filterByDate);
+
+    // Sales Report Data
+    const totalRevenue = filteredTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+    const totalTransactions = filteredTransactions.length;
+    const averageOrder = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
+
+    const topItems = filteredTransactions
+      .flatMap(t => t.items)
+      .reduce((acc, item) => {
+        const existing = acc.find(i => i.name === item.name);
+        const itemPrice = parseFloat(item.price || 0);
+        if (existing) {
+          existing.sold += item.quantity;
+          existing.revenue += item.quantity * itemPrice;
+        } else {
+          acc.push({ name: item.name, sold: item.quantity, revenue: item.quantity * itemPrice });
+        }
+        return acc;
+      }, [])
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+
+    // Stock Report Data
+    const totalStockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
+    const lowStockItems = menuItems.filter(i => i.stock > 0 && i.stock <= 5);
+
+    // Expense Report Data
+    const totalExpenses = filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+    const expenseCategories = [...new Set(filteredExpenses.map(e => e.category))].length;
+    const averageDailyExpenses = totalTransactions > 0 ? totalExpenses / totalTransactions : 0; // Or divide by days in range
+
+    setReportData({
+      sales: {
+        totalRevenue,
+        totalTransactions,
+        averageOrder,
+        topItems,
+      },
+      stock: {
+        totalValue: totalStockValue,
+        totalItems: menuItems.length,
+        lowStockItems: lowStockItems.length,
+        items: menuItems,
+        lowStock: lowStockItems,
+      },
+      expenses: {
+        summary: {
+          totalExpenses: totalExpenses,
+          categories: expenseCategories,
+          averageDaily: averageDailyExpenses
+        },
+        items: filteredExpenses
+      }
+    });
+  };
 
   useEffect(() => {
     if (!transactions || !menuItems) return;
-
-    const processReportData = async () => {
-      // Fetch expenses inside this useEffect to ensure it runs when date range changes
-      const expenseRes = await fetch(`${apiUrl}/api/expenses`);
-      const expenseData = await expenseRes.json();
-      const allExpenses = expenseData.message === 'success' ? expenseData.data : [];
-
-      // Filter transactions and expenses based on selectedDateRange
-      const filterByDate = (item) => {
-        const itemDate = new Date(item.timestamp || item.date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const yesterday = new Date(today);
-        yesterday.setDate(today.getDate() - 1);
-        const weekAgo = new Date(today);
-        weekAgo.setDate(today.getDate() - 7);
-        const monthAgo = new Date(today);
-        monthAgo.setDate(today.getDate() - 30);
-
-        switch (selectedDateRange.range) {
-          case 'today':
-            return itemDate.toDateString() === today.toDateString();
-          case 'yesterday':
-            return itemDate.toDateString() === yesterday.toDateString();
-          case 'week':
-            return itemDate >= weekAgo;
-          case 'month':
-            return itemDate >= monthAgo;
-          default:
-            const startDate = new Date(selectedDateRange.startDate);
-            startDate.setHours(0, 0, 0, 0);
-            const endDate = new Date(selectedDateRange.endDate);
-            endDate.setHours(23, 59, 59, 999);
-            return itemDate >= startDate && itemDate <= endDate;
-        }
-      };
-
-      const filteredTransactions = transactions.filter(filterByDate);
-      const filteredExpenses = allExpenses.filter(filterByDate);
-
-      // Sales Report Data
-      const totalRevenue = filteredTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
-      const totalTransactions = filteredTransactions.length;
-      const averageOrder = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
-
-      const topItems = filteredTransactions
-        .flatMap(t => t.items)
-        .reduce((acc, item) => {
-          const existing = acc.find(i => i.name === item.name);
-          const itemPrice = parseFloat(item.price || 0);
-          if (existing) {
-            existing.sold += item.quantity;
-            existing.revenue += item.quantity * itemPrice;
-          } else {
-            acc.push({ name: item.name, sold: item.quantity, revenue: item.quantity * itemPrice });
-          }
-          return acc;
-        }, [])
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 5);
-
-      // Stock Report Data
-      const totalStockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
-      const lowStockItems = menuItems.filter(i => i.stock > 0 && i.stock <= 5);
-
-      // Expense Report Data
-      const totalExpenses = filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
-      const expenseCategories = [...new Set(filteredExpenses.map(e => e.category))].length;
-      const averageDailyExpenses = totalTransactions > 0 ? totalExpenses / totalTransactions : 0; // Or divide by days in range
-
-      setReportData({
-        sales: {
-          totalRevenue,
-          totalTransactions,
-          averageOrder,
-          topItems,
-        },
-        stock: {
-          totalValue: totalStockValue,
-          totalItems: menuItems.length,
-          lowStockItems: lowStockItems.length,
-          items: menuItems,
-          lowStock: lowStockItems,
-        },
-        expenses: {
-          summary: {
-            totalExpenses: totalExpenses,
-            categories: expenseCategories,
-            averageDaily: averageDailyExpenses
-          },
-          items: filteredExpenses
-        }
-      });
-    };
-
-    processReportData();
+    processReportData(); // Just call the function
   }, [transactions, menuItems, selectedDateRange]);
 
   const handleDateRangeChange = (dateRange) => {
@@ -192,7 +200,7 @@ const BusinessReports = () => {
     }
 
     try {
-      const response = await fetch(`${apiUrl}/api/transactions`, { method: 'DELETE' });
+      const response = await authFetch(`${apiUrl}/api/transactions`, { method: 'DELETE' });
       const result = await response.json();
       if (result.message === 'all deleted') {
         setTransactions([]);
@@ -215,25 +223,12 @@ const BusinessReports = () => {
           {/* Header Section */}
           <div className="mb-6">
             <BreadcrumbNavigation className="mb-4" />
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl lg:text-3xl font-bold text-text-primary mb-2">
-                  Laporan Bisnis
-                </h1>
-                <p className="text-text-secondary">
-                  Analisis komprehensif performa bisnis Anda.
-                </p>
-              </div>
-              <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => setIsModalOpen(true)}
-                  iconName="Trash2"
-                  iconPosition="left"
-                >
-                  Kosongkan Data
-                </Button>
-            </div>
+            <h1 className="text-2xl lg:text-3xl font-bold text-text-primary mb-2">
+              Laporan Bisnis
+            </h1>
+            <p className="text-text-secondary">
+              Analisis komprehensif performa bisnis Anda.
+            </p>
           </div>
 
           {/* Date Range Selector */}

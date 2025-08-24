@@ -9,6 +9,9 @@ import MenuItemsTable from './components/MenuItemsTable';
 import MenuSummaryCards from './components/MenuSummaryCards';
 import MenuSearchAndFilter from './components/MenuSearchAndFilter';
 
+import Button from '../../components/ui/Button';
+import authFetch from '../../utils/authFetch'; // Add this import
+
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const MenuManagement = () => {
@@ -16,33 +19,36 @@ const MenuManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchMenuItems = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(`${apiUrl}/api/menu-items`);
-        const data = await response.json();
-        if (data.message === 'success') {
-          setMenuItems(data.data);
-        } else {
-          console.error('Failed to fetch menu items:', data.error);
-          setMenuItems([]);
-        }
-      } catch (error) {
-        console.error('Error fetching menu items:', error);
+  const fetchMenuItems = async () => { // Moved outside useEffect
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    setIsLoading(true);
+    try {
+      const response = await authFetch(`${apiUrl}/api/menu-items`);
+      const data = await response.json();
+      if (data.message === 'success') {
+        setMenuItems(data.data);
+      } else {
+        console.error('Failed to fetch menu items:', data.error);
         setMenuItems([]);
-      } finally {
-        setIsLoading(false);
       }
-    };
-    fetchMenuItems();
+    } catch (error) {
+      console.error('Error fetching menu items:', error);
+      setMenuItems([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMenuItems(); // Call the function
   }, []);
 
   
 
   const handleAddItem = async (newItem) => {
     try {
-      const response = await fetch(`${apiUrl}/api/menu-items`, {
+      const response = await authFetch(`${apiUrl}/api/menu-items`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -62,7 +68,7 @@ const MenuManagement = () => {
 
   const handleUpdateItem = async (id, updatedItem) => {
     try {
-      const response = await fetch(`${apiUrl}/api/menu-items/${id}`, {
+      const response = await authFetch(`${apiUrl}/api/menu-items/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -84,7 +90,7 @@ const MenuManagement = () => {
 
   const handleDeleteItem = async (id) => {
     try {
-      const response = await fetch(`${apiUrl}/api/menu-items/${id}`, {
+      const response = await authFetch(`${apiUrl}/api/menu-items/${id}`, {
         method: 'DELETE',
       });
       const result = await response.json();
@@ -101,7 +107,7 @@ const MenuManagement = () => {
   const handleBulkDelete = async (ids) => {
     try {
       const deletePromises = ids.map(id => 
-        fetch(`${apiUrl}/api/menu-items/${id}`, {
+        authFetch(`${apiUrl}/api/menu-items/${id}`, {
           method: 'DELETE',
         })
       );

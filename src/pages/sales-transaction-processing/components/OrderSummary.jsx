@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
 
+import authFetch from '../../../utils/authFetch'; // Add this import
+
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const OrderSummary = ({ cart, menuItems, onUpdateQuantity, onRemoveFromCart, onClearCart, onProcessPayment, isLoading }) => {
@@ -10,7 +12,7 @@ const OrderSummary = ({ cart, menuItems, onUpdateQuantity, onRemoveFromCart, onC
   useEffect(() => {
     const fetchPpn = async () => {
       try {
-        const response = await fetch(`${apiUrl}/api/settings/ppn`);
+        const response = await authFetch(`${apiUrl}/api/settings/ppn`);
         const data = await response.json();
         if (data.message === 'success') {
           setPpnRate(data.data);
@@ -47,7 +49,7 @@ const OrderSummary = ({ cart, menuItems, onUpdateQuantity, onRemoveFromCart, onC
 
   const handleSavePpn = async () => {
     try {
-      await fetch(`${apiUrl}/api/settings/ppn`, {
+      await authFetch(`${apiUrl}/api/settings/ppn`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

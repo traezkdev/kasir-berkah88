@@ -10,6 +10,7 @@ import RecentTransactionsList from './components/RecentTransactionsList';
 import BusinessSummaryCard from './components/BusinessSummaryCard';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
+import authFetch from '../../utils/authFetch'; // Add this import
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -17,28 +18,30 @@ const MainDashboard = () => {
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [transRes, menuRes, expenseRes] = await Promise.all([
-          fetch(`${apiUrl}/api/transactions`),
-          fetch(`${apiUrl}/api/menu-items`),
-          fetch(`${apiUrl}/api/expenses`)
-        ]);
+  const fetchData = async () => { // Moved outside useEffect
+    const token = localStorage.getItem('token');
+    if (!token) return; // Exit if no token
+    try {
+      const [transRes, menuRes, expenseRes] = await Promise.all([
+        authFetch(`${apiUrl}/api/transactions`),
+        authFetch(`${apiUrl}/api/menu-items`),
+        authFetch(`${apiUrl}/api/expenses`)
+      ]);
 
-        const transactions = await transRes.json();
-        const menuItems = await menuRes.json();
-        const expenses = await expenseRes.json();
+      const transactions = await transRes.json();
+      const menuItems = await menuRes.json();
+      const expenses = await expenseRes.json();
 
-        if (transactions.message === 'success' && menuItems.message === 'success' && expenses.message === 'success') {
-          processDashboardData(transactions.data, menuItems.data, expenses.data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
+      if (transactions.message === 'success' && menuItems.message === 'success' && expenses.message === 'success') {
+        processDashboardData(transactions.data, menuItems.data, expenses.data);
       }
-    };
+    } catch (error) {
+      console.error("Failed to fetch dashboard data:", error);
+    }
+  };
 
-    fetchData();
+  useEffect(() => {
+    fetchData(); // Call the function
   }, []);
 
   const processDashboardData = (transactions, menuItems, expenses) => {
