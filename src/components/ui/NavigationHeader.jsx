@@ -1,19 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Icon from '../AppIcon';
 import Button from './Button';
 
 const NavigationHeader = ({ isCollapsed = false, onToggleSidebar }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [userRole, setUserRole] = useState(null); // New state for user role
   const location = useLocation();
 
-  const navigationItems = [
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = JSON.parse(atob(token.split('.')[1]));
+        setUserRole(decodedToken.role);
+      } catch (e) {
+        console.error("Error decoding token in NavigationHeader:", e);
+        setUserRole(null);
+      }
+    } else {
+      setUserRole(null);
+    }
+  }, [location.pathname]); // Re-run when path changes (e.g., after login/logout)
+
+  const allNavigationItems = [
     { label: 'Dashboard', path: '/main-dashboard', icon: 'LayoutDashboard' },
     { label: 'Penjualan', path: '/sales-transaction-processing', icon: 'ShoppingCart' },
     { label: 'Menu', path: '/menu-management', icon: 'UtensilsCrossed' },
     { label: 'Pengeluaran', path: '/expense-tracking', icon: 'Receipt' },
     { label: 'Laporan', path: '/transaction-history', icon: 'FileText' },
+    { label: 'Profil', path: '/profile', icon: 'User' },
+    { label: 'Settings', path: '/settings', icon: 'Settings', adminOnly: true },
   ];
+
+  const navigationItems = allNavigationItems.filter(item => {
+    if (item.adminOnly && userRole !== 'admin') {
+      return false;
+    }
+    return true;
+  });
 
   const isActiveRoute = (path) => {
     if (path === '/main-dashboard') {

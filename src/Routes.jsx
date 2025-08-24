@@ -9,6 +9,8 @@ import BusinessReports from './pages/business-reports';
 import NotFound from './pages/NotFound';
 import Login from './pages/auth/Login'; // Import Login
 import Register from './pages/auth/Register'; // Import Register
+import UserProfile from './pages/UserProfile'; // Import UserProfile
+import Settings from './pages/Settings'; // Import Settings
 
 // ProtectedRoute component
 const ProtectedRoute = ({ children }) => {
@@ -35,6 +37,8 @@ const AppRoutes = () => {
       <Route path="/expense-tracking" element={<ProtectedRoute><ExpenseTracking /></ProtectedRoute>} />
       <Route path="/transaction-history" element={<ProtectedRoute><TransactionHistory /></ProtectedRoute>} />
       <Route path="/business-reports" element={<ProtectedRoute><BusinessReports /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       
       {/* Catch all other routes */}
       <Route path="*" element={<NotFound />} />

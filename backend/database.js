@@ -1,5 +1,6 @@
 require('dotenv').config();
 const mysql = require('mysql2');
+const bcrypt = require('bcryptjs');
 
 // Create the connection pool
 const pool = mysql.createPool({
@@ -63,8 +64,21 @@ const setupDatabase = async () => {
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(255) NOT NULL UNIQUE,
-        password VARCHAR(255) NOT NULL
+        password VARCHAR(255) NOT NULL,
+        role VARCHAR(50) DEFAULT 'user'
       );
+    `;
+
+    // Add role column if it doesn't exist and set default for existing users
+    const addRoleColumn = `
+      ALTER TABLE users
+      ADD COLUMN role VARCHAR(50) DEFAULT 'user';
+    `;
+
+    // Check if role column exists before adding
+    const checkRoleColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'role';
     `;
 
     // Execute the create table statements
@@ -78,6 +92,26 @@ const setupDatabase = async () => {
     console.log('expenses table is ready.');
     await connection.query(createUsersTable);
     console.log('users table is ready.');
+
+    // Check and add role column if it doesn't exist
+    const [rows] = await connection.query(checkRoleColumn);
+    if (rows[0]['COUNT(*)'] === 0) {
+      await connection.query(addRoleColumn);
+      console.log('Added role column to users table.');
+    }
+
+    // --- Logika Pembuatan Admin Default ---
+    const [adminUser] = await connection.query('SELECT id FROM users WHERE username = ?', ['admin']);
+    if (adminUser.length === 0) {
+      const defaultAdminPassword = 'admin'; // Password default
+      const hashedAdminPassword = await bcrypt.hash(defaultAdminPassword, 10);
+      await connection.query(
+        'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
+        ['admin', hashedAdminPassword, 'admin']
+      );
+      console.log('Default admin user "admin" created with password "admin".');
+    }
+    // --- Akhir Logika Pembuatan Admin Default ---
 
     connection.release();
 
