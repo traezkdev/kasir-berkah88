@@ -98,5 +98,3 @@ Build the application for production:
 npm run build
 ```
 
-
-Built with ❤️ on Rocket.new
