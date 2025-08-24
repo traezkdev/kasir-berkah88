@@ -283,17 +283,17 @@ const Settings = () => {
   };
 
   const breadcrumbs = [
-    { name: 'Home', path: '/main-dashboard' },
-    { name: 'Settings', path: '/settings' },
+    { name: 'Beranda', path: '/main-dashboard' },
+    { name: 'Pengaturan', path: '/settings' },
   ];
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      <NavigationHeader title="Settings" />
+              <NavigationHeader title="Pengaturan" />
       <BreadcrumbNavigation paths={breadcrumbs} />
       <div className="flex-grow pt-20 px-6 overflow-auto">
         <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8 space-y-8">
-          <h2 className="text-2xl font-bold text-text-primary text-center">Application Settings</h2>
+          <h2 className="text-2xl font-bold text-text-primary text-center">Pengaturan Aplikasi</h2>
 
           {message && <p className="text-success text-center">{message}</p>}
           {error && <p className="text-destructive text-center">{error}</p>}
@@ -304,28 +304,28 @@ const Settings = () => {
             <>
               {/* Website Title Setting */}
               <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-text-primary">Website Title</h3>
+                <h3 className="text-xl font-semibold text-text-primary">Judul Situs Web</h3>
                 <form onSubmit={handleUpdateWebsiteTitle} className="space-y-4">
                   <Input
-                    label="Current Title"
+                    label="Judul Saat Ini"
                     name="newWebsiteTitle"
                     type="text"
-                    placeholder="Enter new website title"
+                    placeholder="Masukkan judul situs web baru"
                     value={newWebsiteTitle}
                     onChange={(e) => setNewWebsiteTitle(e.target.value)}
                     required
                   />
                   <Button type="submit" className="w-full" disabled={isLoading || userRole !== 'admin'}>
-                    Update Title
+                    Perbarui Judul
                   </Button>
                 </form>
               </div>
 
               {/* Registration Toggle Setting */}
               <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-text-primary">User Registration</h3>
+                <h3 className="text-xl font-semibold text-text-primary">Pendaftaran Pengguna</h3>
                 <div className="flex items-center justify-between">
-                  <span>Allow new users to register:</span>
+                  <span>Izinkan pengguna baru mendaftar:</span>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
@@ -337,7 +337,7 @@ const Settings = () => {
                     />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
                     <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">
-                      {registrationEnabled ? 'Enabled' : 'Disabled'}
+                      {registrationEnabled ? 'Diaktifkan' : 'Dinonaktifkan'}
                     </span>
                   </label>
                 </div>
@@ -346,28 +346,28 @@ const Settings = () => {
               {/* Create Admin User Section (Admin Only) */}
               {userRole === 'admin' && (
                 <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-text-primary">Create New Admin User</h3>
+                  <h3 className="text-xl font-semibold text-text-primary">Buat Pengguna Admin Baru</h3>
                   <form onSubmit={handleCreateAdminUser} className="space-y-4">
                     <Input
-                      label="Username"
+                      label="Nama Pengguna"
                       name="adminUsername"
                       type="text"
-                      placeholder="Enter username for new admin"
+                      placeholder="Masukkan nama pengguna untuk admin baru"
                       value={adminUsername}
                       onChange={(e) => setAdminUsername(e.target.value)}
                       required
                     />
                     <Input
-                      label="Password"
+                      label="Kata Sandi"
                       name="adminPassword"
                       type="password"
-                      placeholder="Enter password for new admin"
+                      placeholder="Masukkan kata sandi untuk admin baru"
                       value={adminPassword}
                       onChange={(e) => setAdminPassword(e.target.value)}
                       required
                     />
                     <Button type="submit" className="w-full" disabled={isLoading}>
-                      Create Admin
+                      Buat Admin
                     </Button>
                   </form>
                 </div>
@@ -376,15 +376,15 @@ const Settings = () => {
               {/* User List and Role Management (Admin Only) */}
               {userRole === 'admin' && (
                 <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-text-primary">Manage User Roles</h3>
+                  <h3 className="text-xl font-semibold text-text-primary">Kelola Peran Pengguna</h3>
                   <div className="overflow-x-auto">
                     <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
                       <thead>
                         <tr>
                           <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">ID</th>
-                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Username</th>
-                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Role</th>
-                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Actions</th>
+                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Nama Pengguna</th>
+                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Peran</th>
+                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Tindakan</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -400,7 +400,7 @@ const Settings = () => {
                                   className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
                                   disabled={isLoading || user.id === 1} // Disable changing role for default admin (ID 1)
                                 >
-                                  <option value="user">User</option>
+                                  <option value="user">Pengguna</option>
                                   <option value="admin">Admin</option>
                                 </select>
                               </td>
@@ -411,14 +411,14 @@ const Settings = () => {
                                   onClick={() => handleDeleteUser(user.id, user.username)}
                                   disabled={isLoading || user.id === 1 || (decodedToken && user.id === decodedToken.userId)} // Disable deleting default admin (ID 1) or self
                                 >
-                                  Delete
+                                  Hapus
                                 </Button>
                               </td>
                             </tr>
                           ))
                         ) : (
                           <tr>
-                            <td colSpan="4" className="py-4 text-center text-gray-500">No users found.</td>
+                            <td colSpan="4" className="py-4 text-center text-gray-500">Tidak ada pengguna ditemukan.</td>
                           </tr>
                         )}
                       </tbody>
@@ -430,28 +430,28 @@ const Settings = () => {
               {/* Master Password Management (Admin Only) */}
               {userRole === 'admin' && (
                 <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-text-primary">Change Master Password</h3>
+                  <h3 className="text-xl font-semibold text-text-primary">Ubah Kata Sandi Master</h3>
                   <form onSubmit={handleChangeMasterPassword} className="space-y-4">
                     <Input
-                      label="Current Master Password"
+                      label="Kata Sandi Master Saat Ini"
                       name="currentMasterPassword"
                       type="password"
-                      placeholder="Enter current master password"
+                      placeholder="Masukkan kata sandi master saat ini"
                       value={currentMasterPassword}
                       onChange={(e) => setCurrentMasterPassword(e.target.value)}
                       required
                     />
                     <Input
-                      label="New Master Password"
+                      label="Kata Sandi Master Baru"
                       name="newMasterPassword"
                       type="password"
-                      placeholder="Enter new master password"
+                      placeholder="Masukkan kata sandi master baru"
                       value={newMasterPassword}
                       onChange={(e) => setNewMasterPassword(e.target.value)}
                       required
                     />
                     <Button type="submit" className="w-full" disabled={isLoading}>
-                      Update Master Password
+                      Perbarui Kata Sandi Master
                     </Button>
                   </form>
                 </div>
@@ -460,23 +460,23 @@ const Settings = () => {
               {/* Clear All Data (Admin Only) */}
               {userRole === 'admin' && (
                 <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-text-primary">Clear All Application Data</h3>
+                  <h3 className="text-xl font-semibold text-text-primary">Hapus Semua Data Aplikasi</h3>
                   <p className="text-sm text-text-secondary">
-                    This action will permanently delete all transactions, expenses, and reset all menu item stock to zero.
-                    This action cannot be undone.
+                    Tindakan ini akan menghapus semua transaksi, pengeluaran, dan mengatur ulang semua stok item menu menjadi nol secara permanen.
+                    Tindakan ini tidak dapat dibatalkan.
                   </p>
                   <form onSubmit={handleClearAllData} className="space-y-4">
                     <Input
-                      label="Master Password"
+                      label="Kata Sandi Master"
                       name="masterPasswordForClear"
                       type="password"
-                      placeholder="Enter master password to confirm"
+                      placeholder="Masukkan kata sandi master untuk konfirmasi"
                       value={masterPasswordForClear}
                       onChange={(e) => setMasterPasswordForClear(e.target.value)}
                       required
                     />
                     <Button type="submit" className="w-full bg-destructive hover:bg-red-700" disabled={isLoading}>
-                      Clear All Data
+                      Hapus Semua Data
                     </Button>
                   </form>
                 </div>

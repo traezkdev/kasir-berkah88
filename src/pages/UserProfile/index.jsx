@@ -137,17 +137,17 @@ const UserProfile = () => {
   };
 
   const breadcrumbs = [
-    { name: 'Home', path: '/main-dashboard' },
-    { name: 'Profile', path: '/profile' },
+    { name: 'Beranda', path: '/main-dashboard' },
+    { name: 'Profil', path: '/profile' },
   ];
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      <NavigationHeader title="User Profile" />
+      <NavigationHeader title="Profil Pengguna" />
       <BreadcrumbNavigation paths={breadcrumbs} />
       <div className="flex-grow pt-20 px-6 overflow-auto">
         <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8 space-y-8">
-          <h2 className="text-2xl font-bold text-text-primary text-center">User Profile</h2>
+          <h2 className="text-2xl font-bold text-text-primary text-center">Profil Pengguna</h2>
 
           {message && <p className="text-success text-center">{message}</p>}
           {error && <p className="text-destructive text-center">{error}</p>}
@@ -157,62 +157,62 @@ const UserProfile = () => {
           {!isLoading && (
             <>
               <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-text-primary">Current Username: {username}</h3>
+                <h3 className="text-xl font-semibold text-text-primary">Nama Pengguna Saat Ini: {username}</h3>
                 <form onSubmit={handleUpdateUsername} className="space-y-4">
                   <Input
-                    label="New Username"
+                    label="Nama Pengguna Baru"
                     name="newUsername"
                     type="text"
-                    placeholder="Enter new username"
+                    placeholder="Masukkan nama pengguna baru"
                     value={newUsername}
                     onChange={(e) => setNewUsername(e.target.value)}
                     required
                   />
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    Update Username
+                    Perbarui Nama Pengguna
                   </Button>
                 </form>
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-text-primary">Change Password</h3>
+                <h3 className="text-xl font-semibold text-text-primary">Ubah Kata Sandi</h3>
                 <form onSubmit={handleChangePassword} className="space-y-4">
                   <Input
-                    label="Current Password"
+                    label="Kata Sandi Saat Ini"
                     name="currentPassword"
                     type="password"
-                    placeholder="Enter current password"
+                    placeholder="Masukkan kata sandi saat ini"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     required
                   />
                   <Input
-                    label="New Password"
+                    label="Kata Sandi Baru"
                     name="newPassword"
                     type="password"
-                    placeholder="Enter new password"
+                    placeholder="Masukkan kata sandi baru"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
                   />
                   <Input
-                    label="Confirm New Password"
+                    label="Konfirmasi Kata Sandi Baru"
                     name="confirmNewPassword"
                     type="password"
-                    placeholder="Confirm new password"
+                    placeholder="Konfirmasi kata sandi baru"
                     value={confirmNewPassword}
                     onChange={(e) => setConfirmNewPassword(e.target.value)}
                     required
                   />
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    Change Password
+                    Ubah Kata Sandi
                   </Button>
                 </form>
               </div>
 
               <div className="pt-4 border-t border-gray-200">
                 <Button onClick={handleLogout} className="w-full bg-destructive hover:bg-red-700" disabled={isLoading}>
-                  Logout
+                  Keluar
                 </Button>
               </div>
             </>
