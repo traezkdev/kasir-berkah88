@@ -15,7 +15,7 @@ import authFetch from '../../utils/authFetch';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-const BusinessReports = () => {
+const BusinessReports = ({ headerTitle }) => {
   const [selectedDateRange, setSelectedDateRange] = useState({
     startDate: new Date(),
     endDate: new Date(),
@@ -217,7 +217,7 @@ const BusinessReports = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <NavigationHeader onToggleSidebar={() => {}} />
+      <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />
       <main className="pt-20 pb-24 lg:pb-8">
         <div className="max-w-7xl mx-auto px-4 lg:px-6">
           {/* Header Section */}

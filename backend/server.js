@@ -444,7 +444,31 @@ app.put("/api/settings/title", authenticateToken, authorizeRoles('admin'), async
             const insertSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?)';
             await db.query(insertSql, ['website_title', title]);
         }
-        res.json({ message: "Website title updated successfully", data: { title } });
+                res.json({ message: "Website title updated successfully", data: { title } });
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// Update header title
+app.put("/api/settings/header-title", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        const { title } = req.body;
+        if (!title) {
+            return res.status(400).json({ error: "Judul header diperlukan" });
+        }
+
+        const selectSql = 'SELECT * FROM settings WHERE `key` = ?';
+        const [rows] = await db.query(selectSql, ['header_title']);
+
+        if (rows.length > 0) {
+            const updateSql = 'UPDATE settings SET `value` = ? WHERE `key` = ?';
+            await db.query(updateSql, [title, 'header_title']);
+        } else {
+            const insertSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?)';
+            await db.query(insertSql, ['header_title', title]);
+        }
+        res.json({ message: "Judul header berhasil diperbarui", data: { title } });
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
     }

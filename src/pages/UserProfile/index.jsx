@@ -8,7 +8,7 @@ import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-const UserProfile = () => {
+const UserProfile = ({ headerTitle }) => {
   const [username, setUsername] = useState('');
   const [newUsername, setNewUsername] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -143,7 +143,7 @@ const UserProfile = () => {
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      <NavigationHeader title="Profil Pengguna" />
+      <NavigationHeader title="Profil Pengguna" headerTitle={headerTitle} />
       <BreadcrumbNavigation paths={breadcrumbs} />
       <div className="flex-grow pt-20 px-6 pb-20 overflow-auto">
         <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8 space-y-8">

@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import Icon from '../AppIcon';
 import Button from './Button';
 
-const NavigationHeader = ({ isCollapsed = false, onToggleSidebar }) => {
+const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = "Kasir Berkah 88" }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState(null); // New state for user role
   const location = useLocation();
@@ -62,7 +62,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar }) => {
                 <Icon name="Calculator" size={20} color="white" />
               </div>
               <div className="hidden sm:block">
-                <h1 className="text-xl font-semibold text-text-primary">Kasir Berkah 88</h1>
+                <h1 className="text-xl font-semibold text-text-primary">{headerTitle}</h1>
               </div>
             </Link>
           </div>

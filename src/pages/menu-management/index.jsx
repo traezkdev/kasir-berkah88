@@ -14,7 +14,7 @@ import authFetch from '../../utils/authFetch'; // Add this import
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-const MenuManagement = () => {
+const MenuManagement = ({ headerTitle }) => {
   const [menuItems, setMenuItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -160,7 +160,7 @@ const MenuManagement = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <NavigationHeader onToggleSidebar={() => {}} />
+        <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />
         <div className="pt-16">
           
           <div className="flex items-center justify-center h-96">
@@ -181,7 +181,7 @@ const MenuManagement = () => {
         <meta name="description" content="Kelola menu dan inventori warung dengan mudah. Tambah, edit, dan hapus menu dengan tracking stok otomatis." />
       </Helmet>
 
-      <NavigationHeader onToggleSidebar={() => {}} />
+      <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />
       
       <div className="pt-16">
         

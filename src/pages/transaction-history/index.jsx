@@ -18,7 +18,7 @@ import * as XLSX from 'xlsx';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-const TransactionHistory = () => {
+const TransactionHistory = ({ headerTitle }) => {
   const exportContentRef = useRef(null); // Add this line
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
@@ -368,7 +368,7 @@ const TransactionHistory = () => {
 
     <div className="min-h-screen bg-background">
 
-      <NavigationHeader onToggleSidebar={() => {}} />
+      <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />
 
       <main className="pt-16 pb-20 lg:pb-8">
 

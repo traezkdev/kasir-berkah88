@@ -10,7 +10,7 @@ import authFetch from '../../utils/authFetch'; // Add this import
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-const SalesTransactionProcessing = () => {
+const SalesTransactionProcessing = ({ headerTitle }) => {
   const [cart, setCart] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -194,7 +194,7 @@ const SalesTransactionProcessing = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <NavigationHeader onToggleSidebar={handleToggleSidebar} />
+      <NavigationHeader onToggleSidebar={handleToggleSidebar} headerTitle={headerTitle} />
       <div className="pt-16">
         {/* <DashboardMetricsBar metrics={dashboardMetrics} showOnAllPages /> */}
         <main className="pt-6 lg:pt-8 pb-20 lg:pb-8">

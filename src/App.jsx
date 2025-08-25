@@ -6,6 +6,7 @@ const apiUrl = import.meta.env.VITE_API_URL;
 
 function App() {
   const [websiteTitle, setWebsiteTitle] = useState('Kasir Berkah 88'); // Default title
+  const [headerTitle, setHeaderTitle] = useState('Kasir Berkah 88'); // Default header title
 
   useEffect(() => {
     const fetchWebsiteTitle = async () => {
@@ -14,6 +15,7 @@ function App() {
         const data = await response.json();
         if (response.ok) {
           setWebsiteTitle(data.data.website_title || 'Kasir Berkah 88');
+          setHeaderTitle(data.data.header_title || 'Kasir Berkah 88'); // Assuming header_title from API
         } else {
           console.error('Failed to fetch website title:', data.error);
         }
@@ -29,7 +31,7 @@ function App() {
   }, [websiteTitle]);
 
   return (
-    <Routes />
+    <Routes headerTitle={headerTitle} />
   );
 }
 

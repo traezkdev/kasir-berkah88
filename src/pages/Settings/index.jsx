@@ -8,9 +8,10 @@ import { useNavigate } from 'react-router-dom';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-const Settings = () => {
+const Settings = ({ headerTitle }) => {
   const [websiteTitle, setWebsiteTitle] = useState('');
   const [newWebsiteTitle, setNewWebsiteTitle] = useState('');
+  const [newHeaderTitle, setNewHeaderTitle] = useState('');
   const [registrationEnabled, setRegistrationEnabled] = useState(false);
   const [adminUsername, setAdminUsername] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
@@ -86,6 +87,7 @@ const Settings = () => {
       if (response.ok) {
         setWebsiteTitle(data.data.website_title || 'Kasir Berkah 88');
         setNewWebsiteTitle(data.data.website_title || 'Kasir Berkah 88');
+        setNewHeaderTitle(data.data.header_title || headerTitle || 'Kasir Berkah 88'); // Initialize newHeaderTitle with API data or prop
         setRegistrationEnabled(data.data.registration_enabled === 'true');
         setCurrentFaviconUrl(data.data.favicon_url || '');
         setCurrentCoverImageUrl(data.data.cover_image_url || '');
@@ -148,6 +150,34 @@ const Settings = () => {
       setIsLoading(false);
     }
   };
+
+  const handleUpdateHeaderTitle = async (e) => {
+    e.preventDefault();
+    setMessage('');
+    setError('');
+    setIsLoading(true);
+
+    try {
+        const response = await authFetch(`${apiUrl}/api/settings/header-title`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ title: newHeaderTitle }),
+        });
+        const data = await response.json();
+        if (response.ok) {
+            setMessage('Judul header berhasil diperbarui!');
+        } else {
+            setError(data.error || 'Gagal memperbarui judul header');
+        }
+    } catch (err) {
+        setError('Kesalahan jaringan atau server tidak dapat dijangkau');
+        console.error('Update header title error:', err);
+    } finally {
+        setIsLoading(false);
+    }
+};
 
   const handleToggleRegistration = async () => {
     setMessage('');
@@ -428,7 +458,7 @@ const Settings = () => {
 
   return (
     <div className="flex flex-col h-screen bg-background">
-              <NavigationHeader title="Pengaturan" />
+              <NavigationHeader title="Pengaturan" headerTitle={headerTitle} />
       <BreadcrumbNavigation paths={breadcrumbs} />
       <div className="flex-grow pt-20 px-6 pb-20 overflow-auto">
         <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8 space-y-8">
@@ -458,6 +488,25 @@ const Settings = () => {
                     Perbarui Judul
                   </Button>
                 </form>
+              </div>
+
+              {/* Header Title Setting */}
+              <div className="space-y-4">
+                  <h3 className="text-xl font-semibold text-text-primary">Judul Header Web</h3>
+                  <form onSubmit={handleUpdateHeaderTitle} className="space-y-4">
+                      <Input
+                          label="Judul Header Saat Ini"
+                          name="newHeaderTitle"
+                          type="text"
+                          placeholder="Masukkan judul header web baru"
+                          value={newHeaderTitle}
+                          onChange={(e) => setNewHeaderTitle(e.target.value)}
+                          required
+                      />
+                      <Button type="submit" className="w-full" disabled={isLoading || userRole !== 'admin'}>
+                          Perbarui Judul Header
+                      </Button>
+                  </form>
               </div>
 
               {/* Registration Toggle Setting */}

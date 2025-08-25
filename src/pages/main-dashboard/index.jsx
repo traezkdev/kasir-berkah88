@@ -14,7 +14,7 @@ import authFetch from '../../utils/authFetch'; // Add this import
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-const MainDashboard = () => {
+const MainDashboard = ({ headerTitle }) => {
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
 
@@ -176,7 +176,7 @@ const MainDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <NavigationHeader onToggleSidebar={() => {}} />
+      <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />
       <div className="pt-16">
         <DashboardMetricsBar metrics={dashboardData.dashboardMetrics} />
         <main className="pb-20 lg:pb-8">

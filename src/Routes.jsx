@@ -22,7 +22,7 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-const AppRoutes = () => {
+const AppRoutes = ({ headerTitle }) => {
   return (
     <Routes>
       {/* Public Routes */}
@@ -30,15 +30,15 @@ const AppRoutes = () => {
       <Route path="/register" element={<Register />} />
 
       {/* Protected Routes */}
-      <Route path="/" element={<ProtectedRoute><MainDashboard /></ProtectedRoute>} />
-      <Route path="/main-dashboard" element={<ProtectedRoute><MainDashboard /></ProtectedRoute>} />
-      <Route path="/sales-transaction-processing" element={<ProtectedRoute><SalesTransactionProcessing /></ProtectedRoute>} />
-      <Route path="/menu-management" element={<ProtectedRoute><MenuManagement /></ProtectedRoute>} />
-      <Route path="/expense-tracking" element={<ProtectedRoute><ExpenseTracking /></ProtectedRoute>} />
-      <Route path="/transaction-history" element={<ProtectedRoute><TransactionHistory /></ProtectedRoute>} />
-      <Route path="/business-reports" element={<ProtectedRoute><BusinessReports /></ProtectedRoute>} />
-      <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route path="/" element={<ProtectedRoute><MainDashboard headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/main-dashboard" element={<ProtectedRoute><MainDashboard headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/sales-transaction-processing" element={<ProtectedRoute><SalesTransactionProcessing headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/menu-management" element={<ProtectedRoute><MenuManagement headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/expense-tracking" element={<ProtectedRoute><ExpenseTracking headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/transaction-history" element={<ProtectedRoute><TransactionHistory headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/business-reports" element={<ProtectedRoute><BusinessReports headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><UserProfile headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><Settings headerTitle={headerTitle} /></ProtectedRoute>} />
       
       {/* Catch all other routes */}
       <Route path="*" element={<NotFound />} />

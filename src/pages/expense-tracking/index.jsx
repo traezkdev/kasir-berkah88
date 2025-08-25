@@ -14,7 +14,7 @@ import authFetch from '../../utils/authFetch';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-const ExpenseTracking = () => {
+const ExpenseTracking = ({ headerTitle }) => {
   const [expenses, setExpenses] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -331,7 +331,7 @@ const ExpenseTracking = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <NavigationHeader onToggleSidebar={() => {}} /> 
+      <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} /> 
       <div className="pt-16">
         {/* <DashboardMetricsBar metrics={dashboardMetrics} showOnAllPages />  */}
         <main className="pt-6 lg:pt-8 pb-20 lg:pb-8">
