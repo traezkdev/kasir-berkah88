@@ -8,8 +8,8 @@ import TransactionTable from './components/TransactionTable';
 import BulkActions from './components/BulkActions';
 
 import authFetch from '../../utils/authFetch';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable'; // Import the plugin
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 import { prepareTransactionDataForExport } from '../../utils/exportUtils';
 import * as XLSX from 'xlsx';
@@ -213,6 +213,8 @@ const TransactionHistory = () => {
       
       const dataToExport = prepareTransactionDataForExport(filteredTransactions);
 
+      const totalRevenue = filteredTransactions?.filter(t => !t?.isEmployeeMeal)?.reduce((sum, t) => sum + parseFloat(t?.total || 0), 0);
+
       if (format === 'excel') {
         const ws_data = [
           ["Laporan Riwayat Transaksi"], // Title
@@ -277,7 +279,6 @@ const TransactionHistory = () => {
 
         // Add footer with total transactions
         const totalTransactions = filteredTransactions?.length;
-        const totalRevenue = filteredTransactions?.filter(t => !t?.isEmployeeMeal)?.reduce((sum, t) => sum + parseFloat(t?.total || 0), 0);
 
         const footerRowIndex = ws_data.length;
         ws_data.push([]); // Empty row for spacing
@@ -291,6 +292,7 @@ const TransactionHistory = () => {
         XLSX.utils.book_append_sheet(wb, ws, "Riwayat Transaksi");
         XLSX.writeFile(wb, `riwayat-transaksi-${new Date()?.toISOString()?.split('T')?.[0]}.xlsx`);
       } else if (format === 'pdf') {
+
         const doc = new jsPDF();
 
         // Add header
@@ -304,7 +306,7 @@ const TransactionHistory = () => {
         const headers = Object.keys(dataToExport[0] || {});
         const body = dataToExport.map(row => Object.values(row));
 
-        doc.autoTable({
+        autoTable(doc, {
           startY: 40,
           head: [headers],
           body: body,
@@ -329,65 +331,128 @@ const TransactionHistory = () => {
           }
         });
 
+        let finalY = doc.lastAutoTable.finalY;
+
+        doc.text(`Total Pendapatan: Rp ${totalRevenue.toLocaleString('id-ID')}`, 14, finalY + 17);
+        doc.text(`Total Penjualan: Rp ${totalRevenue.toLocaleString('id-ID')}`, 14, finalY + 24);
+
         doc.save(`riwayat-transaksi-${new Date()?.toISOString()?.split('T')?.[0]}.pdf`);
       }
       
       console.log(`Exported ${filteredTransactions?.length} transactions as ${format}`);
     } catch (error) {
+
       console.error('Export failed:', error);
+
     } finally {
+
       setIsExporting(false);
+
     }
+
   };
 
+
+
   const breadcrumbPath = [
+
     { label: 'Dashboard', path: '/main-dashboard', isActive: false },
+
     { label: 'Riwayat Transaksi', path: '/transaction-history', isActive: true }
+
   ];
 
+
+
   return (
+
     <div className="min-h-screen bg-background">
+
       <NavigationHeader onToggleSidebar={() => {}} />
+
       <main className="pt-16 pb-20 lg:pb-8">
+
         <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6">
+
           <div className="mb-6">
+
             <BreadcrumbNavigation customPath={breadcrumbPath} />
+
             <h1 className="text-2xl lg:text-3xl font-semibold text-text-primary mt-2">
+
               Riwayat Transaksi
+
             </h1>
+
             <p className="text-text-secondary mt-1">
+
               Kelola dan pantau semua transaksi penjualan Anda
+
             </p>
+
           </div>
+
+
 
           <div className="space-y-6" ref={exportContentRef}>
+
             <TransactionFilters
+
               onFilterChange={handleFilterChange}
+
               onSearch={handleSearch}
+
               onDateRangeChange={handleDateRangeChange}
+
               totalTransactions={summaryStats?.totalTransactions}
+
               totalRevenue={summaryStats?.totalRevenue}
+
               employeeMealCount={summaryStats?.employeeMealCount}
+
             />
+
+
 
             <TransactionTable
+
               transactions={filteredTransactions}
+
               onDeleteTransaction={handleDeleteTransaction}
+
               isMobile={isMobile}
+
             />
+
+
 
             <BulkActions
+
               onClearAllTransactions={handleClearAllTransactions}
+
               onExportTransactions={handleExportTransactions}
+
               transactionCount={filteredTransactions?.length}
+
               isExporting={isExporting}
+
             />
+
           </div>
+
         </div>
+
       </main>
+
       
+
     </div>
+
   );
+
 };
 
+
+
 export default TransactionHistory;
+
