@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 
@@ -6,11 +6,19 @@ import TransactionFilters from './components/TransactionFilters';
 import TransactionTable from './components/TransactionTable';
 import BulkActions from './components/BulkActions';
 
-import authFetch from '../../utils/authFetch'; // Add this import
+import authFetch from '../../utils/authFetch';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+import { prepareTransactionDataForExport } from '../../utils/exportUtils';
+import * as XLSX from 'xlsx';
+
+
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const TransactionHistory = () => {
+  const exportContentRef = useRef(null); // Add this line
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -202,26 +210,148 @@ const TransactionHistory = () => {
       // Simulate export process
       await new Promise(resolve => setTimeout(resolve, 2000));
       
+      const dataToExport = prepareTransactionDataForExport(filteredTransactions);
+
       if (format === 'excel') {
-        // Mock Excel export
-        const csvContent = [
-          ['ID Transaksi', 'Tanggal', 'Item', 'Total', 'Jenis']?.join(','),
-          ...filteredTransactions?.map(t => [
-            t?.id,
-            new Intl.DateTimeFormat('id-ID')?.format(new Date(t.timestamp)),
-            t?.items?.map(item => `${item?.name} (${item?.quantity})`)?.join('; '),
-            t?.total,
-            t?.isEmployeeMeal ? 'Makan Karyawan' : 'Regular'
-          ]?.join(','))
-        ]?.join('\n');
+        const ws_data = [
+          ["Laporan Riwayat Transaksi"], // Title
+          [], // Empty row for spacing
+          Object.keys(dataToExport[0] || {}), // Headers
+          ...dataToExport.map(row => Object.values(row)) // Data
+        ];
+
+        const ws = XLSX.utils.aoa_to_sheet(ws_data);
+
+        // Merge title cells
+        ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: Object.keys(dataToExport[0] || {}).length - 1 } }];
+
+        // Style for title
+        if (ws['A1']) {
+          ws['A1'].s = {
+            font: { bold: true, sz: 16 },
+            alignment: { horizontal: "center", vertical: "center" }
+          };
+        }
+
+        // Style for headers (row 2, 0-indexed)
+        const headerRowIndex = 2;
+        const headerStyle = {
+          font: { bold: true, color: { rgb: "FFFFFF" } }, // White text
+          fill: { fgColor: { rgb: "000080" } }, // Dark blue background
+          border: {
+            top: { style: "thin", color: { auto: 1 } },
+            bottom: { style: "thin", color: { auto: 1 } },
+            left: { style: "thin", color: { auto: 1 } },
+            right: { style: "thin", color: { auto: 1 } }
+          }
+        };
+        Object.keys(dataToExport[0] || {}).forEach((_, colIndex) => {
+          const cellRef = XLSX.utils.encode_cell({ r: headerRowIndex, c: colIndex });
+          if (ws[cellRef]) {
+            ws[cellRef].s = headerStyle;
+          }
+        });
+
+        // Style for data cells (rows from 3 onwards)
+        const dataStyle = {
+          border: {
+            top: { style: "thin", color: { auto: 1 } },
+            bottom: { style: "thin", color: { auto: 1 } },
+            left: { style: "thin", color: { auto: 1 } },
+            right: { style: "thin", color: { auto: 1 } }
+          }
+        };
+        for (let r = headerRowIndex + 1; r < ws_data.length; r++) {
+          for (let c = 0; c < (Object.keys(dataToExport[0] || {}).length); c++) {
+            const cellRef = XLSX.utils.encode_cell({ r: r, c: c });
+            if (ws[cellRef]) {
+              ws[cellRef].s = dataStyle;
+            }
+          }
+        }
+
+        // Auto-width columns
+        const max_width = ws_data[headerRowIndex].map((header, i) => Math.max(...ws_data.map(row => (row[i] ? row[i].toString().length : 0)), header.length));
+        ws['!cols'] = max_width.map(w => ({ wch: w + 2 })); // Add some padding
+
+        // Add footer with total transactions
+        const totalTransactions = filteredTransactions?.length;
+        const totalRevenue = filteredTransactions?.filter(t => !t?.isEmployeeMeal)?.reduce((sum, t) => sum + parseFloat(t?.total || 0), 0);
+
+        const footerRowIndex = ws_data.length;
+        ws_data.push([]); // Empty row for spacing
+        ws_data.push([`Total Transaksi: ${totalTransactions}`]);
+        ws_data.push([`Total Pendapatan: Rp ${totalRevenue.toLocaleString('id-ID')}`]);
+
+        // Update worksheet with footer data
+        XLSX.utils.sheet_add_aoa(ws, ws_data.slice(footerRowIndex), { origin: -1 });
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Riwayat Transaksi");
+        XLSX.writeFile(wb, `riwayat-transaksi-${new Date()?.toISOString()?.split('T')?.[0]}.xlsx`);
+      } else if (format === 'pdf') {
         
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL?.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `riwayat-transaksi-${new Date()?.toISOString()?.split('T')?.[0]}.csv`;
-        a?.click();
-        window.URL?.revokeObjectURL(url);
+        const doc = new jsPDF();
+
+        // Add logo and store name to header
+        const imgData = 'public/assets/images/no_image.png'; // Placeholder logo path
+        const imgWidth = 20;
+        const imgHeight = 20;
+        const imgX = (doc.internal.pageSize.width / 2) - (imgWidth / 2); // Center the image
+        doc.addImage(imgData, 'PNG', imgX, 10, imgWidth, imgHeight);
+
+        doc.setFontSize(16);
+        doc.text("Kasir Berkah 88", doc.internal.pageSize.width / 2, 35, { align: 'center' });
+
+        // Report Title
+        doc.setFontSize(20);
+        doc.text("Laporan Penjualan Kasir", doc.internal.pageSize.width / 2, 50, { align: 'center' });
+
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        doc.text(`Tanggal Export: ${new Date().toLocaleDateString('id-ID')}`, 14, 60);
+
+        // Prepare table data
+        const headers = Object.keys(dataToExport[0] || {});
+        const body = dataToExport.map(row => Object.values(row));
+
+        autoTable(doc, {
+          startY: 70,
+          head: [headers],
+          body: body,
+          theme: 'grid', // Use 'grid' for borders
+          styles: {
+            fontSize: 8,
+            cellPadding: 2,
+            font: 'helvetica', // Ensure Helvetica
+            textColor: [0, 0, 0], // Black text
+          },
+          headStyles: {
+            fillColor: [20, 83, 45], // Dark green header
+            textColor: 255, // White text
+            fontStyle: 'bold',
+          },
+          alternateRowStyles: {
+            fillColor: [245, 245, 245], // Light grey for alternate rows
+          },
+          didDrawPage: function (data) {
+            // Footer
+            let str = "Halaman " + doc.internal.getNumberOfPages();
+            doc.setFontSize(10);
+            doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 10);
+          }
+        });
+
+        // Add total transactions below the table
+        const finalY = doc.lastAutoTable.finalY; // Get the Y position of the end of the table
+        const totalTransactions = filteredTransactions?.length;
+        const totalRevenue = filteredTransactions?.filter(t => !t?.isEmployeeMeal)?.reduce((sum, t) => sum + parseFloat(t?.total || 0), 0);
+
+        doc.setFontSize(12);
+        doc.text(`Total Transaksi: ${totalTransactions}`, 14, finalY + 10);
+        doc.text(`Total Pendapatan: Rp ${totalRevenue.toLocaleString('id-ID')}`, 14, finalY + 17);
+
+        doc.save(`riwayat-transaksi-${new Date()?.toISOString()?.split('T')?.[0]}.pdf`);
       }
       
       console.log(`Exported ${filteredTransactions?.length} transactions as ${format}`);
@@ -252,7 +382,7 @@ const TransactionHistory = () => {
             </p>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-6" ref={exportContentRef}>
             <TransactionFilters
               onFilterChange={handleFilterChange}
               onSearch={handleSearch}

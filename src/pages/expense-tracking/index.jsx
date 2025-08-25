@@ -8,6 +8,8 @@ import ExpenseSummaryCard from './components/ExpenseSummaryCard';
 import ExpenseHistoryTable from './components/ExpenseHistoryTable';
 import ExpenseAnalytics from './components/ExpenseAnalytics';
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import authFetch from '../../utils/authFetch';
 
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -180,32 +182,119 @@ const ExpenseTracking = () => {
       return;
     }
 
-    const exportData = expenses?.map(expense => ({
-      'Tanggal': new Date(expense.date)?.toLocaleDateString('id-ID'),
-      'Waktu': new Date(expense.date)?.toLocaleTimeString('id-ID'),
-      'Kategori': expense?.categoryLabel,
-      'Deskripsi': expense?.description,
-      'Catatan': expense?.notes || '-',
-      'Jumlah': expense?.amount
-    }));
-
-    const ws = XLSX?.utils?.json_to_sheet(exportData);
-    const wb = XLSX?.utils?.book_new();
-    XLSX?.utils?.book_append_sheet(wb, ws, 'Pengeluaran');
-
-    // Auto-size columns
-    const colWidths = [
-      { wch: 12 }, // Tanggal
-      { wch: 10 }, // Waktu
-      { wch: 20 }, // Kategori
-      { wch: 30 }, // Deskripsi
-      { wch: 25 }, // Catatan
-      { wch: 15 }  // Jumlah
+    const categoryOptions = [
+      { value: 'supplies', label: 'Bahan Baku & Supplies' },
+      { value: 'utilities', label: 'Listrik & Air' },
+      { value: 'inventory', label: 'Pembelian Stok' },
+      { value: 'equipment', label: 'Peralatan' },
+      { value: 'maintenance', label: 'Perawatan & Perbaikan' },
+      { value: 'transport', label: 'Transportasi' },
+      { value: 'marketing', label: 'Promosi & Marketing' },
+      { value: 'operational', label: 'Operasional Lainnya' },
+      { value: 'other', label: 'Lain-lain' }
     ];
-    ws['!cols'] = colWidths;
+    const categoryLabelMap = new Map(categoryOptions.map(opt => [opt.value, opt.label]));
 
-    const fileName = `Pengeluaran_${new Date()?.toLocaleDateString('id-ID')?.replace(/\//g, '-')}.xlsx`;
-    XLSX?.writeFile(wb, fileName);
+    const fileName = `Laporan-Pengeluaran-${new Date().toISOString().split('T')[0]}`;
+
+    if (format === 'excel') {
+      const header = ['Tanggal', 'Waktu', 'Kategori', 'Deskripsi', 'Catatan', 'Jumlah'];
+      const dataForSheet = expenses.map(expense => [
+        new Date(expense.date).toLocaleDateString('id-ID'),
+        new Date(expense.date).toLocaleTimeString('id-ID'),
+        categoryLabelMap.get(expense.category) || expense.category,
+        expense.name,
+        expense.notes || '-',
+        parseFloat(expense.amount) // Keep as number for formatting and sum
+      ]);
+
+      const totalExpenses = expenses.reduce((sum, expense) => sum + parseFloat(expense.amount || 0), 0);
+
+      const ws_data = [
+        ["Laporan Pengeluaran"], // Title
+        [], // Empty row
+        header,
+        ...dataForSheet,
+        [], // Empty row
+        ['Total Pengeluaran', '', '', '', '', totalExpenses]
+      ];
+
+      const ws = XLSX.utils.aoa_to_sheet(ws_data);
+
+      // Merge title and footer cells
+      ws['!merges'] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: header.length - 1 } },
+        { s: { r: ws_data.length - 1, c: 0 }, e: { r: ws_data.length - 1, c: header.length - 2 } }
+      ];
+
+      // --- Styling ---
+      const titleStyle = { font: { bold: true, sz: 16 }, alignment: { horizontal: "center" } };
+      const headerStyle = { font: { bold: true, color: { rgb: "FFFFFF" } }, fill: { fgColor: { rgb: "228B22" } } }; // Green fill
+      const totalStyle = { font: { bold: true } };
+      const currencyFormat = '"Rp"#,##0;\-"Rp"#,##0';
+
+      ws['A1'].s = titleStyle;
+      ws[`F${ws_data.length}`].s = { ...totalStyle, numFmt: currencyFormat };
+      ws[`A${ws_data.length}`].s = totalStyle;
+
+      // Style headers
+      header.forEach((_, colIndex) => {
+        const cellRef = XLSX.utils.encode_cell({ r: 2, c: colIndex });
+        ws[cellRef].s = headerStyle;
+      });
+
+      // Set number format for amount column
+      for (let i = 0; i < dataForSheet.length; i++) {
+        const cellRef = XLSX.utils.encode_cell({ r: 3 + i, c: 5 });
+        if(ws[cellRef]) ws[cellRef].s = { numFmt: currencyFormat };
+      }
+
+      // Auto-fit columns
+      const colWidths = header.map((_, i) => ({
+        wch: ws_data.reduce((w, r) => Math.max(w, (r[i] || '').toString().length), 10)
+      }));
+      ws['!cols'] = colWidths;
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Pengeluaran');
+      XLSX.writeFile(wb, `${fileName}.xlsx`);
+
+    } else if (format === 'pdf') {
+      const dataToExport = expenses.map(expense => ({
+        'Tanggal': new Date(expense.date).toLocaleDateString('id-ID'),
+        'Waktu': new Date(expense.date).toLocaleTimeString('id-ID'),
+        'Kategori': categoryLabelMap.get(expense.category) || expense.category,
+        'Deskripsi': expense.name,
+        'Catatan': expense.notes || '-',
+        'Jumlah': new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(expense.amount)
+      }));
+
+      const doc = new jsPDF();
+      doc.setFontSize(18);
+      doc.text('Laporan Pengeluaran', 14, 22);
+      doc.setFontSize(11);
+      doc.setTextColor(100);
+      doc.text(`Tanggal Ekspor: ${new Date().toLocaleDateString('id-ID')}`, 14, 30);
+
+      const headers = Object.keys(dataToExport[0]);
+      const body = dataToExport.map(row => Object.values(row));
+
+      autoTable(doc, {
+        startY: 40,
+        head: [headers],
+        body: body,
+        theme: 'grid',
+        headStyles: { fillColor: [22, 160, 133] },
+        styles: { fontSize: 8 },
+      });
+
+      const finalY = doc.lastAutoTable.finalY;
+      const totalExpenses = expenses.reduce((sum, expense) => sum + parseFloat(expense.amount || 0), 0);
+      doc.setFontSize(12);
+      doc.text(`Total Pengeluaran: ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalExpenses)}`, 14, finalY + 10);
+
+      doc.save(`${fileName}.pdf`);
+    }
   };
 
   // Calculate summary metrics

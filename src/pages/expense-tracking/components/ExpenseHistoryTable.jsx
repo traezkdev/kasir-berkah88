@@ -132,12 +132,21 @@ const ExpenseHistoryTable = ({
           <div className="flex flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
-              onClick={onExportData}
+              onClick={() => onExportData('excel')}
               iconName="Download"
               iconPosition="left"
               size="sm"
             >
               Export Excel
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => onExportData('pdf')}
+              iconName="FileText"
+              iconPosition="left"
+              size="sm"
+            >
+              Export PDF
             </Button>
             
             <Button
