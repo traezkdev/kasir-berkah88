@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
-import Checkbox from '../../../components/ui/Checkbox'; // Import Checkbox
+import { Checkbox } from '../../../components/ui/Checkbox'; // Import Checkbox
 
 import authFetch from '../../../utils/authFetch';
 

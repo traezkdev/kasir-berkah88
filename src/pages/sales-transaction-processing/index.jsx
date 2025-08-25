@@ -12,6 +12,7 @@ const apiUrl = import.meta.env.VITE_API_URL;
 
 const SalesTransactionProcessing = () => {
   const [cart, setCart] = useState([]);
+  const [menuItems, setMenuItems] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isEmployeeMeal, setIsEmployeeMeal] = useState(false);
   const [transactions, setTransactions] = useState([]);
