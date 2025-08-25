@@ -208,7 +208,7 @@ const MenuItemsTable = ({
             {isEditing ? (
               <Input
                 type="number"
-                value={localStock} // Use local state
+                value={Number(localStock)} // Use local state
                 onChange={handleLocalStockChange} // Update local state
                 onBlur={handleStockBlur} // Update parent state on blur
                 min="0"
@@ -228,9 +228,9 @@ const MenuItemsTable = ({
             <p className="text-xs text-text-secondary mb-1">Harga</p>
             {isEditing ? (
               <Input
-                type="text"
-                value={formatPrice(localPrice)}
-                onChange={(e) => handleLocalPriceChange(e?.target?.value)}
+                type="number"
+                value={localPrice}
+                onChange={(e) => setLocalPrice(e.target.value)}
                 onBlur={handlePriceBlur}
                 className="text-sm"
               />
@@ -443,7 +443,7 @@ const MenuItemsTable = ({
                     {isEditing ? (
                       <Input
                         type="number"
-                        value={editData?.stock}
+                        value={Number(editData?.stock)}
                         onChange={(e) => setEditData(prev => ({ ...prev, stock: e?.target?.value }))}
                         min="0"
                         className="w-20"
@@ -455,9 +455,9 @@ const MenuItemsTable = ({
                   <td className="p-4">
                     {isEditing ? (
                       <Input
-                        type="text"
-                        value={formatPrice(editData?.price)}
-                        onChange={(e) => handlePriceChange(e?.target?.value)}
+                        type="number"
+                        value={editData?.price}
+                        onChange={(e) => setEditData(prev => ({ ...prev, price: e?.target?.value }))}
                         className="min-w-32"
                       />
                     ) : (
