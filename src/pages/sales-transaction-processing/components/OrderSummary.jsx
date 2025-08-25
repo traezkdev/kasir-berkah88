@@ -156,7 +156,7 @@ const OrderSummary = ({
             <Checkbox 
               id="employee-meal-checkbox"
               checked={isEmployeeMeal}
-              onCheckedChange={setIsEmployeeMeal}
+              onChange={(e) => setIsEmployeeMeal(e.target.checked)}
             />
             <label htmlFor="employee-meal-checkbox" className="text-sm font-medium text-gray-700">Makan Karyawan</label>
           </div>
