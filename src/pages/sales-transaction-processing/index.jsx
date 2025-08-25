@@ -12,7 +12,8 @@ const apiUrl = import.meta.env.VITE_API_URL;
 
 const SalesTransactionProcessing = () => {
   const [cart, setCart] = useState([]);
-  const [menuItems, setMenuItems] = useState([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isEmployeeMeal, setIsEmployeeMeal] = useState(false);
   const [transactions, setTransactions] = useState([]);
   const [dashboardMetrics, setDashboardMetrics] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -125,7 +126,7 @@ const SalesTransactionProcessing = () => {
       items: cart,
       total: paymentData.total,
       ppn: paymentData.ppn,
-      isEmployeeMeal: false, // Assuming regular transaction, you might need a way to set this
+      isEmployeeMeal: isEmployeeMeal, // Use state here
     };
 
     try {
@@ -142,6 +143,7 @@ const SalesTransactionProcessing = () => {
       if (result.message === 'success') {
         console.log('Transaction saved successfully');
         handleClearCart();
+        setIsEmployeeMeal(false); // Reset checkbox state
         // Maybe show a success message
       } else {
         console.error('Failed to save transaction:', result.error);
@@ -187,6 +189,8 @@ const SalesTransactionProcessing = () => {
                   onClearCart={handleClearCart}
                   onProcessPayment={handleProcessPayment}
                   isLoading={isLoading}
+                  isEmployeeMeal={isEmployeeMeal}
+                  setIsEmployeeMeal={setIsEmployeeMeal}
                 />
               </div>
             </div>

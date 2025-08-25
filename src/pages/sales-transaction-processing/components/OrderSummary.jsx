@@ -1,12 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
+import Checkbox from '../../../components/ui/Checkbox'; // Import Checkbox
 
-import authFetch from '../../../utils/authFetch'; // Add this import
+import authFetch from '../../../utils/authFetch';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-const OrderSummary = ({ cart, menuItems, onUpdateQuantity, onRemoveFromCart, onClearCart, onProcessPayment, isLoading }) => {
+const OrderSummary = ({ 
+  cart, 
+  menuItems, 
+  onUpdateQuantity, 
+  onRemoveFromCart, 
+  onClearCart, 
+  onProcessPayment, 
+  isLoading, 
+  isEmployeeMeal, 
+  setIsEmployeeMeal 
+}) => {
   const [ppnRate, setPpnRate] = useState(0.11); // Default PPN rate
 
   useEffect(() => {
@@ -139,6 +150,17 @@ const OrderSummary = ({ cart, menuItems, onUpdateQuantity, onRemoveFromCart, onC
             </div>
           </div>
           <div className="border-t my-4"></div>
+          
+          {/* Employee Meal Checkbox */}
+          <div className="flex items-center space-x-2 mb-4">
+            <Checkbox 
+              id="employee-meal-checkbox"
+              checked={isEmployeeMeal}
+              onCheckedChange={setIsEmployeeMeal}
+            />
+            <label htmlFor="employee-meal-checkbox" className="text-sm font-medium text-gray-700">Makan Karyawan</label>
+          </div>
+
           <div className="flex gap-2 mt-4">
             <Button variant="outline" onClick={onClearCart} className="w-full">Kosongkan</Button>
             <Button 
