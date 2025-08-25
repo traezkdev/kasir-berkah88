@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
@@ -15,6 +15,7 @@ const MenuItemsTable = ({
   const [editData, setEditData] = useState({});
   const [selectedItems, setSelectedItems] = useState([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const scrollRef = useRef(null); // Add this ref
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('id-ID', {
@@ -35,6 +36,9 @@ const MenuItemsTable = ({
   );
 
   const handleEdit = (item) => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollTop; // Store current scroll position
+    }
     setEditingId(item?.id);
     setEditData({
       name: item?.name,
@@ -58,6 +62,9 @@ const MenuItemsTable = ({
       await onUpdateItem(id, updatedItem);
       setEditingId(null);
       setEditData({});
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollTop; // Restore scroll position
+      }
     } catch (error) {
       console.error('Error updating item:', error);
     }
@@ -66,6 +73,9 @@ const MenuItemsTable = ({
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditData({});
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollTop; // Restore scroll position
+    }
   };
 
   const handleDelete = async (id) => {
@@ -117,10 +127,50 @@ const MenuItemsTable = ({
   };
 
   // Mobile Card View
-  const MobileCard = ({ item }) => {
+  const MobileCard = React.memo(({ item, editingId, editData, setEditData, handleEdit, handleSaveEdit, handleCancelEdit, handleSelectItem, selectedItems, setShowDeleteConfirm }) => {
     const stockStatus = getStockStatus(item?.stock);
     const isEditing = editingId === item?.id;
     const isSelected = selectedItems?.includes(item?.id);
+
+    // Local state for stock input
+    const [localStock, setLocalStock] = useState(editData?.stock);
+    const [localImageUrl, setLocalImageUrl] = useState(editData?.image_url);
+    const [localPrice, setLocalPrice] = useState(editData?.price);
+
+    // Update localStock when editData.stock changes (e.g., when editing starts)
+    useEffect(() => {
+      if (isEditing) {
+        setLocalStock(editData?.stock);
+        setLocalImageUrl(editData?.image_url);
+        setLocalPrice(editData?.price);
+      }
+    }, [isEditing, editData?.stock, editData?.image_url, editData?.price]);
+
+    const handleLocalStockChange = (e) => {
+      setLocalStock(e.target.value);
+    };
+
+    const handleStockBlur = () => {
+      // Update parent state only when input loses focus
+      setEditData(prev => ({ ...prev, stock: localStock }));
+    };
+
+    const handleLocalImageUrlChange = (e) => {
+      setLocalImageUrl(e.target.value);
+    };
+
+    const handleImageUrlBlur = () => {
+      setEditData(prev => ({ ...prev, image_url: localImageUrl }));
+    };
+
+    const handleLocalPriceChange = (value) => {
+      const numericValue = value?.replace(/[^\d]/g, '');
+      setLocalPrice(numericValue);
+    };
+
+    const handlePriceBlur = () => {
+      setEditData(prev => ({ ...prev, price: localPrice }));
+    };
 
     return (
       <div className="bg-white rounded-lg border border-slate-200 p-4 space-y-3">
@@ -158,8 +208,9 @@ const MenuItemsTable = ({
             {isEditing ? (
               <Input
                 type="number"
-                value={editData?.stock}
-                onChange={(e) => setEditData(prev => ({ ...prev, stock: e?.target?.value }))}
+                value={localStock} // Use local state
+                onChange={handleLocalStockChange} // Update local state
+                onBlur={handleStockBlur} // Update parent state on blur
                 min="0"
                 className="text-sm"
               />
@@ -178,8 +229,9 @@ const MenuItemsTable = ({
             {isEditing ? (
               <Input
                 type="text"
-                value={formatPrice(editData?.price)}
-                onChange={(e) => handlePriceChange(e?.target?.value)}
+                value={formatPrice(localPrice)}
+                onChange={(e) => handleLocalPriceChange(e?.target?.value)}
+                onBlur={handlePriceBlur}
                 className="text-sm"
               />
             ) : (
@@ -193,8 +245,9 @@ const MenuItemsTable = ({
             {isEditing ? (
               <Input
                 type="text"
-                value={editData?.image_url}
-                onChange={(e) => setEditData(prev => ({ ...prev, image_url: e?.target?.value }))}
+                value={localImageUrl}
+                onChange={handleLocalImageUrlChange}
+                onBlur={handleImageUrlBlur}
                 className="text-sm"
               />
             ) : (
@@ -236,7 +289,7 @@ const MenuItemsTable = ({
                 <Button
                   variant="ghost"
                   size="xs"
-                  onClick={() => handleEdit(item)}
+                  onClick={(e) => { e.preventDefault(); handleEdit(item); }}
                   iconName="Edit"
                   iconPosition="left"
                 >
@@ -257,7 +310,9 @@ const MenuItemsTable = ({
         </div>
       </div>
     );
-  };
+  });
+
+  MobileCard.displayName = 'MobileCard';
 
   if (filteredItems?.length === 0) {
     return (
@@ -308,9 +363,21 @@ const MenuItemsTable = ({
         </div>
       </div>
       {/* Mobile View */}
-      <div className="block lg:hidden p-4 space-y-4">
+      <div className="block lg:hidden p-4 space-y-4" ref={scrollRef}>
         {filteredItems?.map(item => (
-          <MobileCard key={item?.id} item={item} />
+          <MobileCard 
+            key={item?.id} 
+            item={item} 
+            editingId={editingId}
+            editData={editData}
+            setEditData={setEditData}
+            handleEdit={handleEdit}
+            handleSaveEdit={handleSaveEdit}
+            handleCancelEdit={handleCancelEdit}
+            handleSelectItem={handleSelectItem}
+            selectedItems={selectedItems}
+            setShowDeleteConfirm={setShowDeleteConfirm}
+          />
         ))}
       </div>
       {/* Desktop Table View */}

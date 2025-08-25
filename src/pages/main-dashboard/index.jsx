@@ -48,7 +48,7 @@ const MainDashboard = () => {
     const today = new Date().toDateString();
 
     // Overall Metrics
-    const totalRevenue = transactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+    const totalRevenue = transactions.filter(t => !t.isEmployeeMeal).reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
     const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
     const stockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
     const netProfit = totalRevenue - totalExpenses;
