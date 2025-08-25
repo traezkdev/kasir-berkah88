@@ -91,6 +91,7 @@ const SalesTransactionProcessing = () => {
   }, [transactions, menuItems]);
 
   const handleAddToCart = (item) => {
+    // Update cart
     setCart(prevCart => {
       const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
       if (existingItem) {
@@ -100,10 +101,27 @@ const SalesTransactionProcessing = () => {
       }
       return [...prevCart, { ...item, quantity: 1 }];
     });
+
+    // Decrement stock in menuItems
+    setMenuItems(prevMenuItems =>
+      prevMenuItems.map(menuItem =>
+        menuItem.id === item.id ? { ...menuItem, stock: menuItem.stock - 1 } : menuItem
+      )
+    );
   };
 
   const handleRemoveFromCart = (itemId) => {
-    setCart(prevCart => prevCart.filter(item => item.id !== itemId));
+    setCart(prevCart => {
+      const removedItem = prevCart.find(item => item.id === itemId);
+      if (removedItem) {
+        setMenuItems(prevMenuItems =>
+          prevMenuItems.map(menuItem =>
+            menuItem.id === itemId ? { ...menuItem, stock: menuItem.stock + removedItem.quantity } : menuItem
+          )
+        );
+      }
+      return prevCart.filter(item => item.id !== itemId);
+    });
   };
 
   const handleUpdateQuantity = (itemId, quantity) => {
@@ -117,6 +135,20 @@ const SalesTransactionProcessing = () => {
   };
 
   const handleClearCart = () => {
+    // Restore stock for all items in the cart
+    setMenuItems(prevMenuItems => {
+      const updatedMenuItems = [...prevMenuItems];
+      cart.forEach(cartItem => {
+        const index = updatedMenuItems.findIndex(menuItem => menuItem.id === cartItem.id);
+        if (index !== -1) {
+          updatedMenuItems[index] = {
+            ...updatedMenuItems[index],
+            stock: updatedMenuItems[index].stock + cartItem.quantity
+          };
+        }
+      });
+      return updatedMenuItems;
+    });
     setCart([]);
   };
 

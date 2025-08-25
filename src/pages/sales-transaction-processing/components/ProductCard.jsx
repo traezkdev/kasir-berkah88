@@ -1,10 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Button from '../../../components/ui/Button';
 import AppImage from '../../../components/AppImage';
 import { cn } from '../../../utils/cn'; // Import cn utility
 
 const ProductCard = ({ item, onAddToCart }) => {
+  const [isAdding, setIsAdding] = useState(false);
   const isOutOfStock = item.stock <= 0;
+
+  const handleClick = () => {
+    setIsAdding(true);
+    onAddToCart(item);
+    setTimeout(() => {
+      setIsAdding(false);
+    }, 500); // Show feedback for 0.5 seconds
+  };
 
   return (
     <div className={cn(
@@ -23,10 +32,10 @@ const ProductCard = ({ item, onAddToCart }) => {
         <Button
           size="sm"
           className="w-full mt-4"
-          onClick={() => onAddToCart(item)}
-          disabled={isOutOfStock} // Disable if out of stock
+          onClick={handleClick}
+          disabled={isOutOfStock || isAdding} // Disable if out of stock or currently adding
         >
-          {isOutOfStock ? 'Stok Habis' : 'Tambah'} {/* Change button text */}
+          {isAdding ? 'Ditambahkan!' : (isOutOfStock ? 'Stok Habis' : 'Tambah')} {/* Change button text */}
         </Button>
       </div>
     </div>
