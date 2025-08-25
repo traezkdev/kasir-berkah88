@@ -32,6 +32,7 @@ const TransactionHistory = () => {
   });
   const [isExporting, setIsExporting] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [logoBase64, setLogoBase64] = useState('');
 
   useEffect(() => {
     const handleResize = () => {
@@ -41,6 +42,23 @@ const TransactionHistory = () => {
     return () => {
       window.removeEventListener('resize', handleResize);
     };
+  }, []);
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const response = await fetch('/assets/images/no_image.png'); // Path relative to public folder
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setLogoBase64(reader.result);
+        };
+        reader.readAsDataURL(blob);
+      } catch (error) {
+        console.error('Failed to load logo for PDF:', error);
+      }
+    };
+    fetchLogo();
   }, []);
 
   
@@ -294,11 +312,15 @@ const TransactionHistory = () => {
         const doc = new jsPDF();
 
         // Add logo and store name to header
-        const imgData = 'public/assets/images/no_image.png'; // Placeholder logo path
+        const imgData = logoBase64; // Use the base64 string
         const imgWidth = 20;
         const imgHeight = 20;
         const imgX = (doc.internal.pageSize.width / 2) - (imgWidth / 2); // Center the image
-        doc.addImage(imgData, 'PNG', imgX, 10, imgWidth, imgHeight);
+        if (imgData) {
+          doc.addImage(imgData, 'PNG', imgX, 10, imgWidth, imgHeight);
+        } else {
+          console.warn('Logo not loaded, skipping image in PDF.');
+        }
 
         doc.setFontSize(16);
         doc.text("Kasir Berkah 88", doc.internal.pageSize.width / 2, 35, { align: 'center' });
