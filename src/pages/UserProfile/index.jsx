@@ -145,7 +145,7 @@ const UserProfile = () => {
     <div className="flex flex-col h-screen bg-background">
       <NavigationHeader title="Profil Pengguna" />
       <BreadcrumbNavigation paths={breadcrumbs} />
-      <div className="flex-grow pt-20 px-6 overflow-auto">
+      <div className="flex-grow pt-20 px-6 pb-20 overflow-auto">
         <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8 space-y-8">
           <h2 className="text-2xl font-bold text-text-primary text-center">Profil Pengguna</h2>
 
