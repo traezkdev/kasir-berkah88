@@ -57,16 +57,6 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar }) => {
         <div className="flex items-center justify-between h-16 px-4 lg:px-6">
           {/* Logo Section */}
           <div className="flex items-center space-x-4">
-            {onToggleSidebar && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onToggleSidebar}
-                className="lg:hidden"
-              >
-                <Icon name="Menu" size={20} />
-              </Button>
-            )}
             <Link to="/main-dashboard" className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <Icon name="Calculator" size={20} color="white" />

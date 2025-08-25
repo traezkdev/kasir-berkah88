@@ -349,7 +349,7 @@ const TransactionHistory = () => {
     <div className="min-h-screen bg-background">
       <NavigationHeader onToggleSidebar={() => {}} />
       <main className="pt-16 pb-20 lg:pb-8">
-        <div className="px-4 lg:px-6 py-6">
+        <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6">
           <div className="mb-6">
             <BreadcrumbNavigation customPath={breadcrumbPath} />
             <h1 className="text-2xl lg:text-3xl font-semibold text-text-primary mt-2">
