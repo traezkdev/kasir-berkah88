@@ -3,10 +3,24 @@ const cors = require('cors');
 const db = require('./database.js'); // db is now the promisePool
 const bcrypt = require('bcryptjs'); // Import bcryptjs
 const jwt = require('jsonwebtoken'); // Import jsonwebtoken
+const multer = require('multer');
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use('/public/uploads', express.static(path.join(__dirname, 'public/uploads')));
+
+// Multer storage configuration
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'public/uploads/'); // Files will be stored in public/uploads/
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+const upload = multer({ storage: storage });
 
 const PORT = 4000;
 app.listen(PORT, () => {
@@ -455,6 +469,75 @@ app.put("/api/settings/registration", authenticateToken, authorizeRoles('admin')
             await db.query(insertSql, ['registration_enabled', enabled.toString()]);
         }
         res.json({ message: "Registration setting updated successfully", data: { enabled } });
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// Update web description
+app.put('/api/settings/description', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        const { description } = req.body;
+        if (!description) {
+            return res.status(400).json({ message: 'Description is required.' });
+        }
+        const selectSql = 'SELECT * FROM settings WHERE `key` = ?';
+        const [rows] = await db.query(selectSql, ['web_description']);
+
+        if (rows.length > 0) {
+            const updateSql = 'UPDATE settings SET `value` = ? WHERE `key` = ?';
+            await db.query(updateSql, [description, 'web_description']);
+        } else {
+            const insertSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?)';
+            await db.query(insertSql, ['web_description', description]);
+        }
+        res.json({ message: 'Web description updated successfully!', data: { web_description: description } });
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// Upload favicon
+app.post('/api/settings/favicon', authenticateToken, authorizeRoles('admin'), upload.single('favicon'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No favicon file uploaded.' });
+        }
+        const faviconUrl = `/public/uploads/${req.file.filename}`;
+        const selectSql = 'SELECT * FROM settings WHERE `key` = ?';
+        const [rows] = await db.query(selectSql, ['favicon_url']);
+
+        if (rows.length > 0) {
+            const updateSql = 'UPDATE settings SET `value` = ? WHERE `key` = ?';
+            await db.query(updateSql, [faviconUrl, 'favicon_url']);
+        } else {
+            const insertSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?)';
+            await db.query(insertSql, ['favicon_url', faviconUrl]);
+        }
+        res.json({ message: 'Favicon updated successfully!', data: { favicon_url: faviconUrl } });
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// Upload cover image
+app.post('/api/settings/cover-image', authenticateToken, authorizeRoles('admin'), upload.single('coverImage'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No cover image file uploaded.' });
+        }
+        const coverImageUrl = `/public/uploads/${req.file.filename}`;
+        const selectSql = 'SELECT * FROM settings WHERE `key` = ?';
+        const [rows] = await db.query(selectSql, ['cover_image_url']);
+
+        if (rows.length > 0) {
+            const updateSql = 'UPDATE settings SET `value` = ? WHERE `key` = ?';
+            await db.query(updateSql, [coverImageUrl, 'cover_image_url']);
+        } else {
+            const insertSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?)';
+            await db.query(insertSql, ['cover_image_url', coverImageUrl]);
+        }
+        res.json({ message: 'Cover image updated successfully!', data: { cover_image_url: coverImageUrl } });
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
     }

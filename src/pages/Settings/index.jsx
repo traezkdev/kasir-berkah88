@@ -23,6 +23,12 @@ const Settings = () => {
   const [currentMasterPassword, setCurrentMasterPassword] = useState('');
   const [newMasterPassword, setNewMasterPassword] = useState('');
   const [masterPasswordForClear, setMasterPasswordForClear] = useState('');
+  const [faviconFile, setFaviconFile] = useState(null);
+  const [webDescription, setWebDescription] = useState('');
+  const [coverImageFile, setCoverImageFile] = useState(null);
+  const [currentFaviconUrl, setCurrentFaviconUrl] = useState('');
+  const [currentCoverImageUrl, setCurrentCoverImageUrl] = useState('');
+  const [currentWebDescription, setCurrentWebDescription] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,6 +50,34 @@ const Settings = () => {
     }
   }, []);
 
+  useEffect(() => {
+    // Update favicon
+    const faviconLink = document.getElementById('favicon-link');
+    if (faviconLink && currentFaviconUrl) {
+      faviconLink.href = currentFaviconUrl;
+    }
+
+    // Update Open Graph and Twitter meta tags
+    const ogTitle = document.getElementById('og-title');
+    if (ogTitle) ogTitle.content = websiteTitle;
+
+    const ogDescription = document.getElementById('og-description');
+    if (ogDescription) ogDescription.content = currentWebDescription;
+
+    const ogImage = document.getElementById('og-image');
+    if (ogImage) ogImage.content = currentCoverImageUrl || '/no_image.png'; // Fallback to default
+
+    const twitterTitle = document.getElementById('twitter-title');
+    if (twitterTitle) twitterTitle.content = websiteTitle;
+
+    const twitterDescription = document.getElementById('twitter-description');
+    if (twitterDescription) twitterDescription.content = currentWebDescription;
+
+    const twitterImage = document.getElementById('twitter-image');
+    if (twitterImage) twitterImage.content = currentCoverImageUrl || '/no_image.png'; // Fallback to default
+
+  }, [currentFaviconUrl, currentWebDescription, currentCoverImageUrl, websiteTitle]);
+
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
@@ -53,6 +87,10 @@ const Settings = () => {
         setWebsiteTitle(data.data.website_title || 'Kasir Berkah 88');
         setNewWebsiteTitle(data.data.website_title || 'Kasir Berkah 88');
         setRegistrationEnabled(data.data.registration_enabled === 'true');
+        setCurrentFaviconUrl(data.data.favicon_url || '');
+        setCurrentCoverImageUrl(data.data.cover_image_url || '');
+        setCurrentWebDescription(data.data.web_description || '');
+        setWebDescription(data.data.web_description || ''); // Initialize input field
       } else {
         setError(data.error || 'Failed to fetch settings');
       }
@@ -256,6 +294,107 @@ const Settings = () => {
     }
   };
 
+  const handleUpdateWebDescription = async (e) => {
+    e.preventDefault();
+    setMessage('');
+    setError('');
+    setIsLoading(true);
+
+    try {
+      const response = await authFetch(`${apiUrl}/api/settings/description`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ description: webDescription }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setMessage('Web description updated successfully!');
+        setCurrentWebDescription(webDescription);
+      } else {
+        setError(data.error || 'Failed to update web description');
+      }
+    } catch (err) {
+      setError('Network error or server unreachable');
+      console.error('Update web description error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFaviconUpload = async (e) => {
+    e.preventDefault();
+    setMessage('');
+    setError('');
+    setIsLoading(true);
+
+    if (!faviconFile) {
+      setError('Please select a favicon file to upload.');
+      setIsLoading(false);
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('favicon', faviconFile);
+
+    try {
+      const response = await authFetch(`${apiUrl}/api/settings/favicon`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setMessage('Favicon uploaded successfully!');
+        setCurrentFaviconUrl(data.data.favicon_url); // Assuming backend returns the new URL
+        setFaviconFile(null); // Clear selected file
+      } else {
+        setError(data.error || 'Failed to upload favicon');
+      }
+    } catch (err) {
+      setError('Network error or server unreachable');
+      console.error('Favicon upload error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCoverImageUpload = async (e) => {
+    e.preventDefault();
+    setMessage('');
+    setError('');
+    setIsLoading(true);
+
+    if (!coverImageFile) {
+      setError('Please select a cover image file to upload.');
+      setIsLoading(false);
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('coverImage', coverImageFile);
+
+    try {
+      const response = await authFetch(`${apiUrl}/api/settings/cover-image`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setMessage('Cover image uploaded successfully!');
+        setCurrentCoverImageUrl(data.data.cover_image_url); // Assuming backend returns the new URL
+        setCoverImageFile(null); // Clear selected file
+      } else {
+        setError(data.error || 'Failed to upload cover image');
+      }
+    } catch (err) {
+      setError('Network error or server unreachable');
+      console.error('Cover image upload error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleDeleteUser = async (userId, username) => {
     if (window.confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
       setMessage('');
@@ -341,6 +480,83 @@ const Settings = () => {
                     </span>
                   </label>
                 </div>
+              </div>
+
+              {/* Web Description Setting */}
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-text-primary">Deskripsi Web</h3>
+                <form onSubmit={handleUpdateWebDescription} className="space-y-4">
+                  <label htmlFor="webDescription" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground">
+                    Deskripsi Saat Ini
+                  </label>
+                  <textarea
+                    id="webDescription"
+                    name="webDescription"
+                    rows="4"
+                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="Masukkan deskripsi web untuk SEO dan berbagi media sosial"
+                    value={webDescription}
+                    onChange={(e) => setWebDescription(e.target.value)}
+                    required
+                  ></textarea>
+                  <Button type="submit" className="w-full" disabled={isLoading || userRole !== 'admin'}>
+                    Perbarui Deskripsi Web
+                  </Button>
+                </form>
+              </div>
+
+              {/* Favicon Setting */}
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-text-primary">Favicon</h3>
+                {currentFaviconUrl && (
+                  <div className="flex items-center space-x-2">
+                    <span>Favicon Saat Ini:</span>
+                    <img src={currentFaviconUrl} alt="Current Favicon" className="w-8 h-8" />
+                  </div>
+                )}
+                <form onSubmit={handleFaviconUpload} className="space-y-4">
+                  <label htmlFor="faviconFile" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground">
+                    Pilih File Favicon (PNG, ICO)
+                  </label>
+                  <input
+                    id="faviconFile"
+                    name="faviconFile"
+                    type="file"
+                    accept=".png, .ico"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    onChange={(e) => setFaviconFile(e.target.files[0])}
+                  />
+                  <Button type="submit" className="w-full" disabled={isLoading || userRole !== 'admin' || !faviconFile}>
+                    Unggah Favicon
+                  </Button>
+                </form>
+              </div>
+
+              {/* Cover Image Setting */}
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-text-primary">Gambar Sampul (untuk media sosial)</h3>
+                {currentCoverImageUrl && (
+                  <div className="flex items-center space-x-2">
+                    <span>Gambar Sampul Saat Ini:</span>
+                    <img src={currentCoverImageUrl} alt="Current Cover" className="w-32 h-auto" />
+                  </div>
+                )}
+                <form onSubmit={handleCoverImageUpload} className="space-y-4">
+                  <label htmlFor="coverImageFile" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground">
+                    Pilih File Gambar Sampul (JPG, PNG)
+                  </label>
+                  <input
+                    id="coverImageFile"
+                    name="coverImageFile"
+                    type="file"
+                    accept=".jpg, .jpeg, .png"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    onChange={(e) => setCoverImageFile(e.target.files[0])}
+                  />
+                  <Button type="submit" className="w-full" disabled={isLoading || userRole !== 'admin' || !coverImageFile}>
+                    Unggah Gambar Sampul
+                  </Button>
+                </form>
               </div>
 
               {/* Create Admin User Section (Admin Only) */}
