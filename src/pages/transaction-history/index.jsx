@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
@@ -8,7 +9,7 @@ import BulkActions from './components/BulkActions';
 
 import authFetch from '../../utils/authFetch';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import 'jspdf-autotable'; // Import the plugin
 
 import { prepareTransactionDataForExport } from '../../utils/exportUtils';
 import * as XLSX from 'xlsx';
@@ -32,7 +33,6 @@ const TransactionHistory = () => {
   });
   const [isExporting, setIsExporting] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [logoBase64, setLogoBase64] = useState('');
 
   useEffect(() => {
     const handleResize = () => {
@@ -42,23 +42,6 @@ const TransactionHistory = () => {
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-  }, []);
-
-  useEffect(() => {
-    const fetchLogo = async () => {
-      try {
-        const response = await fetch('/assets/images/no_image.png'); // Path relative to public folder
-        const blob = await response.blob();
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setLogoBase64(reader.result);
-        };
-        reader.readAsDataURL(blob);
-      } catch (error) {
-        console.error('Failed to load logo for PDF:', error);
-      }
-    };
-    fetchLogo();
   }, []);
 
   
@@ -308,53 +291,35 @@ const TransactionHistory = () => {
         XLSX.utils.book_append_sheet(wb, ws, "Riwayat Transaksi");
         XLSX.writeFile(wb, `riwayat-transaksi-${new Date()?.toISOString()?.split('T')?.[0]}.xlsx`);
       } else if (format === 'pdf') {
-        
         const doc = new jsPDF();
 
-        // Add logo and store name to header
-        const imgData = logoBase64; // Use the base64 string
-        const imgWidth = 20;
-        const imgHeight = 20;
-        const imgX = (doc.internal.pageSize.width / 2) - (imgWidth / 2); // Center the image
-        if (imgData) {
-          doc.addImage(imgData, 'PNG', imgX, 10, imgWidth, imgHeight);
-        } else {
-          console.warn('Logo not loaded, skipping image in PDF.');
-        }
-
-        doc.setFontSize(16);
-        doc.text("Kasir Berkah 88", doc.internal.pageSize.width / 2, 35, { align: 'center' });
-
-        // Report Title
-        doc.setFontSize(20);
-        doc.text("Laporan Penjualan Kasir", doc.internal.pageSize.width / 2, 50, { align: 'center' });
-
+        // Add header
+        doc.setFontSize(18);
+        doc.text("Riwayat Transaksi", 14, 22);
         doc.setFontSize(11);
         doc.setTextColor(100);
-        doc.text(`Tanggal Export: ${new Date().toLocaleDateString('id-ID')}`, 14, 60);
+        doc.text(`Tanggal Export: ${new Date().toLocaleDateString()}`, 14, 30);
 
         // Prepare table data
         const headers = Object.keys(dataToExport[0] || {});
         const body = dataToExport.map(row => Object.values(row));
 
-        autoTable(doc, {
-          startY: 70,
+        doc.autoTable({
+          startY: 40,
           head: [headers],
           body: body,
-          theme: 'grid', // Use 'grid' for borders
+          theme: 'striped',
           styles: {
             fontSize: 8,
             cellPadding: 2,
-            font: 'helvetica', // Ensure Helvetica
-            textColor: [0, 0, 0], // Black text
           },
           headStyles: {
-            fillColor: [20, 83, 45], // Dark green header
-            textColor: 255, // White text
+            fillColor: [20, 83, 45], // Dark green
+            textColor: 255,
             fontStyle: 'bold',
           },
           alternateRowStyles: {
-            fillColor: [245, 245, 245], // Light grey for alternate rows
+            fillColor: [240, 240, 240],
           },
           didDrawPage: function (data) {
             // Footer
@@ -363,15 +328,6 @@ const TransactionHistory = () => {
             doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 10);
           }
         });
-
-        // Add total transactions below the table
-        const finalY = doc.lastAutoTable.finalY; // Get the Y position of the end of the table
-        const totalTransactions = filteredTransactions?.length;
-        const totalRevenue = filteredTransactions?.filter(t => !t?.isEmployeeMeal)?.reduce((sum, t) => sum + parseFloat(t?.total || 0), 0);
-
-        doc.setFontSize(12);
-        doc.text(`Total Transaksi: ${totalTransactions}`, 14, finalY + 10);
-        doc.text(`Total Pendapatan: Rp ${totalRevenue.toLocaleString('id-ID')}`, 14, finalY + 17);
 
         doc.save(`riwayat-transaksi-${new Date()?.toISOString()?.split('T')?.[0]}.pdf`);
       }

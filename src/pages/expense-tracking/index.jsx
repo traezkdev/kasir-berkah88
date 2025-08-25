@@ -333,7 +333,7 @@ const ExpenseTracking = () => {
     <div className="min-h-screen bg-background">
       <NavigationHeader onToggleSidebar={() => {}} /> 
       <div className="pt-16">
-        <DashboardMetricsBar metrics={dashboardMetrics} showOnAllPages /> 
+        {/* <DashboardMetricsBar metrics={dashboardMetrics} showOnAllPages />  */}
         <main className="pt-6 lg:pt-8 pb-20 lg:pb-8">
           <div className="max-w-7xl mx-auto px-4 lg:px-6 space-y-6">
             {/* Breadcrumb */}

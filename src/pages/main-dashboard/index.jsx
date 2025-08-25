@@ -54,8 +54,8 @@ const MainDashboard = () => {
     const netProfit = totalRevenue - totalExpenses;
 
     // Today's Stats
-    const todayTransactions = transactions.filter(t => new Date(t.timestamp).toDateString() === today);
-    const todaySales = todayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+    const todayTransactions = transactions.filter(t => new Date(t.timestamp).toDateString() === today && !t.isEmployeeMeal);
+    const todaySales = todayTransactions.filter(t => !t.isEmployeeMeal).reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
     const itemsSoldToday = todayTransactions.flatMap(t => t.items).reduce((sum, i) => sum + i.quantity, 0);
     const averageOrderToday = todayTransactions.length > 0 ? todaySales / todayTransactions.length : 0;
 
