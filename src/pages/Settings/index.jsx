@@ -369,7 +369,7 @@ const Settings = ({ headerTitle }) => {
     formData.append('favicon', faviconFile);
 
     try {
-      const response = await authFetch(`${apiUrl}/api/settings/favicon`, {
+      const response = await authFetch(`${apiUrl}/api/settings/favicon/`, {
         method: 'POST',
         body: formData,
       });
@@ -405,7 +405,7 @@ const Settings = ({ headerTitle }) => {
     formData.append('coverImage', coverImageFile);
 
     try {
-      const response = await authFetch(`${apiUrl}/api/settings/cover-image`, {
+      const response = await authFetch(`${apiUrl}/api/settings/cover-image/`, {
         method: 'POST',
         body: formData,
       });

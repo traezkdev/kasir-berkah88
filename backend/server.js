@@ -522,7 +522,7 @@ app.put('/api/settings/description', authenticateToken, authorizeRoles('admin'),
 });
 
 // Upload favicon
-app.post('/api/settings/favicon', authenticateToken, authorizeRoles('admin'), upload.single('favicon'), async (req, res) => {
+app.post('/api/settings/favicon/', authenticateToken, authorizeRoles('admin'), upload.single('favicon'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: 'No favicon file uploaded.' });
@@ -545,7 +545,7 @@ app.post('/api/settings/favicon', authenticateToken, authorizeRoles('admin'), up
 });
 
 // Upload cover image
-app.post('/api/settings/cover-image', authenticateToken, authorizeRoles('admin'), upload.single('coverImage'), async (req, res) => {
+app.post('/api/settings/cover-image/', authenticateToken, authorizeRoles('admin'), upload.single('coverImage'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: 'No cover image file uploaded.' });

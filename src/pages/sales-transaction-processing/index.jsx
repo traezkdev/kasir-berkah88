@@ -6,7 +6,7 @@ import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import SalesForm from './components/SalesForm';
 import OrderSummary from './components/OrderSummary';
 
-import authFetch from '../../utils/authFetch'; // Add this import
+import authFetch from '../../utils/authFetch';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -20,7 +20,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const fetchMenuItems = async () => { // Moved outside useEffect
+  const fetchMenuItems = async () => {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
@@ -38,7 +38,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
     }
   };
 
-  const fetchTransactions = async () => { // Moved outside useEffect
+  const fetchTransactions = async () => {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
@@ -58,9 +58,6 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
 
   useEffect(() => {
     fetchMenuItems();
-  }, []);
-
-  useEffect(() => {
     fetchTransactions();
   }, []);
 
@@ -91,42 +88,41 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
   }, [transactions, menuItems]);
 
   const handleAddToCart = (item) => {
-    // Update cart
     setCart(prevCart => {
       const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
       if (existingItem) {
+        // Check if adding another item exceeds stock
+        if (existingItem.quantity + 1 > item.stock) {
+          // Optionally, show an error message to the user
+          console.warn(`Not enough stock for ${item.name}`);
+          return prevCart; // Return previous cart without changes
+        }
         return prevCart.map(cartItem =>
           cartItem.id === item.id ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem
         );
       }
       return [...prevCart, { ...item, quantity: 1 }];
     });
-
-    // Decrement stock in menuItems
-    setMenuItems(prevMenuItems =>
-      prevMenuItems.map(menuItem =>
-        menuItem.id === item.id ? { ...menuItem, stock: menuItem.stock - 1 } : menuItem
-      )
-    );
   };
 
   const handleRemoveFromCart = (itemId) => {
-    setCart(prevCart => {
-      const removedItem = prevCart.find(item => item.id === itemId);
-      if (removedItem) {
-        setMenuItems(prevMenuItems =>
-          prevMenuItems.map(menuItem =>
-            menuItem.id === itemId ? { ...menuItem, stock: menuItem.stock + removedItem.quantity } : menuItem
-          )
-        );
-      }
-      return prevCart.filter(item => item.id !== itemId);
-    });
+    setCart(prevCart => prevCart.filter(item => item.id !== itemId));
   };
 
   const handleUpdateQuantity = (itemId, quantity) => {
     if (quantity <= 0) {
       handleRemoveFromCart(itemId);
+      return;
+    }
+  
+    const menuItem = menuItems.find(item => item.id === itemId);
+    if (menuItem && quantity > menuItem.stock) {
+      // Optionally, show an error message
+      console.warn(`Not enough stock for ${menuItem.name}. Available: ${menuItem.stock}`);
+      // You might want to cap the quantity to the available stock
+      setCart(prevCart =>
+        prevCart.map(item => (item.id === itemId ? { ...item, quantity: menuItem.stock } : item))
+      );
     } else {
       setCart(prevCart =>
         prevCart.map(item => (item.id === itemId ? { ...item, quantity } : item))
@@ -135,20 +131,6 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
   };
 
   const handleClearCart = () => {
-    // Restore stock for all items in the cart
-    setMenuItems(prevMenuItems => {
-      const updatedMenuItems = [...prevMenuItems];
-      cart.forEach(cartItem => {
-        const index = updatedMenuItems.findIndex(menuItem => menuItem.id === cartItem.id);
-        if (index !== -1) {
-          updatedMenuItems[index] = {
-            ...updatedMenuItems[index],
-            stock: updatedMenuItems[index].stock + cartItem.quantity
-          };
-        }
-      });
-      return updatedMenuItems;
-    });
     setCart([]);
   };
 
@@ -159,7 +141,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       items: cart,
       total: paymentData.total,
       ppn: paymentData.ppn,
-      isEmployeeMeal: isEmployeeMeal, // Use state here
+      isEmployeeMeal: isEmployeeMeal,
     };
 
     try {
@@ -175,9 +157,9 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
 
       if (result.message === 'success') {
         console.log('Transaction saved successfully');
-        handleClearCart();
-        setIsEmployeeMeal(false); // Reset checkbox state
-        // Maybe show a success message
+        setCart([]);
+        setIsEmployeeMeal(false);
+        fetchMenuItems(); // Re-fetch menu items for updated stock
       } else {
         console.error('Failed to save transaction:', result.error);
       }
@@ -196,7 +178,6 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
     <div className="min-h-screen bg-background">
       <NavigationHeader onToggleSidebar={handleToggleSidebar} headerTitle={headerTitle} />
       <div className="pt-16">
-        {/* <DashboardMetricsBar metrics={dashboardMetrics} showOnAllPages /> */}
         <main className="pt-6 lg:pt-8 pb-20 lg:pb-8">
           <div className="max-w-7xl mx-auto px-4 lg:px-6 space-y-6">
             <BreadcrumbNavigation />
@@ -216,7 +197,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
               <div className="lg:col-span-1">
                 <OrderSummary
                   cart={cart}
-                  menuItems={menuItems} // Add this prop
+                  menuItems={menuItems}
                   onUpdateQuantity={handleUpdateQuantity}
                   onRemoveFromCart={handleRemoveFromCart}
                   onClearCart={handleClearCart}
