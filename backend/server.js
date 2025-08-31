@@ -330,6 +330,33 @@ app.post("/api/expenses", authenticateToken, async (req, res, next) => {
     }
 });
 
+// Update an expense
+app.put("/api/expenses/:id", authenticateToken, async (req, res, next) => {
+    try {
+        const { name, amount, category, date } = req.body;
+        const sql = `UPDATE expenses set 
+           name = COALESCE(?, name), 
+           amount = COALESCE(?, amount), 
+           category = COALESCE(?, category), 
+           date = COALESCE(?, date) 
+           WHERE id = ?`;
+        const params = [name, amount, category, date ? new Date(date) : null, req.params.id];
+        const [result] = await db.query(sql, params);
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ "error": "Expense not found" });
+        }
+        
+        res.json({
+            "message": "success",
+            "data": req.body,
+            "changes": result.affectedRows
+        });
+    } catch (err) {
+        res.status(400).json({ "error": err.message });
+    }
+});
+
 // Delete an expense
 app.delete("/api/expenses/:id", authenticateToken, async (req, res, next) => {
     try {

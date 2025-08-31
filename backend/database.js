@@ -47,6 +47,7 @@ const setupDatabase = async () => {
         total DECIMAL(10, 2) NOT NULL,
         ppn DECIMAL(10, 2) NOT NULL,
         isEmployeeMeal BOOLEAN DEFAULT FALSE
+        
       );
     `;
 
