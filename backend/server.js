@@ -58,7 +58,7 @@ const authorizeRoles = (...roles) => {
 // --- Menu Items Endpoints ---
 
 // Get all menu items
-app.get("/api/menu-items", authenticateToken, async (req, res, next) => {
+app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'guest'), async (req, res, next) => {
     try {
         const sql = "select * from menu_items";
         const [rows] = await db.query(sql);
@@ -72,7 +72,7 @@ app.get("/api/menu-items", authenticateToken, async (req, res, next) => {
 });
 
 // Add a new menu item
-app.post("/api/menu-items", authenticateToken, async (req, res, next) => {
+app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
     try {
         const { id, name, price, stock, category, image_url } = req.body;
         const sql = 'INSERT INTO menu_items (id, name, price, stock, category, image_url) VALUES (?,?,?,?,?,?)';
@@ -89,7 +89,7 @@ app.post("/api/menu-items", authenticateToken, async (req, res, next) => {
 });
 
 // Update a menu item
-app.put("/api/menu-items/:id", authenticateToken, async (req, res, next) => {
+app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
     try {
         const { name, price, stock, category, image_url } = req.body;
         const sql = `UPDATE menu_items set 
@@ -108,7 +108,7 @@ app.put("/api/menu-items/:id", authenticateToken, async (req, res, next) => {
 });
 
 // Delete a menu item
-app.delete("/api/menu-items/:id", authenticateToken, async (req, res, next) => {
+app.delete("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
     try {
         const sql = 'DELETE FROM menu_items WHERE id = ?';
         const [result] = await db.query(sql, [req.params.id]);
@@ -121,7 +121,7 @@ app.delete("/api/menu-items/:id", authenticateToken, async (req, res, next) => {
 // --- Settings Endpoints ---
 
 // Get PPN setting
-app.get('/api/settings/ppn', authenticateToken, async (req, res) => {
+app.get('/api/settings/ppn', authenticateToken, authorizeRoles('user', 'admin', 'guest'), async (req, res) => {
     try {
         const sql = "SELECT value FROM settings WHERE `key` = ?";
         const [rows] = await db.query(sql, ['ppn']);
@@ -142,7 +142,7 @@ app.get('/api/settings/ppn', authenticateToken, async (req, res) => {
 });
 
 // Update PPN setting
-app.put('/api/settings/ppn', authenticateToken, async (req, res) => {
+app.put('/api/settings/ppn', authenticateToken, authorizeRoles('admin'), async (req, res) => {
     try {
         const { value } = req.body;
         if (value === undefined) {
@@ -173,7 +173,7 @@ app.put('/api/settings/ppn', authenticateToken, async (req, res) => {
 // --- Transaction Endpoints ---
 
 // Get all transactions
-app.get("/api/transactions", authenticateToken, async (req, res, next) => {
+app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'guest'), async (req, res, next) => {
     try {
         const sql = "select * from transactions ORDER BY timestamp DESC";
         const [rows] = await db.query(sql);
@@ -192,7 +192,7 @@ app.get("/api/transactions", authenticateToken, async (req, res, next) => {
 });
 
 // Get a single transaction by id
-app.get("/api/transactions/:id", authenticateToken, async (req, res, next) => {
+app.get("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin', 'guest'), async (req, res, next) => {
     try {
         const sql = "select * from transactions where id = ?";
         const params = [req.params.id];
@@ -216,7 +216,7 @@ app.get("/api/transactions/:id", authenticateToken, async (req, res, next) => {
 
 
 // Create a new transaction
-app.post("/api/transactions/", authenticateToken, async (req, res, next) => {
+app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
     try {
         const errors = [];
         if (!req.body.items) {
@@ -273,7 +273,7 @@ app.post("/api/transactions/", authenticateToken, async (req, res, next) => {
 });
 
 // Delete a transaction
-app.delete("/api/transactions/:id", authenticateToken, async (req, res, next) => {
+app.delete("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
     try {
         const sql = 'DELETE FROM transactions WHERE id = ?';
         const [result] = await db.query(sql, [req.params.id]);
@@ -284,7 +284,7 @@ app.delete("/api/transactions/:id", authenticateToken, async (req, res, next) =>
 });
 
 // Delete all transactions
-app.delete("/api/transactions", authenticateToken, async (req, res, next) => {
+app.delete("/api/transactions", authenticateToken, authorizeRoles('admin'), async (req, res, next) => {
     try {
         const sql = 'DELETE FROM transactions';
         const [result] = await db.query(sql);
@@ -298,7 +298,7 @@ app.delete("/api/transactions", authenticateToken, async (req, res, next) => {
 // --- Expense Endpoints ---
 
 // Get all expenses
-app.get("/api/expenses", authenticateToken, async (req, res, next) => {
+app.get("/api/expenses", authenticateToken, authorizeRoles('user', 'admin', 'guest'), async (req, res, next) => {
     try {
         const sql = "SELECT * FROM expenses ORDER BY date DESC";
         const [rows] = await db.query(sql);
@@ -312,7 +312,7 @@ app.get("/api/expenses", authenticateToken, async (req, res, next) => {
 });
 
 // Add a new expense
-app.post("/api/expenses", authenticateToken, async (req, res, next) => {
+app.post("/api/expenses", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
     try {
         const { name, amount, category, date } = req.body;
         if (!name || !amount || !date) {
@@ -331,7 +331,7 @@ app.post("/api/expenses", authenticateToken, async (req, res, next) => {
 });
 
 // Update an expense
-app.put("/api/expenses/:id", authenticateToken, async (req, res, next) => {
+app.put("/api/expenses/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
     try {
         const { name, amount, category, date } = req.body;
         const sql = `UPDATE expenses set 
@@ -358,7 +358,7 @@ app.put("/api/expenses/:id", authenticateToken, async (req, res, next) => {
 });
 
 // Delete an expense
-app.delete("/api/expenses/:id", authenticateToken, async (req, res, next) => {
+app.delete("/api/expenses/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
     try {
         const sql = 'DELETE FROM expenses WHERE id = ?';
         const [result] = await db.query(sql, [req.params.id]);
@@ -372,7 +372,7 @@ app.delete("/api/expenses/:id", authenticateToken, async (req, res, next) => {
 });
 
 // Delete all expenses
-app.delete("/api/expenses", authenticateToken, async (req, res, next) => {
+app.delete("/api/expenses", authenticateToken, authorizeRoles('admin'), async (req, res, next) => {
     try {
         const sql = 'TRUNCATE TABLE expenses';
         await db.query(sql);
@@ -635,8 +635,8 @@ app.put("/api/admin/users/:id/role", authenticateToken, authorizeRoles('admin'),
         const { newRole } = req.body;
         const { id } = req.params;
 
-        if (!newRole || (newRole !== 'admin' && newRole !== 'user')) {
-            return res.status(400).json({ error: "Invalid role specified. Must be 'admin' or 'user'." });
+        if (!newRole || (newRole !== 'admin' && newRole !== 'user' && newRole !== 'guest')) {
+            return res.status(400).json({ error: "Invalid role specified. Must be 'admin', 'user', or 'guest'." });
         }
 
         // Prevent changing own role (optional, but good practice)
@@ -745,7 +745,7 @@ app.delete("/api/admin/users/:id", authenticateToken, authorizeRoles('admin'), a
 // --- User Profile Endpoints ---
 
 // Get User Profile
-app.get("/api/user/profile", authenticateToken, async (req, res) => {
+app.get("/api/user/profile", authenticateToken, authorizeRoles('user', 'admin'), async (req, res) => {
     try {
         const sql = 'SELECT id, username FROM users WHERE id = ?';
         const [rows] = await db.query(sql, [req.user.userId]);
@@ -760,7 +760,7 @@ app.get("/api/user/profile", authenticateToken, async (req, res) => {
 });
 
 // Update Username
-app.put("/api/user/profile/username", authenticateToken, async (req, res) => {
+app.put("/api/user/profile/username", authenticateToken, authorizeRoles('user', 'admin'), async (req, res) => {
     try {
         const { username } = req.body;
         if (!username) {
@@ -788,7 +788,7 @@ app.put("/api/user/profile/username", authenticateToken, async (req, res) => {
 });
 
 // Change Password
-app.put("/api/user/profile/password", authenticateToken, async (req, res) => {
+app.put("/api/user/profile/password", authenticateToken, authorizeRoles('user', 'admin'), async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;
         if (!currentPassword || !newPassword) {

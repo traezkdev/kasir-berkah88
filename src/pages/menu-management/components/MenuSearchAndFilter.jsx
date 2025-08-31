@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
+import { exportToExcel, exportToPdf } from '../../../utils/exportUtils';
 
 const MenuSearchAndFilter = ({ 
   searchTerm, 
   onSearchChange, 
   menuItems,
-  onExportData 
+  onExportData,
+  isExporting 
 }) => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -20,7 +22,12 @@ const MenuSearchAndFilter = ({
   ];
 
   const handleExport = (format) => {
-    onExportData(format);
+    if (format === 'excel') {
+      exportToExcel(menuItems, 'Menu_Items');
+    } else if (format === 'pdf') {
+      exportToPdf(menuItems, 'Menu_Items');
+    }
+    onExportData(format); // Keep this if there's external handling, otherwise remove
     setShowExportMenu(false);
   };
 
@@ -76,6 +83,7 @@ const MenuSearchAndFilter = ({
             onClick={() => setShowExportMenu(!showExportMenu)}
             iconName="Download"
             iconPosition="left"
+            loading={isExporting} // Add loading prop
           >
             Export
           </Button>
@@ -90,17 +98,10 @@ const MenuSearchAndFilter = ({
                 <span>Export ke Excel</span>
               </button>
               <button
-                onClick={() => handleExport('csv')}
-                className="w-full px-4 py-2 text-left text-sm text-text-primary hover:bg-muted transition-colors duration-200 flex items-center space-x-2"
-              >
-                <Icon name="FileText" size={16} />
-                <span>Export ke CSV</span>
-              </button>
-              <button
                 onClick={() => handleExport('pdf')}
                 className="w-full px-4 py-2 text-left text-sm text-text-primary hover:bg-muted transition-colors duration-200 flex items-center space-x-2"
               >
-                <Icon name="FileImage" size={16} />
+                <Icon name="FileText" size={16} /> {/* Corrected icon to FileText */}
                 <span>Export ke PDF</span>
               </button>
             </div>

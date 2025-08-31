@@ -9,7 +9,8 @@ const MenuItemsTable = ({
   onDeleteItem, 
   onBulkDelete,
   searchTerm,
-  onSearchChange 
+  onSearchChange,
+  userRole 
 }) => {
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
@@ -286,24 +287,28 @@ const MenuItemsTable = ({
               </>
             ) : (
               <>
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  onClick={(e) => { e.preventDefault(); handleEdit(item); }}
-                  iconName="Edit"
-                  iconPosition="left"
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="xs"
-                  onClick={() => setShowDeleteConfirm(item?.id)}
-                  iconName="Trash2"
-                  iconPosition="left"
-                >
-                  Hapus
-                </Button>
+                {userRole !== 'guest' && (
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={(e) => { e.preventDefault(); handleEdit(item); }}
+                    iconName="Edit"
+                    iconPosition="left"
+                  >
+                    Edit
+                  </Button>
+                )}
+                {userRole !== 'guest' && (
+                  <Button
+                    variant="destructive"
+                    size="xs"
+                    onClick={() => setShowDeleteConfirm(item?.id)}
+                    iconName="Trash2"
+                    iconPosition="left"
+                  >
+                    Hapus
+                  </Button>
+                )}
               </>
             )}
           </div>
@@ -350,14 +355,15 @@ const MenuItemsTable = ({
           <div className="flex flex-col sm:flex-row gap-3">
             {selectedItems?.length > 0 && (
               <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleBulkDelete}
-                iconName="Trash2"
-                iconPosition="left"
-              >
-                Hapus {selectedItems?.length} item
-              </Button>
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBulkDelete}
+                  iconName="Trash2"
+                  iconPosition="left"
+                  disabled={userRole === 'guest'}
+                >
+                  Hapus {selectedItems?.length} item
+                </Button>
             )}
           </div>
         </div>
@@ -511,18 +517,22 @@ const MenuItemsTable = ({
                         </>
                       ) : (
                         <>
-                          <Button
-                            variant="ghost"
-                            size="xs"
-                            onClick={() => handleEdit(item)}
-                            iconName="Edit"
-                          />
-                          <Button
-                            variant="destructive"
-                            size="xs"
-                            onClick={() => setShowDeleteConfirm(item?.id)}
-                            iconName="Trash2"
-                          />
+                          {userRole !== 'guest' && (
+                            <Button
+                              variant="ghost"
+                              size="xs"
+                              onClick={() => handleEdit(item)}
+                              iconName="Edit"
+                            />
+                          )}
+                          {userRole !== 'guest' && (
+                            <Button
+                              variant="destructive"
+                              size="xs"
+                              onClick={() => setShowDeleteConfirm(item?.id)}
+                              iconName="Trash2"
+                            />
+                          )}
                         </>
                       )}
                     </div>

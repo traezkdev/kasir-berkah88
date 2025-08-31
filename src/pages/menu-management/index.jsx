@@ -17,7 +17,8 @@ const apiUrl = import.meta.env.VITE_API_URL;
 const MenuManagement = ({ headerTitle }) => {
   const [menuItems, setMenuItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [userRole, setUserRole] = useState(null); // New state for user role
 
   const fetchMenuItems = async () => { // Moved outside useEffect
     const token = localStorage.getItem('token');
@@ -41,7 +42,20 @@ const MenuManagement = ({ headerTitle }) => {
   };
 
   useEffect(() => {
-    fetchMenuItems(); // Call the function
+    fetchMenuItems();
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = JSON.parse(atob(token.split('.')[1]));
+        setUserRole(decodedToken.role);
+      } catch (e) {
+        console.error("Error decoding token in MenuManagement:", e);
+        setUserRole(null);
+      }
+    } else {
+      setUserRole(null);
+    }
   }, []);
 
   
@@ -205,7 +219,7 @@ const MenuManagement = ({ headerTitle }) => {
           <MenuSummaryCards menuItems={menuItems} />
 
           {/* Add Menu Form */}
-          <AddMenuItemForm onAddItem={handleAddItem} />
+          <AddMenuItemForm onAddItem={handleAddItem} userRole={userRole} />
 
           {/* Search and Filter */}
           <MenuSearchAndFilter
@@ -223,6 +237,7 @@ const MenuManagement = ({ headerTitle }) => {
             onBulkDelete={handleBulkDelete}
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
+            userRole={userRole}
           />
         </main>
 

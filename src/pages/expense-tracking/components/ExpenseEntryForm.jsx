@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const ExpenseEntryForm = ({ onAddExpense, isLoading = false }) => {
+const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole }) => {
   const [formData, setFormData] = useState({
     category: '',
     description: '',
@@ -223,7 +223,7 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading = false }) => {
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || userRole === 'guest'}
               className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex-1 sm:flex-none disabled:opacity-50"
             >
               {isLoading ? (

@@ -6,7 +6,8 @@ const BulkActions = ({
   onClearAllTransactions, 
   onExportTransactions, 
   transactionCount,
-  isExporting = false 
+  isExporting = false,
+  userRole 
 }) => {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
@@ -53,7 +54,7 @@ const BulkActions = ({
             onClick={() => setShowClearConfirm(true)}
             iconName="Trash2"
             iconPosition="left"
-            disabled={transactionCount === 0}
+            disabled={transactionCount === 0 || userRole === 'guest'}
           >
             Hapus Semua
           </Button>

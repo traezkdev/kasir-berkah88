@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import DashboardMetricsBar from '../../components/ui/DashboardMetricsBar';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
@@ -22,6 +23,7 @@ const ExpenseTracking = ({ headerTitle }) => {
   const [dashboardMetrics, setDashboardMetrics] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userRole, setUserRole] = useState(null); // New state for user role
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
 
@@ -88,6 +90,19 @@ const ExpenseTracking = ({ headerTitle }) => {
     fetchExpenses();
     fetchMenuItems();
     fetchTransactions();
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = JSON.parse(atob(token.split('.')[1]));
+        setUserRole(decodedToken.role);
+      } catch (e) {
+        console.error("Error decoding token in ExpenseTracking:", e);
+        setUserRole(null);
+      }
+    } else {
+      setUserRole(null);
+    }
   }, []);
 
   useEffect(() => {
@@ -260,7 +275,7 @@ const ExpenseTracking = ({ headerTitle }) => {
               </div>
             </div>
             <ExpenseSummaryCard {...summaryMetrics} />
-            <ExpenseEntryForm onAddExpense={handleAddExpense} isLoading={isLoading} />
+            <ExpenseEntryForm onAddExpense={handleAddExpense} isLoading={isLoading} userRole={userRole} />
             {expenses?.length > 0 && <ExpenseAnalytics expenses={expenses} />}
             <ExpenseHistoryTable
               expenses={expenses}
@@ -269,6 +284,7 @@ const ExpenseTracking = ({ headerTitle }) => {
               onExportData={handleExportData}
               onEditExpense={handleOpenEditModal} // Pass the handler
               isLoading={isLoading}
+              userRole={userRole}
             />
           </div>
         </main>

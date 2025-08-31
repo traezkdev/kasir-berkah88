@@ -1,7 +1,7 @@
 import React from 'react';
 import TransactionCard from './TransactionCard';
 
-const TransactionTable = ({ transactions, onDeleteTransaction, isMobile = false }) => {
+const TransactionTable = ({ transactions, onDeleteTransaction, isMobile, userRole }) => {
   if (transactions?.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-slate-200 shadow-elevation-1 p-8 text-center">
@@ -18,10 +18,11 @@ const TransactionTable = ({ transactions, onDeleteTransaction, isMobile = false 
       <div className="space-y-3">
         {transactions?.map((transaction) => (
           <TransactionCard
-            key={transaction?.id}
-            transaction={transaction}
+            key={transaction?.id} 
+            transaction={transaction} 
             onDelete={onDeleteTransaction}
             isMobile={true}
+            userRole={userRole}
           />
         ))}
       </div>
@@ -61,6 +62,7 @@ const TransactionTable = ({ transactions, onDeleteTransaction, isMobile = false 
                 transaction={transaction}
                 onDelete={onDeleteTransaction}
                 isMobile={false}
+                userRole={userRole}
               />
             ))}
           </tbody>

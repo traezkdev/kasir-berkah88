@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Input from '../../../components/ui/Input';
 import ProductCard from './ProductCard';
 
-const SalesForm = ({ menuItems, onAddToCart, cart }) => {
+const SalesForm = ({ menuItems, onAddToCart, cart, userRole }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredMenuItems = menuItems.filter(item =>
@@ -20,7 +20,7 @@ const SalesForm = ({ menuItems, onAddToCart, cart }) => {
       />
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {filteredMenuItems.map(item => (
-          <ProductCard key={item.id} item={item} onAddToCart={onAddToCart} cart={cart} />
+          <ProductCard key={item.id} item={item} onAddToCart={onAddToCart} cart={cart} userRole={userRole} />
         ))}
       </div>
     </div>

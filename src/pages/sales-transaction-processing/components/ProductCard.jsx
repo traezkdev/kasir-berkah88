@@ -3,7 +3,7 @@ import Button from '../../../components/ui/Button';
 import AppImage from '../../../components/AppImage';
 import { cn } from '../../../utils/cn'; // Import cn utility
 
-const ProductCard = ({ item, onAddToCart, cart }) => {
+const ProductCard = ({ item, onAddToCart, cart, userRole }) => {
   const [isAdding, setIsAdding] = useState(false);
 
   // Calculate effective stock
@@ -40,7 +40,7 @@ const ProductCard = ({ item, onAddToCart, cart }) => {
           size="sm"
           className="w-full mt-4"
           onClick={handleClick}
-          disabled={isOutOfStock || isAdding} // Disable if out of stock or currently adding
+          disabled={isOutOfStock || isAdding || userRole === 'guest'} // Disable if out of stock, adding, or guest
         >
           {isAdding ? 'Ditambahkan!' : (isOutOfStock ? 'Stok Habis' : 'Tambah')} {/* Change button text */}
         </Button>
