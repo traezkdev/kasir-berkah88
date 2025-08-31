@@ -414,18 +414,6 @@ const TransactionHistory = ({ headerTitle }) => {
 
 
 
-            <TransactionTable
-
-              transactions={filteredTransactions}
-
-              onDeleteTransaction={handleDeleteTransaction}
-
-              isMobile={isMobile}
-
-            />
-
-
-
             <BulkActions
 
               onClearAllTransactions={handleClearAllTransactions}
@@ -435,6 +423,18 @@ const TransactionHistory = ({ headerTitle }) => {
               transactionCount={filteredTransactions?.length}
 
               isExporting={isExporting}
+
+            />
+
+
+
+            <TransactionTable
+
+              transactions={filteredTransactions}
+
+              onDeleteTransaction={handleDeleteTransaction}
+
+              isMobile={isMobile}
 
             />
 
