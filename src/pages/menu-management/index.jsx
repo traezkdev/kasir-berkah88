@@ -193,7 +193,7 @@ const MenuManagement = ({ headerTitle }) => {
 
       <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />
       {notification && (
-        <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg z-50 ${
+        <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg z-[1002] ${
           notification.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
         }`}>
           {notification.message}
