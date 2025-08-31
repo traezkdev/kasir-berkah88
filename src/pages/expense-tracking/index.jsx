@@ -213,7 +213,29 @@ const ExpenseTracking = ({ headerTitle }) => {
   };
 
   const calculateSummaryMetrics = () => {
-    // ... (existing summary logic) ...
+    const totalExpenses = expenses?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
+    const expenseCount = expenses?.length;
+
+    const today = new Date();
+    const todayString = today.toDateString();
+    const todayExpenses = expenses?.filter(expense => {
+        const expenseDate = new Date(expense.date);
+        return expenseDate.toDateString() === todayString;
+      })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
+
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    const monthlyExpenses = expenses?.filter(expense => {
+        const expenseDate = new Date(expense.date);
+        return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
+      })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
+
+    return {
+      totalExpenses,
+      expenseCount,
+      todayExpenses,
+      monthlyExpenses
+    };
   };
 
   const summaryMetrics = calculateSummaryMetrics();
