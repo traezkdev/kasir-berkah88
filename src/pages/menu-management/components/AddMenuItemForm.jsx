@@ -3,7 +3,7 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 
-const AddMenuItemForm = ({ onAddItem }) => {
+const AddMenuItemForm = ({ onAddItem, userRole }) => {
   const [formData, setFormData] = useState({
     name: '',
     stock: '',
@@ -203,6 +203,7 @@ const AddMenuItemForm = ({ onAddItem }) => {
             iconName="Plus"
             iconPosition="left"
             className="sm:w-auto"
+            disabled={userRole === 'guest'}
           >
             {isSubmitting ? 'Menambahkan...' : 'Tambah Menu'}
           </Button>

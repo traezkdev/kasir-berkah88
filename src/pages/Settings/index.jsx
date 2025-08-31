@@ -484,7 +484,7 @@ const Settings = ({ headerTitle }) => {
                     onChange={(e) => setNewWebsiteTitle(e.target.value)}
                     required
                   />
-                  <Button type="submit" className="w-full" disabled={isLoading || userRole !== 'admin'}>
+                  <Button type="submit" className="w-full" disabled={isLoading || userRole !== 'admin' || userRole === 'guest'}>
                     Perbarui Judul
                   </Button>
                 </form>
@@ -667,6 +667,7 @@ const Settings = ({ headerTitle }) => {
                                 >
                                   <option value="user">Pengguna</option>
                                   <option value="admin">Admin</option>
+                                  <option value="guest">Tamu</option>
                                 </select>
                               </td>
                               <td className="py-2 px-4 border-b text-sm text-gray-700">

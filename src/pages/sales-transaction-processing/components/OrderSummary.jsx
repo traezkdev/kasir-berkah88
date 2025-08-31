@@ -18,7 +18,8 @@ const OrderSummary = ({
   isEmployeeMeal, 
   setIsEmployeeMeal,
   paymentMethod,
-  setPaymentMethod
+  setPaymentMethod,
+  userRole
 }) => {
   const [ppnRate, setPpnRate] = useState(0.11); // Default PPN rate
 
@@ -185,7 +186,7 @@ const OrderSummary = ({
               onClick={() => onProcessPayment({ total, ppn: ppnRate })} 
               className="w-full"
               loading={isLoading}
-              disabled={disablePaymentButton}
+              disabled={disablePaymentButton || userRole === 'guest'}
             >
               Bayar
             </Button>

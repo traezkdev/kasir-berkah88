@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 
@@ -32,7 +33,10 @@ const TransactionHistory = ({ headerTitle }) => {
     endDate: ''
   });
   const [isExporting, setIsExporting] = useState(false);
+  const [userRole, setUserRole] = useState(null); // New state for user role
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  const navigate = useNavigate(); // Initialize useNavigate
 
   useEffect(() => {
     const handleResize = () => {
@@ -72,6 +76,19 @@ const TransactionHistory = ({ headerTitle }) => {
 
   useEffect(() => {
     fetchTransactions();
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = JSON.parse(atob(token.split('.')[1]));
+        setUserRole(decodedToken.role);
+      } catch (e) {
+        console.error("Error decoding token in TransactionHistory:", e);
+        setUserRole(null);
+      }
+    } else {
+      setUserRole(null);
+    }
   }, []);
 
   
@@ -414,18 +431,6 @@ const TransactionHistory = ({ headerTitle }) => {
 
 
 
-            <TransactionTable
-
-              transactions={filteredTransactions}
-
-              onDeleteTransaction={handleDeleteTransaction}
-
-              isMobile={isMobile}
-
-            />
-
-
-
             <BulkActions
 
               onClearAllTransactions={handleClearAllTransactions}
@@ -435,6 +440,20 @@ const TransactionHistory = ({ headerTitle }) => {
               transactionCount={filteredTransactions?.length}
 
               isExporting={isExporting}
+              userRole={userRole}
+
+            />
+
+
+
+            <TransactionTable
+
+              transactions={filteredTransactions}
+
+              onDeleteTransaction={handleDeleteTransaction}
+
+              isMobile={isMobile}
+              userRole={userRole}
 
             />
 

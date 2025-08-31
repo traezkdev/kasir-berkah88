@@ -6,7 +6,8 @@ const BulkActions = ({
   onClearAllTransactions, 
   onExportTransactions, 
   transactionCount,
-  isExporting = false 
+  isExporting = false,
+  userRole 
 }) => {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
@@ -21,7 +22,7 @@ const BulkActions = ({
   ];
 
   return (
-    <div className="bg-white border-t border-slate-200 p-4 lg:p-6">
+    <div className="bg-white border-b border-slate-200 p-4 lg:p-6">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="text-sm text-text-secondary">
           Menampilkan {transactionCount} transaksi
@@ -53,7 +54,7 @@ const BulkActions = ({
             onClick={() => setShowClearConfirm(true)}
             iconName="Trash2"
             iconPosition="left"
-            disabled={transactionCount === 0}
+            disabled={transactionCount === 0 || userRole === 'guest'}
           >
             Hapus Semua
           </Button>

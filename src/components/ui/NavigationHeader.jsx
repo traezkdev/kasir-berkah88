@@ -37,6 +37,9 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
     if (item.adminOnly && userRole !== 'admin') {
       return false;
     }
+    if (item.guestRestricted && userRole === 'guest') {
+      return false;
+    }
     return true;
   });
 

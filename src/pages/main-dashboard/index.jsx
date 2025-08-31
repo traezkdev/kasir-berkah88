@@ -18,7 +18,7 @@ const MainDashboard = ({ headerTitle }) => {
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
 
-  const fetchData = async () => { // Moved outside useEffect
+  const fetchData = async (currentUserRole) => { // Add currentUserRole parameter
     const token = localStorage.getItem('token');
     if (!token) return; // Exit if no token
     try {
@@ -28,21 +28,105 @@ const MainDashboard = ({ headerTitle }) => {
         authFetch(`${apiUrl}/api/expenses`)
       ]);
 
-      const transactions = await transRes.json();
-      const menuItems = await menuRes.json();
-      const expenses = await expenseRes.json();
+      let transactionsData = [];
+      let menuItemsData = [];
+      let expensesData = [];
 
-      if (transactions.message === 'success' && menuItems.message === 'success' && expenses.message === 'success') {
-        processDashboardData(transactions.data, menuItems.data, expenses.data);
+      // Handle transactions data
+      const transactions = await transRes.json();
+      if (transRes.ok && transactions.message === 'success') {
+        transactionsData = transactions.data;
+      } else {
+        console.error("Failed to fetch transactions:", transactions.error || "Unknown error");
       }
+
+      // Handle menu items data
+      const menuItems = await menuRes.json();
+      if (menuRes.ok && menuItems.message === 'success') {
+        menuItemsData = menuItems.data;
+      }
+
+      // Handle expenses data
+      const expenses = await expenseRes.json();
+      if (expenseRes.ok && expenses.message === 'success') {
+        expensesData = expenses.data;
+      } else {
+        console.error("Failed to fetch expenses:", expenses.error || "Unknown error");
+      }
+
+      // Process data if menu items are available (always expected)
+      // and other data is fetched (or empty if not available)
+      if (menuItemsData.length > 0 || transactionsData.length > 0 || expensesData.length > 0) {
+        processDashboardData(transactionsData, menuItemsData, expensesData);
+      } else {
+        console.error("No dashboard data fetched successfully.");
+        // Optionally, set dashboardData to an empty state to stop loading spinner
+        setDashboardData({
+          metrics: { totalRevenue: 0, totalExpenses: 0, stockValue: 0, netProfit: 0 },
+          todayStats: { transactions: 0, itemsSold: 0, averageOrder: 0, peakHour: 'N/A' },
+          recentTransactions: [],
+          dashboardMetrics: {
+            todaySales: { value: 'Rp 0', change: '0%', trend: 'up' },
+            totalTransactions: { value: '0', change: '0', trend: 'up' },
+            averageOrder: { value: 'Rp 0', change: '0%', trend: 'up' },
+            lowStock: { value: '0', change: '', trend: 'down' }
+          }
+        });
+      }
+
     } catch (error) {
-      console.error("Failed to fetch dashboard data:", error);
+      console.error("Error during dashboard data fetch:", error);
+      // In case of network error, stop loading and show empty data
+      setDashboardData({
+        metrics: { totalRevenue: 0, totalExpenses: 0, stockValue: 0, netProfit: 0 },
+        todayStats: { transactions: 0, itemsSold: 0, averageOrder: 0, peakHour: 'N/A' },
+        recentTransactions: [],
+        dashboardMetrics: {
+          todaySales: { value: 'Rp 0', change: '0%', trend: 'up' },
+          totalTransactions: { value: '0', change: '0', trend: 'up' },
+          averageOrder: { value: 'Rp 0', change: '0%', trend: 'up' },
+          lowStock: { value: '0', change: '', trend: 'down' }
+        }
+      });
     }
   };
 
+  // Get user role from token and then fetch data
   useEffect(() => {
-    fetchData(); // Call the function
-  }, []);
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = JSON.parse(atob(token.split('.')[1]));
+        const role = decodedToken.role;
+        // Pass the role to fetchData
+        fetchData(role);
+      } catch (e) {
+        console.error("Error decoding token in MainDashboard:", e);
+        // If token is invalid, maybe redirect to login or handle as unauthenticated
+        navigate('/login');
+      }
+    } else {
+      // No token, redirect to login
+      navigate('/login');
+    }
+  }, []); // Empty dependency array to run once on mount
+
+  // Get user role from token and then fetch data
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = JSON.parse(atob(token.split('.')[1]));
+        const role = decodedToken.role;
+        // Pass the role to fetchData
+        fetchData(role);
+      } catch (e) {
+        console.error("Error decoding token in MainDashboard:", e);
+        // If token is invalid, maybe redirect to login or handle as unauthenticated
+        navigate('/login');
+      }
+    }
+  }, []); // Empty dependency array to run once on mount
 
   const processDashboardData = (transactions, menuItems, expenses) => {
     const today = new Date();

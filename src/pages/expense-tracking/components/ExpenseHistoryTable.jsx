@@ -10,7 +10,8 @@ const ExpenseHistoryTable = ({
   onBulkDelete,
   onExportData,
   onEditExpense,
-  isLoading = false 
+  isLoading = false,
+  userRole 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -250,22 +251,26 @@ const ExpenseHistoryTable = ({
                   </span>
                 </td>
                 <td className="p-4 text-center flex items-center justify-center">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onEditExpense(expense)}
-                    className="text-primary hover:text-primary hover:bg-primary/10"
-                  >
-                    <Icon name="Edit3" size={16} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setShowDeleteConfirm(expense?.id)}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <Icon name="Trash2" size={16} />
-                  </Button>
+                  {userRole !== 'guest' && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onEditExpense(expense)}
+                      className="text-primary hover:text-primary hover:bg-primary/10"
+                    >
+                      <Icon name="Edit3" size={16} />
+                    </Button>
+                  )}
+                  {userRole !== 'guest' && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowDeleteConfirm(expense?.id)}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Icon name="Trash2" size={16} />
+                    </Button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -295,22 +300,26 @@ const ExpenseHistoryTable = ({
               </div>
               
               <div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onEditExpense(expense)}
-                  className="text-primary hover:text-primary hover:bg-primary/10"
-                >
-                  <Icon name="Edit3" size={16} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowDeleteConfirm(expense?.id)}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  <Icon name="Trash2" size={16} />
-                </Button>
+                {userRole !== 'guest' && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onEditExpense(expense)}
+                    className="text-primary hover:text-primary hover:bg-primary/10"
+                  >
+                    <Icon name="Edit3" size={16} />
+                  </Button>
+                )}
+                {userRole !== 'guest' && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowDeleteConfirm(expense?.id)}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Icon name="Trash2" size={16} />
+                  </Button>
+                )}
               </div>
             </div>
 

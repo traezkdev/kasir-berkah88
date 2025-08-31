@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const TransactionCard = ({ transaction, onDelete, isMobile = false }) => {
+const TransactionCard = ({ transaction, onDelete, isMobile = false, userRole }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -89,13 +89,15 @@ const TransactionCard = ({ transaction, onDelete, isMobile = false }) => {
           >
             Detail
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowDeleteConfirm(true)}
-            iconName="Trash2"
-            className="text-destructive hover:text-destructive"
-          />
+          {userRole !== 'guest' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowDeleteConfirm(true)}
+              iconName="Trash2"
+              className="text-destructive hover:text-destructive"
+            />
+          )}
         </div>
         {isExpanded && (
           <div className="mt-3 pt-3 border-t border-slate-200">
@@ -177,13 +179,15 @@ const TransactionCard = ({ transaction, onDelete, isMobile = false }) => {
         {paymentBadge}
       </td>
       <td className="px-4 py-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowDeleteConfirm(true)}
-          iconName="Trash2"
-          className="text-destructive hover:text-destructive"
-        />
+        {userRole !== 'guest' && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowDeleteConfirm(true)}
+            iconName="Trash2"
+            className="text-destructive hover:text-destructive"
+          />
+        )}
       </td>
       {showDeleteConfirm && (
         <td colSpan="6" className="absolute inset-0">

@@ -20,6 +20,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
   const [dashboardMetrics, setDashboardMetrics] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userRole, setUserRole] = useState(null); // New state for user role
 
   const fetchMenuItems = async () => {
     const token = localStorage.getItem('token');
@@ -60,6 +61,19 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
   useEffect(() => {
     fetchMenuItems();
     fetchTransactions();
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = JSON.parse(atob(token.split('.')[1]));
+        setUserRole(decodedToken.role);
+      } catch (e) {
+        console.error("Error decoding token in SalesTransactionProcessing:", e);
+        setUserRole(null);
+      }
+    } else {
+      setUserRole(null);
+    }
   }, []);
 
   useEffect(() => {
@@ -194,7 +208,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                <SalesForm menuItems={menuItems} onAddToCart={handleAddToCart} cart={cart} />
+                <SalesForm menuItems={menuItems} onAddToCart={handleAddToCart} cart={cart} userRole={userRole} />
               </div>
               <div className="lg:col-span-1">
                 <OrderSummary
@@ -209,6 +223,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
                   setIsEmployeeMeal={setIsEmployeeMeal}
                   paymentMethod={paymentMethod}
                   setPaymentMethod={setPaymentMethod}
+                  userRole={userRole}
                 />
               </div>
             </div>
