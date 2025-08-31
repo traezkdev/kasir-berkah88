@@ -248,11 +248,12 @@ app.post("/api/transactions/", authenticateToken, async (req, res, next) => {
             items: JSON.stringify(req.body.items),
             total: req.body.total,
             ppn: req.body.ppn,
-            isEmployeeMeal: req.body.isEmployeeMeal ? 1 : 0
+            isEmployeeMeal: req.body.isEmployeeMeal ? 1 : 0,
+            payment_method: req.body.payment_method || 'Tunai' // Add payment_method, default to 'Tunai'
         };
-        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal) VALUES (?,?,?,?,?,?)';
+        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method) VALUES (?,?,?,?,?,?,?)';
 
-        const params = [data.id, data.timestamp, data.items, data.total, data.ppn, data.isEmployeeMeal];
+        const params = [data.id, data.timestamp, data.items, data.total, data.ppn, data.isEmployeeMeal, data.payment_method];
         const [result] = await db.query(sql, params);
 
         // --- STOCK REDUCTION LOGIC --- 

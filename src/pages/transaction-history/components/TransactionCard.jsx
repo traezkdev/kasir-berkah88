@@ -6,6 +6,27 @@ const TransactionCard = ({ transaction, onDelete, isMobile = false }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  let paymentBadge = null;
+  if (transaction?.isEmployeeMeal) {
+    paymentBadge = (
+      <span className="px-2 py-1 bg-accent/10 text-accent text-xs font-medium rounded-full">
+        Makan Karyawan
+      </span>
+    );
+  } else if (transaction?.payment_method === 'Gojek') {
+    paymentBadge = (
+      <span className="px-2 py-1 bg-success/10 text-success text-xs font-medium rounded-full">
+        Gojek
+      </span>
+    );
+  } else if (transaction?.payment_method === 'Transfer') {
+    paymentBadge = (
+      <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
+        Transfer
+      </span>
+    );
+  }
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -43,11 +64,7 @@ const TransactionCard = ({ transaction, onDelete, isMobile = false }) => {
               <span className="text-sm font-medium text-text-primary">
                 #{transaction?.id}
               </span>
-              {transaction?.isEmployeeMeal && (
-                <span className="px-2 py-1 bg-accent/10 text-accent text-xs font-medium rounded-full">
-                  Makan Karyawan
-                </span>
-              )}
+              {paymentBadge}
             </div>
             <p className="text-xs text-text-secondary">
               {formatDateTime(transaction?.timestamp)}
@@ -157,11 +174,7 @@ const TransactionCard = ({ transaction, onDelete, isMobile = false }) => {
         {formatCurrency(transaction?.total)}
       </td>
       <td className="px-4 py-3">
-        {transaction?.isEmployeeMeal && (
-          <span className="px-2 py-1 bg-accent/10 text-accent text-xs font-medium rounded-full">
-            Makan Karyawan
-          </span>
-        )}
+        {paymentBadge}
       </td>
       <td className="px-4 py-3">
         <Button

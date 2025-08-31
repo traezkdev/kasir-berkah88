@@ -5,30 +5,43 @@ import authFetch from './utils/authFetch';
 const apiUrl = import.meta.env.VITE_API_URL;
 
 function App() {
-  const [websiteTitle, setWebsiteTitle] = useState('Kasir Berkah 88'); // Default title
   const [headerTitle, setHeaderTitle] = useState('Kasir Berkah 88'); // Default header title
 
   useEffect(() => {
-    const fetchWebsiteTitle = async () => {
+    const fetchSettings = async () => {
       try {
-        const response = await authFetch(`${apiUrl}/api/settings`);
+        // No authFetch needed for public settings like title/favicon
+        const response = await fetch(`${apiUrl}/api/settings`);
         const data = await response.json();
         if (response.ok) {
-          setWebsiteTitle(data.data.website_title || 'Kasir Berkah 88');
-          setHeaderTitle(data.data.header_title || 'Kasir Berkah 88'); // Assuming header_title from API
+          const settings = data.data;
+          
+          // Set Website Title
+          const newTitle = settings.website_title || 'Kasir Berkah 88';
+          document.title = newTitle;
+
+          // Set Header Title
+          setHeaderTitle(settings.header_title || 'Kasir Berkah 88');
+          
+          // Set Favicon
+          if (settings.favicon_url) {
+            const faviconLink = document.getElementById('favicon-link');
+            if (faviconLink) {
+              faviconLink.href = settings.favicon_url;
+            }
+          }
         } else {
-          console.error('Failed to fetch website title:', data.error);
+          console.error('Failed to fetch settings:', data.error);
         }
       } catch (err) {
-        console.error('Network error fetching website title:', err);
+        // This can happen if the user is offline or the backend is down.
+        // The app will just use the default title.
+        console.error('Network error fetching settings:', err);
       }
     };
-    fetchWebsiteTitle();
+    
+    fetchSettings();
   }, []);
-
-  useEffect(() => {
-    document.title = websiteTitle;
-  }, [websiteTitle]);
 
   return (
     <Routes headerTitle={headerTitle} />

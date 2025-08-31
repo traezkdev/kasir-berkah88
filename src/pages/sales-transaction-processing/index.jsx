@@ -15,6 +15,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
   const [menuItems, setMenuItems] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isEmployeeMeal, setIsEmployeeMeal] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('Tunai');
   const [transactions, setTransactions] = useState([]);
   const [dashboardMetrics, setDashboardMetrics] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -142,6 +143,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       total: paymentData.total,
       ppn: paymentData.ppn,
       isEmployeeMeal: isEmployeeMeal,
+      payment_method: paymentMethod,
     };
 
     try {
@@ -192,7 +194,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                <SalesForm menuItems={menuItems} onAddToCart={handleAddToCart} />
+                <SalesForm menuItems={menuItems} onAddToCart={handleAddToCart} cart={cart} />
               </div>
               <div className="lg:col-span-1">
                 <OrderSummary
@@ -205,6 +207,8 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
                   isLoading={isLoading}
                   isEmployeeMeal={isEmployeeMeal}
                   setIsEmployeeMeal={setIsEmployeeMeal}
+                  paymentMethod={paymentMethod}
+                  setPaymentMethod={setPaymentMethod}
                 />
               </div>
             </div>
