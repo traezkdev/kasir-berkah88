@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
-import { Checkbox } from '../../../components/ui/Checkbox'; // Import Checkbox
-
+import { Checkbox } from '../../../components/ui/Checkbox';
+import Select from '../../../components/ui/Select'; // Import Select
 import authFetch from '../../../utils/authFetch';
 
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -16,7 +16,9 @@ const OrderSummary = ({
   onProcessPayment, 
   isLoading, 
   isEmployeeMeal, 
-  setIsEmployeeMeal 
+  setIsEmployeeMeal,
+  paymentMethod,
+  setPaymentMethod
 }) => {
   const [ppnRate, setPpnRate] = useState(0.11); // Default PPN rate
 
@@ -46,10 +48,16 @@ const OrderSummary = ({
   const tax = subtotal * ppnRate;
   const total = subtotal + tax;
 
+  const paymentMethodOptions = [
+    { value: 'Tunai', label: 'Tunai' },
+    { value: 'Gojek', label: 'Gojek' },
+    { value: 'Transfer', label: 'Transfer' },
+  ];
+
   const handlePpnChange = (e) => {
     const inputValue = e.target.value;
     if (inputValue === '') {
-      setPpnRate(0); // Allow clearing the input to set PPN to 0
+      setPpnRate(0);
     } else {
       const newRate = parseFloat(inputValue);
       if (!isNaN(newRate)) {
@@ -67,19 +75,18 @@ const OrderSummary = ({
         },
         body: JSON.stringify({ value: ppnRate }),
       });
-      // Maybe show a success message
     } catch (error) {
       console.error('Error saving PPN:', error);
     }
   };
 
   const isCartValid = () => {
-    if (cart.length === 0) return false; // Cannot process empty cart
+    if (cart.length === 0) return false;
 
     for (const cartItem of cart) {
       const correspondingMenuItem = menuItems.find(item => item.id === cartItem.id);
       if (!correspondingMenuItem || cartItem.quantity > correspondingMenuItem.stock) {
-        return false; // Item not found or insufficient stock
+        return false;
       }
     }
     return true;
@@ -151,20 +158,31 @@ const OrderSummary = ({
           </div>
           <div className="border-t my-4"></div>
           
-          {/* Employee Meal Checkbox */}
-          <div className="flex items-center space-x-2 mb-4">
-            <Checkbox 
-              id="employee-meal-checkbox"
-              checked={isEmployeeMeal}
-              onChange={(e) => setIsEmployeeMeal(e.target.checked)}
-            />
-            <label htmlFor="employee-meal-checkbox" className="text-sm font-medium text-gray-700">Makan Karyawan</label>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="employee-meal-checkbox"
+                checked={isEmployeeMeal}
+                onChange={(e) => setIsEmployeeMeal(e.target.checked)}
+              />
+              <label htmlFor="employee-meal-checkbox" className="text-sm font-medium text-gray-700">Makan Karyawan</label>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="payment-method" className="text-sm font-medium text-gray-700">Metode Pembayaran</label>
+              <Select
+                id="payment-method"
+                options={paymentMethodOptions}
+                value={paymentMethod}
+                onChange={setPaymentMethod}
+              />
+            </div>
           </div>
 
           <div className="flex gap-2 mt-4">
             <Button variant="outline" onClick={onClearCart} className="w-full">Kosongkan</Button>
             <Button 
-              onClick={() => onProcessPayment({ total, method: 'Tunai', ppn: ppnRate })} 
+              onClick={() => onProcessPayment({ total, ppn: ppnRate })} 
               className="w-full"
               loading={isLoading}
               disabled={disablePaymentButton}

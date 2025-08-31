@@ -16,6 +16,7 @@ const ExpenseHistoryTable = ({
   const [selectedExpenses, setSelectedExpenses] = useState([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [dateFilter, setDateFilter] = useState('');
 
   const categoryOptions = [
     { value: '', label: 'Semua Kategori' },
@@ -63,7 +64,8 @@ const ExpenseHistoryTable = ({
     const lowercasedSearchTerm = searchTerm?.toLowerCase() || '';
     const matchesSearch = expense?.name?.toLowerCase()?.includes(lowercasedSearchTerm);
     const matchesCategory = !categoryFilter || expense?.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+    const matchesDate = !dateFilter || (expense?.date && expense.date.startsWith(dateFilter));
+    return matchesSearch && matchesCategory && matchesDate;
   });
 
   const handleSelectExpense = (expenseId) => {
@@ -162,7 +164,7 @@ const ExpenseHistoryTable = ({
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           <Input
             type="search"
             placeholder="Cari pengeluaran..."
@@ -176,6 +178,13 @@ const ExpenseHistoryTable = ({
             options={categoryOptions}
             value={categoryFilter}
             onChange={setCategoryFilter}
+            className="lg:col-span-1"
+          />
+
+          <Input
+            type="date"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
             className="lg:col-span-1"
           />
         </div>

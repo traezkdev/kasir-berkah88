@@ -3,11 +3,18 @@ import Button from '../../../components/ui/Button';
 import AppImage from '../../../components/AppImage';
 import { cn } from '../../../utils/cn'; // Import cn utility
 
-const ProductCard = ({ item, onAddToCart }) => {
+const ProductCard = ({ item, onAddToCart, cart }) => {
   const [isAdding, setIsAdding] = useState(false);
-  const isOutOfStock = item.stock <= 0;
+
+  // Calculate effective stock
+  const itemInCart = cart.find(cartItem => cartItem.id === item.id);
+  const quantityInCart = itemInCart ? itemInCart.quantity : 0;
+  const effectiveStock = item.stock - quantityInCart;
+
+  const isOutOfStock = effectiveStock <= 0;
 
   const handleClick = () => {
+    if (isOutOfStock) return; // Prevent adding if stock is effectively zero
     setIsAdding(true);
     onAddToCart(item);
     setTimeout(() => {
@@ -28,7 +35,7 @@ const ProductCard = ({ item, onAddToCart }) => {
       <div className="p-4">
         <h3 className="text-md font-semibold text-text-primary">{item.name}</h3>
         <p className="text-sm text-text-secondary">Rp {item.price?.toLocaleString('id-ID')}</p>
-        <p className="text-xs text-text-secondary mt-1">Stok: {item.stock}</p> {/* Display stock */}
+        <p className="text-xs text-text-secondary mt-1">Stok: {effectiveStock}</p> {/* Display effective stock */}
         <Button
           size="sm"
           className="w-full mt-4"
