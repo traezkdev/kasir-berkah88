@@ -45,7 +45,12 @@ const MainDashboard = ({ headerTitle }) => {
   }, []);
 
   const processDashboardData = (transactions, menuItems, expenses) => {
-    const today = new Date().toDateString();
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const todayString = today.toDateString();
+    const yesterdayString = yesterday.toDateString();
 
     // Overall Metrics
     const totalRevenue = transactions.filter(t => !t.isEmployeeMeal).reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
@@ -53,16 +58,48 @@ const MainDashboard = ({ headerTitle }) => {
     const stockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
     const netProfit = totalRevenue - totalExpenses;
 
-    // Today's Stats
-    const todayTransactions = transactions.filter(t => new Date(t.timestamp).toDateString() === today && !t.isEmployeeMeal);
-    const todaySales = todayTransactions.filter(t => !t.isEmployeeMeal).reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
-    const itemsSoldToday = todayTransactions.flatMap(t => t.items).reduce((sum, i) => sum + i.quantity, 0);
+    // --- Daily Stats Calculation ---
+
+    // Today's Data
+    const todayTransactions = transactions.filter(t => new Date(t.timestamp).toDateString() === todayString && !t.isEmployeeMeal);
+    const todaySales = todayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
     const averageOrderToday = todayTransactions.length > 0 ? todaySales / todayTransactions.length : 0;
 
-    // Low Stock
-    const lowStockItems = menuItems.filter(item => item.stock <= 5 && item.stock > 0).length;
+    // Yesterday's Data
+    const yesterdayTransactions = transactions.filter(t => new Date(t.timestamp).toDateString() === yesterdayString && !t.isEmployeeMeal);
+    const yesterdaySales = yesterdayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+    const averageOrderYesterday = yesterdayTransactions.length > 0 ? yesterdaySales / yesterdayTransactions.length : 0;
 
-    // Recent Transactions
+    // --- Change & Trend Calculation ---
+
+    // 1. Sales Change
+    let salesChange = 0;
+    if (yesterdaySales > 0) {
+      salesChange = ((todaySales - yesterdaySales) / yesterdaySales) * 100;
+    } else if (todaySales > 0) {
+      salesChange = 100; // Infinite growth if yesterday was 0 and today is > 0
+    }
+    const salesChangeFormatted = `${salesChange >= 0 ? '+' : ''}${salesChange.toFixed(0)}%`;
+    const salesTrend = salesChange >= 0 ? 'up' : 'down';
+
+    // 2. Total Transactions Change
+    const transChange = todayTransactions.length - yesterdayTransactions.length;
+    const transChangeFormatted = `${transChange >= 0 ? '+' : ''}${transChange}`;
+    const transTrend = transChange >= 0 ? 'up' : 'down';
+
+    // 3. Average Order Change
+    let avgOrderChange = 0;
+    if (averageOrderYesterday > 0) {
+      avgOrderChange = ((averageOrderToday - averageOrderYesterday) / averageOrderYesterday) * 100;
+    } else if (averageOrderToday > 0) {
+      avgOrderChange = 100;
+    }
+    const avgOrderChangeFormatted = `${avgOrderChange >= 0 ? '+' : ''}${avgOrderChange.toFixed(0)}%`;
+    const avgOrderTrend = avgOrderChange >= 0 ? 'up' : 'down';
+
+    // --- Other Metrics ---
+    const itemsSoldToday = todayTransactions.flatMap(t => t.items).reduce((sum, i) => sum + i.quantity, 0);
+    const lowStockItems = menuItems.filter(item => item.stock <= 5 && item.stock > 0).length;
     const recentTransactions = transactions.slice(0, 6);
 
     setDashboardData({
@@ -89,10 +126,10 @@ const MainDashboard = ({ headerTitle }) => {
       },
       recentTransactions,
       dashboardMetrics: {
-        todaySales: { value: formatCurrency(todaySales), change: '+12%', trend: 'up' },
-        totalTransactions: { value: todayTransactions.length.toString(), change: '+8', trend: 'up' },
-        averageOrder: { value: formatCurrency(averageOrderToday), change: '+5%', trend: 'up' },
-        lowStock: { value: lowStockItems.toString(), change: '-2', trend: 'down' }
+        todaySales: { value: formatCurrency(todaySales), change: salesChangeFormatted, trend: salesTrend },
+        totalTransactions: { value: todayTransactions.length.toString(), change: transChangeFormatted, trend: transTrend },
+        averageOrder: { value: formatCurrency(averageOrderToday), change: avgOrderChangeFormatted, trend: avgOrderTrend },
+        lowStock: { value: lowStockItems.toString(), change: '', trend: 'down' } // Removed change text
       }
     });
   };
@@ -196,7 +233,7 @@ const MainDashboard = ({ headerTitle }) => {
               <div className="flex items-center justify-between mt-4">
                 <div>
                   <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
-                    Dashboard Kasir Berkah 88
+                    Dashboard
                   </h1>
                   <p className="text-text-secondary mt-1">
                     Selamat datang! Kelola warung Anda dengan mudah
