@@ -13,6 +13,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import authFetch from '../../utils/authFetch';
+import { exportToExcel, exportToPdf, prepareExpenseDataForExport } from '../../utils/exportUtils';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -24,8 +25,18 @@ const ExpenseTracking = ({ headerTitle }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userRole, setUserRole] = useState(null); // New state for user role
+  const [notification, setNotification] = useState(null); // New state for notification
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
+  const [showBulkDeleteConfirmModal, setShowBulkDeleteConfirmModal] = useState(false); // New state
+  const [bulkDeleteTarget, setBulkDeleteTarget] = useState(null); // New state
+
+  const showNotification = (message, type) => {
+    setNotification({ message, type });
+    setTimeout(() => {
+      setNotification(null);
+    }, 3000); // Hide after 3 seconds
+  };
 
   // Define fetch functions outside useEffects
   const fetchExpenses = async () => {
@@ -195,8 +206,8 @@ const ExpenseTracking = ({ headerTitle }) => {
     }
   };
 
-  const handleBulkDelete = async () => {
-    if (confirm('Apakah Anda yakin ingin menghapus semua data pengeluaran? Aksi ini tidak dapat dibatalkan.')) {
+  const handleBulkDelete = async (confirmed = false) => {
+    if (confirmed) {
       try {
         const response = await authFetch(`${apiUrl}/api/expenses`, {
           method: 'DELETE',
@@ -204,12 +215,19 @@ const ExpenseTracking = ({ headerTitle }) => {
         const result = await response.json();
         if (result.message === 'all deleted') {
           fetchExpenses(); // Refetch to show an empty list
+          showNotification('Semua pengeluaran berhasil dihapus!', 'success');
         } else {
           console.error('Failed to bulk delete expenses:', result.error);
+          showNotification('Gagal menghapus semua pengeluaran.', 'error');
         }
       } catch (error) {
         console.error('Error bulk deleting expenses:', error);
+        showNotification('Terjadi kesalahan saat menghapus pengeluaran.', 'error');
+      } finally {
+        setShowBulkDeleteConfirmModal(false); // Close modal
       }
+    } else {
+      setShowBulkDeleteConfirmModal(true);
     }
   };
 
@@ -224,7 +242,19 @@ const ExpenseTracking = ({ headerTitle }) => {
   };
 
   const handleExportData = (format) => {
-    // ... (existing export logic) ...
+    try {
+      const dataToExport = prepareExpenseDataForExport(expenses);
+      if (format === 'excel') {
+        exportToExcel(dataToExport, 'Laporan_Pengeluaran');
+        showNotification('Data pengeluaran berhasil diekspor ke Excel!', 'success');
+      } else if (format === 'pdf') {
+        exportToPdf(dataToExport, 'Laporan_Pengeluaran');
+        showNotification('Data pengeluaran berhasil diekspor ke PDF!', 'success');
+      }
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      showNotification('Gagal mengekspor data. Silakan coba lagi.', 'error');
+    }
   };
 
   const calculateSummaryMetrics = () => {
@@ -262,6 +292,13 @@ const ExpenseTracking = ({ headerTitle }) => {
   return (
     <div className="min-h-screen bg-background">
       <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} /> 
+      {notification && (
+        <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg z-[1002] ${
+          notification.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+        }`}>
+          {notification.message}
+        </div>
+      )}
       <div className="pt-16">
         <main className="pt-6 lg:pt-8 pb-20 lg:pb-8">
           <div className="max-w-7xl mx-auto px-4 lg:px-6 space-y-6">
@@ -296,6 +333,43 @@ const ExpenseTracking = ({ headerTitle }) => {
         onUpdateExpense={handleUpdateExpense}
         isLoading={isLoading}
       />
+
+      {/* Bulk Delete Confirmation Modal */}
+      {showBulkDeleteConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1002] p-4">
+          <div className="bg-white rounded-lg shadow-elevation-3 max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-2 bg-destructive/10 rounded-lg">
+                  <Icon name="AlertTriangle" size={24} className="text-destructive" />
+                </div>
+                <h3 className="text-lg font-semibold text-text-primary">Konfirmasi Hapus Pengeluaran</h3>
+              </div>
+              
+              <p className="text-text-secondary mb-6">
+                Apakah Anda yakin ingin menghapus semua pengeluaran? Tindakan ini tidak dapat dibatalkan.
+              </p>
+              
+              <div className="flex space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowBulkDeleteConfirmModal(false)}
+                  className="flex-1"
+                >
+                  Batal
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => handleBulkDelete(true)}
+                  className="flex-1"
+                >
+                  Hapus Semua
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

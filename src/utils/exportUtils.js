@@ -12,10 +12,33 @@ const calculateTotalPriceOfStock = (data) => {
   return data.reduce((sum, item) => sum + ((item.stock || 0) * (item.price || 0)), 0);
 };
 
+// New helper function to calculate total amount (for expenses)
+const calculateTotalAmount = (data) => {
+  return data.reduce((sum, item) => sum + (item.Jumlah || 0), 0);
+};
+
 export const exportToExcel = (data, filename = 'data') => {
-  const totalStock = calculateTotalStock(data);
-  const totalPriceOfStock = calculateTotalPriceOfStock(data); // New calculation
-  const title = "Laporan Stok Menu";
+  const isExpenseData = filename.includes('Pengeluaran'); // Simple check
+
+  let title = "Laporan Stok Menu";
+  let summaryRows = [];
+
+  if (isExpenseData) {
+    title = "Laporan Pengeluaran";
+    const totalAmount = calculateTotalAmount(data);
+    summaryRows = [
+      [], // Empty row before summary
+      ['Total Pengeluaran:', totalAmount.toLocaleString('id-ID')] // Summary row for total amount
+    ];
+  } else {
+    const totalStock = calculateTotalStock(data);
+    const totalPriceOfStock = calculateTotalPriceOfStock(data);
+    summaryRows = [
+      [], // Empty row before summary
+      ['Total Stok:', totalStock],
+      ['Total Harga Stok:', totalPriceOfStock.toLocaleString('id-ID')]
+    ];
+  }
 
   // Prepare data for Excel
   const ws_data = [
@@ -23,9 +46,7 @@ export const exportToExcel = (data, filename = 'data') => {
     [], // Empty row for spacing
     Object.keys(data[0] || {}), // Headers
     ...data.map(item => Object.values(item)), // Data rows
-    [], // Empty row before summary
-    ['Total Stok:', totalStock], // Summary row for stock
-    ['Total Harga Stok:', totalPriceOfStock.toLocaleString('id-ID')] // New summary row for total price
+    ...summaryRows // Add dynamic summary rows
   ];
 
   const ws = XLSX.utils.aoa_to_sheet(ws_data);
@@ -47,18 +68,35 @@ export const exportToExcel = (data, filename = 'data') => {
   ws['!cols'] = max_width.map(w => ({ wch: w + 2 })); // Add some padding
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Stok Menu");
+  XLSX.utils.book_append_sheet(wb, ws, isExpenseData ? "Pengeluaran" : "Stok Menu");
   XLSX.writeFile(wb, `${filename}.xlsx`);
 };
 
 export const exportToPdf = (data, filename = 'data') => {
   const doc = new jsPDF();
-  const totalStock = calculateTotalStock(data);
-  const totalPriceOfStock = calculateTotalPriceOfStock(data); // New calculation
+  const isExpenseData = filename.includes('Pengeluaran'); // Simple check
+
+  let title = "Laporan Stok Menu";
+  let summaryLines = [];
+
+  if (isExpenseData) {
+    title = "Laporan Pengeluaran";
+    const totalAmount = calculateTotalAmount(data);
+    summaryLines = [
+      `Total Pengeluaran: Rp ${totalAmount.toLocaleString('id-ID')}`
+    ];
+  } else {
+    const totalStock = calculateTotalStock(data);
+    const totalPriceOfStock = calculateTotalPriceOfStock(data);
+    summaryLines = [
+      `Total Stok: ${totalStock}`,
+      `Total Harga Stok: Rp ${totalPriceOfStock.toLocaleString('id-ID')}`
+    ];
+  }
 
   // Add title
   doc.setFontSize(18);
-  doc.text("Laporan Stok Menu", 14, 22);
+  doc.text(title, 14, 22);
   doc.setFontSize(11);
   doc.setTextColor(100);
   doc.text(`Tanggal Export: ${new Date().toLocaleDateString()}`, 14, 30);
@@ -92,12 +130,13 @@ export const exportToPdf = (data, filename = 'data') => {
     }
   });
 
-  // Add total stock summary
+  // Add dynamic summary lines
   let finalY = doc.lastAutoTable.finalY;
   doc.setFontSize(12);
   doc.setTextColor(0);
-  doc.text(`Total Stok: ${totalStock}`, 14, finalY + 10);
-  doc.text(`Total Harga Stok: Rp ${totalPriceOfStock.toLocaleString('id-ID')}`, 14, finalY + 17); // New summary line
+  summaryLines.forEach((line, index) => {
+    doc.text(line, 14, finalY + 10 + (index * 7)); // 7 is approximate line height
+  });
 
   doc.save(`${filename}.pdf`);
 };
@@ -111,5 +150,17 @@ export const prepareTransactionDataForExport = (transactions) => {
     'Tipe': transaction.isEmployeeMeal ? 'Karyawan' : 'Reguler',
     'Metode Pembayaran': transaction.paymentMethod,
     'Item Terjual': transaction.items.map(item => `${item.name} (${item.quantity})`).join(', '),
+  }));
+};
+
+export const prepareExpenseDataForExport = (expenses) => {
+  return expenses.map(expense => ({
+    'ID Pengeluaran': expense.id,
+    'Tanggal': new Date(expense.date).toLocaleDateString('id-ID'),
+    'Waktu': new Date(expense.date).toLocaleTimeString('id-ID'),
+    'Kategori': expense.category,
+    'Deskripsi': expense.name,
+    'Jumlah': parseFloat(expense.amount || 0), // Keep as number for Excel sum
+    'Catatan': expense.notes || '',
   }));
 };
