@@ -19,6 +19,14 @@ const MenuManagement = ({ headerTitle }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [userRole, setUserRole] = useState(null); // New state for user role
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type) => {
+    setNotification({ message, type });
+    setTimeout(() => {
+      setNotification(null);
+    }, 3000); // Hide after 3 seconds
+  };
 
   const fetchMenuItems = async () => { // Moved outside useEffect
     const token = localStorage.getItem('token');
@@ -141,31 +149,19 @@ const MenuManagement = ({ headerTitle }) => {
 
   const handleExportData = (format) => {
     try {
-      const exportData = menuItems?.map(item => ({
-        'Nama Menu': item?.name,
-        'Stok': item?.stock,
-        'Harga': item?.price,
-        'Status': item?.stock === 0 ? 'Habis' : item?.stock <= 5 ? 'Menipis' : 'Tersedia',
-        'Dibuat': new Date(item.createdAt)?.toLocaleDateString('id-ID'),
-        'Diperbarui': new Date(item.updatedAt)?.toLocaleDateString('id-ID')
-      }));
+      // The actual export is now handled in MenuSearchAndFilter.jsx
+      // This function now only handles the notification.
 
       if (format === 'excel') {
-        // Mock Excel export
-        console.log('Exporting to Excel:', exportData);
-        alert('Data menu berhasil diekspor ke Excel!');
+        showNotification('Data menu berhasil diekspor ke Excel!', 'success');
       } else if (format === 'csv') {
-        // Mock CSV export
-        console.log('Exporting to CSV:', exportData);
-        alert('Data menu berhasil diekspor ke CSV!');
+        showNotification('Data menu berhasil diekspor ke CSV!', 'success');
       } else if (format === 'pdf') {
-        // Mock PDF export
-        console.log('Exporting to PDF:', exportData);
-        alert('Data menu berhasil diekspor ke PDF!');
+        showNotification('Data menu berhasil diekspor ke PDF!', 'success');
       }
     } catch (error) {
       console.error('Error exporting data:', error);
-      alert('Gagal mengekspor data. Silakan coba lagi.');
+      showNotification('Gagal mengekspor data. Silakan coba lagi.', 'error');
     }
   };
 
@@ -196,6 +192,13 @@ const MenuManagement = ({ headerTitle }) => {
       </Helmet>
 
       <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />
+      {notification && (
+        <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg z-50 ${
+          notification.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+        }`}>
+          {notification.message}
+        </div>
+      )}
       
       <div className="pt-16">
         
