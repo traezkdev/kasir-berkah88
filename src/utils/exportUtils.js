@@ -7,8 +7,14 @@ const calculateTotalStock = (data) => {
   return data.reduce((sum, item) => sum + (item.stock || 0), 0);
 };
 
+// New helper function to calculate total stock price
+const calculateTotalPriceOfStock = (data) => {
+  return data.reduce((sum, item) => sum + ((item.stock || 0) * (item.price || 0)), 0);
+};
+
 export const exportToExcel = (data, filename = 'data') => {
   const totalStock = calculateTotalStock(data);
+  const totalPriceOfStock = calculateTotalPriceOfStock(data); // New calculation
   const title = "Laporan Stok Menu";
 
   // Prepare data for Excel
@@ -18,7 +24,8 @@ export const exportToExcel = (data, filename = 'data') => {
     Object.keys(data[0] || {}), // Headers
     ...data.map(item => Object.values(item)), // Data rows
     [], // Empty row before summary
-    ['Total Stok:', totalStock] // Summary row
+    ['Total Stok:', totalStock], // Summary row for stock
+    ['Total Harga Stok:', totalPriceOfStock.toLocaleString('id-ID')] // New summary row for total price
   ];
 
   const ws = XLSX.utils.aoa_to_sheet(ws_data);
@@ -47,6 +54,7 @@ export const exportToExcel = (data, filename = 'data') => {
 export const exportToPdf = (data, filename = 'data') => {
   const doc = new jsPDF();
   const totalStock = calculateTotalStock(data);
+  const totalPriceOfStock = calculateTotalPriceOfStock(data); // New calculation
 
   // Add title
   doc.setFontSize(18);
@@ -89,6 +97,7 @@ export const exportToPdf = (data, filename = 'data') => {
   doc.setFontSize(12);
   doc.setTextColor(0);
   doc.text(`Total Stok: ${totalStock}`, 14, finalY + 10);
+  doc.text(`Total Harga Stok: Rp ${totalPriceOfStock.toLocaleString('id-ID')}`, 14, finalY + 17); // New summary line
 
   doc.save(`${filename}.pdf`);
 };
