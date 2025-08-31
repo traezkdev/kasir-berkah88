@@ -9,6 +9,7 @@ const ExpenseHistoryTable = ({
   onDeleteExpense, 
   onBulkDelete,
   onExportData,
+  onEditExpense,
   isLoading = false 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -248,7 +249,15 @@ const ExpenseHistoryTable = ({
                     {formatCurrency(expense?.amount)}
                   </span>
                 </td>
-                <td className="p-4 text-center">
+                <td className="p-4 text-center flex items-center justify-center">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onEditExpense(expense)}
+                    className="text-primary hover:text-primary hover:bg-primary/10"
+                  >
+                    <Icon name="Edit3" size={16} />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -285,14 +294,24 @@ const ExpenseHistoryTable = ({
                 </div>
               </div>
               
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowDeleteConfirm(expense?.id)}
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-              >
-                <Icon name="Trash2" size={16} />
-              </Button>
+              <div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onEditExpense(expense)}
+                  className="text-primary hover:text-primary hover:bg-primary/10"
+                >
+                  <Icon name="Edit3" size={16} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowDeleteConfirm(expense?.id)}
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <Icon name="Trash2" size={16} />
+                </Button>
+              </div>
             </div>
 
             <div className="mb-3">
