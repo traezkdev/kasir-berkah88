@@ -76,7 +76,16 @@ const MainDashboard = ({ headerTitle }) => {
         transactions: todayTransactions.length,
         itemsSold: itemsSoldToday,
         averageOrder: averageOrderToday,
-        peakHour: 'N/A' // Placeholder
+        peakHour: (() => {
+          if (todayTransactions.length === 0) return 'N/A';
+          const hourCounts = Array(24).fill(0);
+          todayTransactions.forEach(t => {
+            const hour = new Date(t.timestamp).getHours();
+            hourCounts[hour]++;
+          });
+          const busiestHour = hourCounts.indexOf(Math.max(...hourCounts));
+          return `${String(busiestHour).padStart(2, '0')}:00 - ${String(busiestHour + 1).padStart(2, '0')}:00`;
+        })()
       },
       recentTransactions,
       dashboardMetrics: {
