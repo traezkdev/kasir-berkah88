@@ -11,6 +11,7 @@ import Login from './pages/auth/Login'; // Import Login
 import Register from './pages/auth/Register'; // Import Register
 import UserProfile from './pages/UserProfile'; // Import UserProfile
 import Settings from './pages/Settings'; // Import Settings
+import Credits from './pages/Credits'; // Import Credits
 
 // ProtectedRoute component
 const ProtectedRoute = ({ children }) => {
@@ -39,6 +40,7 @@ const AppRoutes = ({ headerTitle }) => {
       <Route path="/business-reports" element={<ProtectedRoute><BusinessReports headerTitle={headerTitle} /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><UserProfile headerTitle={headerTitle} /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/credits" element={<ProtectedRoute><Credits headerTitle={headerTitle} /></ProtectedRoute>} />
       
       {/* Catch all other routes */}
       <Route path="*" element={<NotFound />} />
