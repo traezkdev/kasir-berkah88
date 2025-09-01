@@ -667,7 +667,6 @@ const Settings = ({ headerTitle }) => {
                                 >
                                   <option value="user">Pengguna</option>
                                   <option value="admin">Admin</option>
-                                  <option value="guest">Tamu</option>
                                 </select>
                               </td>
                               <td className="py-2 px-4 border-b text-sm text-gray-700">
@@ -747,6 +746,17 @@ const Settings = ({ headerTitle }) => {
                   </form>
                 </div>
               )}
+
+              {/* Credits Button */}
+              <div className="space-y-4 pt-8">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => navigate('/credits')}
+                >
+                  Lihat Credits
+                </Button>
+              </div>
             </>
           )}
         </div>

@@ -10,8 +10,7 @@ function App() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        // No authFetch needed for public settings like title/favicon
-        const response = await fetch(`${apiUrl}/api/settings`);
+        const response = await authFetch(`${apiUrl}/api/settings`);
         const data = await response.json();
         if (response.ok) {
           const settings = data.data;
