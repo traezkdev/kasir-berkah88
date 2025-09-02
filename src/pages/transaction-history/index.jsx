@@ -7,6 +7,7 @@ import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import TransactionFilters from './components/TransactionFilters';
 import TransactionTable from './components/TransactionTable';
 import BulkActions from './components/BulkActions';
+import Pagination from '../../components/ui/Pagination';
 
 import authFetch from '../../utils/authFetch';
 import { jsPDF } from 'jspdf';
@@ -35,6 +36,8 @@ const TransactionHistory = ({ headerTitle }) => {
   const [isExporting, setIsExporting] = useState(false);
   const [userRole, setUserRole] = useState(null); // New state for user role
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   const navigate = useNavigate(); // Initialize useNavigate
 
@@ -172,6 +175,14 @@ const TransactionHistory = ({ headerTitle }) => {
       employeeMealCount
     };
   }, [filteredTransactions]);
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = useMemo(() => {
+    return filteredTransactions.slice(indexOfFirstItem, indexOfLastItem);
+  }, [filteredTransactions, indexOfFirstItem, indexOfLastItem]);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   const handleSearch = (term) => {
     setSearchTerm(term);
@@ -444,13 +455,20 @@ const TransactionHistory = ({ headerTitle }) => {
 
             <TransactionTable
 
-              transactions={filteredTransactions}
+              transactions={currentItems}
 
               onDeleteTransaction={handleDeleteTransaction}
 
               isMobile={isMobile}
               userRole={userRole}
 
+            />
+
+            <Pagination
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredTransactions.length}
+              paginate={paginate}
+              currentPage={currentPage}
             />
 
           </div>
