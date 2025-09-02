@@ -89,6 +89,7 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole }) => {
       amount: numericAmount,
       category: formData.category,
       date: new Date().toISOString(),
+      notes: formData.notes.trim(),
     };
 
     onAddExpense(expenseData);
