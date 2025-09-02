@@ -25,7 +25,7 @@ const TransactionHistory = ({ headerTitle }) => {
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
-    type: 'all',
+    paymentMethod: 'all',
     amountRange: 'all'
   });
   const [dateRange, setDateRange] = useState({
@@ -108,13 +108,9 @@ const TransactionHistory = ({ headerTitle }) => {
       );
     }
 
-    // Type filter
-    if (filters?.type !== 'all') {
-      filtered = filtered?.filter(transaction => {
-        if (filters?.type === 'regular') return !transaction?.isEmployeeMeal;
-        if (filters?.type === 'employee') return transaction?.isEmployeeMeal;
-        return true;
-      });
+    // Payment method filter
+    if (filters?.paymentMethod !== 'all') {
+      filtered = filtered?.filter(transaction => transaction.payment_method === filters.paymentMethod);
     }
 
     // Amount range filter
@@ -167,8 +163,8 @@ const TransactionHistory = ({ headerTitle }) => {
   // Calculate summary statistics
   const summaryStats = useMemo(() => {
     const totalTransactions = filteredTransactions?.length;
-    const totalRevenue = filteredTransactions?.filter(t => !t?.isEmployeeMeal)?.reduce((sum, t) => sum + parseFloat(t?.total || 0), 0);
-    const employeeMealCount = filteredTransactions?.filter(t => t?.isEmployeeMeal)?.length;
+    const totalRevenue = filteredTransactions?.filter(t => t.payment_method !== 'Makan Karyawan')?.reduce((sum, t) => sum + parseFloat(t?.total || 0), 0);
+    const employeeMealCount = filteredTransactions?.filter(t => t.payment_method === 'Makan Karyawan')?.length;
 
     return {
       totalTransactions,

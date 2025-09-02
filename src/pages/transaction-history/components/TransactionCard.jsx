@@ -7,24 +7,34 @@ const TransactionCard = ({ transaction, onDelete, isMobile = false, userRole }) 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   let paymentBadge = null;
-  if (transaction?.isEmployeeMeal) {
-    paymentBadge = (
-      <span className="px-2 py-1 bg-accent/10 text-accent text-xs font-medium rounded-full">
-        Makan Karyawan
-      </span>
-    );
-  } else if (transaction?.payment_method === 'Gojek') {
-    paymentBadge = (
-      <span className="px-2 py-1 bg-success/10 text-success text-xs font-medium rounded-full">
-        Gojek
-      </span>
-    );
-  } else if (transaction?.payment_method === 'Transfer') {
-    paymentBadge = (
-      <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
-        Transfer
-      </span>
-    );
+  switch (transaction?.payment_method) {
+    case 'Makan Karyawan':
+      paymentBadge = (
+        <span className="px-2 py-1 bg-accent/10 text-accent text-xs font-medium rounded-full">
+          Makan Karyawan
+        </span>
+      );
+      break;
+    case 'Gojek':
+      paymentBadge = (
+        <span className="px-2 py-1 bg-success/10 text-success text-xs font-medium rounded-full">
+          Gojek
+        </span>
+      );
+      break;
+    case 'Transfer':
+      paymentBadge = (
+        <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
+          Transfer
+        </span>
+      );
+      break;
+    default:
+      paymentBadge = (
+        <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
+          Tunai
+        </span>
+      );
   }
 
   const formatCurrency = (amount) => {

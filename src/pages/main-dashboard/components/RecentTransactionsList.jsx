@@ -22,10 +22,17 @@ const RecentTransactionsList = ({ transactions = [], onViewAll }) => {
     })?.format(new Date(date));
   };
 
-  const getTransactionIcon = (isEmployeeMeal) => {
-    return isEmployeeMeal
-      ? { icon: 'Users', color: 'text-accent' }
-      : { icon: 'ShoppingCart', color: 'text-success' };
+  const getTransactionIcon = (paymentMethod) => {
+    switch (paymentMethod) {
+      case 'Makan Karyawan':
+        return { icon: 'Users', color: 'text-accent' };
+      case 'Gojek':
+        return { icon: 'Truck', color: 'text-success' };
+      case 'Transfer':
+        return { icon: 'CreditCard', color: 'text-primary' };
+      default:
+        return { icon: 'ShoppingCart', color: 'text-success' };
+    }
   };
 
   if (transactions?.length === 0) {
@@ -59,7 +66,7 @@ const RecentTransactionsList = ({ transactions = [], onViewAll }) => {
       </div>
       <div className="space-y-3">
         {transactions?.map((transaction) => {
-          const iconData = getTransactionIcon(transaction.isEmployeeMeal);
+          const iconData = getTransactionIcon(transaction.payment_method);
           
           return (
             <div key={transaction.id} className="flex items-center space-x-3 p-3 rounded-md hover:bg-muted transition-colors duration-200">
@@ -69,16 +76,16 @@ const RecentTransactionsList = ({ transactions = [], onViewAll }) => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <p className="font-medium text-text-primary truncate">
-                    {transaction.isEmployeeMeal ? 'Makan Karyawan' : `Transaksi #${transaction.id}`}
+                    {transaction.payment_method === 'Makan Karyawan' ? 'Makan Karyawan' : `Transaksi #${transaction.id}`}
                   </p>
-                  <span className="font-mono text-sm text-success">
-                    +{formatCurrency(transaction.total)}
+                  <span className={`font-mono text-sm ${transaction.payment_method === 'Makan Karyawan' ? 'text-destructive' : 'text-success'}`}>
+                    {transaction.payment_method === 'Makan Karyawan' ? '-' : '+'}{formatCurrency(transaction.total)}
                   </span>
                 </div>
                 
                 <div className="flex items-center justify-between mt-1">
                   <p className="text-sm text-text-secondary">
-                    {transaction.items ? `${transaction.items.length} item` : ''}
+                    {transaction.items ? `${transaction.items.length} item` : ''} - {transaction.payment_method}
                   </p>
                   <p className="text-xs text-text-secondary">
                     {formatDateTime(transaction.timestamp)}

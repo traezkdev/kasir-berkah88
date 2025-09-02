@@ -8,7 +8,7 @@ const authFetch = async (url, options = {}) => {
   const response = await fetch(url, { ...options, headers });
   
   // Handle 401/403 responses globally
-  if (response.status === 401) { // Only redirect on 401 (Unauthorized)
+  if (response.status === 401 || response.status === 403) {
     localStorage.removeItem('token'); // Clear invalid token
     window.location.href = '/login'; // Redirect to login page
   }

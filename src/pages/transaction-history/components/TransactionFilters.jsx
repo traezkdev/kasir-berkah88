@@ -18,7 +18,7 @@ const TransactionFilters = ({
     endDate: ''
   });
   const [activeFilters, setActiveFilters] = useState({
-    type: 'all',
+    paymentMethod: 'all',
     amountRange: 'all'
   });
 
@@ -52,9 +52,9 @@ const TransactionFilters = ({
   const clearAllFilters = () => {
     setSearchTerm('');
     setDateRange({ startDate: '', endDate: '' });
-    setActiveFilters({ type: 'all', amountRange: 'all' });
+    setActiveFilters({ paymentMethod: 'all', amountRange: 'all' });
     onSearch('');
-    onFilterChange({ type: 'all', amountRange: 'all' });
+    onFilterChange({ paymentMethod: 'all', amountRange: 'all' });
     onDateRangeChange({ startDate: '', endDate: '' });
   };
 
@@ -62,7 +62,7 @@ const TransactionFilters = ({
     let count = 0;
     if (searchTerm) count++;
     if (dateRange?.startDate || dateRange?.endDate) count++;
-    if (activeFilters?.type !== 'all') count++;
+    if (activeFilters?.paymentMethod !== 'all') count++;
     if (activeFilters?.amountRange !== 'all') count++;
     return count;
   };
@@ -169,19 +169,21 @@ const TransactionFilters = ({
                 />
               </div>
 
-              {/* Transaction Type Filter */}
+              {/* Payment Method Filter */}
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-2">
-                  Jenis Transaksi
+                  Metode Pembayaran
                 </label>
                 <select
-                  value={activeFilters?.type}
-                  onChange={(e) => handleFilterChange('type', e?.target?.value)}
+                  value={activeFilters?.paymentMethod}
+                  onChange={(e) => handleFilterChange('paymentMethod', e?.target?.value)}
                   className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 >
-                  <option value="all">Semua Transaksi</option>
-                  <option value="regular">Penjualan Regular</option>
-                  <option value="employee">Makan Karyawan</option>
+                  <option value="all">Semua</option>
+                  <option value="Tunai">Tunai</option>
+                  <option value="Gojek">Gojek</option>
+                  <option value="Transfer">Transfer</option>
+                  <option value="Makan Karyawan">Makan Karyawan</option>
                 </select>
               </div>
 
