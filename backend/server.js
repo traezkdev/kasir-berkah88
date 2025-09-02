@@ -318,8 +318,8 @@ app.post("/api/expenses", authenticateToken, authorizeRoles('user', 'admin'), as
         if (!name || !amount || !date) {
             return res.status(400).json({ "error": "Missing required fields: name, amount, date" });
         }
-        const sql = 'INSERT INTO expenses (name, amount, category, date) VALUES (?,?,?,?)';
-        const params = [name, amount, category, new Date(date)];
+        const sql = 'INSERT INTO expenses (name, amount, category, date, notes) VALUES (?,?,?,?,?)';
+        const params = [data.name, data.amount, data.category, data.date, data.notes];
         const [result] = await db.query(sql, params);
         res.json({
             "message": "success",
@@ -333,14 +333,15 @@ app.post("/api/expenses", authenticateToken, authorizeRoles('user', 'admin'), as
 // Update an expense
 app.put("/api/expenses/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
     try {
-        const { name, amount, category, date } = req.body;
+        const { name, amount, category, date, notes } = req.body;
         const sql = `UPDATE expenses set 
            name = COALESCE(?, name), 
            amount = COALESCE(?, amount), 
            category = COALESCE(?, category), 
-           date = COALESCE(?, date) 
+           date = COALESCE(?, date), 
+           notes = COALESCE(?, notes) 
            WHERE id = ?`;
-        const params = [name, amount, category, date ? new Date(date) : null, req.params.id];
+        const params = [name, amount, category, date ? new Date(date) : null, notes, req.params.id];
         const [result] = await db.query(sql, params);
         
         if (result.affectedRows === 0) {

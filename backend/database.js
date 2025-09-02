@@ -57,8 +57,19 @@ const setupDatabase = async () => {
         name VARCHAR(255) NOT NULL,
         amount DECIMAL(10, 2) NOT NULL,
         category VARCHAR(255),
-        date DATETIME NOT NULL
+        date DATETIME NOT NULL,
+        notes TEXT DEFAULT NULL
       );
+    `;
+
+    const addNotesColumnToExpenses = `
+      ALTER TABLE expenses
+      ADD COLUMN notes TEXT DEFAULT NULL;
+    `;
+
+    const checkNotesColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'expenses' AND COLUMN_NAME = 'notes';
     `;
 
     const createUsersTable = `
@@ -93,6 +104,13 @@ const setupDatabase = async () => {
     console.log('expenses table is ready.');
     await connection.query(createUsersTable);
     console.log('users table is ready.');
+
+    // Check and add notes column to expenses if it doesn't exist
+    const [notesRows] = await connection.query(checkNotesColumn);
+    if (notesRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addNotesColumnToExpenses);
+      console.log('Added notes column to expenses table.');
+    }
 
     // Check and add role column if it doesn't exist
     const [rows] = await connection.query(checkRoleColumn);
