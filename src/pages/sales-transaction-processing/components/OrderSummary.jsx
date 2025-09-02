@@ -53,7 +53,13 @@ const OrderSummary = ({
     { value: 'Tunai', label: 'Tunai' },
     { value: 'Gojek', label: 'Gojek' },
     { value: 'Transfer', label: 'Transfer' },
+    { value: 'Makan Karyawan', label: 'Makan Karyawan' },
   ];
+
+  const handlePaymentMethodChange = (selectedValue) => {
+    setPaymentMethod(selectedValue);
+    setIsEmployeeMeal(selectedValue === 'Makan Karyawan');
+  };
 
   const handlePpnChange = (e) => {
     const inputValue = e.target.value;
@@ -160,22 +166,13 @@ const OrderSummary = ({
           <div className="border-t my-4"></div>
           
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="employee-meal-checkbox"
-                checked={isEmployeeMeal}
-                onChange={(e) => setIsEmployeeMeal(e.target.checked)}
-              />
-              <label htmlFor="employee-meal-checkbox" className="text-sm font-medium text-gray-700">Makan Karyawan</label>
-            </div>
-
             <div className="space-y-2">
               <label htmlFor="payment-method" className="text-sm font-medium text-gray-700">Metode Pembayaran</label>
               <Select
                 id="payment-method"
                 options={paymentMethodOptions}
                 value={paymentMethod}
-                onChange={setPaymentMethod}
+                onChange={handlePaymentMethodChange}
               />
             </div>
           </div>

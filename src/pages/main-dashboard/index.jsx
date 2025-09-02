@@ -137,7 +137,7 @@ const MainDashboard = ({ headerTitle }) => {
     const yesterdayString = yesterday.toDateString();
 
     // Overall Metrics
-    const totalRevenue = transactions.filter(t => !t.isEmployeeMeal).reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+    const totalRevenue = transactions.filter(t => t.payment_method !== 'Makan Karyawan').reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
     const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
     const stockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
     const netProfit = totalRevenue - totalExpenses;
@@ -145,12 +145,12 @@ const MainDashboard = ({ headerTitle }) => {
     // --- Daily Stats Calculation ---
 
     // Today's Data
-    const todayTransactions = transactions.filter(t => new Date(t.timestamp).toDateString() === todayString && !t.isEmployeeMeal);
+    const todayTransactions = transactions.filter(t => new Date(t.timestamp).toDateString() === todayString && t.payment_method !== 'Makan Karyawan');
     const todaySales = todayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
     const averageOrderToday = todayTransactions.length > 0 ? todaySales / todayTransactions.length : 0;
 
     // Yesterday's Data
-    const yesterdayTransactions = transactions.filter(t => new Date(t.timestamp).toDateString() === yesterdayString && !t.isEmployeeMeal);
+    const yesterdayTransactions = transactions.filter(t => new Date(t.timestamp).toDateString() === yesterdayString && t.payment_method !== 'Makan Karyawan');
     const yesterdaySales = yesterdayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
     const averageOrderYesterday = yesterdayTransactions.length > 0 ? yesterdaySales / yesterdayTransactions.length : 0;
 
