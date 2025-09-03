@@ -47,6 +47,7 @@ const ExpenseTracking = ({ headerTitle }) => {
       const response = await authFetch(`${apiUrl}/api/expenses`);
       const data = await response.json();
       if (data.message === 'success') {
+        console.log('Fetched expenses:', data.data);
         setExpenses(data.data);
       } else {
         console.error('Failed to fetch expenses:', data.error);
@@ -152,11 +153,17 @@ const ExpenseTracking = ({ headerTitle }) => {
         },
         body: JSON.stringify(expenseData),
       });
+
       const result = await response.json();
-      if (result.message === 'success') {
-        fetchExpenses(); // Refetch to get the latest list
+
+      if (response.ok) {
+        if (result.message === 'success') {
+          fetchExpenses(); // Refetch to get the latest list
+        } else {
+          console.error('Failed to add expense:', result.error || 'Unknown error');
+        }
       } else {
-        console.error('Failed to add expense:', result.error);
+        console.error('Failed to add expense (HTTP error):', result.error || result.message || 'Unknown error');
       }
     } catch (error) {
       console.error('Error adding expense:', error);
@@ -262,10 +269,12 @@ const ExpenseTracking = ({ headerTitle }) => {
     const expenseCount = expenses?.length;
 
     const today = new Date();
-    const todayString = today.toDateString();
+    today.setUTCHours(0, 0, 0, 0); // Normalize today to start of day in UTC
+
     const todayExpenses = expenses?.filter(expense => {
         const expenseDate = new Date(expense.date);
-        return expenseDate.toDateString() === todayString;
+        expenseDate.setUTCHours(0, 0, 0, 0); // Normalize expense date to start of day in UTC
+        return expenseDate.getTime() === today.getTime();
       })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
 
     const currentMonth = today.getMonth();
