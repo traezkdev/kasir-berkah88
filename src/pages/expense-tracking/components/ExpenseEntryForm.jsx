@@ -88,7 +88,7 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole }) => {
       name: formData.description.trim(),
       amount: numericAmount,
       category: formData.category,
-      date: new Date().toISOString(),
+      date: new Date().toISOString().slice(0, 19).replace('T', ' '),
       notes: formData.notes.trim(),
     };
 

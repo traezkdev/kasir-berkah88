@@ -314,12 +314,12 @@ app.get("/api/expenses", authenticateToken, authorizeRoles('user', 'admin', 'gue
 // Add a new expense
 app.post("/api/expenses", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
     try {
-        const { name, amount, category, date } = req.body;
+        const { name, amount, category, date, notes } = req.body;
         if (!name || !amount || !date) {
             return res.status(400).json({ "error": "Missing required fields: name, amount, date" });
         }
         const sql = 'INSERT INTO expenses (name, amount, category, date, notes) VALUES (?,?,?,?,?)';
-        const params = [data.name, data.amount, data.category, data.date, data.notes];
+        const params = [name, amount, category, date, notes];
         const [result] = await db.query(sql, params);
         res.json({
             "message": "success",
