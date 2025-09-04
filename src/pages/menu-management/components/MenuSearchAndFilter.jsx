@@ -9,9 +9,10 @@ const MenuSearchAndFilter = ({
   onSearchChange, 
   menuItems,
   onExportData,
-  isExporting 
+  isExporting, 
+  activeFilter,
+  onFilterChange
 }) => {
-  const [activeFilter, setActiveFilter] = useState('all');
   const [showExportMenu, setShowExportMenu] = useState(false);
 
   const filterOptions = [
@@ -59,7 +60,7 @@ const MenuSearchAndFilter = ({
               key={option?.key}
               variant={activeFilter === option?.key ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setActiveFilter(option?.key)}
+              onClick={() => onFilterChange(option?.key)}
               className="text-xs"
             >
               {option?.label}
@@ -108,23 +109,7 @@ const MenuSearchAndFilter = ({
           )}
         </div>
       </div>
-      {/* Active Filter Indicator */}
-      {activeFilter !== 'all' && (
-        <div className="mt-4 flex items-center space-x-2">
-          <span className="text-sm text-text-secondary">Filter aktif:</span>
-          <span className="px-2 py-1 bg-primary/10 text-primary text-sm rounded-md">
-            {filterOptions?.find(f => f?.key === activeFilter)?.label}
-          </span>
-          <Button
-            variant="ghost"
-            size="xs"
-            onClick={() => setActiveFilter('all')}
-            iconName="X"
-          >
-            Hapus Filter
-          </Button>
-        </div>
-      )}
+      
       {/* Click outside handler */}
       {showExportMenu && (
         <div 

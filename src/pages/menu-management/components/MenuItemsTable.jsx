@@ -8,8 +8,6 @@ const MenuItemsTable = ({
   onUpdateItem, 
   onDeleteItem, 
   onBulkDelete,
-  searchTerm,
-  onSearchChange,
   userRole 
 }) => {
   const [editingId, setEditingId] = useState(null);
@@ -32,9 +30,7 @@ const MenuItemsTable = ({
     return { color: 'text-success', bg: 'bg-success/10', label: 'Tersedia' };
   };
 
-  const filteredItems = menuItems?.filter(item =>
-    item?.name?.toLowerCase()?.includes(searchTerm?.toLowerCase())
-  );
+  
 
   const handleEdit = (item) => {
     if (scrollRef.current) {
@@ -90,7 +86,7 @@ const MenuItemsTable = ({
 
   const handleSelectAll = (checked) => {
     if (checked) {
-      setSelectedItems(filteredItems?.map(item => item?.id));
+      setSelectedItems(menuItems?.map(item => item?.id));
     } else {
       setSelectedItems([]);
     }
@@ -319,7 +315,7 @@ const MenuItemsTable = ({
 
   MobileCard.displayName = 'MobileCard';
 
-  if (filteredItems?.length === 0) {
+  if (menuItems?.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-elevation-1 border border-slate-200 p-8">
         <div className="text-center">
@@ -327,13 +323,10 @@ const MenuItemsTable = ({
             <Icon name="UtensilsCrossed" size={32} className="text-text-secondary" />
           </div>
           <h3 className="text-lg font-medium text-text-primary mb-2">
-            {searchTerm ? 'Menu tidak ditemukan' : 'Belum ada menu'}
+            {'Menu tidak ditemukan'}
           </h3>
           <p className="text-text-secondary">
-            {searchTerm 
-              ? `Tidak ada menu yang cocok dengan "${searchTerm}"`
-              : 'Tambahkan menu pertama Anda menggunakan form di atas'
-            }
+            {'Tidak ada menu yang cocok dengan filter yang dipilih'}
           </p>
         </div>
       </div>
@@ -348,7 +341,7 @@ const MenuItemsTable = ({
           <div>
             <h2 className="text-xl font-semibold text-text-primary">Menu Saat Ini</h2>
             <p className="text-sm text-text-secondary">
-              {filteredItems?.length} item menu tersedia
+              {menuItems?.length} item menu tersedia
             </p>
           </div>
           
@@ -370,7 +363,7 @@ const MenuItemsTable = ({
       </div>
       {/* Mobile View */}
       <div className="block lg:hidden p-4 space-y-4" ref={scrollRef}>
-        {filteredItems?.map(item => (
+        {menuItems?.map(item => (
           <MobileCard 
             key={item?.id} 
             item={item} 
@@ -394,7 +387,7 @@ const MenuItemsTable = ({
               <th className="text-left p-4 w-12">
                 <input
                   type="checkbox"
-                  checked={selectedItems?.length === filteredItems?.length}
+                  checked={selectedItems?.length === menuItems?.length}
                   onChange={(e) => handleSelectAll(e?.target?.checked)}
                   className="w-4 h-4 text-primary border-slate-300 rounded focus:ring-primary"
                 />
@@ -410,7 +403,7 @@ const MenuItemsTable = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
-            {filteredItems?.map(item => {
+            {menuItems?.map(item => {
               const stockStatus = getStockStatus(item?.stock);
               const isEditing = editingId === item?.id;
               const isSelected = selectedItems?.includes(item?.id);

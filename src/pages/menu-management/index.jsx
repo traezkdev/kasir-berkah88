@@ -17,6 +17,7 @@ const apiUrl = import.meta.env.VITE_API_URL;
 const MenuManagement = ({ headerTitle }) => {
   const [menuItems, setMenuItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(false);
   const [userRole, setUserRole] = useState(null); // New state for user role
   const [notification, setNotification] = useState(null);
@@ -167,6 +168,24 @@ const MenuManagement = ({ headerTitle }) => {
 
   
 
+  const filteredMenuItems = menuItems.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+
+    if (activeFilter === 'all') {
+      return matchesSearch;
+    }
+    if (activeFilter === 'available') {
+      return matchesSearch && item.stock > 5;
+    }
+    if (activeFilter === 'low') {
+      return matchesSearch && item.stock <= 5 && item.stock > 0;
+    }
+    if (activeFilter === 'out') {
+      return matchesSearch && item.stock === 0;
+    }
+    return false;
+  });
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -230,16 +249,16 @@ const MenuManagement = ({ headerTitle }) => {
             onSearchChange={setSearchTerm}
             menuItems={menuItems}
             onExportData={handleExportData}
+            activeFilter={activeFilter}
+            onFilterChange={setActiveFilter}
           />
 
           {/* Menu Items Table */}
           <MenuItemsTable
-            menuItems={menuItems}
+            menuItems={filteredMenuItems}
             onUpdateItem={handleUpdateItem}
             onDeleteItem={handleDeleteItem}
             onBulkDelete={handleBulkDelete}
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
             userRole={userRole}
           />
         </main>
