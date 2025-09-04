@@ -50,7 +50,8 @@ const ExpenseHistoryTable = ({
     return date?.toLocaleDateString('id-ID', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
+      timeZone: 'Asia/Jakarta'
     });
   };
 
@@ -58,7 +59,8 @@ const ExpenseHistoryTable = ({
     const date = new Date(dateString);
     return date?.toLocaleTimeString('id-ID', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZone: 'Asia/Jakarta'
     });
   };
 

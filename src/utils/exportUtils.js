@@ -99,7 +99,7 @@ export const exportToPdf = (data, filename = 'data') => {
   doc.text(title, 14, 22);
   doc.setFontSize(11);
   doc.setTextColor(100);
-  doc.text(`Tanggal Export: ${new Date().toLocaleDateString()}`, 14, 30);
+  doc.text(`Tanggal Export: ${new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}`, 14, 30);
 
   // Prepare table data
   const headers = Object.keys(data[0] || {});
@@ -144,8 +144,8 @@ export const exportToPdf = (data, filename = 'data') => {
 export const prepareTransactionDataForExport = (transactions) => {
   return transactions.map(transaction => ({
     'ID Transaksi': transaction.id,
-    'Tanggal': new Date(transaction.timestamp).toLocaleDateString('id-ID'),
-    'Waktu': new Date(transaction.timestamp).toLocaleTimeString('id-ID'),
+    'Tanggal': new Date(transaction.timestamp).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' }),
+    'Waktu': new Date(transaction.timestamp).toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' }),
     'Total': `Rp ${parseFloat(transaction.total || 0).toLocaleString('id-ID')}`,
     'Tipe': transaction.isEmployeeMeal ? 'Karyawan' : 'Reguler',
     'Metode Pembayaran': transaction.paymentMethod,
@@ -156,8 +156,8 @@ export const prepareTransactionDataForExport = (transactions) => {
 export const prepareExpenseDataForExport = (expenses) => {
   return expenses.map(expense => ({
     'ID Pengeluaran': expense.id,
-    'Tanggal': new Date(expense.date).toLocaleDateString('id-ID'),
-    'Waktu': new Date(expense.date).toLocaleTimeString('id-ID'),
+    'Tanggal': new Date(expense.date).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' }),
+    'Waktu': new Date(expense.date).toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' }),
     'Kategori': expense.category,
     'Deskripsi': expense.name,
     'Jumlah': parseFloat(expense.amount || 0), // Keep as number for Excel sum

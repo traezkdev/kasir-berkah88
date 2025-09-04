@@ -18,7 +18,7 @@ const DateRangeSelector = ({ onDateRangeChange, selectedRange = 'today' }) => {
   const handlePresetSelect = (range) => {
     setActiveRange(range);
     
-    const today = new Date();
+    const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
     let startDate, endDate;
 
     switch (range) {
