@@ -129,16 +129,36 @@ const MainDashboard = ({ headerTitle }) => {
   }, []); // Empty dependency array to run once on mount
 
   const processDashboardData = (transactions, menuItems, expenses) => {
-    const today = new Date();
+    const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
     const todayString = today.toDateString();
     const yesterdayString = yesterday.toDateString();
 
-    // Overall Metrics
-    const totalRevenue = transactions.filter(t => t.payment_method !== 'Makan Karyawan').reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
-    const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
+    const monthlyTransactions = transactions.filter(t => {
+      const transactionDate = new Date(t.timestamp);
+      return (
+        transactionDate.getMonth() === currentMonth &&
+        transactionDate.getFullYear() === currentYear
+      );
+    });
+
+    const totalRevenue = monthlyTransactions
+      .filter(t => t.payment_method !== 'Makan Karyawan')
+      .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+    const monthlyExpenses = expenses.filter(e => {
+      const expenseDate = new Date(e.date);
+      return (
+        expenseDate.getMonth() === currentMonth &&
+        expenseDate.getFullYear() === currentYear
+      );
+    });
+
+    const totalExpenses = monthlyExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
     const stockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
     const netProfit = totalRevenue - totalExpenses;
 
@@ -275,14 +295,14 @@ const MainDashboard = ({ headerTitle }) => {
 
   const metricsData = [
     {
-      title: 'Total Pendapatan',
+      title: 'Pendapatan Bulan Ini',
       value: formatCurrency(dashboardData.metrics.totalRevenue),
       icon: 'TrendingUp',
       color: 'success',
       description: 'Tidak termasuk makan karyawan'
     },
     {
-      title: 'Total Pengeluaran',
+      title: 'Pengeluaran Bulan Ini',
       value: formatCurrency(dashboardData.metrics.totalExpenses),
       icon: 'Receipt',
       color: 'warning',
@@ -319,9 +339,9 @@ const MainDashboard = ({ headerTitle }) => {
                   <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
                     Dashboard
                   </h1>
-                  <p className="text-text-secondary mt-1">
+                  {/* <p className="text-text-secondary mt-1">
                     Selamat datang! Kelola warung Anda dengan mudah
-                  </p>
+                  </p> */}
                 </div>
                 <div className="hidden lg:block">
                   <Button

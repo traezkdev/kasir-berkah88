@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatInTimeZone } from 'date-fns-tz';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
@@ -50,7 +51,8 @@ const ExpenseHistoryTable = ({
     return date?.toLocaleDateString('id-ID', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
+      timeZone: 'Asia/Jakarta'
     });
   };
 
@@ -58,7 +60,8 @@ const ExpenseHistoryTable = ({
     const date = new Date(dateString);
     return date?.toLocaleTimeString('id-ID', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZone: 'Asia/Jakarta'
     });
   };
 
@@ -66,7 +69,7 @@ const ExpenseHistoryTable = ({
     const lowercasedSearchTerm = searchTerm?.toLowerCase() || '';
     const matchesSearch = expense?.name?.toLowerCase()?.includes(lowercasedSearchTerm);
     const matchesCategory = !categoryFilter || expense?.category === categoryFilter;
-    const matchesDate = !dateFilter || (expense?.date && expense.date.startsWith(dateFilter));
+    const matchesDate = !dateFilter || (expense?.date && formatInTimeZone(new Date(expense.date), 'Asia/Jakarta', 'yyyy-MM-dd') === dateFilter);
     return matchesSearch && matchesCategory && matchesDate;
   });
 
@@ -136,7 +139,7 @@ const ExpenseHistoryTable = ({
           <div className="flex flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
-              onClick={() => onExportData('excel')}
+              onClick={() => onExportData('excel', filteredExpenses)}
               iconName="Download"
               iconPosition="left"
               size="sm"
@@ -145,7 +148,7 @@ const ExpenseHistoryTable = ({
             </Button>
             <Button
               variant="outline"
-              onClick={() => onExportData('pdf')}
+              onClick={() => onExportData('pdf', filteredExpenses)}
               iconName="FileText"
               iconPosition="left"
               size="sm"

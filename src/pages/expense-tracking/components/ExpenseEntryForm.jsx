@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatInTimeZone } from 'date-fns-tz';
 
 const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole }) => {
   const [formData, setFormData] = useState({
@@ -88,7 +89,7 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole }) => {
       name: formData.description.trim(),
       amount: numericAmount,
       category: formData.category,
-      date: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      date: formatInTimeZone(new Date(), 'Asia/Jakarta', 'yyyy-MM-dd HH:mm:ss'),
       notes: formData.notes.trim(),
     };
 
@@ -99,7 +100,8 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole }) => {
       category: '',
       description: '',
       amount: '',
-      notes: ''
+      notes: '',
+      date: ''
     });
     setErrors({});
   };
@@ -109,7 +111,8 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole }) => {
       category: '',
       description: '',
       amount: '',
-      notes: ''
+      notes: '',
+      date: ''
     });
     setErrors({});
   };
@@ -176,6 +179,8 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole }) => {
               </select>
               {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category}</p>}
             </div>
+
+            
 
             <div className="lg:col-span-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">Jumlah Pengeluaran</label>
