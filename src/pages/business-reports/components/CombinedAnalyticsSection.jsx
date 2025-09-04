@@ -30,8 +30,6 @@ const CombinedAnalyticsSection = ({ salesData, stockData, expensesData, onExport
       iconColor="text-accent"
       iconBgColor="bg-accent/10"
       metrics={analyticsMetrics}
-      onExport={onExportCombined}
-      exportLabel="Export Lengkap"
     >
       <div className="space-y-6">
         {/* Cash Flow Summary */}

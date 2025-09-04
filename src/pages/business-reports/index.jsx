@@ -13,6 +13,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import authFetch from '../../utils/authFetch';
 import { formatInTimeZone } from 'date-fns-tz';
+import { exportToExcel, exportToPdf, prepareCombinedDataForExport } from '../../utils/exportUtils';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -27,6 +28,7 @@ const BusinessReports = ({ headerTitle }) => {
   const [expenses, setExpenses] = useState([]); // State for expenses
   const [reportData, setReportData] = useState(null);
   const [isLoading, setIsLoading] = useState(true); // Start with loading true
+  const [isExporting, setIsExporting] = useState(false); // New state for export loading
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -182,6 +184,25 @@ const BusinessReports = ({ headerTitle }) => {
     }
   };
 
+  const handleExportCombinedData = async (format) => {
+    if (!reportData) return;
+    setIsExporting(true);
+    try {
+      const preparedData = prepareCombinedDataForExport(reportData);
+      if (format === 'excel') {
+        exportToExcel(preparedData, 'Laporan_Bisnis_Gabungan');
+      } else if (format === 'pdf') {
+        exportToPdf(preparedData, 'Laporan_Bisnis_Gabungan');
+      }
+      // Optionally show a success notification
+    } catch (error) {
+      console.error('Error exporting combined data:', error);
+      // Optionally show an error notification
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />
@@ -220,7 +241,30 @@ const BusinessReports = ({ headerTitle }) => {
               <SalesReportSection data={reportData.sales} />
               <StockReportSection data={reportData.stock} />
               <ExpenseReportSection data={reportData.expenses} />
-              <CombinedAnalyticsSection salesData={reportData.sales} stockData={reportData.stock} expensesData={reportData.expenses} />
+              <CombinedAnalyticsSection salesData={reportData.sales} stockData={reportData.stock} expensesData={reportData.expenses} onExportCombined={handleExportCombinedData} />
+              <div className="bg-white rounded-lg border border-slate-200 shadow-elevation-1 p-6 mt-6">
+                <p className="text-sm text-text-secondary mb-4 text-center">Export laporan gabungan untuk analisis lebih lanjut.</p>
+                <div className="flex justify-center space-x-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => handleExportCombinedData('excel')}
+                    iconName="Download"
+                    iconPosition="left"
+                    loading={isExporting}
+                  >
+                    Export Excel
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleExportCombinedData('pdf')}
+                    iconName="FileText"
+                    iconPosition="left"
+                    loading={isExporting}
+                  >
+                    Export PDF
+                  </Button>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="text-center py-16">
