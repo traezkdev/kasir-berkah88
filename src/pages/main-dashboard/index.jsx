@@ -339,9 +339,9 @@ const MainDashboard = ({ headerTitle }) => {
                   <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
                     Dashboard
                   </h1>
-                  <p className="text-text-secondary mt-1">
+                  {/* <p className="text-text-secondary mt-1">
                     Selamat datang! Kelola warung Anda dengan mudah
-                  </p>
+                  </p> */}
                 </div>
                 <div className="hidden lg:block">
                   <Button

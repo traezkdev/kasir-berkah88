@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatInTimeZone } from 'date-fns-tz';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
@@ -68,7 +69,7 @@ const ExpenseHistoryTable = ({
     const lowercasedSearchTerm = searchTerm?.toLowerCase() || '';
     const matchesSearch = expense?.name?.toLowerCase()?.includes(lowercasedSearchTerm);
     const matchesCategory = !categoryFilter || expense?.category === categoryFilter;
-    const matchesDate = !dateFilter || (expense?.date && expense.date.startsWith(dateFilter));
+    const matchesDate = !dateFilter || (expense?.date && formatInTimeZone(new Date(expense.date), 'Asia/Jakarta', 'yyyy-MM-dd') === dateFilter);
     return matchesSearch && matchesCategory && matchesDate;
   });
 

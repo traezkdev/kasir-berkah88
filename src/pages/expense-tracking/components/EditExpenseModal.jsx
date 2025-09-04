@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatInTimeZone } from 'date-fns-tz';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
@@ -10,8 +11,7 @@ const EditExpenseModal = ({ isOpen, onClose, expense, onUpdateExpense, isLoading
   useEffect(() => {
     if (expense) {
       // Format date to YYYY-MM-DD for the input field
-      const date = new Date(expense.date);
-      const formattedDate = date.toISOString().split('T')[0];
+      const formattedDate = expense.date ? formatInTimeZone(new Date(expense.date), 'Asia/Jakarta', 'yyyy-MM-dd') : '';
       setFormData({ ...expense, date: formattedDate });
     } else {
       setFormData({});
@@ -41,7 +41,11 @@ const EditExpenseModal = ({ isOpen, onClose, expense, onUpdateExpense, isLoading
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onUpdateExpense(formData);
+    const updatedFormData = {
+      ...formData,
+      date: formData.date ? formatInTimeZone(new Date(`${formData.date}T${formatInTimeZone(new Date(), 'Asia/Jakarta', 'HH:mm:ss')}`), 'Asia/Jakarta', 'yyyy-MM-dd HH:mm:ss') : null,
+    };
+    onUpdateExpense(updatedFormData);
   };
 
   if (!isOpen) return null;

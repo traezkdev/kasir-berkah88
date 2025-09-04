@@ -73,13 +73,13 @@ const BusinessReports = ({ headerTitle }) => {
     const processReportData = () => {
       const filterByDate = (item) => {
           const itemDate = new Date(item.timestamp || item.date);
-          itemDate.setUTCHours(0, 0, 0, 0); // Normalize item date to UTC start of day
+          
 
           const startDate = new Date(selectedDateRange.startDate);
-          startDate.setUTCHours(0, 0, 0, 0); // Normalize start date to UTC start of day
+          
 
           const endDate = new Date(selectedDateRange.endDate);
-          endDate.setUTCHours(23, 59, 59, 999); // Set to end of day in UTC
+          
 
           return itemDate >= startDate && itemDate <= endDate;
         };
@@ -117,9 +117,9 @@ const BusinessReports = ({ headerTitle }) => {
       const expenseCategories = [...new Set(filteredExpenses.map(e => e.category))].length;
 
       const startOfDayStartDate = new Date(selectedDateRange.startDate);
-      startOfDayStartDate.setUTCHours(0, 0, 0, 0);
+      
       const endOfDayEndDate = new Date(selectedDateRange.endDate);
-      endOfDayEndDate.setUTCHours(0, 0, 0, 0);
+      
 
       const diffTime = Math.abs(endOfDayEndDate.getTime() - startOfDayStartDate.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end day

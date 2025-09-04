@@ -14,6 +14,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import authFetch from '../../utils/authFetch';
 import { exportToExcel, exportToPdf, prepareExpenseDataForExport } from '../../utils/exportUtils';
+import { formatInTimeZone } from 'date-fns-tz';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -269,12 +270,11 @@ const ExpenseTracking = ({ headerTitle }) => {
     const expenseCount = expenses?.length;
 
     const today = new Date();
-    today.setUTCHours(0, 0, 0, 0); // Normalize today to start of day in UTC
+    const todayFormatted = formatInTimeZone(today, 'Asia/Jakarta', 'yyyy-MM-dd');
 
     const todayExpenses = expenses?.filter(expense => {
-        const expenseDate = new Date(expense.date);
-        expenseDate.setUTCHours(0, 0, 0, 0); // Normalize expense date to start of day in UTC
-        return expenseDate.getTime() === today.getTime();
+        const expenseDateFormatted = formatInTimeZone(new Date(expense.date), 'Asia/Jakarta', 'yyyy-MM-dd');
+        return expenseDateFormatted === todayFormatted;
       })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
 
     const currentMonth = today.getMonth();
@@ -285,7 +285,7 @@ const ExpenseTracking = ({ headerTitle }) => {
       })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
 
     return {
-      totalExpenses,
+      totalExpenses: monthlyExpenses,
       expenseCount,
       todayExpenses,
       monthlyExpenses

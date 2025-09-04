@@ -19,7 +19,7 @@ const ExpenseSummaryCard = ({
 
   const summaryItems = [
     {
-      label: 'Total Pengeluaran',
+      label: 'Pengeluaran Bulan Ini',
       value: formatCurrency(totalExpenses),
       icon: 'Wallet', // Replace with a different icon that is less likely to have arcs
       color: 'text-destructive',
