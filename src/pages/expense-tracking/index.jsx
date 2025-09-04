@@ -15,6 +15,7 @@ import autoTable from 'jspdf-autotable';
 import authFetch from '../../utils/authFetch';
 import { exportToExcel, exportToPdf, prepareExpenseDataForExport } from '../../utils/exportUtils';
 import { formatInTimeZone } from 'date-fns-tz';
+import { startOfWeek, endOfWeek } from 'date-fns';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -277,18 +278,19 @@ const ExpenseTracking = ({ headerTitle }) => {
         return expenseDateFormatted === todayFormatted;
       })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
 
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-    const monthlyExpenses = expenses?.filter(expense => {
+    const startOfCurrentWeek = startOfWeek(today, { weekStartsOn: 1 }); // Monday as start of week
+    const endOfCurrentWeek = endOfWeek(today, { weekStartsOn: 1 }); // Sunday as end of week
+
+    const weeklyExpenses = expenses?.filter(expense => {
         const expenseDate = new Date(expense.date);
-        return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
+        return expenseDate >= startOfCurrentWeek && expenseDate <= endOfCurrentWeek;
       })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
 
     return {
-      totalExpenses: monthlyExpenses,
+      totalExpenses: weeklyExpenses,
       expenseCount,
       todayExpenses,
-      monthlyExpenses
+      monthlyExpenses: weeklyExpenses // Keep monthlyExpenses for now, will change label in card
     };
   };
 

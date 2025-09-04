@@ -35,12 +35,12 @@ const ExpenseSummaryCard = ({
       description: 'Hari ini'
     },
     {
-      label: 'Pengeluaran Bulan Ini',
+      label: 'Pengeluaran Minggu Ini',
       value: formatCurrency(monthlyExpenses),
       icon: 'TrendingDown',
       color: 'text-accent',
       bgColor: 'bg-accent/10',
-      description: 'Bulan berjalan'
+      description: 'Minggu berjalan'
     }
   ];
 
