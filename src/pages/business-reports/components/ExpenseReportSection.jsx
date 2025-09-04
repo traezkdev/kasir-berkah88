@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatInTimeZone } from 'date-fns-tz';
 import ReportCard from './ReportCard';
 import Icon from '../../../components/AppIcon';
 
@@ -56,7 +57,7 @@ const ExpenseReportSection = ({ data, onExportExpenses }) => {
               <tbody>
                 {items && items.map((item, index) => (
                   <tr key={index} className="border-b border-slate-100">
-                    <td className="py-3 text-text-primary font-mono">{new Date(item.date).toLocaleDateString('id-ID')}</td>
+                    <td className="py-3 text-text-primary font-mono">{formatInTimeZone(new Date(item.date), 'Asia/Jakarta', 'dd/MM/yyyy')}</td>
                     <td className="py-3 text-text-primary font-medium">{item.name}</td>
                     <td className="py-3 text-text-primary">{item.category}</td>
                     <td className="py-3 text-right font-mono text-text-primary">{formatCurrency(item.amount)}</td>
