@@ -248,9 +248,9 @@ const ExpenseTracking = ({ headerTitle }) => {
     setIsEditModalOpen(false);
   };
 
-  const handleExportData = (format) => {
+  const handleExportData = (format, data) => {
     try {
-      const dataToExport = prepareExpenseDataForExport(expenses);
+      const dataToExport = prepareExpenseDataForExport(data);
       if (format === 'excel') {
         exportToExcel(dataToExport, 'Laporan_Pengeluaran');
         showNotification('Data pengeluaran berhasil diekspor ke Excel!', 'success');

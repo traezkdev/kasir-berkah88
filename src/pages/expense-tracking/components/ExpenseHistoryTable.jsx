@@ -138,7 +138,7 @@ const ExpenseHistoryTable = ({
           <div className="flex flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
-              onClick={() => onExportData('excel')}
+              onClick={() => onExportData('excel', filteredExpenses)}
               iconName="Download"
               iconPosition="left"
               size="sm"
@@ -147,7 +147,7 @@ const ExpenseHistoryTable = ({
             </Button>
             <Button
               variant="outline"
-              onClick={() => onExportData('pdf')}
+              onClick={() => onExportData('pdf', filteredExpenses)}
               iconName="FileText"
               iconPosition="left"
               size="sm"
