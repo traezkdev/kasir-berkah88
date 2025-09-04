@@ -327,8 +327,22 @@ const TransactionHistory = ({ headerTitle }) => {
         doc.text(`Tanggal Export: ${new Date().toLocaleDateString()}`, 14, 30);
 
         // Prepare table data
-        const headers = Object.keys(dataToExport[0] || {});
-        const body = dataToExport.map(row => Object.values(row));
+        const headers = [
+          'ID Transaksi',
+          'Tanggal',
+          'Waktu',
+          'Total',
+          'Tipe',
+          'Item Terjual',
+        ];
+        const body = dataToExport.map(row => [
+          row['ID Transaksi'],
+          row['Tanggal'],
+          row['Waktu'],
+          row['Total'],
+          row['Tipe'],
+          row['Item Terjual'],
+        ]);
 
         autoTable(doc, {
           startY: 40,
