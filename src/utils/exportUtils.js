@@ -107,16 +107,15 @@ export const exportToPdf = (data, filename = 'data') => {
   const doc = new jsPDF();
   const isCombinedData = data.length > 0 && data[0].hasOwnProperty('title') && data[0].hasOwnProperty('headers') && data[0].hasOwnProperty('rows');
 
-  // Common PDF header
-  doc.setFontSize(18);
-  doc.text("Laporan Bisnis Gabungan", 14, 22);
-  doc.setFontSize(11);
-  doc.setTextColor(100);
-  doc.text(`Tanggal Export: ${new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}`, 14, 30);
-
-  let finalY = 40; // Starting Y position for the first table
-
   if (isCombinedData) {
+    // Common PDF header
+    doc.setFontSize(18);
+    doc.text("Laporan Bisnis Gabungan", 14, 22);
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+    doc.text(`Tanggal Export: ${new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}`, 14, 30);
+
+    let finalY = 40; // Starting Y position for the first table
     data.forEach(section => {
       // Add section title
       doc.setFontSize(14);
@@ -177,18 +176,23 @@ export const exportToPdf = (data, filename = 'data') => {
   }
 
   // Add title
+  let finalY = 30; // Give more space from top
   doc.setFontSize(18);
-  doc.text(title, 14, 22);
+  doc.text(title, 14, finalY);
+  finalY += 10;
+
   doc.setFontSize(11);
   doc.setTextColor(100);
-  doc.text(`Tanggal Export: ${new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}`, 14, 30);
+  doc.text(`Tanggal Export: ${new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}`, 14, finalY);
+  finalY += 10;
+
 
   // Prepare table data
   const headers = Object.keys(data[0] || {});
   const body = data.map(item => Object.values(item));
 
   autoTable(doc, {
-    startY: 40, // Start table after title and date
+    startY: finalY, // Start table after title and date
     head: [headers],
     body: body,
     theme: 'striped',
