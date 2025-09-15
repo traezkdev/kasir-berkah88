@@ -234,7 +234,6 @@ export const prepareTransactionDataForExport = (transactions) => {
     'Waktu': new Date(transaction.timestamp).toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' }),
     'Total': `Rp ${parseFloat(transaction.total || 0).toLocaleString('id-ID')}`,
     'Tipe': transaction.isEmployeeMeal ? 'Karyawan' : transaction.payment_method,
-    'Metode Pembayaran': transaction.paymentMethod,
     'Item Terjual': transaction.items.map(item => `${item.name} (${item.quantity})`).join(', '),
   }));
 };
