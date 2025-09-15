@@ -555,7 +555,7 @@ const Settings = ({ headerTitle }) => {
               </div>
 
               {/* Favicon Setting */}
-              <div className="space-y-4">
+              {/* <div className="space-y-4">
                 <h3 className="text-xl font-semibold text-text-primary">Favicon</h3>
                 {currentFaviconUrl && (
                   <div className="flex items-center space-x-2">
@@ -579,10 +579,10 @@ const Settings = ({ headerTitle }) => {
                     Unggah Favicon
                   </Button>
                 </form>
-              </div>
+              </div> */}
 
               {/* Cover Image Setting */}
-              <div className="space-y-4">
+              {/* <div className="space-y-4">
                 <h3 className="text-xl font-semibold text-text-primary">Gambar Sampul (untuk media sosial)</h3>
                 {currentCoverImageUrl && (
                   <div className="flex items-center space-x-2">
@@ -606,7 +606,7 @@ const Settings = ({ headerTitle }) => {
                     Unggah Gambar Sampul
                   </Button>
                 </form>
-              </div>
+              </div> */}  
 
               {/* Create Admin User Section (Admin Only) */}
               {userRole === 'admin' && (

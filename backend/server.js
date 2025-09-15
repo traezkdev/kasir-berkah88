@@ -239,17 +239,36 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
                 return res.status(400).json({ "error": `Insufficient stock for item ${cartItem.id}. Available: ${currentStock}, Requested: ${cartItem.quantity}` });
             }
         }
-        // --- END STOCK VALIDATION ---
+        // --- END STOCK VALIDATION --
+
+        // --- Generate New Transaction ID ---
+        let newTransactionId;
+        const [lastTransaction] = await db.query("SELECT id FROM transactions WHERE id LIKE 'TRZ%' ORDER BY id DESC LIMIT 1");
+
+        if (lastTransaction && lastTransaction.length > 0) {
+            const lastId = lastTransaction[0].id;
+            const lastNumber = parseInt(lastId.substring(3), 10);
+            if (!isNaN(lastNumber)) {
+                const newNumber = lastNumber + 1;
+                newTransactionId = 'TRZ' + newNumber.toString().padStart(3, '0');
+            } else {
+                // This should not happen if the query is correct, but as a fallback
+                newTransactionId = 'TRZ001';
+            }
+        } else {
+            newTransactionId = 'TRZ001';
+        }
+        // --- End Generate New Transaction ID ---
 
         // Define data and sql BEFORE params
         const data = {
-            id: `TXN${Date.now()}`,
+            id: newTransactionId,
             timestamp: new Date(),
             items: JSON.stringify(req.body.items),
             total: req.body.total,
             ppn: req.body.ppn,
             isEmployeeMeal: req.body.isEmployeeMeal ? 1 : 0,
-            payment_method: req.body.payment_method || 'Tunai' // Add payment_method, default to 'Tunai'
+            payment_method: req.body.payment_method || 'Tunai'
         };
         const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method) VALUES (?,?,?,?,?,?,?)';
 
@@ -265,7 +284,7 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
         res.json({
             "message": "success",
             "data": req.body,
-            "id": result.insertId
+            "id": data.id // Return the new custom ID
         });
     } catch (err) {
         res.status(400).json({ "error": err.message, "stack": err.stack });

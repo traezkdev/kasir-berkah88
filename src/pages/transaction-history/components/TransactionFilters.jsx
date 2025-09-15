@@ -109,6 +109,7 @@ const TransactionFilters = ({
                 value={searchTerm}
                 onChange={handleSearchChange}
                 className="pl-10"
+                autoComplete="off" // Add this
               />
             </div>
           </div>
