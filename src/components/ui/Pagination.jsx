@@ -3,7 +3,7 @@ import Button from './Button';
 
 const Pagination = ({ itemsPerPage, totalItems, paginate, currentPage }) => {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const maxPageNumbersToShow = 5;
+  const maxPageNumbersToShow = 2;
 
   const handlePrevious = () => {
     if (currentPage > 1) {
