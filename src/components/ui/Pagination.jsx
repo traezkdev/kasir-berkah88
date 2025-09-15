@@ -54,22 +54,33 @@ const Pagination = ({ itemsPerPage, totalItems, paginate, currentPage }) => {
 
   const pageNumbers = getPageNumbers();
 
+  // Hide pagination if there's only one page
+  if (totalPages <= 1) {
+    return null;
+  }
+
   return (
     <nav>
-      <ul className='flex justify-center space-x-2'>
+      <ul className='flex justify-center items-center space-x-1.5'>
         <li>
-          <Button onClick={handlePrevious} disabled={currentPage === 1} variant="outline">
-            Previous
-          </Button>
+          <Button 
+            onClick={handlePrevious} 
+            disabled={currentPage === 1} 
+            variant="outline" 
+            size="sm"
+            iconName="ChevronLeft"
+          />
         </li>
         {pageNumbers.map((number, index) => (
           <li key={index} className='page-item'>
             {number === '...' ? (
-              <span className="flex items-center justify-center px-4 py-2">...</span>
+              <span className="flex items-center justify-center h-9 w-9 text-sm text-text-secondary">...</span>
             ) : (
               <Button
                 onClick={() => paginate(number)}
                 variant={currentPage === number ? 'default' : 'outline'}
+                size="sm"
+                className="w-9"
               >
                 {number}
               </Button>
@@ -77,9 +88,13 @@ const Pagination = ({ itemsPerPage, totalItems, paginate, currentPage }) => {
           </li>
         ))}
         <li>
-          <Button onClick={handleNext} disabled={currentPage === totalPages} variant="outline">
-            Next
-          </Button>
+          <Button 
+            onClick={handleNext} 
+            disabled={currentPage === totalPages} 
+            variant="outline" 
+            size="sm"
+            iconName="ChevronRight"
+          />
         </li>
       </ul>
     </nav>
