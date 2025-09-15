@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import Input from '../../../components/ui/Input'; // Import Input
 
 const BulkActions = ({ 
   onClearAllTransactions, 
@@ -10,10 +11,24 @@ const BulkActions = ({
   userRole 
 }) => {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [password, setPassword] = useState(''); // State for password
+  const [passwordError, setPasswordError] = useState(''); // State for password error
 
   const handleClearAll = () => {
-    onClearAllTransactions();
-    setShowClearConfirm(false);
+    if (password === 'berkah88') {
+      onClearAllTransactions();
+      setShowClearConfirm(false);
+      setPassword('');
+      setPasswordError('');
+    } else {
+      setPasswordError('Kata sandi salah. Silakan coba lagi.');
+    }
+  };
+
+  const openClearConfirm = () => {
+    setShowClearConfirm(true);
+    setPassword('');
+    setPasswordError('');
   };
 
   const exportOptions = [
@@ -51,7 +66,7 @@ const BulkActions = ({
           <Button
             variant="destructive"
             size="sm"
-            onClick={() => setShowClearConfirm(true)}
+            onClick={openClearConfirm}
             iconName="Trash2"
             iconPosition="left"
             disabled={transactionCount === 0 || userRole === 'guest'}
@@ -77,13 +92,32 @@ const BulkActions = ({
               <p className="text-text-secondary mb-3">
                 Apakah Anda yakin ingin menghapus semua {transactionCount} transaksi? 
               </p>
-              <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3">
+              <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3 mb-4">
                 <p className="text-sm text-destructive font-medium">
                   ⚠️ Peringatan: Tindakan ini tidak dapat dibatalkan!
                 </p>
                 <p className="text-sm text-destructive mt-1">
                   Semua data riwayat transaksi akan hilang secara permanen.
                 </p>
+              </div>
+              
+              {/* Password Input */}
+              <div>
+                <label htmlFor="password-confirm" className="text-sm font-medium text-text-primary">
+                  Masukkan kata sandi untuk konfirmasi:
+                </label>
+                <Input
+                  id="password-confirm"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Kata sandi"
+                  className="mt-2"
+                  autoComplete="new-password" // Use "new-password" for password fields
+                />
+                {passwordError && (
+                  <p className="text-sm text-destructive mt-2">{passwordError}</p>
+                )}
               </div>
             </div>
 
