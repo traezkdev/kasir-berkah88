@@ -3,7 +3,7 @@ import Button from '../../../components/ui/Button';
 import AppImage from '../../../components/AppImage';
 import { cn } from '../../../utils/cn'; // Import cn utility
 
-const ProductCard = ({ item, onAddToCart, cart, userRole }) => {
+const ProductCard = ({ item, onAddToCart, cart, userRole, apiUrl }) => {
   const [isAdding, setIsAdding] = useState(false);
 
   // Calculate effective stock
@@ -28,7 +28,7 @@ const ProductCard = ({ item, onAddToCart, cart, userRole }) => {
       isOutOfStock ? "opacity-50 cursor-not-allowed" : "hover:scale-105"
     )}>
       <AppImage
-        src={item.image_url || './assets/images/no_image.png'}
+        src={item.image_url ? `${apiUrl}${item.image_url}` : './assets/images/no_image.png'}
         alt={item.name}
         className="w-full h-32 object-cover"
       />

@@ -69,18 +69,20 @@ const MenuManagement = ({ headerTitle }) => {
 
   
 
-  const handleAddItem = async (newItem) => {
+  const handleAddItem = async (itemData) => {
+    const formData = new FormData();
+    Object.keys(itemData).forEach(key => {
+      formData.append(key, itemData[key]);
+    });
+
     try {
       const response = await authFetch(`${apiUrl}/api/menu-items`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newItem),
+        body: formData,
       });
       const result = await response.json();
       if (result.message === 'success') {
-        setMenuItems(prev => [...prev, newItem]);
+        fetchMenuItems(); // Refetch to get the item with the new image URL
       } else {
         console.error('Failed to add item:', result.error);
       }
@@ -89,20 +91,24 @@ const MenuManagement = ({ headerTitle }) => {
     }
   };
 
-  const handleUpdateItem = async (id, updatedItem) => {
+  const handleUpdateItem = async (id, updatedData) => {
+    const formData = new FormData();
+    Object.keys(updatedData).forEach(key => {
+      if (key === 'image' && !updatedData[key]) {
+        // Don't append null or undefined image
+        return;
+      }
+      formData.append(key, updatedData[key]);
+    });
+
     try {
       const response = await authFetch(`${apiUrl}/api/menu-items/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatedItem),
+        body: formData,
       });
       const result = await response.json();
       if (result.message === 'success') {
-        setMenuItems(prev => 
-          prev.map(item => item.id === id ? { ...item, ...updatedItem } : item)
-        );
+        fetchMenuItems(); // Refetch to get the latest data
       } else {
         console.error('Failed to update item:', result.error);
       }
@@ -260,6 +266,7 @@ const MenuManagement = ({ headerTitle }) => {
             onDeleteItem={handleDeleteItem}
             onBulkDelete={handleBulkDelete}
             userRole={userRole}
+            apiUrl={apiUrl}
           />
         </main>
 

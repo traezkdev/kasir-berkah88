@@ -72,15 +72,18 @@ app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'g
 });
 
 // Add a new menu item
-app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
+app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin'), upload.single('image'), async (req, res, next) => {
     try {
-        const { id, name, price, stock, category, image_url } = req.body;
+        const { id, name, price, stock, category } = req.body;
+        // Image URL is now derived from the uploaded file
+        const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
+
         const sql = 'INSERT INTO menu_items (id, name, price, stock, category, image_url) VALUES (?,?,?,?,?,?)';
         const params = [id, name, price, stock, category, image_url];
         const [result] = await db.query(sql, params);
         res.json({
             "message": "success",
-            "data": req.body,
+            "data": { ...req.body, image_url },
             "id": result.insertId
         });
     } catch (err) {
@@ -89,9 +92,11 @@ app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin'), 
 });
 
 // Update a menu item
-app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
+app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'), upload.single('image'), async (req, res, next) => {
     try {
-        const { name, price, stock, category, image_url } = req.body;
+        const { name, price, stock, category } = req.body;
+        const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
+
         const sql = `UPDATE menu_items set 
            name = COALESCE(?,name), 
            price = COALESCE(?,price), 

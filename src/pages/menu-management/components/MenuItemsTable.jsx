@@ -8,7 +8,8 @@ const MenuItemsTable = ({
   onUpdateItem, 
   onDeleteItem, 
   onBulkDelete,
-  userRole 
+  userRole,
+  apiUrl
 }) => {
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
@@ -41,18 +42,18 @@ const MenuItemsTable = ({
       name: item?.name,
       stock: item?.stock?.toString(),
       price: item?.price?.toString(),
-      image_url: item?.image_url || ''
+      image: null, // Changed from image_url
+      image_url: item?.image_url // Keep original for display
     });
   };
 
   const handleSaveEdit = async (id) => {
     try {
       const updatedItem = {
-        ...menuItems?.find(item => item?.id === id),
         name: editData?.name,
         stock: parseInt(editData?.stock),
         price: parseFloat(editData?.price),
-        image_url: editData?.image_url || '',
+        image: editData?.image, // Pass the file object
         updatedAt: new Date()?.toISOString()
       };
       
@@ -124,24 +125,22 @@ const MenuItemsTable = ({
   };
 
   // Mobile Card View
-  const MobileCard = React.memo(({ item, editingId, editData, setEditData, handleEdit, handleSaveEdit, handleCancelEdit, handleSelectItem, selectedItems, setShowDeleteConfirm }) => {
+  const MobileCard = React.memo(({ item, editingId, editData, setEditData, handleEdit, handleSaveEdit, handleCancelEdit, handleSelectItem, selectedItems, setShowDeleteConfirm, apiUrl }) => {
     const stockStatus = getStockStatus(item?.stock);
     const isEditing = editingId === item?.id;
     const isSelected = selectedItems?.includes(item?.id);
 
     // Local state for stock input
     const [localStock, setLocalStock] = useState(editData?.stock);
-    const [localImageUrl, setLocalImageUrl] = useState(editData?.image_url);
     const [localPrice, setLocalPrice] = useState(editData?.price);
 
     // Update localStock when editData.stock changes (e.g., when editing starts)
     useEffect(() => {
       if (isEditing) {
         setLocalStock(editData?.stock);
-        setLocalImageUrl(editData?.image_url);
         setLocalPrice(editData?.price);
       }
-    }, [isEditing, editData?.stock, editData?.image_url, editData?.price]);
+    }, [isEditing, editData?.stock, editData?.price]);
 
     const handleLocalStockChange = (e) => {
       setLocalStock(e.target.value);
@@ -150,14 +149,6 @@ const MenuItemsTable = ({
     const handleStockBlur = () => {
       // Update parent state only when input loses focus
       setEditData(prev => ({ ...prev, stock: localStock }));
-    };
-
-    const handleLocalImageUrlChange = (e) => {
-      setLocalImageUrl(e.target.value);
-    };
-
-    const handleImageUrlBlur = () => {
-      setEditData(prev => ({ ...prev, image_url: localImageUrl }));
     };
 
     const handleLocalPriceChange = (value) => {
@@ -180,7 +171,7 @@ const MenuItemsTable = ({
               className="w-4 h-4 text-primary border-slate-300 rounded focus:ring-primary"
             />
             <img 
-              src={item?.image_url || '/assets/images/no_image.png'}
+              src={item?.image_url ? `${apiUrl}${item.image_url}` : '/assets/images/no_image.png'}
               alt={item?.name}
               className="w-16 h-16 object-cover rounded-md"
               onError={(e) => { e.target.onerror = null; e.target.src='/assets/images/no_image.png'}}
@@ -238,13 +229,12 @@ const MenuItemsTable = ({
             )}
           </div>
           <div>
-            <p className="text-xs text-text-secondary mb-1">URL Gambar</p>
+            <p className="text-xs text-text-secondary mb-1">Upload Gambar Baru</p>
             {isEditing ? (
               <Input
-                type="text"
-                value={localImageUrl}
-                onChange={handleLocalImageUrlChange}
-                onBlur={handleImageUrlBlur}
+                type="file"
+                name="image"
+                onChange={(e) => setEditData(prev => ({ ...prev, image: e.target.files[0] }))}
                 className="text-sm"
               />
             ) : (
@@ -376,6 +366,7 @@ const MenuItemsTable = ({
             handleSelectItem={handleSelectItem}
             selectedItems={selectedItems}
             setShowDeleteConfirm={setShowDeleteConfirm}
+            apiUrl={apiUrl}
           />
         ))}
       </div>
@@ -396,7 +387,7 @@ const MenuItemsTable = ({
               <th className="text-left p-4 font-medium text-text-primary">Nama Menu</th>
               <th className="text-left p-4 font-medium text-text-primary">Stok</th>
               <th className="text-left p-4 font-medium text-text-primary">Harga</th>
-              <th className="text-left p-4 font-medium text-text-primary w-48">URL Gambar</th>
+              <th className="text-left p-4 font-medium text-text-primary w-48">Upload Gambar Baru</th>
               <th className="text-left p-4 font-medium text-text-primary">Status</th>
               <th className="text-left p-4 font-medium text-text-primary">Terakhir Diperbarui</th>
               <th className="text-center p-4 font-medium text-text-primary w-32">Aksi</th>
@@ -420,7 +411,7 @@ const MenuItemsTable = ({
                   </td>
                   <td className="p-4">
                     <img 
-                      src={item?.image_url || '/assets/images/no_image.png'}
+                      src={item?.image_url ? `${apiUrl}${item.image_url}` : '/assets/images/no_image.png'}
                       alt={item?.name}
                       className="w-16 h-16 object-cover rounded-md"
                       onError={(e) => { e.target.onerror = null; e.target.src='/assets/images/no_image.png'}}
@@ -466,9 +457,9 @@ const MenuItemsTable = ({
                   <td className="p-4 overflow-hidden">
                     {isEditing ? (
                       <Input
-                        type="text"
-                        value={editData?.image_url}
-                        onChange={(e) => setEditData(prev => ({ ...prev, image_url: e?.target?.value }))}
+                        type="file"
+                        name="image"
+                        onChange={(e) => setEditData(prev => ({ ...prev, image: e.target.files[0] }))}
                         className="w-40"
                       />
                     ) : (
