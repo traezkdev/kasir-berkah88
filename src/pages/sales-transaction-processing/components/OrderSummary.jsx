@@ -22,6 +22,8 @@ const OrderSummary = ({
   userRole
 }) => {
   const [ppnRate, setPpnRate] = useState(0.11); // Default PPN rate
+  const [isEditingTotal, setIsEditingTotal] = useState(false);
+  const [customTotal, setCustomTotal] = useState(null);
 
   useEffect(() => {
     const fetchPpn = async () => {
@@ -48,6 +50,10 @@ const OrderSummary = ({
   }, 0);
   const tax = subtotal * ppnRate;
   const total = subtotal + tax;
+
+  useEffect(() => {
+    setCustomTotal(total);
+  }, [total]);
 
   const paymentMethodOptions = [
     { value: 'Tunai', label: 'Tunai' },
@@ -158,9 +164,31 @@ const OrderSummary = ({
               <p></p>
               <p>Rp {tax.toLocaleString('id-ID')}</p>
             </div>
-            <div className="flex justify-between font-bold text-lg">
+            <div className="flex justify-between items-center font-bold text-lg">
               <p>Total</p>
-              <p>Rp {total.toLocaleString('id-ID')}</p>
+              {isEditingTotal ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={customTotal}
+                    onChange={(e) => setCustomTotal(parseFloat(e.target.value))}
+                    className="w-32 text-right border rounded-md px-2 py-1"
+                  />
+                  <Button variant="ghost" size="icon" onClick={() => { setIsEditingTotal(false); setCustomTotal(total); }}>
+                    <Icon name="X" size={16} />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => setIsEditingTotal(false)}>
+                    <Icon name="Check" size={16} />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p>Rp {customTotal?.toLocaleString('id-ID')}</p>
+                  <Button variant="ghost" size="icon" onClick={() => setIsEditingTotal(true)}>
+                    <Icon name="Pencil" size={16} />
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
           <div className="border-t my-4"></div>
@@ -180,7 +208,7 @@ const OrderSummary = ({
           <div className="flex gap-2 mt-4">
             <Button variant="outline" onClick={onClearCart} className="w-full">Kosongkan</Button>
             <Button 
-              onClick={() => onProcessPayment({ total, ppn: ppnRate })} 
+              onClick={() => onProcessPayment({ total: customTotal, ppn: ppnRate })} 
               className="w-full"
               loading={isLoading}
               disabled={disablePaymentButton || userRole === 'guest'}
