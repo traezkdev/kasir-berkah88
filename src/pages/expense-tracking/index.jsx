@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import DashboardMetricsBar from '../../components/ui/DashboardMetricsBar';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
+import Icon from '../../components/AppIcon';
+import Button from '../../components/ui/Button';
+import Input from '../../components/ui/Input';
 
 import ExpenseEntryForm from './components/ExpenseEntryForm';
 import ExpenseSummaryCard from './components/ExpenseSummaryCard';
@@ -32,6 +35,8 @@ const ExpenseTracking = ({ headerTitle }) => {
   const [editingExpense, setEditingExpense] = useState(null);
   const [showBulkDeleteConfirmModal, setShowBulkDeleteConfirmModal] = useState(false); // New state
   const [bulkDeleteTarget, setBulkDeleteTarget] = useState(null); // New state
+  const [password, setPassword] = useState(''); // State for password
+  const [passwordError, setPasswordError] = useState(''); // State for password error
 
   const showNotification = (message, type) => {
     setNotification({ message, type });
@@ -215,28 +220,37 @@ const ExpenseTracking = ({ headerTitle }) => {
     }
   };
 
-  const handleBulkDelete = async (confirmed = false) => {
-    if (confirmed) {
-      try {
-        const response = await authFetch(`${apiUrl}/api/expenses`, {
-          method: 'DELETE',
-        });
-        const result = await response.json();
-        if (result.message === 'all deleted') {
-          fetchExpenses(); // Refetch to show an empty list
-          showNotification('Semua pengeluaran berhasil dihapus!', 'success');
-        } else {
-          console.error('Failed to bulk delete expenses:', result.error);
-          showNotification('Gagal menghapus semua pengeluaran.', 'error');
-        }
-      } catch (error) {
-        console.error('Error bulk deleting expenses:', error);
-        showNotification('Terjadi kesalahan saat menghapus pengeluaran.', 'error');
-      } finally {
-        setShowBulkDeleteConfirmModal(false); // Close modal
+  const handleBulkDelete = async () => {
+    setShowBulkDeleteConfirmModal(true);
+    setPassword('');
+    setPasswordError('');
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    if (password !== 'berkah88') {
+      setPasswordError('Kata sandi salah. Silakan coba lagi.');
+      return;
+    }
+
+    try {
+      const response = await authFetch(`${apiUrl}/api/expenses`, {
+        method: 'DELETE',
+      });
+      const result = await response.json();
+      if (result.message === 'all deleted') {
+        fetchExpenses(); // Refetch to show an empty list
+        showNotification('Semua pengeluaran berhasil dihapus!', 'success');
+      } else {
+        console.error('Failed to bulk delete expenses:', result.error);
+        showNotification('Gagal menghapus semua pengeluaran.', 'error');
       }
-    } else {
-      setShowBulkDeleteConfirmModal(true);
+    } catch (error) {
+      console.error('Error bulk deleting expenses:', error);
+      showNotification('Terjadi kesalahan saat menghapus pengeluaran.', 'error');
+    } finally {
+      setShowBulkDeleteConfirmModal(false); // Close modal
+      setPassword('');
+      setPasswordError('');
     }
   };
 
@@ -357,10 +371,39 @@ const ExpenseTracking = ({ headerTitle }) => {
                 <h3 className="text-lg font-semibold text-text-primary">Konfirmasi Hapus Pengeluaran</h3>
               </div>
               
-              <p className="text-text-secondary mb-6">
-                Apakah Anda yakin ingin menghapus semua pengeluaran? Tindakan ini tidak dapat dibatalkan.
-              </p>
-              
+              <div className="mb-6">
+                <p className="text-text-secondary mb-3">
+                  Apakah Anda yakin ingin menghapus semua pengeluaran? Tindakan ini tidak dapat dibatalkan.
+                </p>
+                <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-destructive font-medium">
+                    ⚠️ Peringatan: Tindakan ini tidak dapat dibatalkan!
+                  </p>
+                  <p className="text-sm text-destructive mt-1">
+                    Semua data pengeluaran akan hilang secara permanen.
+                  </p>
+                </div>
+                
+                {/* Password Input */}
+                <div>
+                  <label htmlFor="password-confirm" className="text-sm font-medium text-text-primary">
+                    Masukkan kata sandi untuk konfirmasi:
+                  </label>
+                  <Input
+                    id="password-confirm"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Kata sandi"
+                    className="mt-2"
+                    autoComplete="new-password"
+                  />
+                  {passwordError && (
+                    <p className="text-sm text-destructive mt-2">{passwordError}</p>
+                  )}
+                </div>
+              </div>
+
               <div className="flex space-x-3">
                 <Button
                   variant="outline"
@@ -371,10 +414,10 @@ const ExpenseTracking = ({ headerTitle }) => {
                 </Button>
                 <Button
                   variant="destructive"
-                  onClick={() => handleBulkDelete(true)}
+                  onClick={handleConfirmBulkDelete}
                   className="flex-1"
                 >
-                  Hapus Semua
+                  Ya, Hapus Semua
                 </Button>
               </div>
             </div>
