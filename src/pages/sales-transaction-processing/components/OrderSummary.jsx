@@ -52,10 +52,8 @@ const OrderSummary = ({
   const total = subtotal + tax;
 
   useEffect(() => {
-    if (!isEditingTotal) {
-      setCustomTotal(total);
-    }
-  }, [total, isEditingTotal]);
+    setCustomTotal(total);
+  }, [total]);
 
   const paymentMethodOptions = [
     { value: 'Tunai', label: 'Tunai' },
@@ -176,7 +174,7 @@ const OrderSummary = ({
                     onChange={(e) => setCustomTotal(parseFloat(e.target.value))}
                     className="w-32 text-right border rounded-md px-2 py-1"
                   />
-                  <Button variant="ghost" size="icon" onClick={() => setIsEditingTotal(false)}>
+                  <Button variant="ghost" size="icon" onClick={() => { setIsEditingTotal(false); setCustomTotal(total); }}>
                     <Icon name="X" size={16} />
                   </Button>
                   <Button variant="ghost" size="icon" onClick={() => setIsEditingTotal(false)}>
