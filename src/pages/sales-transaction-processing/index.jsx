@@ -208,7 +208,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                <SalesForm menuItems={menuItems} onAddToCart={handleAddToCart} cart={cart} userRole={userRole} />
+                <SalesForm menuItems={menuItems} onAddToCart={handleAddToCart} cart={cart} userRole={userRole} apiUrl={apiUrl} />
               </div>
               <div className="lg:col-span-1">
                 <OrderSummary
