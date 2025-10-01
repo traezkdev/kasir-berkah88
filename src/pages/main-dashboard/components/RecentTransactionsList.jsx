@@ -68,6 +68,18 @@ const RecentTransactionsList = ({ transactions = [], onViewAll }) => {
         {transactions?.map((transaction) => {
           const iconData = getTransactionIcon(transaction.payment_method);
           
+          let itemCount = 0;
+          if (transaction.items) {
+            try {
+              const items = typeof transaction.items === 'string'
+                ? JSON.parse(transaction.items)
+                : transaction.items;
+              itemCount = Array.isArray(items) ? items.length : 0;
+            } catch (error) {
+              console.error('Failed to parse transaction items:', error);
+            }
+          }
+
           return (
             <div key={transaction.id} className="flex items-center space-x-3 p-3 rounded-md hover:bg-muted transition-colors duration-200">
               <div className={`p-2 rounded-md bg-muted ${iconData.color}`}>
@@ -85,7 +97,7 @@ const RecentTransactionsList = ({ transactions = [], onViewAll }) => {
                 
                 <div className="flex items-center justify-between mt-1">
                   <p className="text-sm text-text-secondary">
-                    {transaction.items ? `${transaction.items.length} item` : ''} - {transaction.payment_method}
+                    {`${itemCount} item`} - {transaction.payment_method}
                   </p>
                   <p className="text-xs text-text-secondary">
                     {formatDateTime(transaction.timestamp)}
