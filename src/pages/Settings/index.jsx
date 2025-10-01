@@ -83,7 +83,7 @@ const Settings = ({ headerTitle }) => {
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
-      const response = await authFetch(`${apiUrl}/api/settings`);
+      const response = await authFetch(`${apiUrl}/api/all-settings`);
       const data = await response.json();
       if (response.ok) {
         setWebsiteTitle(data.data.website_title || 'Kasir Berkah 88');

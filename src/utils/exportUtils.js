@@ -264,6 +264,20 @@ export const prepareCombinedDataForExport = (reportData) => {
   const { sales, expenses, stock } = reportData;
   const sections = [];
 
+  // --- NEW: Combined Analytics Section ---
+  const netProfit = sales.totalRevenue - expenses.summary.totalExpenses;
+  const capitalGrowth = sales.initialCapital > 0 ? (netProfit / sales.initialCapital) * 100 : 0;
+
+  sections.push({
+    title: 'Analisis Gabungan',
+    headers: ['Keterangan', 'Nilai'],
+    rows: [
+      ['Modal Awal', `Rp ${parseFloat(sales.initialCapital || 0).toLocaleString('id-ID')}`],
+      ['Laba Bersih', `Rp ${parseFloat(netProfit || 0).toLocaleString('id-ID')}`],
+      ['Pertumbuhan Modal', `${capitalGrowth.toFixed(1)}%`]
+    ],
+  });
+
   // Sales Summary
   sections.push({
     title: 'Ringkasan Penjualan',

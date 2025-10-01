@@ -47,7 +47,7 @@ const BusinessReports = ({ headerTitle }) => {
           authFetch(`${apiUrl}/api/transactions`),
           authFetch(`${apiUrl}/api/menu-items`),
           authFetch(`${apiUrl}/api/expenses`),
-          authFetch(`${apiUrl}/api/settings`)
+          authFetch(`${apiUrl}/api/all-settings`)
         ]);
 
         const transData = await transRes.json();
