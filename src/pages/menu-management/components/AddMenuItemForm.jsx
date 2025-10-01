@@ -63,8 +63,8 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole }) => {
         </div>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="md:col-span-1">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
             <Input
               label="Nama Menu"
               type="text"
@@ -77,7 +77,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole }) => {
             />
           </div>
 
-          <div className="md:col-span-1">
+          <div>
             <Input
               label="Kategori"
               type="text"
@@ -90,7 +90,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole }) => {
             />
           </div>
           
-          <div className="md:col-span-1">
+          <div>
             <Input
               label="Stok"
               type="number"
@@ -104,7 +104,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole }) => {
             />
           </div>
           
-          <div className="md:col-span-1">
+          <div>
             <Input
               label="Harga (Rp)"
               type="number"
@@ -116,7 +116,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole }) => {
               className="w-full"
             />
           </div>
-          <div className="col-span-2">
+          <div className="col-span-2 md:col-span-4">
             <label htmlFor="image" className="block text-sm font-medium text-text-primary">Gambar Produk</label>
             <Input
               type="file"
