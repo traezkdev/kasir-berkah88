@@ -26,6 +26,7 @@ const Settings = ({ headerTitle }) => {
   const [masterPasswordForClear, setMasterPasswordForClear] = useState('');
   const [faviconFile, setFaviconFile] = useState(null);
   const [webDescription, setWebDescription] = useState('');
+  const [initialCapital, setInitialCapital] = useState('');
   const [coverImageFile, setCoverImageFile] = useState(null);
   const [currentFaviconUrl, setCurrentFaviconUrl] = useState('');
   const [currentCoverImageUrl, setCurrentCoverImageUrl] = useState('');
@@ -93,6 +94,7 @@ const Settings = ({ headerTitle }) => {
         setCurrentCoverImageUrl(data.data.cover_image_url || '');
         setCurrentWebDescription(data.data.web_description || '');
         setWebDescription(data.data.web_description || ''); // Initialize input field
+        setInitialCapital(data.data.initial_capital || '');
       } else {
         setError(data.error || 'Failed to fetch settings');
       }
@@ -178,6 +180,36 @@ const Settings = ({ headerTitle }) => {
         setIsLoading(false);
     }
 };
+
+  const handleUpdateInitialCapital = async (e) => {
+    e.preventDefault();
+    setMessage('');
+    setError('');
+    setIsLoading(true);
+
+    try {
+        const response = await authFetch(`${apiUrl}/api/settings`,
+         {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ initial_capital: initialCapital }),
+        });
+        const data = await response.json();
+        if (response.ok) {
+            setMessage('Modal awal berhasil diperbarui!');
+            fetchSettings(); // Re-fetch to get the latest state
+        } else {
+            setError(data.error || 'Gagal memperbarui modal awal');
+        }
+    } catch (err) {
+        setError('Kesalahan jaringan atau server tidak dapat dijangkau');
+        console.error('Update initial capital error:', err);
+    } finally {
+        setIsLoading(false);
+    }
+  };
 
   const handleToggleRegistration = async () => {
     setMessage('');
@@ -507,6 +539,25 @@ const Settings = ({ headerTitle }) => {
                           Perbarui Judul Header
                       </Button>
                   </form>
+              </div>
+
+              {/* Initial Capital Setting */}
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-text-primary">Modal Awal</h3>
+                <form onSubmit={handleUpdateInitialCapital} className="space-y-4">
+                  <Input
+                    label="Jumlah Modal Awal (Rp)"
+                    name="initialCapital"
+                    type="number"
+                    placeholder="Contoh: 5000000"
+                    value={initialCapital}
+                    onChange={(e) => setInitialCapital(e.target.value)}
+                    required
+                  />
+                  <Button type="submit" className="w-full" disabled={isLoading || userRole !== 'admin'}>
+                    Simpan Modal Awal
+                  </Button>
+                </form>
               </div>
 
               {/* Registration Toggle Setting */}
