@@ -61,9 +61,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
           {/* Logo Section */}
           <div className="flex items-center space-x-4">
             <Link to="/main-dashboard" className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Icon name="Calculator" size={20} color="white" />
-              </div>
+                            <img src="/assets/images/logoberkah88.png" alt="Logo" className="w-8 h-8 rounded-lg" />
               <div className="hidden sm:block">
                 <h1 className="text-xl font-semibold text-text-primary">{headerTitle}</h1>
               </div>
