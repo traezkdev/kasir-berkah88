@@ -7,17 +7,21 @@ const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { style: 'curre
 const CombinedAnalyticsSection = ({ salesData, stockData, expensesData, onExportCombined }) => {
   if (!salesData || !stockData || !expensesData || !expensesData.summary) return null;
 
+  const { totalRevenue, initialCapital } = salesData;
   const totalExpenses = expensesData.summary.totalExpenses; // Get total expenses
-  const netProfit = salesData.totalRevenue - totalExpenses;
-  const profitMargin = salesData.totalRevenue > 0 ? (netProfit / salesData.totalRevenue) * 100 : 0;
+  const netProfit = totalRevenue - totalExpenses;
+  const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+  const capitalGrowth = initialCapital > 0 ? (netProfit / initialCapital) * 100 : 0;
 
   const analyticsMetrics = [
     { label: 'Laba Bersih (Revenue)', value: formatCurrency(netProfit) },
     { label: 'Margin Keuntungan', value: `${profitMargin.toFixed(1)}%` },
+    { label: 'Pertumbuhan Modal', value: `${capitalGrowth.toFixed(1)}%` },
   ];
 
   const cashFlowSummary = [
-    { type: 'Pemasukan', amount: formatCurrency(salesData.totalRevenue), icon: 'TrendingUp', color: 'text-success', bgColor: 'bg-success/10' },
+    { type: 'Modal Awal', amount: formatCurrency(initialCapital || 0), icon: 'Landmark', color: 'text-info', bgColor: 'bg-info/10' },
+    { type: 'Pemasukan', amount: formatCurrency(totalRevenue), icon: 'TrendingUp', color: 'text-success', bgColor: 'bg-success/10' },
     { type: 'Pengeluaran', amount: formatCurrency(totalExpenses), icon: 'TrendingDown', color: 'text-destructive', bgColor: 'bg-destructive/10' }, // Use totalExpenses
     { type: 'Laba Bersih', amount: formatCurrency(netProfit), icon: 'DollarSign', color: 'text-primary', bgColor: 'bg-primary/10' }
   ];
@@ -38,7 +42,7 @@ const CombinedAnalyticsSection = ({ salesData, stockData, expensesData, onExport
             <Icon name="Wallet" size={16} className="text-primary mr-2" />
             Ringkasan Arus Kas (Berdasarkan Pemasukan)
           </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {cashFlowSummary?.map((item, index) => (
               <div key={index} className={`p-4 rounded-lg ${item?.bgColor} border border-current/20`}>
                 <div className="flex items-center justify-between mb-2">

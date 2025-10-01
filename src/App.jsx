@@ -10,7 +10,7 @@ function App() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await authFetch(`${apiUrl}/api/settings`);
+        const response = await fetch(`${apiUrl}/api/settings`);
         const data = await response.json();
         if (response.ok) {
           const settings = data.data;

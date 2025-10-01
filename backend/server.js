@@ -464,8 +464,24 @@ app.post("/api/login", async (req, res) => {
 
 // --- Settings Endpoints ---
 
-// Get all settings
+// Get public settings
 app.get("/api/settings", async (req, res) => {
+    try {
+        const publicSettingsKeys = ['website_title', 'header_title', 'favicon_url', 'registration_enabled', 'web_description', 'cover_image_url'];
+        const sql = "SELECT `key`, `value` FROM settings WHERE `key` IN (?)";
+        const [rows] = await db.query(sql, [publicSettingsKeys]);
+        const settings = {};
+        rows.forEach(row => {
+            settings[row.key] = row.value;
+        });
+        res.json({ message: "success", data: settings });
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// Get all settings (protected)
+app.get("/api/all-settings", authenticateToken, authorizeRoles('admin'), async (req, res) => {
     try {
         const sql = "SELECT `key`, `value` FROM settings";
         const [rows] = await db.query(sql);
@@ -474,6 +490,28 @@ app.get("/api/settings", async (req, res) => {
             settings[row.key] = row.value;
         });
         res.json({ message: "success", data: settings });
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// Update multiple settings
+app.post("/api/settings", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        const settings = req.body;
+        if (typeof settings !== 'object' || settings === null || Object.keys(settings).length === 0) {
+            return res.status(400).json({ error: "Invalid request body: expected a non-empty object of settings." });
+        }
+
+        const promises = Object.entries(settings).map(([key, value]) => {
+            const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+            return db.query(sql, [key, value !== null ? value.toString() : null]);
+        });
+
+        await Promise.all(promises);
+
+        res.json({ message: "Settings updated successfully", data: settings });
+
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
     }

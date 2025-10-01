@@ -22,15 +22,17 @@ const MainDashboard = ({ headerTitle }) => {
     const token = localStorage.getItem('token');
     if (!token) return; // Exit if no token
     try {
-      const [transRes, menuRes, expenseRes] = await Promise.all([
+      const [transRes, menuRes, expenseRes, settingsRes] = await Promise.all([
         authFetch(`${apiUrl}/api/transactions`),
         authFetch(`${apiUrl}/api/menu-items`),
-        authFetch(`${apiUrl}/api/expenses`)
+        authFetch(`${apiUrl}/api/expenses`),
+        authFetch(`${apiUrl}/api/settings`)
       ]);
 
       let transactionsData = [];
       let menuItemsData = [];
       let expensesData = [];
+      let settingsData = {};
 
       // Handle transactions data
       const transactions = await transRes.json();
@@ -54,10 +56,16 @@ const MainDashboard = ({ headerTitle }) => {
         console.error("Failed to fetch expenses:", expenses.error || "Unknown error");
       }
 
+      // Handle settings data
+      const settings = await settingsRes.json();
+      if (settingsRes.ok && settings.message === 'success') {
+        settingsData = settings.data;
+      }
+
       // Process data if menu items are available (always expected)
       // and other data is fetched (or empty if not available)
       if (menuItemsData.length > 0 || transactionsData.length > 0 || expensesData.length > 0) {
-        processDashboardData(transactionsData, menuItemsData, expensesData);
+        processDashboardData(transactionsData, menuItemsData, expensesData, settingsData);
       } else {
         console.error("No dashboard data fetched successfully.");
         // Optionally, set dashboardData to an empty state to stop loading spinner
@@ -128,7 +136,7 @@ const MainDashboard = ({ headerTitle }) => {
     }
   }, []); // Empty dependency array to run once on mount
 
-  const processDashboardData = (transactions, menuItems, expenses) => {
+  const processDashboardData = (transactions, menuItems, expenses, settings) => {
     const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -139,6 +147,28 @@ const MainDashboard = ({ headerTitle }) => {
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
 
+    // --- All-Time Metrics for Working Capital ---
+    const initialCapital = parseFloat(settings?.initial_capital || 0);
+    const initialCapitalDate = settings?.initial_capital_date ? new Date(settings.initial_capital_date) : null;
+
+    // Filter transactions and expenses since the initial capital date
+    const relevantTransactions = initialCapitalDate
+      ? transactions.filter(t => new Date(t.timestamp) >= initialCapitalDate)
+      : transactions;
+    
+    const relevantExpenses = initialCapitalDate
+      ? expenses.filter(e => new Date(e.date) >= initialCapitalDate)
+      : expenses;
+
+    const revenueSinceDate = relevantTransactions
+      .filter(t => t.payment_method !== 'Makan Karyawan')
+      .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+
+    const expensesSinceDate = relevantExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+
+    const workingCapital = initialCapital + revenueSinceDate - expensesSinceDate;
+
+    // --- Monthly Metrics for Dashboard ---
     const monthlyTransactions = transactions.filter(t => {
       const transactionDate = new Date(t.timestamp);
       return (
@@ -202,7 +232,15 @@ const MainDashboard = ({ headerTitle }) => {
     const avgOrderTrend = avgOrderChange >= 0 ? 'up' : 'down';
 
     // --- Other Metrics ---
-    const itemsSoldToday = todayTransactions.flatMap(t => t.items).reduce((sum, i) => sum + i.quantity, 0);
+    const itemsSoldToday = todayTransactions.flatMap(t => {
+      try {
+        const items = typeof t.items === 'string' ? JSON.parse(t.items) : t.items;
+        return Array.isArray(items) ? items : [];
+      } catch (e) {
+        console.error("Failed to parse transaction items:", e);
+        return [];
+      }
+    }).reduce((sum, i) => sum + (i.quantity || 0), 0);
     const lowStockItems = menuItems.filter(item => item.stock <= 5 && item.stock > 0).length;
     const recentTransactions = transactions.slice(0, 6);
 
@@ -211,7 +249,8 @@ const MainDashboard = ({ headerTitle }) => {
         totalRevenue,
         totalExpenses,
         stockValue,
-        netProfit
+        netProfit,
+        workingCapital,
       },
       todayStats: {
         transactions: todayTransactions.length,
@@ -294,6 +333,13 @@ const MainDashboard = ({ headerTitle }) => {
   ];
 
   const metricsData = [
+    {
+      title: 'Modal Berjalan',
+      value: formatCurrency(dashboardData.metrics.workingCapital),
+      icon: 'Wallet',
+      color: 'info',
+      description: 'Modal awal + pendapatan - pengeluaran'
+    },
     {
       title: 'Pendapatan Bulan Ini',
       value: formatCurrency(dashboardData.metrics.totalRevenue),

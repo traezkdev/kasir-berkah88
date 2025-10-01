@@ -26,6 +26,7 @@ const BusinessReports = ({ headerTitle }) => {
   const [transactions, setTransactions] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
   const [expenses, setExpenses] = useState([]); // State for expenses
+  const [settings, setSettings] = useState(null);
   const [reportData, setReportData] = useState(null);
   const [isLoading, setIsLoading] = useState(true); // Start with loading true
   const [isExporting, setIsExporting] = useState(false); // New state for export loading
@@ -42,15 +43,17 @@ const BusinessReports = ({ headerTitle }) => {
         return;
       }
       try {
-        const [transRes, menuRes, expenseRes] = await Promise.all([
+        const [transRes, menuRes, expenseRes, settingsRes] = await Promise.all([
           authFetch(`${apiUrl}/api/transactions`),
           authFetch(`${apiUrl}/api/menu-items`),
-          authFetch(`${apiUrl}/api/expenses`)
+          authFetch(`${apiUrl}/api/expenses`),
+          authFetch(`${apiUrl}/api/all-settings`)
         ]);
 
         const transData = await transRes.json();
         const menuData = await menuRes.json();
         const expenseData = await expenseRes.json();
+        const settingsData = await settingsRes.json();
 
         if (transData.message === 'success') {
           setTransactions(transData.data.map(t => ({...t, timestamp: new Date(t.timestamp)})));
@@ -60,6 +63,9 @@ const BusinessReports = ({ headerTitle }) => {
         }
         if (expenseData.message === 'success') {
           setExpenses(expenseData.data.map(e => ({...e, date: new Date(e.date)})));
+        }
+        if (settingsData.message === 'success') {
+          setSettings(settingsData.data);
         }
       } catch (error) {
         console.error("Failed to fetch data:", error);
@@ -97,7 +103,15 @@ const BusinessReports = ({ headerTitle }) => {
       const averageOrder = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
 
       const topItems = filteredTransactions
-        .flatMap(t => t.items)
+        .flatMap(t => {
+          try {
+            const items = typeof t.items === 'string' ? JSON.parse(t.items) : t.items;
+            return Array.isArray(items) ? items : [];
+          } catch (e) {
+            console.error("Failed to parse transaction items:", e);
+            return [];
+          }
+        })
         .reduce((acc, item) => {
           const existing = acc.find(i => i.name === item.name);
           const itemPrice = parseFloat(item.price || 0);
@@ -130,12 +144,15 @@ const BusinessReports = ({ headerTitle }) => {
 
       const averageDailyExpenses = diffDays > 0 ? totalExpenses / diffDays : 0;
 
+      const initialCapital = parseFloat(settings?.initial_capital || 0);
+
       setReportData({
         sales: {
           totalRevenue,
           totalTransactions,
           averageOrder,
           topItems,
+          initialCapital,
         },
         stock: {
           totalValue: totalStockValue,
@@ -156,7 +173,7 @@ const BusinessReports = ({ headerTitle }) => {
     };
 
     processReportData();
-  }, [transactions, menuItems, expenses, selectedDateRange, isLoading]);
+  }, [transactions, menuItems, expenses, settings, selectedDateRange, isLoading]);
 
   const handleDateRangeChange = (dateRange) => {
     setSelectedDateRange(dateRange);
