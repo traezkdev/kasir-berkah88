@@ -24,18 +24,40 @@ export const exportToExcel = (data, filename = 'data') => {
   const isCombinedData = data.length > 0 && data[0].hasOwnProperty('title') && data[0].hasOwnProperty('headers') && data[0].hasOwnProperty('rows');
 
   if (isCombinedData) {
-    const ws = XLSX.utils.json_to_sheet([]); // Start with an empty sheet
-    let rowIdx = 1; // Start content from row 1
+    const ws = XLSX.utils.json_to_sheet([]);
+    let rowIdx = 1;
+
+    // Calculate max columns needed for merging
+    let maxCols = 0;
+    data.forEach(section => {
+      if (section.headers && section.headers.length > maxCols) {
+        maxCols = section.headers.length;
+      }
+    });
+    // Ensure a minimum of 2 columns for summary sections if no headers are found or are too small
+    if (maxCols < 2) maxCols = 2; 
 
     // Main Report Title
     XLSX.utils.sheet_add_aoa(ws, [["Laporan Bisnis Gabungan"]], { origin: `A${rowIdx}` });
     if (ws[`A${rowIdx}`]) {
       ws[`A${rowIdx}`].s = { font: { bold: true, sz: 18 }, alignment: { horizontal: "center" } };
     }
+    // Merge main title
+    if (maxCols > 1) {
+      if (!ws['!merges']) ws['!merges'] = [];
+      ws['!merges'].push({ s: { r: rowIdx - 1, c: 0 }, e: { r: rowIdx - 1, c: maxCols - 1 } });
+    }
     rowIdx++;
+
+    // Export Date
     XLSX.utils.sheet_add_aoa(ws, [[`Tanggal Export: ${new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}`]], { origin: `A${rowIdx}` });
     if (ws[`A${rowIdx}`]) {
       ws[`A${rowIdx}`].s = { font: { sz: 11 }, alignment: { horizontal: "center" } };
+    }
+    // Merge date
+    if (maxCols > 1) {
+      if (!ws['!merges']) ws['!merges'] = [];
+      ws['!merges'].push({ s: { r: rowIdx - 1, c: 0 }, e: { r: rowIdx - 1, c: maxCols - 1 } });
     }
     rowIdx += 2; // Add spacing after main title and date
 
@@ -44,6 +66,11 @@ export const exportToExcel = (data, filename = 'data') => {
       XLSX.utils.sheet_add_aoa(ws, [[section.title]], { origin: `A${rowIdx}` });
       if (ws[`A${rowIdx}`]) {
         ws[`A${rowIdx}`].s = { font: { bold: true, sz: 14 } };
+      }
+      // Merge section title
+      if (maxCols > 1) {
+        if (!ws['!merges']) ws['!merges'] = [];
+        ws['!merges'].push({ s: { r: rowIdx - 1, c: 0 }, e: { r: rowIdx - 1, c: maxCols - 1 } });
       }
       rowIdx++;
 
