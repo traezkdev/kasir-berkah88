@@ -147,28 +147,26 @@ const MainDashboard = ({ headerTitle }) => {
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
 
-    // --- All-Time Metrics for Working Capital ---
+    // --- All-Time & Working Capital Metrics ---
     const initialCapital = parseFloat(settings?.initial_capital);
     const initialCapitalDate = settings?.initial_capital_date ? new Date(settings.initial_capital_date) : null;
-    let workingCapital = 0; // Default to 0
+    let workingCapital = 0;
 
-    // Only calculate working capital if initial capital has been set.
+    const allTimeTransactions = initialCapitalDate
+      ? transactions.filter(t => new Date(t.timestamp) >= initialCapitalDate)
+      : transactions;
+    const allTimeRelevantExpenses = initialCapitalDate
+      ? expenses.filter(e => new Date(e.date) >= initialCapitalDate)
+      : expenses;
+
+    const allTimeRevenue = allTimeTransactions
+      .filter(t => t.payment_method !== 'Makan Karyawan')
+      .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+    const allTimeExpenses = allTimeRelevantExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+    const allTimeNetProfit = allTimeRevenue - allTimeExpenses;
+
     if (!isNaN(initialCapital)) {
-        const relevantTransactions = initialCapitalDate
-          ? transactions.filter(t => new Date(t.timestamp) >= initialCapitalDate)
-          : transactions;
-        
-        const relevantExpenses = initialCapitalDate
-          ? expenses.filter(e => new Date(e.date) >= initialCapitalDate)
-          : expenses;
-
-        const revenueSinceDate = relevantTransactions
-          .filter(t => t.payment_method !== 'Makan Karyawan')
-          .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
-
-        const expensesSinceDate = relevantExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
-
-        workingCapital = initialCapital + revenueSinceDate - expensesSinceDate;
+        workingCapital = initialCapital + allTimeNetProfit;
     }
 
     // --- Monthly Metrics for Dashboard ---
@@ -196,8 +194,6 @@ const MainDashboard = ({ headerTitle }) => {
     const netProfit = totalRevenue - totalExpenses;
 
     // --- Daily Stats Calculation ---
-
-    // Today's Data
     const todayTransactions = transactions.filter(t => new Date(t.timestamp).toDateString() === todayString && t.payment_method !== 'Makan Karyawan');
     const todaySales = todayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
     const averageOrderToday = todayTransactions.length > 0 ? todaySales / todayTransactions.length : 0;
@@ -208,23 +204,19 @@ const MainDashboard = ({ headerTitle }) => {
     const averageOrderYesterday = yesterdayTransactions.length > 0 ? yesterdaySales / yesterdayTransactions.length : 0;
 
     // --- Change & Trend Calculation ---
-
-    // 1. Sales Change
     let salesChange = 0;
     if (yesterdaySales > 0) {
       salesChange = ((todaySales - yesterdaySales) / yesterdaySales) * 100;
     } else if (todaySales > 0) {
-      salesChange = 100; // Infinite growth if yesterday was 0 and today is > 0
+      salesChange = 100;
     }
     const salesChangeFormatted = `${salesChange >= 0 ? '+' : ''}${salesChange.toFixed(0)}%`;
     const salesTrend = salesChange >= 0 ? 'up' : 'down';
 
-    // 2. Total Transactions Change
     const transChange = todayTransactions.length - yesterdayTransactions.length;
     const transChangeFormatted = `${transChange >= 0 ? '+' : ''}${transChange}`;
     const transTrend = transChange >= 0 ? 'up' : 'down';
 
-    // 3. Average Order Change
     let avgOrderChange = 0;
     if (averageOrderYesterday > 0) {
       avgOrderChange = ((averageOrderToday - averageOrderYesterday) / averageOrderYesterday) * 100;
@@ -249,11 +241,17 @@ const MainDashboard = ({ headerTitle }) => {
 
     setDashboardData({
       metrics: {
+        // Monthly
         totalRevenue,
         totalExpenses,
-        stockValue,
         netProfit,
+        // All-Time
         workingCapital,
+        allTimeRevenue,
+        allTimeExpenses,
+        allTimeNetProfit,
+        // Other
+        stockValue,
       },
       todayStats: {
         transactions: todayTransactions.length,
@@ -275,7 +273,7 @@ const MainDashboard = ({ headerTitle }) => {
         todaySales: { value: formatCurrency(todaySales), change: salesChangeFormatted, trend: salesTrend },
         totalTransactions: { value: todayTransactions.length.toString(), change: transChangeFormatted, trend: transTrend },
         averageOrder: { value: formatCurrency(averageOrderToday), change: avgOrderChangeFormatted, trend: avgOrderTrend },
-        lowStock: { value: lowStockItems.toString(), change: '', trend: 'down' } // Removed change text
+        lowStock: { value: lowStockItems.toString(), change: '', trend: 'down' } 
       }
     });
   };
@@ -370,6 +368,27 @@ const MainDashboard = ({ headerTitle }) => {
       icon: 'DollarSign',
       color: 'accent',
       description: 'Pendapatan - pengeluaran'
+    },
+    {
+      title: 'Total Pendapatan (Semua Waktu)',
+      value: formatCurrency(dashboardData.metrics.allTimeRevenue),
+      icon: 'TrendingUp',
+      color: 'success',
+      description: 'Total pendapatan sejak modal awal diatur'
+    },
+    {
+      title: 'Total Pengeluaran (Semua Waktu)',
+      value: formatCurrency(dashboardData.metrics.allTimeExpenses),
+      icon: 'TrendingDown',
+      color: 'destructive',
+      description: 'Total pengeluaran sejak modal awal diatur'
+    },
+    {
+      title: 'Total Laba Bersih (Semua Waktu)',
+      value: formatCurrency(dashboardData.metrics.allTimeNetProfit),
+      icon: 'BarChart',
+      color: 'accent',
+      description: 'Total laba/rugi sejak modal awal diatur'
     }
   ];
 

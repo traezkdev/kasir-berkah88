@@ -24,11 +24,9 @@ const Settings = ({ headerTitle }) => {
   const [currentMasterPassword, setCurrentMasterPassword] = useState('');
   const [newMasterPassword, setNewMasterPassword] = useState('');
   const [masterPasswordForClear, setMasterPasswordForClear] = useState('');
-  const [faviconFile, setFaviconFile] = useState(null);
   const [webDescription, setWebDescription] = useState('');
   const [initialCapital, setInitialCapital] = useState('');
   const [coverImageFile, setCoverImageFile] = useState(null);
-  const [currentFaviconUrl, setCurrentFaviconUrl] = useState('');
   const [currentCoverImageUrl, setCurrentCoverImageUrl] = useState('');
   const [currentWebDescription, setCurrentWebDescription] = useState('');
   const navigate = useNavigate();
@@ -53,12 +51,6 @@ const Settings = ({ headerTitle }) => {
   }, []);
 
   useEffect(() => {
-    // Update favicon
-    const faviconLink = document.getElementById('favicon-link');
-    if (faviconLink && currentFaviconUrl) {
-      faviconLink.href = currentFaviconUrl;
-    }
-
     // Update Open Graph and Twitter meta tags
     const ogTitle = document.getElementById('og-title');
     if (ogTitle) ogTitle.content = websiteTitle;
@@ -78,7 +70,7 @@ const Settings = ({ headerTitle }) => {
     const twitterImage = document.getElementById('twitter-image');
     if (twitterImage) twitterImage.content = currentCoverImageUrl || '/no_image.png'; // Fallback to default
 
-  }, [currentFaviconUrl, currentWebDescription, currentCoverImageUrl, websiteTitle]);
+  }, [currentWebDescription, currentCoverImageUrl, websiteTitle]);
 
   const fetchSettings = async () => {
     setIsLoading(true);
@@ -90,7 +82,6 @@ const Settings = ({ headerTitle }) => {
         setNewWebsiteTitle(data.data.website_title || 'Kasir Berkah 88');
         setNewHeaderTitle(data.data.header_title || headerTitle || 'Kasir Berkah 88'); // Initialize newHeaderTitle with API data or prop
         setRegistrationEnabled(data.data.registration_enabled === 'true');
-        setCurrentFaviconUrl(data.data.favicon_url || '');
         setCurrentCoverImageUrl(data.data.cover_image_url || '');
         setCurrentWebDescription(data.data.web_description || '');
         setWebDescription(data.data.web_description || ''); // Initialize input field
@@ -392,42 +383,6 @@ const Settings = ({ headerTitle }) => {
     } catch (err) {
       setError('Network error or server unreachable');
       console.error('Update web description error:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleFaviconUpload = async (e) => {
-    e.preventDefault();
-    setMessage('');
-    setError('');
-    setIsLoading(true);
-
-    if (!faviconFile) {
-      setError('Please select a favicon file to upload.');
-      setIsLoading(false);
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('favicon', faviconFile);
-
-    try {
-      const response = await authFetch(`${apiUrl}/api/settings/favicon/`, {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setMessage('Favicon uploaded successfully!');
-        setCurrentFaviconUrl(data.data.favicon_url); // Assuming backend returns the new URL
-        setFaviconFile(null); // Clear selected file
-      } else {
-        setError(data.error || 'Failed to upload favicon');
-      }
-    } catch (err) {
-      setError('Network error or server unreachable');
-      console.error('Favicon upload error:', err);
     } finally {
       setIsLoading(false);
     }

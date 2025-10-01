@@ -21,14 +21,6 @@ function App() {
 
           // Set Header Title
           setHeaderTitle(settings.header_title || 'Kasir Berkah 88');
-          
-          // Set Favicon
-          if (settings.favicon_url) {
-            const faviconLink = document.getElementById('favicon-link');
-            if (faviconLink) {
-              faviconLink.href = settings.favicon_url;
-            }
-          }
         } else {
           console.error('Failed to fetch settings:', data.error);
         }
