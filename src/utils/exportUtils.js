@@ -273,8 +273,9 @@ export const prepareCombinedDataForExport = (reportData) => {
     headers: ['Keterangan', 'Nilai'],
     rows: [
       ['Modal Awal', `Rp ${parseFloat(sales.initialCapital || 0).toLocaleString('id-ID')}`],
-      ['Laba Bersih', `Rp ${parseFloat(netProfit || 0).toLocaleString('id-ID')}`],
-      ['Pertumbuhan Modal', `${capitalGrowth.toFixed(1)}%`]
+      ['Modal Berjalan', `Rp ${parseFloat(sales.workingCapital || 0).toLocaleString('id-ID')}`],
+      ['Laba Bersih (Periode Ini)', `Rp ${parseFloat(netProfit || 0).toLocaleString('id-ID')}`],
+      ['Pertumbuhan Modal (dari Laba Bersih)', `${capitalGrowth.toFixed(1)}%`]
     ],
   });
 
