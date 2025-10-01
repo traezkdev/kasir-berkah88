@@ -481,7 +481,7 @@ app.get("/api/settings", async (req, res) => {
 });
 
 // Get all settings (protected)
-app.get("/api/all-settings", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+app.get("/api/all-settings", authenticateToken, authorizeRoles('user', 'admin', 'guest'), async (req, res) => {
     try {
         const sql = "SELECT `key`, `value` FROM settings";
         const [rows] = await db.query(sql);
