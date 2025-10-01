@@ -97,7 +97,15 @@ const BusinessReports = ({ headerTitle }) => {
       const averageOrder = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
 
       const topItems = filteredTransactions
-        .flatMap(t => t.items)
+        .flatMap(t => {
+          try {
+            const items = typeof t.items === 'string' ? JSON.parse(t.items) : t.items;
+            return Array.isArray(items) ? items : [];
+          } catch (e) {
+            console.error("Failed to parse transaction items:", e);
+            return [];
+          }
+        })
         .reduce((acc, item) => {
           const existing = acc.find(i => i.name === item.name);
           const itemPrice = parseFloat(item.price || 0);
