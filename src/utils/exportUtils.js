@@ -17,31 +17,93 @@ const calculateTotalAmount = (data) => {
   return data.reduce((sum, item) => sum + (item.Jumlah || 0), 0);
 };
 
+const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
+
 export const exportToExcel = (data, filename = 'data') => {
-  // Check if it's combined data based on the presence of 'Section' key
-  const isCombinedData = data.length > 0 && data[0].hasOwnProperty('Section');
+  // Check if it's combined data based on the presence of 'title', 'headers', and 'rows' keys
+  const isCombinedData = data.length > 0 && data[0].hasOwnProperty('title') && data[0].hasOwnProperty('headers') && data[0].hasOwnProperty('rows');
 
   if (isCombinedData) {
-    const ws_data = [];
-    let currentSection = '';
+    const ws = XLSX.utils.json_to_sheet([]);
+    let rowIdx = 1;
 
-    data.forEach(row => {
-      if (row.Section && row.Section !== currentSection) {
-        ws_data.push([]); // Add a blank row before a new section
-        ws_data.push([row.Section]); // Add section title
-        currentSection = row.Section;
-        // Add headers for the section if available
-        if (row.Key && row.Key !== 'Nama Menu' && row.Key !== 'Tanggal') { // Avoid adding generic headers for summary rows
-          ws_data.push([row.Key, row.Value, row.Value2, row.Value3].filter(Boolean));
-        }
-      } else if (row.Key) {
-        ws_data.push([row.Key, row.Value, row.Value2, row.Value3].filter(Boolean));
-      } else {
-        ws_data.push([]); // Empty row for spacing
+    // Calculate max columns needed for merging
+    let maxCols = 0;
+    data.forEach(section => {
+      if (section.headers && section.headers.length > maxCols) {
+        maxCols = section.headers.length;
       }
     });
+    // Ensure a minimum of 2 columns for summary sections if no headers are found or are too small
+    if (maxCols < 2) maxCols = 2; 
 
-    const ws = XLSX.utils.aoa_to_sheet(ws_data);
+    // Main Report Title
+    XLSX.utils.sheet_add_aoa(ws, [["Laporan Bisnis Gabungan"]], { origin: `A${rowIdx}` });
+    if (ws[`A${rowIdx}`]) {
+      ws[`A${rowIdx}`].s = { font: { bold: true, sz: 18 }, alignment: { horizontal: "center" } };
+    }
+    // Merge main title
+    if (maxCols > 1) {
+      if (!ws['!merges']) ws['!merges'] = [];
+      ws['!merges'].push({ s: { r: rowIdx - 1, c: 0 }, e: { r: rowIdx - 1, c: maxCols - 1 } });
+    }
+    rowIdx++;
+
+    // Export Date
+    XLSX.utils.sheet_add_aoa(ws, [[`Tanggal Export: ${new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}`]], { origin: `A${rowIdx}` });
+    if (ws[`A${rowIdx}`]) {
+      ws[`A${rowIdx}`].s = { font: { sz: 11 }, alignment: { horizontal: "center" } };
+    }
+    // Merge date
+    if (maxCols > 1) {
+      if (!ws['!merges']) ws['!merges'] = [];
+      ws['!merges'].push({ s: { r: rowIdx - 1, c: 0 }, e: { r: rowIdx - 1, c: maxCols - 1 } });
+    }
+    rowIdx += 2; // Add spacing after main title and date
+
+    data.forEach(section => {
+      // Section Title
+      XLSX.utils.sheet_add_aoa(ws, [[section.title]], { origin: `A${rowIdx}` });
+      if (ws[`A${rowIdx}`]) {
+        ws[`A${rowIdx}`].s = { font: { bold: true, sz: 14 } };
+      }
+      // Merge section title
+      if (maxCols > 1) {
+        if (!ws['!merges']) ws['!merges'] = [];
+        ws['!merges'].push({ s: { r: rowIdx - 1, c: 0 }, e: { r: rowIdx - 1, c: maxCols - 1 } });
+      }
+      rowIdx++;
+
+      // Section Headers
+      XLSX.utils.sheet_add_aoa(ws, [section.headers], { origin: `A${rowIdx}` });
+      section.headers.forEach((_, colIdx) => {
+        const cellRef = XLSX.utils.encode_cell({ r: rowIdx - 1, c: colIdx });
+        if (ws[cellRef]) {
+          ws[cellRef].s = { font: { bold: true } };
+        }
+      });
+      rowIdx++;
+
+      // Section Rows
+      XLSX.utils.sheet_add_aoa(ws, section.rows, { origin: `A${rowIdx}` });
+      rowIdx += section.rows.length;
+      rowIdx++; // Add spacing between sections
+    });
+
+    // Auto-width columns
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    ws['!cols'] = [];
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      let max_width = 10; // default width
+      for (let R = range.s.r; R <= range.e.r; ++R) {
+        const cell = ws[XLSX.utils.encode_cell({ r: R, c: C })];
+        if (cell && cell.v) {
+          max_width = Math.max(max_width, cell.v.toString().length + 2); // +2 for padding
+        }
+      }
+      ws['!cols'][C] = { wch: max_width };
+    }
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Laporan Gabungan");
     XLSX.writeFile(wb, `${filename}.xlsx`);
@@ -284,9 +346,9 @@ export const prepareCombinedDataForExport = (reportData) => {
     title: 'Ringkasan Penjualan',
     headers: ['Keterangan', 'Nilai'],
     rows: [
-      ['Total Pendapatan', sales.totalRevenue],
+      ['Total Pendapatan', formatCurrency(sales.totalRevenue)],
       ['Total Transaksi', sales.totalTransactions],
-      ['Rata-rata Order', sales.averageOrder],
+      ['Rata-rata Order', formatCurrency(sales.averageOrder)],
     ],
   });
 
