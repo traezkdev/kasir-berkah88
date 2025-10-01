@@ -202,7 +202,15 @@ const MainDashboard = ({ headerTitle }) => {
     const avgOrderTrend = avgOrderChange >= 0 ? 'up' : 'down';
 
     // --- Other Metrics ---
-    const itemsSoldToday = todayTransactions.flatMap(t => t.items).reduce((sum, i) => sum + i.quantity, 0);
+    const itemsSoldToday = todayTransactions.flatMap(t => {
+      try {
+        const items = typeof t.items === 'string' ? JSON.parse(t.items) : t.items;
+        return Array.isArray(items) ? items : [];
+      } catch (e) {
+        console.error("Failed to parse transaction items:", e);
+        return [];
+      }
+    }).reduce((sum, i) => sum + (i.quantity || 0), 0);
     const lowStockItems = menuItems.filter(item => item.stock <= 5 && item.stock > 0).length;
     const recentTransactions = transactions.slice(0, 6);
 
