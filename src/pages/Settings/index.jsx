@@ -188,14 +188,26 @@ const Settings = ({ headerTitle }) => {
     setIsLoading(true);
 
     try {
-        const response = await authFetch(`${apiUrl}/api/settings`,
-         {
+        const capitalValue = parseFloat(initialCapital);
+        if (isNaN(capitalValue)) {
+            setError("Modal awal harus berupa angka.");
+            setIsLoading(false);
+            return;
+        }
+
+        const settingsToUpdate = {
+            initial_capital: capitalValue,
+            initial_capital_date: new Date().toISOString(),
+        };
+
+        const response = await authFetch(`${apiUrl}/api/settings`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ initial_capital: initialCapital }),
+            body: JSON.stringify(settingsToUpdate),
         });
+
         const data = await response.json();
         if (response.ok) {
             setMessage('Modal awal berhasil diperbarui!');

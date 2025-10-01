@@ -149,11 +149,24 @@ const MainDashboard = ({ headerTitle }) => {
 
     // --- All-Time Metrics for Working Capital ---
     const initialCapital = parseFloat(settings?.initial_capital || 0);
-    const allTimeRevenue = transactions
+    const initialCapitalDate = settings?.initial_capital_date ? new Date(settings.initial_capital_date) : null;
+
+    // Filter transactions and expenses since the initial capital date
+    const relevantTransactions = initialCapitalDate
+      ? transactions.filter(t => new Date(t.timestamp) >= initialCapitalDate)
+      : transactions;
+    
+    const relevantExpenses = initialCapitalDate
+      ? expenses.filter(e => new Date(e.date) >= initialCapitalDate)
+      : expenses;
+
+    const revenueSinceDate = relevantTransactions
       .filter(t => t.payment_method !== 'Makan Karyawan')
       .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
-    const allTimeExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
-    const workingCapital = initialCapital + allTimeRevenue - allTimeExpenses;
+
+    const expensesSinceDate = relevantExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+
+    const workingCapital = initialCapital + revenueSinceDate - expensesSinceDate;
 
     // --- Monthly Metrics for Dashboard ---
     const monthlyTransactions = transactions.filter(t => {
