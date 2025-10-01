@@ -215,6 +215,17 @@ const UserProfile = ({ headerTitle }) => {
                   Keluar
                 </Button>
               </div>
+
+              {/* Credits Button */}
+              <div className="space-y-4 pt-8">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => navigate('/credits')}
+                >
+                  Lihat Credits
+                </Button>
+              </div>
             </>
           )}
         </div>

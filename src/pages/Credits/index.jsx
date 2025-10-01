@@ -17,7 +17,7 @@ const Credits = ({ headerTitle }) => {
         <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8 space-y-8 text-center">
           <h2 className="text-2xl font-bold text-text-primary">Credits</h2>
           <p className="text-text-secondary">Aplikasi ini di buat oleh:</p>
-          <p className="text-xl font-semibold text-primary">M Alfin Firdaus</p>
+          <p className="text-xl font-semibold text-primary">M Alfin Firdaus (Traezkdev)</p>
           <div className="flex justify-center space-x-4">
             <a href="https://instagram.com/alfinf1rdaus" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-700">
               <Icon name="Instagram" size={24} />
