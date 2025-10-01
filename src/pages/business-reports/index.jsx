@@ -144,7 +144,28 @@ const BusinessReports = ({ headerTitle }) => {
 
       const averageDailyExpenses = diffDays > 0 ? totalExpenses / diffDays : 0;
 
-      const initialCapital = parseFloat(settings?.initial_capital || 0);
+      // --- Working Capital Calculation ---
+      const initialCapital = parseFloat(settings?.initial_capital);
+      const initialCapitalDate = settings?.initial_capital_date ? new Date(settings.initial_capital_date) : null;
+      let workingCapital = 0;
+
+      if (!isNaN(initialCapital)) {
+        const relevantTransactions = initialCapitalDate
+          ? transactions.filter(t => new Date(t.timestamp) >= initialCapitalDate)
+          : transactions;
+        
+        const relevantExpenses = initialCapitalDate
+          ? expenses.filter(e => new Date(e.date) >= initialCapitalDate)
+          : expenses;
+
+        const revenueSinceDate = relevantTransactions
+          .filter(t => t.payment_method !== 'Makan Karyawan')
+          .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+
+        const expensesSinceDate = relevantExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+
+        workingCapital = initialCapital + revenueSinceDate - expensesSinceDate;
+      }
 
       setReportData({
         sales: {
@@ -152,7 +173,8 @@ const BusinessReports = ({ headerTitle }) => {
           totalTransactions,
           averageOrder,
           topItems,
-          initialCapital,
+          initialCapital: !isNaN(initialCapital) ? initialCapital : 0,
+          workingCapital,
         },
         stock: {
           totalValue: totalStockValue,
