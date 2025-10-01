@@ -734,7 +734,7 @@ app.delete("/api/admin/data/all", authenticateToken, authorizeRoles('admin'), as
         const storedMasterPassword = masterPassRow.length > 0 ? masterPassRow[0].value : null;
 
         if (!storedMasterPassword || !(await bcrypt.compare(masterPassword, storedMasterPassword))) {
-            return res.status(401).json({ error: "Invalid master password" });
+            return res.status(401).json({ error: "Kata sandi master salah" });
         }
 
         await db.query('TRUNCATE TABLE transactions');
