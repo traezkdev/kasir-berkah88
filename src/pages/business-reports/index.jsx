@@ -92,7 +92,7 @@ const BusinessReports = ({ headerTitle }) => {
       const filteredExpenses = expenses.filter(filterByDate);
 
       // Sales Report Data
-      const totalRevenue = filteredTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+      const totalRevenue = filteredTransactions.filter(t => t.payment_method !== 'Makan Karyawan').reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
       const totalTransactions = filteredTransactions.length;
       const averageOrder = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
 
