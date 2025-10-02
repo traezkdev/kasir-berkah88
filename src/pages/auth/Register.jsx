@@ -148,7 +148,7 @@ const Register = () => {
           </form>
         ) : (
           <div className="text-center text-text-secondary">
-            <p>User registration is currently disabled by the administrator.</p>
+            <p>Pendaftaran pengguna saat ini dinonaktifkan oleh administrator.</p>
           </div>
         )}
 

@@ -343,11 +343,16 @@ const Settings = ({ headerTitle }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ masterPassword: masterPasswordForClear }),
+        disableRedirectOnAuthError: true,
       });
+
       const data = await response.json();
+
       if (response.ok) {
         setMessage('All data cleared successfully!');
         setMasterPasswordForClear('');
+      } else if (response.status === 401) {
+        setError(data.error || 'Kata sandi master salah!');
       } else {
         setError(data.error || 'Failed to clear all data');
       }

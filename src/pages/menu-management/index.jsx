@@ -71,6 +71,8 @@ const MenuManagement = ({ headerTitle }) => {
 
   const handleAddItem = async (itemData) => {
     const formData = new FormData();
+    const newId = `M-${Date.now()}`;
+    formData.append('id', newId);
     Object.keys(itemData).forEach(key => {
       formData.append(key, itemData[key]);
     });

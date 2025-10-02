@@ -734,7 +734,7 @@ app.delete("/api/admin/data/all", authenticateToken, authorizeRoles('admin'), as
         const storedMasterPassword = masterPassRow.length > 0 ? masterPassRow[0].value : null;
 
         if (!storedMasterPassword || !(await bcrypt.compare(masterPassword, storedMasterPassword))) {
-            return res.status(401).json({ error: "Invalid master password" });
+            return res.status(401).json({ error: "Kata sandi master salah" });
         }
 
         await db.query('TRUNCATE TABLE transactions');
@@ -894,6 +894,20 @@ app.post("/api/logout", authenticateToken, (req, res) => {
     res.json({ message: "Logged out successfully" });
 });
 
+
+// Public API to get all menu items for guest users (no authentication required)
+app.get("/api/guest/menu-items", async (req, res) => {
+    try {
+        const sql = "SELECT id, name, price, stock, category, image_url FROM menu_items";
+        const [rows] = await db.query(sql);
+        res.json({
+            "message": "success",
+            "data": rows
+        });
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
 
 // Default response for any other request
 app.use(function(req, res) {

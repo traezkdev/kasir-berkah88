@@ -12,6 +12,7 @@ import Register from './pages/auth/Register'; // Import Register
 import UserProfile from './pages/UserProfile'; // Import UserProfile
 import Settings from './pages/Settings'; // Import Settings
 import Credits from './pages/Credits'; // Import Credits
+import GuestCheckout from './pages/GuestCheckout'; // Import GuestCheckout
 
 // ProtectedRoute component
 const ProtectedRoute = ({ children }) => {
@@ -29,6 +30,7 @@ const AppRoutes = ({ headerTitle }) => {
       {/* Public Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/guest-checkout" element={<GuestCheckout />} />
 
       {/* Protected Routes */}
       <Route path="/" element={<ProtectedRoute><MainDashboard headerTitle={headerTitle} /></ProtectedRoute>} />
