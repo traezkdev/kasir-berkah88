@@ -134,42 +134,56 @@ const GuestCheckout = () => {
             <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 pb-32 lg:pb-8">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                     {/* Menu Items Section */}
-                    <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {menuItems.map(item => (
-                            <div key={item.id} className="bg-white rounded-lg border border-slate-200 shadow-elevation-1 overflow-hidden flex flex-col">
-                                <AppImage
-                                    src={`https://api.inviteshare.my.id/${item.image_url}`}
-                                    alt={item.name}
-                                    className="w-full h-40 object-cover"
-                                />
-                                <div className="p-4 flex flex-col flex-grow">
-                                    <h2 className="text-lg font-semibold text-text-primary flex-grow">{item.name}</h2>
-                                    <p className="text-primary font-bold text-base my-2">Rp {item.price.toLocaleString('id-ID')}</p>
-                                    <div className={`text-xs font-medium px-2 py-1 rounded-full self-start ${item.stock > 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
-                                        Stok: {item.stock > 0 ? item.stock : 'Habis'}
-                                    </div>
-                                    <div className="flex items-center justify-center mt-4">
-                                        <Button
-                                            variant="outline" size="icon" className="rounded-r-none"
-                                            onClick={() => handleRemoveFromCart(item)}
-                                            disabled={!cart[item.id] || cart[item.id] <= 0}
-                                        >
-                                            <Minus size={16} />
-                                        </Button>
-                                        <span className="px-4 py-2 border-t border-b w-16 text-center font-semibold">
-                                            {cart[item.id] || 0}
-                                        </span>
-                                        <Button
-                                            variant="outline" size="icon" className="rounded-l-none"
-                                            onClick={() => handleAddToCart(item)}
-                                            disabled={item.stock <= (cart[item.id] || 0)}
-                                        >
-                                            <Plus size={16} />
-                                        </Button>
+                    <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {menuItems.map(item => {
+                            const isInCart = cart[item.id] > 0;
+                            const isOutOfStock = item.stock === 0;
+
+                            return (
+                                <div 
+                                    key={item.id} 
+                                    className={`bg-white rounded-lg shadow-md overflow-hidden transform transition-transform duration-200 hover:scale-105 ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                    <AppImage
+                                        src={`https://api.inviteshare.my.id/${item.image_url}`}
+                                        alt={item.name}
+                                        className="w-full h-32 object-cover"
+                                    />
+                                    <div className="p-4 flex flex-col flex-grow">
+                                        <h3 className="text-md font-semibold text-text-primary flex-grow">{item.name}</h3>
+                                        <p className="text-sm text-text-secondary mt-1">Rp {item.price.toLocaleString('id-ID')}</p>
+                                        <p className="text-xs text-text-secondary mt-1">Stok: {item.stock}</p>
+                                        
+                                        <div className="mt-4">
+                                            {isOutOfStock ? (
+                                                <Button className="w-full" disabled>Stok Habis</Button>
+                                            ) : isInCart ? (
+                                                <div className="flex items-center justify-center">
+                                                    <Button
+                                                        variant="outline" size="icon" className="rounded-r-none"
+                                                        onClick={() => handleRemoveFromCart(item)}
+                                                    >
+                                                        <Minus size={16} />
+                                                    </Button>
+                                                    <span className="px-4 py-2 border-t border-b w-16 text-center font-semibold">
+                                                        {cart[item.id] || 0}
+                                                    </span>
+                                                    <Button
+                                                        variant="outline" size="icon" className="rounded-l-none"
+                                                        onClick={() => handleAddToCart(item)}
+                                                        disabled={item.stock <= (cart[item.id] || 0)}
+                                                    >
+                                                        <Plus size={16} />
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <Button className="w-full" onClick={() => handleAddToCart(item)}>Tambah</Button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })} 
                     </div>
 
                     {/* Order Summary Section */}
