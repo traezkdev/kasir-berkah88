@@ -94,7 +94,7 @@ const GuestCheckout = () => {
                 {menuItems.map(item => (
                     <div key={item.id} className="bg-white rounded-lg shadow-md overflow-hidden">
                         <AppImage
-                            src={`http://localhost:4000${item.image_url}`}
+                            src={`https://api.inviteshare.my.id/${item.image_url}`}
                             alt={item.name}
                             className="w-full h-48 object-cover"
                         />
