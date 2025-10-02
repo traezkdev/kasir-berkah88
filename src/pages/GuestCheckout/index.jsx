@@ -12,7 +12,7 @@ const GuestCheckout = () => {
     useEffect(() => {
         const fetchMenuItems = async () => {
             try {
-                const response = await fetch('http://localhost:4000/api/guest/menu-items'); // Changed to 4000
+                const response = await fetch('https://api.inviteshare.my.id/api/guest/menu-items'); // Changed to 4000
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
