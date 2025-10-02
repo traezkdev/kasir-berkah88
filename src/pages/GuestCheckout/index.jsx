@@ -2,19 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AppImage from '../../components/AppImage';
 import Button from '../../components/ui/Button';
+import { Plus, Minus, ShoppingCart, AlertCircle, Trash2 } from 'lucide-react';
 
 const GuestCheckout = () => {
     const [menuItems, setMenuItems] = useState([]);
     const [cart, setCart] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
 
     useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            setIsLoggedIn(true);
+        }
+
         const fetchMenuItems = async () => {
             try {
-                const response = await fetch('https://api.inviteshare.my.id/api/guest/menu-items'); // Changed to 4000
+                const response = await fetch('https://api.inviteshare.my.id/api/guest/menu-items');
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error(`Gagal memuat menu. Status: ${response.status}`);
                 }
                 const data = await response.json();
                 setMenuItems(data.data);
@@ -47,6 +54,10 @@ const GuestCheckout = () => {
         });
     };
 
+    const handleClearCart = () => {
+        setCart({});
+    };
+
     const calculateTotal = () => {
         return Object.entries(cart).reduce((total, [itemId, quantity]) => {
             const item = menuItems.find(menuItem => menuItem.id === itemId);
@@ -60,18 +71,17 @@ const GuestCheckout = () => {
             return;
         }
 
-        let whatsappMessage = "Halo, saya mau pesen:\n\n";
+        let whatsappMessage = "Halo, saya mau pesan:\n\n";
         Object.entries(cart).forEach(([itemId, quantity]) => {
             const item = menuItems.find(menuItem => menuItem.id === itemId);
             if (item) {
                 whatsappMessage += `- ${quantity}x ${item.name} (Rp ${item.price.toLocaleString('id-ID')})\n`;
             }
         });
-        whatsappMessage += `\nTotal: Rp ${calculateTotal().toLocaleString('id-ID')}\n\n`;
+        whatsappMessage += `\n*Total: Rp ${calculateTotal().toLocaleString('id-ID')}*\n\n`;
         whatsappMessage += "Mohon konfirmasi pesanan saya.";
 
-        // Replace with your WhatsApp number
-        const whatsappNumber = "6285864875536"; // Ganti dengan nomor WhatsApp Anda
+        const whatsappNumber = "6285864875536";
         const encodedMessage = encodeURIComponent(whatsappMessage);
         const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
@@ -79,100 +89,159 @@ const GuestCheckout = () => {
     };
 
     if (loading) {
-        return <div className="text-center py-8">Memuat menu...</div>;
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background">
+                <div className="flex flex-col items-center space-y-2">
+                    <svg className="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p className="text-text-secondary">Memuat menu...</p>
+                </div>
+            </div>
+        );
     }
 
     if (error) {
-        return <div className="text-center py-8 text-red-500">Error: {error}</div>;
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background p-4">
+                <div className="bg-white border border-destructive/20 rounded-lg p-8 text-center max-w-md">
+                    <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
+                    <h2 className="text-xl font-semibold text-text-primary mb-2">Terjadi Kesalahan</h2>
+                    <p className="text-text-secondary mb-6">{error}</p>
+                    <Button onClick={() => window.location.reload()}>Coba Lagi</Button>
+                </div>
+            </div>
+        );
     }
 
     return (
-        <div className="container mx-auto p-4">
-            <h1 className="text-3xl font-bold text-center mb-8">Pesan Sekarang</h1>
+        <div className="min-h-screen bg-background">
+            <header className="bg-white shadow-sm sticky top-0 z-30">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                        <AppImage src="/assets/images/logoberkah88.png" alt="Logo" className="h-10 w-auto" />
+                        <h1 className="text-2xl font-bold text-text-primary">Pesan Online</h1>
+                    </div>
+                    {isLoggedIn && (
+                        <Link to="/main-dashboard">
+                            <Button variant="outline">Dashboard</Button>
+                        </Link>
+                    )}
+                </div>
+            </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {menuItems.map(item => (
-                    <div key={item.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                        <AppImage
-                            src={`https://api.inviteshare.my.id/${item.image_url}`}
-                            alt={item.name}
-                            className="w-full h-48 object-cover"
-                        />
-                        <div className="p-4">
-                            <h2 className="text-xl font-semibold mb-2">{item.name}</h2>
-                            <p className="text-gray-700 mb-2">Rp {item.price.toLocaleString('id-ID')}</p>
-                            <p className={`text-sm ${item.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                Stok: {item.stock > 0 ? item.stock : 'Habis'}
-                            </p>
-                            <div className="flex items-center justify-between mt-4">
-                                <div className="flex items-center">
-                                    <Button
-                                        onClick={() => handleRemoveFromCart(item)}
-                                        disabled={!cart[item.id] || cart[item.id] <= 0}
-                                        className="px-3 py-1 bg-red-500 text-white rounded-l-md hover:bg-red-600 disabled:opacity-50"
-                                    >
-                                        -
+            <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 pb-32 lg:pb-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                    {/* Menu Items Section */}
+                    <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {menuItems.map(item => (
+                            <div key={item.id} className="bg-white rounded-lg border border-slate-200 shadow-elevation-1 overflow-hidden flex flex-col">
+                                <AppImage
+                                    src={`https://api.inviteshare.my.id/${item.image_url}`}
+                                    alt={item.name}
+                                    className="w-full h-40 object-cover"
+                                />
+                                <div className="p-4 flex flex-col flex-grow">
+                                    <h2 className="text-lg font-semibold text-text-primary flex-grow">{item.name}</h2>
+                                    <p className="text-primary font-bold text-base my-2">Rp {item.price.toLocaleString('id-ID')}</p>
+                                    <div className={`text-xs font-medium px-2 py-1 rounded-full self-start ${item.stock > 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
+                                        Stok: {item.stock > 0 ? item.stock : 'Habis'}
+                                    </div>
+                                    <div className="flex items-center justify-center mt-4">
+                                        <Button
+                                            variant="outline" size="icon" className="rounded-r-none"
+                                            onClick={() => handleRemoveFromCart(item)}
+                                            disabled={!cart[item.id] || cart[item.id] <= 0}
+                                        >
+                                            <Minus size={16} />
+                                        </Button>
+                                        <span className="px-4 py-2 border-t border-b w-16 text-center font-semibold">
+                                            {cart[item.id] || 0}
+                                        </span>
+                                        <Button
+                                            variant="outline" size="icon" className="rounded-l-none"
+                                            onClick={() => handleAddToCart(item)}
+                                            disabled={item.stock <= (cart[item.id] || 0)}
+                                        >
+                                            <Plus size={16} />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Order Summary Section */}
+                    <div className="lg:col-span-1 sticky top-24">
+                        <div className="bg-white rounded-lg border border-slate-200 shadow-elevation-1">
+                            <div className="p-4 border-b border-slate-200 flex justify-between items-center">
+                                <h2 className="text-xl font-bold flex items-center">
+                                    <ShoppingCart className="mr-2" size={22} /> Ringkasan Pesanan
+                                </h2>
+                                {Object.keys(cart).length > 0 && (
+                                    <Button onClick={handleClearCart} variant="ghost" size="icon" className="text-destructive rounded-full">
+                                        <Trash2 size={20} />
                                     </Button>
-                                    <span className="px-4 py-1 border-t border-b">
-                                        {cart[item.id] || 0}
-                                    </span>
-                                    <Button
-                                        onClick={() => handleAddToCart(item)}
-                                        disabled={item.stock <= (cart[item.id] || 0)}
-                                        className="px-3 py-1 bg-green-500 text-white rounded-r-md hover:bg-green-600 disabled:opacity-50"
-                                    >
-                                        +
-                                    </Button>
+                                )}
+                            </div>
+                            <div className="p-4 space-y-3 max-h-60 overflow-y-auto">
+                                {Object.keys(cart).length === 0 ? (
+                                    <p className="text-text-secondary text-center py-4">Keranjang Anda kosong.</p>
+                                ) : (
+                                    Object.entries(cart).map(([itemId, quantity]) => {
+                                        const item = menuItems.find(menuItem => menuItem.id === itemId);
+                                        return item ? (
+                                            <div key={itemId} className="flex justify-between items-center text-sm">
+                                                <span className="text-text-primary">{quantity}x {item.name}</span>
+                                                <span className="font-medium">Rp {(item.price * quantity).toLocaleString('id-ID')}</span>
+                                            </div>
+                                        ) : null;
+                                    })
+                                )}
+                            </div>
+                            <div className="p-4 bg-slate-50/50 rounded-b-lg">
+                                <div className="flex justify-between items-center text-lg font-bold mt-2 pt-2 border-t">
+                                    <span>Total:</span>
+                                    <span>Rp {calculateTotal().toLocaleString('id-ID')}</span>
                                 </div>
                                 <Button
-                                    onClick={() => handleAddToCart(item)}
-                                    disabled={item.stock <= (cart[item.id] || 0)}
-                                    className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 disabled:opacity-50"
+                                    onClick={handleCheckout}
+                                    className="w-full mt-4"
+                                    variant="success"
+                                    disabled={Object.keys(cart).length === 0}
                                 >
-                                    Tambah
+                                    Pesan via WhatsApp
                                 </Button>
+                                <p className="text-xs text-text-secondary mt-3 text-center">
+                                    *Stok akan dikonfirmasi ulang via WhatsApp.
+                                </p>
                             </div>
                         </div>
                     </div>
-                ))}
-            </div>
-
-            <div className="mt-8 p-6 bg-blue-100 rounded-lg shadow-lg">
-                <h2 className="text-2xl font-bold mb-4">Ringkasan Pesanan</h2>
-                {Object.keys(cart).length === 0 ? (
-                    <p>Keranjang belanja Anda kosong.</p>
-                ) : (
-                    <ul className="mb-4">
-                        {Object.entries(cart).map(([itemId, quantity]) => {
-                            const item = menuItems.find(menuItem => menuItem.id === itemId);
-                            return item ? (
-                                <li key={itemId} className="flex justify-between items-center py-2 border-b last:border-b-0">
-                                    <span>{quantity}x {item.name}</span>
-                                    <span>Rp {(item.price * quantity).toLocaleString('id-ID')}</span>
-                                </li>
-                            ) : null;
-                        })}
-                    </ul>
-                )}
-                <div className="flex justify-between items-center text-xl font-bold mt-4 pt-4 border-t-2 border-blue-300">
-                    <span>Total:</span>
-                    <span>Rp {calculateTotal().toLocaleString('id-ID')}</span>
                 </div>
-                <Button
-                    onClick={handleCheckout}
-                    className="w-full bg-green-600 text-white py-3 rounded-md mt-6 text-lg font-semibold hover:bg-green-700 disabled:opacity-50"
-                    disabled={Object.keys(cart).length === 0}
-                >
-                    Checkout via WhatsApp
-                </Button>
-                <p className="text-sm text-gray-600 mt-2 text-center">
-                    *Stok yang ditampilkan adalah stok saat ini. Pesanan akan dikonfirmasi setelah Anda mengirim pesan WhatsApp.
-                </p>
-            </div>
+            </main>
 
-            <div className="text-center mt-8">
-                <Link to="/login" className="text-blue-500 hover:underline">Kembali ke Login</Link>
-            </div>
+            {/* Sticky Footer for Mobile */}
+            {Object.keys(cart).length > 0 && (
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.1)] p-3 border-t border-slate-200">
+                    <div className="flex justify-between items-center max-w-7xl mx-auto">
+                        <div className="flex items-center space-x-2">
+                            <Button onClick={handleClearCart} variant="ghost" size="icon" className="text-destructive rounded-full">
+                                <Trash2 size={20} />
+                            </Button>
+                            <div>
+                                <p className="font-bold text-sm">{Object.values(cart).reduce((a, b) => a + b, 0)} item</p>
+                                <p className="text-lg font-bold text-primary">Rp {calculateTotal().toLocaleString('id-ID')}</p>
+                            </div>
+                        </div>
+                        <Button onClick={handleCheckout} variant="success">
+                            <ShoppingCart className="mr-2" size={18} />
+                            Pesan Sekarang
+                        </Button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
