@@ -1,7 +1,7 @@
 import React from 'react';
 import TransactionCard from './TransactionCard';
 
-const TransactionTable = ({ transactions, onDeleteTransaction, isMobile, userRole }) => {
+const TransactionTable = ({ transactions, onDeleteTransaction, isMobile, userRole, onRowClick }) => {
   if (transactions?.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-slate-200 shadow-elevation-1 p-8 text-center">
@@ -21,6 +21,7 @@ const TransactionTable = ({ transactions, onDeleteTransaction, isMobile, userRol
             key={transaction?.id} 
             transaction={transaction} 
             onDelete={onDeleteTransaction}
+            onRowClick={onRowClick} // Pass prop
             isMobile={true}
             userRole={userRole}
           />
@@ -61,6 +62,7 @@ const TransactionTable = ({ transactions, onDeleteTransaction, isMobile, userRol
                 key={transaction?.id}
                 transaction={transaction}
                 onDelete={onDeleteTransaction}
+                onRowClick={onRowClick} // Pass prop
                 isMobile={false}
                 userRole={userRole}
               />

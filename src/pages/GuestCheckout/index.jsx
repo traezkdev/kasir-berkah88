@@ -60,7 +60,7 @@ const GuestCheckout = () => {
             return;
         }
 
-        let whatsappMessage = "Halo, saya ingin memesan:\n\n";
+        let whatsappMessage = "Halo, saya mau pesen:\n\n";
         Object.entries(cart).forEach(([itemId, quantity]) => {
             const item = menuItems.find(menuItem => menuItem.id === itemId);
             if (item) {

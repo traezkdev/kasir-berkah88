@@ -8,6 +8,7 @@ import TransactionFilters from './components/TransactionFilters';
 import TransactionTable from './components/TransactionTable';
 import BulkActions from './components/BulkActions';
 import Pagination from '../../components/ui/Pagination';
+import TransactionReceiptModal from './components/TransactionReceiptModal'; // Import the modal
 
 import authFetch from '../../utils/authFetch';
 import { jsPDF } from 'jspdf';
@@ -38,6 +39,10 @@ const TransactionHistory = ({ headerTitle }) => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
+  
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+
 
   const navigate = useNavigate(); // Initialize useNavigate
 
@@ -52,6 +57,16 @@ const TransactionHistory = ({ headerTitle }) => {
   }, []);
 
   
+  const handleTransactionClick = (transaction) => {
+    setSelectedTransaction(transaction);
+    setIsReceiptModalOpen(true);
+  };
+
+  const handleCloseReceiptModal = () => {
+    setIsReceiptModalOpen(false);
+    setSelectedTransaction(null);
+  };
+
 
   // Load transactions from API
   const fetchTransactions = async () => { // Moved outside useEffect
@@ -472,6 +487,8 @@ const TransactionHistory = ({ headerTitle }) => {
               transactions={currentItems}
 
               onDeleteTransaction={handleDeleteTransaction}
+              
+              onRowClick={handleTransactionClick}
 
               isMobile={isMobile}
               userRole={userRole}
@@ -492,6 +509,11 @@ const TransactionHistory = ({ headerTitle }) => {
       </main>
 
       
+      <TransactionReceiptModal
+        isOpen={isReceiptModalOpen}
+        onClose={handleCloseReceiptModal}
+        transaction={selectedTransaction}
+      />
 
     </div>
 
