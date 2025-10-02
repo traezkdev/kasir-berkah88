@@ -64,7 +64,7 @@
     "xlsx": "^0.18.5"
   },
   "scripts": {
-    "start": "vite",
+    "start": "npx vite",
     "build": "vite build --sourcemap",
     "serve": "vite preview"
   },
