@@ -895,6 +895,20 @@ app.post("/api/logout", authenticateToken, (req, res) => {
 });
 
 
+// Public API to get all menu items for guest users (no authentication required)
+app.get("/api/guest/menu-items", async (req, res) => {
+    try {
+        const sql = "SELECT id, name, price, stock, category, image_url FROM menu_items";
+        const [rows] = await db.query(sql);
+        res.json({
+            "message": "success",
+            "data": rows
+        });
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
 // Default response for any other request
 app.use(function(req, res) {
     res.status(404).send();
