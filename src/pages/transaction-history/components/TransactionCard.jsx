@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const TransactionCard = ({ transaction, onDelete, isMobile = false, userRole }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+const TransactionCard = ({ transaction, onDelete, isMobile = false, userRole, onRowClick }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   let paymentBadge = null;
@@ -68,7 +67,7 @@ const TransactionCard = ({ transaction, onDelete, isMobile = false, userRole }) 
   if (isMobile) {
     return (
       <div className="bg-white rounded-lg border border-slate-200 shadow-elevation-1 p-4 mb-3">
-        <div className="flex items-start justify-between mb-3">
+        <div className="flex items-start justify-between mb-3" onClick={() => onRowClick(transaction)}>
           <div className="flex-1">
             <div className="flex items-center space-x-2 mb-1">
               <span className="text-sm font-medium text-text-primary">
@@ -93,39 +92,20 @@ const TransactionCard = ({ transaction, onDelete, isMobile = false, userRole }) 
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setIsExpanded(!isExpanded)}
-            iconName={isExpanded ? "ChevronUp" : "ChevronDown"}
-            iconPosition="right"
+            onClick={() => onRowClick(transaction)}
           >
-            Detail
+            Lihat Struk
           </Button>
           {userRole !== 'guest' && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShowDeleteConfirm(true)}
+              onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
               iconName="Trash2"
               className="text-destructive hover:text-destructive"
             />
           )}
         </div>
-        {isExpanded && (
-          <div className="mt-3 pt-3 border-t border-slate-200">
-            <div className="space-y-2">
-              {transaction?.items?.map((item, index) => (
-                <div key={index} className="flex justify-between items-center text-sm">
-                  <div>
-                    <span className="text-text-primary">{item?.name}</span>
-                    <span className="text-text-secondary ml-2">x{item?.quantity}</span>
-                  </div>
-                  <span className="font-mono text-text-primary">
-                    {formatCurrency(item?.price * item?.quantity)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
             <div className="bg-white rounded-lg p-6 max-w-sm w-full">
@@ -144,7 +124,7 @@ const TransactionCard = ({ transaction, onDelete, isMobile = false, userRole }) 
               <div className="flex space-x-3">
                 <Button
                   variant="outline"
-                  onClick={() => setShowDeleteConfirm(false)}
+                  onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(false); }}
                   className="flex-1"
                 >
                   Batal
@@ -165,7 +145,10 @@ const TransactionCard = ({ transaction, onDelete, isMobile = false, userRole }) 
   }
 
   return (
-    <tr className="hover:bg-muted/50 transition-colors duration-200">
+    <tr 
+      onClick={() => onRowClick(transaction)}
+      className="hover:bg-muted/50 transition-colors duration-200 cursor-pointer"
+    >
       <td className="px-4 py-3 text-sm font-medium text-text-primary">
         #{transaction?.id}
       </td>
@@ -193,7 +176,7 @@ const TransactionCard = ({ transaction, onDelete, isMobile = false, userRole }) 
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setShowDeleteConfirm(true)}
+            onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
             iconName="Trash2"
             className="text-destructive hover:text-destructive"
           />
@@ -218,7 +201,7 @@ const TransactionCard = ({ transaction, onDelete, isMobile = false, userRole }) 
               <div className="flex space-x-3">
                 <Button
                   variant="outline"
-                  onClick={() => setShowDeleteConfirm(false)}
+                  onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(false); }}
                   className="flex-1"
                 >
                   Batal
