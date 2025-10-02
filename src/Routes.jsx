@@ -30,10 +30,7 @@ const AppRoutes = ({ headerTitle }) => {
       {/* Public Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/guest-checkout" element={<GuestCheckout />} />
-
-      {/* Protected Routes */}
-      <Route path="/" element={<ProtectedRoute><MainDashboard headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/" element={<GuestCheckout />} />
       <Route path="/main-dashboard" element={<ProtectedRoute><MainDashboard headerTitle={headerTitle} /></ProtectedRoute>} />
       <Route path="/sales-transaction-processing" element={<ProtectedRoute><SalesTransactionProcessing headerTitle={headerTitle} /></ProtectedRoute>} />
       <Route path="/menu-management" element={<ProtectedRoute><MenuManagement headerTitle={headerTitle} /></ProtectedRoute>} />
