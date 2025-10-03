@@ -121,7 +121,7 @@ const GuestCheckout = () => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
                     <div className="flex items-center space-x-3">
                         <AppImage src="/assets/images/logoberkah88.png" alt="Logo" className="h-10 w-auto" />
-                        <h1 className="text-2xl font-bold text-text-primary">Pesan Online</h1>
+                        <h1 className="text-2xl font-bold text-text-primary">Pesan Delivery</h1>
                     </div>
                     {isLoggedIn && (
                         <Link to="/main-dashboard">
