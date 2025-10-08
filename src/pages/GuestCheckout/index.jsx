@@ -24,7 +24,8 @@ const GuestCheckout = () => {
 
         const fetchMenuItems = async () => {
             try {
-                const response = await fetch('/api/guest/menu-items');
+                const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+                const response = await fetch(`${API_BASE_URL}/api/guest/menu-items`);
                 if (!response.ok) {
                     throw new Error(`Gagal memuat menu. Status: ${response.status}`);
                 }
