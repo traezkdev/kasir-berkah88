@@ -9,7 +9,7 @@ const OrderConfirmationPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('pending');
-    const [modalState, setModalState] = useState({ isOpen: false, orderId: null, action: null, title: '', message: '' });
+    const [modalState, setModalState] = useState({ isOpen: false, orderId: null, action: null, title: '', message: '', type: null }); // type: 'confirm' or 'success' or 'error'
 
     const fetchOrders = useCallback(async () => {
         try {
@@ -46,14 +46,17 @@ const OrderConfirmationPage = () => {
                 throw new Error(res.error || `Gagal mengubah status pesanan.`);
             }
             
-            alert(res.message || 'Status pesanan berhasil diubah.'); // Keep alert for now, will replace later
+            setModalState({ isOpen: true, title: 'Sukses!', message: res.message || 'Status pesanan berhasil diubah.', type: 'success' });
             fetchOrders(); // Refresh the list after updating
 
         } catch (err) {
             console.error("Error updating order status:", err);
-            alert(err.message);
+            setModalState({ isOpen: true, title: 'Error!', message: err.message, type: 'error' });
         } finally {
-            setModalState({ isOpen: false, orderId: null, action: null, title: '', message: '' }); // Close modal
+            // For confirmation type, modal closes after action. For success/error, it stays open until user closes.
+            if (modalState.type === 'confirm') {
+                setModalState({ isOpen: false, orderId: null, action: null, title: '', message: '', type: null });
+            }
         }
     };
 
@@ -62,11 +65,11 @@ const OrderConfirmationPage = () => {
         const message = action === 'accepted' 
             ? 'Apakah Anda yakin ingin MENERIMA pesanan ini? Stok akan dikurangi dan pesanan akan masuk ke laporan transaksi.'
             : 'Apakah Anda yakin ingin MENOLAK pesanan ini? Aksi ini tidak dapat dibatalkan.';
-        setModalState({ isOpen: true, orderId, action, title, message });
+        setModalState({ isOpen: true, orderId, action, title, message, type: 'confirm' });
     };
 
     const closeConfirmationModal = () => {
-        setModalState({ isOpen: false, orderId: null, action: null, title: '', message: '' });
+        setModalState({ isOpen: false, orderId: null, action: null, title: '', message: '', type: null });
     };
 
     const handleConfirmAction = () => {
