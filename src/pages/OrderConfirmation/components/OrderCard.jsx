@@ -3,20 +3,7 @@ import Button from '../../../components/ui/Button';
 import { Check, X, Clock, User, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
 
 const OrderCard = ({ order, onAccept, onReject }) => {
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
-
-    const handleAccept = async () => {
-        setIsSubmitting(true);
-        await onAccept();
-        setIsSubmitting(false);
-    };
-
-    const handleReject = async () => {
-        setIsSubmitting(true);
-        await onReject();
-        setIsSubmitting(false);
-    };
 
     const getStatusChipColor = (status) => {
         switch (status) {
@@ -89,19 +76,17 @@ const OrderCard = ({ order, onAccept, onReject }) => {
                 <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
                     <Button 
                         variant="destructive" 
-                        onClick={handleReject} 
-                        disabled={isSubmitting}
+                        onClick={onReject} 
                     >
                         <X size={16} className="mr-2" />
-                        {isSubmitting ? 'Menolak...' : 'Tolak'}
+                        Tolak
                     </Button>
                     <Button 
                         variant="success" 
-                        onClick={handleAccept} 
-                        disabled={isSubmitting}
+                        onClick={onAccept} 
                     >
                         <Check size={16} className="mr-2" />
-                        {isSubmitting ? 'Menerima...' : 'Terima'}
+                        Terima
                     </Button>
                 </div>
             )}

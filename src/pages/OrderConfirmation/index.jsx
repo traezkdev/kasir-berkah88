@@ -2,12 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import authFetch from '../../utils/authFetch';
 import OrderCard from './components/OrderCard';
+import ConfirmationModal from '../../components/ui/ConfirmationModal';
 
 const OrderConfirmationPage = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('pending');
+    const [modalState, setModalState] = useState({ isOpen: false, orderId: null, action: null, title: '', message: '' });
 
     const fetchOrders = useCallback(async () => {
         try {
@@ -44,13 +46,32 @@ const OrderConfirmationPage = () => {
                 throw new Error(res.error || `Gagal mengubah status pesanan.`);
             }
             
-            alert(res.message || 'Status pesanan berhasil diubah.');
-            // Refresh the list after updating
-            fetchOrders();
+            alert(res.message || 'Status pesanan berhasil diubah.'); // Keep alert for now, will replace later
+            fetchOrders(); // Refresh the list after updating
 
         } catch (err) {
             console.error("Error updating order status:", err);
             alert(err.message);
+        } finally {
+            setModalState({ isOpen: false, orderId: null, action: null, title: '', message: '' }); // Close modal
+        }
+    };
+
+    const openConfirmationModal = (orderId, action) => {
+        const title = action === 'accepted' ? 'Konfirmasi Terima Pesanan' : 'Konfirmasi Tolak Pesanan';
+        const message = action === 'accepted' 
+            ? 'Apakah Anda yakin ingin MENERIMA pesanan ini? Stok akan dikurangi dan pesanan akan masuk ke laporan transaksi.'
+            : 'Apakah Anda yakin ingin MENOLAK pesanan ini? Aksi ini tidak dapat dibatalkan.';
+        setModalState({ isOpen: true, orderId, action, title, message });
+    };
+
+    const closeConfirmationModal = () => {
+        setModalState({ isOpen: false, orderId: null, action: null, title: '', message: '' });
+    };
+
+    const handleConfirmAction = () => {
+        if (modalState.orderId && modalState.action) {
+            handleUpdateStatus(modalState.orderId, modalState.action);
         }
     };
 
@@ -72,8 +93,8 @@ const OrderConfirmationPage = () => {
                     <OrderCard 
                         key={order.id} 
                         order={order} 
-                        onAccept={() => handleUpdateStatus(order.id, 'accepted')}
-                        onReject={() => handleUpdateStatus(order.id, 'rejected')}
+                        onAccept={() => openConfirmationModal(order.id, 'accepted')}
+                        onReject={() => openConfirmationModal(order.id, 'rejected')}
                     />
                 ))}
             </div>
@@ -122,6 +143,15 @@ const OrderConfirmationPage = () => {
                     {renderContent()}
                 </div>
             </div>
+
+            <ConfirmationModal
+                isOpen={modalState.isOpen}
+                onClose={closeConfirmationModal}
+                onConfirm={handleConfirmAction}
+                title={modalState.title}
+                message={modalState.message}
+                isDestructive={modalState.action === 'rejected'}
+            />
         </div>
     );
 };

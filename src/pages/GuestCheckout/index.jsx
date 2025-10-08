@@ -14,6 +14,7 @@ const GuestCheckout = () => {
     const [customerName, setCustomerName] = useState('');
     const [customerAddress, setCustomerAddress] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [validationError, setValidationError] = useState('');
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -71,14 +72,15 @@ const GuestCheckout = () => {
 
     const handleCheckout = async () => {
         if (Object.keys(cart).length === 0) {
-            alert('Keranjang belanja Anda kosong!');
+            setValidationError('Keranjang belanja Anda kosong!');
             return;
         }
         if (!customerName.trim() || !customerAddress.trim()) {
-            alert('Mohon isi Nama Pelanggan dan Alamat Pengiriman.');
+            setValidationError('Mohon isi Nama Pelanggan dan Alamat Pengiriman.');
             return;
         }
 
+        setValidationError(''); // Clear error on successful validation
         setIsSubmitting(true);
 
         const orderItems = Object.entries(cart).map(([itemId, quantity]) => {
@@ -285,6 +287,14 @@ const GuestCheckout = () => {
                                     <span>Total:</span>
                                     <span>Rp {calculateTotal().toLocaleString('id-ID')}</span>
                                 </div>
+
+                                {validationError && (
+                                    <div className="mt-4 p-3 bg-red-100 border border-red-200 text-red-700 rounded-lg text-sm flex items-center">
+                                        <AlertCircle size={18} className="mr-2 flex-shrink-0" />
+                                        <span>{validationError}</span>
+                                    </div>
+                                )}
+
                                 <Button
                                     onClick={handleCheckout}
                                     className="w-full mt-4"
