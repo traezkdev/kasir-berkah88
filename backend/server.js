@@ -408,6 +408,206 @@ app.delete("/api/expenses", authenticateToken, authorizeRoles('admin'), async (r
 });
 
 
+// --- Notes Endpoints ---
+
+// Get all notes for the logged-in user
+app.get("/api/notes", authenticateToken, async (req, res) => {
+    try {
+        const sql = "SELECT * FROM notes WHERE user_id = ? ORDER BY updated_at DESC";
+        const [rows] = await db.query(sql, [req.user.userId]);
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Create a new note
+app.post("/api/notes", authenticateToken, async (req, res) => {
+    try {
+        const { title, content } = req.body;
+        if (!title) {
+            return res.status(400).json({ error: "Title is required" });
+        }
+        const sql = 'INSERT INTO notes (user_id, title, content) VALUES (?, ?, ?)';
+        const [result] = await db.query(sql, [req.user.userId, title, content]);
+        res.status(201).json({ 
+            message: "Note created successfully", 
+            data: { id: result.insertId, title, content, user_id: req.user.userId }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update a note
+app.put("/api/notes/:id", authenticateToken, async (req, res) => {
+    try {
+        const { title, content } = req.body;
+        const { id } = req.params;
+
+        if (!title) {
+            return res.status(400).json({ error: "Title is required" });
+        }
+
+        const sql = 'UPDATE notes SET title = ?, content = ? WHERE id = ? AND user_id = ?';
+        const [result] = await db.query(sql, [title, content, id, req.user.userId]);
+
+        if (result.affectedRows > 0) {
+            res.json({ message: "Note updated successfully" });
+        } else {
+            res.status(404).json({ error: "Note not found or user not authorized" });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete a note
+app.delete("/api/notes/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const sql = 'DELETE FROM notes WHERE id = ? AND user_id = ?';
+        const [result] = await db.query(sql, [id, req.user.userId]);
+
+        if (result.affectedRows > 0) {
+            res.json({ message: "Note deleted successfully" });
+        } else {
+            res.status(404).json({ error: "Note not found or user not authorized" });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
+// --- Order Endpoints ---
+
+// Create a new pending order (public)
+app.post("/api/orders", async (req, res) => {
+    try {
+        const { customer_name, customer_address, items, total } = req.body;
+        if (!customer_name || !items || !total) {
+            return res.status(400).json({ error: "Missing required fields: customer_name, items, total" });
+        }
+
+        const sql = 'INSERT INTO orders (customer_name, customer_address, items, total, status) VALUES (?, ?, ?, ?, ?)';
+        const params = [customer_name, customer_address, JSON.stringify(items), total, 'pending'];
+        const [result] = await db.query(sql, params);
+
+        res.status(201).json({ 
+            message: "Order created successfully and is pending verification.", 
+            data: { id: result.insertId, ...req.body, status: 'pending' }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// Get all orders (admin only)
+app.get("/api/orders", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        const sql = "SELECT * FROM orders ORDER BY created_at DESC";
+        const [rows] = await db.query(sql);
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update an order's status (admin only)
+app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    const { status } = req.body;
+    const { id } = req.params;
+
+    if (!status || !['accepted', 'rejected'].includes(status)) {
+        return res.status(400).json({ error: "Invalid status provided. Must be 'accepted' or 'rejected'." });
+    }
+
+    const connection = await db.getConnection();
+
+    try {
+        await connection.beginTransaction();
+
+        // Handle 'rejected' status: just update and finish
+        if (status === 'rejected') {
+            const updateSql = 'UPDATE orders SET status = ? WHERE id = ?';
+            await connection.query(updateSql, ['rejected', id]);
+            await connection.commit();
+            return res.json({ message: `Order ${id} has been rejected.` });
+        }
+
+        // Handle 'accepted' status: the complex transaction
+        if (status === 'accepted') {
+            // 1. Get the order and lock the row to prevent concurrent modifications
+            const [orderRows] = await connection.query('SELECT * FROM orders WHERE id = ? AND status = \'pending\' FOR UPDATE', [id]);
+            if (orderRows.length === 0) {
+                await connection.rollback();
+                return res.status(404).json({ error: "Order not found or not in pending state." });
+            }
+            const order = orderRows[0];
+            const items = order.items; // Items are already in JSON format from the DB
+
+            // 2. Stock Validation
+            for (const item of items) {
+                const [menuItemRows] = await connection.query('SELECT name, stock FROM menu_items WHERE id = ?', [item.id]);
+                if (menuItemRows.length === 0) {
+                    await connection.rollback();
+                    return res.status(400).json({ error: `Menu item with ID ${item.id} not found.` });
+                }
+                if (menuItemRows[0].stock < item.quantity) {
+                    await connection.rollback();
+                    return res.status(400).json({ error: `Insufficient stock for ${menuItemRows[0].name}. Available: ${menuItemRows[0].stock}, Requested: ${item.quantity}` });
+                }
+            }
+
+            // 3. Stock Reduction
+            for (const item of items) {
+                await connection.query('UPDATE menu_items SET stock = stock - ? WHERE id = ?', [item.quantity, item.id]);
+            }
+
+            // 4. Create a new record in the transactions table
+            const [ppnSetting] = await connection.query("SELECT value FROM settings WHERE `key` = 'ppn'");
+            const ppnRate = ppnSetting.length > 0 ? parseFloat(ppnSetting[0].value) : 0.11;
+            const totalWithPpn = order.total * (1 + ppnRate);
+            const ppnAmount = order.total * ppnRate;
+
+            let newTransactionId;
+            const [lastTransaction] = await connection.query("SELECT id FROM transactions WHERE id LIKE 'TRZ%' ORDER BY id DESC LIMIT 1");
+            if (lastTransaction && lastTransaction.length > 0) {
+                const lastId = lastTransaction[0].id;
+                const lastNumber = parseInt(lastId.substring(3), 10);
+                newTransactionId = 'TRZ' + (lastNumber + 1).toString().padStart(3, '0');
+            } else {
+                newTransactionId = 'TRZ001';
+            }
+
+            const transactionData = {
+                id: newTransactionId,
+                timestamp: new Date(),
+                items: JSON.stringify(items),
+                total: totalWithPpn, // Assuming order.total does not include PPN
+                ppn: ppnAmount,
+                isEmployeeMeal: 0,
+                payment_method: 'Tunai' // Default or could be added to order
+            };
+            await connection.query('INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method) VALUES (?,?,?,?,?,?,?)', Object.values(transactionData));
+
+            // 5. Update the order status to 'accepted'
+            await connection.query('UPDATE orders SET status = ? WHERE id = ?', ['accepted', id]);
+
+            // 6. Commit the transaction
+            await connection.commit();
+            res.json({ message: `Order ${id} has been accepted and transaction ${newTransactionId} created.` });
+        }
+    } catch (err) {
+        await connection.rollback();
+        res.status(500).json({ error: "Transaction failed: " + err.message, stack: err.stack });
+    } finally {
+        connection.release();
+    }
+});
+
+
 // --- Auth Endpoints ---
 
 // Register User

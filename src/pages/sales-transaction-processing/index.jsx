@@ -102,21 +102,36 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
     }
   }, [transactions, menuItems]);
 
-  const handleAddToCart = (item) => {
+  const handleIncrementItem = (item) => {
     setCart(prevCart => {
       const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
       if (existingItem) {
-        // Check if adding another item exceeds stock
         if (existingItem.quantity + 1 > item.stock) {
-          // Optionally, show an error message to the user
           console.warn(`Not enough stock for ${item.name}`);
-          return prevCart; // Return previous cart without changes
+          return prevCart;
         }
         return prevCart.map(cartItem =>
           cartItem.id === item.id ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem
         );
       }
       return [...prevCart, { ...item, quantity: 1 }];
+    });
+  };
+
+  const handleDecrementItem = (item) => {
+    setCart(prevCart => {
+      const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
+      if (!existingItem) return prevCart; // Should not happen
+
+      if (existingItem.quantity === 1) {
+        // Remove item from cart if quantity is 1
+        return prevCart.filter(cartItem => cartItem.id !== item.id);
+      } else {
+        // Decrement quantity
+        return prevCart.map(cartItem =>
+          cartItem.id === item.id ? { ...cartItem, quantity: cartItem.quantity - 1 } : cartItem
+        );
+      }
     });
   };
 
@@ -208,7 +223,14 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                <SalesForm menuItems={menuItems} onAddToCart={handleAddToCart} cart={cart} userRole={userRole} apiUrl={apiUrl} />
+                <SalesForm 
+                  menuItems={menuItems} 
+                  onIncrementItem={handleIncrementItem} 
+                  onDecrementItem={handleDecrementItem} 
+                  cart={cart} 
+                  userRole={userRole} 
+                  apiUrl={apiUrl} 
+                />
               </div>
               <div className="lg:col-span-1">
                 <OrderSummary

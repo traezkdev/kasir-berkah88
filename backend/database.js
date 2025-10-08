@@ -82,6 +82,30 @@ const setupDatabase = async () => {
       );
     `;
 
+    const createNotesTable = `
+      CREATE TABLE IF NOT EXISTS notes (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        content TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+    `;
+
+    const createOrdersTable = `
+      CREATE TABLE IF NOT EXISTS orders (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        customer_name VARCHAR(255) NOT NULL,
+        customer_address TEXT,
+        items JSON NOT NULL,
+        total DECIMAL(10, 2) NOT NULL,
+        status VARCHAR(50) NOT NULL DEFAULT 'pending', -- pending, accepted, rejected
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
     // Add role column if it doesn't exist and set default for existing users
     const addRoleColumn = `
       ALTER TABLE users
@@ -105,6 +129,10 @@ const setupDatabase = async () => {
     console.log('expenses table is ready.');
     await connection.query(createUsersTable);
     console.log('users table is ready.');
+    await connection.query(createNotesTable);
+    console.log('notes table is ready.');
+    await connection.query(createOrdersTable);
+    console.log('orders table is ready.');
 
     // Check and add notes column to expenses if it doesn't exist
     const [notesRows] = await connection.query(checkNotesColumn);
