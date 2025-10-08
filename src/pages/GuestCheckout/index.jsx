@@ -97,8 +97,10 @@ const GuestCheckout = () => {
         };
 
         try {
+            const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
             // 1. Submit order to backend for verification
-            const response = await fetch('/api/orders', {
+            const response = await fetch(`${API_BASE_URL}/api/orders`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
