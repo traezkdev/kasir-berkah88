@@ -49,12 +49,15 @@ const OrderConfirmationPage = () => {
                 }
             }
 
+            // Ekstrak hanya ID dari setiap item
+            const itemIds = parsedItems.map(item => item.id);
+
             const response = await authFetch(`/api/orders/${orderId}/status`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ status: newStatus, menuItems: parsedItems }),
+                body: JSON.stringify({ status: newStatus, items: itemIds }), // Mengirim array ID
             });
 
             const res = await response.json();
