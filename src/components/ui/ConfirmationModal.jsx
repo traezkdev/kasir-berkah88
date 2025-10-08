@@ -69,7 +69,7 @@ const ConfirmationModal = ({
                         </div>
                     </div>
                 </div>
-                <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse gap-3">
+                <div className="mt-5 sm:mt-4 flex w-full justify-center gap-3">
                     <Button
                         variant={confirmButtonVariant}
                         onClick={type === 'confirm' ? onConfirm : onClose} // For success/error, just close
