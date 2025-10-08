@@ -13,6 +13,7 @@ import UserProfile from './pages/UserProfile'; // Import UserProfile
 import Settings from './pages/Settings'; // Import Settings
 import Credits from './pages/Credits'; // Import Credits
 import GuestCheckout from './pages/GuestCheckout'; // Import GuestCheckout
+import NotesPage from './pages/Notes'; // Import NotesPage
 
 // ProtectedRoute component
 const ProtectedRoute = ({ children }) => {
@@ -40,6 +41,7 @@ const AppRoutes = ({ headerTitle }) => {
       <Route path="/profile" element={<ProtectedRoute><UserProfile headerTitle={headerTitle} /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings headerTitle={headerTitle} /></ProtectedRoute>} />
       <Route path="/credits" element={<ProtectedRoute><Credits headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/notes" element={<ProtectedRoute><NotesPage headerTitle={headerTitle} /></ProtectedRoute>} />
       
       {/* Catch all other routes */}
       <Route path="*" element={<NotFound />} />

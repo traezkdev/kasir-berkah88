@@ -408,6 +408,78 @@ app.delete("/api/expenses", authenticateToken, authorizeRoles('admin'), async (r
 });
 
 
+// --- Notes Endpoints ---
+
+// Get all notes for the logged-in user
+app.get("/api/notes", authenticateToken, async (req, res) => {
+    try {
+        const sql = "SELECT * FROM notes WHERE user_id = ? ORDER BY updated_at DESC";
+        const [rows] = await db.query(sql, [req.user.userId]);
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Create a new note
+app.post("/api/notes", authenticateToken, async (req, res) => {
+    try {
+        const { title, content } = req.body;
+        if (!title) {
+            return res.status(400).json({ error: "Title is required" });
+        }
+        const sql = 'INSERT INTO notes (user_id, title, content) VALUES (?, ?, ?)';
+        const [result] = await db.query(sql, [req.user.userId, title, content]);
+        res.status(201).json({ 
+            message: "Note created successfully", 
+            data: { id: result.insertId, title, content, user_id: req.user.userId }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update a note
+app.put("/api/notes/:id", authenticateToken, async (req, res) => {
+    try {
+        const { title, content } = req.body;
+        const { id } = req.params;
+
+        if (!title) {
+            return res.status(400).json({ error: "Title is required" });
+        }
+
+        const sql = 'UPDATE notes SET title = ?, content = ? WHERE id = ? AND user_id = ?';
+        const [result] = await db.query(sql, [title, content, id, req.user.userId]);
+
+        if (result.affectedRows > 0) {
+            res.json({ message: "Note updated successfully" });
+        } else {
+            res.status(404).json({ error: "Note not found or user not authorized" });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete a note
+app.delete("/api/notes/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const sql = 'DELETE FROM notes WHERE id = ? AND user_id = ?';
+        const [result] = await db.query(sql, [id, req.user.userId]);
+
+        if (result.affectedRows > 0) {
+            res.json({ message: "Note deleted successfully" });
+        } else {
+            res.status(404).json({ error: "Note not found or user not authorized" });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
 // --- Auth Endpoints ---
 
 // Register User

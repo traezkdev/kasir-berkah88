@@ -29,6 +29,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
     { label: 'Menu', path: '/menu-management', icon: 'UtensilsCrossed' },
     { label: 'Pengeluaran', path: '/expense-tracking', icon: 'Receipt' },
     { label: 'Laporan', path: '/transaction-history', icon: 'FileText' },
+    { label: 'Catatan', path: '/notes', icon: 'Notebook' },
     { label: 'Profil', path: '/profile', icon: 'User' },
     { label: 'Settings', path: '/settings', icon: 'Settings', adminOnly: true },
   ];
