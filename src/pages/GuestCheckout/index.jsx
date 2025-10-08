@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import AppImage from '../../components/AppImage';
 import Button from '../../components/ui/Button';
 import { Plus, Minus, ShoppingCart, AlertCircle, Trash2 } from 'lucide-react';
+import Input from '../../components/ui/Input';
 
 const GuestCheckout = () => {
     const [menuItems, setMenuItems] = useState([]);
@@ -10,6 +11,9 @@ const GuestCheckout = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [customerName, setCustomerName] = useState('');
+    const [customerAddress, setCustomerAddress] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -19,7 +23,7 @@ const GuestCheckout = () => {
 
         const fetchMenuItems = async () => {
             try {
-                const response = await fetch('https://api.inviteshare.my.id/api/guest/menu-items');
+                const response = await fetch('/api/guest/menu-items');
                 if (!response.ok) {
                     throw new Error(`Gagal memuat menu. Status: ${response.status}`);
                 }
@@ -65,27 +69,67 @@ const GuestCheckout = () => {
         }, 0);
     };
 
-    const handleCheckout = () => {
+    const handleCheckout = async () => {
         if (Object.keys(cart).length === 0) {
             alert('Keranjang belanja Anda kosong!');
             return;
         }
+        if (!customerName.trim() || !customerAddress.trim()) {
+            alert('Mohon isi Nama Pelanggan dan Alamat Pengiriman.');
+            return;
+        }
 
-        let whatsappMessage = "Halo, saya mau pesan:\n\n";
-        Object.entries(cart).forEach(([itemId, quantity]) => {
+        setIsSubmitting(true);
+
+        const orderItems = Object.entries(cart).map(([itemId, quantity]) => {
             const item = menuItems.find(menuItem => menuItem.id === itemId);
-            if (item) {
-                whatsappMessage += `- ${quantity}x ${item.name} (Rp ${item.price.toLocaleString('id-ID')})\n`;
-            }
+            return { id: item.id, name: item.name, price: item.price, quantity };
         });
-        whatsappMessage += `\n*Total: Rp ${calculateTotal().toLocaleString('id-ID')}*\n\n`;
-        whatsappMessage += "Mohon konfirmasi pesanan saya.";
 
-        const whatsappNumber = "6285864875536";
-        const encodedMessage = encodeURIComponent(whatsappMessage);
-        const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+        const orderData = {
+            customer_name: customerName,
+            customer_address: customerAddress,
+            items: orderItems,
+            total: calculateTotal(),
+        };
 
-        window.open(whatsappUrl, '_blank');
+        try {
+            // 1. Submit order to backend for verification
+            const response = await fetch('/api/orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(orderData),
+            });
+
+            if (!response.ok) {
+                throw new Error('Gagal mengirim pesanan untuk verifikasi. Silakan coba lagi.');
+            }
+
+            // 2. If submission is successful, proceed to WhatsApp
+            let whatsappMessage = `*Pesanan Baru*\n\n`;
+            whatsappMessage += `*Nama:* ${customerName}\n`;
+            whatsappMessage += `*Alamat:* ${customerAddress}\n\n`;
+            whatsappMessage += "*Item Pesanan:*\n";
+            orderItems.forEach(item => {
+                whatsappMessage += `- ${item.quantity}x ${item.name} (Rp ${item.price.toLocaleString('id-ID')})\n`;
+            });
+            whatsappMessage += `\n*Total: Rp ${calculateTotal().toLocaleString('id-ID')}*\n\n`;
+            whatsappMessage += "Mohon untuk segera diverifikasi.";
+
+            const whatsappNumber = "6285864875536"; // Consider making this configurable
+            const encodedMessage = encodeURIComponent(whatsappMessage);
+            const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+
+            window.open(whatsappUrl, '_blank');
+
+        } catch (error) {
+            console.error("Checkout error:", error);
+            alert(error.message || 'Terjadi kesalahan saat checkout.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     if (loading) {
@@ -215,6 +259,26 @@ const GuestCheckout = () => {
                                 )}
                             </div>
                             <div className="p-4 bg-slate-50/50 rounded-b-lg">
+                                <div className="space-y-4 mb-4">
+                                    <Input 
+                                        label="Nama Pelanggan"
+                                        id="customerName"
+                                        type="text"
+                                        placeholder="Masukkan nama Anda"
+                                        value={customerName}
+                                        onChange={(e) => setCustomerName(e.target.value)}
+                                        required
+                                    />
+                                    <Input 
+                                        label="Alamat Pengiriman"
+                                        id="customerAddress"
+                                        type="text"
+                                        placeholder="Masukkan alamat lengkap Anda"
+                                        value={customerAddress}
+                                        onChange={(e) => setCustomerAddress(e.target.value)}
+                                        required
+                                    />
+                                </div>
                                 <div className="flex justify-between items-center text-lg font-bold mt-2 pt-2 border-t">
                                     <span>Total:</span>
                                     <span>Rp {calculateTotal().toLocaleString('id-ID')}</span>
@@ -223,9 +287,9 @@ const GuestCheckout = () => {
                                     onClick={handleCheckout}
                                     className="w-full mt-4"
                                     variant="success"
-                                    disabled={Object.keys(cart).length === 0}
+                                    disabled={Object.keys(cart).length === 0 || isSubmitting}
                                 >
-                                    Pesan via WhatsApp
+                                    {isSubmitting ? 'Mengirim Pesanan...' : 'Pesan via WhatsApp'}
                                 </Button>
                                 <p className="text-xs text-text-secondary mt-3 text-center">
                                     *Stok akan dikonfirmasi ulang via WhatsApp.
