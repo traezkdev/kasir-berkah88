@@ -50,27 +50,24 @@ const ConfirmationModal = ({
             className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50"
             onClick={onClose}
         >
-            <div
-                className="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm mx-4"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className="flex items-start space-x-4">
-                    <div className={`mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full ${iconBgClass} sm:mx-0 sm:h-10 sm:w-10`}>
-                        {iconComponent}
-                    </div>
-                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-grow">
-                        <h3 className="text-lg leading-6 font-bold text-gray-900" id="modal-title">
-                            {title}
-                        </h3>
-                        <div className="mt-2">
-                            <p className="text-sm text-gray-500">
-                                {message}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse gap-3">
-                    <Button
+                        <div 
+                            className="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm mx-4 text-center" 
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full ${iconBgClass} sm:h-10 sm:w-10">
+                                {iconComponent}
+                            </div>
+                            <div className="mt-3 text-center">
+                                <h3 className="text-lg leading-6 font-bold text-gray-900" id="modal-title">
+                                    {title}
+                                </h3>
+                                <div className="mt-2">
+                                    <p className="text-sm text-gray-500">
+                                        {message}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="mt-5 sm:mt-4 flex w-full justify-center gap-3">                    <Button
                         variant={confirmButtonVariant}
                         onClick={type === 'confirm' ? onConfirm : onClose} // For success/error, just close
                     >

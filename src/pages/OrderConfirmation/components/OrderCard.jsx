@@ -51,13 +51,13 @@ const OrderCard = ({ order, onAccept, onReject }) => {
 
             <div className="p-4">
                 <div className="flex justify-between items-center cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
-                    <h4 className="font-semibold text-gray-700">Detail Item ({order.items.length})</h4>
+                    <h4 className="font-semibold text-gray-700">Detail Item ({order.items?.length || 0})</h4>
                     {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                 </div>
 
                 {isExpanded && (
                     <div className="mt-3 space-y-2 border-t pt-3">
-                        {order.items.map(item => (
+                        {(typeof order.items === 'string' ? JSON.parse(order.items) : order.items).map(item => (
                             <div key={item.id} className="flex justify-between items-center text-sm">
                                 <span>{item.quantity}x {item.name}</span>
                                 <span className="font-mono">Rp {(item.price * item.quantity).toLocaleString('id-ID')}</span>
