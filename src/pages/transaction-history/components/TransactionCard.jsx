@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const TransactionCard = ({ transaction, onDelete, isMobile = false, userRole, onRowClick }) => {
+const TransactionCard = ({ transaction, onDelete, onEdit, isMobile = false, userRole, onRowClick }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   let paymentBadge = null;
@@ -97,13 +97,22 @@ const TransactionCard = ({ transaction, onDelete, isMobile = false, userRole, on
             Lihat Struk
           </Button>
           {userRole !== 'guest' && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
-              iconName="Trash2"
-              className="text-destructive hover:text-destructive"
-            />
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => { e.stopPropagation(); onEdit(transaction); }}
+                iconName="Pencil"
+                className="text-primary hover:text-primary"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
+                iconName="Trash2"
+                className="text-destructive hover:text-destructive"
+              />
+            </div>
           )}
         </div>
         {showDeleteConfirm && (
@@ -173,13 +182,22 @@ const TransactionCard = ({ transaction, onDelete, isMobile = false, userRole, on
       </td>
       <td className="px-4 py-3">
         {userRole !== 'guest' && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
-            iconName="Trash2"
-            className="text-destructive hover:text-destructive"
-          />
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => { e.stopPropagation(); onEdit(transaction); }}
+              iconName="Pencil"
+              className="text-primary hover:text-primary"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
+              iconName="Trash2"
+              className="text-destructive hover:text-destructive"
+            />
+          </div>
         )}
       </td>
       {showDeleteConfirm && (

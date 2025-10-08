@@ -296,6 +296,31 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
     }
 });
 
+// Update a transaction
+app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
+    try {
+        const { total, ppn, isEmployeeMeal, payment_method } = req.body;
+        const { id } = req.params;
+
+        const sql = `UPDATE transactions SET 
+           total = COALESCE(?, total), 
+           ppn = COALESCE(?, ppn), 
+           isEmployeeMeal = COALESCE(?, isEmployeeMeal), 
+           payment_method = COALESCE(?, payment_method) 
+           WHERE id = ?`;
+        const params = [total, ppn, isEmployeeMeal ? 1 : 0, payment_method, id];
+        const [result] = await db.query(sql, params);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ "error": "Transaction not found" });
+        }
+
+        res.json({ message: "success", data: req.body, changes: result.affectedRows });
+    } catch (err) {
+        res.status(400).json({ "error": err.message, "stack": err.stack });
+    }
+});
+
 // Delete a transaction
 app.delete("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
     try {
