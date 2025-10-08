@@ -545,7 +545,7 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin'), as
                 return res.status(404).json({ error: "Order not found or not in pending state." });
             }
             const order = orderRows[0];
-            const items = order.items; // Items are already in JSON format from the DB
+            const items = JSON.parse(order.items); // Items are stored as JSON string in the DB
 
             // 2. Stock Validation
             for (const item of items) {
