@@ -13,5 +13,11 @@ export default defineConfig({
     host: "0.0.0.0",
     strictPort: true,
     allowedHosts: ['.amazonaws.com', '.builtwithrocket.new'],
+    proxy: {
+      '/api': {
+        target: 'https://api.inviteshare.my.id:4000',
+        changeOrigin: true,
+      },
+    },
   }
 });
