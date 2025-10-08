@@ -38,15 +38,21 @@ const OrderConfirmationPage = () => {
             if (!orderToUpdate) {
                 throw new Error('Order not found.');
             }
-            console.log("Order to update:", orderToUpdate);
-            console.log("Menu items to send:", orderToUpdate.menuItems);
+
+            let parsedItems = [];
+            try {
+                parsedItems = JSON.parse(orderToUpdate.items);
+            } catch (e) {
+                console.error("Failed to parse order items:", e);
+                throw new Error("Invalid order items data.");
+            }
 
             const response = await authFetch(`/api/orders/${orderId}/status`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ status: newStatus, menuItems: orderToUpdate.menuItems }),
+                body: JSON.stringify({ status: newStatus, menuItems: parsedItems }),
             });
 
             const res = await response.json();
