@@ -5,6 +5,7 @@ import authFetch from '../../utils/authFetch';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import NoteFormModal from './components/NoteFormModal';
+import ViewNoteModal from './components/ViewNoteModal'; // Import the new modal
 import NoteCard from './components/NoteCard';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 
@@ -14,8 +15,10 @@ const NotesPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [selectedNote, setSelectedNote] = useState(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false); // State for view modal
+  const [noteToView, setNoteToView] = useState(null); // State for note to view
 
   const fetchNotes = useCallback(async () => {
     try {
@@ -46,19 +49,29 @@ const NotesPage = () => {
     setFilteredNotes(results);
   }, [searchTerm, notes]);
 
-  const handleOpenModal = (note = null) => {
+  const handleOpenFormModal = (note = null) => {
     setSelectedNote(note);
-    setIsModalOpen(true);
+    setIsFormModalOpen(true);
   };
 
-  const handleCloseModal = () => {
+  const handleCloseFormModal = () => {
     setSelectedNote(null);
-    setIsModalOpen(false);
+    setIsFormModalOpen(false);
+  };
+
+  const handleOpenViewModal = (note) => {
+    setNoteToView(note);
+    setIsViewModalOpen(true);
+  };
+
+  const handleCloseViewModal = () => {
+    setNoteToView(null);
+    setIsViewModalOpen(false);
   };
 
   const handleSaveNote = async () => {
     await fetchNotes(); // Re-fetch notes to get the latest data
-    handleCloseModal();
+    handleCloseFormModal();
   };
 
   const handleDeleteNote = async (id) => {
@@ -91,7 +104,7 @@ const NotesPage = () => {
             className="pl-10 w-full"
           />
         </div>
-        <Button onClick={() => handleOpenModal()} className="flex items-center gap-2">
+        <Button onClick={() => handleOpenFormModal()} className="flex items-center gap-2">
           <Plus size={18} />
           Tambah Catatan
         </Button>
@@ -107,7 +120,8 @@ const NotesPage = () => {
               <NoteCard 
                 key={note.id} 
                 note={note} 
-                onEdit={() => handleOpenModal(note)} 
+                onView={() => handleOpenViewModal(note)} // Pass the handler
+                onEdit={() => handleOpenFormModal(note)} 
                 onDelete={() => handleDeleteNote(note.id)}
               />
             ))
@@ -117,11 +131,18 @@ const NotesPage = () => {
         </div>
       )}
 
-      {isModalOpen && (
+      {isFormModalOpen && (
         <NoteFormModal
           note={selectedNote}
-          onClose={handleCloseModal}
+          onClose={handleCloseFormModal}
           onSave={handleSaveNote}
+        />
+      )}
+
+      {isViewModalOpen && (
+        <ViewNoteModal
+          note={noteToView}
+          onClose={handleCloseViewModal}
         />
       )}
     </div>
