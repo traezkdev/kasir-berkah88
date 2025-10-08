@@ -33,12 +33,17 @@ const OrderConfirmationPage = () => {
 
     const handleUpdateStatus = async (orderId, newStatus) => {
         try {
+            const orderToUpdate = orders.find(order => order.id === orderId);
+            if (!orderToUpdate) {
+                throw new Error('Order not found.');
+            }
+
             const response = await authFetch(`/api/orders/${orderId}/status`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ status: newStatus }),
+                body: JSON.stringify({ status: newStatus, menuItems: orderToUpdate.menuItems }),
             });
 
             const res = await response.json();
