@@ -87,16 +87,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, onSave }) => {
                         >
                         </Select>
                     </div>
-                    <div className="mb-4 flex items-center">
-                        <Checkbox
-                            id="isEmployeeMeal"
-                            name="isEmployeeMeal"
-                            checked={editedTransaction.isEmployeeMeal}
-                            onChange={(e) => setEditedTransaction(prev => ({ ...prev, isEmployeeMeal: e.target.checked }))}
-                            className="mr-2"
-                        />
-                        <label className="text-gray-700 text-sm font-bold" htmlFor="isEmployeeMeal">Makanan Karyawan</label>
-                    </div>
+
                     
                     <div className="flex justify-end gap-2">
                         <Button variant="outline" onClick={onClose}>Batal</Button>

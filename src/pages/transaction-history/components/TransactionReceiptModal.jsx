@@ -53,7 +53,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
                   <span>
                     {item.name} <span className="text-gray-500">x{item.quantity}</span>
                   </span>
-                  <span>Rp {Number(item.price).toLocaleString("id-ID")}</span>
+                  <span>Rp {Number(item.price * item.quantity).toLocaleString("id-ID")}</span>
                 </div>
               ))}
             </div>
