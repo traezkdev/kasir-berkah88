@@ -20,6 +20,10 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
     minute: "2-digit",
   });
 
+  const subtotalAmount = transaction.items.reduce((sum, item) => {
+    return sum + (Number(item.price) * Number(item.quantity));
+  }, 0);
+
   return (
     <>
       <div
@@ -60,7 +64,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
             <div className="border-b border-dashed border-gray-400 my-4"></div>
             <div className="flex justify-between font-semibold text-sm mb-2">
               <span>Subtotal:</span>
-              <span>Rp {Number(transaction.total).toLocaleString("id-ID")}</span>
+              <span>Rp {Number(subtotalAmount).toLocaleString("id-ID")}</span>
             </div>
             <div className="flex justify-between font-semibold">
               <span className="text-lg">TOTAL:</span>
