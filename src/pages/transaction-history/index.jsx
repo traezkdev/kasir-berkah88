@@ -9,6 +9,7 @@ import TransactionTable from './components/TransactionTable';
 import BulkActions from './components/BulkActions';
 import Pagination from '../../components/ui/Pagination';
 import TransactionReceiptModal from './components/TransactionReceiptModal'; // Import the modal
+import EditTransactionModal from './components/EditTransactionModal'; // Import the new edit modal
 
 import authFetch from '../../utils/authFetch';
 import { jsPDF } from 'jspdf';
@@ -43,6 +44,9 @@ const TransactionHistory = ({ headerTitle }) => {
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
 
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [transactionToEdit, setTransactionToEdit] = useState(null);
+
 
   const navigate = useNavigate(); // Initialize useNavigate
 
@@ -65,6 +69,37 @@ const TransactionHistory = ({ headerTitle }) => {
   const handleCloseReceiptModal = () => {
     setIsReceiptModalOpen(false);
     setSelectedTransaction(null);
+  };
+
+  const handleEditTransaction = (transaction) => {
+    setTransactionToEdit(transaction);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setTransactionToEdit(null);
+  };
+
+  const handleUpdateTransaction = async (updatedTransaction) => {
+    try {
+      const response = await authFetch(`${apiUrl}/api/transactions/${updatedTransaction.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedTransaction),
+      });
+      const data = await response.json();
+      if (data.message === 'success') {
+        fetchTransactions(); // Refresh the list
+        handleCloseEditModal();
+      } else {
+        console.error('Failed to update transaction:', data.error);
+      }
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+    }
   };
 
 
@@ -487,6 +522,7 @@ const TransactionHistory = ({ headerTitle }) => {
               transactions={currentItems}
 
               onDeleteTransaction={handleDeleteTransaction}
+              onEditTransaction={handleEditTransaction}
               
               onRowClick={handleTransactionClick}
 
@@ -513,6 +549,13 @@ const TransactionHistory = ({ headerTitle }) => {
         isOpen={isReceiptModalOpen}
         onClose={handleCloseReceiptModal}
         transaction={selectedTransaction}
+      />
+
+      <EditTransactionModal
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        transaction={transactionToEdit}
+        onSave={handleUpdateTransaction}
       />
 
     </div>
