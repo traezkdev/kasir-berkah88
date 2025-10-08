@@ -5,6 +5,9 @@ import { Check, X, Clock, User, MapPin, ChevronDown, ChevronUp } from 'lucide-re
 const OrderCard = ({ order, onAccept, onReject }) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
+    // Parse items once at the beginning
+    const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+
     const getStatusChipColor = (status) => {
         switch (status) {
             case 'pending':
@@ -51,13 +54,13 @@ const OrderCard = ({ order, onAccept, onReject }) => {
 
             <div className="p-4">
                 <div className="flex justify-between items-center cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
-                    <h4 className="font-semibold text-gray-700">Detail Item ({order.items?.length || 0})</h4>
+                    <h4 className="font-semibold text-gray-700">Detail Item ({items?.length || 0})</h4>
                     {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                 </div>
 
                 {isExpanded && (
                     <div className="mt-3 space-y-2 border-t pt-3">
-                        {(typeof order.items === 'string' ? JSON.parse(order.items) : order.items).map(item => (
+                        {items.map(item => (
                             <div key={item.id} className="flex justify-between items-center text-sm">
                                 <span>{item.quantity}x {item.name}</span>
                                 <span className="font-mono">Rp {(item.price * item.quantity).toLocaleString('id-ID')}</span>
