@@ -86,8 +86,18 @@ const GuestCheckout = () => {
 
         const orderItems = Object.entries(cart).map(([itemId, quantity]) => {
             const item = menuItems.find(menuItem => menuItem.id === itemId);
+            if (!item) {
+                console.error(`Item with ID ${itemId} not found in menuItems. Skipping.`);
+                return null; // Skip this item
+            }
             return { id: item.id, name: item.name, price: item.price, quantity };
-        });
+        }).filter(Boolean); // Remove any null entries
+
+        if (orderItems.length === 0) {
+            setValidationError('Keranjang belanja Anda kosong atau item tidak valid.');
+            setIsSubmitting(false);
+            return;
+        }
 
         const orderData = {
             customer_name: customerName,
