@@ -114,7 +114,7 @@ const GuestCheckout = () => {
             whatsappMessage += `-----------------------------------\n`; // Separator
             whatsappMessage += "*Item Pesanan:*\n";
             orderItems.forEach(item => {
-                whatsappMessage += `- ${item.quantity}x ${item.name} (Rp ${item.price.toLocaleString('id-ID')})\n`;
+                whatsappMessage += `- ${item.quantity}x ${item.name} (Rp ${(item.price * item.quantity).toLocaleString('id-ID')})\n`;
             });
             whatsappMessage += `-----------------------------------\n`; // Separator
             whatsappMessage += `\n*Total: Rp ${calculateTotal().toLocaleString('id-ID')}*\n\n`;
