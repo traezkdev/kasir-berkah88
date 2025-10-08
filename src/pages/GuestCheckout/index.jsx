@@ -110,11 +110,13 @@ const GuestCheckout = () => {
             // 2. If submission is successful, proceed to WhatsApp
             let whatsappMessage = `*Pesanan Baru*\n\n`;
             whatsappMessage += `*Nama:* ${customerName}\n`;
-            whatsappMessage += `*Alamat:* ${customerAddress}\n\n`;
+            whatsappMessage += `*Alamat:* ${customerAddress}\n`;
+            whatsappMessage += `-----------------------------------\n`; // Separator
             whatsappMessage += "*Item Pesanan:*\n";
             orderItems.forEach(item => {
                 whatsappMessage += `- ${item.quantity}x ${item.name} (Rp ${item.price.toLocaleString('id-ID')})\n`;
             });
+            whatsappMessage += `-----------------------------------\n`; // Separator
             whatsappMessage += `\n*Total: Rp ${calculateTotal().toLocaleString('id-ID')}*\n\n`;
             whatsappMessage += "Mohon untuk segera diverifikasi.";
 
