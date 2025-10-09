@@ -124,7 +124,7 @@ const OrderConfirmationPage = () => {
     };
 
     return (
-        <div className="container mx-auto p-4 pt-24">
+        <div className="container mx-auto p-4 pt-24 pb-32">
             <NavigationHeader title="Konfirmasi Pesanan" />
             <div className="bg-white p-6 rounded-lg shadow-lg">
                 <h1 className="text-2xl font-bold mb-4">Manajemen Pesanan Masuk</h1>

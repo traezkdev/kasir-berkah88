@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import AppImage from '../../components/AppImage';
 import Button from '../../components/ui/Button';
@@ -15,6 +15,7 @@ const GuestCheckout = () => {
     const [customerAddress, setCustomerAddress] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [validationError, setValidationError] = useState('');
+    const customerInfoRef = useRef(null);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -149,6 +150,15 @@ const GuestCheckout = () => {
         }
     };
 
+    const handleMobileCheckout = () => {
+        if (!customerName.trim() || !customerAddress.trim()) {
+            customerInfoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setValidationError('Mohon isi Nama Pelanggan dan Alamat Pengiriman.');
+        } else {
+            handleCheckout();
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background">
@@ -276,7 +286,7 @@ const GuestCheckout = () => {
                                 )}
                             </div>
                             <div className="p-4 bg-slate-50/50 rounded-b-lg">
-                                <div className="space-y-4 mb-4">
+                                <div ref={customerInfoRef} className="space-y-4 mb-4">
                                     <Input 
                                         label="Nama Pelanggan"
                                         id="customerName"
@@ -338,7 +348,7 @@ const GuestCheckout = () => {
                                 <p className="text-lg font-bold text-primary">Rp {calculateTotal().toLocaleString('id-ID')}</p>
                             </div>
                         </div>
-                        <Button onClick={handleCheckout} variant="success">
+                        <Button onClick={handleMobileCheckout} variant="success">
                             <ShoppingCart className="mr-2" size={18} />
                             Pesan Sekarang
                         </Button>
