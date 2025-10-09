@@ -1,15 +1,50 @@
 
-import React from "react";
+import React, { useRef } from "react";
 import Button from "../../../components/ui/Button";
-import { X } from "lucide-react";
+import { X, Share2 } from "lucide-react";
+import * as htmlToImage from 'html-to-image';
 
 const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
+  const receiptRef = useRef(null);
+
   if (!isOpen || !transaction) {
     return null;
   }
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleShare = async () => {
+    if (!receiptRef.current) {
+      return;
+    }
+
+    try {
+      const dataUrl = await htmlToImage.toPng(receiptRef.current, { pixelRatio: 2 });
+      
+      // Convert data URL to blob
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], `struk-${transaction.id}.png`, { type: 'image/png' });
+
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: `Struk Transaksi ${transaction.id}`,
+          text: `Berikut adalah struk untuk transaksi ${transaction.id}`,
+          files: [file],
+        });
+      } else {
+        // Fallback for desktop or browsers that don't support Web Share API
+        const link = document.createElement('a');
+        link.download = `struk-${transaction.id}.png`;
+        link.href = dataUrl;
+        link.click();
+      }
+    } catch (error) {
+      console.error('oops, something went wrong!', error);
+      alert('Gagal membagikan struk. Silakan coba lagi.');
+    }
   };
 
   const transactionDate = new Date(transaction.timestamp).toLocaleString("id-ID", {
@@ -32,10 +67,10 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
       ></div>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          id="receipt-content"
+          id="receipt-container"
           className="relative bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col"
         >
-          <div className="p-6 overflow-y-auto">
+          <div ref={receiptRef} className="p-6 overflow-y-auto bg-white">
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold">Berkah 88</h2>
               <p className="text-sm text-gray-500">Harga hemat, Rasa terhormat</p>
@@ -83,6 +118,10 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
             <Button variant="outline" onClick={onClose}>
               Tutup
             </Button>
+            <Button variant="outline" onClick={handleShare} className="flex items-center gap-2">
+              <Share2 size={16} />
+              Bagikan
+            </Button>
             <Button onClick={handlePrint}>Cetak</Button>
           </div>
           <button
@@ -98,10 +137,10 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
           body * {
             visibility: hidden;
           }
-          #receipt-content, #receipt-content * {
+          #receipt-container, #receipt-container * {
             visibility: visible;
           }
-          #receipt-content {
+          #receipt-container {
             position: absolute;
             left: 0;
             top: 0;
