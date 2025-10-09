@@ -1,15 +1,20 @@
-import React from "react";
-import { createRoot } from "react-dom/client";
-import { BrowserRouter } from "react-router-dom"; // Import BrowserRouter
-import App from "./App";
-import "./styles/tailwind.css";
-import "./styles/index.css";
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
+import './styles/tailwind.css';
 
-const container = document.getElementById("root");
-const root = createRoot(container);
+// Easter egg for the developer console
+console.log(
+  '%c Crafted with ❤️ by M Alfin Firdaus (traezkdev) %c',
+  'background: #222; color: #bada55; font-size: 14px; border-radius: 5px; padding: 5px;',
+  ''
+);
 
-root.render(
-  <BrowserRouter> {/* Wrap App with BrowserRouter */}
-    <App />
-  </BrowserRouter>
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
 );
