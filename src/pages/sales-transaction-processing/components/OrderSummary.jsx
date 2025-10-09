@@ -108,7 +108,7 @@ const OrderSummary = ({
   const disablePaymentButton = isLoading || !isCartValid();
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="bg-white rounded-lg shadow-lg p-6 lg:sticky lg:top-20">
       <h2 className="text-xl font-bold text-text-primary mb-4">Ringkasan Pesanan</h2>
       
       {cart.length === 0 ? (

@@ -179,6 +179,17 @@ export const exportToPdf = (data, filename = 'data') => {
 
     let finalY = 40; // Starting Y position for the first table
     data.forEach(section => {
+      // Calculate required space for title (~15mm) + at least one table row (~7mm) + margin (~20mm)
+      const requiredSpace = 15 + 7 + 20; 
+      const remainingPageSpace = doc.internal.pageSize.height - finalY; 
+
+      // If not enough space for title and first row, add a new page
+      // Also, ensure it's not the very first section on the very first page
+      if (finalY > 40 && remainingPageSpace < requiredSpace) { 
+        doc.addPage();
+        finalY = 20; // Reset Y position for new page, leaving space for header
+      }
+
       // Add section title
       doc.setFontSize(14);
       doc.setTextColor(0);
@@ -202,6 +213,7 @@ export const exportToPdf = (data, filename = 'data') => {
         alternateRowStyles: {
           fillColor: [240, 240, 240],
         },
+        margin: { bottom: 20 }, // Add bottom margin to prevent overlap with footer
         didDrawPage: function (data) {
           // Footer
           let str = "Halaman " + doc.internal.getNumberOfPages();
@@ -270,6 +282,7 @@ export const exportToPdf = (data, filename = 'data') => {
     alternateRowStyles: {
       fillColor: [240, 240, 240],
     },
+    margin: { bottom: 20 }, // Add bottom margin to prevent overlap with footer
     didDrawPage: function (data) {
       // Footer
       let str = "Halaman " + doc.internal.getNumberOfPages();
