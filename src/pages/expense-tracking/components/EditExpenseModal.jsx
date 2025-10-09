@@ -41,9 +41,13 @@ const EditExpenseModal = ({ isOpen, onClose, expense, onUpdateExpense, isLoading
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // Preserve the original time to prevent it from being reset
+    const originalTime = expense.date ? formatInTimeZone(new Date(expense.date), 'Asia/Jakarta', 'HH:mm:ss') : '00:00:00';
+    
     const updatedFormData = {
       ...formData,
-      date: formData.date ? formatInTimeZone(new Date(`${formData.date}T${formatInTimeZone(new Date(), 'Asia/Jakarta', 'HH:mm:ss')}`), 'Asia/Jakarta', 'yyyy-MM-dd HH:mm:ss') : null,
+      // Combine the potentially updated date from the form with the original time
+      date: formData.date ? formatInTimeZone(new Date(`${formData.date}T${originalTime}`), 'Asia/Jakarta', 'yyyy-MM-dd HH:mm:ss') : null,
     };
     onUpdateExpense(updatedFormData);
   };
