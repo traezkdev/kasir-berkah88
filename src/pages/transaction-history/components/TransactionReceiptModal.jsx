@@ -21,7 +21,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
     }
 
     try {
-      const dataUrl = await htmlToImage.toPng(receiptRef.current, { quality: 0.95 });
+      const dataUrl = await htmlToImage.toPng(receiptRef.current, { pixelRatio: 2 });
       
       // Convert data URL to blob
       const res = await fetch(dataUrl);
