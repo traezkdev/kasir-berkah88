@@ -19,7 +19,19 @@ const NotesPage = () => {
   const [selectedNote, setSelectedNote] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false); // State for view modal
   const [noteToView, setNoteToView] = useState(null); // State for note to view
+  const [currentUserId, setCurrentUserId] = useState(null);
 
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setCurrentUserId(payload.userId);
+      } catch (e) {
+        console.error('Failed to decode token:', e);
+      }
+    }
+  }, []);
   const fetchNotes = useCallback(async () => {
     try {
       setLoading(true);
@@ -90,7 +102,7 @@ const NotesPage = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 pt-24">
+    <div className="container mx-auto p-4 pt-24 pb-32">
       <NavigationHeader title="Catatan Saya" />
       
       <div className="flex justify-between items-center mb-6 gap-4">
@@ -120,6 +132,7 @@ const NotesPage = () => {
               <NoteCard 
                 key={note.id} 
                 note={note} 
+                currentUserId={currentUserId}
                 onView={() => handleOpenViewModal(note)} // Pass the handler
                 onEdit={() => handleOpenFormModal(note)} 
                 onDelete={() => handleDeleteNote(note.id)}
