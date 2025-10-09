@@ -134,7 +134,7 @@ const GuestCheckout = () => {
             });
             whatsappMessage += `-----------------------------------\n`; // Separator
             whatsappMessage += `\n*Total: Rp ${calculateTotal().toLocaleString('id-ID')}*\n\n`;
-            whatsappMessage += "Mohon untuk segera diverifikasi.";
+            whatsappMessage += "Mohon untuk segera Diproses.";
 
             const whatsappNumber = "6285864875536"; // Consider making this configurable
             const encodedMessage = encodeURIComponent(whatsappMessage);
