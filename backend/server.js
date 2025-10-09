@@ -435,11 +435,23 @@ app.delete("/api/expenses", authenticateToken, authorizeRoles('admin'), async (r
 
 // --- Notes Endpoints ---
 
-// Get all notes for the logged-in user
+// Get all notes for all users
 app.get("/api/notes", authenticateToken, async (req, res) => {
     try {
-        const sql = "SELECT * FROM notes WHERE user_id = ? ORDER BY updated_at DESC";
-        const [rows] = await db.query(sql, [req.user.userId]);
+        const sql = `
+            SELECT 
+                n.id, 
+                n.title, 
+                n.content, 
+                n.user_id, 
+                u.username as author,
+                n.created_at, 
+                n.updated_at
+            FROM notes n
+            JOIN users u ON n.user_id = u.id
+            ORDER BY n.updated_at DESC
+        `;
+        const [rows] = await db.query(sql);
         res.json({ message: "success", data: rows });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -469,17 +481,32 @@ app.put("/api/notes/:id", authenticateToken, async (req, res) => {
     try {
         const { title, content } = req.body;
         const { id } = req.params;
+        const userId = req.user.userId;
 
         if (!title) {
             return res.status(400).json({ error: "Title is required" });
         }
 
-        const sql = 'UPDATE notes SET title = ?, content = ? WHERE id = ? AND user_id = ?';
-        const [result] = await db.query(sql, [title, content, id, req.user.userId]);
+        // First, get the note to check ownership
+        const [noteRows] = await db.query('SELECT user_id FROM notes WHERE id = ?', [id]);
+
+        if (noteRows.length === 0) {
+            return res.status(404).json({ error: "Note not found" });
+        }
+
+        const note = noteRows[0];
+        if (note.user_id !== userId) {
+            return res.status(403).json({ error: "Forbidden: You are not the author of this note" });
+        }
+
+        // If ownership is verified, update the note
+        const sql = 'UPDATE notes SET title = ?, content = ? WHERE id = ?';
+        const [result] = await db.query(sql, [title, content, id]);
 
         if (result.affectedRows > 0) {
             res.json({ message: "Note updated successfully" });
         } else {
+            // This case should ideally not be reached due to the checks above
             res.status(404).json({ error: "Note not found or user not authorized" });
         }
     } catch (err) {
@@ -491,12 +518,28 @@ app.put("/api/notes/:id", authenticateToken, async (req, res) => {
 app.delete("/api/notes/:id", authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-        const sql = 'DELETE FROM notes WHERE id = ? AND user_id = ?';
-        const [result] = await db.query(sql, [id, req.user.userId]);
+        const userId = req.user.userId;
+
+        // First, get the note to check ownership
+        const [noteRows] = await db.query('SELECT user_id FROM notes WHERE id = ?', [id]);
+
+        if (noteRows.length === 0) {
+            return res.status(404).json({ error: "Note not found" });
+        }
+
+        const note = noteRows[0];
+        if (note.user_id !== userId) {
+            return res.status(403).json({ error: "Forbidden: You are not the author of this note" });
+        }
+
+        // If ownership is verified, delete the note
+        const sql = 'DELETE FROM notes WHERE id = ?';
+        const [result] = await db.query(sql, [id]);
 
         if (result.affectedRows > 0) {
             res.json({ message: "Note deleted successfully" });
         } else {
+            // This case should ideally not be reached due to the checks above
             res.status(404).json({ error: "Note not found or user not authorized" });
         }
     } catch (err) {
@@ -528,8 +571,8 @@ app.post("/api/orders", async (req, res) => {
     }
 });
 
-// Get all orders (admin only)
-app.get("/api/orders", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+// Get all orders (admin and user access)
+app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user'), async (req, res) => {
     try {
         const sql = "SELECT * FROM orders ORDER BY created_at DESC";
         const [rows] = await db.query(sql);
