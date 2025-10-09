@@ -571,8 +571,8 @@ app.post("/api/orders", async (req, res) => {
     }
 });
 
-// Get all orders (admin only)
-app.get("/api/orders", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+// Get all orders (admin and user access)
+app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user'), async (req, res) => {
     try {
         const sql = "SELECT * FROM orders ORDER BY created_at DESC";
         const [rows] = await db.query(sql);
