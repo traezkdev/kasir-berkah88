@@ -299,12 +299,20 @@ const ExpenseTracking = ({ headerTitle }) => {
         const expenseDate = new Date(expense.date);
         return expenseDate >= startOfCurrentWeek && expenseDate <= endOfCurrentWeek;
       })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
+    
+    const startOfCurrentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const endOfCurrentMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const monthlyExpenses = expenses?.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate >= startOfCurrentMonth && expenseDate <= endOfCurrentMonth;
+    })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
 
     return {
-      totalExpenses: weeklyExpenses,
+      totalExpenses,
       expenseCount,
       todayExpenses,
-      monthlyExpenses: weeklyExpenses // Keep monthlyExpenses for now, will change label in card
+      weeklyExpenses,
+      monthlyExpenses
     };
   };
 

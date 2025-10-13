@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import Icon from '../AppIcon';
 import Button from './Button';
 
 const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = "Kasir Berkah 88" }) => {
+  const isNativePlatform = Capacitor.isNativePlatform();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState(null); // New state for user role
   const location = useLocation();
@@ -58,7 +60,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-[1001] bg-white border-b border-slate-200 shadow-elevation-1">
+      <header className={`fixed top-0 left-0 right-0 z-[1001] bg-white border-b border-slate-200 shadow-elevation-1 ${isNativePlatform ? 'pt-8' : ''}`}>
         <div className="flex items-center justify-between h-16 px-4 lg:px-6">
           {/* Logo Section */}
           <div className="flex items-center space-x-4">
