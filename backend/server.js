@@ -7,7 +7,13 @@ const multer = require('multer');
 const path = require('path');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: '*', // Allow all origins
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  allowedHeaders: 'Content-Type,Authorization',
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+}));
 app.use(express.json());
 app.use('/public/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
