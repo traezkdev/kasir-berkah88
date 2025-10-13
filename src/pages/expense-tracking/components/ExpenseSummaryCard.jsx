@@ -5,6 +5,7 @@ const ExpenseSummaryCard = ({
   totalExpenses = 0, 
   expenseCount = 0, 
   todayExpenses = 0,
+  weeklyExpenses = 0,
   monthlyExpenses = 0,
   className = "" 
 }) => {
@@ -20,11 +21,11 @@ const ExpenseSummaryCard = ({
   const summaryItems = [
     {
       label: 'Pengeluaran Bulan Ini',
-      value: formatCurrency(totalExpenses),
+      value: formatCurrency(monthlyExpenses),
       icon: 'Wallet', // Replace with a different icon that is less likely to have arcs
       color: 'text-destructive',
       bgColor: 'bg-destructive/10',
-      description: `${expenseCount} transaksi`
+      description: `${expenseCount} transaksi bulan ini`
     },
     {
       label: 'Pengeluaran Hari Ini',
@@ -36,7 +37,7 @@ const ExpenseSummaryCard = ({
     },
     {
       label: 'Pengeluaran Minggu Ini',
-      value: formatCurrency(monthlyExpenses),
+      value: formatCurrency(weeklyExpenses),
       icon: 'TrendingDown',
       color: 'text-accent',
       bgColor: 'bg-accent/10',
