@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">kasir-berkah88</string>
+    <string name="title_activity_main">kasir-berkah88</string>
+    <string name="package_name">com.kasirberkah88.app</string>
+    <string name="custom_url_scheme">com.kasirberkah88.app</string>
+</resources>
