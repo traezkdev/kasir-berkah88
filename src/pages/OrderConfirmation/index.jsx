@@ -3,13 +3,22 @@ import NavigationHeader from '../../components/ui/NavigationHeader';
 import authFetch from '../../utils/authFetch';
 import OrderCard from './components/OrderCard';
 import ConfirmationModal from '../../components/ui/ConfirmationModal';
+import Button from '../../components/ui/Button'; // Import Button
 
 const OrderConfirmationPage = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('pending');
-    const [modalState, setModalState] = useState({ isOpen: false, orderId: null, action: null, title: '', message: '', type: null }); // type: 'confirm' or 'success' or 'error'
+    const [modalState, setModalState] = useState({ isOpen: false, orderId: null, action: null, title: '', message: '', type: null, isBulk: false }); // Added isBulk
+    const [notification, setNotification] = useState(null); // New state for notification
+
+    const showNotification = (message, type) => {
+        setNotification({ message, type });
+        setTimeout(() => {
+            setNotification(null);
+        }, 3000); // Hide after 3 seconds
+    };
 
     const fetchOrders = useCallback(async () => {
         try {
@@ -23,6 +32,7 @@ const OrderConfirmationPage = () => {
             setOrders(data.data || []);
         } catch (err) {
             setError(err.message);
+            showNotification(`Error: ${err.message}`, 'error');
         } finally {
             setLoading(false);
         }
@@ -65,35 +75,91 @@ const OrderConfirmationPage = () => {
                 throw new Error(res.error || `Gagal mengubah status pesanan.`);
             }
             
-            setModalState({ isOpen: true, title: 'Sukses!', message: res.message || 'Status pesanan berhasil diubah.', type: 'success' });
+            showNotification(res.message || 'Status pesanan berhasil diubah.', 'success');
             fetchOrders(); // Refresh the list after updating
 
         } catch (err) {
             console.error("Error updating order status:", err);
-            setModalState({ isOpen: true, title: 'Error!', message: err.message, type: 'error' });
+            showNotification(`Error: ${err.message}`, 'error');
         } finally {
-            // For confirmation type, modal closes after action. For success/error, it stays open until user closes.
-            if (modalState.type === 'confirm') {
-                setModalState({ isOpen: false, orderId: null, action: null, title: '', message: '', type: null });
-            }
+            closeConfirmationModal(); // Always close modal after action
         }
     };
 
-    const openConfirmationModal = (orderId, action) => {
-        const title = action === 'accepted' ? 'Konfirmasi Terima Pesanan' : 'Konfirmasi Tolak Pesanan';
-        const message = action === 'accepted' 
-            ? 'Apakah Anda yakin ingin MENERIMA pesanan ini? Stok akan dikurangi dan pesanan akan masuk ke laporan transaksi.'
-            : 'Apakah Anda yakin ingin MENOLAK pesanan ini? Aksi ini tidak dapat dibatalkan.';
-        setModalState({ isOpen: true, orderId, action, title, message, type: 'confirm' });
+    const handleDeleteOrder = async (orderId) => {
+        try {
+            const response = await authFetch(`/api/orders/${orderId}`, {
+                method: 'DELETE',
+            });
+            const res = await response.json();
+            if (!response.ok) {
+                throw new Error(res.error || 'Gagal menghapus pesanan.');
+            }
+            showNotification(res.message || 'Pesanan berhasil dihapus.', 'success');
+            fetchOrders();
+        } catch (err) {
+            console.error("Error deleting order:", err);
+            showNotification(`Error: ${err.message}`, 'error');
+        } finally {
+            closeConfirmationModal();
+        }
+    };
+
+    const handleBulkDeleteOrders = async (statusToDelete) => {
+        try {
+            const response = await authFetch(`/api/orders/status/${statusToDelete}`, {
+                method: 'DELETE',
+            });
+            const res = await response.json();
+            if (!response.ok) {
+                throw new Error(res.error || `Gagal menghapus pesanan dengan status ${statusToDelete}.`);
+            }
+            showNotification(res.message || `${res.changes} pesanan dengan status '${statusToDelete}' berhasil dihapus.`, 'success');
+            fetchOrders();
+        } catch (err) {
+            console.error("Error bulk deleting orders:", err);
+            showNotification(`Error: ${err.message}`, 'error');
+        } finally {
+            closeConfirmationModal();
+        }
+    };
+
+    const openConfirmationModal = (orderId, action, isBulk = false) => {
+        let title = '';
+        let message = '';
+        let isDestructive = false;
+
+        if (action === 'accepted') {
+            title = 'Konfirmasi Terima Pesanan';
+            message = 'Apakah Anda yakin ingin MENERIMA pesanan ini? Stok akan dikurangi dan pesanan akan masuk ke laporan transaksi.';
+        } else if (action === 'rejected') {
+            title = 'Konfirmasi Tolak Pesanan';
+            message = 'Apakah Anda yakin ingin MENOLAK pesanan ini? Aksi ini tidak dapat dibatalkan.';
+            isDestructive = true;
+        } else if (action === 'delete' && !isBulk) {
+            title = 'Konfirmasi Hapus Pesanan';
+            message = 'Apakah Anda yakin ingin MENGHAPUS pesanan ini? Aksi ini tidak dapat dibatalkan.';
+            isDestructive = true;
+        } else if (action === 'delete' && isBulk) {
+            title = `Konfirmasi Hapus Semua Pesanan ${orderId === 'pending' ? 'Menunggu Konfirmasi' : 'Ditolak'}`;
+            message = `Apakah Anda yakin ingin MENGHAPUS SEMUA pesanan dengan status '${orderId}'? Aksi ini tidak dapat dibatalkan.`;
+            isDestructive = true;
+        }
+
+        setModalState({ isOpen: true, orderId, action, title, message, type: 'confirm', isDestructive, isBulk });
     };
 
     const closeConfirmationModal = () => {
-        setModalState({ isOpen: false, orderId: null, action: null, title: '', message: '', type: null });
+        setModalState({ isOpen: false, orderId: null, action: null, title: '', message: '', type: null, isBulk: false });
     };
 
     const handleConfirmAction = () => {
-        if (modalState.orderId && modalState.action) {
+        if (modalState.action === 'accepted' || modalState.action === 'rejected') {
             handleUpdateStatus(modalState.orderId, modalState.action);
+        } else if (modalState.action === 'delete' && !modalState.isBulk) {
+            handleDeleteOrder(modalState.orderId);
+        } else if (modalState.action === 'delete' && modalState.isBulk) {
+            handleBulkDeleteOrders(modalState.orderId); // orderId here is actually the status for bulk delete
         }
     };
 
@@ -117,6 +183,7 @@ const OrderConfirmationPage = () => {
                         order={order} 
                         onAccept={() => openConfirmationModal(order.id, 'accepted')}
                         onReject={() => openConfirmationModal(order.id, 'rejected')}
+                        onDelete={() => openConfirmationModal(order.id, 'delete')}
                     />
                 ))}
             </div>
@@ -126,6 +193,13 @@ const OrderConfirmationPage = () => {
     return (
         <div className="container mx-auto p-4 pt-24 pb-32">
             <NavigationHeader title="Konfirmasi Pesanan" />
+            {notification && (
+                <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg z-[1002] ${
+                    notification.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                }`}>
+                    {notification.message}
+                </div>
+            )}
             <div className="bg-white p-6 rounded-lg shadow-lg">
                 <h1 className="text-2xl font-bold mb-4">Manajemen Pesanan Masuk</h1>
                 
@@ -161,6 +235,17 @@ const OrderConfirmationPage = () => {
                     </nav>
                 </div>
 
+                {(activeTab === 'pending' || activeTab === 'rejected') && filteredOrders.length > 0 && (
+                    <div className="flex justify-end mb-4">
+                        <Button
+                            variant="destructive"
+                            onClick={() => openConfirmationModal(activeTab, 'delete', true)}
+                        >
+                            Hapus Semua {activeTab === 'pending' ? 'Menunggu Konfirmasi' : 'Ditolak'}
+                        </Button>
+                    </div>
+                )}
+
                 <div>
                     {renderContent()}
                 </div>
@@ -172,7 +257,7 @@ const OrderConfirmationPage = () => {
                 onConfirm={handleConfirmAction}
                 title={modalState.title}
                 message={modalState.message}
-                isDestructive={modalState.action === 'rejected'}
+                isDestructive={modalState.isDestructive}
             />
         </div>
     );
