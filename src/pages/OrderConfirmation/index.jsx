@@ -195,22 +195,22 @@ const OrderConfirmationPage = () => {
             <NavigationHeader title="Konfirmasi Pesanan" />
             {notification && (
                 <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg z-[1002] ${
-                    notification.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                    notification.type === 'success' ? 'bg-success text-success-foreground' : 'bg-destructive text-destructive-foreground'
                 }`}>
                     {notification.message}
                 </div>
             )}
-            <div className="bg-white p-6 rounded-lg shadow-lg">
+            <div className="bg-card p-6 rounded-lg shadow-lg">
                 <h1 className="text-2xl font-bold mb-4">Manajemen Pesanan Masuk</h1>
                 
-                <div className="border-b border-gray-200 mb-4">
+                <div className="border-b border-border mb-4">
                     <nav className="-mb-px flex justify-around">
                         <button
                             onClick={() => setActiveTab('pending')}
                             className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                                 activeTab === 'pending' 
-                                ? 'border-blue-500 text-blue-600' 
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ? 'border-primary text-primary' 
+                                : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
                             }`}>
                             Menunggu Konfirmasi
                         </button>
@@ -218,8 +218,8 @@ const OrderConfirmationPage = () => {
                             onClick={() => setActiveTab('accepted')}
                             className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                                 activeTab === 'accepted' 
-                                ? 'border-blue-500 text-blue-600' 
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ? 'border-primary text-primary' 
+                                : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
                             }`}>
                             Diterima
                         </button>
@@ -227,8 +227,8 @@ const OrderConfirmationPage = () => {
                             onClick={() => setActiveTab('rejected')}
                             className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                                 activeTab === 'rejected' 
-                                ? 'border-blue-500 text-blue-600' 
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ? 'border-primary text-primary' 
+                                : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
                             }`}>
                             Ditolak
                         </button>

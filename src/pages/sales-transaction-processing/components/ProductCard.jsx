@@ -14,7 +14,7 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl })
 
   return (
     <div className={cn(
-      "bg-white rounded-lg shadow-md overflow-hidden transform transition-transform duration-200",
+      "bg-card rounded-lg shadow-md overflow-hidden transform transition-transform duration-200",
       isOutOfStock && quantityInCart === 0 ? "opacity-50 cursor-not-allowed" : "hover:scale-105"
     )}>
       <AppImage
@@ -39,7 +39,7 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl })
               >
                 <Minus size={16} />
               </Button>
-              <span className="px-4 py-2 border-t border-b h-9 w-16 text-center font-semibold flex items-center justify-center">
+              <span className="px-4 py-2 border-t border-b border-border h-9 w-16 text-center font-semibold flex items-center justify-center">
                 {quantityInCart}
               </span>
               <Button

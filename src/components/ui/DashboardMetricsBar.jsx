@@ -44,7 +44,7 @@ const DashboardMetricsBar = ({
 
   if (isCollapsed && !showOnAllPages) {
     return (
-      <div className="hidden lg:block fixed top-16 left-0 right-0 z-500 bg-white/95 backdrop-blur-sm border-b border-slate-200">
+      <div className="hidden lg:block fixed top-16 left-0 right-0 z-500 bg-background/95 dark:bg-card/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center justify-center py-3 px-4">
           <div className="flex items-center space-x-6">
             {metricItems?.map((item) => {
@@ -72,7 +72,7 @@ const DashboardMetricsBar = ({
   }
 
   return (
-    <div className="bg-white border-b border-slate-200 shadow-elevation-1">
+    <div className="bg-background border-b border-border shadow-elevation-1">
       <div className="px-4 lg:px-6 py-4">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {metricItems?.map((item) => {

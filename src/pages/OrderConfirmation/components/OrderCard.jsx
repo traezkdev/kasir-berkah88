@@ -17,25 +17,25 @@ const OrderCard = ({ order, onAccept, onReject, onDelete }) => {
   const getStatusClasses = (status) => {
     switch (status) {
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300';
       case 'accepted':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300';
       case 'rejected':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted dark:bg-muted/20 text-text-primary';
     }
   };
 
   const parsedItems = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+    <div className="bg-card border border-border rounded-lg shadow-sm">
       <div className="p-4 border-b border-gray-200">
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="font-bold text-lg text-gray-800">Order #{order.id}</h3>
-            <div className="flex items-center text-sm text-gray-500 mt-1">
+            <h3 className="font-bold text-lg text-text-primary">Order #{order.id}</h3>
+            <div className="flex items-center text-sm text-text-secondary mt-1">
               <Icon name="Clock" className="mr-2" size={14} />
               <span>{new Date(order.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</span>
             </div>
@@ -47,12 +47,12 @@ const OrderCard = ({ order, onAccept, onReject, onDelete }) => {
           </span>
         </div>
         <div className="mt-3">
-          <div className="flex items-center text-sm text-gray-700">
+          <div className="flex items-center text-sm text-text-primary">
             <Icon name="User" className="mr-2" size={14} />
             <span className="font-semibold">{order.customer_name}</span>
           </div>
           {order.customer_address && (
-            <div className="flex items-start text-sm text-gray-500 mt-1">
+            <div className="flex items-start text-sm text-text-secondary mt-1">
               <Icon name="MapPin" className="mr-2 mt-1 flex-shrink-0" size={14} />
               <span>{order.customer_address}</span>
             </div>
@@ -61,13 +61,13 @@ const OrderCard = ({ order, onAccept, onReject, onDelete }) => {
       </div>
       <div className="p-4">
         <div className="flex justify-between items-center cursor-pointer" onClick={() => setShowDetails(!showDetails)}>
-          <h4 className="font-semibold text-gray-700">Detail Item ({parsedItems.length})</h4>
+          <h4 className="font-semibold text-text-primary">Detail Item ({parsedItems.length})</h4>
           <Icon name={showDetails ? "ChevronUp" : "ChevronDown"} size={20} />
         </div>
         {showDetails && (
           <div className="mt-3 space-y-2 border-t pt-3">
             {parsedItems.map(item => (
-              <div key={item.id} className="flex justify-between text-sm text-gray-600">
+              <div key={item.id} className="flex justify-between text-sm text-text-primary">
                 <span>{item.name} x {item.quantity}</span>
                 <span>{formatCurrency(item.price * item.quantity)}</span>
               </div>
@@ -79,7 +79,7 @@ const OrderCard = ({ order, onAccept, onReject, onDelete }) => {
           <span>{formatCurrency(order.total)}</span>
         </div>
       </div>
-      <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
+      <div className="p-4 bg-background border-t border-border flex justify-end space-x-3">
         {order.status === 'pending' && (
           <>
             <Button variant="destructive" onClick={onReject}>

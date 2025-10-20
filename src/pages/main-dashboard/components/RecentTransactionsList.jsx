@@ -37,7 +37,7 @@ const RecentTransactionsList = ({ transactions = [], onViewAll }) => {
 
   if (transactions?.length === 0) {
     return (
-      <div className="bg-white rounded-lg p-6 shadow-elevation-1 border border-slate-200">
+      <div className="bg-card rounded-lg p-6 shadow-elevation-1 border border-border">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-text-primary">Transaksi Terbaru</h2>
         </div>
@@ -51,7 +51,7 @@ const RecentTransactionsList = ({ transactions = [], onViewAll }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg p-4 shadow-elevation-1 border border-slate-200">
+    <div className="bg-card rounded-lg p-4 shadow-elevation-1 border border-border">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-text-primary">Transaksi Terbaru</h2>
         <Button
@@ -81,7 +81,7 @@ const RecentTransactionsList = ({ transactions = [], onViewAll }) => {
           }
 
           return (
-            <div key={transaction.id} className="flex items-center space-x-3 p-3 rounded-md hover:bg-muted transition-colors duration-200">
+            <div key={transaction.id} className="flex items-center space-x-3 p-3 rounded-md hover:bg-muted dark:hover:bg-muted/50 transition-colors duration-200">
               <div className={`p-2 rounded-md bg-muted ${iconData.color}`}>
                 <Icon name={iconData.icon} size={16} />
               </div>

@@ -10,6 +10,7 @@ import RecentTransactionsList from './components/RecentTransactionsList';
 import BusinessSummaryCard from './components/BusinessSummaryCard';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
+import DarkModeToggle from '../../components/ui/DarkModeToggle';
 import authFetch from '../../utils/authFetch'; // Add this import
 
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -490,6 +491,7 @@ const MainDashboard = ({ headerTitle }) => {
             </div>
 
             {/* Status Banner */}
+            {/* Status Banner */}
             <div className="mt-8 bg-gradient-to-r from-primary/10 to-success/10 rounded-lg p-4 border border-primary/20">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-primary/20 rounded-md">
@@ -513,6 +515,10 @@ const MainDashboard = ({ headerTitle }) => {
                   </p>
                 </div>
               </div>
+            </div>
+
+            <div className="mt-8">
+              <DarkModeToggle />
             </div>
           </div>
         </main>

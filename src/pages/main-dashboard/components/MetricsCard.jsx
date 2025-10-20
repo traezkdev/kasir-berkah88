@@ -10,7 +10,7 @@ const MetricsCard = ({ title, value, icon, color = 'primary', trend = null, desc
   };
 
   return (
-    <div className="bg-white rounded-lg p-4 shadow-elevation-1 border border-slate-200 hover:shadow-elevation-2 transition-shadow duration-200">
+    <div className="bg-card rounded-lg p-4 shadow-elevation-1 border border-border hover:shadow-elevation-2 transition-shadow duration-200">
       <div className="flex items-center justify-between mb-3">
         <div className={`p-2 rounded-md ${colorClasses?.[color]}`}>
           <Icon name={icon} size={20} />

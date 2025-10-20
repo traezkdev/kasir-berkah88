@@ -23,23 +23,23 @@ const ConfirmationModal = ({
     switch (type) {
         case 'success':
             iconComponent = <Check size={24} />;
-            iconBgClass = 'bg-green-100';
-            iconColorClass = 'text-green-600';
+            iconBgClass = 'bg-success/10 dark:bg-success/20';
+            iconColorClass = 'text-success';
             confirmButtonVariant = 'success';
             confirmButtonText = 'OK';
             break;
         case 'error':
             iconComponent = <X size={24} />;
-            iconBgClass = 'bg-red-100';
-            iconColorClass = 'text-red-600';
+            iconBgClass = 'bg-destructive/10 dark:bg-destructive/20';
+            iconColorClass = 'text-destructive';
             confirmButtonVariant = 'destructive';
             confirmButtonText = 'Tutup';
             break;
         case 'confirm':
         default:
             iconComponent = <AlertTriangle size={24} />;
-            iconBgClass = 'bg-blue-100';
-            iconColorClass = 'text-blue-600';
+            iconBgClass = 'bg-primary/10 dark:bg-primary/20';
+            iconColorClass = 'text-primary';
             confirmButtonVariant = 'default';
             confirmButtonText = confirmText;
             break;
@@ -51,18 +51,18 @@ const ConfirmationModal = ({
             onClick={onClose}
         >
                         <div 
-                            className="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm mx-4 text-center" 
+                            className="bg-card rounded-lg shadow-xl p-6 w-full max-w-sm mx-4 text-center" 
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full ${iconBgClass} sm:h-10 sm:w-10">
                                 {iconComponent}
                             </div>
                             <div className="mt-3 text-center">
-                                <h3 className="text-lg leading-6 font-bold text-gray-900" id="modal-title">
+                                <h3 className="text-lg leading-6 font-bold text-text-primary" id="modal-title">
                                     {title}
                                 </h3>
                                 <div className="mt-2">
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-sm text-text-secondary">
                                         {message}
                                     </p>
                                 </div>
