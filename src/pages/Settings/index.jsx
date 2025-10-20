@@ -561,8 +561,8 @@ const Settings = ({ headerTitle }) => {
               <NavigationHeader title="Pengaturan" headerTitle={headerTitle} />
       <BreadcrumbNavigation paths={breadcrumbs} />
       <div className="flex-grow pt-20 px-6 pb-20 overflow-auto">
-        <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8 space-y-8">
-          <h2 className="text-2xl font-bold text-text-primary text-center">Pengaturan Aplikasi</h2>
+        <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg dark:shadow-none p-8 space-y-8">
+          <h2 className="text-2xl font-bold text-text-primary dark:text-white text-center">Pengaturan Aplikasi</h2>
 
           {message && <p className="text-success text-center">{message}</p>}
           {error && <p className="text-destructive text-center">{error}</p>}
@@ -573,7 +573,7 @@ const Settings = ({ headerTitle }) => {
             <>
               {/* Website Title Setting */}
               <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-text-primary">Judul Situs Web</h3>
+                <h3 className="text-xl font-semibold text-text-primary dark:text-white">Judul Situs Web</h3>
                 <form onSubmit={handleUpdateWebsiteTitle} className="space-y-4">
                   <Input
                     label="Judul Saat Ini"
@@ -592,7 +592,7 @@ const Settings = ({ headerTitle }) => {
 
               {/* Header Title Setting */}
               <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-text-primary">Judul Header Web</h3>
+                  <h3 className="text-xl font-semibold text-text-primary dark:text-white">Judul Header Web</h3>
                   <form onSubmit={handleUpdateHeaderTitle} className="space-y-4">
                       <Input
                           label="Judul Header Saat Ini"
@@ -611,7 +611,7 @@ const Settings = ({ headerTitle }) => {
 
               {/* Initial Capital Setting */}
               <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-text-primary">Modal Awal</h3>
+                <h3 className="text-xl font-semibold text-text-primary dark:text-white">Modal Awal</h3>
                 <form onSubmit={handleUpdateInitialCapital} className="space-y-4">
                   <Input
                     label="Jumlah Modal Awal (Rp)"
@@ -630,9 +630,9 @@ const Settings = ({ headerTitle }) => {
 
               {/* Registration Toggle Setting */}
               <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-text-primary">Pendaftaran Pengguna</h3>
+                <h3 className="text-xl font-semibold text-text-primary dark:text-white">Pendaftaran Pengguna</h3>
                 <div className="flex items-center justify-between">
-                  <span>Izinkan pengguna baru mendaftar:</span>
+                  <span className="text-gray-700 dark:text-gray-200">Izinkan pengguna baru mendaftar:</span>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
@@ -652,7 +652,7 @@ const Settings = ({ headerTitle }) => {
 
               {/* Web Description Setting */}
               <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-text-primary">Deskripsi Web</h3>
+                <h3 className="text-xl font-semibold text-text-primary dark:text-white">Deskripsi Web</h3>
                 <form onSubmit={handleUpdateWebDescription} className="space-y-4">
                   <label htmlFor="webDescription" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground">
                     Deskripsi Saat Ini
@@ -730,7 +730,7 @@ const Settings = ({ headerTitle }) => {
               {/* Create Admin User Section (Admin Only) */}
               {userRole === 'admin' && (
                 <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-text-primary">Buat Pengguna Admin Baru</h3>
+                  <h3 className="text-xl font-semibold text-text-primary dark:text-white">Buat Pengguna Admin Baru</h3>
                   <form onSubmit={handleCreateAdminUser} className="space-y-4">
                     <Input
                       label="Nama Pengguna"
@@ -760,28 +760,28 @@ const Settings = ({ headerTitle }) => {
               {/* User List and Role Management (Admin Only) */}
               {userRole === 'admin' && (
                 <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-text-primary">Kelola Peran Pengguna</h3>
+                  <h3 className="text-xl font-semibold text-text-primary dark:text-white">Kelola Peran Pengguna</h3>
                   <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+                    <table className="min-w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm dark:shadow-none">
                       <thead>
                         <tr>
-                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">ID</th>
-                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Nama Pengguna</th>
-                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Peran</th>
-                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Tindakan</th>
+                          <th className="py-2 px-4 border-b dark:border-gray-700 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">ID</th>
+                          <th className="py-2 px-4 border-b dark:border-gray-700 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Nama Pengguna</th>
+                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Peran</th>
+                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
                         {users.length > 0 ? (
                           users.map((user) => (
-                            <tr key={user.id} className="hover:bg-gray-50">
-                              <td className="py-2 px-4 border-b text-sm text-gray-700">{user.id}</td>
-                              <td className="py-2 px-4 border-b text-sm text-gray-700">{user.username}</td>
-                              <td className="py-2 px-4 border-b text-sm text-gray-700">
+                            <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                              <td className="py-2 px-4 border-b text-sm text-gray-700 dark:text-gray-200">{user.id}</td>
+                              <td className="py-2 px-4 border-b text-sm text-gray-700 dark:text-gray-200">{user.username}</td>
+                              <td className="py-2 px-4 border-b text-sm text-gray-700 dark:text-gray-200">
                                 <select
                                   value={user.role}
                                   onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                                  className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+                                  className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm dark:bg-gray-700 dark:text-white dark:border-gray-600"
                                   disabled={isLoading || user.id === 1} // Disable changing role for default admin (ID 1)
                                 >
                                   <option value="user">Pengguna</option>
@@ -794,6 +794,7 @@ const Settings = ({ headerTitle }) => {
                                   size="sm"
                                   onClick={() => handleDeleteUser(user.id, user.username)}
                                   disabled={isLoading || user.id === 1 || (decodedToken && user.id === decodedToken.userId)} // Disable deleting default admin (ID 1) or self
+                                  className="dark:bg-destructive dark:hover:bg-destructive/90 dark:text-destructive-foreground"
                                 >
                                   Hapus
                                 </Button>
@@ -820,24 +821,24 @@ const Settings = ({ headerTitle }) => {
                     <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
                       <thead>
                         <tr>
-                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Nama</th>
-                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Posisi</th>
-                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Telepon</th>
-                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Email</th>
-                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Tindakan</th>
+                          <th className="py-2 px-4 border-b dark:border-gray-700 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Nama</th>
+                          <th className="py-2 px-4 border-b dark:border-gray-700 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Posisi</th>
+                          <th className="py-2 px-4 border-b dark:border-gray-700 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Telepon</th>
+                          <th className="py-2 px-4 border-b dark:border-gray-700 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Email</th>
+                          <th className="py-2 px-4 border-b dark:border-gray-700 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Tindakan</th>
                         </tr>
                       </thead>
                       <tbody>
                         {employees.length > 0 ? (
                           employees.map((employee) => (
-                            <tr key={employee.id} className="hover:bg-gray-50">
-                              <td className="py-2 px-4 border-b text-sm text-gray-700">{employee.name}</td>
-                              <td className="py-2 px-4 border-b text-sm text-gray-700">{employee.position}</td>
-                              <td className="py-2 px-4 border-b text-sm text-gray-700">{employee.phone}</td>
-                              <td className="py-2 px-4 border-b text-sm text-gray-700">{employee.email}</td>
-                              <td className="py-2 px-4 border-b text-sm text-gray-700">
-                                <Button variant="outline" size="sm" onClick={() => handleOpenEmployeeModal(employee)} className="mr-2">Edit</Button>
-                                <Button variant="destructive" size="sm" onClick={() => handleDeleteEmployee(employee.id, employee.name)}>Hapus</Button>
+                            <tr key={employee.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                              <td className="py-2 px-4 border-b text-sm text-gray-700 dark:text-gray-200">{employee.name}</td>
+                              <td className="py-2 px-4 border-b text-sm text-gray-700 dark:text-gray-200">{employee.position}</td>
+                              <td className="py-2 px-4 border-b text-sm text-gray-700 dark:text-gray-200">{employee.phone}</td>
+                              <td className="py-2 px-4 border-b text-sm text-gray-700 dark:text-gray-200">{employee.email}</td>
+                              <td className="py-2 px-4 border-b text-sm text-gray-700 dark:text-gray-200">
+                                <Button variant="outline" size="sm" onClick={() => handleOpenEmployeeModal(employee)} className="mr-2 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600">Edit</Button>
+                                <Button variant="destructive" size="sm" onClick={() => handleDeleteEmployee(employee.id, employee.name)} className="dark:bg-destructive dark:hover:bg-destructive/90 dark:text-destructive-foreground">Hapus</Button>
                               </td>
                             </tr>
                           ))
