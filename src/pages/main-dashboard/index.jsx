@@ -330,6 +330,13 @@ const MainDashboard = ({ headerTitle }) => {
       icon: 'FileText',
       route: '/business-reports',
       color: 'secondary'
+    },
+    {
+      title: 'Kalkulator',
+      description: 'Akses kalkulator cepat',
+      icon: 'Calculator',
+      route: '/calculator',
+      color: 'destructive'
     }
   ];
 

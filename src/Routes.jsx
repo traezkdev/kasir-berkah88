@@ -15,6 +15,7 @@ import Credits from './pages/Credits'; // Import Credits
 import GuestCheckout from './pages/GuestCheckout'; // Import GuestCheckout
 import NotesPage from './pages/Notes'; // Import NotesPage
 import OrderConfirmationPage from './pages/OrderConfirmation'; // Import OrderConfirmationPage
+import CalculatorPage from './pages/Calculator'; // Import CalculatorPage
 
 // ProtectedRoute component
 const ProtectedRoute = ({ children }) => {
@@ -44,6 +45,7 @@ const AppRoutes = ({ headerTitle }) => {
       <Route path="/credits" element={<ProtectedRoute><Credits headerTitle={headerTitle} /></ProtectedRoute>} />
       <Route path="/notes" element={<ProtectedRoute><NotesPage headerTitle={headerTitle} /></ProtectedRoute>} />
       <Route path="/order-confirmation" element={<ProtectedRoute><OrderConfirmationPage headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/calculator" element={<ProtectedRoute><CalculatorPage headerTitle={headerTitle} /></ProtectedRoute>} />
       
       {/* Catch all other routes */}
       <Route path="*" element={<NotFound />} />
