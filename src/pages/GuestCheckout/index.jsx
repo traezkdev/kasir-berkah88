@@ -229,17 +229,16 @@ const GuestCheckout = () => {
                             return (
                                 <div 
                                     key={item.id} 
-                                    className={`bg-white rounded-lg shadow-md overflow-hidden transform transition-transform duration-200 hover:scale-105 ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                >
+                                    className={`bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-md dark:shadow-none overflow-hidden transform transition-transform duration-200 hover:scale-105 ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                     <AppImage
                                         src={`https://api.inviteshare.my.id/${item.image_url}`}
                                         alt={item.name}
                                         className="w-full h-32 object-cover"
                                     />
                                     <div className="p-4 flex flex-col flex-grow">
-                                        <h3 className="text-md font-semibold text-text-primary flex-grow">{item.name}</h3>
-                                        <p className="text-sm text-text-secondary mt-1">Rp {item.price.toLocaleString('id-ID')}</p>
-                                        <p className="text-xs text-text-secondary mt-1">Stok: {item.stock}</p>
+                                        <h3 className="text-md font-semibold text-text-primary dark:text-white flex-grow">{item.name}</h3>
+                                        <p className="text-sm text-text-secondary dark:text-gray-300 mt-1">Rp {item.price.toLocaleString('id-ID')}</p>
+                                        <p className="text-xs text-text-secondary dark:text-gray-300 mt-1">Stok: {item.stock}</p>
                                         
                                         <div className="mt-4">
                                             {isOutOfStock ? (
@@ -247,16 +246,16 @@ const GuestCheckout = () => {
                                             ) : isInCart ? (
                                                 <div className="flex items-center justify-center">
                                                     <Button
-                                                        variant="outline" size="icon" className="rounded-r-none"
+                                                        variant="outline" size="icon" className="rounded-r-none dark:border-gray-700"
                                                         onClick={() => handleRemoveFromCart(item)}
                                                     >
                                                         <Minus size={16} />
                                                     </Button>
-                                                    <span className="px-4 py-2 border-t border-b w-16 text-center font-semibold">
+                                                    <span className="px-4 py-2 border-t border-b dark:border-gray-700 w-16 text-center font-semibold">
                                                         {cart[item.id] || 0}
                                                     </span>
                                                     <Button
-                                                        variant="outline" size="icon" className="rounded-l-none"
+                                                        variant="outline" size="icon" className="rounded-l-none dark:border-gray-700"
                                                         onClick={() => handleAddToCart(item)}
                                                         disabled={item.stock <= (cart[item.id] || 0)}
                                                     >

@@ -767,17 +767,17 @@ const Settings = ({ headerTitle }) => {
                         <tr>
                           <th className="py-2 px-4 border-b dark:border-gray-700 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">ID</th>
                           <th className="py-2 px-4 border-b dark:border-gray-700 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Nama Pengguna</th>
-                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Peran</th>
-                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Aksi</th>
+                          <th className="py-2 px-4 border-b dark:border-gray-700 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Peran</th>
+                          <th className="py-2 px-4 border-b dark:border-gray-700 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
                         {users.length > 0 ? (
                           users.map((user) => (
                             <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                              <td className="py-2 px-4 border-b text-sm text-gray-700 dark:text-gray-200">{user.id}</td>
-                              <td className="py-2 px-4 border-b text-sm text-gray-700 dark:text-gray-200">{user.username}</td>
-                              <td className="py-2 px-4 border-b text-sm text-gray-700 dark:text-gray-200">
+                              <td className="py-2 px-4 border-b dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200">{user.id}</td>
+                              <td className="py-2 px-4 border-b dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200">{user.username}</td>
+                              <td className="py-2 px-4 border-b dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200">
                                 <select
                                   value={user.role}
                                   onChange={(e) => handleRoleChange(user.id, e.target.value)}
@@ -788,7 +788,7 @@ const Settings = ({ headerTitle }) => {
                                   <option value="admin">Admin</option>
                                 </select>
                               </td>
-                              <td className="py-2 px-4 border-b text-sm text-gray-700">
+                              <td className="py-2 px-4 border-b dark:border-gray-700 text-sm text-gray-700">
                                 <Button
                                   variant="destructive"
                                   size="sm"
@@ -815,10 +815,10 @@ const Settings = ({ headerTitle }) => {
               {/* Employee Management Section (Admin Only) */}
               {userRole === 'admin' && (
                 <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-text-primary">Manajemen Karyawan</h3>
+                  <h3 className="text-xl font-semibold text-text-primary dark:text-white">Manajemen Karyawan</h3>
                   <Button onClick={() => handleOpenEmployeeModal(null)} className="w-full">Tambah Karyawan</Button>
                   <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+                    <table className="min-w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm dark:shadow-none">
                       <thead>
                         <tr>
                           <th className="py-2 px-4 border-b dark:border-gray-700 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Nama</th>
@@ -832,11 +832,11 @@ const Settings = ({ headerTitle }) => {
                         {employees.length > 0 ? (
                           employees.map((employee) => (
                             <tr key={employee.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                              <td className="py-2 px-4 border-b text-sm text-gray-700 dark:text-gray-200">{employee.name}</td>
-                              <td className="py-2 px-4 border-b text-sm text-gray-700 dark:text-gray-200">{employee.position}</td>
-                              <td className="py-2 px-4 border-b text-sm text-gray-700 dark:text-gray-200">{employee.phone}</td>
-                              <td className="py-2 px-4 border-b text-sm text-gray-700 dark:text-gray-200">{employee.email}</td>
-                              <td className="py-2 px-4 border-b text-sm text-gray-700 dark:text-gray-200">
+                              <td className="py-2 px-4 border-b dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200">{employee.name}</td>
+                              <td className="py-2 px-4 border-b dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200">{employee.position}</td>
+                              <td className="py-2 px-4 border-b dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200">{employee.phone}</td>
+                              <td className="py-2 px-4 border-b dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200">{employee.email}</td>
+                              <td className="py-2 px-4 border-b dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200">
                                 <Button variant="outline" size="sm" onClick={() => handleOpenEmployeeModal(employee)} className="mr-2 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600">Edit</Button>
                                 <Button variant="destructive" size="sm" onClick={() => handleDeleteEmployee(employee.id, employee.name)} className="dark:bg-destructive dark:hover:bg-destructive/90 dark:text-destructive-foreground">Hapus</Button>
                               </td>
