@@ -70,39 +70,39 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
           id="receipt-container"
           className="relative bg-card rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col"
         >
-          <div ref={receiptRef} className="p-6 overflow-y-auto bg-card">
+          <div ref={receiptRef} className="p-6 overflow-y-auto bg-white">
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold">Berkah 88</h2>
-              <p className="text-sm text-text-secondary">Harga hemat, Rasa terhormat</p>
+              <h2 className="text-2xl font-bold text-gray-900">Berkah 88</h2>
+              <p className="text-sm text-gray-900">Harga hemat, Rasa terhormat</p>
             </div>
             <div className="border-b border-dashed border-gray-400 mb-4"></div>
             <div className="flex justify-between text-sm mb-2">
-              <span>ID Transaksi:</span>
-              <span>{transaction.id}</span>
+              <span className="text-gray-900">ID Transaksi:</span>
+              <span className="text-gray-900">{transaction.id}</span>
             </div>
             <div className="flex justify-between text-sm mb-4">
-              <span>Tanggal:</span>
-              <span>{transactionDate}</span>
+              <span className="text-gray-900">Tanggal:</span>
+              <span className="text-gray-900">{transactionDate}</span>
             </div>
             <div className="border-b border-dashed border-gray-400 mb-4"></div>
-            <h3 className="font-semibold mb-2">Detail Item:</h3>
+            <h3 className="font-semibold mb-2 text-gray-900">Detail Item:</h3>
             <div className="space-y-2">
               {transaction.items.map((item) => (
                 <div key={item.id} className="flex justify-between text-sm">
-                  <span>
+                  <span className="text-gray-900">
                     {item.name} <span className="text-gray-500">x{item.quantity}</span>
                   </span>
-                  <span>Rp {Number(item.price * item.quantity).toLocaleString("id-ID")}</span>
+                  <span className="text-gray-900">Rp {Number(item.price * item.quantity).toLocaleString("id-ID")}</span>
                 </div>
               ))}
             </div>
             <div className="border-b border-dashed border-gray-400 my-4"></div>
             <div className="flex justify-between font-semibold text-sm mb-2">
-              <span>Subtotal:</span>
-              <span>Rp {Number(subtotalAmount).toLocaleString("id-ID")}</span>
+              <span className="text-gray-900">Subtotal:</span>
+              <span className="text-gray-900">Rp {Number(subtotalAmount).toLocaleString("id-ID")}</span>
             </div>
             <div className="flex justify-between font-semibold">
-              <span className="text-lg">TOTAL:</span>
+              <span className="text-lg text-gray-900">TOTAL:</span>
               <span className="text-lg">Rp {Number(transaction.total).toLocaleString("id-ID")}</span>
             </div>
             <div className="border-b border-dashed border-gray-400 my-4"></div>
