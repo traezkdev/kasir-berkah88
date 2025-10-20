@@ -525,6 +525,32 @@ const Settings = ({ headerTitle }) => {
     }
   };
 
+  const handleDeleteUser = async (userId, username) => {
+    if (window.confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
+      setMessage('');
+      setError('');
+      setIsLoading(true);
+
+      try {
+        const response = await authFetch(`${apiUrl}/api/admin/users/${userId}`, {
+          method: 'DELETE',
+        });
+        const data = await response.json();
+        if (response.ok) {
+          setMessage(`User "${username}" deleted successfully!`);
+          fetchUsers(); // Refresh user list
+        } else {
+          setError(data.error || `Failed to delete user "${username}"`);
+        }
+      } catch (err) {
+        setError('Network error or server unreachable');
+        console.error('Delete user error:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
   const breadcrumbs = [
     { name: 'Beranda', path: '/main-dashboard' },
     { name: 'Pengaturan', path: '/settings' },
