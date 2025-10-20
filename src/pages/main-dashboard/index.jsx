@@ -330,6 +330,20 @@ const MainDashboard = ({ headerTitle }) => {
       icon: 'FileText',
       route: '/business-reports',
       color: 'secondary'
+    },
+    {
+      title: 'Kalkulator',
+      description: 'Akses kalkulator cepat',
+      icon: 'Calculator',
+      route: '/calculator',
+      color: 'destructive'
+    },
+    {
+      title: 'Daftar Karyawan',
+      description: 'Lihat struktur organisasi',
+      icon: 'Users',
+      route: '/employee-list',
+      color: 'success'
     }
   ];
 

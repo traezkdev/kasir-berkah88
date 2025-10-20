@@ -29,6 +29,10 @@ const Settings = ({ headerTitle }) => {
   const [coverImageFile, setCoverImageFile] = useState(null);
   const [currentCoverImageUrl, setCurrentCoverImageUrl] = useState('');
   const [currentWebDescription, setCurrentWebDescription] = useState('');
+  const [employees, setEmployees] = useState([]);
+  const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState(null);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,6 +46,7 @@ const Settings = ({ headerTitle }) => {
         setUserRole(decodedToken.role);
         if (decodedToken.role === 'admin') {
           fetchUsers(); // Fetch users if admin
+          fetchEmployees(); // Fetch employees if admin
         }
       } catch (e) {
         console.error("Error decoding token:", e);
@@ -114,6 +119,97 @@ const Settings = ({ headerTitle }) => {
       setIsLoading(false);
     }
   };
+
+  const fetchEmployees = async () => {
+    setIsLoading(true);
+    try {
+      const response = await authFetch(`${apiUrl}/api/employees`);
+      const data = await response.json();
+      if (response.ok) {
+        setEmployees(data.data);
+      } else {
+        setError(data.error || 'Failed to fetch employees');
+      }
+    } catch (err) {
+      setError('Network error or server unreachable');
+      console.error('Fetch employees error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOpenEmployeeModal = (employee) => {
+    setEditingEmployee(employee);
+    setIsEmployeeModalOpen(true);
+  };
+
+  const handleCloseEmployeeModal = () => {
+    setEditingEmployee(null);
+    setIsEmployeeModalOpen(false);
+  };
+
+  const handleSaveEmployee = async (e) => {
+    e.preventDefault();
+    setMessage('');
+    setError('');
+    setIsLoading(true);
+
+    const formData = new FormData(e.target);
+    const employeeData = Object.fromEntries(formData.entries());
+
+    const url = editingEmployee
+      ? `${apiUrl}/api/employees/${editingEmployee.id}`
+      : `${apiUrl}/api/employees`;
+    const method = editingEmployee ? 'PUT' : 'POST';
+
+    try {
+      const response = await authFetch(url, {
+        method,
+        body: formData,
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setMessage(editingEmployee ? 'Employee updated successfully!' : 'Employee added successfully!');
+        fetchEmployees();
+        handleCloseEmployeeModal();
+      } else {
+        setError(data.error || 'Failed to save employee');
+      }
+    } catch (err) {
+      setError('Network error or server unreachable');
+      console.error('Save employee error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteEmployee = async (employeeId, employeeName) => {
+    if (window.confirm(`Are you sure you want to delete employee "${employeeName}"?`)) {
+      setMessage('');
+      setError('');
+      setIsLoading(true);
+
+      try {
+        const response = await authFetch(`${apiUrl}/api/employees/${employeeId}`, {
+          method: 'DELETE',
+        });
+        const data = await response.json();
+        if (response.ok) {
+          setMessage(`Employee "${employeeName}" deleted successfully!`);
+          fetchEmployees();
+        } else {
+          setError(data.error || `Failed to delete employee "${employeeName}"`);
+        }
+      } catch (err) {
+        setError('Network error or server unreachable');
+        console.error('Delete employee error:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+
 
   const handleUpdateWebsiteTitle = async (e) => {
     e.preventDefault();
@@ -715,6 +811,47 @@ const Settings = ({ headerTitle }) => {
                 </div>
               )}
 
+              {/* Employee Management Section (Admin Only) */}
+              {userRole === 'admin' && (
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold text-text-primary">Manajemen Karyawan</h3>
+                  <Button onClick={() => handleOpenEmployeeModal(null)} className="w-full">Tambah Karyawan</Button>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+                      <thead>
+                        <tr>
+                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Nama</th>
+                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Posisi</th>
+                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Telepon</th>
+                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Email</th>
+                          <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Tindakan</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {employees.length > 0 ? (
+                          employees.map((employee) => (
+                            <tr key={employee.id} className="hover:bg-gray-50">
+                              <td className="py-2 px-4 border-b text-sm text-gray-700">{employee.name}</td>
+                              <td className="py-2 px-4 border-b text-sm text-gray-700">{employee.position}</td>
+                              <td className="py-2 px-4 border-b text-sm text-gray-700">{employee.phone}</td>
+                              <td className="py-2 px-4 border-b text-sm text-gray-700">{employee.email}</td>
+                              <td className="py-2 px-4 border-b text-sm text-gray-700">
+                                <Button variant="outline" size="sm" onClick={() => handleOpenEmployeeModal(employee)} className="mr-2">Edit</Button>
+                                <Button variant="destructive" size="sm" onClick={() => handleDeleteEmployee(employee.id, employee.name)}>Hapus</Button>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="5" className="py-4 text-center text-gray-500">Tidak ada karyawan ditemukan.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
               {/* Master Password Management (Admin Only) */}
               {userRole === 'admin' && (
                 <div className="space-y-4">
@@ -784,6 +921,53 @@ const Settings = ({ headerTitle }) => {
           )}
         </div>
       </div>
+
+      {isEmployeeModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+            <h2 className="text-2xl font-bold mb-4">{editingEmployee ? 'Edit Karyawan' : 'Tambah Karyawan'}</h2>
+            <form onSubmit={handleSaveEmployee} className="space-y-4">
+              <Input
+                label="Nama"
+                name="name"
+                type="text"
+                defaultValue={editingEmployee?.name}
+                required
+              />
+              <Input
+                label="Posisi"
+                name="position"
+                type="text"
+                defaultValue={editingEmployee?.position}
+                required
+              />
+              <Input
+                label="Telepon"
+                name="phone"
+                type="text"
+                defaultValue={editingEmployee?.phone}
+              />
+              <Input
+                label="Email"
+                name="email"
+                type="email"
+                defaultValue={editingEmployee?.email}
+              />
+              <Input
+                label="Avatar"
+                name="avatar"
+                type="file"
+                accept="image/*"
+              />
+              <div className="flex justify-end space-x-4">
+                <Button type="button" variant="outline" onClick={handleCloseEmployeeModal}>Batal</Button>
+                <Button type="submit" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan'}</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

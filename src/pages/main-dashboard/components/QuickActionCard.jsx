@@ -16,7 +16,8 @@ const QuickActionCard = ({ title, description, icon, route, color = 'primary', d
     primary: 'from-primary/10 to-primary/5 border-primary/20 hover:border-primary/30',
     success: 'from-success/10 to-success/5 border-success/20 hover:border-success/30',
     accent: 'from-accent/10 to-accent/5 border-accent/20 hover:border-accent/30',
-    secondary: 'from-secondary/10 to-secondary/5 border-secondary/20 hover:border-secondary/30'
+    secondary: 'from-secondary/10 to-secondary/5 border-secondary/20 hover:border-secondary/30',
+    destructive: 'from-destructive/10 to-destructive/5 border-destructive/20 hover:border-destructive/30'
   };
 
   return (
@@ -30,7 +31,8 @@ const QuickActionCard = ({ title, description, icon, route, color = 'primary', d
         <div className={`p-2 rounded-md ${
           color === 'primary' ? 'bg-primary text-white' :
           color === 'success' ? 'bg-success text-white' :
-          color === 'accent'? 'bg-accent text-white' : 'bg-secondary text-white'
+          color === 'accent'? 'bg-accent text-white' :
+          color === 'destructive'? 'bg-destructive text-white' : 'bg-secondary text-white'
         }`}>
           <Icon name={icon} size={20} />
         </div>
