@@ -29,10 +29,10 @@ const QuickActionCard = ({ title, description, icon, route, color = 'primary', d
     >
       <div className="flex items-center space-x-3 mb-3">
         <div className={`p-2 rounded-md ${
-          color === 'primary' ? 'bg-primary text-white' :
-          color === 'success' ? 'bg-success text-white' :
-          color === 'accent'? 'bg-accent text-white' :
-          color === 'destructive'? 'bg-destructive text-white' : 'bg-secondary text-white'
+          color === 'primary' ? 'bg-primary text-primary-foreground' :
+          color === 'success' ? 'bg-success text-success-foreground' :
+          color === 'accent'? 'bg-accent text-accent-foreground' :
+          color === 'destructive'? 'bg-destructive text-destructive-foreground' : 'bg-secondary text-secondary-foreground'
         }`}>
           <Icon name={icon} size={20} />
         </div>

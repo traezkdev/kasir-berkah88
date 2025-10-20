@@ -30,7 +30,7 @@ const TransactionCard = ({ transaction, onDelete, onEdit, isMobile = false, user
       break;
     default:
       paymentBadge = (
-        <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
+        <span className="px-2 py-1 bg-muted text-muted-foreground text-xs font-medium rounded-full">
           Tunai
         </span>
       );
@@ -66,7 +66,7 @@ const TransactionCard = ({ transaction, onDelete, onEdit, isMobile = false, user
 
   if (isMobile) {
     return (
-      <div className="bg-white rounded-lg border border-slate-200 shadow-elevation-1 p-4 mb-3">
+      <div className="bg-card rounded-lg border border-border shadow-elevation-1 p-4 mb-3">
         <div className="flex items-start justify-between mb-3" onClick={() => onRowClick(transaction)}>
           <div className="flex-1">
             <div className="flex items-center space-x-2 mb-1">
@@ -117,7 +117,7 @@ const TransactionCard = ({ transaction, onDelete, onEdit, isMobile = false, user
         </div>
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
-            <div className="bg-white rounded-lg p-6 max-w-sm w-full">
+            <div className="bg-card rounded-lg p-6 max-w-sm w-full">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="p-2 bg-destructive/10 rounded-full">
                   <Icon name="AlertTriangle" size={20} className="text-destructive" />
@@ -203,7 +203,7 @@ const TransactionCard = ({ transaction, onDelete, onEdit, isMobile = false, user
       {showDeleteConfirm && (
         <td colSpan="6" className="absolute inset-0">
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <div className="bg-card rounded-lg p-6 max-w-md w-full">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="p-2 bg-destructive/10 rounded-full">
                   <Icon name="AlertTriangle" size={20} className="text-destructive" />

@@ -142,10 +142,10 @@ const setupDatabase = async () => {
     console.log('users table is ready.');
     await connection.query(createNotesTable);
     console.log('notes table is ready.');
-    await connection.query(createOrdersTable);
-    console.log('orders table is ready.');
     await connection.query(createEmployeesTable);
     console.log('employees table is ready.');
+    await connection.query(createOrdersTable);
+    console.log('orders table is ready.');
 
     // Check and add notes column to expenses if it doesn't exist
     const [notesRows] = await connection.query(checkNotesColumn);
@@ -178,6 +178,7 @@ const setupDatabase = async () => {
 
   } catch (error) {
     console.error('Error setting up the database:', error);
+    console.error(error.stack);
     // Exit process if database connection fails
     process.exit(1);
   }

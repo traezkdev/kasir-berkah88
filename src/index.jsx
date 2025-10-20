@@ -5,6 +5,8 @@ import { HelmetProvider } from 'react-helmet-async';
 import App from './App';
 import './styles/tailwind.css';
 
+import { ThemeProvider } from './components/ThemeProvider';
+
 // Easter egg for the developer console
 console.log(
   '%c Crafted with ❤️ by M Alfin Firdaus (traezkdev) %c',
@@ -16,7 +18,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <HelmetProvider>
       <BrowserRouter>
-        <App />
+        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+          <App />
+        </ThemeProvider>
       </BrowserRouter>
     </HelmetProvider>
   </React.StrictMode>

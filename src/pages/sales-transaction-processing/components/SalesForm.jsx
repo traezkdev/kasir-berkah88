@@ -10,7 +10,7 @@ const SalesForm = ({ menuItems, onIncrementItem, onDecrementItem, cart, userRole
   );
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="bg-card rounded-lg shadow-lg p-6">
       <Input
         type="text"
         placeholder="Cari menu..."

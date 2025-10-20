@@ -37,7 +37,7 @@ const BulkActions = ({
   ];
 
   return (
-    <div className="bg-white border-b border-slate-200 p-4 lg:p-6">
+    <div className="bg-card border-b border-border p-4 lg:p-6">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="text-sm text-text-secondary">
           Menampilkan {transactionCount} transaksi
@@ -78,7 +78,7 @@ const BulkActions = ({
       {/* Clear All Confirmation Modal */}
       {showClearConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <div className="bg-card rounded-lg p-6 max-w-md w-full">
             <div className="flex items-center space-x-3 mb-4">
               <div className="p-2 bg-destructive/10 rounded-full">
                 <Icon name="AlertTriangle" size={24} className="text-destructive" />

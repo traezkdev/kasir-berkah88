@@ -108,26 +108,25 @@ const OrderSummary = ({
   const disablePaymentButton = isLoading || !isCartValid();
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 lg:sticky lg:top-20">
-      <h2 className="text-xl font-bold text-text-primary mb-4">Ringkasan Pesanan</h2>
+    <div className="bg-card rounded-lg shadow-lg p-6 lg:sticky lg:top-20">
+      <h2 className="text-xl font-bold text-foreground mb-4">Ringkasan Pesanan</h2>
       
       {cart.length === 0 ? (
-        <p className="text-text-secondary text-center py-8">Keranjang belanja kosong</p>
+        <p className="text-muted-foreground text-center py-8">Keranjang belanja kosong</p>
       ) : (
         <div className="space-y-4">
           {cart.map(item => (
             <div key={item.id} className="flex items-center justify-between">
               <div>
                 <p className="font-semibold">{item.name}</p>
-                <p className="text-sm text-text-secondary">Rp {item.price?.toLocaleString('id-ID')}</p>
+                <p className="text-sm text-muted-foreground">Rp {item.price?.toLocaleString('id-ID')}</p>
               </div>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
                   min="1"
                   value={item.quantity}
-                  onChange={(e) => onUpdateQuantity(item.id, parseInt(e.target.value, 10))}
-                  className="w-16 text-center border rounded-md"
+                  className="w-16 text-center border border-input rounded-md text-foreground bg-background"
                 />
                 <Button variant="ghost" size="icon" onClick={() => onRemoveFromCart(item.id)}>
                   <Icon name="Trash2" size={16} />
@@ -153,7 +152,7 @@ const OrderSummary = ({
                   type="number"
                   value={ppnRate * 100}
                   onChange={handlePpnChange}
-                  className="w-16 text-center border rounded-md"
+                  className="w-16 text-center border border-input rounded-md text-foreground bg-background"
                 />
                 <Button variant="ghost" size="icon" onClick={handleSavePpn}>
                   <Icon name="Save" size={16} />
@@ -172,7 +171,7 @@ const OrderSummary = ({
                     type="number"
                     value={customTotal}
                     onChange={(e) => setCustomTotal(parseFloat(e.target.value))}
-                    className="w-32 text-right border rounded-md px-2 py-1"
+                    className="w-32 text-right border border-input rounded-md px-2 py-1 text-foreground bg-background"
                   />
                   <Button variant="ghost" size="icon" onClick={() => { setIsEditingTotal(false); setCustomTotal(total); }}>
                     <Icon name="X" size={16} />
@@ -195,7 +194,7 @@ const OrderSummary = ({
           
           <div className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="payment-method" className="text-sm font-medium text-gray-700">Metode Pembayaran</label>
+              <label htmlFor="payment-method" className="text-sm font-medium text-muted-foreground">Metode Pembayaran</label>
               <Select
                 id="payment-method"
                 options={paymentMethodOptions}

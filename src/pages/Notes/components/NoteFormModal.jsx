@@ -57,19 +57,19 @@ const NoteFormModal = ({ note, onClose, onSave }) => {
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4" 
+        className="bg-card rounded-lg shadow-xl p-6 w-full max-w-md mx-4" 
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">{isEditing ? 'Edit Catatan' : 'Tambah Catatan Baru'}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-800">
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X size={24} />
           </button>
         </div>
         
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Judul</label>
+            <label htmlFor="title" className="block text-sm font-medium text-foreground mb-1">Judul</label>
             <Input
               id="title"
               type="text"
@@ -81,18 +81,18 @@ const NoteFormModal = ({ note, onClose, onSave }) => {
           </div>
 
           <div className="mb-6">
-            <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">Isi Catatan</label>
+            <label htmlFor="content" className="block text-sm font-medium text-foreground mb-1">Isi Catatan</label>
             <textarea
               id="content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Tuliskan isi catatan di sini..."
               rows={8}
-              className="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-foreground border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-background"
             />
           </div>
 
-          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+          {error && <p className="text-destructive text-sm mb-4">{error}</p>}
 
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>

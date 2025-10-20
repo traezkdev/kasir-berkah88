@@ -122,9 +122,8 @@ const ExpenseHistoryTable = ({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-elevation-2 border border-slate-200">
-      {/* Header */}
-      <div className="p-4 lg:p-6 border-b border-slate-200">
+    <div className="bg-card rounded-lg shadow-md border border-border dark:bg-dark-card dark:border-dark-border dark:shadow-dark-md">
+      <div className="p-4 lg:p-6 border-b border-border dark:border-dark-border">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-primary/10 rounded-lg">
@@ -197,14 +196,14 @@ const ExpenseHistoryTable = ({
       {/* Desktop Table */}
       <div className="hidden lg:block overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-slate-50 border-b border-slate-200">
+          <thead className="bg-background-alt border-b border-border dark:bg-dark-background-alt dark:border-dark-border">
             <tr>
               <th className="text-left p-4">
                 <input
                   type="checkbox"
                   checked={selectedExpenses?.length === filteredExpenses?.length && filteredExpenses?.length > 0}
                   onChange={handleSelectAll}
-                  className="rounded border-slate-300 text-primary focus:ring-primary"
+                  className="rounded border-border dark:border-dark-border text-primary focus:ring-primary"
                 />
               </th>
               <th className="text-left p-4 text-sm font-medium text-text-secondary">Tanggal</th>
@@ -216,13 +215,13 @@ const ExpenseHistoryTable = ({
           </thead>
           <tbody>
             {filteredExpenses?.map((expense) => (
-              <tr key={expense?.id} className="border-b border-slate-100 hover:bg-slate-50">
+              <tr key={expense?.id} className="border-b border-border dark:border-dark-border hover:bg-background-alt dark:hover:bg-dark-background-alt">
                 <td className="p-4">
                   <input
                     type="checkbox"
                     checked={selectedExpenses?.includes(expense?.id)}
                     onChange={() => handleSelectExpense(expense?.id)}
-                    className="rounded border-slate-300 text-primary focus:ring-primary"
+                    className="rounded border-border dark:border-dark-border text-primary focus:ring-primary"
                   />
                 </td>
                 <td className="p-4">
@@ -281,7 +280,7 @@ const ExpenseHistoryTable = ({
         </table>
       </div>
       {/* Mobile Cards */}
-      <div className="lg:hidden divide-y divide-slate-100">
+      <div className="lg:hidden divide-y divide-border dark:divide-dark-border">
         {filteredExpenses?.map((expense) => (
           <div key={expense?.id} className="p-4">
             <div className="flex items-start justify-between mb-3">
@@ -290,7 +289,7 @@ const ExpenseHistoryTable = ({
                   type="checkbox"
                   checked={selectedExpenses?.includes(expense?.id)}
                   onChange={() => handleSelectExpense(expense?.id)}
-                  className="rounded border-slate-300 text-primary focus:ring-primary mt-1"
+                  className="rounded border-border dark:border-dark-border text-primary focus:ring-primary mt-1"
                 />
                 <div>
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-accent/10 text-accent">

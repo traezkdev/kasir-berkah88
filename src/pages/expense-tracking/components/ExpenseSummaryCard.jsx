@@ -46,7 +46,7 @@ const ExpenseSummaryCard = ({
   ];
 
   return (
-    <div className={`bg-white rounded-lg shadow-elevation-2 border border-slate-200 ${className}`}>
+    <div className={`bg-card rounded-lg shadow-md border border-border dark:bg-dark-card dark:border-dark-border dark:shadow-dark-md ${className}`}>
       <div className="p-4 lg:p-6">
         <div className="flex items-center space-x-3 mb-6">
           <div className="p-2 bg-primary/10 rounded-lg">
@@ -83,7 +83,7 @@ const ExpenseSummaryCard = ({
         </div>
 
         {totalExpenses > 0 && (
-          <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
+          <div className="mt-6 p-4 bg-background-alt rounded-lg border border-border-alt dark:bg-dark-background-alt dark:border-dark-border-alt">
             <div className="flex items-center space-x-2 mb-2">
               <Icon name="Info" size={16} className="text-primary" />
               <span className="text-sm font-medium text-text-primary">Informasi Keuangan</span>

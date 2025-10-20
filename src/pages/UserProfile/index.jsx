@@ -146,8 +146,8 @@ const UserProfile = ({ headerTitle }) => {
       <NavigationHeader title="Profil Pengguna" headerTitle={headerTitle} />
       <BreadcrumbNavigation paths={breadcrumbs} />
       <div className="flex-grow pt-20 px-6 pb-20 overflow-auto">
-        <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8 space-y-8">
-          <h2 className="text-2xl font-bold text-text-primary text-center">Profil Pengguna</h2>
+        <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg dark:shadow-none p-8 space-y-8">
+          <h2 className="text-2xl font-bold text-text-primary dark:text-white text-center">Profil Pengguna</h2>
 
           {message && <p className="text-success text-center">{message}</p>}
           {error && <p className="text-destructive text-center">{error}</p>}
@@ -157,7 +157,7 @@ const UserProfile = ({ headerTitle }) => {
           {!isLoading && (
             <>
               <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-text-primary">Nama Pengguna Saat Ini: {username}</h3>
+                <h3 className="text-xl font-semibold text-text-primary dark:text-white">Nama Pengguna Saat Ini: {username}</h3>
                 <form onSubmit={handleUpdateUsername} className="space-y-4">
                   <Input
                     label="Nama Pengguna Baru"
@@ -175,7 +175,7 @@ const UserProfile = ({ headerTitle }) => {
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-text-primary">Ubah Kata Sandi</h3>
+                <h3 className="text-xl font-semibold text-text-primary dark:text-white">Ubah Kata Sandi</h3>
                 <form onSubmit={handleChangePassword} className="space-y-4">
                   <Input
                     label="Kata Sandi Saat Ini"
@@ -210,7 +210,7 @@ const UserProfile = ({ headerTitle }) => {
                 </form>
               </div>
 
-              <div className="pt-4 border-t border-gray-200">
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                 <Button onClick={handleLogout} className="w-full bg-destructive hover:bg-red-700" disabled={isLoading}>
                   Keluar
                 </Button>

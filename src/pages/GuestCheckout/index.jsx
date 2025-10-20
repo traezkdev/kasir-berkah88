@@ -204,7 +204,7 @@ const GuestCheckout = () => {
 
     return (
         <div className="min-h-screen bg-background">
-            <header className="bg-white shadow-sm sticky top-0 z-30">
+            <header className="bg-card shadow-sm sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
                     <div className="flex items-center space-x-3">
                         <AppImage src="/assets/images/logoberkah88.png" alt="Logo" className="h-10 w-auto" />
@@ -229,17 +229,16 @@ const GuestCheckout = () => {
                             return (
                                 <div 
                                     key={item.id} 
-                                    className={`bg-white rounded-lg shadow-md overflow-hidden transform transition-transform duration-200 hover:scale-105 ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                >
+                                    className={`bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-md dark:shadow-none overflow-hidden transform transition-transform duration-200 hover:scale-105 ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                     <AppImage
                                         src={`https://api.inviteshare.my.id/${item.image_url}`}
                                         alt={item.name}
                                         className="w-full h-32 object-cover"
                                     />
                                     <div className="p-4 flex flex-col flex-grow">
-                                        <h3 className="text-md font-semibold text-text-primary flex-grow">{item.name}</h3>
-                                        <p className="text-sm text-text-secondary mt-1">Rp {item.price.toLocaleString('id-ID')}</p>
-                                        <p className="text-xs text-text-secondary mt-1">Stok: {item.stock}</p>
+                                        <h3 className="text-md font-semibold text-text-primary dark:text-white flex-grow">{item.name}</h3>
+                                        <p className="text-sm text-text-secondary dark:text-gray-300 mt-1">Rp {item.price.toLocaleString('id-ID')}</p>
+                                        <p className="text-xs text-text-secondary dark:text-gray-300 mt-1">Stok: {item.stock}</p>
                                         
                                         <div className="mt-4">
                                             {isOutOfStock ? (
@@ -247,16 +246,16 @@ const GuestCheckout = () => {
                                             ) : isInCart ? (
                                                 <div className="flex items-center justify-center">
                                                     <Button
-                                                        variant="outline" size="icon" className="rounded-r-none"
+                                                        variant="outline" size="icon" className="rounded-r-none dark:border-gray-700"
                                                         onClick={() => handleRemoveFromCart(item)}
                                                     >
                                                         <Minus size={16} />
                                                     </Button>
-                                                    <span className="px-4 py-2 border-t border-b w-16 text-center font-semibold">
+                                                    <span className="px-4 py-2 border-t border-b dark:border-gray-700 w-16 text-center font-semibold">
                                                         {cart[item.id] || 0}
                                                     </span>
                                                     <Button
-                                                        variant="outline" size="icon" className="rounded-l-none"
+                                                        variant="outline" size="icon" className="rounded-l-none dark:border-gray-700"
                                                         onClick={() => handleAddToCart(item)}
                                                         disabled={item.stock <= (cart[item.id] || 0)}
                                                     >
@@ -275,8 +274,8 @@ const GuestCheckout = () => {
 
                     {/* Order Summary Section */}
                     <div className="lg:col-span-1 sticky top-24">
-                        <div className="bg-white rounded-lg border border-slate-200 shadow-elevation-1">
-                            <div className="p-4 border-b border-slate-200 flex justify-between items-center">
+                        <div className="bg-card rounded-lg border border-border shadow-elevation-1">
+                            <div className="p-4 border-b border-border flex justify-between items-center">
                                 <h2 className="text-xl font-bold flex items-center">
                                     <ShoppingCart className="mr-2" size={22} /> Ringkasan Pesanan
                                 </h2>
@@ -301,7 +300,7 @@ const GuestCheckout = () => {
                                     })
                                 )}
                             </div>
-                            <div className="p-4 bg-slate-50/50 rounded-b-lg">
+                            <div className="p-4 bg-background rounded-b-lg">
                                 <div ref={customerInfoRef} className="space-y-4 mb-4">
                                     <Input 
                                         label="Nama Pelanggan"
@@ -328,7 +327,7 @@ const GuestCheckout = () => {
                                 </div>
 
                                 {validationError && (
-                                    <div className="mt-4 p-3 bg-red-100 border border-red-200 text-red-700 rounded-lg text-sm flex items-center">
+                                    <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded-lg text-sm flex items-center">
                                         <AlertCircle size={18} className="mr-2 flex-shrink-0" />
                                         <span>{validationError}</span>
                                     </div>
@@ -353,7 +352,7 @@ const GuestCheckout = () => {
 
             {/* Sticky Footer for Mobile */}
             {Object.keys(cart).length > 0 && (
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.1)] p-3 border-t border-slate-200">
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 z-1000 bg-card border-t border-border shadow-[0_-2px_10px_rgba(0,0,0,0.1)]">
                     <div className="flex justify-between items-center max-w-7xl mx-auto">
                         <div className="flex items-center space-x-2">
                             <Button onClick={handleClearCart} variant="ghost" size="icon" className="text-destructive rounded-full">

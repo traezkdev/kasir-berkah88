@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import Icon from '../AppIcon';
 import Button from './Button';
+import DarkModeToggle from './DarkModeToggle';
 
 const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = "Kasir Berkah 88" }) => {
   const isNativePlatform = Capacitor.isNativePlatform();
@@ -60,7 +61,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
 
   return (
     <>
-      <header className={`fixed top-0 left-0 right-0 z-[1001] bg-white border-b border-slate-200 shadow-elevation-1 ${isNativePlatform ? 'pt-8' : ''}`}>
+      <header className={`fixed top-0 left-0 right-0 z-[1001] bg-card border-b border-border shadow-elevation-1 ${isNativePlatform ? 'pt-8' : ''}`}>
         <div className="flex items-center justify-between h-16 px-4 lg:px-6">
           {/* Logo Section */}
           <div className="flex items-center space-x-4">
@@ -80,7 +81,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
                 to={item?.path}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
                   isActiveRoute(item?.path)
-                    ? 'bg-primary text-white' :'text-text-secondary hover:text-text-primary hover:bg-muted'
+                    ? 'bg-primary text-primary-foreground' :'text-text-secondary hover:text-text-primary hover:bg-muted'
                 }`}
               >
                 <Icon name={item?.icon} size={18} />
@@ -89,20 +90,22 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
             ))}
           </nav>
 
-          {/* Mobile Menu Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleMobileMenu}
-            className="lg:hidden"
-          >
-            <Icon name={isMobileMenuOpen ? "X" : "Menu"} size={20} />
-          </Button>
+          <div className="flex items-center space-x-2">
+            <DarkModeToggle />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleMobileMenu}
+              className="lg:hidden"
+            >
+              <Icon name={isMobileMenuOpen ? "X" : "Menu"} size={20} />
+            </Button>
+          </div>
         </div>
 
         {/* Mobile Navigation Menu */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden bg-white border-t border-slate-200 shadow-elevation-2">
+          <div className="lg:hidden bg-card border-t border-border shadow-elevation-2">
             <nav className="px-4 py-2 space-y-1">
               {navigationItems?.map((item) => (
                 <Link
@@ -111,7 +114,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center space-x-3 px-3 py-3 rounded-md text-sm font-medium transition-colors duration-200 ${
                     isActiveRoute(item?.path)
-                      ? 'bg-primary text-white' :'text-text-secondary hover:text-text-primary hover:bg-muted'
+                      ? 'bg-primary text-primary-foreground' :'text-text-secondary hover:text-text-primary hover:bg-muted'
                   }`}
                 >
                   <Icon name={item?.icon} size={20} />
@@ -123,7 +126,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
         )}
       </header>
       {/* Mobile Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 z-1000 bg-white border-t border-slate-200 shadow-elevation-2 lg:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-1000 bg-card border-t border-border shadow-elevation-2 lg:hidden">
         <nav className="flex items-center justify-around py-2">
           {navigationItems?.slice(0, 5)?.map((item) => (
             <Link

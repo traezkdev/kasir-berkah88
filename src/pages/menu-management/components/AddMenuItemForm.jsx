@@ -52,14 +52,14 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-elevation-1 border border-slate-200 p-6 mb-6">
+    <div className="bg-card rounded-lg shadow-elevation-1 border border-border p-6 mb-6">
       <div className="flex items-center space-x-3 mb-6">
         <div className="p-2 bg-primary/10 rounded-lg">
           <Icon name="Plus" size={20} className="text-primary" />
         </div>
         <div>
-          <h2 className="text-xl font-semibold text-text-primary">Tambah Menu Baru</h2>
-          <p className="text-sm text-text-secondary">Tambahkan item menu dengan stok dan harga</p>
+          <h2 className="text-xl font-semibold text-foreground">Tambah Menu Baru</h2>
+          <p className="text-sm text-muted-foreground">Tambahkan item menu dengan stok dan harga</p>
         </div>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -117,7 +117,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole }) => {
             />
           </div>
           <div className="col-span-2 md:col-span-4">
-            <label htmlFor="image" className="block text-sm font-medium text-text-primary">Gambar Produk</label>
+            <label htmlFor="image" className="block text-sm font-medium text-foreground">Gambar Produk</label>
             <Input
               type="file"
               name="image"
