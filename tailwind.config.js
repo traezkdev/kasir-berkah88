@@ -10,6 +10,7 @@ export default {
       colors: {
         border: 'var(--color-border)', // slate-200
         input: 'var(--color-input)', // white
+        'dark-input': 'var(--dark-color-input)',
         ring: 'var(--color-ring)', // blue-600
         background: 'var(--color-background)', // gray-50
         foreground: 'var(--color-foreground)', // slate-800
@@ -41,6 +42,8 @@ export default {
           DEFAULT: 'var(--color-card)', // white
           foreground: 'var(--color-card-foreground)', // slate-800
         },
+        'background-alt': 'var(--color-background-alt)', // slate-50
+        'border-alt': 'var(--color-border-alt)', // slate-200
         success: {
           DEFAULT: 'var(--color-success)', // emerald-500
           foreground: 'var(--color-success-foreground)', // white

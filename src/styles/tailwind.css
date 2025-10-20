@@ -16,6 +16,8 @@
     /* Card Colors */
     --color-card: #FFFFFF; /* white */
     --color-card-foreground: #1E293B; /* slate-800 */
+    --color-background-alt: #F8FAFC; /* slate-50 */
+    --color-border-alt: #E2E8F0; /* slate-200 */
     --color-popover: #FFFFFF; /* white */
     --color-popover-foreground: #1E293B; /* slate-800 */
     
@@ -65,6 +67,7 @@
     --color-foreground: #FFFFFF; /* white */
     --color-border: #1E293B; /* slate-800 */
     --color-input: #1E293B; /* slate-800 */
+    --dark-color-input: #1E293B; /* slate-800 */
     --color-ring: #2563EB; /* blue-600 */
 
     /* Card Colors */
@@ -72,6 +75,8 @@
     --color-card-foreground: #FFFFFF; /* white */
     --color-popover: #0F172A; /* slate-900 */
     --color-popover-foreground: #FFFFFF; /* white */
+    --color-background-alt: #1E293B; /* slate-800 */
+    --color-border-alt: #334155; /* slate-700 */
 
     /* Muted Colors */
     --color-muted: #1E293B; /* slate-800 */

@@ -81,7 +81,7 @@ const ExpenseAnalytics = ({ expenses = [], className = "" }) => {
   }
 
   return (
-    <div className={`bg-white rounded-lg shadow-elevation-2 border border-slate-200 ${className}`}>
+    <div className={`bg-card rounded-lg shadow-md border border-border dark:bg-dark-card dark:border-dark-border dark:shadow-dark-md ${className}`}>
       <div className="p-4 lg:p-6">
         <div className="flex items-center space-x-3 mb-6">
           <div className="p-2 bg-primary/10 rounded-lg">
@@ -100,23 +100,22 @@ const ExpenseAnalytics = ({ expenses = [], className = "" }) => {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={dailyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                   <XAxis 
                     dataKey="date" 
-                    stroke="#64748B"
+                    stroke="var(--color-text-secondary)"
                     fontSize={12}
                   />
                   <YAxis 
-                    stroke="#64748B"
+                    stroke="var(--color-text-secondary)"
                     fontSize={12}
                     tickFormatter={(value) => `${(value / 1000)}K`}
                   />
                   <Tooltip 
                     formatter={(value, name) => [formatCurrency(value), 'Pengeluaran']}
-                    labelFormatter={(label) => `Tanggal: ${label}`}
                     contentStyle={{
-                      backgroundColor: 'white',
-                      border: '1px solid #E2E8F0',
+                      backgroundColor: 'var(--color-card)',
+                      border: '1px solid var(--color-border)',
                       borderRadius: '8px',
                       fontSize: '12px'
                     }}
@@ -153,8 +152,8 @@ const ExpenseAnalytics = ({ expenses = [], className = "" }) => {
                   <Tooltip 
                     formatter={(value, name) => [formatCurrency(value), 'Total']}
                     contentStyle={{
-                      backgroundColor: 'white',
-                      border: '1px solid #E2E8F0',
+                      backgroundColor: 'var(--color-card)',
+                      border: '1px solid var(--color-border)',
                       borderRadius: '8px',
                       fontSize: '12px'
                     }}
@@ -166,11 +165,11 @@ const ExpenseAnalytics = ({ expenses = [], className = "" }) => {
         </div>
 
         {/* Category Legend */}
-        <div className="mt-6 pt-6 border-t border-slate-200">
+        <div className="mt-6 pt-6 border-t border-border dark:border-dark-border">
           <h4 className="text-md font-medium text-text-primary mb-4">Detail Kategori</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {categoryData?.map((item, index) => (
-              <div key={item?.category} className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
+              <div key={item?.category} className="flex items-center space-x-3 p-3 bg-background-alt rounded-lg dark:bg-dark-background-alt">
                 <div 
                   className="w-4 h-4 rounded-full flex-shrink-0"
                   style={{ backgroundColor: pieColors?.[index % pieColors?.length] }}

@@ -54,7 +54,7 @@ const ExpenseTracking = ({ headerTitle }) => {
       const response = await authFetch(`${apiUrl}/api/expenses`);
       const data = await response.json();
       if (data.message === 'success') {
-        console.log('Fetched expenses:', data.data);
+
         setExpenses(data.data);
       } else {
         console.error('Failed to fetch expenses:', data.error);

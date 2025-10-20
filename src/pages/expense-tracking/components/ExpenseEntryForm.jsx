@@ -144,8 +144,8 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole }) => {
   );
 
   return (
-    <div className="bg-white rounded-lg shadow-md border border-slate-200">
-      <div className="p-4 lg:p-6 border-b border-slate-200">
+    <div className="bg-card rounded-lg shadow-md border border-border dark:bg-dark-card dark:border-dark-border dark:shadow-dark-md">
+      <div className="p-4 lg:p-6 border-b border-border dark:border-dark-border">
         <div className="flex items-center space-x-3 mb-4">
           <div className="p-2 bg-blue-100 rounded-lg">
             <div className="text-blue-600">
@@ -153,21 +153,19 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole }) => {
             </div>
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-gray-800">Catat Pengeluaran</h2>
-            <p className="text-sm text-gray-600">Tambahkan pengeluaran bisnis untuk tracking keuangan</p>
+            <h2 className="text-xl font-semibold text-text-primary">Catat Pengeluaran</h2>
+            <p className="text-sm text-text-secondary">Tambahkan pengeluaran bisnis untuk tracking keuangan</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="lg:col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Kategori Pengeluaran</label>
+              <label className="block text-sm font-medium text-text-primary mb-1">Kategori Pengeluaran</label>
               <select
                 value={formData.category}
                 onChange={(e) => handleInputChange('category', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.category ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-3 py-2 border bg-input dark:bg-dark-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${errors.category ? 'border-destructive' : 'border-border dark:border-dark-border'}`}
                 required
               >
                 <option value="">Pilih kategori pengeluaran</option>
@@ -183,54 +181,50 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole }) => {
             
 
             <div className="lg:col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Jumlah Pengeluaran</label>
+              <label className="block text-sm font-medium text-text-primary mb-1">Jumlah Pengeluaran</label>
               <input
                 type="text"
                 placeholder="0"
                 value={formData.amount}
                 onChange={handleAmountChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.amount ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-3 py-2 border bg-input dark:bg-dark-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${errors.amount ? 'border-destructive' : 'border-border dark:border-dark-border'}`}
                 required
               />
               {errors.amount && <p className="mt-1 text-sm text-red-600">{errors.amount}</p>}
-              <p className="mt-1 text-xs text-gray-500">Format: Rp 50.000</p>
+              <p className="mt-1 text-xs text-text-secondary">Format: Rp 50.000</p>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Deskripsi Pengeluaran</label>
+            <label className="block text-sm font-medium text-text-primary mb-1">Deskripsi Pengeluaran</label>
             <input
               type="text"
               placeholder="Contoh: Pembelian beras 10kg, bayar listrik bulan ini"
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.description ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`w-full px-3 py-2 border bg-input dark:bg-dark-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${errors.description ? 'border-destructive' : 'border-border dark:border-dark-border'}`}
               required
             />
             {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Catatan Tambahan</label>
+            <label className="block text-sm font-medium text-text-primary mb-1">Catatan Tambahan</label>
             <input
               type="text"
               placeholder="Catatan opsional untuk pengeluaran ini"
               value={formData.notes}
               onChange={(e) => handleInputChange('notes', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border bg-input dark:bg-dark-input border-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
             />
-            <p className="mt-1 text-xs text-gray-500">Opsional - untuk informasi tambahan</p>
+            <p className="mt-1 text-xs text-text-secondary">Opsional - untuk informasi tambahan</p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <button
               type="submit"
               disabled={isLoading || userRole === 'guest'}
-              className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex-1 sm:flex-none disabled:opacity-50"
+              className="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors flex-1 sm:flex-none disabled:opacity-50"
             >
               {isLoading ? (
                 <span>Memproses...</span>
@@ -245,7 +239,7 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole }) => {
             <button
               type="button"
               onClick={handleClear}
-              className="flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex-1 sm:flex-none"
+              className="flex items-center justify-center gap-2 border border-border dark:border-dark-border hover:bg-muted dark:hover:bg-dark-muted text-text-primary font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors flex-1 sm:flex-none"
             >
               <ResetIcon />
               <span>Bersihkan Form</span>
