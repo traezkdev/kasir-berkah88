@@ -90,17 +90,17 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
             ))}
           </nav>
 
-          <DarkModeToggle />
-
-          {/* Mobile Menu Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleMobileMenu}
-            className="lg:hidden"
-          >
-            <Icon name={isMobileMenuOpen ? "X" : "Menu"} size={20} />
-          </Button>
+          <div className="flex items-center space-x-2">
+            <DarkModeToggle />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleMobileMenu}
+              className="lg:hidden"
+            >
+              <Icon name={isMobileMenuOpen ? "X" : "Menu"} size={20} />
+            </Button>
+          </div>
         </div>
 
         {/* Mobile Navigation Menu */}
