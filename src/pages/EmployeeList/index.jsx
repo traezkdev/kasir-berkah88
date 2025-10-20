@@ -1,51 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import AppImage from '../../components/AppImage';
 import Icon from '../../components/AppIcon';
+import authFetch from '../../utils/authFetch';
 
-// Dummy data for employees
-const employees = [
-    {
-        id: 1,
-        name: 'Alfin',
-        position: 'Owner',
-        avatar: '/assets/images/logoberkah88.png',
-        phone: '0858-xxxx-xxxx',
-        email: 'alfin@example.com',
-        social: {
-            linkedin: '#',
-            twitter: '#',
-        }
-    },
-    {
-        id: 2,
-        name: 'Karyawan 1',
-        position: 'Kasir',
-        avatar: '/assets/images/no_image.png',
-        phone: '0812-xxxx-xxxx',
-        email: 'karyawan1@example.com',
-        social: {
-            linkedin: '#',
-            twitter: '#',
-        }
-    },
-    {
-        id: 3,
-        name: 'Karyawan 2',
-        position: 'Koki',
-        avatar: '/assets/images/no_image.png',
-        phone: '0813-xxxx-xxxx',
-        email: 'karyawan2@example.com',
-        social: {
-            linkedin: '#',
-            twitter: '#',
-        }
-    },
-];
+const apiUrl = import.meta.env.VITE_API_URL;
 
 const EmployeeCard = ({ employee }) => (
     <div className="bg-white rounded-lg shadow-lg p-6 text-center">
-        <AppImage src={employee.avatar} alt={employee.name} className="w-32 h-32 rounded-full mx-auto mb-4" />
+        <AppImage src={`${apiUrl}${employee.avatar}`} alt={employee.name} className="w-32 h-32 rounded-full mx-auto mb-4" />
         <h3 className="text-xl font-bold">{employee.name}</h3>
         <p className="text-gray-500">{employee.position}</p>
         <div className="mt-4 space-y-2">
@@ -58,18 +21,43 @@ const EmployeeCard = ({ employee }) => (
                 <span>{employee.email}</span>
             </div>
         </div>
-        <div className="mt-4 flex justify-center space-x-4">
-            <a href={employee.social.linkedin} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-500">
-                <Icon name="Linkedin" size={20} />
-            </a>
-            <a href={employee.social.twitter} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-400">
-                <Icon name="Twitter" size={20} />
-            </a>
-        </div>
     </div>
 );
 
 const EmployeeListPage = () => {
+    const [employees, setEmployees] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchEmployees = async () => {
+            try {
+                const response = await authFetch(`${apiUrl}/api/employees`);
+                const data = await response.json();
+                if (response.ok) {
+                    setEmployees(data.data);
+                } else {
+                    setError(data.error || 'Failed to fetch employees');
+                }
+            } catch (err) {
+                setError('Network error or server unreachable');
+                console.error('Fetch employees error:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchEmployees();
+    }, []);
+
+    if (loading) {
+        return <div className="text-center py-10">Loading...</div>;
+    }
+
+    if (error) {
+        return <div className="text-center py-10 text-red-500">Error: {error}</div>;
+    }
+
     return (
         <div className="container mx-auto p-4 pt-24 pb-32">
             <NavigationHeader title="Struktur Organisasi" />

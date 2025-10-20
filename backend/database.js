@@ -106,6 +106,17 @@ const setupDatabase = async () => {
       );
     `;
 
+    const createEmployeesTable = `
+      CREATE TABLE IF NOT EXISTS employees (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        position VARCHAR(255) NOT NULL,
+        avatar VARCHAR(255),
+        phone VARCHAR(255),
+        email VARCHAR(255)
+      );
+    `;
+
     // Add role column if it doesn't exist and set default for existing users
     const addRoleColumn = `
       ALTER TABLE users
@@ -133,6 +144,8 @@ const setupDatabase = async () => {
     console.log('notes table is ready.');
     await connection.query(createOrdersTable);
     console.log('orders table is ready.');
+    await connection.query(createEmployeesTable);
+    console.log('employees table is ready.');
 
     // Check and add notes column to expenses if it doesn't exist
     const [notesRows] = await connection.query(checkNotesColumn);

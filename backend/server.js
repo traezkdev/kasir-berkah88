@@ -902,6 +902,76 @@ app.delete("/api/orders/status/:status", authenticateToken, authorizeRoles('admi
 
 // --- Auth Endpoints ---
 
+// --- Employee Endpoints ---
+
+// Get all employees
+app.get("/api/employees", authenticateToken, authorizeRoles('user', 'admin'), async (req, res) => {
+    try {
+        const sql = "SELECT * FROM employees ORDER BY id DESC";
+        const [rows] = await db.query(sql);
+        res.json({
+            "message": "success",
+            "data": rows
+        });
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
+// Add a new employee
+app.post("/api/employees", authenticateToken, authorizeRoles('admin'), upload.single('avatar'), async (req, res) => {
+    try {
+        const { name, position, phone, email } = req.body;
+        const avatar = req.file ? `/public/uploads/${req.file.filename}` : null;
+
+        const sql = 'INSERT INTO employees (name, position, avatar, phone, email) VALUES (?,?,?,?,?)';
+        const params = [name, position, avatar, phone, email];
+        const [result] = await db.query(sql, params);
+        res.json({
+            "message": "success",
+            "data": { ...req.body, avatar },
+            "id": result.insertId
+        });
+    } catch (err) {
+        res.status(400).json({ "error": err.message });
+    }
+});
+
+// Update an employee
+app.put("/api/employees/:id", authenticateToken, authorizeRoles('admin'), upload.single('avatar'), async (req, res) => {
+    try {
+        const { name, position, phone, email } = req.body;
+        const avatar = req.file ? `/public/uploads/${req.file.filename}` : null;
+
+        const sql = `UPDATE employees set 
+           name = COALESCE(?,name), 
+           position = COALESCE(?,position), 
+           avatar = COALESCE(?,avatar), 
+           phone = COALESCE(?,phone), 
+           email = COALESCE(?,email) 
+           WHERE id = ?`;
+        const params = [name, position, avatar, phone, email, req.params.id];
+        const [result] = await db.query(sql, params);
+        res.json({ message: "success", data: req.body, changes: result.affectedRows });
+    } catch (err) {
+        res.status(400).json({ "error": err.message });
+    }
+});
+
+// Delete an employee
+app.delete("/api/employees/:id", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        const sql = 'DELETE FROM employees WHERE id = ?';
+        const [result] = await db.query(sql, [req.params.id]);
+        res.json({ "message": "deleted", changes: result.affectedRows });
+    } catch (err) {
+        res.status(400).json({ "error": err.message });
+    }
+});
+
+
+// --- Auth Endpoints ---
+
 // Register User
 app.post("/api/register", async (req, res) => {
     try {
