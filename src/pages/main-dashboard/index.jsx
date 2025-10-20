@@ -517,8 +517,9 @@ const MainDashboard = ({ headerTitle }) => {
               </div>
             </div>
 
-            <div className="mt-8">
+            <div className="mt-8 flex flex-col justify-center items-center">
               <DarkModeToggle />
+              <p className="mt-2 text-sm text-text-secondary">Website App ini di buat oleh M Alfin Firdaus</p>
             </div>
           </div>
         </main>

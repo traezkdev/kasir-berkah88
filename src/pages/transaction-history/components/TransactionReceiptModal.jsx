@@ -68,12 +68,12 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
           id="receipt-container"
-          className="relative bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col"
+          className="relative bg-card rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col"
         >
-          <div ref={receiptRef} className="p-6 overflow-y-auto bg-white">
+          <div ref={receiptRef} className="p-6 overflow-y-auto bg-card">
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold">Berkah 88</h2>
-              <p className="text-sm text-gray-500">Harga hemat, Rasa terhormat</p>
+              <p className="text-sm text-text-secondary">Harga hemat, Rasa terhormat</p>
             </div>
             <div className="border-b border-dashed border-gray-400 mb-4"></div>
             <div className="flex justify-between text-sm mb-2">
@@ -114,7 +114,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
               <p>Terima kasih telah berbelanja!</p>
             </div>
           </div>
-          <div className="p-4 bg-gray-50 rounded-b-lg flex items-center justify-end space-x-3 print:hidden">
+          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-b-lg flex items-center justify-end space-x-3 print:hidden">
             <Button variant="outline" onClick={onClose}>
               Tutup
             </Button>
