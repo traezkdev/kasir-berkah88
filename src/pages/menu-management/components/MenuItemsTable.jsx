@@ -161,14 +161,14 @@ const MenuItemsTable = ({
     };
 
     return (
-      <div className="bg-white rounded-lg border border-slate-200 p-4 space-y-3">
+      <div className="bg-card rounded-lg border border-border p-4 space-y-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3 flex-1">
             <input
               type="checkbox"
               checked={isSelected}
               onChange={(e) => handleSelectItem(item?.id, e?.target?.checked)}
-              className="w-4 h-4 text-primary border-slate-300 rounded focus:ring-primary"
+              className="w-4 h-4 text-primary border-input rounded focus:ring-primary"
             />
             <img 
               src={item?.image_url ? `${apiUrl}${item.image_url}` : '/assets/images/no_image.png'}
@@ -185,14 +185,14 @@ const MenuItemsTable = ({
                   className="text-sm"
                 />
               ) : (
-                <h3 className="font-medium text-text-primary">{item?.name}</h3>
+                <h3 className="font-medium text-foreground">{item?.name}</h3>
               )}
             </div>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-xs text-text-secondary mb-1">Stok</p>
+            <p className="text-xs text-muted-foreground mb-1">Stok</p>
             {isEditing ? (
               <Input
                 type="number"
@@ -213,7 +213,7 @@ const MenuItemsTable = ({
           </div>
           
           <div>
-            <p className="text-xs text-text-secondary mb-1">Harga</p>
+            <p className="text-xs text-muted-foreground mb-1">Harga</p>
             {isEditing ? (
               <Input
                 type="number"
@@ -223,13 +223,13 @@ const MenuItemsTable = ({
                 className="text-sm"
               />
             ) : (
-              <p className="font-mono font-medium text-text-primary">
+              <p className="font-mono font-medium text-foreground">
                 {formatCurrency(item?.price)}
               </p>
             )}
           </div>
           <div>
-            <p className="text-xs text-text-secondary mb-1">Upload Gambar Baru</p>
+            <p className="text-xs text-muted-foreground mb-1">Upload Gambar Baru</p>
             {isEditing ? (
               <Input
                 type="file"
@@ -238,14 +238,14 @@ const MenuItemsTable = ({
                 className="text-sm"
               />
             ) : (
-              <p className="text-sm text-text-secondary truncate">
+              <p className="text-sm text-muted-foreground truncate">
                 {item?.image_url || 'Tidak ada gambar'}
               </p>
             )}
           </div>
         </div>
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-          <p className="text-xs text-text-secondary">
+        <div className="flex items-center justify-between pt-2 border-t border-border">
+          <p className="text-xs text-muted-foreground">
             Diperbarui: {new Date(item.updatedAt)?.toLocaleDateString('id-ID')}
           </p>
           
@@ -307,15 +307,15 @@ const MenuItemsTable = ({
 
   if (menuItems?.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-elevation-1 border border-slate-200 p-8">
+      <div className="bg-card rounded-lg shadow-elevation-1 border border-border p-8">
         <div className="text-center">
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-            <Icon name="UtensilsCrossed" size={32} className="text-text-secondary" />
+            <Icon name="UtensilsCrossed" size={32} className="text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-medium text-text-primary mb-2">
+          <h3 className="text-lg font-medium text-foreground mb-2">
             {'Menu tidak ditemukan'}
           </h3>
-          <p className="text-text-secondary">
+          <p className="text-muted-foreground">
             {'Tidak ada menu yang cocok dengan filter yang dipilih'}
           </p>
         </div>
@@ -324,13 +324,12 @@ const MenuItemsTable = ({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-elevation-1 border border-slate-200">
+    <div className="bg-card rounded-lg shadow-elevation-1 border border-border">
       {/* Header */}
-      <div className="p-6 border-b border-slate-200">
+      <div className="p-6 border-b border-border">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
           <div>
-            <h2 className="text-xl font-semibold text-text-primary">Menu Saat Ini</h2>
-            <p className="text-sm text-text-secondary">
+            <p className="text-sm text-muted-foreground">
               {menuItems?.length} item menu tersedia
             </p>
           </div>
@@ -380,20 +379,20 @@ const MenuItemsTable = ({
                   type="checkbox"
                   checked={selectedItems?.length === menuItems?.length}
                   onChange={(e) => handleSelectAll(e?.target?.checked)}
-                  className="w-4 h-4 text-primary border-slate-300 rounded focus:ring-primary"
+                  className="w-4 h-4 text-primary border-input rounded focus:ring-primary"
                 />
               </th>
-              <th className="text-left p-4 font-medium text-text-primary">Gambar</th>
-              <th className="text-left p-4 font-medium text-text-primary">Nama Menu</th>
-              <th className="text-left p-4 font-medium text-text-primary">Stok</th>
-              <th className="text-left p-4 font-medium text-text-primary">Harga</th>
-              <th className="text-left p-4 font-medium text-text-primary w-48">Upload Gambar Baru</th>
-              <th className="text-left p-4 font-medium text-text-primary">Status</th>
-              <th className="text-left p-4 font-medium text-text-primary">Terakhir Diperbarui</th>
-              <th className="text-center p-4 font-medium text-text-primary w-32">Aksi</th>
+              <th className="text-left p-4 font-medium text-foreground">Gambar</th>
+              <th className="text-left p-4 font-medium text-foreground">Nama Menu</th>
+              <th className="text-left p-4 font-medium text-foreground">Stok</th>
+              <th className="text-left p-4 font-medium text-foreground">Harga</th>
+              <th className="text-left p-4 font-medium text-foreground w-48">Upload Gambar Baru</th>
+              <th className="text-left p-4 font-medium text-foreground">Status</th>
+              <th className="text-left p-4 font-medium text-foreground">Terakhir Diperbarui</th>
+              <th className="text-center p-4 font-medium text-foreground w-32">Aksi</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-border">
             {menuItems?.map(item => {
               const stockStatus = getStockStatus(item?.stock);
               const isEditing = editingId === item?.id;
@@ -406,7 +405,7 @@ const MenuItemsTable = ({
                       type="checkbox"
                       checked={isSelected}
                       onChange={(e) => handleSelectItem(item?.id, e?.target?.checked)}
-                      className="w-4 h-4 text-primary border-slate-300 rounded focus:ring-primary"
+                      className="w-4 h-4 text-primary border-input rounded focus:ring-primary"
                     />
                   </td>
                   <td className="p-4">
@@ -426,7 +425,7 @@ const MenuItemsTable = ({
                         className="min-w-48"
                       />
                     ) : (
-                      <span className="font-medium text-text-primary">{item?.name}</span>
+                      <span className="font-medium text-foreground">{item?.name}</span>
                     )}
                   </td>
                   <td className="p-4">
@@ -473,7 +472,7 @@ const MenuItemsTable = ({
                       {stockStatus?.label}
                     </span>
                   </td>
-                  <td className="p-4 text-sm text-text-secondary">
+                  <td className="p-4 text-sm text-muted-foreground">
                     {new Date(item.updatedAt)?.toLocaleDateString('id-ID', {
                       day: '2-digit',
                       month: '2-digit',
@@ -530,18 +529,18 @@ const MenuItemsTable = ({
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
-          <div className="bg-white rounded-lg shadow-elevation-3 max-w-md w-full p-6">
+          <div className="bg-card rounded-lg shadow-elevation-3 max-w-md w-full p-6">
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-12 h-12 bg-error/10 rounded-full flex items-center justify-center">
                 <Icon name="AlertTriangle" size={24} className="text-error" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-text-primary">Konfirmasi Hapus</h3>
-                <p className="text-sm text-text-secondary">Tindakan ini tidak dapat dibatalkan</p>
+                <h3 className="text-lg font-semibold text-foreground">Konfirmasi Hapus</h3>
+                <p className="text-sm text-muted-foreground">Tindakan ini tidak dapat dibatalkan</p>
               </div>
             </div>
             
-            <p className="text-text-secondary mb-6">
+            <p className="text-muted-foreground mb-6">
               Apakah Anda yakin ingin menghapus menu "{menuItems?.find(item => item?.id === showDeleteConfirm)?.name}"?
             </p>
             

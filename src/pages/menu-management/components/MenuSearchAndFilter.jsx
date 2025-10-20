@@ -33,7 +33,7 @@ const MenuSearchAndFilter = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-elevation-1 border border-slate-200 p-4 mb-6">
+    <div className="bg-card rounded-lg shadow-elevation-1 border border-border p-4 mb-6">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
         {/* Search */}
         <div className="flex-1 lg:max-w-md">
@@ -41,7 +41,7 @@ const MenuSearchAndFilter = ({
             <Icon 
               name="Search" 
               size={20} 
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-secondary" 
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" 
             />
             <Input
               type="text"
@@ -67,7 +67,7 @@ const MenuSearchAndFilter = ({
               {option?.count > 0 && (
                 <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
                   activeFilter === option?.key 
-                    ? 'bg-white/20 text-white' :'bg-muted text-text-secondary'
+                    ? 'bg-primary-foreground/20 text-primary-foreground' :'bg-muted text-muted-foreground'
                 }`}>
                   {option?.count}
                 </span>
@@ -90,17 +90,17 @@ const MenuSearchAndFilter = ({
           </Button>
 
           {showExportMenu && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-elevation-2 border border-slate-200 py-2 z-50">
+            <div className="absolute right-0 top-full mt-2 w-48 bg-popover rounded-lg shadow-elevation-2 border border-border py-2 z-50">
               <button
                 onClick={() => handleExport('excel')}
-                className="w-full px-4 py-2 text-left text-sm text-text-primary hover:bg-muted transition-colors duration-200 flex items-center space-x-2"
+                className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted transition-colors duration-200 flex items-center space-x-2"
               >
                 <Icon name="FileSpreadsheet" size={16} />
                 <span>Export ke Excel</span>
               </button>
               <button
                 onClick={() => handleExport('pdf')}
-                className="w-full px-4 py-2 text-left text-sm text-text-primary hover:bg-muted transition-colors duration-200 flex items-center space-x-2"
+                className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted transition-colors duration-200 flex items-center space-x-2"
               >
                 <Icon name="FileText" size={16} /> {/* Corrected icon to FileText */}
                 <span>Export ke PDF</span>

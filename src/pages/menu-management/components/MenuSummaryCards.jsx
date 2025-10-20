@@ -76,7 +76,7 @@ const MenuSummaryCards = ({ menuItems }) => {
       {summaryCards?.map((card, index) => (
         <div
           key={index}
-          className="bg-white rounded-lg shadow-elevation-1 border border-slate-200 p-4 hover:shadow-elevation-2 transition-shadow duration-200"
+          className="bg-card rounded-lg shadow-elevation-1 border border-border p-4 hover:shadow-elevation-2 transition-shadow duration-200"
         >
           <div className="flex items-center justify-between mb-3">
             <div className={`p-2 rounded-lg ${card?.bgColor}`}>
@@ -91,13 +91,13 @@ const MenuSummaryCards = ({ menuItems }) => {
           </div>
           
           <div className="space-y-1">
-            <p className="text-2xl font-mono font-bold text-text-primary">
+            <p className="text-2xl font-mono font-bold text-foreground">
               {card?.value}
             </p>
-            <p className="text-sm font-medium text-text-primary">
+            <p className="text-sm font-medium text-foreground">
               {card?.title}
             </p>
-            <p className="text-xs text-text-secondary">
+            <p className="text-xs text-muted-foreground">
               {card?.description}
             </p>
           </div>
