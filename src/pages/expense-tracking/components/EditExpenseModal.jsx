@@ -116,9 +116,9 @@ const EditExpenseModal = ({ isOpen, onClose, expense, onUpdateExpense, isLoading
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[1002] p-4">
-      <div className="bg-white rounded-lg shadow-elevation-3 max-w-lg w-full">
+      <div className="bg-card rounded-lg shadow-elevation-3 max-w-lg w-full">
         <form onSubmit={handleSubmit}>
-          <div className="p-6 border-b border-slate-200">
+          <div className="p-6 border-b border-border">
             <div className="flex items-center space-x-3">
                 <div className="p-2 bg-primary/10 rounded-lg">
                     <Icon name="Edit3" size={24} className="text-primary" />
@@ -172,7 +172,7 @@ const EditExpenseModal = ({ isOpen, onClose, expense, onUpdateExpense, isLoading
             />
           </div>
 
-          <div className="p-6 bg-slate-50 border-t border-slate-200 flex justify-end space-x-3">
+          <div className="p-6 bg-card-foreground/5 border-t border-border flex justify-end space-x-3">
             <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
               Batal
             </Button>

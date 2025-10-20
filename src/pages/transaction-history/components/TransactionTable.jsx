@@ -4,7 +4,7 @@ import TransactionCard from './TransactionCard';
 const TransactionTable = ({ transactions, onDeleteTransaction, onEditTransaction, isMobile, userRole, onRowClick }) => {
   if (transactions?.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-slate-200 shadow-elevation-1 p-8 text-center">
+      <div className="bg-card rounded-lg border border-border shadow-elevation-1 p-8 text-center">
         <div className="text-text-secondary">
           <p className="text-lg font-medium mb-2">Tidak ada transaksi ditemukan</p>
           <p className="text-sm">Transaksi akan muncul di sini setelah Anda melakukan penjualan</p>
@@ -32,10 +32,10 @@ const TransactionTable = ({ transactions, onDeleteTransaction, onEditTransaction
   }
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 shadow-elevation-1 overflow-hidden">
+    <div className="bg-card rounded-lg border border-border shadow-elevation-1 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-muted/30 border-b border-slate-200">
+          <thead className="bg-muted/30 border-b border-border">
             <tr>
               <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">
                 ID Transaksi
@@ -57,7 +57,7 @@ const TransactionTable = ({ transactions, onDeleteTransaction, onEditTransaction
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-border">
             {transactions?.map((transaction) => (
               <TransactionCard
                 key={transaction?.id}

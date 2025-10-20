@@ -68,9 +68,9 @@ const TransactionFilters = ({
   };
 
   return (
-    <div className="bg-white border-b border-slate-200 shadow-elevation-1">
+    <div className="bg-card border-b border-border shadow-elevation-1">
       {/* Summary Statistics */}
-      <div className="px-4 lg:px-6 py-4 border-b border-slate-200">
+      <div className="px-4 lg:px-6 py-4 border-b border-border">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="text-center sm:text-left">
             <p className="text-2xl font-mono font-semibold text-text-primary">
@@ -145,7 +145,7 @@ const TransactionFilters = ({
 
         {/* Expanded Filter Options */}
         {isFilterOpen && (
-          <div className="mt-4 p-4 bg-muted/30 rounded-lg border border-slate-200">
+          <div className="mt-4 p-4 bg-muted/30 rounded-lg border border-border">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Date Range */}
               <div>
@@ -176,9 +176,7 @@ const TransactionFilters = ({
                   Metode Pembayaran
                 </label>
                 <select
-                  value={activeFilters?.paymentMethod}
-                  onChange={(e) => handleFilterChange('paymentMethod', e?.target?.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
                 >
                   <option value="all">Semua</option>
                   <option value="Tunai">Tunai</option>
@@ -196,7 +194,7 @@ const TransactionFilters = ({
                 <select
                   value={activeFilters?.amountRange}
                   onChange={(e) => handleFilterChange('amountRange', e?.target?.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
                 >
                   <option value="all">Semua Jumlah</option>
                   <option value="0-50000">Rp 0 - Rp 50.000</option>
