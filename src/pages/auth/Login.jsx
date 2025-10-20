@@ -61,7 +61,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8 space-y-6">
+      <div className="w-full max-w-md bg-card rounded-lg shadow-lg p-8 space-y-6">
         <div className="text-center">
           <Icon name="Lock" size={48} className="text-primary mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-text-primary">Login</h2>
