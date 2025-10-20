@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import Icon from '../AppIcon';
 import Button from './Button';
+import DarkModeToggle from './DarkModeToggle';
 
 const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = "Kasir Berkah 88" }) => {
   const isNativePlatform = Capacitor.isNativePlatform();
@@ -88,6 +89,8 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
               </Link>
             ))}
           </nav>
+
+          <DarkModeToggle />
 
           {/* Mobile Menu Button */}
           <Button
