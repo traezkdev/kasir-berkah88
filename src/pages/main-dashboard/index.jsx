@@ -337,6 +337,13 @@ const MainDashboard = ({ headerTitle }) => {
       icon: 'Calculator',
       route: '/calculator',
       color: 'destructive'
+    },
+    {
+      title: 'Daftar Karyawan',
+      description: 'Lihat struktur organisasi',
+      icon: 'Users',
+      route: '/employee-list',
+      color: 'success'
     }
   ];
 
