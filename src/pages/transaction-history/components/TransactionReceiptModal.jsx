@@ -103,12 +103,12 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
             </div>
             <div className="flex justify-between font-semibold">
               <span className="text-lg text-gray-900">TOTAL:</span>
-              <span className="text-lg">Rp {Number(transaction.total).toLocaleString("id-ID")}</span>
+              <span className="text-lg text-black">Rp {Number(transaction.total).toLocaleString("id-ID")}</span>
             </div>
             <div className="border-b border-dashed border-gray-400 my-4"></div>
             <div className="flex justify-between text-sm">
-              <span>Metode Pembayaran:</span>
-              <span>{transaction.payment_method}</span>
+              <span className="text-black">Metode Pembayaran:</span>
+              <span className="text-black">{transaction.payment_method}</span>
             </div>
             <div className="text-center mt-8 text-sm text-gray-500">
               <p>Terima kasih telah berbelanja!</p>
