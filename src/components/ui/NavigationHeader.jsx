@@ -91,7 +91,9 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
           </nav>
 
           <div className="flex items-center space-x-2">
-            <DarkModeToggle />
+            <div className="lg:hidden">
+              <DarkModeToggle />
+            </div>
             <Button
               variant="ghost"
               size="icon"
