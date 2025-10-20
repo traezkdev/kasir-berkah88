@@ -18,6 +18,25 @@ const GuestCheckout = () => {
     const customerInfoRef = useRef(null);
 
     useEffect(() => {
+        const savedCustomerName = localStorage.getItem('customerName');
+        const savedCustomerAddress = localStorage.getItem('customerAddress');
+        if (savedCustomerName) {
+            setCustomerName(savedCustomerName);
+        }
+        if (savedCustomerAddress) {
+            setCustomerAddress(savedCustomerAddress);
+        }
+    }, []);
+
+    useEffect(() => {
+        localStorage.setItem('customerName', customerName);
+    }, [customerName]);
+
+    useEffect(() => {
+        localStorage.setItem('customerAddress', customerAddress);
+    }, [customerAddress]);
+
+    useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
             setIsLoggedIn(true);
