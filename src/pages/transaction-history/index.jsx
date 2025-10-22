@@ -48,6 +48,7 @@ const TransactionHistory = ({ headerTitle }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState(null);
   const [chartFilterType, setChartFilterType] = useState('daily'); // New state for chart filter
+  const [currentDailyDate, setCurrentDailyDate] = useState(new Date()); // State for current date in daily view
 
 
   const navigate = useNavigate(); // Initialize useNavigate
@@ -246,6 +247,22 @@ const TransactionHistory = ({ headerTitle }) => {
 
   const handleDateRangeChange = (newDateRange) => {
     setDateRange(newDateRange);
+  };
+
+  const handleNextDayRange = () => {
+    setCurrentDailyDate(prevDate => {
+      const nextDate = new Date(prevDate);
+      nextDate.setDate(prevDate.getDate() + 7);
+      return nextDate;
+    });
+  };
+
+  const handlePrevDayRange = () => {
+    setCurrentDailyDate(prevDate => {
+      const prevDateClone = new Date(prevDate);
+      prevDateClone.setDate(prevDate.getDate() - 7);
+      return prevDateClone;
+    });
   };
 
   const handleDeleteTransaction = async (transactionId) => {
@@ -507,7 +524,13 @@ const TransactionHistory = ({ headerTitle }) => {
                   Bulanan
                 </button>
               </div>
-              <TransactionChart transactions={transactions} filterType={chartFilterType} />
+              <TransactionChart 
+                transactions={transactions} 
+                filterType={chartFilterType} 
+                currentDailyDate={currentDailyDate}
+                onNextDayRange={handleNextDayRange}
+                onPrevDayRange={handlePrevDayRange}
+              />
             </div>
 
             <TransactionFilters
