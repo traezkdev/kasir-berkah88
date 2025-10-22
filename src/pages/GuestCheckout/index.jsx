@@ -352,7 +352,7 @@ const GuestCheckout = () => {
 
             {/* Sticky Footer for Mobile */}
             {Object.keys(cart).length > 0 && (
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 z-1000 bg-card border-t border-border shadow-[0_-2px_10px_rgba(0,0,0,0.1)]">
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 z-1000 bg-card border-t border-border shadow-[0_-2px_10px_rgba(0,0,0,0.1)] p-3">
                     <div className="flex justify-between items-center max-w-7xl mx-auto">
                         <div className="flex items-center space-x-2">
                             <Button onClick={handleClearCart} variant="ghost" size="icon" className="text-destructive rounded-full">

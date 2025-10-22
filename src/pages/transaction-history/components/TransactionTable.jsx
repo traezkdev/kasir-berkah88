@@ -37,22 +37,22 @@ const TransactionTable = ({ transactions, onDeleteTransaction, onEditTransaction
         <table className="w-full">
           <thead className="bg-muted/30 border-b border-border">
             <tr>
-              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">
+              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary dark:text-gray-100">
                 ID Transaksi
               </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">
+              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary dark:text-gray-100">
                 Tanggal & Waktu
               </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">
+              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary dark:text-gray-100">
                 Item
               </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">
+              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary dark:text-gray-100">
                 Total
               </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">
+              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary dark:text-gray-100">
                 Jenis
               </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">
+              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary dark:text-gray-100">
                 Aksi
               </th>
             </tr>

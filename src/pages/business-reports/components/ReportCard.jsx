@@ -7,14 +7,14 @@ const ReportCard = ({
   description, 
   icon, 
   iconColor = 'text-primary',
-  iconBgColor = 'bg-primary/10',
+  iconBgColor = 'bg-primary/10 dark:bg-primary/20',
   metrics = [], 
   onExport,
   exportLabel = 'Export',
   children 
 }) => {
   return (
-    <div className="bg-white rounded-lg border border-slate-200 shadow-elevation-1 hover:shadow-elevation-2 transition-shadow duration-200">
+    <div className="bg-card rounded-lg border border-border shadow-elevation-1 hover:shadow-elevation-2 transition-shadow duration-200">
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
@@ -22,8 +22,8 @@ const ReportCard = ({
               <Icon name={icon} size={24} className={iconColor} />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-text-primary">{title}</h3>
-              <p className="text-sm text-text-secondary">{description}</p>
+              <h3 className="text-lg font-semibold text-text-primary dark:text-white">{title}</h3>
+              <p className="text-sm text-text-secondary dark:text-gray-400">{description}</p>
             </div>
           </div>
           {onExport && (
@@ -43,9 +43,9 @@ const ReportCard = ({
         {metrics?.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             {metrics?.map((metric, index) => (
-              <div key={index} className="bg-muted rounded-lg p-3">
+              <div key={index} className="bg-muted rounded-lg p-3 dark:bg-muted">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-text-secondary">{metric?.label}</span>
+                  <span className="text-sm text-text-secondary dark:text-gray-400">{metric?.label}</span>
                   {metric?.trend && (
                     <div className={`flex items-center space-x-1 text-xs ${
                       metric?.trend === 'up' ? 'text-success' : 
@@ -60,7 +60,7 @@ const ReportCard = ({
                     </div>
                   )}
                 </div>
-                <p className="text-xl font-mono font-semibold text-text-primary mt-1">
+                <p className="text-xl font-mono font-semibold text-text-primary mt-1 dark:text-white">
                   {metric?.value}
                 </p>
               </div>

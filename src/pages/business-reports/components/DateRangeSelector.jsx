@@ -58,8 +58,8 @@ const DateRangeSelector = ({ onDateRangeChange, selectedRange = 'today' }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 p-4 mb-6">
-      <h3 className="text-sm font-medium text-text-primary mb-3">Periode Laporan</h3>
+    <div className="bg-card rounded-lg border border-border p-4 mb-6">
+      <h3 className="text-sm font-medium text-text-primary mb-3 dark:text-white">Periode Laporan</h3>
       <div className="flex flex-wrap gap-2 mb-4">
         {presetRanges?.map((range) => (
           <Button

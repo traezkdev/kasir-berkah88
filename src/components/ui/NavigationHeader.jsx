@@ -73,35 +73,39 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-1">
-            {navigationItems?.map((item) => (
-              <Link
-                key={item?.path}
-                to={item?.path}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-                  isActiveRoute(item?.path)
-                    ? 'bg-primary text-primary-foreground' :'text-text-secondary hover:text-text-primary hover:bg-muted'
-                }`}
-              >
-                <Icon name={item?.icon} size={18} />
-                <span>{item?.label}</span>
-              </Link>
-            ))}
-          </nav>
-
+          {/* Right-aligned group for Desktop */}
           <div className="flex items-center space-x-2">
-            <div className="lg:hidden">
-              <DarkModeToggle />
+            {/* Desktop Navigation */}
+            <nav className="hidden lg:flex items-center space-x-1">
+              {navigationItems?.map((item) => (
+                <Link
+                  key={item?.path}
+                  to={item?.path}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                    isActiveRoute(item?.path)
+                      ? 'bg-primary text-primary-foreground' :'text-text-secondary hover:text-text-primary hover:bg-muted'
+                  }`}
+                >
+                  <Icon name={item?.icon} size={18} />
+                  <span>{item?.label}</span>
+                </Link>
+              ))}
+            </nav>
+
+            {/* DarkModeToggle and Mobile Menu Button */}
+            <div className="flex items-center space-x-2">
+              <div className="lg:hidden">
+                <DarkModeToggle />
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleMobileMenu}
+                className="lg:hidden"
+              >
+                <Icon name={isMobileMenuOpen ? "X" : "Menu"} size={20} />
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleMobileMenu}
-              className="lg:hidden"
-            >
-              <Icon name={isMobileMenuOpen ? "X" : "Menu"} size={20} />
-            </Button>
           </div>
         </div>
 

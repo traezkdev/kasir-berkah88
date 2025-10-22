@@ -10,6 +10,7 @@ import BulkActions from './components/BulkActions';
 import Pagination from '../../components/ui/Pagination';
 import TransactionReceiptModal from './components/TransactionReceiptModal'; // Import the modal
 import EditTransactionModal from './components/EditTransactionModal'; // Import the new edit modal
+import TransactionChart from './components/TransactionChart'; // Import TransactionChart
 
 import authFetch from '../../utils/authFetch';
 import { jsPDF } from 'jspdf';
@@ -46,6 +47,8 @@ const TransactionHistory = ({ headerTitle }) => {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState(null);
+  const [chartFilterType, setChartFilterType] = useState('daily'); // New state for chart filter
+  const [currentDailyDate, setCurrentDailyDate] = useState(new Date()); // State for current date in daily view
 
 
   const navigate = useNavigate(); // Initialize useNavigate
@@ -192,6 +195,12 @@ const TransactionHistory = ({ headerTitle }) => {
         const startDate = dateRange?.startDate ? new Date(dateRange.startDate) : null;
         const endDate = dateRange?.endDate ? new Date(dateRange.endDate) : null;
 
+        // Normalize transactionDate to start of day for comparison
+        transactionDate.setHours(0, 0, 0, 0);
+
+        if (startDate) startDate.setHours(0, 0, 0, 0);
+        if (endDate) endDate.setHours(23, 59, 59, 999);
+
         if (startDate && endDate) {
           return transactionDate >= startDate && transactionDate <= endDate;
         } else if (startDate) {
@@ -244,6 +253,22 @@ const TransactionHistory = ({ headerTitle }) => {
 
   const handleDateRangeChange = (newDateRange) => {
     setDateRange(newDateRange);
+  };
+
+  const handleNextDayRange = () => {
+    setCurrentDailyDate(prevDate => {
+      const nextDate = new Date(prevDate);
+      nextDate.setDate(prevDate.getDate() + 7);
+      return nextDate;
+    });
+  };
+
+  const handlePrevDayRange = () => {
+    setCurrentDailyDate(prevDate => {
+      const prevDateClone = new Date(prevDate);
+      prevDateClone.setDate(prevDate.getDate() - 7);
+      return prevDateClone;
+    });
   };
 
   const handleDeleteTransaction = async (transactionId) => {
@@ -483,6 +508,36 @@ const TransactionHistory = ({ headerTitle }) => {
 
 
           <div className="space-y-6" ref={exportContentRef}>
+
+            <div className="bg-card p-4 rounded-lg shadow-md">
+              <div className="flex justify-center space-x-4 mb-4">
+                <button
+                  onClick={() => setChartFilterType('daily')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium ${chartFilterType === 'daily' ? 'bg-blue-500 text-white dark:bg-blue-700 dark:text-gray-100' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'}`}
+                >
+                  Harian
+                </button>
+                <button
+                  onClick={() => setChartFilterType('weekly')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium ${chartFilterType === 'weekly' ? 'bg-blue-500 text-white dark:bg-blue-700 dark:text-gray-100' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'}`}
+                >
+                  Mingguan
+                </button>
+                <button
+                  onClick={() => setChartFilterType('monthly')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium ${chartFilterType === 'monthly' ? 'bg-blue-500 text-white dark:bg-blue-700 dark:text-gray-100' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'}`}
+                >
+                  Bulanan
+                </button>
+              </div>
+              <TransactionChart 
+                transactions={transactions} 
+                filterType={chartFilterType} 
+                currentDailyDate={currentDailyDate}
+                onNextDayRange={handleNextDayRange}
+                onPrevDayRange={handlePrevDayRange}
+              />
+            </div>
 
             <TransactionFilters
 

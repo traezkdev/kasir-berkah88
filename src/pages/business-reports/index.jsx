@@ -281,8 +281,8 @@ const BusinessReports = ({ headerTitle }) => {
               <StockReportSection data={reportData.stock} />
               <ExpenseReportSection data={reportData.expenses} />
               <CombinedAnalyticsSection salesData={reportData.sales} stockData={reportData.stock} expensesData={reportData.expenses} onExportCombined={handleExportCombinedData} />
-              <div className="bg-white rounded-lg border border-slate-200 shadow-elevation-1 p-6 mt-6">
-                <p className="text-sm text-text-secondary mb-4 text-center">Export laporan gabungan untuk analisis lebih lanjut.</p>
+              <div className="bg-card rounded-lg border border-border shadow-elevation-1 p-6 mt-6">
+                <p className="text-sm text-text-secondary mb-4 text-center dark:text-gray-400">Export laporan gabungan untuk analisis lebih lanjut.</p>
                 <div className="flex justify-center space-x-3">
                   <Button
                     variant="outline"
