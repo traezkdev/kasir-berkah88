@@ -247,23 +247,23 @@ const TransactionChart = ({ transactions, filterType, currentDailyDate, onNextDa
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg">
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
       {filterType === 'daily' && (
         <div className="flex flex-col sm:flex-row justify-between items-center mb-4 space-y-2 sm:space-y-0">
           <button
             onClick={onPrevDayRange}
-            className="px-3 py-1 rounded-md text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 w-full sm:w-auto"
+            className="px-3 py-1 rounded-md text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 w-full sm:w-auto"
           >
             &larr; Sebelumnya
           </button>
-          <span className="text-md font-semibold text-center">
+          <span className="text-md font-semibold text-center dark:text-gray-100">
             {chartData.labels.length > 0 ? 
               `${new Date(chartData.labels[0]).toLocaleDateString()} - ${new Date(chartData.labels[chartData.labels.length - 1]).toLocaleDateString()}`
               : 'Pilih Tanggal'}
           </span>
           <button
             onClick={onNextDayRange}
-            className="px-3 py-1 rounded-md text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 w-full sm:w-auto"
+            className="px-3 py-1 rounded-md text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 w-full sm:w-auto"
           >
             Berikutnya &rarr;
           </button>
