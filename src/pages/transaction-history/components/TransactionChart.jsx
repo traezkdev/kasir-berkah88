@@ -71,53 +71,79 @@ const TransactionChart = ({ transactions, filterType, currentDailyDate, onNextDa
       }
 
       if (!aggregatedData[key]) {
-        aggregatedData[key] = 0;
+        aggregatedData[key] = { count: 0, total: 0 };
       }
-      aggregatedData[key] += parseFloat(transaction.total || 0);
+      aggregatedData[key].count += 1;
+      aggregatedData[key].total += parseFloat(transaction.total || 0);
     });
 
     // Ensure all 7 days are present in daily view, even if no transactions
     if (filterType === 'daily') {
       const labels = [];
-      const data = [];
+      const counts = [];
+      const totals = [];
       const endDate = new Date(currentDailyDate);
       for (let i = 6; i >= 0; i--) {
         const d = new Date(endDate);
         d.setDate(endDate.getDate() - i);
         const key = d.toISOString().split('T')[0];
         labels.push(key);
-        data.push(aggregatedData[key] || 0);
+        counts.push(aggregatedData[key]?.count || 0);
+        totals.push(aggregatedData[key]?.total || 0);
       }
       return {
         labels,
         datasets: [
           {
-            label: 'Total Nominal Transaksi',
-            data: data,
+            label: 'Jumlah Transaksi',
+            data: counts,
             borderColor: 'rgba(59, 130, 246, 1)', // Light blue
             backgroundColor: 'rgba(59, 130, 246, 0.2)',
             borderWidth: 3,
             fill: true,
             tension: 0.4,
+            yAxisID: 'y-count', // Assign to a specific Y-axis
+          },
+          {
+            label: 'Total Nominal Transaksi',
+            data: totals,
+            borderColor: 'rgba(16, 185, 129, 1)', // Green
+            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            yAxisID: 'y-total', // Assign to a specific Y-axis
           },
         ],
       };
     } else {
       const sortedKeys = Object.keys(aggregatedData).sort();
       const labels = sortedKeys;
-      const data = sortedKeys.map(key => aggregatedData[key]);
+      const counts = sortedKeys.map(key => aggregatedData[key].count);
+      const totals = sortedKeys.map(key => aggregatedData[key].total);
 
       return {
         labels,
         datasets: [
           {
-            label: 'Total Nominal Transaksi',
-            data: data,
+            label: 'Jumlah Transaksi',
+            data: counts,
             borderColor: 'rgba(59, 130, 246, 1)', // Light blue
             backgroundColor: 'rgba(59, 130, 246, 0.2)',
             borderWidth: 3,
             fill: true,
             tension: 0.4,
+            yAxisID: 'y-count', // Assign to a specific Y-axis
+          },
+          {
+            label: 'Total Nominal Transaksi',
+            data: totals,
+            borderColor: 'rgba(16, 185, 129, 1)', // Green
+            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            yAxisID: 'y-total', // Assign to a specific Y-axis
           },
         ],
       };
@@ -169,7 +195,35 @@ const TransactionChart = ({ transactions, filterType, currentDailyDate, onNextDa
           color: 'rgba(200, 200, 200, 0.2)', // Subtle grid lines
         },
       },
-      y: {
+      'y-count': {
+        type: 'linear',
+        position: 'left',
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Jumlah Transaksi',
+          font: {
+            size: 14,
+            weight: 'bold',
+          },
+          color: '#555',
+        },
+        grid: {
+          drawOnChartArea: false, // Only draw grid lines for one Y-axis
+        },
+        ticks: {
+          callback: function(value) {
+            if (Number.isInteger(value)) {
+              return value;
+            }
+            return null; // Hide non-integer ticks
+          },
+          stepSize: 1, // Ensure integer steps
+        },
+      },
+      'y-total': {
+        type: 'linear',
+        position: 'right',
         beginAtZero: true,
         title: {
           display: true,
@@ -181,16 +235,13 @@ const TransactionChart = ({ transactions, filterType, currentDailyDate, onNextDa
           color: '#555',
         },
         grid: {
-          display: true,
-          drawOnChartArea: true,
-          drawTicks: true,
-          color: 'rgba(200, 200, 200, 0.2)', // Subtle grid lines
+          drawOnChartArea: false, // Only draw grid lines for one Y-axis
         },
         ticks: {
           callback: function(value) {
             return 'Rp ' + value.toLocaleString('id-ID');
-          }
-        }
+          },
+        },
       },
     },
   };
