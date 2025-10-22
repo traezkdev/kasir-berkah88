@@ -151,7 +151,7 @@ const TransactionChart = ({ transactions, filterType }) => {
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md">
+    <div className="bg-white p-4 rounded-lg">
       <div style={{ height: '400px' }}>
         <Line data={chartData} options={options} />
       </div>
