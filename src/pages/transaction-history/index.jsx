@@ -10,6 +10,7 @@ import BulkActions from './components/BulkActions';
 import Pagination from '../../components/ui/Pagination';
 import TransactionReceiptModal from './components/TransactionReceiptModal'; // Import the modal
 import EditTransactionModal from './components/EditTransactionModal'; // Import the new edit modal
+import TransactionChart from './components/TransactionChart'; // Import TransactionChart
 
 import authFetch from '../../utils/authFetch';
 import { jsPDF } from 'jspdf';
@@ -46,6 +47,7 @@ const TransactionHistory = ({ headerTitle }) => {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState(null);
+  const [chartFilterType, setChartFilterType] = useState('daily'); // New state for chart filter
 
 
   const navigate = useNavigate(); // Initialize useNavigate
@@ -483,6 +485,30 @@ const TransactionHistory = ({ headerTitle }) => {
 
 
           <div className="space-y-6" ref={exportContentRef}>
+
+            <div className="bg-white p-4 rounded-lg shadow-md">
+              <div className="flex justify-center space-x-4 mb-4">
+                <button
+                  onClick={() => setChartFilterType('daily')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium ${chartFilterType === 'daily' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                >
+                  Harian
+                </button>
+                <button
+                  onClick={() => setChartFilterType('weekly')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium ${chartFilterType === 'weekly' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                >
+                  Mingguan
+                </button>
+                <button
+                  onClick={() => setChartFilterType('monthly')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium ${chartFilterType === 'monthly' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                >
+                  Bulanan
+                </button>
+              </div>
+              <TransactionChart transactions={transactions} filterType={chartFilterType} />
+            </div>
 
             <TransactionFilters
 
