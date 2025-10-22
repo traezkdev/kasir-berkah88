@@ -176,6 +176,8 @@ const TransactionFilters = ({
                   Metode Pembayaran
                 </label>
                 <select
+                  value={activeFilters?.paymentMethod}
+                  onChange={(e) => handleFilterChange('paymentMethod', e?.target?.value)}
                   className="w-full px-3 py-2 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
                 >
                   <option value="all">Semua</option>

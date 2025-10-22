@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -27,6 +27,22 @@ ChartJS.register(
 );
 
 const TransactionChart = ({ transactions, filterType, currentDailyDate, onNextDayRange, onPrevDayRange }) => {
+  const [chartTextColor, setChartTextColor] = useState('#333'); // Default light mode color
+  const [chartGridColor, setChartGridColor] = useState('rgba(200, 200, 200, 0.2)'); // Default light mode color
+
+  useEffect(() => {
+    const htmlElement = document.documentElement;
+    const isDarkMode = htmlElement.classList.contains('dark');
+
+    if (isDarkMode) {
+      setChartTextColor('#E0E0E0'); // Light gray for dark mode text
+      setChartGridColor('rgba(255, 255, 255, 0.1)'); // Lighter grid for dark mode
+    } else {
+      setChartTextColor('#333'); // Dark gray for light mode text
+      setChartGridColor('rgba(200, 200, 200, 0.2)'); // Darker grid for light mode
+    }
+  }, []); // Run once on mount
+
   const chartData = useMemo(() => {
     if (!transactions || transactions.length === 0) {
       return {
@@ -150,12 +166,15 @@ const TransactionChart = ({ transactions, filterType, currentDailyDate, onNextDa
     }
   }, [transactions, filterType, currentDailyDate]);
 
-  const options = {
+  const options = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'top',
+        labels: {
+          color: chartTextColor, // Dynamic color
+        },
       },
       title: {
         display: true,
@@ -164,7 +183,7 @@ const TransactionChart = ({ transactions, filterType, currentDailyDate, onNextDa
           size: 18,
           weight: 'bold',
         },
-        color: '#333',
+        color: chartTextColor, // Dynamic color
       },
     },
     scales: {
@@ -186,13 +205,16 @@ const TransactionChart = ({ transactions, filterType, currentDailyDate, onNextDa
             size: 14,
             weight: 'bold',
           },
-          color: '#555',
+          color: chartTextColor, // Dynamic color
         },
         grid: {
           display: true,
           drawOnChartArea: true,
           drawTicks: true,
-          color: 'rgba(200, 200, 200, 0.2)', // Subtle grid lines
+          color: chartGridColor, // Dynamic color
+        },
+        ticks: {
+          color: chartTextColor, // Dynamic color
         },
       },
       'y-count': {
@@ -206,10 +228,11 @@ const TransactionChart = ({ transactions, filterType, currentDailyDate, onNextDa
             size: 14,
             weight: 'bold',
           },
-          color: '#555',
+          color: chartTextColor, // Dynamic color
         },
         grid: {
           drawOnChartArea: false, // Only draw grid lines for one Y-axis
+          color: chartGridColor, // Dynamic color
         },
         ticks: {
           callback: function(value) {
@@ -219,6 +242,7 @@ const TransactionChart = ({ transactions, filterType, currentDailyDate, onNextDa
             return null; // Hide non-integer ticks
           },
           stepSize: 1, // Ensure integer steps
+          color: chartTextColor, // Dynamic color
         },
       },
       'y-total': {
@@ -232,19 +256,21 @@ const TransactionChart = ({ transactions, filterType, currentDailyDate, onNextDa
             size: 14,
             weight: 'bold',
           },
-          color: '#555',
+          color: chartTextColor, // Dynamic color
         },
         grid: {
           drawOnChartArea: false, // Only draw grid lines for one Y-axis
+          color: chartGridColor, // Dynamic color
         },
         ticks: {
           callback: function(value) {
             return 'Rp ' + value.toLocaleString('id-ID');
           },
+          color: chartTextColor, // Dynamic color
         },
       },
     },
-  };
+  }), [filterType, chartTextColor, chartGridColor]);
 
   return (
     <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
