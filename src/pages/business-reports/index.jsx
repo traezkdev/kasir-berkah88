@@ -124,7 +124,7 @@ const BusinessReports = ({ headerTitle }) => {
           return acc;
         }, [])
         .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 5);
+;
 
       // Stock Report Data
       const totalStockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
