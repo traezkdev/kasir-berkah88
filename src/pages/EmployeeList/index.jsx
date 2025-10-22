@@ -7,16 +7,16 @@ import authFetch from '../../utils/authFetch';
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const EmployeeCard = ({ employee }) => (
-    <div className="bg-white rounded-lg shadow-lg p-6 text-center">
+    <div className="bg-card rounded-lg shadow-lg p-6 text-center">
         <AppImage src={`${apiUrl}${employee.avatar}`} alt={employee.name} className="w-32 h-32 rounded-full mx-auto mb-4" />
         <h3 className="text-xl font-bold">{employee.name}</h3>
-        <p className="text-gray-500">{employee.position}</p>
+        <p className="text-muted-foreground">{employee.position}</p>
         <div className="mt-4 space-y-2">
-            <div className="flex items-center justify-center text-gray-600">
+            <div className="flex items-center justify-center text-muted-foreground">
                 <Icon name="Phone" size={16} className="mr-2" />
                 <span>{employee.phone}</span>
             </div>
-            <div className="flex items-center justify-center text-gray-600">
+            <div className="flex items-center justify-center text-muted-foreground">
                 <Icon name="Mail" size={16} className="mr-2" />
                 <span>{employee.email}</span>
             </div>
