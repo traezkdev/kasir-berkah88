@@ -195,6 +195,12 @@ const TransactionHistory = ({ headerTitle }) => {
         const startDate = dateRange?.startDate ? new Date(dateRange.startDate) : null;
         const endDate = dateRange?.endDate ? new Date(dateRange.endDate) : null;
 
+        // Normalize transactionDate to start of day for comparison
+        transactionDate.setHours(0, 0, 0, 0);
+
+        if (startDate) startDate.setHours(0, 0, 0, 0);
+        if (endDate) endDate.setHours(23, 59, 59, 999);
+
         if (startDate && endDate) {
           return transactionDate >= startDate && transactionDate <= endDate;
         } else if (startDate) {
