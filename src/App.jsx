@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Routes from "./Routes";
 import authFetch from './utils/authFetch';
+import FloatingActionButton from './components/ui/FloatingActionButton'; // Import the new component
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -35,7 +36,10 @@ function App() {
   }, []);
 
   return (
-    <Routes headerTitle={headerTitle} />
+    <> {/* Use a React Fragment to return multiple elements */}
+      <Routes headerTitle={headerTitle} />
+      <FloatingActionButton /> {/* Render the new component */}
+    </>
   );
 }
 
