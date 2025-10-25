@@ -275,7 +275,8 @@ const MainDashboard = ({ headerTitle }) => {
         totalTransactions: { value: todayTransactions.length.toString(), change: transChangeFormatted, trend: transTrend },
         averageOrder: { value: formatCurrency(averageOrderToday), change: avgOrderChangeFormatted, trend: avgOrderTrend },
         lowStock: { value: lowStockItems.toString(), change: '', trend: 'down' } 
-      }
+      },
+      data_last_updated: settings?.data_last_updated
     });
   };
 
@@ -491,29 +492,33 @@ const MainDashboard = ({ headerTitle }) => {
             </div>
 
             {/* Status Banner */}
-            {/* Status Banner */}
             <div className="mt-8 bg-gradient-to-r from-primary/10 to-success/10 rounded-lg p-4 border border-primary/20">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-primary/20 rounded-md">
-                  <Icon name="CheckCircle" size={20} className="text-primary" />
+                  <Icon name={dashboardData.data_last_updated ? "CheckCircle" : "AlertCircle"} size={20} className="text-primary" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-text-primary">
-                    Sistem Berjalan Normal
+                    {dashboardData.data_last_updated ? "Data Menu Telah Sinkron" : "Sinkronisasi Data Tertunda"}
                   </h3>
                   <p className="text-sm text-text-secondary">
-                    Semua fitur POS tersedia dan data tersinkronisasi dengan baik
+                    {dashboardData.data_last_updated ? "Semua data (menu, harga, dll) telah sesuai dengan data fisik terbaru." : "Admin belum melakukan sinkronisasi data terbaru."}
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-text-secondary">Terakhir dicek</p>
-                  <p className="text-sm font-medium text-text-primary">
-                    {new Date().toLocaleTimeString('id-ID', { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </p>
-                </div>
+                {dashboardData.data_last_updated && (
+                  <div className="text-right">
+                    <p className="text-xs text-text-secondary">Terakhir diperbarui</p>
+                    <p className="text-sm font-medium text-text-primary">
+                      {new Date(dashboardData.data_last_updated).toLocaleString('id-ID', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
