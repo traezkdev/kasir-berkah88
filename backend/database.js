@@ -170,11 +170,27 @@ const setupDatabase = async () => {
       console.log('Added role column to users table.');
     }
 
+    const addUpdatedAtToMenuItems = `
+      ALTER TABLE menu_items ADD COLUMN updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+    `;
+
+    const checkUpdatedAtOnMenuItems = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'menu_items' AND COLUMN_NAME = 'updatedAt';
+    `;
+
     // Check and add ignore_stock column to transactions if it doesn't exist
     const [ignoreStockRows] = await connection.query(checkIgnoreStockColumn);
     if (ignoreStockRows[0]['COUNT(*)'] === 0) {
       await connection.query(addIgnoreStockColumn);
       console.log('Added ignore_stock column to transactions table.');
+    }
+
+    // Check and add updatedAt column to menu_items if it doesn't exist
+    const [updatedAtRows] = await connection.query(checkUpdatedAtOnMenuItems);
+    if (updatedAtRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addUpdatedAtToMenuItems);
+      console.log('Added updatedAt column to menu_items table.');
     }
 
 
