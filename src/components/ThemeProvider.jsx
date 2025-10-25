@@ -16,6 +16,20 @@ export function ThemeProvider({ children, defaultTheme = 'system', storageKey = 
     }
 
     root.classList.add(theme);
+
+    // Update the theme-color meta tag for mobile browsers
+    let themeColorMetaTag = document.querySelector('meta[name="theme-color"]');
+    if (!themeColorMetaTag) {
+      themeColorMetaTag = document.createElement('meta');
+      themeColorMetaTag.setAttribute('name', 'theme-color');
+      document.head.appendChild(themeColorMetaTag);
+    }
+
+    if (theme === 'dark') {
+      themeColorMetaTag.setAttribute('content', '#1a1a1a'); // Dark color for dark mode
+    } else {
+      themeColorMetaTag.setAttribute('content', '#ffffff'); // Light color for light mode
+    }
   }, [theme]);
 
   const value = {
