@@ -130,24 +130,33 @@ const MenuItemsTable = ({
     const isEditing = editingId === item?.id;
     const isSelected = selectedItems?.includes(item?.id);
 
-    // Local state for stock input
+    // Local state for inputs
+    const [localName, setLocalName] = useState(editData?.name);
     const [localStock, setLocalStock] = useState(editData?.stock);
     const [localPrice, setLocalPrice] = useState(editData?.price);
 
-    // Update localStock when editData.stock changes (e.g., when editing starts)
+    // Update local state when editing starts
     useEffect(() => {
       if (isEditing) {
+        setLocalName(editData?.name);
         setLocalStock(editData?.stock);
         setLocalPrice(editData?.price);
       }
-    }, [isEditing, editData?.stock, editData?.price]);
+    }, [isEditing, editData?.name, editData?.stock, editData?.price]);
+
+    const handleLocalNameChange = (e) => {
+      setLocalName(e.target.value);
+    };
+
+    const handleNameBlur = () => {
+      setEditData(prev => ({ ...prev, name: localName }));
+    };
 
     const handleLocalStockChange = (e) => {
       setLocalStock(e.target.value);
     };
 
     const handleStockBlur = () => {
-      // Update parent state only when input loses focus
       setEditData(prev => ({ ...prev, stock: localStock }));
     };
 
@@ -180,8 +189,9 @@ const MenuItemsTable = ({
               {isEditing ? (
                 <Input
                   type="text"
-                  value={editData?.name}
-                  onChange={(e) => setEditData(prev => ({ ...prev, name: e?.target?.value }))}
+                  value={localName} // Use local state
+                  onChange={handleLocalNameChange} // Update local state
+                  onBlur={handleNameBlur} // Update parent on blur
                   className="text-sm"
                 />
               ) : (

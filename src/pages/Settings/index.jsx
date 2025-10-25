@@ -551,6 +551,28 @@ const Settings = ({ headerTitle }) => {
     }
   };
 
+  const handleMarkDataAsUpdated = async () => {
+    setMessage('');
+    setError('');
+    setIsLoading(true);
+    try {
+        const response = await authFetch(`${apiUrl}/api/settings/data-updated-timestamp`, {
+            method: 'PUT',
+        });
+        const data = await response.json();
+        if (response.ok) {
+            setMessage(`Data ditandai sebagai diperbarui pada: ${new Date(data.timestamp).toLocaleString()}`);
+        } else {
+            setError(data.error || 'Gagal menandai data sebagai diperbarui');
+        }
+    } catch (err) {
+        setError('Kesalahan jaringan atau server tidak dapat dijangkau');
+        console.error('Mark data as updated error:', err);
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
   const breadcrumbs = [
     { name: 'Beranda', path: '/main-dashboard' },
     { name: 'Pengaturan', path: '/settings' },
@@ -901,11 +923,21 @@ const Settings = ({ headerTitle }) => {
                       onChange={(e) => setMasterPasswordForClear(e.target.value)}
                       required
                     />
-                    <Button type="submit" className="w-full bg-destructive hover:bg-red-700" disabled={isLoading}>
-                      Hapus Semua Data
-                    </Button>
                   </form>
                 </div>
+              )}
+
+              {/* Data Update Marker */}
+              {userRole === 'admin' && (
+                  <div className="space-y-4">
+                      <h3 className="text-xl font-semibold text-text-primary dark:text-white">Sinkronisasi Data</h3>
+                      <p className="text-sm text-text-secondary">
+                          Klik tombol ini untuk menandai bahwa semua data (menu, harga, dll.) telah sesuai dengan data fisik terbaru. Ini akan menampilkan waktu pembaruan terakhir di dasbor utama.
+                      </p>
+                      <Button onClick={handleMarkDataAsUpdated} className="w-full" disabled={isLoading}>
+                          Tandai Semua Data Telah Diperbarui
+                      </Button>
+                  </div>
               )}
 
               {/* Credits Button */}

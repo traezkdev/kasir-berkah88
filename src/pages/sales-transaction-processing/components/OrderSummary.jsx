@@ -19,7 +19,9 @@ const OrderSummary = ({
   setIsEmployeeMeal,
   paymentMethod,
   setPaymentMethod,
-  userRole
+  userRole,
+  ignoreStock,
+  setIgnoreStock
 }) => {
   const [ppnRate, setPpnRate] = useState(0.11); // Default PPN rate
   const [isEditingTotal, setIsEditingTotal] = useState(false);
@@ -96,6 +98,8 @@ const OrderSummary = ({
   const isCartValid = () => {
     if (cart.length === 0) return false;
 
+    if (ignoreStock) return true; // If ignoring stock, cart is always valid if not empty
+
     for (const cartItem of cart) {
       const correspondingMenuItem = menuItems.find(item => item.id === cartItem.id);
       if (!correspondingMenuItem || cartItem.quantity > correspondingMenuItem.stock) {
@@ -126,6 +130,7 @@ const OrderSummary = ({
                   type="number"
                   min="1"
                   value={item.quantity}
+                  onChange={(e) => onUpdateQuantity(item.id, parseInt(e.target.value, 10) || 0)}
                   className="w-16 text-center border border-input rounded-md text-foreground bg-background"
                 />
                 <Button variant="ghost" size="icon" onClick={() => onRemoveFromCart(item.id)}>
@@ -193,6 +198,13 @@ const OrderSummary = ({
           <div className="border-t my-4"></div>
           
           <div className="space-y-4">
+            <Checkbox
+              id="ignore-stock"
+              label="Abaikan Stok"
+              checked={ignoreStock}
+              onChange={(e) => setIgnoreStock(e.target.checked)}
+              className="mb-4"
+            />
             <div className="space-y-2">
               <label htmlFor="payment-method" className="text-sm font-medium text-muted-foreground">Metode Pembayaran</label>
               <Select

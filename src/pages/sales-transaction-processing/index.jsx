@@ -21,6 +21,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userRole, setUserRole] = useState(null); // New state for user role
+  const [ignoreStock, setIgnoreStock] = useState(false);
 
   const fetchMenuItems = async () => {
     const token = localStorage.getItem('token');
@@ -106,7 +107,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
     setCart(prevCart => {
       const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
       if (existingItem) {
-        if (existingItem.quantity + 1 > item.stock) {
+        if (!ignoreStock && existingItem.quantity + 1 > item.stock) {
           console.warn(`Not enough stock for ${item.name}`);
           return prevCart;
         }
@@ -140,13 +141,12 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
   };
 
   const handleUpdateQuantity = (itemId, quantity) => {
-    if (quantity <= 0) {
-      handleRemoveFromCart(itemId);
+    if (quantity < 0) {
       return;
     }
   
     const menuItem = menuItems.find(item => item.id === itemId);
-    if (menuItem && quantity > menuItem.stock) {
+    if (!ignoreStock && menuItem && quantity > menuItem.stock) {
       // Optionally, show an error message
       console.warn(`Not enough stock for ${menuItem.name}. Available: ${menuItem.stock}`);
       // You might want to cap the quantity to the available stock
@@ -173,6 +173,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       ppn: paymentData.ppn,
       isEmployeeMeal: isEmployeeMeal,
       payment_method: paymentMethod,
+      ignoreStock: ignoreStock,
     };
 
     try {
@@ -246,6 +247,8 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
                   paymentMethod={paymentMethod}
                   setPaymentMethod={setPaymentMethod}
                   userRole={userRole}
+                  ignoreStock={ignoreStock}
+                  setIgnoreStock={setIgnoreStock}
                 />
               </div>
             </div>
