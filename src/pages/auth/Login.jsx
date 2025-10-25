@@ -6,6 +6,25 @@ import { FiUser, FiLock, FiLogIn } from 'react-icons/fi';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
+const PeekingCharacter = ({ isFocused }) => (
+  <motion.div
+    className="absolute -top-12 right-0 left-0 mx-auto w-24 h-12"
+    initial={{ y: 20, opacity: 0 }}
+    animate={{
+      y: isFocused ? 0 : 20,
+      opacity: isFocused ? 1 : 0,
+    }}
+    transition={{ duration: 0.3 }}
+  >
+    <div className="w-full h-full bg-gray-700 rounded-t-full border-4 border-gray-800 overflow-hidden relative">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/4 w-12 h-6 flex justify-around items-center">
+        <div className="w-3 h-3 bg-white rounded-full"></div>
+        <div className="w-3 h-3 bg-white rounded-full"></div>
+      </div>
+    </div>
+  </motion.div>
+);
+
 const Login = () => {
   const [formData, setFormData] = useState({
     username: '',
@@ -13,6 +32,7 @@ const Login = () => {
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -65,6 +85,7 @@ const Login = () => {
         transition={{ duration: 0.5, ease: 'easeOut' }}
         className="relative w-full max-w-md bg-gray-800/50 backdrop-blur-lg rounded-2xl shadow-2xl p-8 z-10"
       >
+        <PeekingCharacter isFocused={isPasswordFocused} />
         <div className="absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-purple-500 rounded-full filter blur-3xl opacity-30 animate-blob"></div>
         <div className="absolute bottom-0 right-0 translate-x-1/2 translate-y-1/2 w-32 h-32 bg-blue-500 rounded-full filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
         
@@ -118,6 +139,8 @@ const Login = () => {
               placeholder="Kata Sandi"
               value={formData.password}
               onChange={handleInputChange}
+              onFocus={() => setIsPasswordFocused(true)}
+              onBlur={() => setIsPasswordFocused(false)}
               required
               className="w-full bg-gray-900/50 text-white placeholder-gray-500 rounded-lg py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300"
             />
