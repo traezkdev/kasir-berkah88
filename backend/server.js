@@ -229,8 +229,9 @@ app.get("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
 // Create a new transaction
 app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
     try {
+        const { items, ignoreStock } = req.body;
         const errors = [];
-        if (!req.body.items) {
+        if (!items) {
             errors.push("No items specified");
         }
         if (errors.length) {
@@ -238,19 +239,20 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
             return;
         }
         
-
-        // --- STOCK VALIDATION BEFORE TRANSACTION ---
-        for (const cartItem of req.body.items) {
-            const [rows] = await db.query('SELECT stock FROM menu_items WHERE id = ?', [cartItem.id]);
-            if (rows.length === 0) {
-                return res.status(400).json({ "error": `Item with ID ${cartItem.id} not found.` });
+        if (!ignoreStock) {
+            // --- STOCK VALIDATION BEFORE TRANSACTION ---
+            for (const cartItem of items) {
+                const [rows] = await db.query('SELECT stock FROM menu_items WHERE id = ?', [cartItem.id]);
+                if (rows.length === 0) {
+                    return res.status(400).json({ "error": `Item with ID ${cartItem.id} not found.` });
+                }
+                const currentStock = rows[0].stock;
+                if (cartItem.quantity > currentStock) {
+                    return res.status(400).json({ "error": `Insufficient stock for item ${cartItem.id}. Available: ${currentStock}, Requested: ${cartItem.quantity}` });
+                }
             }
-            const currentStock = rows[0].stock;
-            if (cartItem.quantity > currentStock) {
-                return res.status(400).json({ "error": `Insufficient stock for item ${cartItem.id}. Available: ${currentStock}, Requested: ${cartItem.quantity}` });
-            }
+            // --- END STOCK VALIDATION --
         }
-        // --- END STOCK VALIDATION --
 
         // --- Generate New Transaction ID ---
         let newTransactionId;
@@ -279,17 +281,20 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
             total: req.body.total,
             ppn: req.body.ppn,
             isEmployeeMeal: req.body.isEmployeeMeal ? 1 : 0,
-            payment_method: req.body.payment_method || 'Tunai'
+            payment_method: req.body.payment_method || 'Tunai',
+            ignore_stock: req.body.ignoreStock ? 1 : 0
         };
-        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method) VALUES (?,?,?,?,?,?,?)';
+        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock) VALUES (?,?,?,?,?,?,?,?)';
 
-        const params = [data.id, data.timestamp, data.items, data.total, data.ppn, data.isEmployeeMeal, data.payment_method];
+        const params = [data.id, data.timestamp, data.items, data.total, data.ppn, data.isEmployeeMeal, data.payment_method, data.ignore_stock];
         const [result] = await db.query(sql, params);
 
-        // --- STOCK REDUCTION LOGIC --- 
-        for (const item of req.body.items) { 
-            const updateStockSql = 'UPDATE menu_items SET stock = stock - ? WHERE id = ?';
-            await db.query(updateStockSql, [item.quantity, item.id]);
+        if (!ignoreStock) {
+            // --- STOCK REDUCTION LOGIC --- 
+            for (const item of req.body.items) { 
+                const updateStockSql = 'UPDATE menu_items SET stock = stock - ? WHERE id = ?';
+                await db.query(updateStockSql, [item.quantity, item.id]);
+            }
         }
 
         res.json({

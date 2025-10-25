@@ -19,7 +19,9 @@ const OrderSummary = ({
   setIsEmployeeMeal,
   paymentMethod,
   setPaymentMethod,
-  userRole
+  userRole,
+  ignoreStock,
+  setIgnoreStock
 }) => {
   const [ppnRate, setPpnRate] = useState(0.11); // Default PPN rate
   const [isEditingTotal, setIsEditingTotal] = useState(false);
@@ -95,6 +97,8 @@ const OrderSummary = ({
 
   const isCartValid = () => {
     if (cart.length === 0) return false;
+
+    if (ignoreStock) return true; // If ignoring stock, cart is always valid if not empty
 
     for (const cartItem of cart) {
       const correspondingMenuItem = menuItems.find(item => item.id === cartItem.id);
@@ -194,6 +198,13 @@ const OrderSummary = ({
           <div className="border-t my-4"></div>
           
           <div className="space-y-4">
+            <Checkbox
+              id="ignore-stock"
+              label="Abaikan Stok"
+              checked={ignoreStock}
+              onChange={(e) => setIgnoreStock(e.target.checked)}
+              className="mb-4"
+            />
             <div className="space-y-2">
               <label htmlFor="payment-method" className="text-sm font-medium text-muted-foreground">Metode Pembayaran</label>
               <Select

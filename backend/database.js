@@ -154,12 +154,29 @@ const setupDatabase = async () => {
       console.log('Added notes column to expenses table.');
     }
 
+    const addIgnoreStockColumn = `
+      ALTER TABLE transactions ADD COLUMN ignore_stock TINYINT(1) DEFAULT 0;
+    `;
+
+    const checkIgnoreStockColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'ignore_stock';
+    `;
+
     // Check and add role column if it doesn't exist
     const [rows] = await connection.query(checkRoleColumn);
     if (rows[0]['COUNT(*)'] === 0) {
       await connection.query(addRoleColumn);
       console.log('Added role column to users table.');
     }
+
+    // Check and add ignore_stock column to transactions if it doesn't exist
+    const [ignoreStockRows] = await connection.query(checkIgnoreStockColumn);
+    if (ignoreStockRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addIgnoreStockColumn);
+      console.log('Added ignore_stock column to transactions table.');
+    }
+
 
     // --- Logika Pembuatan Admin Default ---
     const [adminUser] = await connection.query('SELECT id FROM users WHERE username = ?', ['admin']);
