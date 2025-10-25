@@ -49,22 +49,22 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, onSave }) => {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+            <div className="bg-card p-6 rounded-lg shadow-lg w-full max-w-md">
                 <h2 className="text-xl font-bold mb-4">Edit Transaksi #{editedTransaction.id}</h2>
                 <form>
                     <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="total">Total</label>
+                        <label className="block text-text-secondary text-sm font-bold mb-2" htmlFor="total">Total</label>
                         <Input
                             id="total"
                             name="total"
                             type="number"
                             value={editedTransaction.total}
                             onChange={handleChange}
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-card-foreground leading-tight focus:outline-none focus:shadow-outline"
                         />
                     </div>
                     <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="ppn">PPN</label>
+                        <label className="block text-text-secondary text-sm font-bold mb-2" htmlFor="ppn">PPN</label>
                         <Input
                             id="ppn"
                             name="ppn"
@@ -72,18 +72,18 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, onSave }) => {
                             step="0.01"
                             value={editedTransaction.ppn}
                             onChange={handleChange}
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-card-foreground leading-tight focus:outline-none focus:shadow-outline"
                         />
                     </div>
                     <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="payment_method">Metode Pembayaran</label>
+                        <label className="block text-text-secondary text-sm font-bold mb-2" htmlFor="payment_method">Metode Pembayaran</label>
                         <Select
                             id="payment_method"
                             name="payment_method"
                             value={editedTransaction.payment_method}
                             onChange={handleChange}
                             options={paymentMethodOptions}
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-card-foreground leading-tight focus:outline-none focus:shadow-outline"
                         >
                         </Select>
                     </div>
