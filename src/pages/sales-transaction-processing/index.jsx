@@ -140,8 +140,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
   };
 
   const handleUpdateQuantity = (itemId, quantity) => {
-    if (quantity <= 0) {
-      handleRemoveFromCart(itemId);
+    if (quantity < 0) {
       return;
     }
   

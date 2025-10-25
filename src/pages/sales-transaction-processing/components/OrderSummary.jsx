@@ -126,6 +126,7 @@ const OrderSummary = ({
                   type="number"
                   min="1"
                   value={item.quantity}
+                  onChange={(e) => onUpdateQuantity(item.id, parseInt(e.target.value, 10) || 0)}
                   className="w-16 text-center border border-input rounded-md text-foreground bg-background"
                 />
                 <Button variant="ghost" size="icon" onClick={() => onRemoveFromCart(item.id)}>
