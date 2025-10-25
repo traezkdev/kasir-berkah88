@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import Routes from "./Routes";
 import authFetch from './utils/authFetch';
 import FloatingActionButton from './components/ui/FloatingActionButton'; // Import the new component
@@ -7,6 +8,10 @@ const apiUrl = import.meta.env.VITE_API_URL;
 
 function App() {
   const [headerTitle, setHeaderTitle] = useState('Kasir Berkah 88'); // Default header title
+  const location = useLocation();
+
+  // Hide floating action button on login and register pages
+  const showFloatingButton = !['/login', '/register'].includes(location.pathname);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -38,7 +43,7 @@ function App() {
   return (
     <> {/* Use a React Fragment to return multiple elements */}
       <Routes headerTitle={headerTitle} />
-      <FloatingActionButton /> {/* Render the new component */}
+      {showFloatingButton && <FloatingActionButton />} {/* Render the new component conditionally */}
     </>
   );
 }
