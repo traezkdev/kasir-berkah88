@@ -669,7 +669,7 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin'), as
 
                     await connection.rollback();
 
-                    return res.status(400).json({ error: `Menu item with ID ${item.id} not found.` });
+                    return res.status(400).json({ error: `Menu item dengan ID ${item.id} tidak ditemukan.` });
 
                 }
 
@@ -677,7 +677,7 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin'), as
 
                     await connection.rollback();
 
-                    return res.status(400).json({ error: `Insufficient stock for ${menuItemRows[0].name}. Available: ${menuItemRows[0].stock}, Requested: ${item.quantity}` });
+                    return res.status(400).json({ error: `Stok untuk ${menuItemRows[0].name} tidak mencukupi. Tersedia: ${menuItemRows[0].stock}, Diminta: ${item.quantity}` });
 
                 }
 
