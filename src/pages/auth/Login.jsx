@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import authFetch from '../../utils/authFetch';
 import { motion } from 'framer-motion';
 import { FiUser, FiLock, FiLogIn } from 'react-icons/fi';
+import DarkModeToggle from '../../components/ui/DarkModeToggle'; // Import the toggle
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -16,10 +17,10 @@ const PeekingCharacter = ({ isFocused }) => (
     }}
     transition={{ duration: 0.3 }}
   >
-    <div className="w-full h-full bg-gray-700 rounded-t-full border-4 border-gray-800 overflow-hidden relative">
+    <div className="w-full h-full bg-gray-300 dark:bg-gray-700 rounded-t-full border-4 border-gray-400 dark:border-gray-800 overflow-hidden relative">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/4 w-12 h-6 flex justify-around items-center">
-        <div className="w-3 h-3 bg-white rounded-full"></div>
-        <div className="w-3 h-3 bg-white rounded-full"></div>
+        <div className="w-3 h-3 bg-gray-900 dark:bg-white rounded-full"></div>
+        <div className="w-3 h-3 bg-gray-900 dark:bg-white rounded-full"></div>
       </div>
     </div>
   </motion.div>
@@ -78,12 +79,15 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800 p-4 overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 p-4 overflow-hidden">
+      <div className="absolute top-4 right-4 z-20">
+        <DarkModeToggle />
+      </div>
       <motion.div
         initial={{ opacity: 0, y: -50, scale: 0.9 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="relative w-full max-w-md bg-gray-800/50 backdrop-blur-lg rounded-2xl shadow-2xl p-8 z-10"
+        className="relative w-full max-w-md bg-white/50 dark:bg-gray-800/50 backdrop-blur-lg rounded-2xl shadow-2xl p-8 z-10"
       >
         <PeekingCharacter isFocused={isPasswordFocused} />
         <div className="absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-purple-500 rounded-full filter blur-3xl opacity-30 animate-blob"></div>
@@ -94,7 +98,7 @@ const Login = () => {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-3xl md:text-4xl font-bold text-white tracking-wider"
+            className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white tracking-wider"
           >
             Selamat Datang Kembali
           </motion.h2>
@@ -102,7 +106,7 @@ const Login = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.4 }}
-            className="text-gray-400 text-sm mt-2"
+            className="text-gray-600 dark:text-gray-400 text-sm mt-2"
           >
             Masuk untuk melanjutkan ke dasbor Anda
           </motion.p>
@@ -123,7 +127,7 @@ const Login = () => {
               value={formData.username}
               onChange={handleInputChange}
               required
-              className="w-full bg-gray-900/50 text-white placeholder-gray-500 rounded-lg py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300"
+              className="w-full bg-gray-200/50 dark:bg-gray-900/50 text-gray-900 dark:text-white placeholder-gray-500 rounded-lg py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300"
             />
           </motion.div>
           <motion.div
@@ -142,7 +146,7 @@ const Login = () => {
               onFocus={() => setIsPasswordFocused(true)}
               onBlur={() => setIsPasswordFocused(false)}
               required
-              className="w-full bg-gray-900/50 text-white placeholder-gray-500 rounded-lg py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300"
+              className="w-full bg-gray-200/50 dark:bg-gray-900/50 text-gray-900 dark:text-white placeholder-gray-500 rounded-lg py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300"
             />
           </motion.div>
 
@@ -150,7 +154,7 @@ const Login = () => {
             <motion.p
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
-              className="text-red-400 text-sm text-center"
+              className="text-red-600 dark:text-red-400 text-sm text-center"
             >
               {error}
             </motion.p>
@@ -179,10 +183,10 @@ const Login = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 1.2 }}
-          className="text-center text-sm text-gray-400 mt-8"
+          className="text-center text-sm text-gray-600 dark:text-gray-400 mt-8"
         >
           Belum punya akun?{' '}
-          <Link to="/register" className="text-purple-400 hover:underline">
+          <Link to="/register" className="text-purple-600 dark:text-purple-400 hover:underline">
             Daftar di sini
           </Link>
         </motion.p>
