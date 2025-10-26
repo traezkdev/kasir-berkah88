@@ -28,7 +28,7 @@ const OrderConfirmationPage = () => {
                 throw new Error('Gagal memuat daftar pesanan.');
             }
             const data = await response.json();
-            console.log("Fetched orders data:", data.data);
+
             setOrders(data.data || []);
         } catch (err) {
             setError(err.message);
