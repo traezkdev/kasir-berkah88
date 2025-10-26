@@ -6,6 +6,7 @@ import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import Pagination from '../../components/ui/Pagination'; // Import Pagination component
 
 import ExpenseEntryForm from './components/ExpenseEntryForm';
 import ExpenseSummaryCard from './components/ExpenseSummaryCard';
@@ -37,6 +38,10 @@ const ExpenseTracking = ({ headerTitle }) => {
   const [bulkDeleteTarget, setBulkDeleteTarget] = useState(null); // New state
   const [password, setPassword] = useState(''); // State for password
   const [passwordError, setPasswordError] = useState(''); // State for password error
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20); // Display 20 items per page
 
   const showNotification = (message, type) => {
     setNotification({ message, type });
@@ -98,7 +103,7 @@ const ExpenseTracking = ({ headerTitle }) => {
         console.error('Failed to fetch transactions:', data.error);
         setTransactions([]);
       }
-    } catch (error) {
+      } catch (error) {
       console.error('Error fetching transactions:', error);
       setTransactions([]);
     }
@@ -322,6 +327,14 @@ const ExpenseTracking = ({ headerTitle }) => {
     setSidebarOpen(prev => !prev);
   };
 
+  // Get current expenses for pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentExpenses = expenses.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Change page
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
   return (
     <div className="min-h-screen bg-background">
       <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} /> 
@@ -348,7 +361,7 @@ const ExpenseTracking = ({ headerTitle }) => {
             <ExpenseEntryForm onAddExpense={handleAddExpense} isLoading={isLoading} userRole={userRole} />
             {expenses?.length > 0 && <ExpenseAnalytics expenses={expenses} />}
             <ExpenseHistoryTable
-              expenses={expenses}
+              expenses={currentExpenses} // Pass currentExpenses for pagination
               onDeleteExpense={handleDeleteExpense}
               onBulkDelete={handleBulkDelete}
               onExportData={handleExportData}
@@ -357,34 +370,12 @@ const ExpenseTracking = ({ headerTitle }) => {
               userRole={userRole}
             />
             <div className="flex justify-center mt-4">
-              <ul className="flex justify-center items-center space-x-1.5">
-                <li>
-                  <button className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input hover:bg-accent hover:text-accent-foreground dark:border-input dark:hover:bg-accent dark:hover:text-accent-foreground h-9 rounded-md px-3" disabled="">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-left" aria-hidden="true">
-                      <path d="m15 18-6-6 6-6"></path>
-                    </svg>
-                  </button>
-                </li>
-                <li className="page-item">
-                  <button className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90 h-9 rounded-md px-3 w-9">1</button>
-                </li>
-                <li className="page-item">
-                  <button className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input hover:bg-accent hover:text-accent-foreground dark:border-input dark:hover:bg-accent dark:hover:text-accent-foreground h-9 rounded-md px-3 w-9">2</button>
-                </li>
-                <li className="page-item">
-                  <span className="flex items-center justify-center h-9 w-9 text-sm text-text-secondary">...</span>
-                </li>
-                <li className="page-item">
-                  <button className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input hover:bg-accent hover:text-accent-foreground dark:border-input dark:hover:bg-accent dark:hover:text-accent-foreground h-9 rounded-md px-3 w-9">8</button>
-                </li>
-                <li>
-                  <button className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input hover:bg-accent hover:text-accent-foreground dark:border-input dark:hover:bg-accent dark:hover:text-accent-foreground h-9 rounded-md px-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-right" aria-hidden="true">
-                      <path d="m9 18 6-6-6-6"></path>
-                    </svg>
-                  </button>
-                </li>
-              </ul>
+              <Pagination
+                itemsPerPage={itemsPerPage}
+                totalItems={expenses.length}
+                paginate={paginate}
+                currentPage={currentPage}
+              />
             </div>
           </div>
         </main>
