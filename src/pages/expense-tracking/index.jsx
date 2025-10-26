@@ -6,6 +6,7 @@ import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import Pagination from '../../components/ui/Pagination'; // Import Pagination component
 
 import ExpenseEntryForm from './components/ExpenseEntryForm';
 import ExpenseSummaryCard from './components/ExpenseSummaryCard';
@@ -37,6 +38,10 @@ const ExpenseTracking = ({ headerTitle }) => {
   const [bulkDeleteTarget, setBulkDeleteTarget] = useState(null); // New state
   const [password, setPassword] = useState(''); // State for password
   const [passwordError, setPasswordError] = useState(''); // State for password error
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20); // Display 20 items per page
 
   const showNotification = (message, type) => {
     setNotification({ message, type });
@@ -98,7 +103,7 @@ const ExpenseTracking = ({ headerTitle }) => {
         console.error('Failed to fetch transactions:', data.error);
         setTransactions([]);
       }
-    } catch (error) {
+      } catch (error) {
       console.error('Error fetching transactions:', error);
       setTransactions([]);
     }
@@ -322,6 +327,14 @@ const ExpenseTracking = ({ headerTitle }) => {
     setSidebarOpen(prev => !prev);
   };
 
+  // Get current expenses for pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentExpenses = expenses.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Change page
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
   return (
     <div className="min-h-screen bg-background">
       <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} /> 
@@ -348,7 +361,7 @@ const ExpenseTracking = ({ headerTitle }) => {
             <ExpenseEntryForm onAddExpense={handleAddExpense} isLoading={isLoading} userRole={userRole} />
             {expenses?.length > 0 && <ExpenseAnalytics expenses={expenses} />}
             <ExpenseHistoryTable
-              expenses={expenses}
+              expenses={currentExpenses} // Pass currentExpenses for pagination
               onDeleteExpense={handleDeleteExpense}
               onBulkDelete={handleBulkDelete}
               onExportData={handleExportData}
@@ -356,6 +369,14 @@ const ExpenseTracking = ({ headerTitle }) => {
               isLoading={isLoading}
               userRole={userRole}
             />
+            <div className="flex justify-center mt-4">
+              <Pagination
+                itemsPerPage={itemsPerPage}
+                totalItems={expenses.length}
+                paginate={paginate}
+                currentPage={currentPage}
+              />
+            </div>
           </div>
         </main>
       </div>
