@@ -80,12 +80,12 @@ app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'g
 // Add a new menu item
 app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin'), upload.single('image'), async (req, res, next) => {
     try {
-        const { id, name, price, stock, category } = req.body;
+        const { id, name, price, stock, category, hpp } = req.body;
         // Image URL is now derived from the uploaded file
         const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
 
-        const sql = 'INSERT INTO menu_items (id, name, price, stock, category, image_url) VALUES (?,?,?,?,?,?)';
-        const params = [id, name, price, stock, category, image_url];
+        const sql = 'INSERT INTO menu_items (id, name, price, stock, category, image_url, hpp) VALUES (?,?,?,?,?,?,?)';
+        const params = [id, name, price, stock, category, image_url, hpp];
         const [result] = await db.query(sql, params);
         res.json({
             "message": "success",
@@ -100,7 +100,7 @@ app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin'), 
 // Update a menu item
 app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'), upload.single('image'), async (req, res, next) => {
     try {
-        const { name, price, stock, category } = req.body;
+        const { name, price, stock, category, hpp } = req.body;
         const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
 
         const sql = `UPDATE menu_items set 
@@ -108,9 +108,10 @@ app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'
            price = COALESCE(?,price), 
            stock = COALESCE(?,stock), 
            category = COALESCE(?,category), 
-           image_url = COALESCE(?,image_url) 
+           image_url = COALESCE(?,image_url), 
+           hpp = COALESCE(?,hpp) 
            WHERE id = ?`;
-        const params = [name, price, stock, category, image_url, req.params.id];
+        const params = [name, price, stock, category, image_url, hpp, req.params.id];
         const [result] = await db.query(sql, params);
         res.json({ message: "success", data: req.body, changes: result.affectedRows });
     } catch (err) {

@@ -211,6 +211,20 @@ const setupDatabase = async () => {
       console.log('Added order_id column and foreign key to transactions table.');
     }
 
+    // Check and add hpp column to menu_items if it doesn't exist
+    const checkHppColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'menu_items' AND COLUMN_NAME = 'hpp';
+    `;
+    const addHppColumn = `
+      ALTER TABLE menu_items ADD COLUMN hpp DECIMAL(10, 2) DEFAULT 0;
+    `;
+    const [hppRows] = await connection.query(checkHppColumn);
+    if (hppRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addHppColumn);
+      console.log('Added hpp column to menu_items table.');
+    }
+
 
     // --- Logika Pembuatan Admin Default ---
     const [adminUser] = await connection.query('SELECT id FROM users WHERE username = ?', ['admin']);

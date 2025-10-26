@@ -346,6 +346,13 @@ const MainDashboard = ({ headerTitle }) => {
       icon: 'Users',
       route: '/employee-list',
       color: 'success'
+    },
+    {
+      title: 'Kalkulator HPP',
+      description: 'Hitung harga pokok penjualan',
+      icon: 'DollarSign',
+      route: '/hpp',
+      color: 'primary'
     }
   ];
 
