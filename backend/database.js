@@ -47,7 +47,9 @@ const setupDatabase = async () => {
         items JSON NOT NULL,
         total DECIMAL(10, 2) NOT NULL,
         ppn DECIMAL(10, 2) NOT NULL,
-        isEmployeeMeal BOOLEAN DEFAULT FALSE
+        isEmployeeMeal BOOLEAN DEFAULT FALSE,
+        order_id INT NULL,
+        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL
         
       );
     `;
@@ -191,6 +193,22 @@ const setupDatabase = async () => {
     if (updatedAtRows[0]['COUNT(*)'] === 0) {
       await connection.query(addUpdatedAtToMenuItems);
       console.log('Added updatedAt column to menu_items table.');
+    }
+
+    // Check and add order_id column to transactions if it doesn't exist
+    const checkOrderIdColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'order_id';
+    `;
+    const addOrderIdColumn = `
+      ALTER TABLE transactions
+      ADD COLUMN order_id INT NULL,
+      ADD FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL;
+    `;
+    const [orderIdRows] = await connection.query(checkOrderIdColumn);
+    if (orderIdRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addOrderIdColumn);
+      console.log('Added order_id column and foreign key to transactions table.');
     }
 
 

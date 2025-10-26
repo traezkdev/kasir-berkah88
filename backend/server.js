@@ -741,11 +741,12 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin'), as
 
                 isEmployeeMeal: 0,
 
-                payment_method: 'Tunai' // Default or could be added to order
+                payment_method: 'Tunai',
+                order_id: id
 
             };
 
-            await connection.query('INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method) VALUES (?,?,?,?,?,?,?)', Object.values(transactionData));
+            await connection.query('INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, order_id) VALUES (?,?,?,?,?,?,?,?)', Object.values(transactionData));
 
 
 
@@ -782,75 +783,54 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin'), as
 // Delete a single order by ID
 
 app.delete("/api/orders/:id", authenticateToken, authorizeRoles('admin'), async (req, res) => {
-
     const { id } = req.params;
-
     const connection = await db.getConnection();
-
     try {
-
         await connection.beginTransaction();
 
-
-
-        // Check order status before deleting
-
-        const [orderRows] = await connection.query('SELECT status FROM orders WHERE id = ? FOR UPDATE', [id]);
+        // Get the full order details
+        const [orderRows] = await connection.query('SELECT * FROM orders WHERE id = ? FOR UPDATE', [id]);
 
         if (orderRows.length === 0) {
-
             await connection.rollback();
-
             return res.status(404).json({ error: "Order not found." });
-
         }
 
-        const orderStatus = orderRows[0].status;
+        const order = orderRows[0];
+        const orderStatus = order.status;
 
-
-
+        // If the order was accepted, we need to reverse the stock reduction and delete the transaction
         if (orderStatus === 'accepted') {
+            const items = JSON.parse(order.items);
 
-            await connection.rollback();
+            // Restore stock
+            for (const item of items) {
+                await connection.query('UPDATE menu_items SET stock = stock + ? WHERE id = ?', [item.quantity, item.id]);
+            }
 
-            return res.status(400).json({ error: "Cannot delete an accepted order. Please handle accepted orders through a separate cancellation/refund process." });
-
+            // Delete the associated transaction
+            await connection.query('DELETE FROM transactions WHERE order_id = ?', [id]);
         }
 
-
-
+        // Finally, delete the order itself
         const sql = 'DELETE FROM orders WHERE id = ?';
-
         const [result] = await connection.query(sql, [id]);
 
-
-
         if (result.affectedRows === 0) {
-
             await connection.rollback();
-
-            return res.status(404).json({ "error": "Order not found" });
-
+            // This case should ideally not be reached if the first query found the order
+            return res.status(404).json({ "error": "Order not found during deletion" });
         }
 
-
-
         await connection.commit();
-
         res.json({ "message": "Order deleted successfully", changes: result.affectedRows });
 
     } catch (err) {
-
         await connection.rollback();
-
         res.status(500).json({ error: err.message, stack: err.stack });
-
     } finally {
-
         connection.release();
-
     }
-
 });
 
 
