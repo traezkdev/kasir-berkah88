@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import Routes from "./Routes";
 import authFetch from './utils/authFetch';
 import FloatingActionButton from './components/ui/FloatingActionButton'; // Import the new component
+import { Toaster } from 'react-hot-toast';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -42,6 +43,7 @@ function App() {
 
   return (
     <> {/* Use a React Fragment to return multiple elements */}
+      <Toaster position="bottom-center" reverseOrder={false} />
       <Routes headerTitle={headerTitle} />
       {showFloatingButton && <FloatingActionButton />} {/* Render the new component conditionally */}
     </>
