@@ -17,6 +17,7 @@ import NotesPage from './pages/Notes'; // Import NotesPage
 import OrderConfirmationPage from './pages/OrderConfirmation'; // Import OrderConfirmationPage
 import CalculatorPage from './pages/Calculator'; // Import CalculatorPage
 import EmployeeListPage from './pages/EmployeeList'; // Import EmployeeListPage
+import ReceiptPage from './pages/receipt'; // Import ReceiptPage
 import Hpp from './pages/Hpp'; // Import Hpp
 
 // ProtectedRoute component
@@ -50,6 +51,7 @@ const AppRoutes = ({ headerTitle }) => {
       <Route path="/calculator" element={<ProtectedRoute><CalculatorPage headerTitle={headerTitle} /></ProtectedRoute>} />
       <Route path="/employee-list" element={<ProtectedRoute><EmployeeListPage headerTitle={headerTitle} /></ProtectedRoute>} />
       <Route path="/hpp" element={<ProtectedRoute><Hpp headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/receipt" element={<ProtectedRoute><ReceiptPage /></ProtectedRoute>} />
       
       {/* Catch all other routes */}
       <Route path="*" element={<NotFound />} />

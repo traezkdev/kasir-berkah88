@@ -298,11 +298,21 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
             }
         }
 
-        res.json({
-            "message": "success",
-            "data": req.body,
-            "id": data.id // Return the new custom ID
-        });
+        const [rows] = await db.query('SELECT * FROM transactions WHERE id = ?', [data.id]);
+        if (rows.length > 0) {
+            const newTransaction = {
+                ...rows[0],
+                items: JSON.parse(rows[0].items || '[]') // Ensure items is an array
+            };
+            res.json({
+                "message": "success",
+                "data": newTransaction,
+                "id": data.id
+            });
+        } else {
+            // This case should ideally not be reached
+            res.status(404).json({ "error": "Failed to retrieve the newly created transaction." });
+        }
     } catch (err) {
         res.status(400).json({ "error": err.message, "stack": err.stack });
     }
