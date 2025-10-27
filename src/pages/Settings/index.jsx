@@ -4,6 +4,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
+import ConfirmationModal from '../../components/ui/ConfirmationModal';
 import { useNavigate } from 'react-router-dom';
 
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -32,6 +33,7 @@ const Settings = ({ headerTitle }) => {
   const [employees, setEmployees] = useState([]);
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
+  const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
 
   const navigate = useNavigate();
 
@@ -570,7 +572,12 @@ const Settings = ({ headerTitle }) => {
         console.error('Mark data as updated error:', err);
     } finally {
         setIsLoading(false);
+        setIsConfirmationModalOpen(false);
     }
+  };
+
+  const openConfirmationModal = () => {
+    setIsConfirmationModalOpen(true);
   };
 
   const breadcrumbs = [
@@ -934,7 +941,7 @@ const Settings = ({ headerTitle }) => {
                       <p className="text-sm text-text-secondary">
                           Klik tombol ini untuk menandai bahwa semua data (menu, harga, dll.) telah sesuai dengan data fisik terbaru. Ini akan menampilkan waktu pembaruan terakhir di dasbor utama.
                       </p>
-                      <Button onClick={handleMarkDataAsUpdated} className="w-full" disabled={isLoading}>
+                      <Button onClick={openConfirmationModal} className="w-full" disabled={isLoading}>
                           Tandai Semua Data Telah Diperbarui
                       </Button>
                   </div>
@@ -954,6 +961,16 @@ const Settings = ({ headerTitle }) => {
           )}
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={isConfirmationModalOpen}
+        onClose={() => setIsConfirmationModalOpen(false)}
+        onConfirm={handleMarkDataAsUpdated}
+        title="Konfirmasi Pembaruan Data"
+        message="Apakah Anda yakin ingin menandai semua data sebagai telah diperbarui? Tindakan ini akan mencatat waktu saat ini sebagai waktu pembaruan terakhir."
+        confirmText="Ya, Tandai Sudah Diperbarui"
+        cancelText="Batal"
+      />
 
       {isEmployeeModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
