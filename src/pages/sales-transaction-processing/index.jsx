@@ -10,7 +10,10 @@ import authFetch from '../../utils/authFetch';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
+import { useNavigate } from 'react-router-dom';
+
 const SalesTransactionProcessing = ({ headerTitle }) => {
+  const navigate = useNavigate();
   const [cart, setCart] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -192,6 +195,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
         setCart([]);
         setIsEmployeeMeal(false);
         fetchMenuItems(); // Re-fetch menu items for updated stock
+        navigate('/receipt', { state: { transaction: result.data } });
       } else {
         console.error('Failed to save transaction:', result.error);
       }
