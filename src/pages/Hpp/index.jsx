@@ -102,7 +102,7 @@ const Hpp = ({ headerTitle }) => {
                               <Button onClick={handleCancel} variant="outline" size="sm">Batal</Button>
                             </>
                           ) : (
-                            <Button onClick={() => handleEdit(item)} variant="ghost" size="sm">Edit HPP</Button>
+                            <Button onClick={() => handleEdit(item)} variant="secondary" size="sm">Edit HPP</Button>
                           )}
                         </td>
                       </tr>
@@ -118,7 +118,7 @@ const Hpp = ({ headerTitle }) => {
                     <div className="flex justify-between items-start">
                       <h3 className="font-bold text-lg text-card-foreground mb-2">{item.name}</h3>
                       {editingId !== item.id && (
-                        <Button onClick={() => handleEdit(item)} variant="ghost" size="sm">Edit HPP</Button>
+                        <Button onClick={() => handleEdit(item)} variant="secondary" size="sm">Edit HPP</Button>
                       )}
                     </div>
                     
