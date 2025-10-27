@@ -115,7 +115,7 @@ const Hpp = ({ headerTitle }) => {
               <div className="md:hidden space-y-4">
                 {Array.isArray(menuItems) && menuItems.map((item) => (
                   <div key={item.id} className="bg-card border border-border p-4 rounded-lg shadow-sm">
-                    <div className="flex justify-between items-start">
+                    <div className="flex justify-between items-start mb-3">
                       <h3 className="font-bold text-lg text-card-foreground mb-2">{item.name}</h3>
                       {editingId !== item.id && (
                         <Button onClick={() => handleEdit(item)} variant="secondary" size="sm">Edit HPP</Button>
