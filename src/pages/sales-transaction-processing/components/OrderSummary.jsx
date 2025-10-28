@@ -28,15 +28,25 @@ const OrderSummary = ({
   const [customTotal, setCustomTotal] = useState(null);
   const [cashPaid, setCashPaid] = useState('');
   const [change, setChange] = useState(0);
+  const [selectedCashOption, setSelectedCashOption] = useState('custom'); // Default to custom
+  const [customCashInput, setCustomCashInput] = useState(''); // For custom input
 
   useEffect(() => {
-    if (paymentMethod === 'Tunai' && cashPaid && customTotal) {
-      const calculatedChange = parseFloat(cashPaid) - customTotal;
+    let currentCashPaid = 0;
+    if (selectedCashOption === 'custom') {
+      currentCashPaid = parseFloat(customCashInput) || 0;
+    } else {
+      currentCashPaid = parseFloat(selectedCashOption) || 0;
+    }
+    setCashPaid(currentCashPaid); // Update cashPaid state
+
+    if (paymentMethod === 'Tunai' && currentCashPaid && customTotal) {
+      const calculatedChange = currentCashPaid - customTotal;
       setChange(calculatedChange > 0 ? calculatedChange : 0);
     } else {
       setChange(0);
     }
-  }, [cashPaid, customTotal, paymentMethod]);
+  }, [selectedCashOption, customCashInput, customTotal, paymentMethod]);
 
   useEffect(() => {
     const fetchPpn = async () => {
@@ -229,17 +239,37 @@ const OrderSummary = ({
             {paymentMethod === 'Tunai' && (
               <div className="space-y-3 border-t pt-4 mt-4">
                 <div className="space-y-2">
-                  <label htmlFor="cash-paid" className="text-sm font-medium text-muted-foreground">
+                  <label htmlFor="cash-paid-select" className="text-sm font-medium text-muted-foreground">
                     Nominal Tunai (Opsional)
                   </label>
-                  <input
-                    id="cash-paid"
-                    type="number"
-                    value={cashPaid}
-                    onChange={(e) => setCashPaid(e.target.value)}
-                    className="w-full text-right border border-input rounded-md px-2 py-1 text-foreground bg-background"
-                    placeholder="Rp 0"
+                  <Select
+                    id="cash-paid-select"
+                    options={[
+                      { value: 'custom', label: 'Kustom' },
+                      { value: '20000', label: 'Rp 20.000' },
+                      { value: '50000', label: 'Rp 50.000' },
+                      { value: '100000', label: 'Rp 100.000' },
+                      { value: '200000', label: 'Rp 200.000' },
+                      { value: '500000', label: 'Rp 500.000' },
+                    ]}
+                    value={selectedCashOption}
+                    onChange={(value) => {
+                      setSelectedCashOption(value);
+                      if (value !== 'custom') {
+                        setCustomCashInput(''); // Clear custom input if a preset is selected
+                      }
+                    }}
                   />
+                  {selectedCashOption === 'custom' && (
+                    <input
+                      id="cash-paid-custom"
+                      type="number"
+                      value={customCashInput}
+                      onChange={(e) => setCustomCashInput(e.target.value)}
+                      className="w-full text-right border border-input rounded-md px-2 py-1 text-foreground bg-background mt-2"
+                      placeholder="Masukkan nominal kustom"
+                    />
+                  )}
                 </div>
                 {cashPaid && change > 0 && (
                   <div className="flex justify-between items-center font-bold text-lg text-green-500">
