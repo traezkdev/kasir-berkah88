@@ -160,13 +160,30 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
             position: absolute;
             left: 0;
             top: 0;
-            width: 100%;
-            height: 100%;
+            width: 58mm; /* Fixed width for thermal printer */
+            height: auto; /* Allow height to adjust */
             margin: 0;
             padding: 0;
             border: none;
             box-shadow: none;
             border-radius: 0;
+            /* Adjust font sizes for thermal printer */
+            font-size: 8pt; /* Base font size */
+            line-height: 1.2;
+          }
+          #receipt-container h2 { /* Berkah 88 */
+            font-size: 12pt !important;
+          }
+          #receipt-container p,
+          #receipt-container span,
+          #receipt-container div {
+            font-size: 8pt !important;
+          }
+          #receipt-container .text-lg { /* TOTAL */
+            font-size: 10pt !important;
+          }
+          .print\\:hidden {
+            display: none;
           }
         }
       `}</style>
