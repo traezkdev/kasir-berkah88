@@ -2,6 +2,14 @@ import React from 'react';
 import Icon from '../../../components/AppIcon';
 
 const MenuSummaryCards = ({ menuItems }) => {
+  const gradientClasses = [
+    "bg-gradient-to-br from-purple-500 to-indigo-500",
+    "bg-gradient-to-br from-blue-500 to-cyan-500",
+    "bg-gradient-to-br from-green-500 to-teal-500",
+    "bg-gradient-to-br from-yellow-500 to-orange-500",
+    "bg-gradient-to-br from-red-500 to-pink-500",
+  ];
+
   const calculateSummary = () => {
     const totalItems = menuItems?.length;
     const totalStock = menuItems?.reduce((sum, item) => sum + item?.stock, 0);
@@ -33,40 +41,40 @@ const MenuSummaryCards = ({ menuItems }) => {
       title: 'Total Menu',
       value: summary?.totalItems?.toString(),
       icon: 'UtensilsCrossed',
-      color: 'text-primary',
-      bgColor: 'bg-primary/10',
+      color: 'text-white',
+      bgColor: 'bg-white/20',
       description: 'Item menu tersedia'
     },
     {
       title: 'Total Stok',
       value: summary?.totalStock?.toString(),
       icon: 'Package',
-      color: 'text-success',
-      bgColor: 'bg-success/10',
+      color: 'text-white',
+      bgColor: 'bg-white/20',
       description: 'Unit tersedia'
     },
     {
       title: 'Nilai Stok',
       value: formatCurrency(summary?.totalValue),
       icon: 'DollarSign',
-      color: 'text-accent',
-      bgColor: 'bg-accent/10',
+      color: 'text-white',
+      bgColor: 'bg-white/20',
       description: 'Total nilai inventori'
     },
     {
       title: 'Stok Menipis',
       value: summary?.lowStockItems?.toString(),
       icon: 'AlertTriangle',
-      color: 'text-warning',
-      bgColor: 'bg-warning/10',
+      color: 'text-white',
+      bgColor: 'bg-white/20',
       description: 'Perlu restok segera'
     },
     {
       title: 'Stok Habis',
       value: summary?.outOfStockItems?.toString(),
       icon: 'XCircle',
-      color: 'text-error',
-      bgColor: 'bg-error/10',
+      color: 'text-white',
+      bgColor: 'bg-white/20',
       description: 'Tidak tersedia'
     }
   ];
@@ -76,7 +84,7 @@ const MenuSummaryCards = ({ menuItems }) => {
       {summaryCards?.map((card, index) => (
         <div
           key={index}
-          className="bg-card rounded-lg shadow-elevation-1 border border-border p-4 hover:shadow-elevation-2 transition-shadow duration-200"
+          className={`rounded-lg shadow-elevation-1 p-4 hover:shadow-elevation-2 transition-shadow duration-200 ${gradientClasses[index % gradientClasses.length]}`}
         >
           <div className="flex items-center justify-between mb-3">
             <div className={`p-2 rounded-lg ${card?.bgColor}`}>
@@ -91,13 +99,13 @@ const MenuSummaryCards = ({ menuItems }) => {
           </div>
           
           <div className="space-y-1">
-            <p className="text-2xl font-mono font-bold text-foreground">
+            <p className="text-2xl font-mono font-bold text-white">
               {card?.value}
             </p>
-            <p className="text-sm font-medium text-foreground">
+            <p className="text-sm font-medium text-white">
               {card?.title}
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-white/80">
               {card?.description}
             </p>
           </div>
