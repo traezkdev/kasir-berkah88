@@ -259,6 +259,9 @@ const CashierDashboard = () => {
                   {isOutOfStock && (
                     <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">Stok Habis</div>
                   )}
+                  {!isOutOfStock && currentAvailableStock > 0 && (
+                    <div className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">Tersedia</div>
+                  )}
                   <img
                     src={item.image_url ? `${apiUrl}${item.image_url}` : '/public/assets/images/no_image.png'}
                     alt={item.name}
