@@ -4,6 +4,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { FiPlus, FiMinus, FiTrash2, FiDollarSign, FiShoppingCart, FiXCircle } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
+import DarkModeToggle from '../../components/ui/DarkModeToggle';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -56,9 +57,18 @@ const CashierDashboard = () => {
   }, [menuItems, searchTerm]);
 
   const addToCart = (item) => {
+    if (item.stock === 0) {
+      toast.error(`${item.name} stok habis!`);
+      return;
+    }
+
     setCart((prevCart) => {
       const existingItem = prevCart.find((cartItem) => cartItem.id === item.id);
       if (existingItem) {
+        if (existingItem.quantity + 1 > item.stock) {
+          toast.error(`Stok ${item.name} tidak cukup! Tersedia: ${item.stock}`);
+          return prevCart; // Don't update cart if stock is insufficient
+        }
         return prevCart.map((cartItem) =>
           cartItem.id === item.id
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
@@ -164,7 +174,7 @@ const CashierDashboard = () => {
     <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
       <header className="bg-white dark:bg-gray-800 shadow p-4 flex justify-between items-center">
         <h1 className="text-2xl font-bold">Dasbor Kasir</h1>
-        {/* <DarkModeToggle /> */}
+        <DarkModeToggle />
       </header>
 
       <div className="flex flex-1 overflow-hidden">
@@ -180,22 +190,28 @@ const CashierDashboard = () => {
           {isLoading && <p>Memuat menu...</p>}
           {error && <p className="text-red-500">Error: {error}</p>}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredMenuItems.map((item) => (
-              <div
-                key={item.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg transition-shadow duration-200"
-                onClick={() => addToCart(item)}
-              >
-                <img
-                  src={item.image_url ? `${apiUrl}${item.image_url}` : '/public/assets/images/no_image.png'}
-                  alt={item.name}
-                  className="w-full h-32 object-cover rounded-md mb-2"
-                />
-                <h3 className="font-semibold text-lg truncate">{item.name}</h3>
-                <p className="text-gray-600 dark:text-gray-400">Rp{item.price.toLocaleString('id-ID')}</p>
-                <p className="text-sm text-gray-500">Stok: {item.stock}</p>
-              </div>
-            ))}
+            {filteredMenuItems.map((item) => {
+              const isOutOfStock = item.stock === 0;
+              return (
+                <div
+                  key={item.id}
+                  className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 transition-shadow duration-200 relative ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'}`}
+                  onClick={() => !isOutOfStock && addToCart(item)}
+                >
+                  {isOutOfStock && (
+                    <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">Stok Habis</div>
+                  )}
+                  <img
+                    src={item.image_url ? `${apiUrl}${item.image_url}` : '/public/assets/images/no_image.png'}
+                    alt={item.name}
+                    className="w-full h-32 object-cover rounded-md mb-2"
+                  />
+                  <h3 className="font-semibold text-lg truncate">{item.name}</h3>
+                  <p className="text-gray-600 dark:text-gray-400">Rp{item.price.toLocaleString('id-ID')}</p>
+                  <p className="text-sm text-gray-500">Stok: {item.stock}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
 
