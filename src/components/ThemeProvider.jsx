@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const ThemeProviderContext = createContext();
 
-export function ThemeProvider({ children, defaultTheme = 'system', storageKey = 'vite-ui-theme', ...props }) {
+export default function ThemeProvider({ children, defaultTheme = 'system', storageKey = 'vite-ui-theme', ...props }) {
   const [theme, setTheme] = useState(() => localStorage.getItem(storageKey) || defaultTheme);
 
   useEffect(() => {

@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import Routes from "./Routes";
 import authFetch from './utils/authFetch';
-import FloatingActionButton from './components/ui/FloatingActionButton'; // Import the new component
+import ScrollToTop from './components/ScrollToTop';
+import ThemeProvider from './components/ThemeProvider';
 import { Toaster } from 'react-hot-toast';
 
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -45,7 +46,7 @@ function App() {
     <> {/* Use a React Fragment to return multiple elements */}
       <Toaster position="bottom-center" reverseOrder={false} />
       <Routes headerTitle={headerTitle} />
-      {showFloatingButton && <FloatingActionButton />} {/* Render the new component conditionally */}
+      
     </>
   );
 }

@@ -5,7 +5,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import App from './App';
 import './styles/tailwind.css';
 
-import { ThemeProvider } from './components/ThemeProvider';
+import ThemeProvider from './components/ThemeProvider';
 
 // Easter egg for the developer console
 console.log(
