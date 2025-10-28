@@ -34,7 +34,7 @@ const OrderSummary = ({
   useEffect(() => {
     let currentCashPaid = 0;
     if (selectedCashOption === 'custom') {
-      currentCashPaid = parseFloat(customCashInput) || 0;
+      currentCashPaid = customCashInput === '' ? '' : parseFloat(customCashInput) || 0;
     } else {
       currentCashPaid = parseFloat(selectedCashOption) || 0;
     }
@@ -238,6 +238,7 @@ const OrderSummary = ({
 
             {paymentMethod === 'Tunai' && (
               <div className="space-y-3 border-t pt-4 mt-4">
+
                 <div className="space-y-2">
                   <label htmlFor="cash-paid-select" className="text-sm font-medium text-muted-foreground">
                     Nominal Tunai (Opsional)
@@ -263,9 +264,12 @@ const OrderSummary = ({
                   {selectedCashOption === 'custom' && (
                     <input
                       id="cash-paid-custom"
-                      type="number"
-                      value={customCashInput}
-                      onChange={(e) => setCustomCashInput(e.target.value)}
+                      type="text"
+                      value={parseFloat(customCashInput).toLocaleString('id-ID')}
+                      onChange={(e) => {
+                        const rawValue = e.target.value.replace(/\./g, '');
+                        setCustomCashInput(rawValue);
+                      }}
                       className="w-full text-right border border-input rounded-md px-2 py-1 text-foreground bg-background mt-2"
                       placeholder="Masukkan nominal kustom"
                     />
