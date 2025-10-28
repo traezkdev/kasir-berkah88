@@ -29,7 +29,7 @@ const CashierDashboard = () => {
     // Add more payment methods as needed
   ];
 
-  const quickCashAmounts = [50000, 100000, 150000, 200000, 500000];
+  const quickCashAmounts = [10000, 20000, 50000, 100000, 150000, 200000];
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
