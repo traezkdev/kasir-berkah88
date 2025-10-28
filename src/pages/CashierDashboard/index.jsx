@@ -3,13 +3,15 @@ import authFetch from '../../utils/authFetch';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select'; // Import Select component
-import { FiPlus, FiMinus, FiTrash2, FiDollarSign, FiShoppingCart, FiXCircle, FiCheck } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { FiPlus, FiMinus, FiTrash2, FiDollarSign, FiShoppingCart, FiXCircle, FiCheck, FiList } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import DarkModeToggle from '../../components/ui/DarkModeToggle';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const CashierDashboard = () => {
+  const navigate = useNavigate();
   const [menuItems, setMenuItems] = useState([]);
   const [cart, setCart] = useState([]);
   const [cashPaid, setCashPaid] = useState(0);
@@ -143,9 +145,26 @@ const CashierDashboard = () => {
     return cashPaid >= totalAmount ? cashPaid - totalAmount : 0;
   }, [cashPaid, totalAmount]);
 
+  const formatNumber = (num) => {
+    return num.toLocaleString('id-ID');
+  };
+
+  const parseNumber = (str) => {
+    // Remove all non-digit characters except for a comma (for decimal)
+    // Then replace comma with a dot for parseFloat
+    const cleanedStr = str.replace(/[^,\d]/g, '').replace(/,/g, '.');
+    return parseFloat(cleanedStr);
+  };
+
   const handleCashPaidChange = (e) => {
-    const value = parseFloat(e.target.value);
-    setCashPaid(isNaN(value) ? 0 : value);
+    const value = e.target.value;
+    // Allow empty string or just "Rp" for input
+    if (value === '' || value === 'Rp') {
+      setCashPaid(0);
+      return;
+    }
+    const parsedValue = parseNumber(value);
+    setCashPaid(isNaN(parsedValue) ? 0 : parsedValue);
   };
 
   const processTransaction = async () => {
@@ -219,6 +238,14 @@ const CashierDashboard = () => {
                 {cart.length}
               </span>
             )}
+          </button>
+          <button
+            className="p-2 md:px-4 md:py-2 rounded-full md:rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center"
+            onClick={() => navigate('/cashier-dashboard/transaction-history')}
+            title="Riwayat Transaksi"
+          >
+            <FiList className="h-6 w-6 md:hidden" />
+            <span className="hidden md:block">Riwayat Transaksi</span>
           </button>
           <DarkModeToggle />
         </div>
@@ -368,11 +395,16 @@ const CashierDashboard = () => {
                 </div>
                 <Input
                   label="Uang Dibayar"
-                  type="number"
-                  value={cashPaid}
+                  type="text"
+                  value={`Rp${formatNumber(cashPaid)}`}
                   onChange={handleCashPaidChange}
-                  min="0"
-                  step="any"
+                  onFocus={(e) => {
+                    e.target.value = parseNumber(e.target.value).toString();
+                  }}
+                  onBlur={(e) => {
+                    const value = parseNumber(e.target.value);
+                    e.target.value = `Rp${formatNumber(value)}`;
+                  }}
                   className="mb-2"
                 />
                 {cashPaid > 0 && cashPaid < totalAmount && (

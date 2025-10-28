@@ -7,6 +7,7 @@ import SalesTransactionProcessing from './pages/sales-transaction-processing';
 import MenuManagement from './pages/menu-management';
 import ExpenseTracking from './pages/expense-tracking';
 import TransactionHistory from './pages/transaction-history';
+import CashierTransactionHistory from './pages/CashierTransactionHistory';
 import BusinessReports from './pages/business-reports';
 import NotFound from './pages/NotFound';
 import Login from './pages/auth/Login'; // Import Login
@@ -53,6 +54,7 @@ const AppRoutes = ({ headerTitle }) => {
       <Route path="/" element={<GuestCheckout />} />
       <Route path="/main-dashboard" element={<ProtectedRoute allowedRoles={['admin', 'user']}><MainDashboard headerTitle={headerTitle} /></ProtectedRoute>} />
       <Route path="/cashier-dashboard" element={<ProtectedRoute allowedRoles={['kasir']}><CashierDashboard /></ProtectedRoute>} />
+      <Route path="/cashier-dashboard/transaction-history" element={<ProtectedRoute allowedRoles={['kasir']}><CashierTransactionHistory headerTitle={headerTitle} /></ProtectedRoute>} />
       <Route path="/sales-transaction-processing" element={<ProtectedRoute allowedRoles={['admin', 'user']}><SalesTransactionProcessing headerTitle={headerTitle} /></ProtectedRoute>} />
       <Route path="/menu-management" element={<ProtectedRoute allowedRoles={['admin', 'user']}><MenuManagement headerTitle={headerTitle} /></ProtectedRoute>} />
       <Route path="/expense-tracking" element={<ProtectedRoute allowedRoles={['admin', 'user']}><ExpenseTracking headerTitle={headerTitle} /></ProtectedRoute>} />
