@@ -814,6 +814,7 @@ const Settings = ({ headerTitle }) => {
                                   disabled={isLoading || user.id === 1} // Disable changing role for default admin (ID 1)
                                 >
                                   <option value="user">Pengguna</option>
+                                  <option value="kasir">Kasir</option>
                                   <option value="admin">Admin</option>
                                 </select>
                               </td>

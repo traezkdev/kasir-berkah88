@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import authFetch from '../../utils/authFetch';
 import { motion } from 'framer-motion';
 import { FiUser, FiLock, FiLogIn } from 'react-icons/fi';
-import DarkModeToggle from '../../components/ui/DarkModeToggle'; // Import the toggle
+import DarkModeToggle from '../../components/ui/DarkModeToggle';
+import { jwtDecode } from 'jwt-decode'; // Import jwtDecode
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -39,7 +40,19 @@ const Login = () => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      navigate('/main-dashboard');
+      try {
+        const decodedToken = jwtDecode(token);
+        const userRole = decodedToken.role;
+        if (userRole === 'kasir') {
+          navigate('/cashier-dashboard');
+        } else {
+          navigate('/main-dashboard');
+        }
+      } catch (error) {
+        console.error("Error decoding token in useEffect:", error);
+        localStorage.removeItem('token');
+        navigate('/login');
+      }
     }
   }, [navigate]);
 
@@ -66,7 +79,13 @@ const Login = () => {
 
       if (response.ok) {
         localStorage.setItem('token', data.token);
-        navigate('/main-dashboard');
+        const decodedToken = jwtDecode(data.token);
+        const userRole = decodedToken.role;
+        if (userRole === 'kasir') {
+          navigate('/cashier-dashboard');
+        } else {
+          navigate('/main-dashboard');
+        }
       } else {
         setError(data.error || 'Login failed');
       }
