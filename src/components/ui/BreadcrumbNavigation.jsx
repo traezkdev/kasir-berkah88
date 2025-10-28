@@ -12,7 +12,8 @@ const BreadcrumbNavigation = ({ customPath = null, className = "" }) => {
     '/menu-management': 'Menu',
     '/expense-tracking': 'Pengeluaran',
     '/transaction-history': 'Riwayat Transaksi',
-    '/business-reports': 'Laporan Bisnis'
+    '/business-reports': 'Laporan Bisnis',
+    '/order-confirmation': 'Konfirmasi Pesanan'
   };
 
   const generateBreadcrumbs = () => {

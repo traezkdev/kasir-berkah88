@@ -270,7 +270,7 @@ const OrderSummary = ({
                         const rawValue = e.target.value.replace(/\./g, '');
                         setCustomCashInput(rawValue);
                       }}
-                      className="w-full text-right border border-input rounded-md px-2 py-1 text-foreground bg-background mt-2"
+                      className="w-full text-center border border-input rounded-md px-2 py-1 text-foreground bg-background mt-2"
                       placeholder="Masukkan nominal kustom"
                     />
                   )}
