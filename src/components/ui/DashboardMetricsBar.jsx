@@ -17,28 +17,32 @@ const DashboardMetricsBar = ({
       label: 'Penjualan Hari Ini',
       icon: 'TrendingUp',
       color: 'text-success',
-      bgColor: 'bg-success/10'
+      bgColor: 'bg-success/10',
+      gradient: 'bg-gradient-to-br from-green-400 to-blue-500',
     },
     {
       key: 'totalTransactions',
       label: 'Total Transaksi',
       icon: 'ShoppingCart',
       color: 'text-primary',
-      bgColor: 'bg-primary/10'
+      bgColor: 'bg-primary/10',
+      gradient: 'bg-gradient-to-br from-yellow-400 to-orange-500',
     },
     {
       key: 'averageOrder',
       label: 'Rata-rata Order',
       icon: 'Calculator',
       color: 'text-accent',
-      bgColor: 'bg-accent/10'
+      bgColor: 'bg-accent/10',
+      gradient: 'bg-gradient-to-br from-indigo-400 to-purple-500',
     },
     {
       key: 'lowStock',
       label: 'Stok Menipis',
       icon: 'AlertTriangle',
       color: 'text-warning',
-      bgColor: 'bg-warning/10'
+      bgColor: 'bg-warning/10',
+      gradient: 'bg-gradient-to-br from-red-500 to-pink-500',
     }
   ];
 
@@ -78,14 +82,12 @@ const DashboardMetricsBar = ({
           {metricItems?.map((item) => {
             const metric = metrics?.[item?.key];
             return (
-              <div key={item?.key} className="glass-morphism rounded-lg p-4 hover:shadow-elevation-2 transition-shadow duration-200 overflow-hidden">
+              <div key={item?.key} className={`${item.gradient} text-white rounded-lg p-4 hover:shadow-xl transition-shadow duration-300 ease-in-out overflow-hidden`}>
                 <div className="flex items-center justify-between mb-2">
-                  <div className={`p-2 rounded-md ${item?.bgColor}`}>
-                    <Icon name={item?.icon} size={20} className={item?.color} />
+                  <div className="p-2 rounded-md bg-white/20">
+                    <Icon name={item?.icon} size={20} className="text-white" />
                   </div>
-                  <div className={`flex items-center space-x-1 text-xs font-medium ${
-                    metric?.trend === 'up' ? 'text-success' : 'text-warning'
-                  }`}>
+                  <div className="flex items-center space-x-1 text-xs font-medium text-white">
                     <Icon 
                       name={metric?.trend === 'up' ? 'TrendingUp' : 'TrendingDown'} 
                       size={12} 
@@ -94,10 +96,10 @@ const DashboardMetricsBar = ({
                   </div>
                 </div>
                 <div>
-                  <p className="text-2xl font-mono font-semibold text-text-primary mb-1 break-words">
+                  <p className="text-2xl font-mono font-semibold text-white mb-1 break-words">
                     {metric?.value}
                   </p>
-                  <p className="text-sm text-text-secondary">{item?.label}</p>
+                  <p className="text-sm text-white/80">{item?.label}</p>
                 </div>
               </div>
             );
