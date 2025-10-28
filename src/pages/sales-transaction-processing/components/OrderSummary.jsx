@@ -265,7 +265,7 @@ const OrderSummary = ({
                     <input
                       id="cash-paid-custom"
                       type="text"
-                      value={parseFloat(customCashInput).toLocaleString('id-ID')}
+                      value={customCashInput === '' ? '' : parseFloat(customCashInput).toLocaleString('id-ID')}
                       onChange={(e) => {
                         const rawValue = e.target.value.replace(/\./g, '');
                         setCustomCashInput(rawValue);
