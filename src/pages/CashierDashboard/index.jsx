@@ -18,6 +18,7 @@ const CashierDashboard = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash'); // Default to 'cash'
+  const [showMobileCart, setShowMobileCart] = useState(false); // State for mobile cart visibility
 
   const paymentOptions = [
     { label: 'Tunai', value: 'cash' },
@@ -204,15 +205,28 @@ const CashierDashboard = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white no-select">
-      <header className="bg-white dark:bg-gray-800 shadow p-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Dasbor Kasir</h1>
-        <DarkModeToggle />
+    <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white no-select overflow-x-hidden">
+      <header className="bg-white dark:bg-gray-800 shadow px-4 py-3 flex justify-between items-center">
+        <h1 className="text-xl font-bold md:text-2xl">Dasbor Kasir</h1>
+        <div className="flex items-center space-x-4">
+          <button
+            className="md:hidden relative p-2 rounded-full bg-blue-500 text-white"
+            onClick={() => setShowMobileCart(true)}
+          >
+            <FiShoppingCart className="h-6 w-6" />
+            {cart.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {cart.length}
+              </span>
+            )}
+          </button>
+          <DarkModeToggle />
+        </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 flex-col md:flex-row overflow-hidden">
         {/* Menu Items Section */}
-        <div className="w-2/3 p-4 overflow-y-auto border-r dark:border-gray-700">
+        <div className="w-full md:w-2/3 p-4 overflow-y-auto md:border-r dark:md:border-gray-700">
           <Input
             type="text"
             placeholder="Cari menu..."
@@ -260,8 +274,16 @@ const CashierDashboard = () => {
         </div>
 
         {/* Transaction Cart Section */}
-        <div className="w-1/3 p-4 flex flex-col bg-gray-50 dark:bg-gray-800">
-          <h2 className="text-xl font-bold mb-4 flex items-center"><FiShoppingCart className="mr-2" />Keranjang</h2>
+        <div className={`fixed inset-0 z-50 bg-gray-50 dark:bg-gray-800 flex-col ${showMobileCart ? 'flex' : 'hidden'} md:relative md:flex md:w-1/3 p-4`}>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold flex items-center"><FiShoppingCart className="mr-2" />Keranjang</h2>
+            <button
+              className="md:hidden p-2 rounded-full bg-red-500 text-white"
+              onClick={() => setShowMobileCart(false)}
+            >
+              <FiXCircle className="h-6 w-6" />
+            </button>
+          </div>
           <div className="flex-1 overflow-y-auto mb-4">
             {cart.length === 0 ? (
               <p className="text-gray-500">Keranjang kosong.</p>
@@ -328,7 +350,7 @@ const CashierDashboard = () => {
 
             {paymentMethod === 'cash' && (
               <div className="mt-4">
-                <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
                   {quickCashAmounts.map((amount) => (
                     <Button
                       key={amount}
