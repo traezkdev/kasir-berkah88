@@ -258,6 +258,7 @@ const OrderSummary = ({
                       { value: '20000', label: 'Rp 20.000' },
                       { value: '50000', label: 'Rp 50.000' },
                       { value: '100000', label: 'Rp 100.000' },
+                      { value: '150000', label: 'Rp 150.000' },
                       { value: '200000', label: 'Rp 200.000' },
                       { value: '500000', label: 'Rp 500.000' },
                     ]}
