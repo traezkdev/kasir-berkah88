@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import NavigationHeader from '../../components/ui/NavigationHeader';
+import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import authFetch from '../../utils/authFetch';
 import OrderCard from './components/OrderCard';
 import ConfirmationModal from '../../components/ui/ConfirmationModal';
@@ -193,6 +194,7 @@ const OrderConfirmationPage = () => {
     return (
         <div className="container mx-auto p-4 pt-24 pb-32">
             <NavigationHeader title="Konfirmasi Pesanan" />
+            <BreadcrumbNavigation className="mb-4" />
             {notification && (
                 <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg z-[1002] ${
                     notification.type === 'success' ? 'bg-success text-success-foreground' : 'bg-destructive text-destructive-foreground'

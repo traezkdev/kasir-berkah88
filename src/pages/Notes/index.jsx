@@ -8,6 +8,7 @@ import NoteFormModal from './components/NoteFormModal';
 import ViewNoteModal from './components/ViewNoteModal'; // Import the new modal
 import NoteCard from './components/NoteCard';
 import NavigationHeader from '../../components/ui/NavigationHeader';
+import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 
 const NotesPage = () => {
   const [notes, setNotes] = useState([]);
@@ -104,6 +105,7 @@ const NotesPage = () => {
   return (
     <div className="container mx-auto p-4 pt-24 pb-32">
       <NavigationHeader title="Catatan Saya" />
+      <BreadcrumbNavigation className="mb-4" />
       
       <div className="flex justify-between items-center mb-6 gap-4">
         <div className="relative flex-grow">

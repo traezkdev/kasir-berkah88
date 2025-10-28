@@ -230,7 +230,7 @@ app.get("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
 // Create a new transaction
 app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
     try {
-        const { items, ignoreStock } = req.body;
+        const { items, ignoreStock, cashPaid, change } = req.body;
         const errors = [];
         if (!items) {
             errors.push("No items specified");
@@ -283,11 +283,13 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
             ppn: req.body.ppn,
             isEmployeeMeal: req.body.isEmployeeMeal ? 1 : 0,
             payment_method: req.body.payment_method || 'Tunai',
-            ignore_stock: req.body.ignoreStock ? 1 : 0
+            ignore_stock: req.body.ignoreStock ? 1 : 0,
+            cash_paid: req.body.cashPaid || 0,
+            change: req.body.change || 0
         };
-        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock) VALUES (?,?,?,?,?,?,?,?)';
+        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock, cash_paid, `change`) VALUES (?,?,?,?,?,?,?,?,?,?)';
 
-        const params = [data.id, data.timestamp, data.items, data.total, data.ppn, data.isEmployeeMeal, data.payment_method, data.ignore_stock];
+        const params = [data.id, data.timestamp, data.items, data.total, data.ppn, data.isEmployeeMeal, data.payment_method, data.ignore_stock, data.cash_paid, data.change];
         const [result] = await db.query(sql, params);
 
         if (!ignoreStock) {

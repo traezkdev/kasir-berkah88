@@ -110,11 +110,27 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
               <span className="text-black">Metode Pembayaran:</span>
               <span className="text-black">{transaction.payment_method}</span>
             </div>
+            {transaction.payment_method === 'Tunai' && transaction.cash_paid > 0 && (
+              <>
+                <div className="flex justify-between text-sm mt-2">
+                  <span className="text-black">Tunai:</span>
+                  <span className="text-black">
+                    Rp {Number(transaction.cash_paid).toLocaleString("id-ID")}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-black">Kembalian:</span>
+                  <span className="text-black">
+                    Rp {Number(transaction.change).toLocaleString("id-ID")}
+                  </span>
+                </div>
+              </>
+            )}
             <div className="text-center mt-8 text-sm text-gray-500">
               <p>Terima kasih telah berbelanja!</p>
             </div>
           </div>
-          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-b-lg flex items-center justify-end space-x-3 print:hidden">
+          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-b-lg flex items-center justify-center space-x-3 print:hidden">
             <Button variant="outline" onClick={onClose}>
               Tutup
             </Button>
@@ -144,13 +160,30 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
             position: absolute;
             left: 0;
             top: 0;
-            width: 100%;
-            height: 100%;
+            width: 58mm; /* Fixed width for thermal printer */
+            height: auto; /* Allow height to adjust */
             margin: 0;
             padding: 0;
             border: none;
             box-shadow: none;
             border-radius: 0;
+            /* Adjust font sizes for thermal printer */
+            font-size: 8pt; /* Base font size */
+            line-height: 1.2;
+          }
+          #receipt-container h2 { /* Berkah 88 */
+            font-size: 12pt !important;
+          }
+          #receipt-container p,
+          #receipt-container span,
+          #receipt-container div {
+            font-size: 8pt !important;
+          }
+          #receipt-container .text-lg { /* TOTAL */
+            font-size: 10pt !important;
+          }
+          .print\\:hidden {
+            display: none;
           }
         }
       `}</style>
