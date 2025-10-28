@@ -76,34 +76,97 @@ const CashierDashboard = () => {
     setCart((prevCart) => {
       const existingItem = prevCart.find((cartItem) => cartItem.id === item.id);
       if (existingItem) {
-        if (existingItem.quantity + 1 > item.stock) {
-          setTimeout(() => toast.error(`Stok ${item.name} tidak cukup! Tersedia: ${item.stock}`), 0);
-          return prevCart; // Don't update cart if stock is insufficient
+        // Find the current stock from menuItems state
+        const currentMenuItem = menuItems.find(menuItem => menuItem.id === item.id);
+        if (!currentMenuItem || existingItem.quantity + 1 > currentMenuItem.stock) {
+          setTimeout(() => toast.error(`Stok ${item.name} tidak cukup! Tersedia: ${currentMenuItem?.stock || 0}`), 0);
+          return prevCart;
         }
+        // Decrement stock in menuItems state
+        setMenuItems((prevMenuItems) =>
+          prevMenuItems.map((menuItem) =>
+            menuItem.id === item.id
+              ? { ...menuItem, stock: menuItem.stock - 1 }
+              : menuItem
+          )
+        );
         return prevCart.map((cartItem) =>
           cartItem.id === item.id
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
         );
       } else {
+        // Decrement stock in menuItems state for new item
+        setMenuItems((prevMenuItems) =>
+          prevMenuItems.map((menuItem) =>
+            menuItem.id === item.id
+              ? { ...menuItem, stock: menuItem.stock - 1 }
+              : menuItem
+          )
+        );
         return [...prevCart, { ...item, quantity: 1 }];
       }
     });
-  }, [setCart]);
+  }, [setCart, setMenuItems, menuItems]);
 
   const updateCartQuantity = (itemId, newQuantity) => {
     setCart((prevCart) => {
+      const itemToUpdate = prevCart.find((item) => item.id === itemId);
+      if (!itemToUpdate) return prevCart;
+
+      const currentQuantity = itemToUpdate.quantity;
+      const quantityDifference = newQuantity - currentQuantity;
+
+      // Get the current stock from menuItems state
+      const currentMenuItem = menuItems.find(menuItem => menuItem.id === itemId);
+      if (!currentMenuItem) return prevCart; // Should not happen
+
       if (newQuantity <= 0) {
+        // Item is being removed or quantity set to 0
+        setMenuItems((prevMenuItems) =>
+          prevMenuItems.map((menuItem) =>
+            menuItem.id === itemId
+              ? { ...menuItem, stock: menuItem.stock + currentQuantity } // Return stock to menuItems
+              : menuItem
+          )
+        );
         return prevCart.filter((item) => item.id !== itemId);
+      } else {
+        // Check if new quantity exceeds available stock (currentMenuItem.stock already reflects remaining stock)
+        if (quantityDifference > 0 && quantityDifference > currentMenuItem.stock) {
+          setTimeout(() => toast.error(`Stok ${itemToUpdate.name} tidak cukup! Tersedia: ${currentMenuItem.stock}`), 0);
+          return prevCart;
+        }
+
+        setMenuItems((prevMenuItems) =>
+          prevMenuItems.map((menuItem) =>
+            menuItem.id === itemId
+              ? { ...menuItem, stock: menuItem.stock - quantityDifference } // Adjust stock in menuItems
+              : menuItem
+          )
+        );
+
+        return prevCart.map((item) =>
+          item.id === itemId ? { ...item, quantity: newQuantity } : item
+        );
       }
-      return prevCart.map((item) =>
-        item.id === itemId ? { ...item, quantity: newQuantity } : item
-      );
     });
   };
 
   const removeFromCart = (itemId) => {
-    setCart((prevCart) => prevCart.filter((item) => item.id !== itemId));
+    setCart((prevCart) => {
+      const removedItem = prevCart.find((item) => item.id === itemId);
+      if (removedItem) {
+        setMenuItems((prevMenuItems) =>
+          prevMenuItems.map((menuItem) =>
+            menuItem.id === itemId
+              ? { ...menuItem, stock: menuItem.stock + removedItem.quantity } // Return stock
+              : menuItem
+          )
+        );
+      }
+      return prevCart.filter((item) => item.id !== itemId);
+    });
   };
 
   const subtotal = useMemo(() => {
