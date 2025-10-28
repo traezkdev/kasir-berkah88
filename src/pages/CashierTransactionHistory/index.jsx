@@ -539,7 +539,7 @@ const CashierTransactionHistory = ({ headerTitle }) => {
               onRowClick={handleTransactionClick}
 
               isMobile={isMobile}
-              userRole={userRole}
+              userRole="guest"
 
             />
 
