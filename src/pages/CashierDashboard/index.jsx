@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import authFetch from '../../utils/authFetch';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import Select from '../../components/ui/Select'; // Import Select component
 import { FiPlus, FiMinus, FiTrash2, FiDollarSign, FiShoppingCart, FiXCircle } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import DarkModeToggle from '../../components/ui/DarkModeToggle';
@@ -16,6 +17,16 @@ const CashierDashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('cash'); // Default to 'cash'
+
+  const paymentOptions = [
+    { label: 'Tunai', value: 'cash' },
+    { label: 'Kartu Debit/Kredit', value: 'card' },
+    { label: 'Transfer Bank', value: 'transfer' },
+    // Add more payment methods as needed
+  ];
+
+  const quickCashAmounts = [50000, 100000, 150000, 200000, 500000];
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -121,8 +132,9 @@ const CashierDashboard = () => {
       toast.error('Keranjang belanja kosong!');
       return;
     }
-    if (cashPaid < totalAmount) {
-      toast.error('Jumlah pembayaran kurang dari total!');
+
+    if (paymentMethod === 'cash' && cashPaid < totalAmount) {
+      toast.error('Jumlah pembayaran tunai kurang dari total!');
       return;
     }
 
@@ -146,8 +158,9 @@ const CashierDashboard = () => {
           items: transactionItems,
           total: totalAmount,
           ppn: taxAmount,
-          cashPaid: cashPaid,
-          change: change,
+          cashPaid: paymentMethod === 'cash' ? cashPaid : totalAmount, // If not cash, assume full payment
+          change: paymentMethod === 'cash' ? change : 0, // If not cash, change is 0
+          paymentMethod: paymentMethod,
           ignoreStock: false, // Assuming stock should be managed
         }),
       });
@@ -171,7 +184,7 @@ const CashierDashboard = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
+    <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white no-select">
       <header className="bg-white dark:bg-gray-800 shadow p-4 flex justify-between items-center">
         <h1 className="text-2xl font-bold">Dasbor Kasir</h1>
         <DarkModeToggle />
@@ -274,26 +287,48 @@ const CashierDashboard = () => {
               <span>Rp{totalAmount.toLocaleString('id-ID')}</span>
             </div>
 
-            <div className="mt-4">
-              <Input
-                label="Uang Dibayar"
-                type="number"
-                value={cashPaid}
-                onChange={handleCashPaidChange}
-                min="0"
-                step="any"
-                className="mb-2"
-              />
-              <div className="flex justify-between text-xl font-bold text-green-600 dark:text-green-400">
-                <span>Kembalian:</span>
-                <span>Rp{change.toLocaleString('id-ID')}</span>
+            <Select
+              label="Metode Pembayaran"
+              options={paymentOptions}
+              value={paymentMethod}
+              onChange={setPaymentMethod}
+              className="mt-4 mb-2"
+            />
+
+            {paymentMethod === 'cash' && (
+              <div className="mt-4">
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  {quickCashAmounts.map((amount) => (
+                    <Button
+                      key={amount}
+                      variant="outline"
+                      onClick={() => setCashPaid(amount)}
+                      className="py-3 text-md"
+                    >
+                      Rp{amount.toLocaleString('id-ID')}
+                    </Button>
+                  ))}
+                </div>
+                <Input
+                  label="Uang Dibayar"
+                  type="number"
+                  value={cashPaid}
+                  onChange={handleCashPaidChange}
+                  min="0"
+                  step="any"
+                  className="mb-2"
+                />
+                <div className="flex justify-between text-xl font-bold text-green-600 dark:text-green-400">
+                  <span>Kembalian:</span>
+                  <span>Rp{change.toLocaleString('id-ID')}</span>
+                </div>
               </div>
-            </div>
+            )}
 
             <Button
               onClick={processTransaction}
               className="w-full mt-4 py-3 text-lg"
-              disabled={isLoading || cart.length === 0 || cashPaid < totalAmount}
+              disabled={isLoading || cart.length === 0}
             >
               <FiDollarSign className="mr-2" /> Proses Transaksi
             </Button>
