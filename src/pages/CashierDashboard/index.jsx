@@ -3,7 +3,7 @@ import authFetch from '../../utils/authFetch';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select'; // Import Select component
-import { FiPlus, FiMinus, FiTrash2, FiDollarSign, FiShoppingCart, FiXCircle } from 'react-icons/fi';
+import { FiPlus, FiMinus, FiTrash2, FiDollarSign, FiShoppingCart, FiXCircle, FiCheck } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import DarkModeToggle from '../../components/ui/DarkModeToggle';
 
@@ -184,7 +184,7 @@ const CashierDashboard = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white" onMouseDown={(e) => e.preventDefault()}>
+    <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white no-select">
       <header className="bg-white dark:bg-gray-800 shadow p-4 flex justify-between items-center">
         <h1 className="text-2xl font-bold">Dasbor Kasir</h1>
         <DarkModeToggle />
@@ -205,14 +205,23 @@ const CashierDashboard = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredMenuItems.map((item) => {
               const isOutOfStock = item.stock === 0;
+              const isInCart = cart.some(cartItem => cartItem.id === item.id);
               return (
                 <div
                   key={item.id}
-                  className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 transition-shadow duration-200 relative ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'}`}
+                  className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 transition-shadow duration-200 relative 
+                    ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'} 
+                    ${isInCart ? 'border-2 border-green-500' : ''}`
+                  }
                   onClick={() => !isOutOfStock && addToCart(item)}
                 >
+                  {isInCart && (
+                    <div className="absolute top-2 left-2 bg-green-500 text-white rounded-full p-1 z-10">
+                      <FiCheck className="h-4 w-4" />
+                    </div>
+                  )}
                   {isOutOfStock && (
-                    <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">Stok Habis</div>
+                    <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">Stok Habis</div>
                   )}
                   <img
                     src={item.image_url ? `${apiUrl}${item.image_url}` : '/public/assets/images/no_image.png'}
