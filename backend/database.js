@@ -48,9 +48,11 @@ const setupDatabase = async () => {
         total DECIMAL(10, 2) NOT NULL,
         ppn DECIMAL(10, 2) NOT NULL,
         isEmployeeMeal BOOLEAN DEFAULT FALSE,
+        payment_method VARCHAR(50) DEFAULT 'Tunai',
+        cash_paid DECIMAL(10, 2) DEFAULT 0,
+        \`change\` DECIMAL(10, 2) DEFAULT 0,
         order_id INT NULL,
         FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL
-        
       );
     `;
 
@@ -209,6 +211,22 @@ const setupDatabase = async () => {
     if (orderIdRows[0]['COUNT(*)'] === 0) {
       await connection.query(addOrderIdColumn);
       console.log('Added order_id column and foreign key to transactions table.');
+    }
+
+    // Check and add cash_paid and change columns to transactions if they don't exist
+    const checkCashPaidAndChangeColumns = `
+      SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME IN ('cash_paid', 'change');
+    `;
+    const addCashPaidAndChangeColumns = `
+      ALTER TABLE transactions
+      ADD COLUMN cash_paid DECIMAL(10, 2) DEFAULT 0,
+      ADD COLUMN \`change\` DECIMAL(10, 2) DEFAULT 0;
+    `;
+    const [cashChangeRows] = await connection.query(checkCashPaidAndChangeColumns);
+    if (cashChangeRows[0].count < 2) { // If either or both columns are missing
+      await connection.query(addCashPaidAndChangeColumns);
+      console.log('Added cash_paid and change columns to transactions table.');
     }
 
     // Check and add hpp column to menu_items if it doesn't exist
