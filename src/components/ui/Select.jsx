@@ -198,7 +198,8 @@ const SelectComponent = React.forwardRef(({
                                     <div
                                         key={option?.value}
                                         className={cn(
-                                            "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-muted dark:hover:bg-muted/20",
+                                            "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none",
+                                            !isSelected(option?.value) && "hover:bg-muted dark:hover:bg-muted/20",
                                             isSelected(option?.value) && "bg-primary text-primary-foreground",
                                             option?.disabled && "pointer-events-none opacity-50"
                                         )}
