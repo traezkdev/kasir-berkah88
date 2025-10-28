@@ -4,13 +4,14 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select'; // Import Select component
 import { useNavigate } from 'react-router-dom';
-import { FiPlus, FiMinus, FiTrash2, FiDollarSign, FiShoppingCart, FiXCircle, FiCheck, FiList } from 'react-icons/fi';
+import { FiPlus, FiMinus, FiTrash2, FiDollarSign, FiShoppingCart, FiXCircle, FiCheck, FiList, FiLogOut } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import DarkModeToggle from '../../components/ui/DarkModeToggle';
+import ConfirmationModal from '../../components/ui/ConfirmationModal';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-const CashierDashboard = () => {
+export default function CashierDashboard() {
   const navigate = useNavigate();
   const [menuItems, setMenuItems] = useState([]);
   const [cart, setCart] = useState([]);
@@ -21,6 +22,17 @@ const CashierDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash'); // Default to 'cash'
   const [showMobileCart, setShowMobileCart] = useState(false); // State for mobile cart visibility
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token'); // Assuming token is stored in localStorage
+    navigate('/login');
+    toast.success('Anda telah berhasil logout.');
+  };
+
+  const requestLogoutConfirmation = () => {
+    setShowLogoutConfirm(true);
+  };
 
   const paymentOptions = [
     { label: 'Tunai', value: 'cash' },
@@ -247,6 +259,15 @@ const CashierDashboard = () => {
             <FiList className="h-6 w-6 md:hidden" />
             <span className="hidden md:block">Riwayat Transaksi</span>
           </button>
+          <Button
+            variant="outline"
+            onClick={requestLogoutConfirmation}
+            className="p-2 md:px-4 md:py-2 rounded-full md:rounded-lg hover:bg-red-500 hover:text-white transition-colors duration-200 flex items-center justify-center"
+            title="Logout"
+          >
+            <FiLogOut className="h-6 w-6 md:hidden" />
+            <span className="hidden md:block">Logout</span>
+          </Button>
           <DarkModeToggle />
         </div>
       </header>
@@ -427,8 +448,18 @@ const CashierDashboard = () => {
           </div>
         </div>
       </div>
+
+      {showLogoutConfirm && (
+        <ConfirmationModal
+          isOpen={showLogoutConfirm}
+          onClose={() => setShowLogoutConfirm(false)}
+          onConfirm={handleLogout}
+          title="Konfirmasi Logout"
+          message="Apakah Anda yakin ingin keluar dari akun ini?"
+          confirmText="Logout"
+          cancelText="Batal"
+        />
+      )}
     </div>
   );
 };
-
-export default CashierDashboard;
