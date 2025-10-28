@@ -1,16 +1,23 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
 
-const ExpenseSummaryCard = ({ 
-  totalExpenses = 0, 
-  expenseCount = 0, 
+const ExpenseSummaryCard = ({
+  totalExpenses = 0,
+  expenseCount = 0,
   todayExpenses = 0,
   weeklyExpenses = 0,
   monthlyExpenses = 0,
   className = "" 
 }) => {
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('id-ID', {
+  const gradientClasses = [
+    "bg-gradient-to-br from-purple-500 to-indigo-500",
+    "bg-gradient-to-br from-blue-500 to-cyan-500",
+    "bg-gradient-to-br from-green-500 to-teal-500",
+    "bg-gradient-to-br from-yellow-500 to-orange-500",
+    "bg-gradient-to-br from-red-500 to-pink-500",
+  ];
+
+  const formatCurrency = (amount) => {    return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
@@ -60,21 +67,21 @@ const ExpenseSummaryCard = ({
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {summaryItems?.map((item, index) => (
-            <div key={index} className="glass-morphism rounded-lg p-4 hover:shadow-elevation-2 transition-shadow duration-200">
+            <div key={index} className={`rounded-lg p-4 hover:shadow-elevation-2 transition-shadow duration-200 ${gradientClasses[index % gradientClasses.length]}`}>
               <div className="flex items-center justify-between mb-3">
-                <div className={`p-2 rounded-md ${item?.bgColor}`}>
-                  <Icon name={item?.icon} size={20} className={item?.color} />
+                <div className={`p-2 rounded-md bg-white/20`}>
+                  <Icon name={item?.icon} size={20} className="text-white" />
                 </div>
               </div>
               
               <div>
-                <p className="text-2xl font-mono font-bold text-text-primary mb-1">
+                <p className="text-2xl font-mono font-bold text-white mb-1">
                   {item?.value}
                 </p>
-                <p className="text-sm font-medium text-text-primary mb-1">
+                <p className="text-sm font-medium text-white mb-1">
                   {item?.label}
                 </p>
-                <p className="text-xs text-text-secondary">
+                <p className="text-xs text-white/80">
                   {item?.description}
                 </p>
               </div>
