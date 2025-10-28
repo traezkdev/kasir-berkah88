@@ -313,6 +313,7 @@ const CashierDashboard = () => {
                       variant="outline"
                       onClick={() => setCashPaid(amount)}
                       className="py-3 text-md"
+                      disabled={amount < totalAmount}
                     >
                       Rp{amount.toLocaleString('id-ID')}
                     </Button>
