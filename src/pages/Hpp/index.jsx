@@ -4,6 +4,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { toast } from 'react-hot-toast';
 import NavigationHeader from '../../components/ui/NavigationHeader';
+import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 
 const Hpp = ({ headerTitle }) => {
   const [menuItems, setMenuItems] = useState([]);
@@ -63,6 +64,7 @@ const Hpp = ({ headerTitle }) => {
       <div className="pt-16">
         <main className="pb-20 lg:pb-8">
           <div className="container mx-auto p-4">
+            <BreadcrumbNavigation className="mb-4" />
             <h1 className="text-2xl font-bold mb-4">Kalkulator HPP (Harga Pokok Penjualan)</h1>
             <div className="bg-background-card p-4 rounded-lg shadow">
               {/* Desktop View: Table */}
