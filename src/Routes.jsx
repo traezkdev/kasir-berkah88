@@ -1,10 +1,13 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom'; // Import Navigate
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode'; // Import jwtDecode
 import MainDashboard from './pages/main-dashboard';
+import CashierDashboard from './pages/CashierDashboard';
 import SalesTransactionProcessing from './pages/sales-transaction-processing';
 import MenuManagement from './pages/menu-management';
 import ExpenseTracking from './pages/expense-tracking';
 import TransactionHistory from './pages/transaction-history';
+import CashierTransactionHistory from './pages/CashierTransactionHistory';
 import BusinessReports from './pages/business-reports';
 import NotFound from './pages/NotFound';
 import Login from './pages/auth/Login'; // Import Login
@@ -21,12 +24,24 @@ import ReceiptPage from './pages/receipt'; // Import ReceiptPage
 import Hpp from './pages/Hpp'; // Import Hpp
 
 // ProtectedRoute component
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, allowedRoles }) => {
   const token = localStorage.getItem('token');
   if (!token) {
     return <Navigate to="/login" replace />;
   }
-  // Optionally, you could add token validation here (e.g., check expiration)
+
+  try {
+    const decodedToken = jwtDecode(token);
+    const userRole = decodedToken.role;
+
+    if (allowedRoles && !allowedRoles.includes(userRole)) {
+      return <Navigate to="/login" replace />;
+    }
+  } catch (error) {
+    console.error("Error decoding token:", error);
+    return <Navigate to="/login" replace />;
+  }
+
   return children;
 };
 
@@ -37,21 +52,23 @@ const AppRoutes = ({ headerTitle }) => {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/" element={<GuestCheckout />} />
-      <Route path="/main-dashboard" element={<ProtectedRoute><MainDashboard headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/sales-transaction-processing" element={<ProtectedRoute><SalesTransactionProcessing headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/menu-management" element={<ProtectedRoute><MenuManagement headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/expense-tracking" element={<ProtectedRoute><ExpenseTracking headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/transaction-history" element={<ProtectedRoute><TransactionHistory headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/business-reports" element={<ProtectedRoute><BusinessReports headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/profile" element={<ProtectedRoute><UserProfile headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute><Settings headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/credits" element={<ProtectedRoute><Credits headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/notes" element={<ProtectedRoute><NotesPage headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/order-confirmation" element={<ProtectedRoute><OrderConfirmationPage headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/calculator" element={<ProtectedRoute><CalculatorPage headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/employee-list" element={<ProtectedRoute><EmployeeListPage headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/hpp" element={<ProtectedRoute><Hpp headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/receipt" element={<ProtectedRoute><ReceiptPage /></ProtectedRoute>} />
+      <Route path="/main-dashboard" element={<ProtectedRoute allowedRoles={['admin', 'user']}><MainDashboard headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/cashier-dashboard" element={<ProtectedRoute allowedRoles={['kasir']}><CashierDashboard /></ProtectedRoute>} />
+      <Route path="/cashier-dashboard/transaction-history" element={<ProtectedRoute allowedRoles={['kasir']}><CashierTransactionHistory headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/sales-transaction-processing" element={<ProtectedRoute allowedRoles={['admin', 'user']}><SalesTransactionProcessing headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/menu-management" element={<ProtectedRoute allowedRoles={['admin', 'user']}><MenuManagement headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/expense-tracking" element={<ProtectedRoute allowedRoles={['admin', 'user']}><ExpenseTracking headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/transaction-history" element={<ProtectedRoute allowedRoles={['admin', 'user']}><TransactionHistory headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/business-reports" element={<ProtectedRoute allowedRoles={['admin', 'user']}><BusinessReports headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute allowedRoles={['admin', 'user']}><UserProfile headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute allowedRoles={['admin', 'user']}><Settings headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/credits" element={<ProtectedRoute allowedRoles={['admin', 'user']}><Credits headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/notes" element={<ProtectedRoute allowedRoles={['admin', 'user']}><NotesPage headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/order-confirmation" element={<ProtectedRoute allowedRoles={['admin', 'user']}><OrderConfirmationPage headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/calculator" element={<ProtectedRoute allowedRoles={['admin', 'user']}><CalculatorPage headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/employee-list" element={<ProtectedRoute allowedRoles={['admin', 'user']}><EmployeeListPage headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/hpp" element={<ProtectedRoute allowedRoles={['admin', 'user']}><Hpp headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/receipt" element={<ProtectedRoute allowedRoles={['admin', 'user']}><ReceiptPage /></ProtectedRoute>} />
       
       {/* Catch all other routes */}
       <Route path="*" element={<NotFound />} />

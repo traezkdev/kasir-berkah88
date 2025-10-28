@@ -231,7 +231,8 @@ const GuestCheckout = () => {
                                     key={item.id} 
                                     className={`bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-md dark:shadow-none overflow-hidden transform transition-transform duration-200 hover:scale-105 ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                     <AppImage
-                                        src={`https://api.inviteshare.my.id/${item.image_url}`}
+                                        src={`${import.meta.env.VITE_API_URL}${item.image_url}`}
+                                        fallbackSrc="/assets/images/no_image.png"
                                         alt={item.name}
                                         className="w-full h-32 object-cover"
                                     />

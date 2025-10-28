@@ -82,7 +82,7 @@ const setupDatabase = async () => {
         id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(255) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
-        role VARCHAR(50) DEFAULT 'user'
+        role ENUM('admin', 'user', 'kasir', 'guest') DEFAULT 'user'
       );
     `;
 
@@ -172,6 +172,13 @@ const setupDatabase = async () => {
     if (rows[0]['COUNT(*)'] === 0) {
       await connection.query(addRoleColumn);
       console.log('Added role column to users table.');
+    } else {
+      // If the column exists, modify it to the new ENUM type
+      const alterRoleToEnum = `
+        ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'user', 'kasir', 'guest') DEFAULT 'user';
+      `;
+      await connection.query(alterRoleToEnum);
+      console.log('Modified role column to ENUM type.');
     }
 
     const addUpdatedAtToMenuItems = `

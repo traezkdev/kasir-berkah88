@@ -142,8 +142,13 @@ const OrderConfirmationPage = () => {
             message = 'Apakah Anda yakin ingin MENGHAPUS pesanan ini? Aksi ini tidak dapat dibatalkan.';
             isDestructive = true;
         } else if (action === 'delete' && isBulk) {
-            title = `Konfirmasi Hapus Semua Pesanan ${orderId === 'pending' ? 'Menunggu Konfirmasi' : 'Ditolak'}`;
-            message = `Apakah Anda yakin ingin MENGHAPUS SEMUA pesanan dengan status '${orderId}'? Aksi ini tidak dapat dibatalkan.`;
+            const statusMap = {
+                pending: 'Menunggu Konfirmasi',
+                rejected: 'Ditolak',
+                accepted: 'Diterima'
+            };
+            title = `Konfirmasi Hapus Semua Pesanan ${statusMap[orderId] || ''}`;
+            message = `Apakah Anda yakin ingin MENGHAPUS SEMUA pesanan dengan status '${statusMap[orderId]}'? Aksi ini tidak dapat dibatalkan.`;
             isDestructive = true;
         }
 
@@ -237,13 +242,13 @@ const OrderConfirmationPage = () => {
                     </nav>
                 </div>
 
-                {(activeTab === 'pending' || activeTab === 'rejected') && filteredOrders.length > 0 && (
+                {(activeTab === 'pending' || activeTab === 'rejected' || activeTab === 'accepted') && filteredOrders.length > 0 && (
                     <div className="flex justify-end mb-4">
                         <Button
                             variant="destructive"
                             onClick={() => openConfirmationModal(activeTab, 'delete', true)}
                         >
-                            Hapus Semua {activeTab === 'pending' ? 'Menunggu Konfirmasi' : 'Ditolak'}
+                            Hapus Semua {activeTab === 'pending' ? 'Menunggu Konfirmasi' : (activeTab === 'rejected' ? 'Ditolak' : 'Diterima')}
                         </Button>
                     </div>
                 )}

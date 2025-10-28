@@ -69,29 +69,7 @@ const TransactionFilters = ({
 
   return (
     <div className="bg-card border-b border-border shadow-elevation-1">
-      {/* Summary Statistics */}
-      <div className="px-4 lg:px-6 py-4 border-b border-border">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="text-center sm:text-left">
-            <p className="text-2xl font-mono font-semibold text-text-primary">
-              {totalTransactions}
-            </p>
-            <p className="text-sm text-text-secondary">Total Transaksi</p>
-          </div>
-          <div className="text-center sm:text-left">
-            <p className="text-2xl font-mono font-semibold text-success">
-              {formatCurrency(totalRevenue)}
-            </p>
-            <p className="text-sm text-text-secondary">Total Pendapatan</p>
-          </div>
-          <div className="text-center sm:text-left">
-            <p className="text-2xl font-mono font-semibold text-accent">
-              {employeeMealCount}
-            </p>
-            <p className="text-sm text-text-secondary">Makan Karyawan</p>
-          </div>
-        </div>
-      </div>
+
       {/* Search and Filter Controls */}
       <div className="px-4 lg:px-6 py-4">
         <div className="flex flex-col sm:flex-row gap-4">

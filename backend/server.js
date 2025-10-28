@@ -64,7 +64,7 @@ const authorizeRoles = (...roles) => {
 // --- Menu Items Endpoints ---
 
 // Get all menu items
-app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'guest'), async (req, res, next) => {
+app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir'), async (req, res, next) => {
     try {
         const sql = "select * from menu_items";
         const [rows] = await db.query(sql);
@@ -133,7 +133,7 @@ app.delete("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'adm
 // --- Settings Endpoints ---
 
 // Get PPN setting
-app.get('/api/settings/ppn', authenticateToken, authorizeRoles('user', 'admin', 'guest'), async (req, res) => {
+app.get('/api/settings/ppn', authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir'), async (req, res) => {
     try {
         const sql = "SELECT value FROM settings WHERE `key` = ?";
         const [rows] = await db.query(sql, ['ppn']);
@@ -185,7 +185,7 @@ app.put('/api/settings/ppn', authenticateToken, authorizeRoles('admin'), async (
 // --- Transaction Endpoints ---
 
 // Get all transactions
-app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'guest'), async (req, res, next) => {
+app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir'), async (req, res, next) => {
     try {
         const sql = "select * from transactions ORDER BY timestamp DESC";
         const [rows] = await db.query(sql);
@@ -204,7 +204,7 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
 });
 
 // Get a single transaction by id
-app.get("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin', 'guest'), async (req, res, next) => {
+app.get("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir'), async (req, res, next) => {
     try {
         const sql = "select * from transactions where id = ?";
         const params = [req.params.id];
@@ -228,7 +228,7 @@ app.get("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
 
 
 // Create a new transaction
-app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
+app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res, next) => {
     try {
         const { items, ignoreStock, cashPaid, change } = req.body;
         const errors = [];
@@ -1258,8 +1258,8 @@ app.put("/api/admin/users/:id/role", authenticateToken, authorizeRoles('admin'),
         const { newRole } = req.body;
         const { id } = req.params;
 
-        if (!newRole || (newRole !== 'admin' && newRole !== 'user' && newRole !== 'guest')) {
-            return res.status(400).json({ error: "Invalid role specified. Must be 'admin', 'user', or 'guest'." });
+        if (!newRole || !['admin', 'user', 'kasir', 'guest'].includes(newRole)) {
+            return res.status(400).json({ error: "Invalid role specified. Must be 'admin', 'user', 'kasir', or 'guest'." });
         }
 
         // Prevent changing own role (optional, but good practice)

@@ -4,6 +4,7 @@ function Image({
   src,
   alt = "Image Name",
   className = "",
+  fallbackSrc = "/assets/images/no_image.png",
   ...props
 }) {
 
@@ -13,7 +14,7 @@ function Image({
       alt={alt}
       className={className}
       onError={(e) => {
-        e.target.src = "/assets/images/no_image.png"
+        e.target.src = fallbackSrc;
       }}
       {...props}
     />

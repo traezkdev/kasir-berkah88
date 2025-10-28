@@ -173,7 +173,7 @@ const SelectComponent = React.forwardRef(({
 
                 {/* Dropdown */}
                 {isOpen && (
-                    <div className="absolute z-[1002] w-full mt-1 bg-card text-text-primary border border-border rounded-md shadow-md">
+                    <div className="absolute z-[9999] w-full bottom-full mb-1 bg-card text-text-primary border border-border rounded-md shadow-md">
                         {searchable && (
                             <div className="p-2 border-b">
                                 <div className="relative">
@@ -198,7 +198,8 @@ const SelectComponent = React.forwardRef(({
                                     <div
                                         key={option?.value}
                                         className={cn(
-                                            "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-muted dark:hover:bg-muted/20",
+                                            "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none",
+                                            !isSelected(option?.value) && "hover:bg-muted dark:hover:bg-muted/20",
                                             isSelected(option?.value) && "bg-primary text-primary-foreground",
                                             option?.disabled && "pointer-events-none opacity-50"
                                         )}
