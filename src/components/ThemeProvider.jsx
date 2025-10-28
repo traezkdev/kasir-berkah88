@@ -26,7 +26,7 @@ export function ThemeProvider({ children, defaultTheme = 'system', storageKey = 
     }
 
     if (theme === 'dark') {
-      themeColorMetaTag.setAttribute('content', '#1a1a1a'); // Dark color for dark mode
+      themeColorMetaTag.setAttribute('content', '#0F172A'); // Dark color for dark mode
     } else {
       themeColorMetaTag.setAttribute('content', '#ffffff'); // Light color for light mode
     }
