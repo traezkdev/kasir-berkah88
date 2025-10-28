@@ -177,6 +177,8 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       isEmployeeMeal: isEmployeeMeal,
       payment_method: paymentMethod,
       ignoreStock: ignoreStock,
+      cash_paid: paymentData.cashPaid,
+      change: paymentData.change,
     };
 
     try {

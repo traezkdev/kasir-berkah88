@@ -26,6 +26,17 @@ const OrderSummary = ({
   const [ppnRate, setPpnRate] = useState(0.11); // Default PPN rate
   const [isEditingTotal, setIsEditingTotal] = useState(false);
   const [customTotal, setCustomTotal] = useState(null);
+  const [cashPaid, setCashPaid] = useState('');
+  const [change, setChange] = useState(0);
+
+  useEffect(() => {
+    if (paymentMethod === 'Tunai' && cashPaid && customTotal) {
+      const calculatedChange = parseFloat(cashPaid) - customTotal;
+      setChange(calculatedChange > 0 ? calculatedChange : 0);
+    } else {
+      setChange(0);
+    }
+  }, [cashPaid, customTotal, paymentMethod]);
 
   useEffect(() => {
     const fetchPpn = async () => {
@@ -214,12 +225,41 @@ const OrderSummary = ({
                 onChange={handlePaymentMethodChange}
               />
             </div>
+
+            {paymentMethod === 'Tunai' && (
+              <div className="space-y-3 border-t pt-4 mt-4">
+                <div className="space-y-2">
+                  <label htmlFor="cash-paid" className="text-sm font-medium text-muted-foreground">
+                    Nominal Tunai (Opsional)
+                  </label>
+                  <input
+                    id="cash-paid"
+                    type="number"
+                    value={cashPaid}
+                    onChange={(e) => setCashPaid(e.target.value)}
+                    className="w-full text-right border border-input rounded-md px-2 py-1 text-foreground bg-background"
+                    placeholder="Rp 0"
+                  />
+                </div>
+                {cashPaid && change > 0 && (
+                  <div className="flex justify-between items-center font-bold text-lg text-green-500">
+                    <p>Kembalian</p>
+                    <p>Rp {change.toLocaleString('id-ID')}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2 mt-4">
             <Button variant="outline" onClick={onClearCart} className="w-full">Kosongkan</Button>
             <Button 
-              onClick={() => onProcessPayment({ total: customTotal, ppn: ppnRate })} 
+              onClick={() => onProcessPayment({ 
+                total: customTotal, 
+                ppn: ppnRate,
+                cashPaid: paymentMethod === 'Tunai' ? parseFloat(cashPaid) || 0 : 0,
+                change: paymentMethod === 'Tunai' ? change : 0,
+              })} 
               className="w-full"
               loading={isLoading}
               disabled={disablePaymentButton || userRole === 'guest'}

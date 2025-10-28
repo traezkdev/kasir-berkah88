@@ -104,6 +104,20 @@ const ReceiptPage = () => {
               <span className="text-lg text-gray-900">TOTAL:</span>
               <span className="text-lg text-black">Rp {Number(transaction.total).toLocaleString("id-ID")}</span>
             </div>
+
+            {transaction.payment_method === 'Tunai' && transaction.cash_paid > 0 && (
+              <>
+                <div className="flex justify-between text-sm mt-2">
+                  <span className="text-gray-900">Uang Tunai:</span>
+                  <span className="text-gray-900">Rp {Number(transaction.cash_paid).toLocaleString("id-ID")}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-900">Kembalian:</span>
+                  <span className="text-gray-900">Rp {Number(transaction.change).toLocaleString("id-ID")}</span>
+                </div>
+              </>
+            )}
+
             <div className="border-b border-dashed border-gray-400 my-4"></div>
             <div className="flex justify-between text-sm">
               <span className="text-black">Metode Pembayaran:</span>
