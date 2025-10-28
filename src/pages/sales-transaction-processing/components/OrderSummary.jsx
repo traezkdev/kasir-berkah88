@@ -28,6 +28,7 @@ const OrderSummary = ({
   const [customTotal, setCustomTotal] = useState(null);
   const [cashPaid, setCashPaid] = useState('');
   const [change, setChange] = useState(0);
+  const [moneyShortage, setMoneyShortage] = useState(0);
   const [selectedCashOption, setSelectedCashOption] = useState('custom'); // Default to custom
   const [customCashInput, setCustomCashInput] = useState(''); // For custom input
 
@@ -41,10 +42,17 @@ const OrderSummary = ({
     setCashPaid(currentCashPaid); // Update cashPaid state
 
     if (paymentMethod === 'Tunai' && currentCashPaid && customTotal) {
-      const calculatedChange = currentCashPaid - customTotal;
-      setChange(calculatedChange > 0 ? calculatedChange : 0);
+      const calculatedDifference = currentCashPaid - customTotal;
+      if (calculatedDifference >= 0) {
+        setChange(calculatedDifference);
+        setMoneyShortage(0);
+      } else {
+        setChange(0);
+        setMoneyShortage(Math.abs(calculatedDifference));
+      }
     } else {
       setChange(0);
+      setMoneyShortage(0);
     }
   }, [selectedCashOption, customCashInput, customTotal, paymentMethod]);
 
@@ -275,10 +283,14 @@ const OrderSummary = ({
                     />
                   )}
                 </div>
-                {cashPaid && change > 0 && (
-                  <div className="flex justify-between items-center font-bold text-lg text-green-500">
-                    <p>Kembalian</p>
-                    <p>Rp {change.toLocaleString('id-ID')}</p>
+                {cashPaid && (change > 0 || moneyShortage > 0) && (
+                  <div className="flex justify-between items-center font-bold text-lg">
+                    {change > 0 && (
+                      <p className="text-green-500">Kembalian: Rp {change.toLocaleString('id-ID')}</p>
+                    )}
+                    {moneyShortage > 0 && (
+                      <p className="text-red-500">Uang kurang: Rp {moneyShortage.toLocaleString('id-ID')}</p>
+                    )}
                   </div>
                 )}
               </div>
