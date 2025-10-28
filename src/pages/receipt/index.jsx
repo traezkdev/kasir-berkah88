@@ -67,9 +67,9 @@ const ReceiptPage = () => {
 
   return (
     <>
-      <div className="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+      <div className="bg-gray-100 dark:bg-gray-900 min-h-screen flex flex-col items-center justify-center p-4">
         <div id="receipt-container" className="relative bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col">
-          <div ref={receiptRef} className="p-6 overflow-y-auto">
+          <div ref={receiptRef} className="p-6 overflow-y-auto bg-white">
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Berkah 88</h2>
               <p className="text-sm text-gray-900">Harga hemat, Rasa terhormat</p>
@@ -130,7 +130,7 @@ const ReceiptPage = () => {
               <p>Terima kasih telah berbelanja!</p>
             </div>
           </div>
-          <div className="p-4 bg-gray-50 rounded-b-lg flex items-center justify-between print:hidden">
+          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-b-lg flex items-center justify-between print:hidden">
             <Button variant="outline" onClick={() => navigate('/sales-transaction-processing')} className="flex items-center gap-2">
                 <ArrowLeft size={16} />
                 Kembali
