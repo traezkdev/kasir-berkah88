@@ -187,7 +187,7 @@ const CashierDashboard = () => {
                 onClick={() => addToCart(item)}
               >
                 <img
-                  src={item.image_url || '/public/assets/images/no_image.png'}
+                  src={item.image_url ? `${apiUrl}${item.image_url}` : '/public/assets/images/no_image.png'}
                   alt={item.name}
                   className="w-full h-32 object-cover rounded-md mb-2"
                 />
