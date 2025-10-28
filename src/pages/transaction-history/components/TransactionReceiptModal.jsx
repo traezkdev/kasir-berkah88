@@ -130,7 +130,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
               <p>Terima kasih telah berbelanja!</p>
             </div>
           </div>
-          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-b-lg flex items-center justify-end space-x-3 print:hidden">
+          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-b-lg flex items-center justify-center space-x-3 print:hidden">
             <Button variant="outline" onClick={onClose}>
               Tutup
             </Button>
