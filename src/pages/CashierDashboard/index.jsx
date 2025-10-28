@@ -252,8 +252,8 @@ const CashierDashboard = () => {
                   onClick={() => currentAvailableStock > 0 && addToCart(item)}
                 >
                   {isInCart && (
-                    <div className="absolute top-2 left-2 bg-green-500 text-white rounded-full p-1 z-10">
-                      <FiCheck className="h-4 w-4" />
+                    <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
+                      {itemInCart.quantity}
                     </div>
                   )}
                   {isOutOfStock && (
