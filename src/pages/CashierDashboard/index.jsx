@@ -328,6 +328,9 @@ const CashierDashboard = () => {
                   step="any"
                   className="mb-2"
                 />
+                {cashPaid > 0 && cashPaid < totalAmount && (
+                  <p className="text-sm text-red-500 mt-1">Uang kurang!</p>
+                )}
                 <div className="flex justify-between text-xl font-bold text-green-600 dark:text-green-400">
                   <span>Kembalian:</span>
                   <span>Rp{change.toLocaleString('id-ID')}</span>
