@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import authFetch from '../../utils/authFetch';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -17,11 +17,7 @@ const CashierDashboard = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError('');
     try {
@@ -48,7 +44,11 @@ const CashierDashboard = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [setMenuItems, setPpnRate, setIsLoading, setError]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const filteredMenuItems = useMemo(() => {
     return menuItems.filter(item =>
@@ -56,9 +56,9 @@ const CashierDashboard = () => {
     );
   }, [menuItems, searchTerm]);
 
-  const addToCart = (item) => {
+  const addToCart = useCallback((item) => {
     if (item.stock === 0) {
-      toast.error(`${item.name} stok habis!`);
+      setTimeout(() => toast.error(`${item.name} stok habis!`), 0);
       return;
     }
 
@@ -66,7 +66,7 @@ const CashierDashboard = () => {
       const existingItem = prevCart.find((cartItem) => cartItem.id === item.id);
       if (existingItem) {
         if (existingItem.quantity + 1 > item.stock) {
-          toast.error(`Stok ${item.name} tidak cukup! Tersedia: ${item.stock}`);
+          setTimeout(() => toast.error(`Stok ${item.name} tidak cukup! Tersedia: ${item.stock}`), 0);
           return prevCart; // Don't update cart if stock is insufficient
         }
         return prevCart.map((cartItem) =>
@@ -78,7 +78,7 @@ const CashierDashboard = () => {
         return [...prevCart, { ...item, quantity: 1 }];
       }
     });
-  };
+  }, [setCart]);
 
   const updateCartQuantity = (itemId, newQuantity) => {
     setCart((prevCart) => {
