@@ -184,7 +184,7 @@ const CashierDashboard = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white no-select">
+    <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white" onMouseDown={(e) => e.preventDefault()}>
       <header className="bg-white dark:bg-gray-800 shadow p-4 flex justify-between items-center">
         <h1 className="text-2xl font-bold">Dasbor Kasir</h1>
         <DarkModeToggle />
