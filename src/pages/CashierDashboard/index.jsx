@@ -68,83 +68,50 @@ const CashierDashboard = () => {
   }, [menuItems, searchTerm]);
 
   const addToCart = useCallback((item) => {
-    if (item.stock === 0) {
-      setTimeout(() => toast.error(`${item.name} stok habis!`), 0);
-      return;
-    }
-
     setCart((prevCart) => {
       const existingItem = prevCart.find((cartItem) => cartItem.id === item.id);
+      const originalMenuItem = menuItems.find(menuItem => menuItem.id === item.id);
+
+      if (!originalMenuItem) {
+        setTimeout(() => toast.error(`Item ${item.name} tidak ditemukan!`), 0);
+        return prevCart;
+      }
+
       if (existingItem) {
-        // Find the current stock from menuItems state
-        const currentMenuItem = menuItems.find(menuItem => menuItem.id === item.id);
-        if (!currentMenuItem || existingItem.quantity + 1 > currentMenuItem.stock) {
-          setTimeout(() => toast.error(`Stok ${item.name} tidak cukup! Tersedia: ${currentMenuItem?.stock || 0}`), 0);
+        if (existingItem.quantity + 1 > originalMenuItem.stock) {
+          setTimeout(() => toast.error(`Stok ${item.name} tidak cukup! Tersedia: ${originalMenuItem.stock}`), 0);
           return prevCart;
         }
-        // Decrement stock in menuItems state
-        setMenuItems((prevMenuItems) =>
-          prevMenuItems.map((menuItem) =>
-            menuItem.id === item.id
-              ? { ...menuItem, stock: menuItem.stock - 1 }
-              : menuItem
-          )
-        );
         return prevCart.map((cartItem) =>
           cartItem.id === item.id
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
         );
       } else {
-        // Decrement stock in menuItems state for new item
-        setMenuItems((prevMenuItems) =>
-          prevMenuItems.map((menuItem) =>
-            menuItem.id === item.id
-              ? { ...menuItem, stock: menuItem.stock - 1 }
-              : menuItem
-          )
-        );
+        if (1 > originalMenuItem.stock) { // Check if adding 1 item exceeds original stock
+          setTimeout(() => toast.error(`Stok ${item.name} tidak cukup! Tersedia: ${originalMenuItem.stock}`), 0);
+          return prevCart;
+        }
         return [...prevCart, { ...item, quantity: 1 }];
       }
     });
-  }, [setCart, setMenuItems, menuItems]);
+  }, [setCart, menuItems]);
 
   const updateCartQuantity = (itemId, newQuantity) => {
     setCart((prevCart) => {
       const itemToUpdate = prevCart.find((item) => item.id === itemId);
       if (!itemToUpdate) return prevCart;
 
-      const currentQuantity = itemToUpdate.quantity;
-      const quantityDifference = newQuantity - currentQuantity;
-
-      // Get the current stock from menuItems state
-      const currentMenuItem = menuItems.find(menuItem => menuItem.id === itemId);
-      if (!currentMenuItem) return prevCart; // Should not happen
+      const originalMenuItem = menuItems.find(menuItem => menuItem.id === itemId);
+      if (!originalMenuItem) return prevCart; // Should not happen
 
       if (newQuantity <= 0) {
-        // Item is being removed or quantity set to 0
-        setMenuItems((prevMenuItems) =>
-          prevMenuItems.map((menuItem) =>
-            menuItem.id === itemId
-              ? { ...menuItem, stock: menuItem.stock + currentQuantity } // Return stock to menuItems
-              : menuItem
-          )
-        );
         return prevCart.filter((item) => item.id !== itemId);
       } else {
-        // Check if new quantity exceeds available stock (currentMenuItem.stock already reflects remaining stock)
-        if (quantityDifference > 0 && quantityDifference > currentMenuItem.stock) {
-          setTimeout(() => toast.error(`Stok ${itemToUpdate.name} tidak cukup! Tersedia: ${currentMenuItem.stock}`), 0);
+        if (newQuantity > originalMenuItem.stock) {
+          setTimeout(() => toast.error(`Stok ${itemToUpdate.name} tidak cukup! Tersedia: ${originalMenuItem.stock}`), 0);
           return prevCart;
         }
-
-        setMenuItems((prevMenuItems) =>
-          prevMenuItems.map((menuItem) =>
-            menuItem.id === itemId
-              ? { ...menuItem, stock: menuItem.stock - quantityDifference } // Adjust stock in menuItems
-              : menuItem
-          )
-        );
 
         return prevCart.map((item) =>
           item.id === itemId ? { ...item, quantity: newQuantity } : item
@@ -155,16 +122,6 @@ const CashierDashboard = () => {
 
   const removeFromCart = (itemId) => {
     setCart((prevCart) => {
-      const removedItem = prevCart.find((item) => item.id === itemId);
-      if (removedItem) {
-        setMenuItems((prevMenuItems) =>
-          prevMenuItems.map((menuItem) =>
-            menuItem.id === itemId
-              ? { ...menuItem, stock: menuItem.stock + removedItem.quantity } // Return stock
-              : menuItem
-          )
-        );
-      }
       return prevCart.filter((item) => item.id !== itemId);
     });
   };
@@ -267,7 +224,9 @@ const CashierDashboard = () => {
           {error && <p className="text-red-500">Error: {error}</p>}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredMenuItems.map((item) => {
-              const isOutOfStock = item.stock === 0;
+              const itemInCart = cart.find(cartItem => cartItem.id === item.id);
+              const currentAvailableStock = item.stock - (itemInCart ? itemInCart.quantity : 0);
+              const isOutOfStock = currentAvailableStock <= 0;
               const isInCart = cart.some(cartItem => cartItem.id === item.id);
               return (
                 <div
@@ -276,7 +235,7 @@ const CashierDashboard = () => {
                     ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'} 
                     ${isInCart ? 'border-2 border-green-500' : ''}`
                   }
-                  onClick={() => !isOutOfStock && addToCart(item)}
+                  onClick={() => currentAvailableStock > 0 && addToCart(item)}
                 >
                   {isInCart && (
                     <div className="absolute top-2 left-2 bg-green-500 text-white rounded-full p-1 z-10">
