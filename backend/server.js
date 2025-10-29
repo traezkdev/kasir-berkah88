@@ -1422,9 +1422,9 @@ app.delete("/api/admin/users/:id", authenticateToken, authorizeRoles('admin'), a
 // --- User Profile Endpoints ---
 
 // Get User Profile
-app.get("/api/user/profile", authenticateToken, authorizeRoles('user', 'admin'), async (req, res) => {
+app.get("/api/user/profile", authenticateToken, async (req, res) => {
     try {
-        const sql = 'SELECT id, username FROM users WHERE id = ?';
+        const sql = 'SELECT id, username, role, avatar_url FROM users WHERE id = ?';
         const [rows] = await db.query(sql, [req.user.userId]);
         if (rows.length > 0) {
             res.json({ message: "success", data: rows[0] });
@@ -1495,6 +1495,26 @@ app.put("/api/user/profile/password", authenticateToken, authorizeRoles('user', 
         } else {
             res.status(500).json({ error: "Failed to update password" });
         }
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// Upload User Avatar
+app.post("/api/user/profile/avatar", authenticateToken, upload.single('avatar'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: "No avatar file uploaded." });
+        }
+        const avatarUrl = `/public/uploads/${req.file.filename}`;
+
+        const sql = 'UPDATE users SET avatar_url = ? WHERE id = ?';
+        await db.query(sql, [avatarUrl, req.user.userId]);
+
+        res.json({
+            message: 'Avatar updated successfully!',
+            data: { avatar_url: avatarUrl }
+        });
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
     }

@@ -48,11 +48,13 @@ const ProfileCard = ({ icon, title, description, onClick, isDestructive = false 
 
 const UserProfile = ({ headerTitle }) => {
   // --- States ---
-  const [user, setUser] = useState({ id: '', username: '', role: '' });
+  const [user, setUser] = useState({ id: '', username: '', role: '', avatar_url: null });
   const [newUsername, setNewUsername] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -61,22 +63,30 @@ const UserProfile = ({ headerTitle }) => {
 
   // --- Effects ---
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const decoded = JSON.parse(atob(token.split('.')[1]));
-        setUser({ id: decoded.userId, username: decoded.username, role: decoded.role });
-        setNewUsername(decoded.username);
-      } catch (e) {
-        console.error("Failed to decode token:", e);
-        handleLogout(); // Force logout on bad token
-      }
-    }
+    fetchUserProfile();
   }, []);
 
   // --- Handlers ---
+  const fetchUserProfile = async () => {
+    setIsLoading(true);
+    try {
+      const response = await authFetch(`${apiUrl}/api/user/profile`);
+      const data = await response.json();
+      if (response.ok) {
+        setUser(data.data);
+        setNewUsername(data.data.username);
+      } else {
+        setError(data.error || 'Gagal memuat profil pengguna');
+      }
+    } catch (err) {
+      setError('Kesalahan jaringan. Logout dan coba lagi.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const clearMessages = () => { setMessage(''); setError(''); };
-  const handleModalClose = () => { setActiveModal(null); clearMessages(); };
+  const handleModalClose = () => { setActiveModal(null); clearMessages(); setAvatarFile(null); setAvatarPreview(null); };
 
   const handleUpdateUsername = async (e) => {
     e.preventDefault();
@@ -94,7 +104,8 @@ const UserProfile = ({ headerTitle }) => {
       });
       const data = await response.json();
       if (response.ok) {
-        setMessage('Nama pengguna berhasil diperbarui! Anda mungkin perlu login ulang untuk melihat perubahan.');
+        setMessage('Nama pengguna berhasil diperbarui! Anda mungkin perlu login ulang untuk melihat perubahan di semua tempat.');
+        fetchUserProfile(); // Re-fetch profile to get latest data
         setTimeout(() => handleModalClose(), 2500);
       } else {
         setError(data.error || 'Gagal memperbarui nama pengguna');
@@ -141,6 +152,38 @@ const UserProfile = ({ headerTitle }) => {
     }
   };
 
+  const handleAvatarFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleAvatarUpload = async (e) => {
+    e.preventDefault();
+    if (!avatarFile) { setError('Pilih file gambar untuk diunggah.'); return; }
+    clearMessages();
+    setIsLoading(true);
+    const formData = new FormData();
+    formData.append('avatar', avatarFile);
+    try {
+      const response = await authFetch(`${apiUrl}/api/user/profile/avatar`, { method: 'POST', body: formData });
+      const data = await response.json();
+      if (response.ok) {
+        setMessage('Foto profil berhasil diperbarui!');
+        fetchUserProfile(); // Re-fetch to get new avatar URL
+        setTimeout(() => handleModalClose(), 1500);
+      } else {
+        setError(data.error || 'Gagal mengunggah foto profil');
+      }
+    } catch (err) {
+      setError('Kesalahan jaringan atau server tidak dapat dijangkau');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleLogout = async () => {
     if (window.confirm('Apakah Anda yakin ingin keluar?')) {
       localStorage.removeItem('token');
@@ -149,6 +192,8 @@ const UserProfile = ({ headerTitle }) => {
   };
 
   const breadcrumbs = [{ name: 'Beranda', path: '/main-dashboard' }, { name: 'Profil', path: '/profile' }];
+
+  const avatarSrc = user.avatar_url ? `${apiUrl}${user.avatar_url}` : '/assets/images/no_image.png';
 
   return (
     <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
@@ -164,27 +209,36 @@ const UserProfile = ({ headerTitle }) => {
             <p className="mt-2 text-lg text-text-secondary">Kelola informasi akun, nama pengguna, dan kata sandi Anda.</p>
           </header>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Info Card */}
-            <div className="md:col-span-2 lg:col-span-3 bg-card p-6 rounded-xl shadow-lg border border-border">
-                <h3 className="text-lg font-bold text-text-primary mb-4">Informasi Akun</h3>
-                <div className="space-y-2 text-sm">
-                    <p><strong className="font-medium">ID Pengguna:</strong> {user.id}</p>
-                    <p><strong className="font-medium">Nama Pengguna:</strong> {user.username}</p>
-                    <p><strong className="font-medium">Peran:</strong> <span className="capitalize px-2 py-1 bg-primary/10 text-primary rounded-full text-xs">{user.role}</span></p>
+            <div className="md:col-span-3 bg-card p-6 rounded-xl shadow-lg border border-border flex items-center gap-6">
+                <img src={avatarSrc} alt="Foto Profil" className="w-24 h-24 rounded-full object-cover border-4 border-primary/20" />
+                <div className="flex-grow">
+                    <h3 className="text-xl font-bold text-text-primary mb-2">Informasi Akun</h3>
+                    <div className="space-y-2 text-sm">
+                        <p><strong className="font-medium">ID Pengguna:</strong> {user.id}</p>
+                        <p><strong className="font-medium">Nama Pengguna:</strong> {user.username}</p>
+                        <p><strong className="font-medium">Peran:</strong> <span className="capitalize px-2 py-1 bg-primary/10 text-primary rounded-full text-xs">{user.role}</span></p>
+                    </div>
                 </div>
             </div>
 
             <ProfileCard 
+              icon="Camera" 
+              title="Ubah Foto Profil" 
+              description="Perbarui foto profil Anda."
+              onClick={() => setActiveModal('avatar')}
+            />
+            <ProfileCard 
               icon="UserCog" 
               title="Ubah Nama Pengguna" 
-              description="Perbarui nama pengguna Anda." 
+              description="Perbarui nama pengguna Anda."
               onClick={() => setActiveModal('username')}
             />
             <ProfileCard 
               icon="KeyRound" 
               title="Ubah Kata Sandi" 
-              description="Ganti kata sandi Anda secara berkala untuk keamanan."
+              description="Ganti kata sandi untuk keamanan."
               onClick={() => setActiveModal('password')}
             />
             <ProfileCard 
@@ -199,6 +253,17 @@ const UserProfile = ({ headerTitle }) => {
       </main>
 
       {/* Modals */}
+      <ProfileModal title="Ubah Foto Profil" isOpen={activeModal === 'avatar'} onClose={handleModalClose}>
+        <form onSubmit={handleAvatarUpload} className="space-y-6">
+            <p className="text-sm text-text-secondary">Pilih gambar baru untuk dijadikan foto profil. Disarankan gambar persegi.</p>
+            <Input label="Pilih File Gambar" name="avatarFile" type="file" accept="image/*" onChange={handleAvatarFileChange} />
+            {avatarPreview && <img src={avatarPreview} alt="Pratinjau" className="w-32 h-32 rounded-full object-cover mx-auto border-4 border-dashed p-1" />}
+            <Button type="submit" className="w-full" disabled={isLoading || !avatarFile}>{isLoading ? 'Mengunggah...' : 'Unggah & Simpan'}</Button>
+            {message && <p className="text-sm text-center text-green-500 mt-2">{message}</p>}
+            {error && <p className="text-sm text-center text-red-500 mt-2">{error}</p>}
+        </form>
+      </ProfileModal>
+
       <ProfileModal title="Ubah Nama Pengguna" isOpen={activeModal === 'username'} onClose={handleModalClose}>
         <form onSubmit={handleUpdateUsername} className="space-y-4">
           <p className="text-sm text-text-secondary">Nama pengguna Anda saat ini: <strong className="text-text-primary">{user.username}</strong></p>

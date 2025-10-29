@@ -181,6 +181,20 @@ const setupDatabase = async () => {
       console.log('Modified role column to ENUM type.');
     }
 
+    // Check and add avatar_url column to users if it doesn't exist
+    const checkAvatarUrlColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'avatar_url';
+    `;
+    const addAvatarUrlColumn = `
+      ALTER TABLE users ADD COLUMN avatar_url VARCHAR(255) DEFAULT NULL;
+    `;
+    const [avatarRows] = await connection.query(checkAvatarUrlColumn);
+    if (avatarRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addAvatarUrlColumn);
+      console.log('Added avatar_url column to users table.');
+    }
+
     const addUpdatedAtToMenuItems = `
       ALTER TABLE menu_items ADD COLUMN updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
     `;
