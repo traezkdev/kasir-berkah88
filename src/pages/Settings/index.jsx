@@ -248,6 +248,32 @@ const Settings = ({ headerTitle }) => {
     }
   };
 
+  const handleChangeMasterPassword = async (e) => {
+    e.preventDefault();
+    clearMessages();
+    setIsLoading(true);
+    try {
+      const response = await authFetch(`${apiUrl}/api/settings/master-password`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentMasterPassword, newMasterPassword }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setMessage('Kata sandi master berhasil diperbarui!');
+        setCurrentMasterPassword('');
+        setNewMasterPassword('');
+        setTimeout(() => handleModalClose(), 1500);
+      } else {
+        setError(data.error || 'Gagal memperbarui kata sandi master');
+      }
+    } catch (err) {
+      setError('Kesalahan jaringan atau server tidak dapat dijangkau');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const breadcrumbs = [{ name: 'Beranda', path: '/main-dashboard' }, { name: 'Pengaturan', path: '/settings' }];
   const isAdmin = userRole === 'admin';
 
@@ -255,7 +281,7 @@ const Settings = ({ headerTitle }) => {
     <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
       <NavigationHeader title="Pengaturan" headerTitle={headerTitle} />
       <main className="flex-grow pt-16">
-        <div className="px-4 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8 py-8">
           <BreadcrumbNavigation paths={breadcrumbs} />
           <header className="mt-6 mb-8">
             <h1 className="text-4xl font-bold tracking-tight text-text-primary flex items-center gap-3">
@@ -362,6 +388,15 @@ const Settings = ({ headerTitle }) => {
                 </table>
             </div>
         </div>
+      </SettingsModal>
+
+      <SettingsModal title="Ubah Kata Sandi Master" isOpen={activeModal === 'masterPassword'} onClose={handleModalClose}>
+        <form onSubmit={handleChangeMasterPassword} className="space-y-4">
+          <p className="text-sm text-text-secondary">Kata sandi ini digunakan untuk mengotorisasi tindakan berbahaya seperti menghapus semua data.</p>
+          <Input label="Kata Sandi Master Saat Ini" name="currentMasterPassword" type="password" value={currentMasterPassword} onChange={(e) => setCurrentMasterPassword(e.target.value)} required />
+          <Input label="Kata Sandi Master Baru" name="newMasterPassword" type="password" value={newMasterPassword} onChange={(e) => setNewMasterPassword(e.target.value)} required />
+          <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Memperbarui...' : 'Perbarui Kata Sandi'}</Button>
+        </form>
       </SettingsModal>
 
       {message && <div className="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg">{message}</div>}
