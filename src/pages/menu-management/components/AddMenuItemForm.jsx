@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
+import Select from '../../../components/ui/Select';
 
 const AddMenuItemForm = ({ onAddItem, isLoading, userRole }) => {
   const [formData, setFormData] = useState({
@@ -15,7 +16,17 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
+    let name, value, files;
+
+    if (e && e.target) {
+      // It's an event object from a standard input
+      ({ name, value, files } = e.target);
+    } else {
+      // It's a direct value from the Select component
+      name = 'category'; // Assuming this is only for category for now
+      value = e;
+    }
+
     if (name === 'image') {
       setFormData({ ...formData, [name]: files[0] });
     } else {
@@ -78,15 +89,18 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole }) => {
           </div>
 
           <div>
-            <Input
+            <Select
               label="Kategori"
-              type="text"
               name="category"
-              placeholder="Contoh: Makanan Utama"
               value={formData?.category}
               onChange={handleChange}
               required
               className="w-full"
+              options={[
+                { value: 'makanan', label: 'Makanan' },
+                { value: 'minuman', label: 'Minuman' },
+                { value: 'lainnya', label: 'Lainnya' },
+              ]}
             />
           </div>
           
