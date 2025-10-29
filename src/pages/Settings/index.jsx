@@ -10,40 +10,34 @@ import AppIcon from '../../components/AppIcon';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-// Helper component for the modal
-const SettingsModal = ({ title, isOpen, onClose, children }) => {
+// Reusable Modal Component
+const SettingsModal = ({ title, isOpen, onClose, children, size = 'lg' }) => {
   if (!isOpen) return null;
+  const sizeClass = {
+    md: 'max-w-md',
+    lg: 'max-w-lg',
+    xl: 'max-w-xl',
+    '3xl': 'max-w-3xl',
+  }[size];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-[2000] p-4" onClick={onClose}>
-      <div className="bg-card rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+      <div className={`bg-card rounded-xl shadow-2xl w-full ${sizeClass} max-h-[90vh] flex flex-col`} onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center p-6 border-b border-border">
           <h3 className="text-xl font-semibold text-text-primary">{title}</h3>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <AppIcon name="X" className="w-6 h-6" />
-          </Button>
+          <Button variant="ghost" size="icon" onClick={onClose}><AppIcon name="X" className="w-6 h-6" /></Button>
         </div>
-        <div className="p-6 overflow-y-auto">
-          {children}
-        </div>
+        <div className="p-6 overflow-y-auto">{children}</div>
       </div>
     </div>
   );
 };
 
-// Helper component for the settings cards
+// Reusable Card Component
 const SettingsCard = ({ icon, title, description, onClick, disabled = false }) => (
   <div
     onClick={!disabled ? onClick : undefined}
-    className={`
-      bg-card p-6 rounded-xl shadow-lg border border-border
-      transition-all duration-300 ease-in-out
-      ${disabled
-        ? 'opacity-50 cursor-not-allowed'
-        : 'cursor-pointer hover:shadow-primary/20 hover:scale-[1.02] hover:border-primary/50'
-      }
-    `}
-  >
+    className={`bg-card p-6 rounded-xl shadow-lg border border-border transition-all duration-300 ease-in-out ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-primary/20 hover:scale-[1.02] hover:border-primary/50'}`}>
     <div className="flex items-center gap-4 mb-3">
       <AppIcon name={icon} className="w-8 h-8 text-primary" />
       <h3 className="text-lg font-bold text-text-primary">{title}</h3>
@@ -53,7 +47,7 @@ const SettingsCard = ({ icon, title, description, onClick, disabled = false }) =
 );
 
 const Settings = ({ headerTitle }) => {
-  // --- ALL EXISTING STATES ---
+  // --- States ---
   const [websiteTitle, setWebsiteTitle] = useState('');
   const [newWebsiteTitle, setNewWebsiteTitle] = useState('');
   const [newHeaderTitle, setNewHeaderTitle] = useState('');
@@ -74,13 +68,12 @@ const Settings = ({ headerTitle }) => {
   const [webDescription, setWebDescription] = useState('');
   const [initialCapital, setInitialCapital] = useState('');
   const [employees, setEmployees] = useState([]);
+  const [editingEmployee, setEditingEmployee] = useState(null);
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
-
-  // New state for modal management
   const [activeModal, setActiveModal] = useState(null);
   const navigate = useNavigate();
 
-  // --- ALL EXISTING HANDLERS AND USEEFFECTS ---
+  // --- Effects ---
   useEffect(() => {
     fetchSettings();
     const token = localStorage.getItem('token');
@@ -93,22 +86,13 @@ const Settings = ({ headerTitle }) => {
           fetchUsers();
           fetchEmployees();
         }
-      } catch (e) {
-        console.error("Error decoding token:", e);
-        setUserRole('');
-      }
+      } catch (e) { console.error("Error decoding token:", e); setUserRole(''); }
     }
   }, []);
 
-  const clearMessages = () => {
-    setMessage('');
-    setError('');
-  }
-
-  const handleModalClose = () => {
-    setActiveModal(null);
-    clearMessages();
-  }
+  // --- Handlers ---
+  const clearMessages = () => { setMessage(''); setError(''); };
+  const handleModalClose = () => { setActiveModal(null); clearMessages(); setEditingEmployee(null); };
 
   const fetchSettings = async () => {
     setIsLoading(true);
@@ -126,7 +110,7 @@ const Settings = ({ headerTitle }) => {
         setError(data.error || 'Failed to fetch settings');
       }
     } catch (err) {
-      setError('Network error or server unreachable');
+      setError('Kesalahan jaringan atau server tidak dapat dijangkau');
     } finally {
       setIsLoading(false);
     }
@@ -248,6 +232,37 @@ const Settings = ({ headerTitle }) => {
     }
   };
 
+  const handleCreateAdminUser = async (e) => {
+    e.preventDefault();
+    clearMessages();
+    setIsLoading(true);
+
+    try {
+      const response = await authFetch(`${apiUrl}/api/admin/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: adminUsername, password: adminPassword }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setMessage('Admin user created successfully!');
+        setAdminUsername('');
+        setAdminPassword('');
+        fetchUsers(); // Refresh user list
+        setTimeout(() => handleModalClose(), 1500);
+      } else {
+        setError(data.error || 'Failed to create admin user');
+      }
+    } catch (err) {
+      setError('Network error or server unreachable');
+      console.error('Create admin user error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleChangeMasterPassword = async (e) => {
     e.preventDefault();
     clearMessages();
@@ -274,6 +289,113 @@ const Settings = ({ headerTitle }) => {
     }
   };
 
+  const handleSaveEmployee = async (e) => {
+    e.preventDefault();
+    clearMessages();
+    setIsLoading(true);
+    const formData = new FormData(e.target);
+    const url = editingEmployee ? `${apiUrl}/api/employees/${editingEmployee.id}` : `${apiUrl}/api/employees`;
+    const method = editingEmployee ? 'PUT' : 'POST';
+
+    try {
+      const response = await authFetch(url, { method, body: formData });
+      const data = await response.json();
+      if (response.ok) {
+        setMessage(editingEmployee ? 'Karyawan berhasil diperbarui!' : 'Karyawan berhasil ditambahkan!');
+        fetchEmployees();
+        setActiveModal('employeeManagement'); // Go back to list
+        setEditingEmployee(null);
+      } else {
+        setError(data.error || 'Gagal menyimpan data karyawan');
+      }
+    } catch (err) {
+      setError('Kesalahan jaringan atau server tidak dapat dijangkau');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteEmployee = async (employeeId) => {
+    if (window.confirm('Anda yakin ingin menghapus karyawan ini?')) {
+      clearMessages();
+      setIsLoading(true);
+      try {
+        const response = await authFetch(`${apiUrl}/api/employees/${employeeId}`, { method: 'DELETE' });
+        if (response.ok) {
+          setMessage('Karyawan berhasil dihapus.');
+          fetchEmployees();
+        } else {
+          const data = await response.json();
+          setError(data.error || 'Gagal menghapus karyawan');
+        }
+      } catch (err) {
+        setError('Kesalahan jaringan');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const openEmployeeForm = (employee) => {
+    setEditingEmployee(employee);
+    setActiveModal('employeeForm');
+  };
+
+  const handleClearAllData = async (e) => {
+    e.preventDefault();
+    clearMessages();
+    setIsLoading(true);
+
+    try {
+      const response = await authFetch(`${apiUrl}/api/admin/data/all`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ masterPassword: masterPasswordForClear }),
+        disableRedirectOnAuthError: true,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage('Semua data berhasil dihapus!');
+        // Optionally clear masterPasswordForClear here if needed
+      } else if (response.status === 401) {
+        setError(data.error || 'Kata sandi master salah!');
+      } else {
+        setError(data.error || 'Gagal menghapus semua data');
+      }
+    } catch (err) {
+      setError('Kesalahan jaringan atau server tidak dapat dijangkau');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleMarkDataAsUpdated = async () => {
+    clearMessages();
+    setIsLoading(true);
+    try {
+        const response = await authFetch(`${apiUrl}/api/settings/data-updated-timestamp`, {
+            method: 'PUT',
+        });
+        const data = await response.json();
+        if (response.ok) {
+            setMessage(`Data ditandai sebagai diperbarui pada: ${new Date(data.timestamp).toLocaleString()}`);
+        } else {
+            setError(data.error || 'Gagal menandai data sebagai diperbarui');
+        }
+    } catch (err) {
+        setError('Kesalahan jaringan atau server tidak dapat dijangkau');
+    } finally {
+        setIsLoading(false);
+        setIsConfirmationModalOpen(false);
+    }
+  };
+
+  const openConfirmationModal = () => {
+    setIsConfirmationModalOpen(true);
+  };
+
   const breadcrumbs = [{ name: 'Beranda', path: '/main-dashboard' }, { name: 'Pengaturan', path: '/settings' }];
   const isAdmin = userRole === 'admin';
 
@@ -285,8 +407,7 @@ const Settings = ({ headerTitle }) => {
           <BreadcrumbNavigation paths={breadcrumbs} />
           <header className="mt-6 mb-8">
             <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-text-primary flex items-center gap-3">
-              <AppIcon name="Settings" className="w-10 h-10" />
-              Pengaturan Aplikasi
+              <AppIcon name="Settings" className="w-10 h-10" /> Pengaturan Aplikasi
             </h1>
             <p className="mt-2 text-lg text-text-secondary">Kelola preferensi umum, tampilan, dan fungsionalitas aplikasi Anda di sini.</p>
           </header>
@@ -308,7 +429,10 @@ const Settings = ({ headerTitle }) => {
               <h2 className="text-2xl font-semibold text-text-primary mb-6 border-b border-border pb-3">Manajemen & Keamanan</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <SettingsCard icon="Users" title="Kelola Pengguna" description="Lihat, ubah peran, dan hapus akun pengguna." onClick={() => setActiveModal('userManagement')} />
+                <SettingsCard icon="Contact" title="Manajemen Karyawan" description="Tambah, ubah, dan hapus data karyawan." onClick={() => setActiveModal('employeeManagement')} />
                 <SettingsCard icon="ShieldAlert" title="Kata Sandi Master" description="Ubah kata sandi master untuk tindakan sensitif." onClick={() => setActiveModal('masterPassword')} />
+                <SettingsCard icon="Trash2" title="Hapus Semua Data" description="Hapus semua transaksi, pengeluaran, dan reset stok." onClick={() => setActiveModal('clearAllData')} />
+                <SettingsCard icon="RefreshCw" title="Sinkronisasi Data" description="Tandai semua data (menu, harga) telah diperbarui." onClick={openConfirmationModal} />
               </div>
             </div>
           )}
@@ -362,24 +486,28 @@ const Settings = ({ headerTitle }) => {
         </div>
       </SettingsModal>
 
-      <SettingsModal title="Manajemen Pengguna" isOpen={activeModal === 'userManagement'} onClose={handleModalClose}>
+      <SettingsModal title="Manajemen Pengguna" isOpen={activeModal === 'userManagement'} onClose={handleModalClose} size="3xl">
         <div className="space-y-4">
-            <div className="overflow-x-auto">
+            <div className="flex justify-between items-center mb-4">
+                <h4 className="text-lg font-semibold">Daftar Pengguna</h4>
+                <Button onClick={() => setActiveModal('createAdminUser')}><AppIcon name="UserPlus" className="w-4 h-4 mr-2"/>Tambah Admin Baru</Button>
+            </div>
+            <div className="overflow-x-auto border border-border rounded-lg">
                 <table className="min-w-full text-sm">
-                    <thead className="text-left text-text-secondary"><tr><th className="p-2">ID</th><th className="p-2">Nama</th><th className="p-2">Peran</th><th className="p-2">Aksi</th></tr></thead>
+                    <thead className="bg-gray-100 dark:bg-gray-800 text-left text-text-secondary"><tr><th className="p-3">ID</th><th className="p-3">Nama</th><th className="p-3">Peran</th><th className="p-3">Aksi</th></tr></thead>
                     <tbody>
                         {users.map(user => (
-                            <tr key={user.id} className="border-b border-border">
-                                <td className="p-2">{user.id}</td>
-                                <td className="p-2">{user.username}</td>
-                                <td className="p-2">
+                            <tr key={user.id} className="border-t border-border">
+                                <td className="p-3">{user.id}</td>
+                                <td className="p-3">{user.username}</td>
+                                <td className="p-3">
                                     <select value={user.role} onChange={(e) => handleRoleChange(user.id, e.target.value)} className="bg-background border border-input rounded-md p-1" disabled={isLoading || user.id === 1}>
                                         <option value="user">Pengguna</option>
                                         <option value="kasir">Kasir</option>
                                         <option value="admin">Admin</option>
                                     </select>
                                 </td>
-                                <td className="p-2">
+                                <td className="p-3">
                                     <Button variant="destructive" size="sm" onClick={() => handleDeleteUser(user.id, user.username)} disabled={isLoading || user.id === 1 || (decodedToken && user.id === decodedToken.userId)}>Hapus</Button>
                                 </td>
                             </tr>
@@ -390,6 +518,57 @@ const Settings = ({ headerTitle }) => {
         </div>
       </SettingsModal>
 
+      <SettingsModal title="Buat Pengguna Admin Baru" isOpen={activeModal === 'createAdminUser'} onClose={handleModalClose}>
+        <form onSubmit={handleCreateAdminUser} className="space-y-4">
+          <Input label="Nama Pengguna" name="adminUsername" type="text" value={adminUsername} onChange={(e) => setAdminUsername(e.target.value)} required />
+          <Input label="Kata Sandi" name="adminPassword" type="password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} required />
+          <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Membuat...' : 'Buat Admin'}</Button>
+        </form>
+      </SettingsModal>
+
+      <SettingsModal title="Manajemen Karyawan" isOpen={activeModal === 'employeeManagement'} onClose={handleModalClose} size="3xl">
+        <div className="space-y-4">
+          <Button onClick={() => openEmployeeForm(null)} className="w-full md:w-auto"><AppIcon name="Plus" className="w-4 h-4 mr-2"/>Tambah Karyawan</Button>
+          {message && <p className="text-sm text-center text-green-500 mt-2">{message}</p>}
+          {error && <p className="text-sm text-center text-red-500 mt-2">{error}</p>}
+          <div className="overflow-x-auto border border-border rounded-lg">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-100 dark:bg-gray-800 text-left text-text-secondary"><tr>
+                <th className="p-3">Nama</th><th className="p-3">Posisi</th><th className="p-3">Kontak</th><th className="p-3">Aksi</th>
+              </tr></thead>
+              <tbody>
+                {employees.map(emp => (
+                  <tr key={emp.id} className="border-t border-border">
+                    <td className="p-3 flex items-center gap-3"><img src={emp.avatar ? `${apiUrl}${emp.avatar}` : '/assets/images/no_image.png'} className="w-10 h-10 rounded-full object-cover"/>{emp.name}</td>
+                    <td className="p-3">{emp.position}</td>
+                    <td className="p-3">{emp.phone}<br/>{emp.email}</td>
+                    <td className="p-3"><div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => openEmployeeForm(emp)}>Edit</Button>
+                      <Button variant="destructive" size="sm" onClick={() => handleDeleteEmployee(emp.id)}>Hapus</Button>
+                    </div></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </SettingsModal>
+
+      <SettingsModal title={editingEmployee ? 'Edit Karyawan' : 'Tambah Karyawan Baru'} isOpen={activeModal === 'employeeForm'} onClose={() => setActiveModal('employeeManagement')}>
+        <form onSubmit={handleSaveEmployee} className="space-y-4">
+          <Input label="Nama" name="name" defaultValue={editingEmployee?.name} required />
+          <Input label="Posisi" name="position" defaultValue={editingEmployee?.position} required />
+          <Input label="Telepon" name="phone" defaultValue={editingEmployee?.phone} />
+          <Input label="Email" name="email" type="email" defaultValue={editingEmployee?.email} />
+          <Input label="Avatar" name="avatar" type="file" accept="image/*" />
+          {editingEmployee?.avatar && !editingEmployee?.avatar.startsWith('blob:') && <img src={`${apiUrl}${editingEmployee.avatar}`} className="w-20 h-20 rounded-full object-cover mt-2"/>}
+          <div className="flex justify-end gap-4 pt-4">
+            <Button type="button" variant="outline" onClick={() => setActiveModal('employeeManagement')}>Batal</Button>
+            <Button type="submit" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan'}</Button>
+          </div>
+        </form>
+      </SettingsModal>
+
       <SettingsModal title="Ubah Kata Sandi Master" isOpen={activeModal === 'masterPassword'} onClose={handleModalClose}>
         <form onSubmit={handleChangeMasterPassword} className="space-y-4">
           <p className="text-sm text-text-secondary">Kata sandi ini digunakan untuk mengotorisasi tindakan berbahaya seperti menghapus semua data.</p>
@@ -398,6 +577,24 @@ const Settings = ({ headerTitle }) => {
           <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Memperbarui...' : 'Perbarui Kata Sandi'}</Button>
         </form>
       </SettingsModal>
+
+      <SettingsModal title="Hapus Semua Data" isOpen={activeModal === 'clearAllData'} onClose={handleModalClose}>
+        <form onSubmit={handleClearAllData} className="space-y-4">
+          <p className="text-sm text-text-secondary">Tindakan ini akan menghapus semua transaksi, pengeluaran, dan mengatur ulang stok item menu menjadi nol. Ini tidak dapat dibatalkan.</p>
+          <Input label="Kata Sandi Master" name="masterPasswordForClear" type="password" value={masterPasswordForClear} onChange={(e) => setMasterPasswordForClear(e.target.value)} required />
+          <Button type="submit" variant="destructive" className="w-full" disabled={isLoading}>{isLoading ? 'Menghapus...' : 'Hapus Semua Data'}</Button>
+        </form>
+      </SettingsModal>
+
+      <ConfirmationModal
+        isOpen={isConfirmationModalOpen}
+        onClose={() => setIsConfirmationModalOpen(false)}
+        onConfirm={handleMarkDataAsUpdated}
+        title="Konfirmasi Pembaruan Data"
+        message="Apakah Anda yakin ingin menandai semua data sebagai telah diperbarui? Tindakan ini akan mencatat waktu saat ini sebagai waktu pembaruan terakhir."
+        confirmText="Ya, Tandai Sudah Diperbarui"
+        cancelText="Batal"
+      />
 
       {message && <div className="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{message}</div>}
       {error && <div className="fixed bottom-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{error}</div>}
