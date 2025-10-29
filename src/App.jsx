@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+ehimport React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import Routes from "./Routes";
 import authFetch from './utils/authFetch';
@@ -47,7 +47,7 @@ function App() {
     <> {/* Use a React Fragment to return multiple elements */}
       <Toaster position="bottom-center" reverseOrder={false} />
       <Routes headerTitle={headerTitle} />
-      {location.pathname !== '/cashier-dashboard' && <StickyDarkModeToggle />}
+      <StickyDarkModeToggle />
     </>
   );
 }
