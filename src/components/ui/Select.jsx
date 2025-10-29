@@ -99,12 +99,12 @@ const SelectComponent = React.forwardRef(({
     const hasValue = multiple ? value?.length > 0 : value !== undefined && value !== '';
 
     return (
-        <div className={cn("relative", className)}>
+        <div className={cn("relative space-y-2", className)}>
             {label && (
                 <label
                     htmlFor={selectId}
                     className={cn(
-                        "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block",
+                        "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
                         error ? "text-destructive" : "text-foreground"
                     )}
                 >
