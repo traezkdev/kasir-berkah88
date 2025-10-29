@@ -5,11 +5,50 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
+import AppIcon from '../../components/AppIcon';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
+// Reusable Modal Component
+const ProfileModal = ({ title, isOpen, onClose, children }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-[2000] p-4" onClick={onClose}>
+      <div className="bg-card rounded-xl shadow-2xl w-full max-w-md flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="flex justify-between items-center p-6 border-b border-border">
+          <h3 className="text-xl font-semibold text-text-primary">{title}</h3>
+          <Button variant="ghost" size="icon" onClick={onClose}><AppIcon name="X" className="w-6 h-6" /></Button>
+        </div>
+        <div className="p-6 overflow-y-auto">{children}</div>
+      </div>
+    </div>
+  );
+};
+
+// Reusable Card Component
+const ProfileCard = ({ icon, title, description, onClick, isDestructive = false }) => (
+  <div
+    onClick={onClick}
+    className={`
+      bg-card p-6 rounded-xl shadow-lg border border-border
+      transition-all duration-300 ease-in-out cursor-pointer group
+      ${isDestructive
+        ? 'hover:border-destructive/50 hover:shadow-destructive/20'
+        : 'hover:border-primary/50 hover:shadow-primary/20'
+      }
+    `}
+  >
+    <div className="flex items-center gap-4 mb-2">
+      <AppIcon name={icon} className={`w-8 h-8 ${isDestructive ? 'text-destructive' : 'text-primary'} transition-colors`} />
+      <h3 className="text-lg font-bold text-text-primary">{title}</h3>
+    </div>
+    <p className="text-sm text-text-secondary">{description}</p>
+  </div>
+);
+
 const UserProfile = ({ headerTitle }) => {
-  const [username, setUsername] = useState('');
+  // --- States ---
+  const [user, setUser] = useState({ id: '', username: '', role: '' });
   const [newUsername, setNewUsername] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -17,61 +56,51 @@ const UserProfile = ({ headerTitle }) => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [activeModal, setActiveModal] = useState(null);
   const navigate = useNavigate();
 
+  // --- Effects ---
   useEffect(() => {
-    fetchUserProfile();
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded = JSON.parse(atob(token.split('.')[1]));
+        setUser({ id: decoded.userId, username: decoded.username, role: decoded.role });
+        setNewUsername(decoded.username);
+      } catch (e) {
+        console.error("Failed to decode token:", e);
+        handleLogout(); // Force logout on bad token
+      }
+    }
   }, []);
 
-  const fetchUserProfile = async () => {
-    setIsLoading(true);
-    try {
-      const response = await authFetch(`${apiUrl}/api/user/profile`);
-      const data = await response.json();
-      if (response.ok) {
-        setUsername(data.data.username);
-        setNewUsername(data.data.username); // Initialize newUsername with current username
-      } else {
-        setError(data.error || 'Failed to fetch user profile');
-      }
-    } catch (err) {
-      setError('Network error or server unreachable');
-      console.error('Fetch profile error:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // --- Handlers ---
+  const clearMessages = () => { setMessage(''); setError(''); };
+  const handleModalClose = () => { setActiveModal(null); clearMessages(); };
 
   const handleUpdateUsername = async (e) => {
     e.preventDefault();
-    setMessage('');
-    setError('');
-    setIsLoading(true);
-
-    if (newUsername === username) {
-      setError('New username is the same as current username.');
-      setIsLoading(false);
+    clearMessages();
+    if (newUsername === user.username) {
+      setError('Nama pengguna baru sama dengan nama pengguna saat ini.');
       return;
     }
-
+    setIsLoading(true);
     try {
       const response = await authFetch(`${apiUrl}/api/user/profile/username`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: newUsername }),
       });
       const data = await response.json();
       if (response.ok) {
-        setMessage('Username updated successfully!');
-        setUsername(newUsername); // Update current username state
+        setMessage('Nama pengguna berhasil diperbarui! Anda mungkin perlu login ulang untuk melihat perubahan.');
+        setTimeout(() => handleModalClose(), 2500);
       } else {
-        setError(data.error || 'Failed to update username');
+        setError(data.error || 'Gagal memperbarui nama pengguna');
       }
     } catch (err) {
-      setError('Network error or server unreachable');
-      console.error('Update username error:', err);
+      setError('Kesalahan jaringan atau server tidak dapat dijangkau');
     } finally {
       setIsLoading(false);
     }
@@ -79,157 +108,117 @@ const UserProfile = ({ headerTitle }) => {
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    setMessage('');
-    setError('');
-    setIsLoading(true);
-
+    clearMessages();
     if (newPassword !== confirmNewPassword) {
-      setError('New password and confirm password do not match.');
-      setIsLoading(false);
+      setError('Kata sandi baru dan konfirmasi tidak cocok.');
       return;
     }
-    if (newPassword.length < 6) { // Example: minimum password length
-      setError('New password must be at least 6 characters long.');
-      setIsLoading(false);
+    if (newPassword.length < 6) {
+      setError('Kata sandi baru minimal harus 6 karakter.');
       return;
     }
-
+    setIsLoading(true);
     try {
       const response = await authFetch(`${apiUrl}/api/user/profile/password`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentPassword, newPassword }),
       });
       const data = await response.json();
       if (response.ok) {
-        setMessage('Password updated successfully!');
+        setMessage('Kata sandi berhasil diperbarui!');
         setCurrentPassword('');
         setNewPassword('');
         setConfirmNewPassword('');
+        setTimeout(() => handleModalClose(), 2000);
       } else {
-        setError(data.error || 'Failed to change password');
+        setError(data.error || 'Gagal mengubah kata sandi');
       }
     } catch (err) {
-      setError('Network error or server unreachable');
-      console.error('Change password error:', err);
+      setError('Kesalahan jaringan atau server tidak dapat dijangkau');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleLogout = async () => {
-    setIsLoading(true);
-    try {
-      // Call backend logout endpoint (optional, mainly for logging/blacklist if implemented)
-      await authFetch(`${apiUrl}/api/logout`, { method: 'POST' });
-      localStorage.removeItem('token'); // Clear token from local storage
-      navigate('/login'); // Redirect to login page
-    } catch (err) {
-      console.error('Logout error:', err);
-      // Even if logout API fails, still clear token and redirect
+    if (window.confirm('Apakah Anda yakin ingin keluar?')) {
       localStorage.removeItem('token');
       navigate('/login');
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const breadcrumbs = [
-    { name: 'Beranda', path: '/main-dashboard' },
-    { name: 'Profil', path: '/profile' },
-  ];
+  const breadcrumbs = [{ name: 'Beranda', path: '/main-dashboard' }, { name: 'Profil', path: '/profile' }];
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
       <NavigationHeader title="Profil Pengguna" headerTitle={headerTitle} />
-      <BreadcrumbNavigation paths={breadcrumbs} />
-      <div className="flex-grow pt-20 px-6 pb-20 overflow-auto">
-        <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg dark:shadow-none p-8 space-y-8">
-          <h2 className="text-2xl font-bold text-text-primary dark:text-white text-center">Profil Pengguna</h2>
+      <main className="flex-grow pt-16">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8 py-8">
+          <BreadcrumbNavigation paths={breadcrumbs} />
+          <header className="mt-6 mb-8">
+            <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-text-primary flex items-center gap-3">
+              <AppIcon name="UserCircle" className="w-10 h-10" />
+              Profil Pengguna
+            </h1>
+            <p className="mt-2 text-lg text-text-secondary">Kelola informasi akun, nama pengguna, dan kata sandi Anda.</p>
+          </header>
 
-          {message && <p className="text-success text-center">{message}</p>}
-          {error && <p className="text-destructive text-center">{error}</p>}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Info Card */}
+            <div className="md:col-span-2 lg:col-span-3 bg-card p-6 rounded-xl shadow-lg border border-border">
+                <h3 className="text-lg font-bold text-text-primary mb-4">Informasi Akun</h3>
+                <div className="space-y-2 text-sm">
+                    <p><strong className="font-medium">ID Pengguna:</strong> {user.id}</p>
+                    <p><strong className="font-medium">Nama Pengguna:</strong> {user.username}</p>
+                    <p><strong className="font-medium">Peran:</strong> <span className="capitalize px-2 py-1 bg-primary/10 text-primary rounded-full text-xs">{user.role}</span></p>
+                </div>
+            </div>
 
-          {isLoading && <p className="text-center">Loading...</p>}
-
-          {!isLoading && (
-            <>
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-text-primary dark:text-white">Nama Pengguna Saat Ini: {username}</h3>
-                <form onSubmit={handleUpdateUsername} className="space-y-4">
-                  <Input
-                    label="Nama Pengguna Baru"
-                    name="newUsername"
-                    type="text"
-                    placeholder="Masukkan nama pengguna baru"
-                    value={newUsername}
-                    onChange={(e) => setNewUsername(e.target.value)}
-                    required
-                  />
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    Perbarui Nama Pengguna
-                  </Button>
-                </form>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-text-primary dark:text-white">Ubah Kata Sandi</h3>
-                <form onSubmit={handleChangePassword} className="space-y-4">
-                  <Input
-                    label="Kata Sandi Saat Ini"
-                    name="currentPassword"
-                    type="password"
-                    placeholder="Masukkan kata sandi saat ini"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    required
-                  />
-                  <Input
-                    label="Kata Sandi Baru"
-                    name="newPassword"
-                    type="password"
-                    placeholder="Masukkan kata sandi baru"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
-                  />
-                  <Input
-                    label="Konfirmasi Kata Sandi Baru"
-                    name="confirmNewPassword"
-                    type="password"
-                    placeholder="Konfirmasi kata sandi baru"
-                    value={confirmNewPassword}
-                    onChange={(e) => setConfirmNewPassword(e.target.value)}
-                    required
-                  />
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    Ubah Kata Sandi
-                  </Button>
-                </form>
-              </div>
-
-              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                <Button onClick={handleLogout} className="w-full bg-destructive hover:bg-red-700" disabled={isLoading}>
-                  Keluar
-                </Button>
-              </div>
-
-              {/* Credits Button */}
-              <div className="space-y-4 pt-8">
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => navigate('/credits')}
-                >
-                  Lihat Credits
-                </Button>
-              </div>
-            </>
-          )}
+            <ProfileCard 
+              icon="UserCog" 
+              title="Ubah Nama Pengguna" 
+              description="Perbarui nama pengguna Anda." 
+              onClick={() => setActiveModal('username')}
+            />
+            <ProfileCard 
+              icon="KeyRound" 
+              title="Ubah Kata Sandi" 
+              description="Ganti kata sandi Anda secara berkala untuk keamanan."
+              onClick={() => setActiveModal('password')}
+            />
+            <ProfileCard 
+              icon="LogOut" 
+              title="Keluar" 
+              description="Keluar dari sesi Anda saat ini."
+              onClick={handleLogout}
+              isDestructive
+            />
+          </div>
         </div>
-      </div>
+      </main>
+
+      {/* Modals */}
+      <ProfileModal title="Ubah Nama Pengguna" isOpen={activeModal === 'username'} onClose={handleModalClose}>
+        <form onSubmit={handleUpdateUsername} className="space-y-4">
+          <p className="text-sm text-text-secondary">Nama pengguna Anda saat ini: <strong className="text-text-primary">{user.username}</strong></p>
+          <Input label="Nama Pengguna Baru" name="newUsername" type="text" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} required />
+          <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
+          {message && <p className="text-sm text-center text-green-500 mt-2">{message}</p>}
+          {error && <p className="text-sm text-center text-red-500 mt-2">{error}</p>}
+        </form>
+      </ProfileModal>
+
+      <ProfileModal title="Ubah Kata Sandi" isOpen={activeModal === 'password'} onClose={handleModalClose}>
+        <form onSubmit={handleChangePassword} className="space-y-4">
+          <Input label="Kata Sandi Saat Ini" name="currentPassword" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+          <Input label="Kata Sandi Baru" name="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+          <Input label="Konfirmasi Kata Sandi Baru" name="confirmNewPassword" type="password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} required />
+          <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Ubah Kata Sandi'}</Button>
+          {message && <p className="text-sm text-center text-green-500 mt-2">{message}</p>}
+          {error && <p className="text-sm text-center text-red-500 mt-2">{error}</p>}
+        </form>
+      </ProfileModal>
     </div>
   );
 };
