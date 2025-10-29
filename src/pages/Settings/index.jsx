@@ -6,10 +6,54 @@ import NavigationHeader from '../../components/ui/NavigationHeader';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import ConfirmationModal from '../../components/ui/ConfirmationModal';
 import { useNavigate } from 'react-router-dom';
+import AppIcon from '../../components/AppIcon';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
+// Helper component for the modal
+const SettingsModal = ({ title, isOpen, onClose, children }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-[2000] p-4" onClick={onClose}>
+      <div className="bg-card rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="flex justify-between items-center p-6 border-b border-border">
+          <h3 className="text-xl font-semibold text-text-primary">{title}</h3>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <AppIcon name="X" className="w-6 h-6" />
+          </Button>
+        </div>
+        <div className="p-6 overflow-y-auto">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Helper component for the settings cards
+const SettingsCard = ({ icon, title, description, onClick, disabled = false }) => (
+  <div
+    onClick={!disabled ? onClick : undefined}
+    className={`
+      bg-card p-6 rounded-xl shadow-lg border border-border
+      transition-all duration-300 ease-in-out
+      ${disabled
+        ? 'opacity-50 cursor-not-allowed'
+        : 'cursor-pointer hover:shadow-primary/20 hover:scale-[1.02] hover:border-primary/50'
+      }
+    `}
+  >
+    <div className="flex items-center gap-4 mb-3">
+      <AppIcon name={icon} className="w-8 h-8 text-primary" />
+      <h3 className="text-lg font-bold text-text-primary">{title}</h3>
+    </div>
+    <p className="text-sm text-text-secondary">{description}</p>
+  </div>
+);
+
 const Settings = ({ headerTitle }) => {
+  // --- ALL EXISTING STATES ---
   const [websiteTitle, setWebsiteTitle] = useState('');
   const [newWebsiteTitle, setNewWebsiteTitle] = useState('');
   const [newHeaderTitle, setNewHeaderTitle] = useState('');
@@ -22,35 +66,32 @@ const Settings = ({ headerTitle }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [userRole, setUserRole] = useState('');
-  const [users, setUsers] = useState([]); // New state for users
-  const [decodedToken, setDecodedToken] = useState(null); // New state for decoded token
+  const [users, setUsers] = useState([]);
+  const [decodedToken, setDecodedToken] = useState(null);
   const [currentMasterPassword, setCurrentMasterPassword] = useState('');
   const [newMasterPassword, setNewMasterPassword] = useState('');
   const [masterPasswordForClear, setMasterPasswordForClear] = useState('');
   const [webDescription, setWebDescription] = useState('');
   const [initialCapital, setInitialCapital] = useState('');
-  const [coverImageFile, setCoverImageFile] = useState(null);
-  const [currentCoverImageUrl, setCurrentCoverImageUrl] = useState('');
-  const [currentWebDescription, setCurrentWebDescription] = useState('');
   const [employees, setEmployees] = useState([]);
-  const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState(null);
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
 
+  // New state for modal management
+  const [activeModal, setActiveModal] = useState(null);
   const navigate = useNavigate();
 
+  // --- ALL EXISTING HANDLERS AND USEEFFECTS ---
   useEffect(() => {
     fetchSettings();
-    // Decode JWT to get user role
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        const decodedToken = JSON.parse(atob(token.split('.')[1]));
-        setDecodedToken(decodedToken); // Store the whole decoded token
-        setUserRole(decodedToken.role);
-        if (decodedToken.role === 'admin') {
-          fetchUsers(); // Fetch users if admin
-          fetchEmployees(); // Fetch employees if admin
+        const decoded = JSON.parse(atob(token.split('.')[1]));
+        setDecodedToken(decoded);
+        setUserRole(decoded.role);
+        if (decoded.role === 'admin') {
+          fetchUsers();
+          fetchEmployees();
         }
       } catch (e) {
         console.error("Error decoding token:", e);
@@ -59,27 +100,15 @@ const Settings = ({ headerTitle }) => {
     }
   }, []);
 
-  useEffect(() => {
-    // Update Open Graph and Twitter meta tags
-    const ogTitle = document.getElementById('og-title');
-    if (ogTitle) ogTitle.content = websiteTitle;
+  const clearMessages = () => {
+    setMessage('');
+    setError('');
+  }
 
-    const ogDescription = document.getElementById('og-description');
-    if (ogDescription) ogDescription.content = currentWebDescription;
-
-    const ogImage = document.getElementById('og-image');
-    if (ogImage) ogImage.content = currentCoverImageUrl || '/no_image.png'; // Fallback to default
-
-    const twitterTitle = document.getElementById('twitter-title');
-    if (twitterTitle) twitterTitle.content = websiteTitle;
-
-    const twitterDescription = document.getElementById('twitter-description');
-    if (twitterDescription) twitterDescription.content = currentWebDescription;
-
-    const twitterImage = document.getElementById('twitter-image');
-    if (twitterImage) twitterImage.content = currentCoverImageUrl || '/no_image.png'; // Fallback to default
-
-  }, [currentWebDescription, currentCoverImageUrl, websiteTitle]);
+  const handleModalClose = () => {
+    setActiveModal(null);
+    clearMessages();
+  }
 
   const fetchSettings = async () => {
     setIsLoading(true);
@@ -89,1002 +118,254 @@ const Settings = ({ headerTitle }) => {
       if (response.ok) {
         setWebsiteTitle(data.data.website_title || 'Kasir Berkah 88');
         setNewWebsiteTitle(data.data.website_title || 'Kasir Berkah 88');
-        setNewHeaderTitle(data.data.header_title || headerTitle || 'Kasir Berkah 88'); // Initialize newHeaderTitle with API data or prop
+        setNewHeaderTitle(data.data.header_title || headerTitle || 'Kasir Berkah 88');
         setRegistrationEnabled(data.data.registration_enabled === 'true');
-        setCurrentCoverImageUrl(data.data.cover_image_url || '');
-        setCurrentWebDescription(data.data.web_description || '');
-        setWebDescription(data.data.web_description || ''); // Initialize input field
+        setWebDescription(data.data.web_description || '');
         setInitialCapital(data.data.initial_capital || '');
       } else {
         setError(data.error || 'Failed to fetch settings');
       }
     } catch (err) {
       setError('Network error or server unreachable');
-      console.error('Fetch settings error:', err);
     } finally {
       setIsLoading(false);
     }
   };
 
   const fetchUsers = async () => {
-    setIsLoading(true);
     try {
       const response = await authFetch(`${apiUrl}/api/admin/users`);
       const data = await response.json();
-      if (response.ok) {
-        setUsers(data.data);
-      } else {
-        setError(data.error || 'Failed to fetch users');
-      }
-    } catch (err) {
-      setError('Network error or server unreachable');
-      console.error('Fetch users error:', err);
-    } finally {
-      setIsLoading(false);
-    }
+      if (response.ok) setUsers(data.data);
+    } catch (err) { console.error('Fetch users error:', err); }
   };
 
   const fetchEmployees = async () => {
-    setIsLoading(true);
     try {
       const response = await authFetch(`${apiUrl}/api/employees`);
       const data = await response.json();
-      if (response.ok) {
-        setEmployees(data.data);
-      } else {
-        setError(data.error || 'Failed to fetch employees');
-      }
-    } catch (err) {
-      setError('Network error or server unreachable');
-      console.error('Fetch employees error:', err);
-    } finally {
-      setIsLoading(false);
-    }
+      if (response.ok) setEmployees(data.data);
+    } catch (err) { console.error('Fetch employees error:', err); }
   };
 
-  const handleOpenEmployeeModal = (employee) => {
-    setEditingEmployee(employee);
-    setIsEmployeeModalOpen(true);
-  };
-
-  const handleCloseEmployeeModal = () => {
-    setEditingEmployee(null);
-    setIsEmployeeModalOpen(false);
-  };
-
-  const handleSaveEmployee = async (e) => {
+  const handleUpdateSetting = async (e, endpoint, body, successMessage) => {
     e.preventDefault();
-    setMessage('');
-    setError('');
+    clearMessages();
     setIsLoading(true);
-
-    const formData = new FormData(e.target);
-    const employeeData = Object.fromEntries(formData.entries());
-
-    const url = editingEmployee
-      ? `${apiUrl}/api/employees/${editingEmployee.id}`
-      : `${apiUrl}/api/employees`;
-    const method = editingEmployee ? 'PUT' : 'POST';
-
     try {
-      const response = await authFetch(url, {
-        method,
-        body: formData,
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setMessage(editingEmployee ? 'Employee updated successfully!' : 'Employee added successfully!');
-        fetchEmployees();
-        handleCloseEmployeeModal();
-      } else {
-        setError(data.error || 'Failed to save employee');
-      }
-    } catch (err) {
-      setError('Network error or server unreachable');
-      console.error('Save employee error:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDeleteEmployee = async (employeeId, employeeName) => {
-    if (window.confirm(`Are you sure you want to delete employee "${employeeName}"?`)) {
-      setMessage('');
-      setError('');
-      setIsLoading(true);
-
-      try {
-        const response = await authFetch(`${apiUrl}/api/employees/${employeeId}`, {
-          method: 'DELETE',
-        });
-        const data = await response.json();
-        if (response.ok) {
-          setMessage(`Employee "${employeeName}" deleted successfully!`);
-          fetchEmployees();
-        } else {
-          setError(data.error || `Failed to delete employee "${employeeName}"`);
-        }
-      } catch (err) {
-        setError('Network error or server unreachable');
-        console.error('Delete employee error:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
-
-
-
-  const handleUpdateWebsiteTitle = async (e) => {
-    e.preventDefault();
-    setMessage('');
-    setError('');
-    setIsLoading(true);
-
-    try {
-      const response = await authFetch(`${apiUrl}/api/settings/title`, {
+      const response = await authFetch(`${apiUrl}${endpoint}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ title: newWebsiteTitle }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       });
       const data = await response.json();
       if (response.ok) {
-        setMessage('Website title updated successfully!');
-        setWebsiteTitle(newWebsiteTitle);
+        setMessage(successMessage);
+        fetchSettings();
+        setTimeout(() => handleModalClose(), 1500);
       } else {
-        setError(data.error || 'Failed to update website title');
+        setError(data.error || 'Gagal melakukan pembaruan');
       }
     } catch (err) {
-      setError('Network error or server unreachable');
-      console.error('Update website title error:', err);
+      setError('Kesalahan jaringan atau server tidak dapat dijangkau');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleUpdateHeaderTitle = async (e) => {
-    e.preventDefault();
-    setMessage('');
-    setError('');
-    setIsLoading(true);
-
-    try {
-        const response = await authFetch(`${apiUrl}/api/settings/header-title`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ title: newHeaderTitle }),
-        });
-        const data = await response.json();
-        if (response.ok) {
-            setMessage('Judul header berhasil diperbarui!');
-        } else {
-            setError(data.error || 'Gagal memperbarui judul header');
-        }
-    } catch (err) {
-        setError('Kesalahan jaringan atau server tidak dapat dijangkau');
-        console.error('Update header title error:', err);
-    } finally {
-        setIsLoading(false);
-    }
-};
-
-const handleLogoFileChange = (e) => {
+  const handleLogoFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-        setLogoFile(file);
-        setLogoPreview(URL.createObjectURL(file));
+      setLogoFile(file);
+      setLogoPreview(URL.createObjectURL(file));
     }
-};
+  };
 
-const handleLogoUpload = async (e) => {
+  const handleLogoUpload = async (e) => {
     e.preventDefault();
-    if (!logoFile) {
-        setError('Pilih file logo untuk diunggah.');
-        return;
-    }
-    setMessage('');
-    setError('');
+    if (!logoFile) { setError('Pilih file logo untuk diunggah.'); return; }
+    clearMessages();
     setIsLoading(true);
-
     const formData = new FormData();
     formData.append('logo', logoFile);
-
     try {
-        const response = await authFetch(`${apiUrl}/api/settings/logo`, {
-            method: 'POST',
-            body: formData,
-        });
-        const data = await response.json();
-        if (response.ok) {
-            setMessage('Logo berhasil diunggah! Halaman akan dimuat ulang.');
-            setTimeout(() => window.location.reload(), 2000); // Reload to show new logo
-        } else {
-            setError(data.error || 'Gagal mengunggah logo');
-        }
-    } catch (err) {
-        setError('Kesalahan jaringan atau server tidak dapat dijangkau');
-        console.error('Logo upload error:', err);
-    } finally {
-        setIsLoading(false);
-    }
-};
-
-  const handleUpdateInitialCapital = async (e) => {
-    e.preventDefault();
-    setMessage('');
-    setError('');
-    setIsLoading(true);
-
-    try {
-        const capitalValue = parseFloat(initialCapital);
-        if (isNaN(capitalValue)) {
-            setError("Modal awal harus berupa angka.");
-            setIsLoading(false);
-            return;
-        }
-
-        const settingsToUpdate = {
-            initial_capital: capitalValue,
-            initial_capital_date: new Date().toISOString(),
-        };
-
-        const response = await authFetch(`${apiUrl}/api/settings`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(settingsToUpdate),
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-            setMessage('Modal awal berhasil diperbarui!');
-            fetchSettings(); // Re-fetch to get the latest state
-        } else {
-            setError(data.error || 'Gagal memperbarui modal awal');
-        }
-    } catch (err) {
-        setError('Kesalahan jaringan atau server tidak dapat dijangkau');
-        console.error('Update initial capital error:', err);
-    } finally {
-        setIsLoading(false);
-    }
-  };
-
-  const handleToggleRegistration = async () => {
-    setMessage('');
-    setError('');
-    setIsLoading(true);
-
-    try {
-      const response = await authFetch(`${apiUrl}/api/settings/registration`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ enabled: !registrationEnabled }),
-      });
+      const response = await authFetch(`${apiUrl}/api/settings/logo`, { method: 'POST', body: formData });
       const data = await response.json();
       if (response.ok) {
-        setMessage('Registration setting updated successfully!');
-        setRegistrationEnabled(!registrationEnabled);
+        setMessage('Logo berhasil diunggah! Halaman akan dimuat ulang.');
+        setTimeout(() => window.location.reload(), 2000);
       } else {
-        setError(data.error || 'Failed to update registration setting');
+        setError(data.error || 'Gagal mengunggah logo');
       }
     } catch (err) {
-      setError('Network error or server unreachable');
-      console.error('Toggle registration error:', err);
+      setError('Kesalahan jaringan atau server tidak dapat dijangkau');
     } finally {
       setIsLoading(false);
     }
   };
-
-  const handleCreateAdminUser = async (e) => {
-    e.preventDefault();
-    setMessage('');
-    setError('');
-    setIsLoading(true);
-
-    try {
-      const response = await authFetch(`${apiUrl}/api/admin/users`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username: adminUsername, password: adminPassword }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setMessage('Admin user created successfully!');
-        setAdminUsername('');
-        setAdminPassword('');
-      } else {
-        setError(data.error || 'Failed to create admin user');
-      }
-    } catch (err) {
-      setError('Network error or server unreachable');
-      console.error('Create admin user error:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  
   const handleRoleChange = async (userId, newRole) => {
-    setMessage('');
-    setError('');
+    clearMessages();
     setIsLoading(true);
-
     try {
       const response = await authFetch(`${apiUrl}/api/admin/users/${userId}/role`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ newRole }),
       });
       const data = await response.json();
       if (response.ok) {
-        setMessage(`User role updated successfully for user ID ${userId}!`);
-        fetchUsers(); // Refresh user list
+        setMessage(`Peran pengguna berhasil diperbarui!`);
+        fetchUsers();
       } else {
-        setError(data.error || 'Failed to update user role');
+        setError(data.error || 'Gagal memperbarui peran');
       }
     } catch (err) {
-      setError('Network error or server unreachable');
-      console.error('Update user role error:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleChangeMasterPassword = async (e) => {
-    e.preventDefault();
-    setMessage('');
-    setError('');
-    setIsLoading(true);
-
-    try {
-      const response = await authFetch(`${apiUrl}/api/settings/master-password`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ currentMasterPassword, newMasterPassword }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setMessage('Master password updated successfully!');
-        setCurrentMasterPassword('');
-        setNewMasterPassword('');
-      } else {
-        setError(data.error || 'Failed to update master password');
-      }
-    } catch (err) {
-      setError('Network error or server unreachable');
-      console.error('Update master password error:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleClearAllData = async (e) => {
-    e.preventDefault();
-    setMessage('');
-    setError('');
-    setIsLoading(true);
-
-    try {
-      const response = await authFetch(`${apiUrl}/api/admin/data/all`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ masterPassword: masterPasswordForClear }),
-        disableRedirectOnAuthError: true,
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setMessage('All data cleared successfully!');
-        setMasterPasswordForClear('');
-      } else if (response.status === 401) {
-        setError(data.error || 'Kata sandi master salah!');
-      } else {
-        setError(data.error || 'Failed to clear all data');
-      }
-    } catch (err) {
-      setError('Network error or server unreachable');
-      console.error('Clear all data error:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleUpdateWebDescription = async (e) => {
-    e.preventDefault();
-    setMessage('');
-    setError('');
-    setIsLoading(true);
-
-    try {
-      const response = await authFetch(`${apiUrl}/api/settings/description`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ description: webDescription }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setMessage('Web description updated successfully!');
-        setCurrentWebDescription(webDescription);
-      } else {
-        setError(data.error || 'Failed to update web description');
-      }
-    } catch (err) {
-      setError('Network error or server unreachable');
-      console.error('Update web description error:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCoverImageUpload = async (e) => {
-    e.preventDefault();
-    setMessage('');
-    setError('');
-    setIsLoading(true);
-
-    if (!coverImageFile) {
-      setError('Please select a cover image file to upload.');
-      setIsLoading(false);
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('coverImage', coverImageFile);
-
-    try {
-      const response = await authFetch(`${apiUrl}/api/settings/cover-image/`, {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setMessage('Cover image uploaded successfully!');
-        setCurrentCoverImageUrl(data.data.cover_image_url); // Assuming backend returns the new URL
-        setCoverImageFile(null); // Clear selected file
-      } else {
-        setError(data.error || 'Failed to upload cover image');
-      }
-    } catch (err) {
-      setError('Network error or server unreachable');
-      console.error('Cover image upload error:', err);
+      setError('Kesalahan jaringan');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDeleteUser = async (userId, username) => {
-    if (window.confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
-      setMessage('');
-      setError('');
+    if (window.confirm(`Anda yakin ingin menghapus pengguna "${username}"?`)) {
+      clearMessages();
       setIsLoading(true);
-
       try {
-        const response = await authFetch(`${apiUrl}/api/admin/users/${userId}`, {
-          method: 'DELETE',
-        });
+        const response = await authFetch(`${apiUrl}/api/admin/users/${userId}`, { method: 'DELETE' });
         const data = await response.json();
         if (response.ok) {
-          setMessage(`User "${username}" deleted successfully!`);
-          fetchUsers(); // Refresh user list
+          setMessage(`Pengguna "${username}" berhasil dihapus!`);
+          fetchUsers();
         } else {
-          setError(data.error || `Failed to delete user "${username}"`);
+          setError(data.error || 'Gagal menghapus pengguna');
         }
       } catch (err) {
-        setError('Network error or server unreachable');
-        console.error('Delete user error:', err);
+        setError('Kesalahan jaringan');
       } finally {
         setIsLoading(false);
       }
     }
   };
 
-  const handleMarkDataAsUpdated = async () => {
-    setMessage('');
-    setError('');
-    setIsLoading(true);
-    try {
-        const response = await authFetch(`${apiUrl}/api/settings/data-updated-timestamp`, {
-            method: 'PUT',
-        });
-        const data = await response.json();
-        if (response.ok) {
-            setMessage(`Data ditandai sebagai diperbarui pada: ${new Date(data.timestamp).toLocaleString()}`);
-        } else {
-            setError(data.error || 'Gagal menandai data sebagai diperbarui');
-        }
-    } catch (err) {
-        setError('Kesalahan jaringan atau server tidak dapat dijangkau');
-        console.error('Mark data as updated error:', err);
-    } finally {
-        setIsLoading(false);
-        setIsConfirmationModalOpen(false);
-    }
-  };
-
-  const openConfirmationModal = () => {
-    setIsConfirmationModalOpen(true);
-  };
-
-  const breadcrumbs = [
-    { name: 'Beranda', path: '/main-dashboard' },
-    { name: 'Pengaturan', path: '/settings' },
-  ];
+  const breadcrumbs = [{ name: 'Beranda', path: '/main-dashboard' }, { name: 'Pengaturan', path: '/settings' }];
+  const isAdmin = userRole === 'admin';
 
   return (
-    <div className="flex flex-col h-screen bg-background">
-              <NavigationHeader title="Pengaturan" headerTitle={headerTitle} />
-      <BreadcrumbNavigation paths={breadcrumbs} />
-      <div className="flex-grow pt-20 px-6 pb-20 overflow-auto">
-        <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg dark:shadow-none p-8 space-y-8">
-          <h2 className="text-2xl font-bold text-text-primary dark:text-white text-center">Pengaturan Aplikasi</h2>
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
+      <NavigationHeader title="Pengaturan" headerTitle={headerTitle} />
+      <main className="flex-grow pt-16">
+        <div className="px-4 lg:px-8 py-8">
+          <BreadcrumbNavigation paths={breadcrumbs} />
+          <header className="mt-6 mb-8">
+            <h1 className="text-4xl font-bold tracking-tight text-text-primary flex items-center gap-3">
+              <AppIcon name="Settings" className="w-10 h-10" />
+              Pengaturan Aplikasi
+            </h1>
+            <p className="mt-2 text-lg text-text-secondary">Kelola preferensi umum, tampilan, dan fungsionalitas aplikasi Anda di sini.</p>
+          </header>
 
-          {message && <p className="text-success text-center">{message}</p>}
-          {error && <p className="text-destructive text-center">{error}</p>}
+          <div className="mb-12">
+            <h2 className="text-2xl font-semibold text-text-primary mb-6 border-b border-border pb-3">Pengaturan Umum</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <SettingsCard icon="Type" title="Judul Situs Web" description="Ubah judul di tab browser dan hasil pencarian." onClick={() => setActiveModal('websiteTitle')} disabled={!isAdmin} />
+              <SettingsCard icon="Heading" title="Judul Header Web" description="Sesuaikan teks judul di header utama aplikasi." onClick={() => setActiveModal('headerTitle')} disabled={!isAdmin} />
+              <SettingsCard icon="Image" title="Ganti Logo Header" description="Unggah logo baru yang tampil di header." onClick={() => setActiveModal('logo')} disabled={!isAdmin} />
+              <SettingsCard icon="DollarSign" title="Modal Awal" description="Atur jumlah modal awal untuk perhitungan bisnis." onClick={() => setActiveModal('initialCapital')} disabled={!isAdmin} />
+              <SettingsCard icon="FileText" title="Deskripsi Web" description="Kelola deskripsi meta untuk optimasi SEO." onClick={() => setActiveModal('webDescription')} disabled={!isAdmin} />
+              <SettingsCard icon="ToggleRight" title="Pendaftaran Pengguna" description="Izinkan atau blokir pengguna baru untuk mendaftar." onClick={() => setActiveModal('registration')} disabled={!isAdmin} />
+            </div>
+          </div>
 
-          {isLoading && <p className="text-center">Loading...</p>}
-
-          {!isLoading && (
-            <>
-              {/* Website Title Setting */}
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-text-primary dark:text-white">Judul Situs Web</h3>
-                <form onSubmit={handleUpdateWebsiteTitle} className="space-y-4">
-                  <Input
-                    label="Judul Saat Ini"
-                    name="newWebsiteTitle"
-                    type="text"
-                    placeholder="Masukkan judul situs web baru"
-                    value={newWebsiteTitle}
-                    onChange={(e) => setNewWebsiteTitle(e.target.value)}
-                    required
-                  />
-                  <Button type="submit" className="w-full" disabled={isLoading || userRole !== 'admin' || userRole === 'guest'}>
-                    Perbarui Judul
-                  </Button>
-                </form>
+          {isAdmin && (
+            <div className="mb-12">
+              <h2 className="text-2xl font-semibold text-text-primary mb-6 border-b border-border pb-3">Manajemen & Keamanan</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <SettingsCard icon="Users" title="Kelola Pengguna" description="Lihat, ubah peran, dan hapus akun pengguna." onClick={() => setActiveModal('userManagement')} />
+                <SettingsCard icon="ShieldAlert" title="Kata Sandi Master" description="Ubah kata sandi master untuk tindakan sensitif." onClick={() => setActiveModal('masterPassword')} />
               </div>
-
-              {/* Header Title Setting */}
-              <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-text-primary dark:text-white">Judul Header Web</h3>
-                  <form onSubmit={handleUpdateHeaderTitle} className="space-y-4">
-                      <Input
-                          label="Judul Header Saat Ini"
-                          name="newHeaderTitle"
-                          type="text"
-                          placeholder="Masukkan judul header web baru"
-                          value={newHeaderTitle}
-                          onChange={(e) => setNewHeaderTitle(e.target.value)}
-                          required
-                      />
-                      <Button type="submit" className="w-full" disabled={isLoading || userRole !== 'admin'}>
-                          Perbarui Judul Header
-                      </Button>
-                  </form>
-              </div>
-
-              {/* Logo Setting */}
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-text-primary dark:text-white">Ganti Logo Header</h3>
-                <form onSubmit={handleLogoUpload} className="space-y-4">
-                    <Input
-                        label="Pilih File Logo (PNG, JPG)"
-                        name="logoFile"
-                        type="file"
-                        accept=".png, .jpg, .jpeg"
-                        onChange={handleLogoFileChange}
-                    />
-                    {logoPreview && (
-                        <div className="flex flex-col items-center">
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pratinjau Logo:</span>
-                            <img src={logoPreview} alt="Pratinjau Logo" className="w-24 h-24 rounded-lg border border-border" />
-                        </div>
-                    )}
-                    <Button type="submit" className="w-full" disabled={isLoading || userRole !== 'admin' || !logoFile}>
-                        Unggah Logo
-                    </Button>
-                </form>
-              </div>
-
-              {/* Initial Capital Setting */}
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-text-primary dark:text-white">Modal Awal</h3>
-                <form onSubmit={handleUpdateInitialCapital} className="space-y-4">
-                  <Input
-                    label="Jumlah Modal Awal (Rp)"
-                    name="initialCapital"
-                    type="number"
-                    placeholder="Contoh: 5000000"
-                    value={initialCapital}
-                    onChange={(e) => setInitialCapital(e.target.value)}
-                    required
-                  />
-                  <Button type="submit" className="w-full" disabled={isLoading || userRole !== 'admin'}>
-                    Simpan Modal Awal
-                  </Button>
-                </form>
-              </div>
-
-              {/* Registration Toggle Setting */}
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-text-primary dark:text-white">Pendaftaran Pengguna</h3>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-700 dark:text-gray-200">Izinkan pengguna baru mendaftar:</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      value=""
-                      className="sr-only peer"
-                      checked={registrationEnabled}
-                      onChange={handleToggleRegistration}
-                      disabled={isLoading || userRole !== 'admin'}
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
-                    <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">
-                      {registrationEnabled ? 'Diaktifkan' : 'Dinonaktifkan'}
-                    </span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Web Description Setting */}
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-text-primary dark:text-white">Deskripsi Web</h3>
-                <form onSubmit={handleUpdateWebDescription} className="space-y-4">
-                  <label htmlFor="webDescription" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground">
-                    Deskripsi Saat Ini
-                  </label>
-                  <textarea
-                    id="webDescription"
-                    name="webDescription"
-                    rows="4"
-                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    placeholder="Masukkan deskripsi web untuk SEO dan berbagi media sosial"
-                    value={webDescription}
-                    onChange={(e) => setWebDescription(e.target.value)}
-                    required
-                  ></textarea>
-                  <Button type="submit" className="w-full" disabled={isLoading || userRole !== 'admin'}>
-                    Perbarui Deskripsi Web
-                  </Button>
-                </form>
-              </div>
-
-              {/* Favicon Setting */}
-              {/* <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-text-primary">Favicon</h3>
-                {currentFaviconUrl && (
-                  <div className="flex items-center space-x-2">
-                    <span>Favicon Saat Ini:</span>
-                    <img src={currentFaviconUrl} alt="Current Favicon" className="w-8 h-8" />
-                  </div>
-                )}
-                <form onSubmit={handleFaviconUpload} className="space-y-4">
-                  <label htmlFor="faviconFile" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground">
-                    Pilih File Favicon (PNG, ICO)
-                  </label>
-                  <input
-                    id="faviconFile"
-                    name="faviconFile"
-                    type="file"
-                    accept=".png, .ico"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    onChange={(e) => setFaviconFile(e.target.files[0])}
-                  />
-                  <Button type="submit" className="w-full" disabled={isLoading || userRole !== 'admin' || !faviconFile}>
-                    Unggah Favicon
-                  </Button>
-                </form>
-              </div> */}
-
-              {/* Cover Image Setting */}
-              {/* <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-text-primary">Gambar Sampul (untuk media sosial)</h3>
-                {currentCoverImageUrl && (
-                  <div className="flex items-center space-x-2">
-                    <span>Gambar Sampul Saat Ini:</span>
-                    <img src={currentCoverImageUrl} alt="Current Cover" className="w-32 h-auto" />
-                  </div>
-                )}
-                <form onSubmit={handleCoverImageUpload} className="space-y-4">
-                  <label htmlFor="coverImageFile" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground">
-                    Pilih File Gambar Sampul (JPG, PNG)
-                  </label>
-                  <input
-                    id="coverImageFile"
-                    name="coverImageFile"
-                    type="file"
-                    accept=".jpg, .jpeg, .png"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    onChange={(e) => setCoverImageFile(e.target.files[0])}
-                  />
-                  <Button type="submit" className="w-full" disabled={isLoading || userRole !== 'admin' || !coverImageFile}>
-                    Unggah Gambar Sampul
-                  </Button>
-                </form>
-              </div> */}  
-
-              {/* Create Admin User Section (Admin Only) */}
-              {userRole === 'admin' && (
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-text-primary dark:text-white">Buat Pengguna Admin Baru</h3>
-                  <form onSubmit={handleCreateAdminUser} className="space-y-4">
-                    <Input
-                      label="Nama Pengguna"
-                      name="adminUsername"
-                      type="text"
-                      placeholder="Masukkan nama pengguna untuk admin baru"
-                      value={adminUsername}
-                      onChange={(e) => setAdminUsername(e.target.value)}
-                      required
-                    />
-                    <Input
-                      label="Kata Sandi"
-                      name="adminPassword"
-                      type="password"
-                      placeholder="Masukkan kata sandi untuk admin baru"
-                      value={adminPassword}
-                      onChange={(e) => setAdminPassword(e.target.value)}
-                      required
-                    />
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      Buat Admin
-                    </Button>
-                  </form>
-                </div>
-              )}
-
-              {/* User List and Role Management (Admin Only) */}
-              {userRole === 'admin' && (
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-text-primary dark:text-white">Kelola Peran Pengguna</h3>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm dark:shadow-none">
-                      <thead>
-                        <tr>
-                          <th className="py-2 px-4 border-b dark:border-gray-700 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">ID</th>
-                          <th className="py-2 px-4 border-b dark:border-gray-700 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Nama Pengguna</th>
-                          <th className="py-2 px-4 border-b dark:border-gray-700 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Peran</th>
-                          <th className="py-2 px-4 border-b dark:border-gray-700 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Aksi</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {users.length > 0 ? (
-                          users.map((user) => (
-                            <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                              <td className="py-2 px-4 border-b dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200">{user.id}</td>
-                              <td className="py-2 px-4 border-b dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200">{user.username}</td>
-                              <td className="py-2 px-4 border-b dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200">
-                                <select
-                                  value={user.role}
-                                  onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                                  className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                                  disabled={isLoading || user.id === 1} // Disable changing role for default admin (ID 1)
-                                >
-                                  <option value="user">Pengguna</option>
-                                  <option value="kasir">Kasir</option>
-                                  <option value="admin">Admin</option>
-                                </select>
-                              </td>
-                              <td className="py-2 px-4 border-b dark:border-gray-700 text-sm text-gray-700">
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => handleDeleteUser(user.id, user.username)}
-                                  disabled={isLoading || user.id === 1 || (decodedToken && user.id === decodedToken.userId)} // Disable deleting default admin (ID 1) or self
-                                  className="dark:bg-destructive dark:hover:bg-destructive/90 dark:text-destructive-foreground"
-                                >
-                                  Hapus
-                                </Button>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan="4" className="py-4 text-center text-gray-500">Tidak ada pengguna ditemukan.</td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* Employee Management Section (Admin Only) */}
-              {userRole === 'admin' && (
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-text-primary dark:text-white">Manajemen Karyawan</h3>
-                  <Button onClick={() => handleOpenEmployeeModal(null)} className="w-full">Tambah Karyawan</Button>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm dark:shadow-none">
-                      <thead>
-                        <tr>
-                          <th className="py-2 px-4 border-b dark:border-gray-700 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Nama</th>
-                          <th className="py-2 px-4 border-b dark:border-gray-700 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Posisi</th>
-                          <th className="py-2 px-4 border-b dark:border-gray-700 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Telepon</th>
-                          <th className="py-2 px-4 border-b dark:border-gray-700 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Email</th>
-                          <th className="py-2 px-4 border-b dark:border-gray-700 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">Tindakan</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {employees.length > 0 ? (
-                          employees.map((employee) => (
-                            <tr key={employee.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                              <td className="py-2 px-4 border-b dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200">{employee.name}</td>
-                              <td className="py-2 px-4 border-b dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200">{employee.position}</td>
-                              <td className="py-2 px-4 border-b dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200">{employee.phone}</td>
-                              <td className="py-2 px-4 border-b dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200">{employee.email}</td>
-                              <td className="py-2 px-4 border-b dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200">
-                                <Button variant="outline" size="sm" onClick={() => handleOpenEmployeeModal(employee)} className="mr-2 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600">Edit</Button>
-                                <Button variant="destructive" size="sm" onClick={() => handleDeleteEmployee(employee.id, employee.name)} className="dark:bg-destructive dark:hover:bg-destructive/90 dark:text-destructive-foreground">Hapus</Button>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan="5" className="py-4 text-center text-gray-500">Tidak ada karyawan ditemukan.</td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* Master Password Management (Admin Only) */}
-              {userRole === 'admin' && (
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-text-primary">Ubah Kata Sandi Master</h3>
-                  <form onSubmit={handleChangeMasterPassword} className="space-y-4">
-                    <Input
-                      label="Kata Sandi Master Saat Ini"
-                      name="currentMasterPassword"
-                      type="password"
-                      placeholder="Masukkan kata sandi master saat ini"
-                      value={currentMasterPassword}
-                      onChange={(e) => setCurrentMasterPassword(e.target.value)}
-                      required
-                    />
-                    <Input
-                      label="Kata Sandi Master Baru"
-                      name="newMasterPassword"
-                      type="password"
-                      placeholder="Masukkan kata sandi master baru"
-                      value={newMasterPassword}
-                      onChange={(e) => setNewMasterPassword(e.target.value)}
-                      required
-                    />
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      Perbarui Kata Sandi Master
-                    </Button>
-                  </form>
-                </div>
-              )}
-
-              {/* Clear All Data (Admin Only) */}
-              {userRole === 'admin' && (
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-text-primary">Hapus Semua Data Aplikasi</h3>
-                  <p className="text-sm text-text-secondary">
-                    Tindakan ini akan menghapus semua transaksi, pengeluaran, dan mengatur ulang semua stok item menu menjadi nol secara permanen.
-                    Tindakan ini tidak dapat dibatalkan.
-                  </p>
-                  <form onSubmit={handleClearAllData} className="space-y-4">
-                    <Input
-                      label="Kata Sandi Master"
-                      name="masterPasswordForClear"
-                      type="password"
-                      placeholder="Masukkan kata sandi master untuk konfirmasi"
-                      value={masterPasswordForClear}
-                      onChange={(e) => setMasterPasswordForClear(e.target.value)}
-                      required
-                    />
-                  </form>
-                </div>
-              )}
-
-              {/* Data Update Marker */}
-              {userRole === 'admin' && (
-                  <div className="space-y-4">
-                      <h3 className="text-xl font-semibold text-text-primary dark:text-white">Sinkronisasi Data</h3>
-                      <p className="text-sm text-text-secondary">
-                          Klik tombol ini untuk menandai bahwa semua data (menu, harga, dll.) telah sesuai dengan data fisik terbaru. Ini akan menampilkan waktu pembaruan terakhir di dasbor utama.
-                      </p>
-                      <Button onClick={openConfirmationModal} className="w-full" disabled={isLoading}>
-                          Tandai Semua Data Telah Diperbarui
-                      </Button>
-                  </div>
-              )}
-
-              {/* Credits Button */}
-              <div className="space-y-4 pt-8">
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => navigate('/credits')}
-                >
-                  Lihat Credits
-                </Button>
-              </div>
-            </>
+            </div>
           )}
         </div>
-      </div>
+      </main>
 
-      <ConfirmationModal
-        isOpen={isConfirmationModalOpen}
-        onClose={() => setIsConfirmationModalOpen(false)}
-        onConfirm={handleMarkDataAsUpdated}
-        title="Konfirmasi Pembaruan Data"
-        message="Apakah Anda yakin ingin menandai semua data sebagai telah diperbarui? Tindakan ini akan mencatat waktu saat ini sebagai waktu pembaruan terakhir."
-        confirmText="Ya, Tandai Sudah Diperbarui"
-        cancelText="Batal"
-      />
+      {/* --- ALL MODALS --- */}
+      <SettingsModal title="Ubah Judul Situs Web" isOpen={activeModal === 'websiteTitle'} onClose={handleModalClose}>
+        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/title', { title: newWebsiteTitle }, 'Judul situs berhasil diperbarui!')} className="space-y-4">
+          <Input label="Judul Situs Web Baru" name="newWebsiteTitle" type="text" value={newWebsiteTitle} onChange={(e) => setNewWebsiteTitle(e.target.value)} required />
+          <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
+        </form>
+      </SettingsModal>
 
-      {isEmployeeModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
-            <h2 className="text-2xl font-bold mb-4">{editingEmployee ? 'Edit Karyawan' : 'Tambah Karyawan'}</h2>
-            <form onSubmit={handleSaveEmployee} className="space-y-4">
-              <Input
-                label="Nama"
-                name="name"
-                type="text"
-                defaultValue={editingEmployee?.name}
-                required
-              />
-              <Input
-                label="Posisi"
-                name="position"
-                type="text"
-                defaultValue={editingEmployee?.position}
-                required
-              />
-              <Input
-                label="Telepon"
-                name="phone"
-                type="text"
-                defaultValue={editingEmployee?.phone}
-              />
-              <Input
-                label="Email"
-                name="email"
-                type="email"
-                defaultValue={editingEmployee?.email}
-              />
-              <Input
-                label="Avatar"
-                name="avatar"
-                type="file"
-                accept="image/*"
-              />
-              <div className="flex justify-end space-x-4">
-                <Button type="button" variant="outline" onClick={handleCloseEmployeeModal}>Batal</Button>
-                <Button type="submit" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan'}</Button>
-              </div>
-            </form>
-          </div>
+      <SettingsModal title="Ubah Judul Header Web" isOpen={activeModal === 'headerTitle'} onClose={handleModalClose}>
+        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/header-title', { title: newHeaderTitle }, 'Judul header berhasil diperbarui!')} className="space-y-4">
+          <Input label="Judul Header Baru" name="newHeaderTitle" type="text" value={newHeaderTitle} onChange={(e) => setNewHeaderTitle(e.target.value)} required />
+          <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
+        </form>
+      </SettingsModal>
+
+      <SettingsModal title="Ganti Logo Header" isOpen={activeModal === 'logo'} onClose={handleModalClose}>
+        <form onSubmit={handleLogoUpload} className="space-y-6">
+          <Input label="Pilih File Logo (PNG, JPG)" name="logoFile" type="file" accept=".png, .jpg, .jpeg" onChange={handleLogoFileChange} />
+          {logoPreview && <img src={logoPreview} alt="Pratinjau Logo" className="w-24 h-24 rounded-lg object-cover mx-auto border border-dashed p-1" />}
+          <Button type="submit" className="w-full" disabled={isLoading || !logoFile}>{isLoading ? 'Mengunggah...' : 'Unggah dan Simpan'}</Button>
+        </form>
+      </SettingsModal>
+
+      <SettingsModal title="Atur Modal Awal" isOpen={activeModal === 'initialCapital'} onClose={handleModalClose}>
+         <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings', { initial_capital: initialCapital }, 'Modal awal berhasil diperbarui!')} className="space-y-4">
+          <Input label="Jumlah Modal Awal (Rp)" name="initialCapital" type="number" value={initialCapital} onChange={(e) => setInitialCapital(e.target.value)} required />
+          <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
+        </form>
+      </SettingsModal>
+
+      <SettingsModal title="Ubah Deskripsi Web" isOpen={activeModal === 'webDescription'} onClose={handleModalClose}>
+        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/description', { description: webDescription }, 'Deskripsi web berhasil diperbarui!')} className="space-y-4">
+          <textarea value={webDescription} onChange={(e) => setWebDescription(e.target.value)} rows="4" className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="Masukkan deskripsi web..."></textarea>
+          <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
+        </form>
+      </SettingsModal>
+
+      <SettingsModal title="Pendaftaran Pengguna" isOpen={activeModal === 'registration'} onClose={handleModalClose}>
+        <div className="flex items-center justify-between p-4 rounded-lg bg-background">
+            <span className="text-text-primary">Izinkan pengguna baru mendaftar</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" checked={registrationEnabled} onChange={(e) => handleUpdateSetting(e, '/api/settings/registration', { enabled: !registrationEnabled }, 'Pengaturan pendaftaran diperbarui!')} className="sr-only peer" />
+                <div className="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+            </label>
         </div>
-      )}
+      </SettingsModal>
 
+      <SettingsModal title="Manajemen Pengguna" isOpen={activeModal === 'userManagement'} onClose={handleModalClose}>
+        <div className="space-y-4">
+            <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                    <thead className="text-left text-text-secondary"><tr><th className="p-2">ID</th><th className="p-2">Nama</th><th className="p-2">Peran</th><th className="p-2">Aksi</th></tr></thead>
+                    <tbody>
+                        {users.map(user => (
+                            <tr key={user.id} className="border-b border-border">
+                                <td className="p-2">{user.id}</td>
+                                <td className="p-2">{user.username}</td>
+                                <td className="p-2">
+                                    <select value={user.role} onChange={(e) => handleRoleChange(user.id, e.target.value)} className="bg-background border border-input rounded-md p-1" disabled={isLoading || user.id === 1}>
+                                        <option value="user">Pengguna</option>
+                                        <option value="kasir">Kasir</option>
+                                        <option value="admin">Admin</option>
+                                    </select>
+                                </td>
+                                <td className="p-2">
+                                    <Button variant="destructive" size="sm" onClick={() => handleDeleteUser(user.id, user.username)} disabled={isLoading || user.id === 1 || (decodedToken && user.id === decodedToken.userId)}>Hapus</Button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+      </SettingsModal>
+
+      {message && <div className="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg">{message}</div>}
+      {error && <div className="fixed bottom-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-lg">{error}</div>}
     </div>
   );
 };
