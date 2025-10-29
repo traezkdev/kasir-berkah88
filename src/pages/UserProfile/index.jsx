@@ -209,7 +209,7 @@ const UserProfile = ({ headerTitle }) => {
             <p className="mt-2 text-lg text-text-secondary">Kelola informasi akun, nama pengguna, dan kata sandi Anda.</p>
           </header>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-24">
             {/* Info Card */}
             <div className="md:col-span-3 bg-card p-6 rounded-xl shadow-lg border border-border flex items-center gap-6">
                 <img src={avatarSrc} alt="Foto Profil" className="w-24 h-24 rounded-full object-cover border-4 border-primary/20" />
