@@ -31,19 +31,21 @@ const ProfileCard = ({ icon, title, description, onClick, isDestructive = false 
   <div
     onClick={onClick}
     className={`
-      bg-card p-6 rounded-xl shadow-lg border border-border
+      bg-gradient-to-br ${isDestructive ? 'from-red-500 to-red-700' : 'from-primary to-blue-600'} p-0.5 rounded-xl shadow-lg
       transition-all duration-300 ease-in-out cursor-pointer group
       ${isDestructive
-        ? 'hover:border-destructive/50 hover:shadow-destructive/20'
-        : 'hover:border-primary/50 hover:shadow-primary/20'
+        ? 'hover:shadow-destructive/20'
+        : 'hover:shadow-primary/20'
       }
     `}
   >
-    <div className="flex items-center gap-4 mb-2">
-      <AppIcon name={icon} className={`w-8 h-8 ${isDestructive ? 'text-destructive' : 'text-primary'} transition-colors`} />
-      <h3 className="text-lg font-bold text-text-primary">{title}</h3>
+    <div className="bg-card p-6 rounded-xl h-full">
+      <div className="flex items-center gap-4 mb-2">
+        <AppIcon name={icon} className={`w-8 h-8 ${isDestructive ? 'text-destructive' : 'text-primary'} transition-colors`} />
+        <h3 className="text-lg font-bold text-text-primary">{title}</h3>
+      </div>
+      <p className="text-sm text-text-secondary">{description}</p>
     </div>
-    <p className="text-sm text-text-secondary">{description}</p>
   </div>
 );
 
@@ -215,18 +217,17 @@ const UserProfile = ({ headerTitle }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-24">
             {/* Info Card */}
-            <div className="md:col-span-3 bg-card p-6 rounded-xl shadow-lg border border-border flex items-center gap-6">
-                <img src={avatarSrc} alt="Foto Profil" className="w-24 h-24 rounded-full object-cover border-4 border-primary/20" />
+            <div className="md:col-span-3 bg-gradient-to-br from-sky-400 to-blue-600 text-white rounded-lg p-4 shadow-lg flex items-center gap-6">
+                <img src={avatarSrc} alt="Foto Profil" className="w-24 h-24 rounded-full object-cover border-4 border-white/20" />
                 <div className="flex-grow">
-                    <h3 className="text-xl font-bold text-text-primary mb-2">Informasi Akun</h3>
+                    <h3 className="text-xl font-bold mb-2">Informasi Akun</h3>
                     <div className="space-y-2 text-sm">
                         <p><strong className="font-medium">ID Pengguna:</strong> {user.id}</p>
                         <p><strong className="font-medium">Nama Pengguna:</strong> {user.username}</p>
-                        <p><strong className="font-medium">Peran:</strong> <span className="capitalize px-2 py-1 bg-primary/10 text-primary rounded-full text-xs">{user.role}</span></p>
+                        <p><strong className="font-medium">Peran:</strong> <span className="capitalize px-2 py-1 bg-white/20 rounded-full text-xs">{user.role}</span></p>
                     </div>
                 </div>
             </div>
-
             <ProfileCard 
               icon="Camera" 
               title="Ubah Foto Profil" 
