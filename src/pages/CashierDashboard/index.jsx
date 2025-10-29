@@ -268,6 +268,7 @@ export default function CashierDashboard() {
             <FiLogOut className="h-6 w-6 md:hidden" />
             <span className="hidden md:block">Logout</span>
           </Button>
+
           <DarkModeToggle />
         </div>
       </header>
