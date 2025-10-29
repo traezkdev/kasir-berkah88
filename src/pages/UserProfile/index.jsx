@@ -200,7 +200,7 @@ const UserProfile = ({ headerTitle }) => {
   const avatarSrc = user.avatar_url ? `${apiUrl}${user.avatar_url}` : '/assets/images/no_image.png';
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex flex-col h-screen">
       <NavigationHeader title="Profil Pengguna" headerTitle={headerTitle} />
       <main className="flex-grow pt-16">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 py-8">

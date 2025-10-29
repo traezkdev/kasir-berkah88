@@ -400,7 +400,7 @@ const Settings = ({ headerTitle }) => {
   const isAdmin = userRole === 'admin';
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex flex-col h-screen">
       <NavigationHeader title="Pengaturan" headerTitle={headerTitle} />
       <main className="flex-grow pt-16">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 py-8">
