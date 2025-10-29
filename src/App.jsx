@@ -5,6 +5,7 @@ import authFetch from './utils/authFetch';
 import ScrollToTop from './components/ScrollToTop';
 import ThemeProvider from './components/ThemeProvider';
 import { Toaster } from 'react-hot-toast';
+import StickyDarkModeToggle from './components/ui/StickyDarkModeToggle';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -46,7 +47,7 @@ function App() {
     <> {/* Use a React Fragment to return multiple elements */}
       <Toaster position="bottom-center" reverseOrder={false} />
       <Routes headerTitle={headerTitle} />
-      
+      <StickyDarkModeToggle />
     </>
   );
 }

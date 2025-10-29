@@ -185,6 +185,22 @@ const TransactionChart = ({ transactions, filterType, currentDailyDate, onNextDa
         },
         color: chartTextColor, // Dynamic color
       },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            let label = context.dataset.label || '';
+            if (label) {
+              label += ': ';
+            }
+            if (context.dataset.yAxisID === 'y-total') {
+              label += 'Rp ' + context.parsed.y.toLocaleString('id-ID');
+            } else {
+              label += context.parsed.y;
+            }
+            return label;
+          }
+        }
+      }
     },
     scales: {
       x: {
@@ -251,7 +267,7 @@ const TransactionChart = ({ transactions, filterType, currentDailyDate, onNextDa
         beginAtZero: true,
         title: {
           display: true,
-          text: 'Total Nominal Transaksi (Rp)',
+          text: 'Total Nominal Transaksi',
           font: {
             size: 14,
             weight: 'bold',

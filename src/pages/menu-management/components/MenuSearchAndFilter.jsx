@@ -19,7 +19,10 @@ const MenuSearchAndFilter = ({
     { key: 'all', label: 'Semua', count: menuItems?.length },
     { key: 'available', label: 'Tersedia', count: menuItems?.filter(item => item?.stock > 5)?.length },
     { key: 'low', label: 'Menipis', count: menuItems?.filter(item => item?.stock <= 5 && item?.stock > 0)?.length },
-    { key: 'out', label: 'Habis', count: menuItems?.filter(item => item?.stock === 0)?.length }
+    { key: 'out', label: 'Habis', count: menuItems?.filter(item => item?.stock === 0)?.length },
+    { key: 'makanan', label: 'Makanan', count: menuItems?.filter(item => item?.category === 'makanan')?.length },
+    { key: 'minuman', label: 'Minuman', count: menuItems?.filter(item => item?.category === 'minuman')?.length },
+    { key: 'lainnya', label: 'Lainnya', count: menuItems?.filter(item => item?.category === 'lainnya')?.length }
   ];
 
   const handleExport = (format) => {

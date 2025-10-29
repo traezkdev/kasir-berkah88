@@ -8,6 +8,7 @@ import AddMenuItemForm from './components/AddMenuItemForm';
 import MenuItemsTable from './components/MenuItemsTable';
 import MenuSummaryCards from './components/MenuSummaryCards';
 import MenuSearchAndFilter from './components/MenuSearchAndFilter';
+import EditMenuItemModal from './components/EditMenuItemModal';
 
 import Button from '../../components/ui/Button';
 import authFetch from '../../utils/authFetch'; // Add this import
@@ -21,6 +22,7 @@ const MenuManagement = ({ headerTitle }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [userRole, setUserRole] = useState(null); // New state for user role
   const [notification, setNotification] = useState(null);
+  const [editingMenuItem, setEditingMenuItem] = useState(null); // State for item being edited
 
   const showNotification = (message, type) => {
     setNotification({ message, type });
@@ -176,6 +178,10 @@ const MenuManagement = ({ headerTitle }) => {
 
   
 
+  const handleEditMenuItem = (item) => {
+    setEditingMenuItem(item);
+  };
+
   const filteredMenuItems = menuItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -190,6 +196,16 @@ const MenuManagement = ({ headerTitle }) => {
     }
     if (activeFilter === 'out') {
       return matchesSearch && item.stock === 0;
+    }
+    // Add category filters
+    if (activeFilter === 'makanan') {
+      return matchesSearch && item.category === 'makanan';
+    }
+    if (activeFilter === 'minuman') {
+      return matchesSearch && item.category === 'minuman';
+    }
+    if (activeFilter === 'lainnya') {
+      return matchesSearch && item.category === 'lainnya';
     }
     return false;
   });
@@ -269,12 +285,23 @@ const MenuManagement = ({ headerTitle }) => {
             onBulkDelete={handleBulkDelete}
             userRole={userRole}
             apiUrl={apiUrl}
+            onEditItem={handleEditMenuItem}
           />
         </main>
 
         {/* Quick Action Panel */}
         
       </div>
+
+      {editingMenuItem && (
+        <EditMenuItemModal
+          isOpen={!!editingMenuItem}
+          onClose={() => setEditingMenuItem(null)}
+          menuItem={editingMenuItem}
+          onSave={handleUpdateItem}
+          userRole={userRole}
+        />
+      )}
     </div>
   );
 };

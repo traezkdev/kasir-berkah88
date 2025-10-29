@@ -61,6 +61,7 @@ const EmployeeListPage = () => {
     return (
         <div className="container mx-auto p-4 pt-24 pb-32">
             <NavigationHeader title="Struktur Organisasi" />
+            <h2 className="text-3xl font-bold text-center mb-8">Daftar Karyawan</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {employees.map(employee => (
                     <EmployeeCard key={employee.id} employee={employee} />
