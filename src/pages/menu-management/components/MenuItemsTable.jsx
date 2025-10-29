@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
+import Select from '../../../components/ui/Select';
 
 const MenuItemsTable = ({ 
   menuItems, 
@@ -42,6 +43,7 @@ const MenuItemsTable = ({
       name: item?.name,
       stock: item?.stock?.toString(),
       price: item?.price?.toString(),
+      category: item?.category,
       image: null, // Changed from image_url
       image_url: item?.image_url // Keep original for display
     });
@@ -53,6 +55,7 @@ const MenuItemsTable = ({
         name: editData?.name,
         stock: parseInt(editData?.stock),
         price: parseFloat(editData?.price),
+        category: editData?.category,
         image: editData?.image, // Pass the file object
         updatedAt: new Date()?.toISOString()
       };
@@ -441,7 +444,20 @@ const MenuItemsTable = ({
                     )}
                   </td>
                   <td className="p-4">
-                    <span className="font-medium text-foreground">{item?.category}</span>
+                    {isEditing ? (
+                      <Select
+                        value={editData?.category}
+                        onChange={(value) => setEditData(prev => ({ ...prev, category: value }))}
+                        options={[
+                          { value: 'makanan', label: 'Makanan' },
+                          { value: 'minuman', label: 'Minuman' },
+                          { value: 'lainnya', label: 'Lainnya' },
+                        ]}
+                        className="w-32"
+                      />
+                    ) : (
+                      <span className="font-medium text-foreground">{item?.category}</span>
+                    )}
                   </td>
                   <td className="p-4">
                     {isEditing ? (
