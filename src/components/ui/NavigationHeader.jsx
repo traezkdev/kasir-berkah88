@@ -5,11 +5,36 @@ import Icon from '../AppIcon';
 import Button from './Button';
 import DarkModeToggle from './DarkModeToggle';
 
+const apiUrl = import.meta.env.VITE_API_URL;
+
 const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = "Kasir Berkah 88" }) => {
   const isNativePlatform = Capacitor.isNativePlatform();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [userRole, setUserRole] = useState(null); // New state for user role
+  const [userRole, setUserRole] = useState(null);
+  const [logoUrl, setLogoUrl] = useState('/assets/images/logoberkah88.png'); // Default logo
   const location = useLocation();
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/api/settings/logo`);
+        const data = await response.json();
+        if (response.ok && data.data.logo_url) {
+            // Prepend API URL if the path is relative
+            if (data.data.logo_url.startsWith('/public')) {
+              setLogoUrl(`${apiUrl}${data.data.logo_url}`);
+            } else {
+              setLogoUrl(data.data.logo_url);
+            }
+        }
+      } catch (error) {
+        console.error('Failed to fetch logo:', error);
+        // Keep the default logo on error
+      }
+    };
+
+    fetchLogo();
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -66,7 +91,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
           {/* Logo Section */}
           <div className="flex items-center space-x-4">
             <Link to="/" className="flex items-center space-x-3">
-                            <img src="/assets/images/logoberkah88.png" alt="Logo" className="w-8 h-8 rounded-lg" />
+                            <img src={logoUrl} alt="Logo" className="w-8 h-8 rounded-lg" />
               <div>
                 <h1 className="text-xl font-semibold text-text-primary">{headerTitle}</h1>
               </div>

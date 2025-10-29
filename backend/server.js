@@ -153,6 +153,48 @@ app.get('/api/settings/ppn', authenticateToken, authorizeRoles('user', 'admin', 
     }
 });
 
+// Get logo_url setting
+app.get('/api/settings/logo', async (req, res) => {
+    try {
+        const sql = "SELECT value FROM settings WHERE `key` = ?";
+        const [rows] = await db.query(sql, ['logo_url']);
+        if (rows.length > 0 && rows[0].value) {
+            res.json({
+                "message": "success",
+                "data": { "logo_url": rows[0].value }
+            });
+        } else {
+            // Return a default logo if not set
+            res.json({
+                "message": "success",
+                "data": { "logo_url": "/assets/images/logoberkah88.png" }
+            });
+        }
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
+// Update logo_url setting
+app.post('/api/settings/logo', authenticateToken, authorizeRoles('admin'), upload.single('logo'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ "error": "No logo file uploaded." });
+        }
+        const logoUrl = `/public/uploads/${req.file.filename}`;
+        
+        const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+        await db.query(sql, ['logo_url', logoUrl]);
+
+        res.json({ 
+            message: 'Logo updated successfully!', 
+            data: { logo_url: logoUrl } 
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
 // Update PPN setting
 app.put('/api/settings/ppn', authenticateToken, authorizeRoles('admin'), async (req, res) => {
     try {

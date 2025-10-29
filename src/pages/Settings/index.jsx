@@ -13,6 +13,8 @@ const Settings = ({ headerTitle }) => {
   const [websiteTitle, setWebsiteTitle] = useState('');
   const [newWebsiteTitle, setNewWebsiteTitle] = useState('');
   const [newHeaderTitle, setNewHeaderTitle] = useState('');
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState('');
   const [registrationEnabled, setRegistrationEnabled] = useState(false);
   const [adminUsername, setAdminUsername] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
@@ -265,6 +267,47 @@ const Settings = ({ headerTitle }) => {
     } catch (err) {
         setError('Kesalahan jaringan atau server tidak dapat dijangkau');
         console.error('Update header title error:', err);
+    } finally {
+        setIsLoading(false);
+    }
+};
+
+const handleLogoFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        setLogoFile(file);
+        setLogoPreview(URL.createObjectURL(file));
+    }
+};
+
+const handleLogoUpload = async (e) => {
+    e.preventDefault();
+    if (!logoFile) {
+        setError('Pilih file logo untuk diunggah.');
+        return;
+    }
+    setMessage('');
+    setError('');
+    setIsLoading(true);
+
+    const formData = new FormData();
+    formData.append('logo', logoFile);
+
+    try {
+        const response = await authFetch(`${apiUrl}/api/settings/logo`, {
+            method: 'POST',
+            body: formData,
+        });
+        const data = await response.json();
+        if (response.ok) {
+            setMessage('Logo berhasil diunggah! Halaman akan dimuat ulang.');
+            setTimeout(() => window.location.reload(), 2000); // Reload to show new logo
+        } else {
+            setError(data.error || 'Gagal mengunggah logo');
+        }
+    } catch (err) {
+        setError('Kesalahan jaringan atau server tidak dapat dijangkau');
+        console.error('Logo upload error:', err);
     } finally {
         setIsLoading(false);
     }
@@ -636,6 +679,29 @@ const Settings = ({ headerTitle }) => {
                           Perbarui Judul Header
                       </Button>
                   </form>
+              </div>
+
+              {/* Logo Setting */}
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-text-primary dark:text-white">Ganti Logo Header</h3>
+                <form onSubmit={handleLogoUpload} className="space-y-4">
+                    <Input
+                        label="Pilih File Logo (PNG, JPG)"
+                        name="logoFile"
+                        type="file"
+                        accept=".png, .jpg, .jpeg"
+                        onChange={handleLogoFileChange}
+                    />
+                    {logoPreview && (
+                        <div className="flex flex-col items-center">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pratinjau Logo:</span>
+                            <img src={logoPreview} alt="Pratinjau Logo" className="w-24 h-24 rounded-lg border border-border" />
+                        </div>
+                    )}
+                    <Button type="submit" className="w-full" disabled={isLoading || userRole !== 'admin' || !logoFile}>
+                        Unggah Logo
+                    </Button>
+                </form>
               </div>
 
               {/* Initial Capital Setting */}
