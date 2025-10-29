@@ -16,7 +16,7 @@ const MenuItemsTable = ({
   const [editData, setEditData] = useState({});
   const [selectedItems, setSelectedItems] = useState([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
-  const scrollRef = useRef(null); // Add this ref
+  const [scrollPosition, setScrollPosition] = useState(0);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('id-ID', {
@@ -35,9 +35,7 @@ const MenuItemsTable = ({
   
 
   const handleEdit = (item) => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollTop; // Store current scroll position
-    }
+    setScrollPosition(window.scrollY); // Store current window scroll position
     setEditingId(item?.id);
     setEditData({
       name: item?.name,
@@ -63,9 +61,7 @@ const MenuItemsTable = ({
       await onUpdateItem(id, updatedItem);
       setEditingId(null);
       setEditData({});
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollTop; // Restore scroll position
-      }
+      window.scrollTo(0, scrollPosition); // Restore window scroll position
     } catch (error) {
       console.error('Error updating item:', error);
     }
@@ -74,9 +70,6 @@ const MenuItemsTable = ({
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditData({});
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollTop; // Restore scroll position
-    }
   };
 
   const handleDelete = async (id) => {
@@ -365,7 +358,7 @@ const MenuItemsTable = ({
         </div>
       </div>
       {/* Mobile View */}
-      <div className="block lg:hidden p-4 space-y-4" ref={scrollRef}>
+      <div className="block lg:hidden p-4 space-y-4">
         {menuItems?.map(item => (
           <MobileCard 
             key={item?.id} 
