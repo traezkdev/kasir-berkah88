@@ -399,8 +399,8 @@ const Settings = ({ headerTitle }) => {
         </form>
       </SettingsModal>
 
-      {message && <div className="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg">{message}</div>}
-      {error && <div className="fixed bottom-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-lg">{error}</div>}
+      {message && <div className="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{message}</div>}
+      {error && <div className="fixed bottom-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{error}</div>}
     </div>
   );
 };
