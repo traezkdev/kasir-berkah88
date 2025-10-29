@@ -534,13 +534,13 @@ const Settings = ({ headerTitle }) => {
           <div className="overflow-x-auto border border-border rounded-lg">
             <table className="min-w-full text-sm">
               <thead className="bg-gray-100 dark:bg-gray-800 text-left text-text-secondary"><tr>
-                <th className="p-3">Nama</th><th className="p-3">Posisi</th><th className="p-3">Kontak</th><th className="p-3">Aksi</th>
+                <th className="px-2 py-1 min-w-max">Nama</th><th className="px-2 py-1 min-w-max">Posisi</th><th className="p-3">Kontak</th><th className="p-3">Aksi</th>
               </tr></thead>
               <tbody>
                 {employees.map(emp => (
                   <tr key={emp.id} className="border-t border-border">
-                    <td className="p-3 flex items-center gap-3"><img src={emp.avatar ? `${apiUrl}${emp.avatar}` : '/assets/images/no_image.png'} className="w-10 h-10 rounded-full object-cover"/>{emp.name}</td>
-                    <td className="p-3">{emp.position}</td>
+                    <td className="px-2 py-1 flex items-center gap-3 min-w-max"><img src={emp.avatar ? `${apiUrl}${emp.avatar}` : '/assets/images/no_image.png'} className="w-10 h-10 rounded-full object-cover"/>{emp.name}</td>
+                    <td className="px-2 py-1 min-w-max">{emp.position}</td>
                     <td className="p-3">{emp.phone}<br/>{emp.email}</td>
                     <td className="p-3"><div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => openEmployeeForm(emp)}>Edit</Button>
