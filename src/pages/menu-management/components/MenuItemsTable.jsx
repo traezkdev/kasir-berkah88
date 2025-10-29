@@ -197,6 +197,7 @@ const MenuItemsTable = ({
               ) : (
                 <h3 className="font-medium text-foreground">{item?.name}</h3>
               )}
+              <p className="text-xs text-muted-foreground">{item?.category}</p>
             </div>
           </div>
         </div>
@@ -394,6 +395,7 @@ const MenuItemsTable = ({
               </th>
               <th className="text-left p-4 font-medium text-foreground">Gambar</th>
               <th className="text-left p-4 font-medium text-foreground">Nama Menu</th>
+              <th className="text-left p-4 font-medium text-foreground">Kategori</th>
               <th className="text-left p-4 font-medium text-foreground">Stok</th>
               <th className="text-left p-4 font-medium text-foreground">Harga</th>
               <th className="text-left p-4 font-medium text-foreground w-48">Upload Gambar Baru</th>
@@ -437,6 +439,9 @@ const MenuItemsTable = ({
                     ) : (
                       <span className="font-medium text-foreground">{item?.name}</span>
                     )}
+                  </td>
+                  <td className="p-4">
+                    <span className="font-medium text-foreground">{item?.category}</span>
                   </td>
                   <td className="p-4">
                     {isEditing ? (
