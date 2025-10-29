@@ -197,6 +197,16 @@ const MenuManagement = ({ headerTitle }) => {
     if (activeFilter === 'out') {
       return matchesSearch && item.stock === 0;
     }
+    // Add category filters
+    if (activeFilter === 'makanan') {
+      return matchesSearch && item.category === 'makanan';
+    }
+    if (activeFilter === 'minuman') {
+      return matchesSearch && item.category === 'minuman';
+    }
+    if (activeFilter === 'lainnya') {
+      return matchesSearch && item.category === 'lainnya';
+    }
     return false;
   });
 
