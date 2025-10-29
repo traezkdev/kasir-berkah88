@@ -6,6 +6,7 @@ import Input from '../../components/ui/Input';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import AppIcon from '../../components/AppIcon';
+import ConfirmationModal from '../../components/ui/ConfirmationModal';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -59,6 +60,7 @@ const UserProfile = ({ headerTitle }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
+  const [isLogoutConfirmationOpen, setIsLogoutConfirmationOpen] = useState(false);
   const navigate = useNavigate();
 
   // --- Effects ---
@@ -184,11 +186,13 @@ const UserProfile = ({ headerTitle }) => {
     }
   };
 
-  const handleLogout = async () => {
-    if (window.confirm('Apakah Anda yakin ingin keluar?')) {
-      localStorage.removeItem('token');
-      navigate('/login');
-    }
+  const handleLogout = () => {
+    setIsLogoutConfirmationOpen(true);
+  };
+
+  const confirmLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
   };
 
   const breadcrumbs = [{ name: 'Beranda', path: '/main-dashboard' }, { name: 'Profil', path: '/profile' }];
@@ -284,6 +288,16 @@ const UserProfile = ({ headerTitle }) => {
           {error && <p className="text-sm text-center text-red-500 mt-2">{error}</p>}
         </form>
       </ProfileModal>
+
+      <ConfirmationModal
+        isOpen={isLogoutConfirmationOpen}
+        onClose={() => setIsLogoutConfirmationOpen(false)}
+        onConfirm={confirmLogout}
+        title="Konfirmasi Keluar"
+        message="Apakah Anda yakin ingin keluar dari sesi Anda saat ini?"
+        confirmText="Ya, Keluar"
+        cancelText="Batal"
+      />
     </div>
   );
 };
