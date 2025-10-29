@@ -31,21 +31,19 @@ const ProfileCard = ({ icon, title, description, onClick, isDestructive = false 
   <div
     onClick={onClick}
     className={`
-      bg-gradient-to-br ${isDestructive ? 'from-red-500 to-red-700' : 'from-primary to-blue-600'} p-0.5 rounded-xl shadow-lg
+      bg-card p-6 rounded-xl shadow-lg border border-border
       transition-all duration-300 ease-in-out cursor-pointer group
       ${isDestructive
-        ? 'hover:shadow-destructive/20'
-        : 'hover:shadow-primary/20'
+        ? 'hover:border-destructive/50 hover:shadow-destructive/20'
+        : 'hover:border-primary/50 hover:shadow-primary/20'
       }
     `}
   >
-    <div className="bg-card p-6 rounded-xl h-full">
-      <div className="flex items-center gap-4 mb-2">
-        <AppIcon name={icon} className={`w-8 h-8 ${isDestructive ? 'text-destructive' : 'text-primary'} transition-colors`} />
-        <h3 className="text-lg font-bold text-text-primary">{title}</h3>
-      </div>
-      <p className="text-sm text-text-secondary">{description}</p>
+    <div className="flex items-center gap-4 mb-2">
+      <AppIcon name={icon} className={`w-8 h-8 ${isDestructive ? 'text-destructive' : 'text-primary'} transition-colors`} />
+      <h3 className="text-lg font-bold text-text-primary">{title}</h3>
     </div>
+    <p className="text-sm text-text-secondary">{description}</p>
   </div>
 );
 
