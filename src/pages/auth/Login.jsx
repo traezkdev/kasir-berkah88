@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import authFetch from '../../utils/authFetch';
 import { motion } from 'framer-motion';
 import { FiUser, FiLock, FiLogIn } from 'react-icons/fi';
-import DarkModeToggle from '../../components/ui/DarkModeToggle';
 import { jwtDecode } from 'jwt-decode'; // Import jwtDecode
 
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -100,7 +99,7 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 p-4 overflow-hidden">
       <div className="absolute top-4 right-4 z-20">
-        <DarkModeToggle />
+        
       </div>
       <motion.div
         initial={{ opacity: 0, y: -50, scale: 0.9 }}
