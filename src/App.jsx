@@ -47,7 +47,7 @@ function App() {
     <> {/* Use a React Fragment to return multiple elements */}
       <Toaster position="bottom-center" reverseOrder={false} />
       <Routes headerTitle={headerTitle} />
-      <StickyDarkModeToggle />
+      {location.pathname !== '/cashier-dashboard' && <StickyDarkModeToggle />}
     </>
   );
 }
