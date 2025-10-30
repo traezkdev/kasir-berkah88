@@ -239,7 +239,7 @@ export default function CashierDashboard() {
     <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white no-select overflow-x-hidden">
       <header className="bg-white dark:bg-gray-800 shadow px-4 py-3 flex justify-between items-center">
         <h1 className="text-xl font-bold md:text-2xl">Dasbor Kasir</h1>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 md:space-x-4">
           <button
             className="md:hidden relative p-2 rounded-full bg-blue-500 text-white"
             onClick={() => setShowMobileCart(true)}

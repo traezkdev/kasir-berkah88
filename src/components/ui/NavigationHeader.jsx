@@ -118,7 +118,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
             </nav>
 
             {/* DarkModeToggle and Mobile Menu Button */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center md:space-x-2">
               <div className="lg:hidden">
                 <DarkModeToggle />
               </div>
