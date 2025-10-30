@@ -206,7 +206,7 @@ const UserProfile = ({ headerTitle }) => {
         <div className="max-w-7xl mx-auto px-4 lg:px-8 py-8">
           <BreadcrumbNavigation paths={breadcrumbs} />
           <header className="mt-6 mb-8">
-            <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-text-primary flex items-center gap-3">
+            <h1 className="text-2xl lg:text-4xl font-bold tracking-tight text-text-primary flex items-center gap-3">
               <AppIcon name="UserCircle" className="w-10 h-10" />
               Profil Pengguna
             </h1>
