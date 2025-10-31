@@ -261,11 +261,11 @@ const GuestCheckout = () => {
                                     className={`relative bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-md dark:shadow-none overflow-hidden transform transition-transform duration-200 hover:scale-105 ${initiallyOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                     
                                     {effectivelyOutOfStock ? (
-                                        <span className="absolute bottom-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-full z-10">
+                                        <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-full z-10">
                                             Stok Habis
                                         </span>
                                     ) : (
-                                        <span className="absolute bottom-2 left-2 bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded-full z-10">
+                                        <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded-full z-10">
                                             Tersedia
                                         </span>
                                     )}
