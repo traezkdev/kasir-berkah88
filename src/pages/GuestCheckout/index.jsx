@@ -229,7 +229,18 @@ const GuestCheckout = () => {
                             return (
                                 <div 
                                     key={item.id} 
-                                    className={`bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-md dark:shadow-none overflow-hidden transform transition-transform duration-200 hover:scale-105 ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                    className={`relative bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-md dark:shadow-none overflow-hidden transform transition-transform duration-200 hover:scale-105 ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                    
+                                    {isOutOfStock ? (
+                                        <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-full z-10">
+                                            Stok Habis
+                                        </span>
+                                    ) : (
+                                        <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded-full z-10">
+                                            Tersedia
+                                        </span>
+                                    )}
+                                    
                                     <AppImage
                                         src={`${import.meta.env.VITE_API_URL}${item.image_url}`}
                                         fallbackSrc="/assets/images/no_image.png"
