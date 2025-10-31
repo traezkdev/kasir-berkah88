@@ -223,6 +223,54 @@ app.put('/api/settings/ppn', authenticateToken, authorizeRoles('admin'), async (
     }
 });
 
+// --- App Settings (Open Graph) Endpoints ---
+
+// Get app settings (public)
+app.get('/api/app-settings', async (req, res) => {
+    try {
+        const sql = "SELECT og_title, og_description, og_image_url FROM app_settings ORDER BY id LIMIT 1";
+        const [rows] = await db.query(sql);
+        if (rows.length > 0) {
+            res.json({
+                "message": "success",
+                "data": rows[0]
+            });
+        } else {
+            // This case should not happen if the database is seeded correctly
+            res.status(404).json({ "error": "App settings not found." });
+        }
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
+// Update app settings (admin only)
+app.post('/api/app-settings', authenticateToken, authorizeRoles('admin'), upload.single('og_image'), async (req, res) => {
+    try {
+        const { og_title, og_description } = req.body;
+        const og_image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
+
+        let sql;
+        let params;
+
+        if (og_image_url) {
+            // If a new image is uploaded, update all fields
+            sql = `UPDATE app_settings SET og_title = ?, og_description = ?, og_image_url = ? WHERE id = (SELECT id FROM (SELECT id FROM app_settings ORDER BY id LIMIT 1) as t)`;
+            params = [og_title, og_description, og_image_url];
+        } else {
+            // If no new image, only update text fields
+            sql = `UPDATE app_settings SET og_title = ?, og_description = ? WHERE id = (SELECT id FROM (SELECT id FROM app_settings ORDER BY id LIMIT 1) as t)`;
+            params = [og_title, og_description];
+        }
+
+        const [result] = await db.query(sql, params);
+        res.json({ message: "App settings updated successfully!", changes: result.affectedRows });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
 
 // --- Transaction Endpoints ---
 
@@ -1353,31 +1401,43 @@ app.delete("/api/admin/data/all", authenticateToken, authorizeRoles('admin'), as
 app.put("/api/settings/master-password", authenticateToken, authorizeRoles('admin'), async (req, res) => {
     try {
         const { currentMasterPassword, newMasterPassword } = req.body;
-        if (!currentMasterPassword || !newMasterPassword) {
-            return res.status(400).json({ error: "Current and new master passwords are required" });
+
+        if (!newMasterPassword) {
+            return res.status(400).json({ error: "Kata sandi master baru diperlukan" });
         }
 
-        const [masterPassRow] = await db.query('SELECT value FROM settings WHERE `key` = ?', ['master_password']);
+        const [masterPassRow] = await db.query('SELECT `value` FROM settings WHERE `key` = ?', ['master_password']);
         const storedMasterPassword = masterPassRow.length > 0 ? masterPassRow[0].value : null;
 
-        if (storedMasterPassword && !(await bcrypt.compare(currentMasterPassword, storedMasterPassword))) {
-            return res.status(401).json({ error: "Invalid current master password" });
+        // If a master password already exists, we must validate the current one
+        if (storedMasterPassword) {
+            if (!currentMasterPassword) {
+                return res.status(400).json({ error: "Kata sandi master saat ini diperlukan untuk mengubahnya" });
+            }
+
+            let isPasswordValid = false;
+            const isStoredPassHashed = storedMasterPassword.startsWith('$2a$') || storedMasterPassword.startsWith('$2b$') || storedMasterPassword.startsWith('$2y$');
+
+            if (isStoredPassHashed) {
+                // Normal case: stored password is a valid hash
+                isPasswordValid = await bcrypt.compare(currentMasterPassword, storedMasterPassword);
+            } else {
+                // Legacy/broken case: stored password is plain text. Heal on successful change.
+                isPasswordValid = (currentMasterPassword === storedMasterPassword);
+            }
+
+            if (!isPasswordValid) {
+                return res.status(400).json({ error: "Kata sandi master saat ini salah" });
+            }
         }
 
         const hashedNewMasterPassword = await bcrypt.hash(newMasterPassword, 10);
 
-        const selectSql = 'SELECT * FROM settings WHERE `key` = ?';
-        const [rows] = await db.query(selectSql, ['master_password']);
-
-        if (rows.length > 0) {
-            const updateSql = 'UPDATE settings SET `value` = ? WHERE `key` = ?';
-            await db.query(updateSql, [hashedNewMasterPassword, 'master_password']);
-        } else {
-            const insertSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?)';
-            await db.query(insertSql, ['master_password', hashedNewMasterPassword]);
-        }
+        const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+        await db.query(sql, ['master_password', hashedNewMasterPassword]);
 
         res.json({ message: "Master password updated successfully" });
+
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
     }

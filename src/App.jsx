@@ -43,6 +43,38 @@ function App() {
     fetchSettings();
   }, []);
 
+  useEffect(() => {
+    const fetchOgSettings = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/api/app-settings`);
+        const { data } = await response.json();
+        if (response.ok && data) {
+          const origin = window.location.origin;
+          const imageUrl = data.og_image_url ? `${apiUrl}${data.og_image_url}` : `${origin}/no_image.png`;
+
+          // Helper function to update meta tags
+          const updateMetaTag = (id, content) => {
+            const element = document.getElementById(id);
+            if (element) {
+              element.setAttribute('content', content);
+            }
+          };
+
+          updateMetaTag('og-title', data.og_title);
+          updateMetaTag('og-description', data.og_description);
+          updateMetaTag('og-image', imageUrl);
+          updateMetaTag('twitter-title', data.og_title);
+          updateMetaTag('twitter-description', data.og_description);
+          updateMetaTag('twitter-image', imageUrl);
+        }
+      } catch (error) {
+        console.error('Failed to fetch OG settings:', error);
+      }
+    };
+
+    fetchOgSettings();
+  }, []);
+
   return (
     <> {/* Use a React Fragment to return multiple elements */}
       <Toaster position="bottom-center" reverseOrder={false} />

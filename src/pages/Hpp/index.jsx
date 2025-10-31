@@ -139,7 +139,7 @@ const Hpp = ({ headerTitle }) => {
                             className="w-32 py-1"
                           />
                         ) : (
-                          <span className="font-medium">Rp ${Number(item.hpp || 0).toLocaleString()}</span>
+                          <span className="font-medium">Rp {Number(item.hpp || 0).toLocaleString()}</span>
                         )}
                       </div>
                       <div className="flex justify-between">

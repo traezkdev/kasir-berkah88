@@ -278,6 +278,28 @@ const setupDatabase = async () => {
     }
     // --- Akhir Logika Pembuatan Admin Default ---
 
+    // Create app_settings table
+    const createAppSettingsTable = `
+      CREATE TABLE IF NOT EXISTS app_settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        og_title VARCHAR(255) NOT NULL,
+        og_description TEXT,
+        og_image_url VARCHAR(255)
+      );
+    `;
+    await connection.query(createAppSettingsTable);
+    console.log('app_settings table is ready.');
+
+    // Check and insert default app settings if none exist
+    const [settingsRows] = await connection.query('SELECT id FROM app_settings LIMIT 1');
+    if (settingsRows.length === 0) {
+      await connection.query(
+        'INSERT INTO app_settings (og_title, og_description, og_image_url) VALUES (?, ?, ?)',
+        ['Kasir Berkah 88', 'Aplikasi kasir modern untuk bisnis Anda.', '/no_image.png']
+      );
+      console.log('Default app settings inserted.');
+    }
+
     connection.release();
 
   } catch (error) {

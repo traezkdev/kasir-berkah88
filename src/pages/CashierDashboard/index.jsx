@@ -20,6 +20,8 @@ export default function CashierDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterKategori, setFilterKategori] = useState('semua');
+  const [kategoriOptions, setKategoriOptions] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState('cash'); // Default to 'cash'
   const [showMobileCart, setShowMobileCart] = useState(false); // State for mobile cart visibility
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -76,11 +78,25 @@ export default function CashierDashboard() {
     fetchData();
   }, [fetchData]);
 
+  useEffect(() => {
+    if (menuItems.length > 0) {
+      const uniqueCategories = [...new Set(menuItems.map(item => item.category).filter(Boolean))];
+      setKategoriOptions(uniqueCategories);
+    }
+  }, [menuItems]);
+
   const filteredMenuItems = useMemo(() => {
-    return menuItems.filter(item =>
-      item.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [menuItems, searchTerm]);
+    return menuItems
+      .filter(item =>
+        item.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .filter(item => {
+        if (filterKategori === 'semua') {
+          return true;
+        }
+        return item.category === filterKategori;
+      });
+  }, [menuItems, searchTerm, filterKategori]);
 
   const addToCart = useCallback((item) => {
     setCart((prevCart) => {
@@ -283,6 +299,19 @@ export default function CashierDashboard() {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="mb-4"
           />
+          <div className="flex space-x-2 mb-4 overflow-x-auto pb-2">
+            <Button onClick={() => setFilterKategori('semua')} variant={filterKategori === 'semua' ? 'default' : 'outline'} className="flex-shrink-0">Semua</Button>
+            {kategoriOptions.map(kategori => (
+              <Button 
+                key={kategori} 
+                onClick={() => setFilterKategori(kategori)} 
+                variant={filterKategori === kategori ? 'default' : 'outline'}
+                className="flex-shrink-0 capitalize"
+              >
+                {kategori}
+              </Button>
+            ))}
+          </div>
           {isLoading && <p>Memuat menu...</p>}
           {error && <p className="text-red-500">Error: {error}</p>}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
