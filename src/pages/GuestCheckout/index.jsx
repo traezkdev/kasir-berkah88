@@ -276,6 +276,11 @@ const GuestCheckout = () => {
                                         alt={item.name}
                                         className="w-full h-32 object-cover"
                                     />
+                                    {item.discount > 0 && (
+                                        <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
+                                            Diskon {item.discount * 100}%
+                                        </span>
+                                    )}
                                     <div className="p-4 flex flex-col flex-grow">
                                         <h3 className="text-md font-semibold text-text-primary dark:text-white flex-grow">{item.name}</h3>
                                         <p className="text-sm text-text-secondary dark:text-gray-300 mt-1">Rp {item.price.toLocaleString('id-ID')}</p>

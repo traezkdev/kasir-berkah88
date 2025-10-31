@@ -17,11 +17,18 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl })
       "bg-card rounded-lg shadow-md overflow-hidden transform transition-transform duration-200",
       isOutOfStock && quantityInCart === 0 ? "opacity-50 cursor-not-allowed" : "hover:scale-105"
     )}>
-      <AppImage
-        src={item.image_url ? `${apiUrl}${item.image_url}` : './assets/images/no_image.png'}
-        alt={item.name}
-        className="w-full h-32 object-cover"
-      />
+      <div className="relative">
+        <AppImage
+          src={item.image_url ? `${apiUrl}${item.image_url}` : './assets/images/no_image.png'}
+          alt={item.name}
+          className="w-full h-32 object-cover"
+        />
+        {item.discount > 0 && (
+          <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+            Diskon {item.discount * 100}%
+          </span>
+        )}
+      </div>
       <div className="p-4 flex flex-col flex-grow">
         <h3 className="text-md font-semibold text-text-primary flex-grow min-h-[40px]">{item.name}</h3>
         <p className="text-sm text-text-secondary">Rp {item.price?.toLocaleString('id-ID')}</p>
