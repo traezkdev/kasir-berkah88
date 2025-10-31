@@ -73,6 +73,8 @@ const Settings = ({ headerTitle }) => {
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
+  const [cashierDashboardTitle, setCashierDashboardTitle] = useState('');
+  const [newCashierDashboardTitle, setNewCashierDashboardTitle] = useState('');
   const navigate = useNavigate();
 
   // --- Effects ---
@@ -108,6 +110,8 @@ const Settings = ({ headerTitle }) => {
         setRegistrationEnabled(data.data.registration_enabled === 'true');
         setWebDescription(data.data.web_description || '');
         setInitialCapital(data.data.initial_capital || '');
+        setCashierDashboardTitle(data.data.cashier_dashboard_title || 'Dasbor Kasir');
+        setNewCashierDashboardTitle(data.data.cashier_dashboard_title || 'Dasbor Kasir');
       } else {
         setError(data.error || 'Failed to fetch settings');
       }
@@ -424,6 +428,7 @@ const Settings = ({ headerTitle }) => {
               <SettingsCard icon="FileText" title="Deskripsi Web" description="Kelola deskripsi meta untuk optimasi SEO." onClick={() => setActiveModal('webDescription')} disabled={!isAdmin} />
               <SettingsCard icon="ToggleRight" title="Pendaftaran Pengguna" description="Izinkan atau blokir pengguna baru untuk mendaftar." onClick={() => setActiveModal('registration')} disabled={!isAdmin} />
               <SettingsCard icon="Share2" title="Tampilan Media Sosial" description="Atur judul, deskripsi, dan gambar untuk berbagi di media sosial." onClick={() => setActiveModal('socialShare')} disabled={!isAdmin} />
+              <SettingsCard icon="Type" title="Judul Dasbor Kasir" description="Ubah judul yang ditampilkan di halaman dasbor kasir." onClick={() => setActiveModal('cashierDashboardTitle')} disabled={!isAdmin} />
             </div>
           </div>
 
@@ -445,6 +450,13 @@ const Settings = ({ headerTitle }) => {
       </main>
 
       {/* --- ALL MODALS --- */}
+      <SettingsModal title="Ubah Judul Dasbor Kasir" isOpen={activeModal === 'cashierDashboardTitle'} onClose={handleModalClose}>
+        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/cashier_dashboard_title', { value: newCashierDashboardTitle }, 'Judul dasbor kasir berhasil diperbarui!')} className="space-y-4">
+          <Input label="Judul Dasbor Kasir Baru" name="newCashierDashboardTitle" type="text" value={newCashierDashboardTitle} onChange={(e) => setNewCashierDashboardTitle(e.target.value)} required />
+          <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
+        </form>
+      </SettingsModal>
+
       <SettingsModal title="Ubah Judul Situs Web" isOpen={activeModal === 'websiteTitle'} onClose={handleModalClose}>
         <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/title', { title: newWebsiteTitle }, 'Judul situs berhasil diperbarui!')} className="space-y-4">
           <Input label="Judul Situs Web Baru" name="newWebsiteTitle" type="text" value={newWebsiteTitle} onChange={(e) => setNewWebsiteTitle(e.target.value)} required />

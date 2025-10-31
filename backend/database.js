@@ -138,6 +138,13 @@ const setupDatabase = async () => {
     console.log('menu_items table is ready.');
     await connection.query(createSettingsTable);
     console.log('settings table is ready.');
+
+    const insertDefaultSettings = `
+      INSERT IGNORE INTO settings (\`key\`, \`value\`) VALUES
+      ('cashier_dashboard_title', 'Dasbor Kasir');
+    `;
+    await connection.query(insertDefaultSettings);
+    console.log('Default settings inserted or already exist.');
     await connection.query(createTransactionsTable);
     console.log('transactions table is ready.');
     await connection.query(createExpensesTable);

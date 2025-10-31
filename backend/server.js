@@ -175,6 +175,44 @@ app.get('/api/settings/logo', async (req, res) => {
     }
 });
 
+// Get a specific setting by key
+app.get('/api/settings/:key', async (req, res) => {
+    try {
+        const { key } = req.params;
+        const sql = "SELECT value FROM settings WHERE `key` = ?";
+        const [rows] = await db.query(sql, [key]);
+        if (rows.length > 0) {
+            res.json({
+                "message": "success",
+                "data": { "key": key, "value": rows[0].value }
+            });
+        } else {
+            res.status(404).json({ "error": `Setting with key '${key}' not found.` });
+        }
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
+// Update a specific setting by key
+app.put('/api/settings/:key', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        const { key } = req.params;
+        const { value } = req.body;
+        if (value === undefined) {
+            return res.status(400).json({ "error": "Value is required" });
+        }
+
+        const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+        const [result] = await db.query(sql, [key, value.toString()]);
+        
+        res.json({ message: "Setting updated successfully", data: { key, value } });
+
+    } catch (err) {
+        res.status(400).json({ "error": err.message });
+    }
+});
+
 // Update logo_url setting
 app.post('/api/settings/logo', authenticateToken, authorizeRoles('admin'), upload.single('logo'), async (req, res) => {
     try {
