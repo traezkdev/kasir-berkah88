@@ -84,6 +84,14 @@ const GuestCheckout = () => {
         setCart({});
     };
 
+    const handleDeleteItemFromCart = (itemId) => {
+        setCart(prevCart => {
+            const newCart = { ...prevCart };
+            delete newCart[itemId];
+            return newCart;
+        });
+    };
+
     const calculateTotal = () => {
         return Object.entries(cart).reduce((total, [itemId, quantity]) => {
             const item = menuItems.find(menuItem => menuItem.id === itemId);
@@ -307,8 +315,18 @@ const GuestCheckout = () => {
                                         const item = menuItems.find(menuItem => menuItem.id === itemId);
                                         return item ? (
                                             <div key={itemId} className="flex justify-between items-center text-sm">
-                                                <span className="text-text-primary">{quantity}x {item.name}</span>
-                                                <span className="font-medium">Rp {(item.price * quantity).toLocaleString('id-ID')}</span>
+                                                <span className="text-text-primary flex-grow pr-2">{quantity}x {item.name}</span>
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="font-medium">Rp {(item.price * quantity).toLocaleString('id-ID')}</span>
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        className="h-6 w-6 text-destructive"
+                                                        onClick={() => handleDeleteItemFromCart(itemId)}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </Button>
+                                                </div>
                                             </div>
                                         ) : null;
                                     })
