@@ -261,11 +261,11 @@ const GuestCheckout = () => {
                                     className={`relative bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-md dark:shadow-none overflow-hidden transform transition-transform duration-200 hover:scale-105 ${initiallyOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                     
                                     {effectivelyOutOfStock ? (
-                                        <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-full z-10">
+                                        <span className="absolute bottom-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-full z-10">
                                             Stok Habis
                                         </span>
                                     ) : (
-                                        <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded-full z-10">
+                                        <span className="absolute bottom-2 left-2 bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded-full z-10">
                                             Tersedia
                                         </span>
                                     )}
@@ -276,13 +276,13 @@ const GuestCheckout = () => {
                                         alt={item.name}
                                         className="w-full h-32 object-cover"
                                     />
+                                    {item.discount > 0 && (
+                                        <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
+                                            Diskon {item.discount * 100}%
+                                        </span>
+                                    )}
                                     <div className="p-4 flex flex-col flex-grow">
                                         <h3 className="text-md font-semibold text-text-primary dark:text-white flex-grow">{item.name}</h3>
-                                        {item.discount > 0 && (
-                                            <span className="text-xs font-bold text-red-500 mb-1">
-                                                Diskon {item.discount * 100}%
-                                            </span>
-                                        )}
                                         <p className="text-sm text-text-secondary dark:text-gray-300 mt-1">Rp {item.price.toLocaleString('id-ID')}</p>
                                         <p className="text-xs text-text-secondary dark:text-gray-300 mt-1">Stok: {item.stock}</p>
                                         
