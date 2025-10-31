@@ -173,7 +173,10 @@ export default function CashierDashboard() {
   };
 
   const subtotal = useMemo(() => {
-    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    return cart.reduce((sum, item) => {
+      const discountedPrice = item.price * (1 - (item.discount || 0));
+      return sum + discountedPrice * item.quantity;
+    }, 0);
   }, [cart]);
 
   const taxAmount = useMemo(() => {
