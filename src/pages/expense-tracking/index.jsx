@@ -309,15 +309,20 @@ const ExpenseTracking = ({ headerTitle }) => {
     const endOfCurrentMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     const monthlyExpenses = expenses?.filter(expense => {
       const expenseDate = new Date(expense.date);
-      return expenseDate >= startOfCurrentMonth && expenseDate <= endOfCurrentMonth;
-    })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
+      // Adjust for timezone issues by comparing dates in the correct timezone
+      return expenseDate.getMonth() === today.getMonth() && expenseDate.getFullYear() === today.getFullYear();
+    });
+
+    const monthlyExpenseTotal = monthlyExpenses.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
+    const monthlyExpenseCount = monthlyExpenses.length;
 
     return {
       totalExpenses,
       expenseCount,
       todayExpenses,
       weeklyExpenses,
-      monthlyExpenses
+      monthlyExpenses: monthlyExpenseTotal, // Rename to avoid conflict
+      monthlyExpenseCount
     };
   };
 

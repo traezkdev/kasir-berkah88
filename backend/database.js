@@ -264,6 +264,38 @@ const setupDatabase = async () => {
       console.log('Added hpp column to menu_items table.');
     }
 
+    // Check and add user_id column to transactions if it doesn't exist
+    const checkUserIdColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'user_id';
+    `;
+    const addUserIdColumn = `
+      ALTER TABLE transactions
+      ADD COLUMN user_id INT NULL,
+      ADD FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
+    `;
+    const [userIdRows] = await connection.query(checkUserIdColumn);
+    if (userIdRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addUserIdColumn);
+      console.log('Added user_id column and foreign key to transactions table.');
+    }
+
+    // Check and add user_id column to expenses if it doesn't exist
+    const checkExpenseUserIdColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'expenses' AND COLUMN_NAME = 'user_id';
+    `;
+    const addExpenseUserIdColumn = `
+      ALTER TABLE expenses
+      ADD COLUMN user_id INT NULL,
+      ADD FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
+    `;
+    const [expenseUserIdRows] = await connection.query(checkExpenseUserIdColumn);
+    if (expenseUserIdRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addExpenseUserIdColumn);
+      console.log('Added user_id column and foreign key to expenses table.');
+    }
+
 
     // --- Logika Pembuatan Admin Default ---
     const [adminUser] = await connection.query('SELECT id FROM users WHERE username = ?', ['admin']);

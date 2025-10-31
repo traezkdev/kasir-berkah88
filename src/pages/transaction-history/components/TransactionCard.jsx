@@ -78,6 +78,9 @@ const TransactionCard = ({ transaction, onDelete, onEdit, isMobile = false, user
             <p className="text-xs text-text-secondary">
               {formatDateTime(transaction?.timestamp)}
             </p>
+            <p className="text-xs text-text-secondary">
+              Kasir: {transaction.cashier_name ? transaction.cashier_name : 'System'}
+            </p>
           </div>
           <div className="text-right">
             <p className="text-lg font-mono font-semibold text-text-primary">
@@ -179,6 +182,9 @@ const TransactionCard = ({ transaction, onDelete, onEdit, isMobile = false, user
       </td>
       <td className="px-4 py-3">
         {paymentBadge}
+      </td>
+      <td className="px-4 py-3 text-sm text-text-secondary">
+        {transaction.cashier_name ? transaction.cashier_name : 'System'}
       </td>
       <td className="px-4 py-3">
         {userRole !== 'guest' && (

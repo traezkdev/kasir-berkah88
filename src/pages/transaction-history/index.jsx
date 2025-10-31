@@ -409,6 +409,7 @@ const TransactionHistory = ({ headerTitle }) => {
           'Total',
           'Tipe',
           'Item Terjual',
+          'Kasir',
         ];
         const body = dataToExport.map(row => [
           row['ID Transaksi'],
@@ -417,6 +418,7 @@ const TransactionHistory = ({ headerTitle }) => {
           row['Total'],
           row['Tipe'],
           row['Item Terjual'],
+          row['Kasir'],
         ]);
 
         autoTable(doc, {

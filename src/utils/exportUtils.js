@@ -310,6 +310,7 @@ export const prepareTransactionDataForExport = (transactions) => {
     'Total': `Rp ${parseFloat(transaction.total || 0).toLocaleString('id-ID')}`,
     'Tipe': transaction.isEmployeeMeal ? 'Karyawan' : transaction.payment_method,
     'Item Terjual': transaction.items.map(item => `${item.name} (${item.quantity})`).join(', '),
+    'Kasir': transaction.cashier_name || 'System',
   }));
 };
 
@@ -322,6 +323,7 @@ export const prepareExpenseDataForExport = (expenses) => {
     'Deskripsi': expense.name,
     'Jumlah': parseFloat(expense.amount || 0), // Keep as number for Excel sum
     'Catatan': expense.notes || '',
+    'Dicatat Oleh': expense.recorded_by || 'System',
   }));
 };
 
