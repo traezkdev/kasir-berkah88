@@ -39,8 +39,6 @@ const MainDashboard = ({ headerTitle }) => {
       const transactions = await transRes.json();
       if (transRes.ok && transactions.message === 'success') {
         transactionsData = transactions.data;
-      } else {
-        console.error("Failed to fetch transactions:", transactions.error || "Unknown error");
       }
 
       // Handle menu items data
@@ -53,8 +51,6 @@ const MainDashboard = ({ headerTitle }) => {
       const expenses = await expenseRes.json();
       if (expenseRes.ok && expenses.message === 'success') {
         expensesData = expenses.data;
-      } else {
-        console.error("Failed to fetch expenses:", expenses.error || "Unknown error");
       }
 
       // Handle settings data

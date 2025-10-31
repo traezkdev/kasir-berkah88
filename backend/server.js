@@ -175,6 +175,18 @@ app.get('/api/settings/logo', async (req, res) => {
     }
 });
 
+// Endpoint to mark data as updated
+app.put("/api/settings/data-updated-timestamp", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        const now = new Date();
+        const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+        await db.query(sql, ['data_last_updated', now.toISOString()]);
+        res.json({ message: "Data update timestamp recorded successfully", timestamp: now.toISOString() });
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
 // Get a specific setting by key
 app.get('/api/settings/:key', async (req, res) => {
     try {
