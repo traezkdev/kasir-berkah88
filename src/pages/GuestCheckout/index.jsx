@@ -96,7 +96,9 @@ const GuestCheckout = () => {
     const calculateTotal = () => {
         return Object.entries(cart).reduce((total, [itemId, quantity]) => {
             const item = menuItems.find(menuItem => menuItem.id === itemId);
-            return total + (item ? item.price * quantity : 0);
+            if (!item) return total;
+            const discountedPrice = item.price * (1 - (item.discount || 0));
+            return total + (discountedPrice * quantity);
         }, 0);
     };
 
@@ -158,7 +160,15 @@ const GuestCheckout = () => {
             whatsappMessage += `-----------------------------------\n`; // Separator
             whatsappMessage += "*Item Pesanan:*\n";
             orderItems.forEach(item => {
-                whatsappMessage += `- ${item.quantity}x ${item.name} (Rp ${(item.price * item.quantity).toLocaleString('id-ID')})\n`;
+                const originalItemTotal = item.price * item.quantity;
+                const discountedItemTotal = (item.price * (1 - (item.discount || 0))) * item.quantity;
+                whatsappMessage += `- ${item.quantity}x ${item.name}`;
+                if (item.discount > 0) {
+                    whatsappMessage += ` (Diskon ${(item.discount * 100).toFixed(0)}%)`;
+                    whatsappMessage += ` (Rp ${discountedItemTotal.toLocaleString('id-ID')})\n`;
+                } else {
+                    whatsappMessage += ` (Rp ${originalItemTotal.toLocaleString('id-ID')})\n`;
+                }
             });
             whatsappMessage += `-----------------------------------\n`; // Separator
             whatsappMessage += `\n*Total: Rp ${calculateTotal().toLocaleString('id-ID')}*\n\n`;
@@ -326,7 +336,14 @@ const GuestCheckout = () => {
                                             <div key={itemId} className="flex justify-between items-center text-sm">
                                                 <span className="text-text-primary flex-grow pr-2">{quantity}x {item.name}</span>
                                                 <div className="flex items-center space-x-2">
-                                                    <span className="font-medium">Rp {(item.price * quantity).toLocaleString('id-ID')}</span>
+                                                    {item.discount > 0 && (
+                                                        <span className="text-sm text-muted-foreground line-through">
+                                                            Rp {(item.price * quantity).toLocaleString('id-ID')}
+                                                        </span>
+                                                    )}
+                                                    <span className="font-medium">
+                                                        Rp {((item.price * (1 - (item.discount || 0))) * quantity).toLocaleString('id-ID')}
+                                                    </span>
                                                     <Button 
                                                         variant="ghost" 
                                                         size="icon" 

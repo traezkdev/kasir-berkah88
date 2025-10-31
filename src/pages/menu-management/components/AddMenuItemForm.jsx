@@ -11,6 +11,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
     stock: '',
     category: 'makanan',
     image: null,
+    discount: '', // New discount field
   });
 
   useEffect(() => {
@@ -24,6 +25,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
         stock: '',
         category: 'makanan',
         image: null,
+        discount: '', // Include discount in reset
       });
     }
   }, [initialData]);
@@ -148,6 +150,20 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               value={formData?.price}
               onChange={handleChange}
               required
+              className="w-full"
+            />
+          </div>
+          <div>
+            <Input
+              label="Diskon (0.00 - 1.00)"
+              type="number"
+              name="discount"
+              placeholder="0.00"
+              value={formData?.discount}
+              onChange={handleChange}
+              min="0"
+              max="1"
+              step="0.01"
               className="w-full"
             />
           </div>
