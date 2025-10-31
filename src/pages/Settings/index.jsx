@@ -8,6 +8,8 @@ import ConfirmationModal from '../../components/ui/ConfirmationModal';
 import { useNavigate } from 'react-router-dom';
 import AppIcon from '../../components/AppIcon';
 
+import SocialShareSettings from './SocialShareSettings';
+
 const apiUrl = import.meta.env.VITE_API_URL;
 
 // Reusable Modal Component
@@ -421,6 +423,7 @@ const Settings = ({ headerTitle }) => {
               <SettingsCard icon="DollarSign" title="Modal Awal" description="Atur jumlah modal awal untuk perhitungan bisnis." onClick={() => setActiveModal('initialCapital')} disabled={!isAdmin} />
               <SettingsCard icon="FileText" title="Deskripsi Web" description="Kelola deskripsi meta untuk optimasi SEO." onClick={() => setActiveModal('webDescription')} disabled={!isAdmin} />
               <SettingsCard icon="ToggleRight" title="Pendaftaran Pengguna" description="Izinkan atau blokir pengguna baru untuk mendaftar." onClick={() => setActiveModal('registration')} disabled={!isAdmin} />
+              <SettingsCard icon="Share2" title="Tampilan Media Sosial" description="Atur judul, deskripsi, dan gambar untuk berbagi di media sosial." onClick={() => setActiveModal('socialShare')} disabled={!isAdmin} />
             </div>
           </div>
 
@@ -436,6 +439,8 @@ const Settings = ({ headerTitle }) => {
               </div>
             </div>
           )}
+
+
         </div>
       </main>
 
@@ -584,6 +589,10 @@ const Settings = ({ headerTitle }) => {
           <Input label="Kata Sandi Master" name="masterPasswordForClear" type="password" value={masterPasswordForClear} onChange={(e) => setMasterPasswordForClear(e.target.value)} required />
           <Button type="submit" variant="destructive" className="w-full" disabled={isLoading}>{isLoading ? 'Menghapus...' : 'Hapus Semua Data'}</Button>
         </form>
+      </SettingsModal>
+
+      <SettingsModal title="Pengaturan Tampilan Media Sosial" isOpen={activeModal === 'socialShare'} onClose={handleModalClose}>
+        <SocialShareSettings onClose={handleModalClose} />
       </SettingsModal>
 
       <ConfirmationModal

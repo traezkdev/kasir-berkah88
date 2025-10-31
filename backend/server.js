@@ -223,6 +223,54 @@ app.put('/api/settings/ppn', authenticateToken, authorizeRoles('admin'), async (
     }
 });
 
+// --- App Settings (Open Graph) Endpoints ---
+
+// Get app settings (public)
+app.get('/api/app-settings', async (req, res) => {
+    try {
+        const sql = "SELECT og_title, og_description, og_image_url FROM app_settings ORDER BY id LIMIT 1";
+        const [rows] = await db.query(sql);
+        if (rows.length > 0) {
+            res.json({
+                "message": "success",
+                "data": rows[0]
+            });
+        } else {
+            // This case should not happen if the database is seeded correctly
+            res.status(404).json({ "error": "App settings not found." });
+        }
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
+// Update app settings (admin only)
+app.post('/api/app-settings', authenticateToken, authorizeRoles('admin'), upload.single('og_image'), async (req, res) => {
+    try {
+        const { og_title, og_description } = req.body;
+        const og_image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
+
+        let sql;
+        let params;
+
+        if (og_image_url) {
+            // If a new image is uploaded, update all fields
+            sql = `UPDATE app_settings SET og_title = ?, og_description = ?, og_image_url = ? WHERE id = (SELECT id FROM (SELECT id FROM app_settings ORDER BY id LIMIT 1) as t)`;
+            params = [og_title, og_description, og_image_url];
+        } else {
+            // If no new image, only update text fields
+            sql = `UPDATE app_settings SET og_title = ?, og_description = ? WHERE id = (SELECT id FROM (SELECT id FROM app_settings ORDER BY id LIMIT 1) as t)`;
+            params = [og_title, og_description];
+        }
+
+        const [result] = await db.query(sql, params);
+        res.json({ message: "App settings updated successfully!", changes: result.affectedRows });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
 
 // --- Transaction Endpoints ---
 
