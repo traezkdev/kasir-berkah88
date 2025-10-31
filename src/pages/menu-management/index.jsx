@@ -176,6 +176,38 @@ const MenuManagement = ({ headerTitle }) => {
     }
   };
 
+  const handleShareStock = () => {
+    const availableItems = menuItems.filter(item => item.stock > 0);
+
+    if (availableItems.length === 0) {
+      showNotification('Tidak ada stok yang tersedia untuk dibagikan.', 'error');
+      return;
+    }
+
+    const today = new Date().toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+
+    let message = `*Daftar Stok Tersedia - ${today}*
+
+`;
+    message += availableItems
+      .map(item => `• ${item.name}: *${item.stock}*`)
+      .join('\n');
+    message += `
+
+---
+Powered by Kasir Berkah 88`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
+
+    window.open(whatsappUrl, '_blank');
+    showNotification('Membuka WhatsApp untuk membagikan stok...', 'success');
+  };
+
   
 
   const handleEditMenuItem = (item) => {
@@ -273,6 +305,7 @@ const MenuManagement = ({ headerTitle }) => {
             onSearchChange={setSearchTerm}
             menuItems={menuItems}
             onExportData={handleExportData}
+            onShareStock={handleShareStock}
             activeFilter={activeFilter}
             onFilterChange={setActiveFilter}
           />
