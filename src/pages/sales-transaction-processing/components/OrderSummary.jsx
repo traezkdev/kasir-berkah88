@@ -71,13 +71,22 @@ const OrderSummary = ({
     fetchPpn();
   }, []);
 
-  const subtotal = cart.reduce((sum, item) => {
-    const itemPrice = parseFloat(item?.price || 0);
-    const itemQuantity = Number(item?.quantity || 0);
-    if (isNaN(itemPrice) || isNaN(itemQuantity)) {
+  const subtotal = cart.reduce((sum, cartItem) => {
+    const menuItem = menuItems.find(menu => menu.id === cartItem.id);
+    if (!menuItem) {
+      return sum; // Skip if menu item not found
+    }
+
+    const itemPrice = parseFloat(menuItem?.price || 0);
+    const itemQuantity = Number(cartItem?.quantity || 0);
+    const itemDiscount = parseFloat(menuItem?.discount || 0); // Get discount from menuItem
+
+    if (isNaN(itemPrice) || isNaN(itemQuantity) || isNaN(itemDiscount)) {
         return sum; // Skip invalid items
     }
-    return sum + (itemPrice * itemQuantity);
+
+    const discountedPrice = itemPrice * (1 - itemDiscount);
+    return sum + (discountedPrice * itemQuantity);
   }, 0);
   const tax = subtotal * ppnRate;
   const total = subtotal + tax;
