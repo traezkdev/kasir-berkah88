@@ -322,6 +322,7 @@ export const prepareExpenseDataForExport = (expenses) => {
     'Deskripsi': expense.name,
     'Jumlah': parseFloat(expense.amount || 0), // Keep as number for Excel sum
     'Catatan': expense.notes || '',
+    'Dicatat Oleh': expense.recorded_by || 'System',
   }));
 };
 

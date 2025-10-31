@@ -210,6 +210,7 @@ const ExpenseHistoryTable = ({
               <th className="text-left p-4 text-sm font-medium text-text-secondary">Kategori</th>
               <th className="text-left p-4 text-sm font-medium text-text-secondary">Deskripsi</th>
               <th className="text-right p-4 text-sm font-medium text-text-secondary">Jumlah</th>
+              <th className="text-left p-4 text-sm font-medium text-text-secondary">Dicatat Oleh</th>
               <th className="text-center p-4 text-sm font-medium text-text-secondary">Aksi</th>
             </tr>
           </thead>
@@ -251,6 +252,9 @@ const ExpenseHistoryTable = ({
                   <span className="text-sm font-mono font-semibold text-destructive">
                     {formatCurrency(expense?.amount)}
                   </span>
+                </td>
+                <td className="p-4 text-sm text-text-secondary">
+                  {expense.recorded_by ? expense.recorded_by : 'System'}
                 </td>
                 <td className="p-4 text-center flex items-center justify-center">
                   {userRole !== 'guest' && (
@@ -297,6 +301,9 @@ const ExpenseHistoryTable = ({
                   </span>
                   <div className="text-xs text-text-secondary mt-1">
                     {formatDate(expense?.date)} • {formatTime(expense?.date)}
+                  </div>
+                  <div className="text-xs text-text-secondary mt-1">
+                    Dicatat oleh: {expense.recorded_by ? expense.recorded_by : 'System'}
                   </div>
                 </div>
               </div>

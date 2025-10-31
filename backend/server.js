@@ -277,7 +277,14 @@ app.post('/api/app-settings', authenticateToken, authorizeRoles('admin'), upload
 // Get all transactions
 app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir'), async (req, res, next) => {
     try {
-        const sql = "select * from transactions ORDER BY timestamp DESC";
+        const sql = `
+            SELECT 
+                t.*, 
+                u.username AS cashier_name
+            FROM transactions t
+            LEFT JOIN users u ON t.user_id = u.id
+            ORDER BY t.timestamp DESC
+        `;
         const [rows] = await db.query(sql);
         // The mysql2 driver with JSON column support will autoparse the string
         const transactions = rows.map(row => ({
@@ -375,11 +382,12 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
             payment_method: req.body.payment_method || 'Tunai',
             ignore_stock: req.body.ignoreStock ? 1 : 0,
             cash_paid: req.body.cashPaid || 0,
-            change: req.body.change || 0
+            change: req.body.change || 0,
+            user_id: req.user.userId // Add user_id from authenticated user
         };
-        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock, cash_paid, `change`) VALUES (?,?,?,?,?,?,?,?,?,?)';
+        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock, cash_paid, `change`, user_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)';
 
-        const params = [data.id, data.timestamp, data.items, data.total, data.ppn, data.isEmployeeMeal, data.payment_method, data.ignore_stock, data.cash_paid, data.change];
+        const params = [data.id, data.timestamp, data.items, data.total, data.ppn, data.isEmployeeMeal, data.payment_method, data.ignore_stock, data.cash_paid, data.change, data.user_id];
         const [result] = await db.query(sql, params);
 
         if (!ignoreStock) {
@@ -463,7 +471,14 @@ app.delete("/api/transactions", authenticateToken, authorizeRoles('admin'), asyn
 // Get all expenses
 app.get("/api/expenses", authenticateToken, authorizeRoles('user', 'admin', 'guest'), async (req, res, next) => {
     try {
-        const sql = "SELECT * FROM expenses ORDER BY date DESC";
+        const sql = `
+            SELECT 
+                e.*, 
+                u.username AS recorded_by
+            FROM expenses e
+            LEFT JOIN users u ON e.user_id = u.id
+            ORDER BY e.date DESC
+        `;
         const [rows] = await db.query(sql);
         res.json({
             "message": "success",
@@ -481,8 +496,8 @@ app.post("/api/expenses", authenticateToken, authorizeRoles('user', 'admin'), as
         if (!name || !amount || !date) {
             return res.status(400).json({ "error": "Missing required fields: name, amount, date" });
         }
-        const sql = 'INSERT INTO expenses (name, amount, category, date, notes) VALUES (?,?,?,?,?)';
-        const params = [name, amount, category, date, notes];
+        const sql = 'INSERT INTO expenses (name, amount, category, date, notes, user_id) VALUES (?,?,?,?,?,?)';
+        const params = [name, amount, category, date, notes, req.user.userId];
         const [result] = await db.query(sql, params);
         res.json({
             "message": "success",

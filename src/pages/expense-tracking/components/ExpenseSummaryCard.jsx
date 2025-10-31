@@ -7,6 +7,7 @@ const ExpenseSummaryCard = ({
   todayExpenses = 0,
   weeklyExpenses = 0,
   monthlyExpenses = 0,
+  monthlyExpenseCount = 0,
   className = "" 
 }) => {
   const gradientClasses = [
@@ -32,7 +33,7 @@ const ExpenseSummaryCard = ({
       icon: 'Wallet', // Replace with a different icon that is less likely to have arcs
       color: 'text-destructive',
       bgColor: 'bg-destructive/10',
-      description: `${expenseCount} transaksi bulan ini`
+      description: `${monthlyExpenseCount} transaksi bulan ini`
     },
     {
       label: 'Pengeluaran Hari Ini',
