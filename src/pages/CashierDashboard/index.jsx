@@ -25,6 +25,7 @@ export default function CashierDashboard() {
   const [paymentMethod, setPaymentMethod] = useState('cash'); // Default to 'cash'
   const [showMobileCart, setShowMobileCart] = useState(false); // State for mobile cart visibility
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [dashboardTitle, setDashboardTitle] = useState('Dasbor Kasir');
 
   const handleLogout = () => {
     localStorage.removeItem('token'); // Assuming token is stored in localStorage
@@ -64,8 +65,22 @@ export default function CashierDashboard() {
       if (ppnResponse.ok) {
         setPpnRate(ppnData.data);
       } else {
-        throw new Error(ppnData.error || 'Failed to fetch PPN rate');
+        // Don't throw error, just use default
+        console.error(ppnData.error || 'Failed to fetch PPN rate');
       }
+
+      // Fetch Dashboard Title
+      try {
+        const titleResponse = await authFetch(`${apiUrl}/api/settings/cashier_dashboard_title`);
+        const titleData = await titleResponse.json();
+        if (titleResponse.ok) {
+          setDashboardTitle(titleData.data.value);
+        }
+      } catch (titleErr) {
+        // If fetching title fails, just log it and use the default title.
+        console.error('Failed to fetch dashboard title:', titleErr);
+      }
+
     } catch (err) {
       setError(err.message);
       toast.error(err.message);
@@ -254,7 +269,7 @@ export default function CashierDashboard() {
   return (
     <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white no-select overflow-x-hidden">
       <header className="bg-white dark:bg-gray-800 shadow px-4 py-3 flex justify-between items-center">
-        <h1 className="text-xl font-bold md:text-2xl">Dasbor Kasir</h1>
+        <h1 className="text-xl font-bold md:text-2xl">{dashboardTitle}</h1>
         <div className="flex items-center space-x-2 md:space-x-4">
           <button
             className="md:hidden relative p-2 rounded-full bg-blue-500 text-white"
