@@ -62,7 +62,8 @@ const ReceiptPage = () => {
   });
 
   const subtotalAmount = transaction.items.reduce((sum, item) => {
-    return sum + (Number(item.price) * Number(item.quantity));
+    const discountedPrice = Number(item.price) * (1 - (Number(item.discount) || 0));
+    return sum + (discountedPrice * Number(item.quantity));
   }, 0);
 
   return (

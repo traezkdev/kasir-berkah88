@@ -489,12 +489,25 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
         // --- End Generate New Transaction ID ---
 
         // Define data and sql BEFORE params
+        // Recalculate total and PPN on the backend to ensure accuracy
+        let calculatedSubtotal = 0;
+        const itemsWithDiscount = req.body.items.map(item => {
+            const discountedPrice = item.price * (1 - (item.discount || 0));
+            calculatedSubtotal += discountedPrice * item.quantity;
+            return { ...item, price: discountedPrice }; // Store discounted price in items for consistency
+        });
+
+        const [ppnSetting] = await db.query("SELECT value FROM settings WHERE `key` = 'ppn'");
+        const ppnRate = ppnSetting.length > 0 ? parseFloat(ppnSetting[0].value) : 0.11;
+        const calculatedPpn = calculatedSubtotal * ppnRate;
+        const calculatedTotal = calculatedSubtotal + calculatedPpn;
+
         const data = {
             id: newTransactionId,
             timestamp: new Date(),
-            items: JSON.stringify(req.body.items),
-            total: req.body.total,
-            ppn: req.body.ppn,
+            items: JSON.stringify(itemsWithDiscount), // Store items with discounted prices
+            total: calculatedTotal,
+            ppn: calculatedPpn,
             isEmployeeMeal: req.body.isEmployeeMeal ? 1 : 0,
             payment_method: req.body.payment_method || 'Tunai',
             ignore_stock: req.body.ignoreStock ? 1 : 0,
