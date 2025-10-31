@@ -84,6 +84,14 @@ const GuestCheckout = () => {
         setCart({});
     };
 
+    const handleDeleteItemFromCart = (itemId) => {
+        setCart(prevCart => {
+            const newCart = { ...prevCart };
+            delete newCart[itemId];
+            return newCart;
+        });
+    };
+
     const calculateTotal = () => {
         return Object.entries(cart).reduce((total, [itemId, quantity]) => {
             const item = menuItems.find(menuItem => menuItem.id === itemId);
@@ -223,13 +231,26 @@ const GuestCheckout = () => {
                     {/* Menu Items Section */}
                     <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-4">
                         {menuItems.map(item => {
-                            const isInCart = cart[item.id] > 0;
-                            const isOutOfStock = item.stock === 0;
+                            const quantityInCart = cart[item.id] || 0;
+                            const isInCart = quantityInCart > 0;
+                            const initiallyOutOfStock = item.stock === 0;
+                            const effectivelyOutOfStock = item.stock <= quantityInCart;
 
                             return (
                                 <div 
                                     key={item.id} 
-                                    className={`bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-md dark:shadow-none overflow-hidden transform transition-transform duration-200 hover:scale-105 ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                    className={`relative bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-md dark:shadow-none overflow-hidden transform transition-transform duration-200 hover:scale-105 ${initiallyOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                    
+                                    {effectivelyOutOfStock ? (
+                                        <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-full z-10">
+                                            Stok Habis
+                                        </span>
+                                    ) : (
+                                        <span className="absolute top-2 left-2 bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded-full z-10">
+                                            Tersedia
+                                        </span>
+                                    )}
+                                    
                                     <AppImage
                                         src={`${import.meta.env.VITE_API_URL}${item.image_url}`}
                                         fallbackSrc="/assets/images/no_image.png"
@@ -242,7 +263,7 @@ const GuestCheckout = () => {
                                         <p className="text-xs text-text-secondary dark:text-gray-300 mt-1">Stok: {item.stock}</p>
                                         
                                         <div className="mt-4">
-                                            {isOutOfStock ? (
+                                            {initiallyOutOfStock ? (
                                                 <Button className="w-full" disabled>Stok Habis</Button>
                                             ) : isInCart ? (
                                                 <div className="flex items-center justify-center">
@@ -253,12 +274,12 @@ const GuestCheckout = () => {
                                                         <Minus size={16} />
                                                     </Button>
                                                     <span className="px-4 py-2 border-t border-b dark:border-gray-700 w-16 text-center font-semibold">
-                                                        {cart[item.id] || 0}
+                                                        {quantityInCart}
                                                     </span>
                                                     <Button
                                                         variant="outline" size="icon" className="rounded-l-none dark:border-gray-700"
                                                         onClick={() => handleAddToCart(item)}
-                                                        disabled={item.stock <= (cart[item.id] || 0)}
+                                                        disabled={effectivelyOutOfStock}
                                                     >
                                                         <Plus size={16} />
                                                     </Button>
@@ -294,8 +315,18 @@ const GuestCheckout = () => {
                                         const item = menuItems.find(menuItem => menuItem.id === itemId);
                                         return item ? (
                                             <div key={itemId} className="flex justify-between items-center text-sm">
-                                                <span className="text-text-primary">{quantity}x {item.name}</span>
-                                                <span className="font-medium">Rp {(item.price * quantity).toLocaleString('id-ID')}</span>
+                                                <span className="text-text-primary flex-grow pr-2">{quantity}x {item.name}</span>
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="font-medium">Rp {(item.price * quantity).toLocaleString('id-ID')}</span>
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        className="h-6 w-6 text-destructive"
+                                                        onClick={() => handleDeleteItemFromCart(itemId)}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </Button>
+                                                </div>
                                             </div>
                                         ) : null;
                                     })
