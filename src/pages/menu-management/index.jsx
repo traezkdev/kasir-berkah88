@@ -184,13 +184,19 @@ const MenuManagement = ({ headerTitle }) => {
       return;
     }
 
-    const today = new Date().toLocaleDateString('id-ID', {
+    const now = new Date();
+    const date = now.toLocaleDateString('id-ID', {
       day: '2-digit',
       month: 'long',
       year: 'numeric',
     });
+    const time = now.toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
 
-    let message = `*Daftar Stok Tersedia - ${today}*
+    let message = `*Daftar Stok Tersedia - ${date} Pukul ${time} WIB*
 
 `;
     message += availableItems

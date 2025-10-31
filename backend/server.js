@@ -175,6 +175,18 @@ app.get('/api/settings/logo', async (req, res) => {
     }
 });
 
+// Endpoint to mark data as updated
+app.put("/api/settings/data-updated-timestamp", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        const now = new Date();
+        const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+        await db.query(sql, ['data_last_updated', now.toISOString()]);
+        res.json({ message: "Data update timestamp recorded successfully", timestamp: now.toISOString() });
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
 // Get a specific setting by key
 app.get('/api/settings/:key', async (req, res) => {
     try {
@@ -194,6 +206,52 @@ app.get('/api/settings/:key', async (req, res) => {
     }
 });
 
+// Update master password
+app.put("/api/settings/master-password", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        const { currentMasterPassword, newMasterPassword } = req.body;
+
+        if (!newMasterPassword) {
+            return res.status(400).json({ error: "Kata sandi master baru diperlukan" });
+        }
+
+        const [masterPassRow] = await db.query('SELECT `value` FROM settings WHERE `key` = ?', ['master_password']);
+        const storedMasterPassword = masterPassRow.length > 0 ? masterPassRow[0].value : null;
+
+        // If a master password already exists, we must validate the current one
+        if (storedMasterPassword) {
+            if (!currentMasterPassword) {
+                return res.status(400).json({ error: "Kata sandi master saat ini diperlukan untuk mengubahnya" });
+            }
+
+            let isPasswordValid = false;
+            const isStoredPassHashed = storedMasterPassword.startsWith('$2a$') || storedMasterPassword.startsWith('$2b$') || storedMasterPassword.startsWith('$2y$');
+
+            if (isStoredPassHashed) {
+                // Normal case: stored password is a valid hash
+                isPasswordValid = await bcrypt.compare(currentMasterPassword, storedMasterPassword);
+            } else {
+                // Legacy/broken case: stored password is plain text. Heal on successful change.
+                isPasswordValid = (currentMasterPassword === storedMasterPassword);
+            }
+
+            if (!isPasswordValid) {
+                return res.status(400).json({ error: "Kata sandi master saat ini salah" });
+            }
+        }
+
+        const hashedNewMasterPassword = await bcrypt.hash(newMasterPassword, 10);
+
+        const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+        await db.query(sql, ['master_password', hashedNewMasterPassword]);
+
+        res.json({ message: "Master password updated successfully" });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
 // Update a specific setting by key
 app.put('/api/settings/:key', authenticateToken, authorizeRoles('admin'), async (req, res) => {
     try {
@@ -205,6 +263,13 @@ app.put('/api/settings/:key', authenticateToken, authorizeRoles('admin'), async 
 
         const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
         const [result] = await db.query(sql, [key, value.toString()]);
+
+        // If initial_capital is updated, also update initial_capital_date
+        if (key === 'initial_capital') {
+            const now = new Date().toISOString();
+            const dateSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+            await db.query(dateSql, ['initial_capital_date', now]);
+        }
         
         res.json({ message: "Setting updated successfully", data: { key, value } });
 
@@ -1220,6 +1285,24 @@ app.post("/api/settings", authenticateToken, authorizeRoles('admin'), async (req
     }
 });
 
+// Update last_monthly_reset_date setting
+app.put('/api/settings/last_monthly_reset_date', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        const { value } = req.body;
+        if (!value) {
+            return res.status(400).json({ "error": "Value is required" });
+        }
+
+        const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+        await db.query(sql, ['last_monthly_reset_date', value]);
+        
+        res.json({ message: "Last monthly reset date updated successfully", data: { last_monthly_reset_date: value } });
+
+    } catch (err) {
+        res.status(500).json({ "error": err.message, stack: err.stack });
+    }
+});
+
 // Update website title
 app.put("/api/settings/title", authenticateToken, authorizeRoles('admin'), async (req, res) => {
     try {
@@ -1450,51 +1533,7 @@ app.delete("/api/admin/data/all", authenticateToken, authorizeRoles('admin'), as
     }
 });
 
-// Update master password
-app.put("/api/settings/master-password", authenticateToken, authorizeRoles('admin'), async (req, res) => {
-    try {
-        const { currentMasterPassword, newMasterPassword } = req.body;
 
-        if (!newMasterPassword) {
-            return res.status(400).json({ error: "Kata sandi master baru diperlukan" });
-        }
-
-        const [masterPassRow] = await db.query('SELECT `value` FROM settings WHERE `key` = ?', ['master_password']);
-        const storedMasterPassword = masterPassRow.length > 0 ? masterPassRow[0].value : null;
-
-        // If a master password already exists, we must validate the current one
-        if (storedMasterPassword) {
-            if (!currentMasterPassword) {
-                return res.status(400).json({ error: "Kata sandi master saat ini diperlukan untuk mengubahnya" });
-            }
-
-            let isPasswordValid = false;
-            const isStoredPassHashed = storedMasterPassword.startsWith('$2a$') || storedMasterPassword.startsWith('$2b$') || storedMasterPassword.startsWith('$2y$');
-
-            if (isStoredPassHashed) {
-                // Normal case: stored password is a valid hash
-                isPasswordValid = await bcrypt.compare(currentMasterPassword, storedMasterPassword);
-            } else {
-                // Legacy/broken case: stored password is plain text. Heal on successful change.
-                isPasswordValid = (currentMasterPassword === storedMasterPassword);
-            }
-
-            if (!isPasswordValid) {
-                return res.status(400).json({ error: "Kata sandi master saat ini salah" });
-            }
-        }
-
-        const hashedNewMasterPassword = await bcrypt.hash(newMasterPassword, 10);
-
-        const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
-        await db.query(sql, ['master_password', hashedNewMasterPassword]);
-
-        res.json({ message: "Master password updated successfully" });
-
-    } catch (err) {
-        res.status(500).json({ error: err.message, stack: err.stack });
-    }
-});
 
 // Endpoint to mark data as updated
 app.put("/api/settings/data-updated-timestamp", authenticateToken, authorizeRoles('admin'), async (req, res) => {

@@ -65,13 +65,24 @@ const Settings = ({ headerTitle }) => {
   const [users, setUsers] = useState([]);
   const [decodedToken, setDecodedToken] = useState(null);
   const [currentMasterPassword, setCurrentMasterPassword] = useState('');
+  const [showCurrentMasterPassword, setShowCurrentMasterPassword] = useState(false);
   const [newMasterPassword, setNewMasterPassword] = useState('');
+  const [showNewMasterPassword, setShowNewMasterPassword] = useState(false);
+  const [confirmNewMasterPassword, setConfirmNewMasterPassword] = useState('');
+  const [showConfirmNewMasterPassword, setShowConfirmNewMasterPassword] = useState(false);
   const [masterPasswordForClear, setMasterPasswordForClear] = useState('');
+  const [showMasterPasswordForClear, setShowMasterPasswordForClear] = useState(false);
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [webDescription, setWebDescription] = useState('');
   const [initialCapital, setInitialCapital] = useState('');
   const [employees, setEmployees] = useState([]);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+  const [showDeleteEmployeeConfirmation, setShowDeleteEmployeeConfirmation] = useState(false);
+  const [employeeToDeleteId, setEmployeeToDeleteId] = useState(null);
+  const [showDeleteUserConfirmation, setShowDeleteUserConfirmation] = useState(false);
+  const [userToDeleteId, setUserToDeleteId] = useState(null);
+  const [userToDeleteUsername, setUserToDeleteUsername] = useState('');
   const [activeModal, setActiveModal] = useState(null);
   const [cashierDashboardTitle, setCashierDashboardTitle] = useState('');
   const [newCashierDashboardTitle, setNewCashierDashboardTitle] = useState('');
@@ -217,24 +228,31 @@ const Settings = ({ headerTitle }) => {
     }
   };
 
-  const handleDeleteUser = async (userId, username) => {
-    if (window.confirm(`Anda yakin ingin menghapus pengguna "${username}"?`)) {
-      clearMessages();
-      setIsLoading(true);
-      try {
-        const response = await authFetch(`${apiUrl}/api/admin/users/${userId}`, { method: 'DELETE' });
-        const data = await response.json();
-        if (response.ok) {
-          setMessage(`Pengguna "${username}" berhasil dihapus!`);
-          fetchUsers();
-        } else {
-          setError(data.error || 'Gagal menghapus pengguna');
-        }
-      } catch (err) {
-        setError('Kesalahan jaringan');
-      } finally {
-        setIsLoading(false);
+  const confirmDeleteUser = (userId, username) => {
+    setUserToDeleteId(userId);
+    setUserToDeleteUsername(username);
+    setShowDeleteUserConfirmation(true);
+  };
+
+  const handleDeleteUser = async () => {
+    clearMessages();
+    setIsLoading(true);
+    setShowDeleteUserConfirmation(false); // Close modal immediately
+    try {
+      const response = await authFetch(`${apiUrl}/api/admin/users/${userToDeleteId}`, { method: 'DELETE' });
+      const data = await response.json();
+      if (response.ok) {
+        setMessage(`Pengguna "${userToDeleteUsername}" berhasil dihapus!`);
+        fetchUsers();
+      } else {
+        setError(data.error || 'Gagal menghapus pengguna');
       }
+    } catch (err) {
+      setError('Kesalahan jaringan');
+    } finally {
+      setIsLoading(false);
+      setUserToDeleteId(null);
+      setUserToDeleteUsername('');
     }
   };
 
@@ -271,27 +289,34 @@ const Settings = ({ headerTitle }) => {
 
   const handleChangeMasterPassword = async (e) => {
     e.preventDefault();
-    clearMessages();
-    setIsLoading(true);
+    clearMessages(); // Clear previous messages
+    if (newMasterPassword !== confirmNewMasterPassword) {
+      setError('Kata sandi master baru dan konfirmasi tidak cocok.');
+      return;
+    }
     try {
-      const response = await authFetch(`${apiUrl}/api/settings/master-password`, {
+      const res = await authFetch(`${apiUrl}/api/settings/master-password`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentMasterPassword, newMasterPassword }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          currentMasterPassword: currentMasterPassword,
+          newMasterPassword: newMasterPassword,
+        }),
       });
-      const data = await response.json();
-      if (response.ok) {
+      if (res.ok) {
         setMessage('Kata sandi master berhasil diperbarui!');
         setCurrentMasterPassword('');
         setNewMasterPassword('');
-        setTimeout(() => handleModalClose(), 1500);
+        setConfirmNewMasterPassword('');
       } else {
-        setError(data.error || 'Gagal memperbarui kata sandi master');
+        const errorData = await res.json();
+        setError(errorData.error || 'Gagal memperbarui kata sandi master.');
       }
-    } catch (err) {
-      setError('Kesalahan jaringan atau server tidak dapat dijangkau');
-    } finally {
-      setIsLoading(false);
+    } catch (error) {
+      console.error('Error updating master password:', error);
+      setError(error.message);
     }
   };
 
@@ -321,24 +346,29 @@ const Settings = ({ headerTitle }) => {
     }
   };
 
-  const handleDeleteEmployee = async (employeeId) => {
-    if (window.confirm('Anda yakin ingin menghapus karyawan ini?')) {
-      clearMessages();
-      setIsLoading(true);
-      try {
-        const response = await authFetch(`${apiUrl}/api/employees/${employeeId}`, { method: 'DELETE' });
-        if (response.ok) {
-          setMessage('Karyawan berhasil dihapus.');
-          fetchEmployees();
-        } else {
-          const data = await response.json();
-          setError(data.error || 'Gagal menghapus karyawan');
-        }
-      } catch (err) {
-        setError('Kesalahan jaringan');
-      } finally {
-        setIsLoading(false);
+  const confirmDeleteEmployee = (employeeId) => {
+    setEmployeeToDeleteId(employeeId);
+    setShowDeleteEmployeeConfirmation(true);
+  };
+
+  const handleDeleteEmployee = async () => {
+    clearMessages();
+    setIsLoading(true);
+    setShowDeleteEmployeeConfirmation(false); // Close modal immediately
+    try {
+      const response = await authFetch(`${apiUrl}/api/employees/${employeeToDeleteId}`, { method: 'DELETE' });
+      if (response.ok) {
+        setMessage('Karyawan berhasil dihapus.');
+        fetchEmployees();
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Gagal menghapus karyawan');
       }
+    } catch (err) {
+      setError('Kesalahan jaringan');
+    } finally {
+      setIsLoading(false);
+      setEmployeeToDeleteId(null);
     }
   };
 
@@ -480,7 +510,7 @@ const Settings = ({ headerTitle }) => {
       </SettingsModal>
 
       <SettingsModal title="Atur Modal Awal" isOpen={activeModal === 'initialCapital'} onClose={handleModalClose}>
-         <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings', { initial_capital: initialCapital }, 'Modal awal berhasil diperbarui!')} className="space-y-4">
+         <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/initial_capital', { value: initialCapital }, 'Modal awal berhasil diperbarui!')} className="space-y-4">
           <Input label="Jumlah Modal Awal (Rp)" name="initialCapital" type="number" value={initialCapital} onChange={(e) => setInitialCapital(e.target.value)} required />
           <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
         </form>
@@ -525,7 +555,7 @@ const Settings = ({ headerTitle }) => {
                                     </select>
                                 </td>
                                 <td className="p-3">
-                                    <Button variant="destructive" size="sm" onClick={() => handleDeleteUser(user.id, user.username)} disabled={isLoading || user.id === 1 || (decodedToken && user.id === decodedToken.userId)}>Hapus</Button>
+                                    <Button variant="destructive" size="sm" onClick={() => confirmDeleteUser(user.id, user.username)} disabled={isLoading || user.id === 1 || (decodedToken && user.id === decodedToken.userId)}>Hapus</Button>
                                 </td>
                             </tr>
                         ))}
@@ -538,7 +568,19 @@ const Settings = ({ headerTitle }) => {
       <SettingsModal title="Buat Pengguna Admin Baru" isOpen={activeModal === 'createAdminUser'} onClose={handleModalClose}>
         <form onSubmit={handleCreateAdminUser} className="space-y-4">
           <Input label="Nama Pengguna" name="adminUsername" type="text" value={adminUsername} onChange={(e) => setAdminUsername(e.target.value)} required />
-          <Input label="Kata Sandi" name="adminPassword" type="password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} required />
+          <Input
+            label="Kata Sandi"
+            name="adminPassword"
+            type={showAdminPassword ? "text" : "password"}
+            value={adminPassword}
+            onChange={(e) => setAdminPassword(e.target.value)}
+            required
+            rightIcon={
+              <span className="cursor-pointer" onClick={() => setShowAdminPassword(!showAdminPassword)}>
+                <AppIcon name={showAdminPassword ? "EyeOff" : "Eye"} className="h-5 w-5 text-gray-400" />
+              </span>
+            }
+          />
           <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Membuat...' : 'Buat Admin'}</Button>
         </form>
       </SettingsModal>
@@ -561,7 +603,7 @@ const Settings = ({ headerTitle }) => {
                     <td className="p-3">{emp.phone}<br/>{emp.email}</td>
                     <td className="p-3"><div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => openEmployeeForm(emp)}>Edit</Button>
-                      <Button variant="destructive" size="sm" onClick={() => handleDeleteEmployee(emp.id)}>Hapus</Button>
+                      <Button variant="destructive" size="sm" onClick={() => confirmDeleteEmployee(emp.id)}>Hapus</Button>
                     </div></td>
                   </tr>
                 ))}
@@ -589,8 +631,45 @@ const Settings = ({ headerTitle }) => {
       <SettingsModal title="Ubah Kata Sandi Master" isOpen={activeModal === 'masterPassword'} onClose={handleModalClose}>
         <form onSubmit={handleChangeMasterPassword} className="space-y-4">
           <p className="text-sm text-text-secondary">Kata sandi ini digunakan untuk mengotorisasi tindakan berbahaya seperti menghapus semua data.</p>
-          <Input label="Kata Sandi Master Saat Ini" name="currentMasterPassword" type="password" value={currentMasterPassword} onChange={(e) => setCurrentMasterPassword(e.target.value)} required />
-          <Input label="Kata Sandi Master Baru" name="newMasterPassword" type="password" value={newMasterPassword} onChange={(e) => setNewMasterPassword(e.target.value)} required />
+          <Input
+            label="Kata Sandi Master Saat Ini"
+            name="currentMasterPassword"
+            type={showCurrentMasterPassword ? "text" : "password"}
+            value={currentMasterPassword}
+            onChange={(e) => setCurrentMasterPassword(e.target.value)}
+            required
+            rightIcon={
+              <span className="cursor-pointer" onClick={() => setShowCurrentMasterPassword(!showCurrentMasterPassword)}>
+                <AppIcon name={showCurrentMasterPassword ? "EyeOff" : "Eye"} className="h-5 w-5 text-gray-400" />
+              </span>
+            }
+          />
+          <Input
+            label="Kata Sandi Master Baru"
+            name="newMasterPassword"
+            type={showNewMasterPassword ? "text" : "password"}
+            value={newMasterPassword}
+            onChange={(e) => setNewMasterPassword(e.target.value)}
+            required
+            rightIcon={
+              <span className="cursor-pointer" onClick={() => setShowNewMasterPassword(!showNewMasterPassword)}>
+                <AppIcon name={showNewMasterPassword ? "EyeOff" : "Eye"} className="h-5 w-5 text-gray-400" />
+              </span>
+            }
+          />
+          <Input
+            label="Konfirmasi Kata Sandi Master Baru"
+            name="confirmNewMasterPassword"
+            type={showConfirmNewMasterPassword ? "text" : "password"}
+            value={confirmNewMasterPassword}
+            onChange={(e) => setConfirmNewMasterPassword(e.target.value)}
+            required
+            rightIcon={
+              <span className="cursor-pointer" onClick={() => setShowConfirmNewMasterPassword(!showConfirmNewMasterPassword)}>
+                <AppIcon name={showConfirmNewMasterPassword ? "EyeOff" : "Eye"} className="h-5 w-5 text-gray-400" />
+              </span>
+            }
+          />
           <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Memperbarui...' : 'Perbarui Kata Sandi'}</Button>
         </form>
       </SettingsModal>
@@ -598,7 +677,19 @@ const Settings = ({ headerTitle }) => {
       <SettingsModal title="Hapus Semua Data" isOpen={activeModal === 'clearAllData'} onClose={handleModalClose}>
         <form onSubmit={handleClearAllData} className="space-y-4">
           <p className="text-sm text-text-secondary">Tindakan ini akan menghapus semua transaksi, pengeluaran, dan mengatur ulang stok item menu menjadi nol. Ini tidak dapat dibatalkan.</p>
-          <Input label="Kata Sandi Master" name="masterPasswordForClear" type="password" value={masterPasswordForClear} onChange={(e) => setMasterPasswordForClear(e.target.value)} required />
+          <Input
+            label="Kata Sandi Master"
+            name="masterPasswordForClear"
+            type={showMasterPasswordForClear ? "text" : "password"}
+            value={masterPasswordForClear}
+            onChange={(e) => setMasterPasswordForClear(e.target.value)}
+            required
+            rightIcon={
+              <span className="cursor-pointer" onClick={() => setShowMasterPasswordForClear(!showMasterPasswordForClear)}>
+                <AppIcon name={showMasterPasswordForClear ? "EyeOff" : "Eye"} className="h-5 w-5 text-gray-400" />
+              </span>
+            }
+          />
           <Button type="submit" variant="destructive" className="w-full" disabled={isLoading}>{isLoading ? 'Menghapus...' : 'Hapus Semua Data'}</Button>
         </form>
       </SettingsModal>
@@ -606,6 +697,26 @@ const Settings = ({ headerTitle }) => {
       <SettingsModal title="Pengaturan Tampilan Media Sosial" isOpen={activeModal === 'socialShare'} onClose={handleModalClose}>
         <SocialShareSettings onClose={handleModalClose} />
       </SettingsModal>
+
+      <ConfirmationModal
+        isOpen={showDeleteUserConfirmation}
+        onClose={() => setShowDeleteUserConfirmation(false)}
+        onConfirm={handleDeleteUser}
+        title="Konfirmasi Penghapusan Pengguna"
+        message={`Apakah Anda yakin ingin menghapus pengguna "${userToDeleteUsername}"? Tindakan ini tidak dapat dibatalkan.`}
+        confirmText="Ya, Hapus Pengguna"
+        cancelText="Batal"
+      />
+
+      <ConfirmationModal
+        isOpen={showDeleteEmployeeConfirmation}
+        onClose={() => setShowDeleteEmployeeConfirmation(false)}
+        onConfirm={handleDeleteEmployee}
+        title="Konfirmasi Penghapusan Karyawan"
+        message="Apakah Anda yakin ingin menghapus karyawan ini? Tindakan ini tidak dapat dibatalkan."
+        confirmText="Ya, Hapus Karyawan"
+        cancelText="Batal"
+      />
 
       <ConfirmationModal
         isOpen={isConfirmationModalOpen}

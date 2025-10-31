@@ -47,7 +47,7 @@ const ConfirmationModal = ({
 
     return (
         <div
-            className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50"
+            className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-[2001]"
             onClick={onClose}
         >
                         <div 

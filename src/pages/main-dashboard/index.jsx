@@ -39,8 +39,6 @@ const MainDashboard = ({ headerTitle }) => {
       const transactions = await transRes.json();
       if (transRes.ok && transactions.message === 'success') {
         transactionsData = transactions.data;
-      } else {
-        console.error("Failed to fetch transactions:", transactions.error || "Unknown error");
       }
 
       // Handle menu items data
@@ -53,8 +51,6 @@ const MainDashboard = ({ headerTitle }) => {
       const expenses = await expenseRes.json();
       if (expenseRes.ok && expenses.message === 'success') {
         expensesData = expenses.data;
-      } else {
-        console.error("Failed to fetch expenses:", expenses.error || "Unknown error");
       }
 
       // Handle settings data
@@ -137,149 +133,148 @@ const MainDashboard = ({ headerTitle }) => {
     }
   }, []); // Empty dependency array to run once on mount
 
-  const processDashboardData = (transactions, menuItems, expenses, settings) => {
-    const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    const todayString = today.toDateString();
-    const yesterdayString = yesterday.toDateString();
-
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-
-    // --- All-Time & Working Capital Metrics ---
-    const initialCapital = parseFloat(settings?.initial_capital);
-    const initialCapitalDate = settings?.initial_capital_date ? new Date(settings.initial_capital_date) : null;
-    let workingCapital = 0;
-
-    const allTimeTransactions = initialCapitalDate
-      ? transactions.filter(t => new Date(t.timestamp) >= initialCapitalDate)
-      : transactions;
-    const allTimeRelevantExpenses = initialCapitalDate
-      ? expenses.filter(e => new Date(e.date) >= initialCapitalDate)
-      : expenses;
-
-    const allTimeRevenue = allTimeTransactions
-      .filter(t => t.payment_method !== 'Makan Karyawan')
-      .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
-    const allTimeExpenses = allTimeRelevantExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
-    const allTimeNetProfit = allTimeRevenue - allTimeExpenses;
-
-    if (!isNaN(initialCapital)) {
-        workingCapital = initialCapital + allTimeNetProfit;
-    }
-
-    // --- Monthly Metrics for Dashboard ---
-    const monthlyTransactions = transactions.filter(t => {
-      const transactionDate = new Date(t.timestamp);
-      return (
-        transactionDate.getMonth() === currentMonth &&
-        transactionDate.getFullYear() === currentYear
-      );
-    });
-
-    const totalRevenue = monthlyTransactions
-      .filter(t => t.payment_method !== 'Makan Karyawan')
-      .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
-    const monthlyExpenses = expenses.filter(e => {
-      const expenseDate = new Date(e.date);
-      return (
-        expenseDate.getMonth() === currentMonth &&
-        expenseDate.getFullYear() === currentYear
-      );
-    });
-
-    const totalExpenses = monthlyExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
-    const stockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
-    const netProfit = totalRevenue - totalExpenses;
-
-    // --- Daily Stats Calculation ---
-    const todayTransactions = transactions.filter(t => new Date(t.timestamp).toDateString() === todayString && t.payment_method !== 'Makan Karyawan');
-    const todaySales = todayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
-    const averageOrderToday = todayTransactions.length > 0 ? todaySales / todayTransactions.length : 0;
-
-    // Yesterday's Data
-    const yesterdayTransactions = transactions.filter(t => new Date(t.timestamp).toDateString() === yesterdayString && t.payment_method !== 'Makan Karyawan');
-    const yesterdaySales = yesterdayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
-    const averageOrderYesterday = yesterdayTransactions.length > 0 ? yesterdaySales / yesterdayTransactions.length : 0;
-
-    // --- Change & Trend Calculation ---
-    let salesChange = 0;
-    if (yesterdaySales > 0) {
-      salesChange = ((todaySales - yesterdaySales) / yesterdaySales) * 100;
-    } else if (todaySales > 0) {
-      salesChange = 100;
-    }
-    const salesChangeFormatted = `${salesChange >= 0 ? '+' : ''}${salesChange.toFixed(0)}%`;
-    const salesTrend = salesChange >= 0 ? 'up' : 'down';
-
-    const transChange = todayTransactions.length - yesterdayTransactions.length;
-    const transChangeFormatted = `${transChange >= 0 ? '+' : ''}${transChange}`;
-    const transTrend = transChange >= 0 ? 'up' : 'down';
-
-    let avgOrderChange = 0;
-    if (averageOrderYesterday > 0) {
-      avgOrderChange = ((averageOrderToday - averageOrderYesterday) / averageOrderYesterday) * 100;
-    } else if (averageOrderToday > 0) {
-      avgOrderChange = 100;
-    }
-    const avgOrderChangeFormatted = `${avgOrderChange >= 0 ? '+' : ''}${avgOrderChange.toFixed(0)}%`;
-    const avgOrderTrend = avgOrderChange >= 0 ? 'up' : 'down';
-
-    // --- Other Metrics ---
-    const itemsSoldToday = todayTransactions.flatMap(t => {
-      try {
-        const items = typeof t.items === 'string' ? JSON.parse(t.items) : t.items;
-        return Array.isArray(items) ? items : [];
-      } catch (e) {
-        console.error("Failed to parse transaction items:", e);
-        return [];
+    const processDashboardData = (transactions, menuItems, expenses, settings) => {
+      const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+  
+      const todayString = today.toDateString();
+      const yesterdayString = yesterday.toDateString();
+  
+      const currentMonth = today.getMonth();
+      const currentYear = today.getFullYear();
+  
+      // --- All-Time & Working Capital Metrics ---
+      const initialCapital = parseFloat(settings?.initial_capital || 0);
+      const initialCapitalDate = settings?.initial_capital_date ? new Date(settings.initial_capital_date) : null;
+      let workingCapital = 0;
+  
+      const allTimeTransactions = initialCapitalDate
+        ? transactions.filter(t => new Date(t.timestamp) >= initialCapitalDate)
+        : transactions;
+      const allTimeRelevantExpenses = initialCapitalDate
+        ? expenses.filter(e => new Date(e.date) >= initialCapitalDate)
+        : expenses;
+  
+      const allTimeRevenue = allTimeTransactions
+        .filter(t => t.payment_method !== 'Makan Karyawan')
+        .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+      const allTimeExpenses = allTimeRelevantExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+      const allTimeNetProfit = allTimeRevenue - allTimeExpenses;
+  
+      if (!isNaN(initialCapital)) {
+          workingCapital = initialCapital + allTimeNetProfit;
       }
-    }).reduce((sum, i) => sum + (i.quantity || 0), 0);
-    const lowStockItems = menuItems.filter(item => item.stock <= 5 && item.stock > 0).length;
-    const recentTransactions = transactions.slice(0, 6);
-
-    setDashboardData({
-      metrics: {
-        // Monthly
-        totalRevenue,
-        totalExpenses,
-        netProfit,
-        // All-Time
-        workingCapital,
-        allTimeRevenue,
-        allTimeExpenses,
-        allTimeNetProfit,
-        // Other
-        stockValue,
-      },
-      todayStats: {
-        transactions: todayTransactions.length,
-        itemsSold: itemsSoldToday,
-        averageOrder: averageOrderToday,
-        peakHour: (() => {
-          if (todayTransactions.length === 0) return 'N/A';
-          const hourCounts = Array(24).fill(0);
-          todayTransactions.forEach(t => {
-            const hour = new Date(t.timestamp).getHours();
-            hourCounts[hour]++;
-          });
-          const busiestHour = hourCounts.indexOf(Math.max(...hourCounts));
-          return `${String(busiestHour).padStart(2, '0')}:00 - ${String(busiestHour + 1).padStart(2, '0')}:00`;
-        })()
-      },
-      recentTransactions,
-      dashboardMetrics: {
-        todaySales: { value: formatCurrency(todaySales), change: salesChangeFormatted, trend: salesTrend },
-        totalTransactions: { value: todayTransactions.length.toString(), change: transChangeFormatted, trend: transTrend },
-        averageOrder: { value: formatCurrency(averageOrderToday), change: avgOrderChangeFormatted, trend: avgOrderTrend },
-        lowStock: { value: lowStockItems.toString(), change: '', trend: 'down' } 
-      },
-      data_last_updated: settings?.data_last_updated
-    });
-  };
-
+  
+      // --- Monthly Metrics for Dashboard ---
+      const monthlyTransactions = transactions.filter(t => {
+        const transactionDate = new Date(t.timestamp);
+        return (
+          transactionDate.getMonth() === currentMonth &&
+          transactionDate.getFullYear() === currentYear
+        );
+      });
+  
+      const totalRevenue = monthlyTransactions
+        .filter(t => t.payment_method !== 'Makan Karyawan')
+        .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+      const monthlyExpenses = expenses.filter(e => {
+        const expenseDate = new Date(e.date);
+        return (
+          expenseDate.getMonth() === currentMonth &&
+          expenseDate.getFullYear() === currentYear
+        );
+      });
+  
+      const totalExpenses = monthlyExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+      const stockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
+      const netProfit = totalRevenue - totalExpenses;
+  
+      // --- Daily Stats Calculation ---
+      const todayTransactions = transactions.filter(t => new Date(t.timestamp).toDateString() === todayString && t.payment_method !== 'Makan Karyawan');
+      const todaySales = todayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+      const averageOrderToday = todayTransactions.length > 0 ? todaySales / todayTransactions.length : 0;
+  
+      // Yesterday's Data
+      const yesterdayTransactions = transactions.filter(t => new Date(t.timestamp).toDateString() === yesterdayString && t.payment_method !== 'Makan Karyawan');
+      const yesterdaySales = yesterdayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+      const averageOrderYesterday = yesterdayTransactions.length > 0 ? yesterdaySales / yesterdayTransactions.length : 0;
+  
+      // --- Change & Trend Calculation ---
+      let salesChange = 0;
+      if (yesterdaySales > 0) {
+        salesChange = ((todaySales - yesterdaySales) / yesterdaySales) * 100;
+      } else if (todaySales > 0) {
+        salesChange = 100;
+      }
+      const salesChangeFormatted = `${salesChange >= 0 ? '+' : ''}${salesChange.toFixed(0)}%`;
+      const salesTrend = salesChange >= 0 ? 'up' : 'down';
+  
+      const transChange = todayTransactions.length - yesterdayTransactions.length;
+      const transChangeFormatted = `${transChange >= 0 ? '+' : ''}${transChange}`;
+      const transTrend = transChange >= 0 ? 'up' : 'down';
+  
+      let avgOrderChange = 0;
+      if (averageOrderYesterday > 0) {
+        avgOrderChange = ((averageOrderToday - averageOrderYesterday) / averageOrderYesterday) * 100;
+      } else if (averageOrderToday > 0) {
+        avgOrderChange = 100;
+      }
+      const avgOrderChangeFormatted = `${avgOrderChange >= 0 ? '+' : ''}${avgOrderChange.toFixed(0)}%`;
+      const avgOrderTrend = avgOrderChange >= 0 ? 'up' : 'down';
+  
+      // --- Other Metrics ---
+      const itemsSoldToday = todayTransactions.flatMap(t => {
+        try {
+          const items = typeof t.items === 'string' ? JSON.parse(t.items) : t.items;
+          return Array.isArray(items) ? items : [];
+        } catch (e) {
+          console.error("Failed to parse transaction items:", e);
+          return [];
+        }
+      }).reduce((sum, i) => sum + (i.quantity || 0), 0);
+      const lowStockItems = menuItems.filter(item => item.stock <= 5 && item.stock > 0).length;
+      const recentTransactions = transactions.slice(0, 6);
+  
+      setDashboardData({
+        metrics: {
+          // Monthly
+          totalRevenue,
+          totalExpenses,
+          netProfit,
+          // All-Time
+          workingCapital,
+          allTimeRevenue,
+          allTimeExpenses,
+          allTimeNetProfit,
+          // Other
+          stockValue,
+        },
+        todayStats: {
+          transactions: todayTransactions.length,
+          itemsSold: itemsSoldToday,
+          averageOrder: averageOrderToday,
+          peakHour: (() => {
+            if (todayTransactions.length === 0) return 'N/A';
+            const hourCounts = Array(24).fill(0);
+            todayTransactions.forEach(t => {
+              const hour = new Date(t.timestamp).getHours();
+              hourCounts[hour]++;
+            });
+            const busiestHour = hourCounts.indexOf(Math.max(...hourCounts));
+            return `${String(busiestHour).padStart(2, '0')}:00 - ${String(busiestHour + 1).padStart(2, '0')}:00`;
+          })()
+        },
+        recentTransactions,
+        dashboardMetrics: {
+          todaySales: { value: formatCurrency(todaySales), change: salesChangeFormatted, trend: salesTrend },
+          totalTransactions: { value: todayTransactions.length.toString(), change: transChangeFormatted, trend: transTrend },
+          averageOrder: { value: formatCurrency(averageOrderToday), change: avgOrderChangeFormatted, trend: avgOrderTrend },
+          lowStock: { value: lowStockItems.toString(), change: '', trend: 'down' }
+        },
+        data_last_updated: settings?.data_last_updated
+      });
+    };
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
