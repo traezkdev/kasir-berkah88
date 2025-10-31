@@ -80,6 +80,9 @@ const Settings = ({ headerTitle }) => {
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const [showDeleteEmployeeConfirmation, setShowDeleteEmployeeConfirmation] = useState(false);
   const [employeeToDeleteId, setEmployeeToDeleteId] = useState(null);
+  const [showDeleteUserConfirmation, setShowDeleteUserConfirmation] = useState(false);
+  const [userToDeleteId, setUserToDeleteId] = useState(null);
+  const [userToDeleteUsername, setUserToDeleteUsername] = useState('');
   const [activeModal, setActiveModal] = useState(null);
   const [cashierDashboardTitle, setCashierDashboardTitle] = useState('');
   const [newCashierDashboardTitle, setNewCashierDashboardTitle] = useState('');
@@ -225,24 +228,31 @@ const Settings = ({ headerTitle }) => {
     }
   };
 
-  const handleDeleteUser = async (userId, username) => {
-    if (window.confirm(`Anda yakin ingin menghapus pengguna "${username}"?`)) {
-      clearMessages();
-      setIsLoading(true);
-      try {
-        const response = await authFetch(`${apiUrl}/api/admin/users/${userId}`, { method: 'DELETE' });
-        const data = await response.json();
-        if (response.ok) {
-          setMessage(`Pengguna "${username}" berhasil dihapus!`);
-          fetchUsers();
-        } else {
-          setError(data.error || 'Gagal menghapus pengguna');
-        }
-      } catch (err) {
-        setError('Kesalahan jaringan');
-      } finally {
-        setIsLoading(false);
+  const confirmDeleteUser = (userId, username) => {
+    setUserToDeleteId(userId);
+    setUserToDeleteUsername(username);
+    setShowDeleteUserConfirmation(true);
+  };
+
+  const handleDeleteUser = async () => {
+    clearMessages();
+    setIsLoading(true);
+    setShowDeleteUserConfirmation(false); // Close modal immediately
+    try {
+      const response = await authFetch(`${apiUrl}/api/admin/users/${userToDeleteId}`, { method: 'DELETE' });
+      const data = await response.json();
+      if (response.ok) {
+        setMessage(`Pengguna "${userToDeleteUsername}" berhasil dihapus!`);
+        fetchUsers();
+      } else {
+        setError(data.error || 'Gagal menghapus pengguna');
       }
+    } catch (err) {
+      setError('Kesalahan jaringan');
+    } finally {
+      setIsLoading(false);
+      setUserToDeleteId(null);
+      setUserToDeleteUsername('');
     }
   };
 
@@ -545,7 +555,7 @@ const Settings = ({ headerTitle }) => {
                                     </select>
                                 </td>
                                 <td className="p-3">
-                                    <Button variant="destructive" size="sm" onClick={() => handleDeleteUser(user.id, user.username)} disabled={isLoading || user.id === 1 || (decodedToken && user.id === decodedToken.userId)}>Hapus</Button>
+                                    <Button variant="destructive" size="sm" onClick={() => confirmDeleteUser(user.id, user.username)} disabled={isLoading || user.id === 1 || (decodedToken && user.id === decodedToken.userId)}>Hapus</Button>
                                 </td>
                             </tr>
                         ))}
@@ -687,6 +697,16 @@ const Settings = ({ headerTitle }) => {
       <SettingsModal title="Pengaturan Tampilan Media Sosial" isOpen={activeModal === 'socialShare'} onClose={handleModalClose}>
         <SocialShareSettings onClose={handleModalClose} />
       </SettingsModal>
+
+      <ConfirmationModal
+        isOpen={showDeleteUserConfirmation}
+        onClose={() => setShowDeleteUserConfirmation(false)}
+        onConfirm={handleDeleteUser}
+        title="Konfirmasi Penghapusan Pengguna"
+        message={`Apakah Anda yakin ingin menghapus pengguna "${userToDeleteUsername}"? Tindakan ini tidak dapat dibatalkan.`}
+        confirmText="Ya, Hapus Pengguna"
+        cancelText="Batal"
+      />
 
       <ConfirmationModal
         isOpen={showDeleteEmployeeConfirmation}
