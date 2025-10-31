@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import AppImage from '../../components/AppImage';
 import Button from '../../components/ui/Button';
-import { Plus, Minus, ShoppingCart, AlertCircle, Trash2 } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, AlertCircle, Trash2, LayoutDashboard } from 'lucide-react';
 import Input from '../../components/ui/Input';
+import DarkModeToggle from '../../components/ui/DarkModeToggle';
 
 const GuestCheckout = () => {
     const [menuItems, setMenuItems] = useState([]);
@@ -218,11 +219,19 @@ const GuestCheckout = () => {
                         <AppImage src="/assets/images/logoberkah88.png" alt="Logo" className="h-10 w-auto" />
                         <h1 className="text-2xl font-bold text-text-primary">Pesan Delivery</h1>
                     </div>
-                    {isLoggedIn && (
-                        <Link to="/main-dashboard">
-                            <Button variant="outline">Dashboard</Button>
-                        </Link>
-                    )}
+                    <div className="flex items-center space-x-1"> {/* This div will hold DarkModeToggle and Dashboard button */}
+                        <div className="lg:hidden"> {/* DarkModeToggle for mobile */}
+                            <DarkModeToggle />
+                        </div>
+                        {isLoggedIn && (
+                            <Link to="/main-dashboard">
+                                <Button variant="outline" className="flex items-center">
+                                    <LayoutDashboard className="h-5 w-5 lg:hidden" /> {/* Icon for mobile */}
+                                    <span className="hidden lg:inline">Dashboard</span> {/* Text for larger screens */}
+                                </Button>
+                            </Link>
+                        )}
+                    </div>
                 </div>
             </header>
 
