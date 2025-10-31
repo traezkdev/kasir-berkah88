@@ -271,6 +271,20 @@ const setupDatabase = async () => {
       console.log('Added hpp column to menu_items table.');
     }
 
+    // Check and add discount column to menu_items if it doesn't exist
+    const checkDiscountColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'menu_items' AND COLUMN_NAME = 'discount';
+    `;
+    const addDiscountColumn = `
+      ALTER TABLE menu_items ADD COLUMN discount DECIMAL(5, 2) DEFAULT 0.00;
+    `;
+    const [discountRows] = await connection.query(checkDiscountColumn);
+    if (discountRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addDiscountColumn);
+      console.log('Added discount column to menu_items table.');
+    }
+
     // Check and add user_id column to transactions if it doesn't exist
     const checkUserIdColumn = `
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS

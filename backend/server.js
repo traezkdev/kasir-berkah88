@@ -66,7 +66,7 @@ const authorizeRoles = (...roles) => {
 // Get all menu items
 app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir'), async (req, res, next) => {
     try {
-        const sql = "select * from menu_items";
+        const sql = "select id, name, price, stock, category, image_url, hpp, discount, updatedAt from menu_items";
         const [rows] = await db.query(sql);
         res.json({
             "message": "success",
@@ -80,12 +80,12 @@ app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'g
 // Add a new menu item
 app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin'), upload.single('image'), async (req, res, next) => {
     try {
-        const { id, name, price, stock, category, hpp } = req.body;
+        const { id, name, price, stock, category, hpp, discount } = req.body;
         // Image URL is now derived from the uploaded file
         const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
 
-        const sql = 'INSERT INTO menu_items (id, name, price, stock, category, image_url, hpp) VALUES (?,?,?,?,?,?,?)';
-        const params = [id, name, price, stock, category, image_url, hpp];
+        const sql = 'INSERT INTO menu_items (id, name, price, stock, category, image_url, hpp, discount) VALUES (?,?,?,?,?,?,?,?)';
+        const params = [id, name, price, stock, category, image_url, hpp, discount || 0];
         const [result] = await db.query(sql, params);
         res.json({
             "message": "success",
@@ -100,7 +100,7 @@ app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin'), 
 // Update a menu item
 app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'), upload.single('image'), async (req, res, next) => {
     try {
-        const { name, price, stock, category, hpp } = req.body;
+        const { name, price, stock, category, hpp, discount } = req.body;
         const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
 
         const sql = `UPDATE menu_items set 
@@ -109,11 +109,25 @@ app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'
            stock = COALESCE(?,stock), 
            category = COALESCE(?,category), 
            image_url = COALESCE(?,image_url), 
-           hpp = COALESCE(?,hpp) 
+           hpp = COALESCE(?,hpp), 
+           discount = COALESCE(?,discount) 
            WHERE id = ?`;
-        const params = [name, price, stock, category, image_url, hpp, req.params.id];
+        const params = [name, price, stock, category, image_url, hpp, discount, req.params.id];
         const [result] = await db.query(sql, params);
-        res.json({ message: "success", data: req.body, changes: result.affectedRows });
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Menu item not found or no changes made." });
+        }
+
+        // Fetch the updated item to include the automatically updated 'updatedAt' timestamp
+        const [updatedItemRows] = await db.query("SELECT id, name, price, stock, category, image_url, hpp, discount, updatedAt FROM menu_items WHERE id = ?", [req.params.id]);
+
+        if (updatedItemRows.length > 0) {
+            res.json({ message: "success", data: updatedItemRows[0], changes: result.affectedRows });
+        } else {
+            res.status(404).json({ message: "Menu item not found after update." });
+        }
+
     } catch (err) {
         res.status(400).json({ "error": err.message });
     }
@@ -785,24 +799,49 @@ app.delete("/api/notes/:id", authenticateToken, async (req, res) => {
 // Create a new pending order (public)
 app.post("/api/orders", async (req, res) => {
     try {
-        const { customer_name, customer_address, items, total } = req.body;
-        if (!customer_name || !items || !total) {
-            return res.status(400).json({ error: "Missing required fields: customer_name, items, total" });
+        const { customer_name, customer_address, items } = req.body; // 'total' will be calculated on backend
+        if (!customer_name || !items || items.length === 0) {
+            return res.status(400).json({ error: "Missing required fields: customer_name, items" });
+        }
+
+        let calculatedTotal = 0;
+        const orderItemsWithDetails = [];
+
+        for (const item of items) {
+            const [menuItemRows] = await db.query('SELECT id, name, price, discount FROM menu_items WHERE id = ?', [item.id]);
+            if (menuItemRows.length === 0) {
+                return res.status(400).json({ error: `Menu item with ID ${item.id} not found.` });
+            }
+            const menuItem = menuItemRows[0];
+            const itemPrice = parseFloat(menuItem.price);
+            const itemDiscount = parseFloat(menuItem.discount || 0); // Ensure discount is a number, default to 0
+
+            const discountedPrice = itemPrice * (1 - itemDiscount);
+            const itemSubtotal = discountedPrice * item.quantity;
+            calculatedTotal += itemSubtotal;
+
+            orderItemsWithDetails.push({
+                id: menuItem.id,
+                name: menuItem.name,
+                price: itemPrice, // Store original price
+                discount: itemDiscount, // Store discount applied
+                quantity: item.quantity,
+                subtotal: itemSubtotal // Store subtotal after discount
+            });
         }
 
         const sql = 'INSERT INTO orders (customer_name, customer_address, items, total, status) VALUES (?, ?, ?, ?, ?)';
-        const params = [customer_name, customer_address, JSON.stringify(items), total, 'pending'];
+        const params = [customer_name, customer_address, JSON.stringify(orderItemsWithDetails), calculatedTotal, 'pending'];
         const [result] = await db.query(sql, params);
 
-        res.status(201).json({ 
-            message: "Order created successfully and is pending verification.", 
-            data: { id: result.insertId, ...req.body, status: 'pending' }
+        res.status(201).json({
+            message: "Order created successfully and is pending verification.",
+            data: { id: result.insertId, customer_name, customer_address, items: orderItemsWithDetails, total: calculatedTotal, status: 'pending' }
         });
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
     }
 });
-
 // Get all orders (admin and user access)
 app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user'), async (req, res) => {
     try {
@@ -1684,7 +1723,7 @@ app.post("/api/logout", authenticateToken, (req, res) => {
 // Public API to get all menu items for guest users (no authentication required)
 app.get("/api/guest/menu-items", async (req, res) => {
     try {
-        const sql = "SELECT id, name, price, stock, category, image_url FROM menu_items";
+        const sql = "SELECT id, name, price, stock, category, image_url, discount FROM menu_items";
         const [rows] = await db.query(sql);
         res.json({
             "message": "success",

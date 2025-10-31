@@ -86,14 +86,26 @@ const ReceiptPage = () => {
             <div className="border-b border-dashed border-gray-400 mb-4"></div>
             <h3 className="font-semibold mb-2 text-gray-900">Detail Item:</h3>
             <div className="space-y-2">
-              {transaction.items.map((item) => (
-                <div key={item.id} className="flex justify-between text-sm">
-                  <span className="text-gray-900">
-                    {item.name} <span className="text-gray-500">x{item.quantity}</span>
-                  </span>
-                  <span className="text-gray-900">Rp {Number(item.price * item.quantity).toLocaleString("id-ID")}</span>
-                </div>
-              ))}
+              {transaction.items.map((item) => {
+                const originalPrice = Number(item.price) * Number(item.quantity);
+                const discountedPrice = originalPrice * (1 - (item.discount || 0));
+                return (
+                  <div key={item.id} className="flex justify-between text-sm">
+                    <span className="text-gray-900">
+                      {item.name} <span className="text-gray-500">x{item.quantity}</span>
+                      {item.discount > 0 && (
+                        <span className="text-red-500 ml-2">({item.discount * 100}% Diskon)</span>
+                      )}
+                    </span>
+                    <span className="text-gray-900">
+                      {item.discount > 0 && (
+                        <span className="line-through text-gray-500 mr-1">Rp {originalPrice.toLocaleString("id-ID")}</span>
+                      )}
+                      Rp {discountedPrice.toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
             <div className="border-b border-dashed border-gray-400 my-4"></div>
             <div className="flex justify-between font-semibold text-sm mb-2">
