@@ -9,6 +9,7 @@ const Input = React.forwardRef(({
     error,
     required = false,
     id,
+    rightIcon,
     ...props
 }, ref) => {
     // Generate unique ID if not provided
@@ -65,17 +66,25 @@ const Input = React.forwardRef(({
                 </label>
             )}
 
-            <input
-                type={type}
-                className={cn(
-                    baseInputClasses,
-                    error && "border-destructive focus-visible:ring-destructive",
-                    className
+            <div className="relative">
+                <input
+                    type={type}
+                    className={cn(
+                        baseInputClasses,
+                        rightIcon && "pr-10", // Add right padding if icon is present
+                        error && "border-destructive focus-visible:ring-destructive",
+                        className
+                    )}
+                    ref={ref}
+                    id={inputId}
+                    {...props}
+                />
+                {rightIcon && (
+                    <span className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                        {rightIcon}
+                    </span>
                 )}
-                ref={ref}
-                id={inputId}
-                {...props}
-            />
+            </div>
 
             {description && !error && (
                 <p className="text-sm text-muted-foreground">
@@ -91,7 +100,6 @@ const Input = React.forwardRef(({
         </div>
     );
 });
-
 Input.displayName = "Input";
 
 export default Input;
