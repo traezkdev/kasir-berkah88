@@ -344,11 +344,6 @@ export default function CashierDashboard() {
                   }
                   onClick={() => currentAvailableStock > 0 && addToCart(item)}
                 >
-                  {isInCart && (
-                    <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
-                      {itemInCart.quantity}
-                    </div>
-                  )}
                   {isOutOfStock && (
                     <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">Stok Habis</div>
                   )}
@@ -360,7 +355,17 @@ export default function CashierDashboard() {
                     alt={item.name}
                     className="w-full h-32 object-cover rounded-md mb-2"
                   />
-                  <h3 className="font-semibold text-lg truncate">{item.name}</h3>
+                  {item.discount > 0 && (
+                    <div className="relative block left-[-0.5rem] mt-[-1.5rem] bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10 w-fit">Diskon {item.discount * 100}%</div>
+                  )}
+                  <h3 className="font-semibold text-lg flex justify-between items-center">
+                    <span className="truncate">{item.name}</span>
+                    {isInCart && (
+                      <span className="ml-2 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full flex-shrink-0">
+                        {itemInCart.quantity}
+                      </span>
+                    )}
+                  </h3>
                   <p className="text-gray-600 dark:text-gray-400">Rp{item.price.toLocaleString('id-ID')}</p>
                   <p className="text-sm text-gray-500">Stok: {item.stock}</p>
                 </div>
