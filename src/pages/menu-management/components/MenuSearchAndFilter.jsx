@@ -9,6 +9,7 @@ const MenuSearchAndFilter = ({
   onSearchChange, 
   menuItems,
   onExportData,
+  onShareStock, // Tambahkan prop ini
   isExporting, 
   activeFilter,
   onFilterChange
@@ -79,37 +80,51 @@ const MenuSearchAndFilter = ({
           ))}
         </div>
 
-        {/* Export */}
-        <div className="relative">
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2">
+          {/* Share Button */}
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setShowExportMenu(!showExportMenu)}
-            iconName="Download"
+            onClick={onShareStock}
+            iconName="Share2" // Menggunakan ikon WhatsApp atau ikon share
             iconPosition="left"
-            loading={isExporting} // Add loading prop
           >
-            Export
+            Bagikan Stok
           </Button>
 
-          {showExportMenu && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-popover rounded-lg shadow-elevation-2 border border-border py-2 z-50">
-              <button
-                onClick={() => handleExport('excel')}
-                className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted transition-colors duration-200 flex items-center space-x-2"
-              >
-                <Icon name="FileSpreadsheet" size={16} />
-                <span>Export ke Excel</span>
-              </button>
-              <button
-                onClick={() => handleExport('pdf')}
-                className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted transition-colors duration-200 flex items-center space-x-2"
-              >
-                <Icon name="FileText" size={16} /> {/* Corrected icon to FileText */}
-                <span>Export ke PDF</span>
-              </button>
-            </div>
-          )}
+          {/* Export */}
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              iconName="Download"
+              iconPosition="left"
+              loading={isExporting}
+            >
+              Export
+            </Button>
+
+            {showExportMenu && (
+              <div className="absolute right-0 top-full mt-2 w-48 bg-popover rounded-lg shadow-elevation-2 border border-border py-2 z-50">
+                <button
+                  onClick={() => handleExport('excel')}
+                  className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted transition-colors duration-200 flex items-center space-x-2"
+                >
+                  <Icon name="FileSpreadsheet" size={16} />
+                  <span>Export ke Excel</span>
+                </button>
+                <button
+                  onClick={() => handleExport('pdf')}
+                  className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted transition-colors duration-200 flex items-center space-x-2"
+                >
+                  <Icon name="FileText" size={16} />
+                  <span>Export ke PDF</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       
