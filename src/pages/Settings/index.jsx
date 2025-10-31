@@ -78,6 +78,8 @@ const Settings = ({ headerTitle }) => {
   const [employees, setEmployees] = useState([]);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+  const [showDeleteEmployeeConfirmation, setShowDeleteEmployeeConfirmation] = useState(false);
+  const [employeeToDeleteId, setEmployeeToDeleteId] = useState(null);
   const [activeModal, setActiveModal] = useState(null);
   const [cashierDashboardTitle, setCashierDashboardTitle] = useState('');
   const [newCashierDashboardTitle, setNewCashierDashboardTitle] = useState('');
@@ -334,24 +336,29 @@ const Settings = ({ headerTitle }) => {
     }
   };
 
-  const handleDeleteEmployee = async (employeeId) => {
-    if (window.confirm('Anda yakin ingin menghapus karyawan ini?')) {
-      clearMessages();
-      setIsLoading(true);
-      try {
-        const response = await authFetch(`${apiUrl}/api/employees/${employeeId}`, { method: 'DELETE' });
-        if (response.ok) {
-          setMessage('Karyawan berhasil dihapus.');
-          fetchEmployees();
-        } else {
-          const data = await response.json();
-          setError(data.error || 'Gagal menghapus karyawan');
-        }
-      } catch (err) {
-        setError('Kesalahan jaringan');
-      } finally {
-        setIsLoading(false);
+  const confirmDeleteEmployee = (employeeId) => {
+    setEmployeeToDeleteId(employeeId);
+    setShowDeleteEmployeeConfirmation(true);
+  };
+
+  const handleDeleteEmployee = async () => {
+    clearMessages();
+    setIsLoading(true);
+    setShowDeleteEmployeeConfirmation(false); // Close modal immediately
+    try {
+      const response = await authFetch(`${apiUrl}/api/employees/${employeeToDeleteId}`, { method: 'DELETE' });
+      if (response.ok) {
+        setMessage('Karyawan berhasil dihapus.');
+        fetchEmployees();
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Gagal menghapus karyawan');
       }
+    } catch (err) {
+      setError('Kesalahan jaringan');
+    } finally {
+      setIsLoading(false);
+      setEmployeeToDeleteId(null);
     }
   };
 
@@ -586,7 +593,7 @@ const Settings = ({ headerTitle }) => {
                     <td className="p-3">{emp.phone}<br/>{emp.email}</td>
                     <td className="p-3"><div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => openEmployeeForm(emp)}>Edit</Button>
-                      <Button variant="destructive" size="sm" onClick={() => handleDeleteEmployee(emp.id)}>Hapus</Button>
+                      <Button variant="destructive" size="sm" onClick={() => confirmDeleteEmployee(emp.id)}>Hapus</Button>
                     </div></td>
                   </tr>
                 ))}
@@ -680,6 +687,16 @@ const Settings = ({ headerTitle }) => {
       <SettingsModal title="Pengaturan Tampilan Media Sosial" isOpen={activeModal === 'socialShare'} onClose={handleModalClose}>
         <SocialShareSettings onClose={handleModalClose} />
       </SettingsModal>
+
+      <ConfirmationModal
+        isOpen={showDeleteEmployeeConfirmation}
+        onClose={() => setShowDeleteEmployeeConfirmation(false)}
+        onConfirm={handleDeleteEmployee}
+        title="Konfirmasi Penghapusan Karyawan"
+        message="Apakah Anda yakin ingin menghapus karyawan ini? Tindakan ini tidak dapat dibatalkan."
+        confirmText="Ya, Hapus Karyawan"
+        cancelText="Batal"
+      />
 
       <ConfirmationModal
         isOpen={isConfirmationModalOpen}
