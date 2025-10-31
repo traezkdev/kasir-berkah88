@@ -263,6 +263,13 @@ app.put('/api/settings/:key', authenticateToken, authorizeRoles('admin'), async 
 
         const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
         const [result] = await db.query(sql, [key, value.toString()]);
+
+        // If initial_capital is updated, also update initial_capital_date
+        if (key === 'initial_capital') {
+            const now = new Date().toISOString();
+            const dateSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+            await db.query(dateSql, ['initial_capital_date', now]);
+        }
         
         res.json({ message: "Setting updated successfully", data: { key, value } });
 
@@ -1275,6 +1282,24 @@ app.post("/api/settings", authenticateToken, authorizeRoles('admin'), async (req
 
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// Update last_monthly_reset_date setting
+app.put('/api/settings/last_monthly_reset_date', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        const { value } = req.body;
+        if (!value) {
+            return res.status(400).json({ "error": "Value is required" });
+        }
+
+        const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+        await db.query(sql, ['last_monthly_reset_date', value]);
+        
+        res.json({ message: "Last monthly reset date updated successfully", data: { last_monthly_reset_date: value } });
+
+    } catch (err) {
+        res.status(500).json({ "error": err.message, stack: err.stack });
     }
 });
 
