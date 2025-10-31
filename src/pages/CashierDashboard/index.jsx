@@ -230,6 +230,7 @@ export default function CashierDashboard() {
         name: item.name,
         price: item.price,
         quantity: item.quantity,
+        discount: item.discount || 0, // Include discount, default to 0 if not present
       }));
 
       const response = await authFetch(`${apiUrl}/api/transactions/`, {
