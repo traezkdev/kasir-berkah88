@@ -510,7 +510,7 @@ const Settings = ({ headerTitle }) => {
       </SettingsModal>
 
       <SettingsModal title="Atur Modal Awal" isOpen={activeModal === 'initialCapital'} onClose={handleModalClose}>
-         <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings', { initial_capital: initialCapital }, 'Modal awal berhasil diperbarui!')} className="space-y-4">
+         <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/initial_capital', { value: initialCapital }, 'Modal awal berhasil diperbarui!')} className="space-y-4">
           <Input label="Jumlah Modal Awal (Rp)" name="initialCapital" type="number" value={initialCapital} onChange={(e) => setInitialCapital(e.target.value)} required />
           <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
         </form>
