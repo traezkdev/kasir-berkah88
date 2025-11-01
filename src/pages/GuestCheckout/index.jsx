@@ -248,7 +248,7 @@ const GuestCheckout = () => {
             <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 pb-32 lg:pb-8">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                     {/* Menu Items Section */}
-                    <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-4">
                         {menuItems.map(item => {
                             const quantityInCart = cart[item.id] || 0;
                             const isInCart = quantityInCart > 0;
