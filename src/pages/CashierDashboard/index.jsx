@@ -37,6 +37,12 @@ export default function CashierDashboard() {
     setShowLogoutConfirm(true);
   };
 
+  const handleResetKeranjang = () => {
+    setCart([]);
+    setCashPaid(0);
+    toast.success('Keranjang berhasil dikosongkan!');
+  };
+
   const paymentOptions = [
     { label: 'Tunai', value: 'cash' },
     { label: 'Kartu Debit/Kredit', value: 'card' },
@@ -310,7 +316,7 @@ export default function CashierDashboard() {
 
       <div className="flex flex-1 flex-col md:flex-row overflow-hidden">
         {/* Menu Items Section */}
-        <div className="w-full md:w-2/3 p-4 overflow-y-auto md:border-r dark:md:border-gray-700">
+        <div className="w-full md:w-2/3 p-4 overflow-y-auto md:border-r dark:md:border-gray-700 pb-24 md:pb-0">
           <Input
             type="text"
             placeholder="Cari menu..."
@@ -513,6 +519,26 @@ export default function CashierDashboard() {
           confirmText="Logout"
           cancelText="Batal"
         />
+      )}
+      {cart.length > 0 && !showMobileCart && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-1000 bg-card border-t border-border shadow-[0_-2px_10px_rgba(0,0,0,0.1)] p-3">
+          <div className="flex justify-between items-center max-w-7xl mx-auto">
+            <div className="flex items-center space-x-2">
+              <Button onClick={handleResetKeranjang} className="text-destructive rounded-full">
+                <FiTrash2 className="text-white" />
+              </Button>
+              <div>
+                <p className="font-bold text-sm">{cart.length} item</p>
+                <p className="text-lg font-bold text-primary">
+                  Rp{totalAmount.toLocaleString('id-ID')}
+                </p>
+              </div>
+            </div>
+                              <Button onClick={() => setShowMobileCart(true)} className="bg-success text-success-foreground hover:bg-success/90">
+                                <FiShoppingCart className="mr-2 text-white" />
+                                Proses Transaksi
+                              </Button>          </div>
+        </div>
       )}
     </div>
   );
