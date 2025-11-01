@@ -316,7 +316,7 @@ export default function CashierDashboard() {
 
       <div className="flex flex-1 flex-col md:flex-row overflow-hidden">
         {/* Menu Items Section */}
-        <div className="w-full md:w-2/3 p-4 overflow-y-auto md:border-r dark:md:border-gray-700 pb-24 md:pb-0">
+        <div className="w-full md:w-2/3 p-4 overflow-y-auto md:border-r dark:md:border-gray-700 pb-24 md:pb-16">
           <Input
             type="text"
             placeholder="Cari menu..."
