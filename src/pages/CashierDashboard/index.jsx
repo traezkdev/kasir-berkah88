@@ -339,7 +339,7 @@ export default function CashierDashboard() {
           </div>
           {isLoading && <p>Memuat menu...</p>}
           {error && <p className="text-red-500">Error: {error}</p>}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {filteredMenuItems.map((item) => {
               const itemInCart = cart.find(cartItem => cartItem.id === item.id);
               const currentAvailableStock = item.stock - (itemInCart ? itemInCart.quantity : 0);
@@ -385,7 +385,7 @@ export default function CashierDashboard() {
         </div>
 
         {/* Transaction Cart Section */}
-        <div className={`fixed inset-0 z-50 bg-gray-50 dark:bg-gray-800 flex-col ${showMobileCart ? 'flex' : 'hidden'} md:relative md:flex md:w-1/3 p-4`}>
+        <div className={`fixed inset-0 z-50 bg-gray-50 dark:bg-gray-800 flex-col ${showMobileCart ? 'flex' : 'hidden'} md:relative md:flex md:w-1/2 lg:w-1/3 p-4`}>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold flex items-center"><FiShoppingCart className="mr-2" />Keranjang</h2>
             <Button
