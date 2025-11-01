@@ -388,6 +388,14 @@ export default function CashierDashboard() {
         <div className={`fixed inset-0 z-50 bg-gray-50 dark:bg-gray-800 flex-col ${showMobileCart ? 'flex' : 'hidden'} md:relative md:flex md:w-1/3 p-4`}>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold flex items-center"><FiShoppingCart className="mr-2" />Keranjang</h2>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleResetKeranjang}
+              className="p-2 rounded-full"
+            >
+              <FiTrash2 className="h-6 w-6" />
+            </Button>
             <button
               className="md:hidden p-2 rounded-full bg-red-500 text-white"
               onClick={() => setShowMobileCart(false)}
