@@ -316,7 +316,7 @@ export default function CashierDashboard() {
 
       <div className="flex flex-1 flex-col md:flex-row overflow-hidden">
         {/* Menu Items Section */}
-        <div className="w-full md:w-2/3 p-4 overflow-y-auto md:border-r dark:md:border-gray-700 pb-24 md:pb-0">
+        <div className="w-full md:w-2/3 p-4 overflow-y-auto md:border-r dark:md:border-gray-700 pb-24 md:pb-16">
           <Input
             type="text"
             placeholder="Cari menu..."
@@ -339,7 +339,7 @@ export default function CashierDashboard() {
           </div>
           {isLoading && <p>Memuat menu...</p>}
           {error && <p className="text-red-500">Error: {error}</p>}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {filteredMenuItems.map((item) => {
               const itemInCart = cart.find(cartItem => cartItem.id === item.id);
               const currentAvailableStock = item.stock - (itemInCart ? itemInCart.quantity : 0);
@@ -385,15 +385,25 @@ export default function CashierDashboard() {
         </div>
 
         {/* Transaction Cart Section */}
-        <div className={`fixed inset-0 z-50 bg-gray-50 dark:bg-gray-800 flex-col ${showMobileCart ? 'flex' : 'hidden'} md:relative md:flex md:w-1/3 p-4`}>
+        <div className={`fixed inset-0 z-50 bg-gray-50 dark:bg-gray-800 flex-col ${showMobileCart ? 'flex' : 'hidden'} md:relative md:flex md:w-1/2 lg:w-1/3 p-4`}>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold flex items-center"><FiShoppingCart className="mr-2" />Keranjang</h2>
-            <button
-              className="md:hidden p-2 rounded-full bg-red-500 text-white"
-              onClick={() => setShowMobileCart(false)}
-            >
-              <FiXCircle className="h-6 w-6" />
-            </button>
+            <div className="flex items-center space-x-2"> {/* New wrapper div */}
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleResetKeranjang}
+                className="p-2 rounded-full"
+              >
+                <FiTrash2 className="h-6 w-6" />
+              </Button>
+              <button
+                className="md:hidden p-2 rounded-full bg-red-500 text-white"
+                onClick={() => setShowMobileCart(false)}
+              >
+                <FiXCircle className="h-6 w-6" />
+              </button>
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto mb-4">
             {cart.length === 0 ? (
@@ -461,7 +471,7 @@ export default function CashierDashboard() {
 
             {paymentMethod === 'cash' && (
               <div className="mt-4">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+                <div className="grid grid-cols-2 md:grid-cols-2 gap-2 mb-4">
                   {quickCashAmounts.map((amount) => (
                     <Button
                       key={amount}
@@ -521,7 +531,7 @@ export default function CashierDashboard() {
         />
       )}
       {cart.length > 0 && !showMobileCart && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-1000 bg-card border-t border-border shadow-[0_-2px_10px_rgba(0,0,0,0.1)] p-3">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-1000 bg-card border-t border-border shadow-[0_-2px_10px_rgba(0,0,0,0.1)] p-3">
           <div className="flex justify-between items-center max-w-7xl mx-auto">
             <div className="flex items-center space-x-2">
               <Button onClick={handleResetKeranjang} className="text-destructive rounded-full">
