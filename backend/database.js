@@ -154,15 +154,6 @@ const setupDatabase = async () => {
     `;
     await connection.query(insertDefaultSettings);
     console.log('Default settings inserted or already exist.');
-
-    // Insert default logo_url if it doesn't exist
-    const insertDefaultLogoUrl = `
-      INSERT IGNORE INTO settings (\`key\`, \`value\`) VALUES
-      ('logo_url', '/assets/images/logoberkah88.png');
-    `;
-    await connection.query(insertDefaultLogoUrl);
-    console.log('Default logo_url setting inserted or already exists.');
-
     await connection.query(createOrdersTable);
     console.log('orders table is ready.');
     await connection.query(createTransactionsTable);
