@@ -45,6 +45,7 @@ const CategorySettings = ({ onClose }) => {
     try {
       const response = await authFetch('/api/categories', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newCategoryName }),
       });
       const data = await response.json();
@@ -92,6 +93,7 @@ const CategorySettings = ({ onClose }) => {
     try {
       const response = await authFetch(`/api/categories/${editingCategoryId}`, {
         method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: editingCategoryName }),
       });
       const data = await response.json();
