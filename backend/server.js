@@ -1,4 +1,3 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const db = require('./database.js'); // db is now the promisePool
@@ -8,23 +7,8 @@ const multer = require('multer');
 const path = require('path');
 
 const app = express();
-const allowedOrigins = [
-  'https://kasir-berkah88.vercel.app',
-  'http://localhost:3000', // For local development
-  'http://localhost:5173',  // For local development (Vite default)
-  'http://localhost:4028'  // For local development (User's reported origin)
-];
-
 app.use(cors({
-  origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
+  origin: '*', // Allow all origins
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   allowedHeaders: 'Content-Type,Authorization',
   preflightContinue: false,
@@ -49,12 +33,7 @@ app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
 
-const JWT_SECRET = process.env.JWT_SECRET;
-
-if (!JWT_SECRET) {
-    console.error('FATAL ERROR: JWT_SECRET is not defined in .env file. Please set it.');
-    process.exit(1); // Exit the process if secret is not defined
-}
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey'; // Fallback for development
 
 // Auth Middleware
 const authenticateToken = (req, res, next) => {
