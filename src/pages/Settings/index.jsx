@@ -9,7 +9,6 @@ import { useNavigate } from 'react-router-dom';
 import AppIcon from '../../components/AppIcon';
 
 import SocialShareSettings from './SocialShareSettings';
-import CategoryManagement from './CategoryManagement';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -468,7 +467,6 @@ const Settings = ({ headerTitle }) => {
               <h2 className="text-2xl font-semibold text-text-primary mb-6 border-b border-border pb-3">Manajemen & Keamanan</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <SettingsCard icon="Users" title="Kelola Pengguna" description="Lihat, ubah peran, dan hapus akun pengguna." onClick={() => setActiveModal('userManagement')} />
-                <SettingsCard icon="Tag" title="Manajemen Kategori" description="Tambah, ubah, dan hapus kategori menu." onClick={() => setActiveModal('categoryManagement')} />
                 <SettingsCard icon="Contact" title="Manajemen Karyawan" description="Tambah, ubah, dan hapus data karyawan." onClick={() => setActiveModal('employeeManagement')} />
                 <SettingsCard icon="ShieldAlert" title="Kata Sandi Master" description="Ubah kata sandi master untuk tindakan sensitif." onClick={() => setActiveModal('masterPassword')} />
                 <SettingsCard icon="Trash2" title="Hapus Semua Data" description="Hapus semua transaksi, pengeluaran, dan reset stok." onClick={() => setActiveModal('clearAllData')} />
@@ -698,10 +696,6 @@ const Settings = ({ headerTitle }) => {
 
       <SettingsModal title="Pengaturan Tampilan Media Sosial" isOpen={activeModal === 'socialShare'} onClose={handleModalClose}>
         <SocialShareSettings onClose={handleModalClose} />
-      </SettingsModal>
-
-      <SettingsModal title="Manajemen Kategori" isOpen={activeModal === 'categoryManagement'} onClose={handleModalClose} size="3xl">
-        <CategoryManagement />
       </SettingsModal>
 
       <ConfirmationModal

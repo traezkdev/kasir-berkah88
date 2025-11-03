@@ -3,59 +3,32 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
-import authFetch from '../../../utils/authFetch';
 
 const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditing, onCategoryChange, onFormChange }) => {
-  const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState(initialData || {
     name: '',
     price: '',
     stock: '',
-    category: '', // Initialize with empty string
+    category: 'makanan',
     image: null,
-    discount: '',
+    discount: '', // New discount field
   });
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await authFetch('/api/categories');
-        if (response.ok) {
-          const data = await response.json();
-          const fetchedCategories = data.data.map(cat => ({ value: cat.name, label: cat.name }));
-          setCategories(fetchedCategories);
-          // Set default category if none is selected and categories are available
-          if (!formData.category && fetchedCategories.length > 0) {
-            setFormData(prev => ({ ...prev, category: fetchedCategories[0].value }));
-          }
-        } else {
-          console.error('Failed to fetch categories');
-        }
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-      }
-    };
-    fetchCategories();
-  }, [authFetch]); // Depend only on authFetch
-
-  useEffect(() => {
     if (initialData) {
-      setFormData({
-        ...initialData,
-        discount: initialData.discount, // initialData.discount is already percentage string from EditMenuItemModal
-      });
+      setFormData(initialData);
     } else {
+      // Reset form when initialData is cleared (e.g., modal closed)
       setFormData({
         name: '',
         price: '',
         stock: '',
-        category: categories.length > 0 ? categories[0].value : '', // Set default from fetched categories
+        category: 'makanan',
         image: null,
-        discount: '',
+        discount: '', // Include discount in reset
       });
     }
-  }, [initialData, categories]);
-
+  }, [initialData]);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -78,8 +51,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
       onFormChange({ name, value, files });
     } else if (name === 'image') {
       setFormData({ ...formData, [name]: files[0] });
-    }
-    else {
+    } else {
       setFormData({ ...formData, [name]: value });
     }
   };
@@ -95,18 +67,14 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
       return;
     }
     try {
-      const dataToSubmit = {
-        ...formData,
-        discount: formData.discount ? parseFloat(formData.discount) / 100 : 0, // Convert percentage string to decimal
-      };
-      await onAddItem(dataToSubmit);
+      await onAddItem(formData);
       if (!isEditing) {
         // Reset form only if not in editing mode
         setFormData({
           name: '',
           price: '',
           stock: '',
-          category: categories.length > 0 ? categories[0].value : '', // Reset to first category
+          category: 'makanan',
           image: null,
         });
       }
@@ -135,6 +103,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               label="Nama Menu"
               type="text"
               name="name"
+              placeholder="Contoh: Nasi Gudeg"
               value={formData?.name}
               onChange={handleChange}
               required
@@ -150,7 +119,11 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               onChange={handleChange}
               required
               className="w-full"
-              options={categories}
+              options={[
+                { value: 'makanan', label: 'Makanan' },
+                { value: 'minuman', label: 'Minuman' },
+                { value: 'lainnya', label: 'Lainnya' },
+              ]}
             />
           </div>
           
@@ -182,15 +155,15 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
           </div>
           <div>
             <Input
-              label="Diskon (%)"
+              label="Diskon (0.00 - 1.00)"
               type="number"
               name="discount"
-              placeholder="0"
+              placeholder="0.00"
               value={formData?.discount}
               onChange={handleChange}
               min="0"
-              max="100"
-              step="1"
+              max="1"
+              step="0.01"
               className="w-full"
             />
           </div>
@@ -228,7 +201,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               type="button"
               variant="outline"
               onClick={() => {
-                setFormData({ name: '', stock: '', price: '', category: categories.length > 0 ? categories[0].value : '', image: null });
+                setFormData({ name: '', stock: '', price: '', category: 'makanan', image: null });
                 setErrors({});
               }}
               iconName="RotateCcw"
