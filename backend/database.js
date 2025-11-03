@@ -34,13 +34,6 @@ const setupDatabase = async () => {
       );
     `;
 
-    const createCategoriesTable = `
-      CREATE TABLE IF NOT EXISTS categories (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL UNIQUE
-      );
-    `;
-
     const createSettingsTable = 
       'CREATE TABLE IF NOT EXISTS settings (' +
       '`key` VARCHAR(255) PRIMARY KEY,' +
@@ -143,8 +136,6 @@ const setupDatabase = async () => {
     // Execute the create table statements
     await connection.query(createMenuItemsTable);
     console.log('menu_items table is ready.');
-    await connection.query(createCategoriesTable);
-    console.log('categories table is ready.');
     await connection.query(createSettingsTable);
     console.log('settings table is ready.');
 
@@ -154,8 +145,6 @@ const setupDatabase = async () => {
     `;
     await connection.query(insertDefaultSettings);
     console.log('Default settings inserted or already exist.');
-    await connection.query(createOrdersTable);
-    console.log('orders table is ready.');
     await connection.query(createTransactionsTable);
     console.log('transactions table is ready.');
     await connection.query(createExpensesTable);
@@ -166,6 +155,8 @@ const setupDatabase = async () => {
     console.log('notes table is ready.');
     await connection.query(createEmployeesTable);
     console.log('employees table is ready.');
+    await connection.query(createOrdersTable);
+    console.log('orders table is ready.');
 
     // Check and add notes column to expenses if it doesn't exist
     const [notesRows] = await connection.query(checkNotesColumn);
