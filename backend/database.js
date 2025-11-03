@@ -158,6 +158,27 @@ const setupDatabase = async () => {
     await connection.query(createOrdersTable);
     console.log('orders table is ready.');
 
+    const createCategoriesTable = `
+      CREATE TABLE IF NOT EXISTS categories (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL UNIQUE
+      );
+    `;
+    await connection.query(createCategoriesTable);
+    console.log('categories table is ready.');
+
+    // Insert default categories if the table is empty
+    const [categoryRows] = await connection.query('SELECT id FROM categories LIMIT 1');
+    if (categoryRows.length === 0) {
+      const defaultCategories = ['Makanan', 'Minuman', 'Lainnya'];
+      const insertPromises = defaultCategories.map(name => {
+        return connection.query('INSERT INTO categories (name) VALUES (?)', [name]);
+      });
+      await Promise.all(insertPromises);
+      console.log('Default categories inserted.');
+    }
+
+
     // Check and add notes column to expenses if it doesn't exist
     const [notesRows] = await connection.query(checkNotesColumn);
     if (notesRows[0]['COUNT(*)'] === 0) {
