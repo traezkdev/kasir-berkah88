@@ -135,7 +135,6 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               label="Nama Menu"
               type="text"
               name="name"
-              placeholder="Contoh: Nasi Gudeg"
               value={formData?.name}
               onChange={handleChange}
               required
