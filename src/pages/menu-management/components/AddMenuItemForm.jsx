@@ -3,32 +3,56 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
+import authFetch from '../../../utils/authFetch';
 
 const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditing, onCategoryChange, onFormChange }) => {
+  const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState(initialData || {
     name: '',
     price: '',
     stock: '',
-    category: 'makanan',
+    category: '', // Initialize with empty string
     image: null,
-    discount: '', // New discount field
+    discount: '',
   });
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await authFetch('/api/categories');
+        if (response.ok) {
+          const data = await response.json();
+          const fetchedCategories = data.data.map(cat => ({ value: cat.name, label: cat.name }));
+          setCategories(fetchedCategories);
+          // Set default category if none is selected and categories are available
+          if (!formData.category && fetchedCategories.length > 0) {
+            setFormData(prev => ({ ...prev, category: fetchedCategories[0].value }));
+          }
+        } else {
+          console.error('Failed to fetch categories');
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+    fetchCategories();
+  }, [authFetch]); // Depend only on authFetch
 
   useEffect(() => {
     if (initialData) {
       setFormData(initialData);
     } else {
-      // Reset form when initialData is cleared (e.g., modal closed)
       setFormData({
         name: '',
         price: '',
         stock: '',
-        category: 'makanan',
+        category: categories.length > 0 ? categories[0].value : '', // Set default from fetched categories
         image: null,
-        discount: '', // Include discount in reset
+        discount: '',
       });
     }
-  }, [initialData]);
+  }, [initialData, categories]);
+
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -51,7 +75,8 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
       onFormChange({ name, value, files });
     } else if (name === 'image') {
       setFormData({ ...formData, [name]: files[0] });
-    } else {
+    }
+    else {
       setFormData({ ...formData, [name]: value });
     }
   };
@@ -74,7 +99,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
           name: '',
           price: '',
           stock: '',
-          category: 'makanan',
+          category: categories.length > 0 ? categories[0].value : '', // Reset to first category
           image: null,
         });
       }
@@ -119,11 +144,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               onChange={handleChange}
               required
               className="w-full"
-              options={[
-                { value: 'makanan', label: 'Makanan' },
-                { value: 'minuman', label: 'Minuman' },
-                { value: 'lainnya', label: 'Lainnya' },
-              ]}
+              options={categories}
             />
           </div>
           
@@ -201,7 +222,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               type="button"
               variant="outline"
               onClick={() => {
-                setFormData({ name: '', stock: '', price: '', category: 'makanan', image: null });
+                setFormData({ name: '', stock: '', price: '', category: categories.length > 0 ? categories[0].value : '', image: null });
                 setErrors({});
               }}
               iconName="RotateCcw"

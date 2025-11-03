@@ -34,6 +34,13 @@ const setupDatabase = async () => {
       );
     `;
 
+    const createCategoriesTable = `
+      CREATE TABLE IF NOT EXISTS categories (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL UNIQUE
+      );
+    `;
+
     const createSettingsTable = 
       'CREATE TABLE IF NOT EXISTS settings (' +
       '`key` VARCHAR(255) PRIMARY KEY,' +
@@ -136,6 +143,8 @@ const setupDatabase = async () => {
     // Execute the create table statements
     await connection.query(createMenuItemsTable);
     console.log('menu_items table is ready.');
+    await connection.query(createCategoriesTable);
+    console.log('categories table is ready.');
     await connection.query(createSettingsTable);
     console.log('settings table is ready.');
 
