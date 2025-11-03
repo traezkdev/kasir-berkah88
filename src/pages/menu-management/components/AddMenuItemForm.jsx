@@ -40,7 +40,10 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
 
   useEffect(() => {
     if (initialData) {
-      setFormData(initialData);
+      setFormData({
+        ...initialData,
+        discount: initialData.discount, // initialData.discount is already percentage string from EditMenuItemModal
+      });
     } else {
       setFormData({
         name: '',
@@ -92,7 +95,11 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
       return;
     }
     try {
-      await onAddItem(formData);
+      const dataToSubmit = {
+        ...formData,
+        discount: formData.discount ? parseFloat(formData.discount) / 100 : 0, // Convert percentage string to decimal
+      };
+      await onAddItem(dataToSubmit);
       if (!isEditing) {
         // Reset form only if not in editing mode
         setFormData({
@@ -176,15 +183,15 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
           </div>
           <div>
             <Input
-              label="Diskon (0.00 - 1.00)"
+              label="Diskon (%)"
               type="number"
               name="discount"
-              placeholder="0.00"
+              placeholder="0"
               value={formData?.discount}
               onChange={handleChange}
               min="0"
-              max="1"
-              step="0.01"
+              max="100"
+              step="1"
               className="w-full"
             />
           </div>

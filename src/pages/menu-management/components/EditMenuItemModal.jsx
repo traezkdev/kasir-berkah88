@@ -19,8 +19,8 @@ const EditMenuItemModal = ({
         category: menuItem.category,
         image_url: menuItem.image_url,
         image: null,
-        discount: menuItem.discount ? menuItem.discount.toString() : '0.00', // Add discount
-      };
+        discount: menuItem.discount ? (parseFloat(menuItem.discount) * 100).toString() : '', // Convert to percentage string
+      }; // Added missing curly brace
     }
     return {};
   });
@@ -34,7 +34,7 @@ const EditMenuItemModal = ({
         category: menuItem.category,
         image_url: menuItem.image_url,
         image: null,
-        discount: menuItem.discount ? menuItem.discount.toString() : '0.00', // Add discount
+        discount: menuItem.discount ? (parseFloat(menuItem.discount) * 100).toString() : '', // Convert to percentage string
       });
     } else {
       setFormData({}); // Clear form data when menuItem is null
@@ -63,7 +63,7 @@ const EditMenuItemModal = ({
       stock: parseInt(formData.stock),
       category: formData.category,
       image: formData.image, // Pass the file object if new image selected
-      discount: parseFloat(formData.discount || '0.00'), // Add discount
+      discount: formData.discount ? parseFloat(formData.discount) / 100 : 0, // Convert percentage string to decimal
     };
     await onSave(menuItem.id, dataToSave);
     onClose(); // Close modal after saving
