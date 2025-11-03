@@ -28,7 +28,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

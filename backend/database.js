@@ -154,6 +154,8 @@ const setupDatabase = async () => {
     `;
     await connection.query(insertDefaultSettings);
     console.log('Default settings inserted or already exist.');
+    await connection.query(createOrdersTable);
+    console.log('orders table is ready.');
     await connection.query(createTransactionsTable);
     console.log('transactions table is ready.');
     await connection.query(createExpensesTable);
@@ -164,8 +166,6 @@ const setupDatabase = async () => {
     console.log('notes table is ready.');
     await connection.query(createEmployeesTable);
     console.log('employees table is ready.');
-    await connection.query(createOrdersTable);
-    console.log('orders table is ready.');
 
     // Check and add notes column to expenses if it doesn't exist
     const [notesRows] = await connection.query(checkNotesColumn);
