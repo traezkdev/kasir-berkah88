@@ -3,16 +3,40 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
+import authFetch from '../../../utils/authFetch'; // Import authFetch
 
 const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditing, onCategoryChange, onFormChange }) => {
   const [formData, setFormData] = useState(initialData || {
     name: '',
     price: '',
     stock: '',
-    category: 'makanan',
+    category: '', // Changed default to empty
     image: null,
     discount: '', // New discount field
   });
+  const [categories, setCategories] = useState([]); // State for categories
+
+  // Fetch categories from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await authFetch('/api/categories');
+        const data = await response.json();
+        if (response.ok) {
+          setCategories(data.data);
+          // Set default category if not editing and categories are fetched
+          if (!isEditing && data.data.length > 0) {
+            setFormData(prev => ({ ...prev, category: data.data[0].name.toLowerCase() }));
+          }
+        } else {
+          console.error("Failed to fetch categories");
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    fetchCategories();
+  }, [isEditing]);
 
   useEffect(() => {
     if (initialData) {
@@ -23,12 +47,12 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
         name: '',
         price: '',
         stock: '',
-        category: 'makanan',
+        category: categories.length > 0 ? categories[0].name.toLowerCase() : '',
         image: null,
         discount: '', // Include discount in reset
       });
     }
-  }, [initialData]);
+  }, [initialData, categories]);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -119,11 +143,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               onChange={handleChange}
               required
               className="w-full"
-              options={[
-                { value: 'makanan', label: 'Makanan' },
-                { value: 'minuman', label: 'Minuman' },
-                { value: 'lainnya', label: 'Lainnya' },
-              ]}
+              options={categories.map(cat => ({ value: cat.name.toLowerCase(), label: cat.name }))}
             />
           </div>
           
@@ -201,7 +221,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               type="button"
               variant="outline"
               onClick={() => {
-                setFormData({ name: '', stock: '', price: '', category: 'makanan', image: null });
+                setFormData({ name: '', stock: '', price: '', category: categories.length > 0 ? categories[0].name.toLowerCase() : '', image: null, discount: '' });
                 setErrors({});
               }}
               iconName="RotateCcw"

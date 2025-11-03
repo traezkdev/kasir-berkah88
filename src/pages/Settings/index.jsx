@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import AppIcon from '../../components/AppIcon';
 
 import SocialShareSettings from './SocialShareSettings';
+import CategorySettings from './CategorySettings';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -459,6 +460,7 @@ const Settings = ({ headerTitle }) => {
               <SettingsCard icon="ToggleRight" title="Pendaftaran Pengguna" description="Izinkan atau blokir pengguna baru untuk mendaftar." onClick={() => setActiveModal('registration')} disabled={!isAdmin} />
               <SettingsCard icon="Share2" title="Tampilan Media Sosial" description="Atur judul, deskripsi, dan gambar untuk berbagi di media sosial." onClick={() => setActiveModal('socialShare')} disabled={!isAdmin} />
               <SettingsCard icon="Type" title="Judul Dasbor Kasir" description="Ubah judul yang ditampilkan di halaman dasbor kasir." onClick={() => setActiveModal('cashierDashboardTitle')} disabled={!isAdmin} />
+              <SettingsCard icon="List" title="Kelola Kategori Menu" description="Tambah, ubah, atau hapus kategori untuk item menu." onClick={() => setActiveModal('categoryManagement')} disabled={!isAdmin} />
             </div>
           </div>
 
@@ -696,6 +698,10 @@ const Settings = ({ headerTitle }) => {
 
       <SettingsModal title="Pengaturan Tampilan Media Sosial" isOpen={activeModal === 'socialShare'} onClose={handleModalClose}>
         <SocialShareSettings onClose={handleModalClose} />
+      </SettingsModal>
+
+      <SettingsModal title="Kelola Kategori Menu" isOpen={activeModal === 'categoryManagement'} onClose={handleModalClose}>
+        <CategorySettings onClose={handleModalClose} />
       </SettingsModal>
 
       <ConfirmationModal
