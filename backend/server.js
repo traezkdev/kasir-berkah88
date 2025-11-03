@@ -1,17 +1,11 @@
-const path = require('path');
-
-// Conditional dotenv loading
-if (process.env.NODE_ENV === 'production') {
-  require('dotenv').config({ path: path.resolve(__dirname, '.env.production') });
-} else {
-  require('dotenv').config({ path: path.resolve(__dirname, '.env') });
-}
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const db = require('./database.js'); // db is now the promisePool
 const bcrypt = require('bcryptjs'); // Import bcryptjs
 const jwt = require('jsonwebtoken'); // Import jsonwebtoken
 const multer = require('multer');
+const path = require('path');
 
 const app = express();
 const allowedOrigins = [
@@ -57,14 +51,9 @@ app.listen(PORT, () => {
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Robust JWT_SECRET validation
 if (!JWT_SECRET) {
-    console.error('FATAL ERROR: JWT_SECRET is not defined. Please ensure it is set in your .env file (or .env.production for production) or as an environment variable.');
-    process.exit(1);
-}
-if (typeof JWT_SECRET !== 'string') {
-    console.error(`FATAL ERROR: JWT_SECRET is not a string. Current type: ${typeof JWT_SECRET}, Value: ${JWT_SECRET}. Please ensure it is a valid string.`);
-    process.exit(1);
+    console.error('FATAL ERROR: JWT_SECRET is not defined in .env file. Please set it.');
+    process.exit(1); // Exit the process if secret is not defined
 }
 
 // Auth Middleware
@@ -1389,7 +1378,6 @@ app.post("/api/login", async (req, res) => {
 
         res.json({ message: "Login successful", token });
     } catch (err) {
-        console.error('Login Error:', err); // Log the full error for debugging
         res.status(500).json({ error: err.message, stack: err.stack });
     }
 });
