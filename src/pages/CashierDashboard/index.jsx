@@ -58,24 +58,21 @@ export default function CashierDashboard() {
     try {
       // Fetch Menu Items
       const menuResponse = await authFetch(`${apiUrl}/api/menu-items`);
-      if (!menuResponse.ok) {
-        const errorData = await menuResponse.json();
-        console.error('Failed to fetch menu items:', menuResponse.status, errorData);
-        throw new Error(errorData.error || `Failed to fetch menu items (Status: ${menuResponse.status})`);
-      }
       const menuData = await menuResponse.json();
-      setMenuItems(menuData.data);
+      if (menuResponse.ok) {
+        setMenuItems(menuData.data);
+      } else {
+        throw new Error(menuData.error || 'Failed to fetch menu items');
+      }
 
       // Fetch PPN Rate
       const ppnResponse = await authFetch(`${apiUrl}/api/settings/ppn`);
-      if (!ppnResponse.ok) {
-        const errorData = await ppnResponse.json();
-        console.error('Failed to fetch PPN rate:', ppnResponse.status, errorData);
-        // Don't throw error, just use default
-        setPpnRate(0); // Ensure PPN rate is set to 0 if fetching fails
-      } else {
-        const ppnData = await ppnResponse.json();
+      const ppnData = await ppnResponse.json();
+      if (ppnResponse.ok) {
         setPpnRate(ppnData.data);
+      } else {
+        // Don't throw error, just use default
+        console.error(ppnData.error || 'Failed to fetch PPN rate');
       }
 
       // Fetch Dashboard Title
