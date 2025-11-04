@@ -14,14 +14,14 @@ const ExpenseAnalytics = ({ expenses = [], className = "" }) => {
 
   const categoryTranslations = {
     supplies: 'Bahan Baku & Supplies',
-    electricity_water: 'Listrik & Air',
-    inventory_purchase: 'Pembelian Stok',
+    utilities: 'Listrik & Air',
+    inventory: 'Pembelian Stok',
     equipment: 'Peralatan',
-    maintenance_repair: 'Perawatan & Perbaikan',
-    transportation: 'Transportasi',
+    maintenance: 'Perawatan & Perbaikan',
+    transport: 'Transportasi',
     marketing: 'Promosi & Marketing',
-    other_operational: 'Operasional Lainnya',
-    miscellaneous: 'Lain-lain',
+    operational: 'Operasional Lainnya',
+    other: 'Lain-lain',
   };
 
   // Generate category breakdown data
