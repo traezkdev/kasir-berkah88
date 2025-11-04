@@ -405,7 +405,7 @@ app.put('/api/settings/:key', authenticateToken, authorizeRoles('admin'), async 
     try {
         const { key } = req.params;
         const { value } = req.body;
-        if (value === undefined) {
+        if (value === undefined || value === null || value.toString().trim() === '') {
             return res.status(400).json({ "error": "Value is required" });
         }
 
@@ -418,7 +418,7 @@ app.put('/api/settings/:key', authenticateToken, authorizeRoles('admin'), async 
             const dateSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
             await db.query(dateSql, ['initial_capital_date', now]);
         }
-        
+
         res.json({ message: "Setting updated successfully", data: { key, value } });
 
     } catch (err) {
@@ -1538,29 +1538,7 @@ app.put("/api/settings/title", authenticateToken, authorizeRoles('admin'), async
     }
 });
 
-// Update header title
-app.put("/api/settings/header-title", authenticateToken, authorizeRoles('admin'), async (req, res) => {
-    try {
-        const { title } = req.body;
-        if (!title) {
-            return res.status(400).json({ error: "Judul header diperlukan" });
-        }
 
-        const selectSql = 'SELECT * FROM settings WHERE `key` = ?';
-        const [rows] = await db.query(selectSql, ['header_title']);
-
-        if (rows.length > 0) {
-            const updateSql = 'UPDATE settings SET `value` = ? WHERE `key` = ?';
-            await db.query(updateSql, [title, 'header_title']);
-        } else {
-            const insertSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?)';
-            await db.query(insertSql, ['header_title', title]);
-        }
-        res.json({ message: "Judul header berhasil diperbarui", data: { title } });
-    } catch (err) {
-        res.status(500).json({ error: err.message, stack: err.stack });
-    }
-});
 
 // Enable/disable registration
 app.put("/api/settings/registration", authenticateToken, authorizeRoles('admin'), async (req, res) => {

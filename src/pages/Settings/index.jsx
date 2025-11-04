@@ -165,6 +165,24 @@ const Settings = ({ headerTitle }) => {
     e.preventDefault();
     clearMessages();
     setIsLoading(true);
+
+    // Validation for title-related settings to prevent empty values
+    if (endpoint === '/api/settings/header-title' && (!body.title || body.title.trim() === '')) {
+      setError('Judul header tidak boleh kosong');
+      setIsLoading(false);
+      return;
+    }
+    if (endpoint === '/api/settings/title' && (!body.title || body.title.trim() === '')) {
+      setError('Judul situs web tidak boleh kosong');
+      setIsLoading(false);
+      return;
+    }
+    if (endpoint === '/api/settings/cashier_dashboard_title' && (!body.value || body.value.trim() === '')) {
+      setError('Judul dasbor kasir tidak boleh kosong');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const response = await authFetch(`${apiUrl}${endpoint}`, {
         method: 'PUT',
@@ -532,7 +550,7 @@ const Settings = ({ headerTitle }) => {
       </SettingsModal>
 
       <SettingsModal title="Ubah Judul Header Web" isOpen={activeModal === 'headerTitle'} onClose={handleModalClose}>
-        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/header-title', { title: newHeaderTitle }, 'Judul header berhasil diperbarui!')} className="space-y-4">
+        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/header_title', { value: newHeaderTitle }, 'Judul header berhasil diperbarui!')} className="space-y-4">
           <Input label="Judul Header Baru" name="newHeaderTitle" type="text" value={newHeaderTitle} onChange={(e) => setNewHeaderTitle(e.target.value)} required />
           <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
         </form>
