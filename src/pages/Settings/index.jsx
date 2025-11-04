@@ -7,6 +7,7 @@ import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import ConfirmationModal from '../../components/ui/ConfirmationModal';
 import { useNavigate } from 'react-router-dom';
 import AppIcon from '../../components/AppIcon';
+import RestaurantSettingsModal from './components/RestaurantSettingsModal';
 
 import SocialShareSettings from './SocialShareSettings';
 import CategorySettings from './CategorySettings';
@@ -90,6 +91,8 @@ const Settings = ({ headerTitle }) => {
   const [cashierDashboardTitle, setCashierDashboardTitle] = useState('');
   const [newCashierDashboardTitle, setNewCashierDashboardTitle] = useState('');
   const navigate = useNavigate();
+  const [isRestaurantSettingsModalOpen, setIsRestaurantSettingsModalOpen] = useState(false);
+  const [restaurantSettings, setRestaurantSettings] = useState({ restaurant_name: 'Trz Kasir Apps', restaurant_slogan: 'Aplikasi kasir modern cepat dan keren' });
 
   // --- Effects ---
   useEffect(() => {
@@ -111,6 +114,29 @@ const Settings = ({ headerTitle }) => {
   // --- Handlers ---
   const clearMessages = () => { setMessage(''); setError(''); };
   const handleModalClose = () => { setActiveModal(null); clearMessages(); setEditingEmployee(null); };
+
+  const handleSaveRestaurantSettings = async (settings) => {
+    clearMessages();
+    setIsLoading(true);
+    try {
+      const response = await authFetch(`${apiUrl}/api/restaurant-settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setMessage('Pengaturan restoran berhasil diperbarui!');
+        fetchSettings(); // Refresh settings to update displayed values
+      } else {
+        setError(data.error || 'Gagal memperbarui pengaturan restoran');
+      }
+    } catch (err) {
+      setError('Kesalahan jaringan atau server tidak dapat dijangkau');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const fetchSettings = async () => {
     setIsLoading(true);
@@ -135,9 +161,18 @@ const Settings = ({ headerTitle }) => {
         } else {
           setCurrentLogoUrl(''); // No logo or failed to fetch
         }
+        // Fetch restaurant settings
+        const restaurantSettingsResponse = await authFetch(`${apiUrl}/api/restaurant-settings`);
+        const restaurantSettingsData = await restaurantSettingsResponse.json();
+        if (restaurantSettingsResponse.ok && restaurantSettingsData.data) {
+          setRestaurantSettings(restaurantSettingsData.data);
+        } else {
+          console.error('Failed to fetch restaurant settings:', restaurantSettingsData.error);
+        }
+
       } else {
         setError(data.error || 'Failed to fetch settings');
-      }
+      } 
     } catch (err) {
       setError('Kesalahan jaringan atau server tidak dapat dijangkau');
     } finally {
@@ -513,6 +548,13 @@ const Settings = ({ headerTitle }) => {
               <SettingsCard icon="ToggleRight" title="Pendaftaran Pengguna" description="Izinkan atau blokir pengguna baru untuk mendaftar." onClick={() => setActiveModal('registration')} disabled={!isAdmin} />
               <SettingsCard icon="Share2" title="Tampilan Media Sosial" description="Atur judul, deskripsi, dan gambar untuk berbagi di media sosial." onClick={() => setActiveModal('socialShare')} disabled={!isAdmin} />
               <SettingsCard icon="Type" title="Judul Dasbor Kasir" description="Ubah judul yang ditampilkan di halaman dasbor kasir." onClick={() => setActiveModal('cashierDashboardTitle')} disabled={!isAdmin} />
+              <SettingsCard
+                icon="Store"
+                title="Pengaturan Restoran"
+                description="Ubah nama dan slogan restoran Anda."
+                onClick={() => setIsRestaurantSettingsModalOpen(true)}
+                disabled={!isAdmin}
+              />
               <SettingsCard icon="List" title="Kelola Kategori Menu" description="Tambah, ubah, atau hapus kategori untuk item menu." onClick={() => setActiveModal('categoryManagement')} disabled={!isAdmin} />
             </div>
           </div>
@@ -765,6 +807,13 @@ const Settings = ({ headerTitle }) => {
       <SettingsModal title="Kelola Kategori Menu" isOpen={activeModal === 'categoryManagement'} onClose={handleModalClose}>
         <CategorySettings onClose={handleModalClose} />
       </SettingsModal>
+
+      <RestaurantSettingsModal
+        isOpen={isRestaurantSettingsModalOpen}
+        onClose={() => setIsRestaurantSettingsModalOpen(false)}
+        onSave={handleSaveRestaurantSettings}
+        initialSettings={restaurantSettings}
+      />
 
       <ConfirmationModal
         isOpen={showDeleteUserConfirmation}

@@ -1,11 +1,35 @@
 
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import Button from "../../../components/ui/Button";
 import { X, Share2 } from "lucide-react";
 import * as htmlToImage from 'html-to-image';
 
+const apiUrl = import.meta.env.VITE_API_URL;
+
 const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
   const receiptRef = useRef(null);
+
+  const [restaurantName, setRestaurantName] = useState('Trz Kasir Apps');
+  const [restaurantSlogan, setRestaurantSlogan] = useState('Aplikasi kasir modern cepat dan keren');
+
+  const fetchRestaurantSettings = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/restaurant-settings`); // Public endpoint, no authFetch needed
+      const data = await response.json();
+      if (response.ok && data.data) {
+        setRestaurantName(data.data.restaurant_name || 'Trz Kasir Apps');
+        setRestaurantSlogan(data.data.restaurant_slogan || 'Aplikasi kasir modern cepat dan keren');
+      } else {
+        console.error('Failed to fetch restaurant settings:', data.error);
+      }
+    } catch (err) {
+      console.error('Error fetching restaurant settings:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchRestaurantSettings();
+  }, []);
 
   if (!isOpen || !transaction) {
     return null;
@@ -75,8 +99,8 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
         >
           <div ref={receiptRef} className="p-6 overflow-y-auto bg-white">
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Berkah 88</h2>
-              <p className="text-sm text-gray-900">Harga hemat, Rasa terhormat</p>
+              <h2 className="text-2xl font-bold text-gray-900">{restaurantName}</h2>
+              <p className="text-sm text-gray-900">{restaurantSlogan}</p>
             </div>
             <div className="border-b border-dashed border-gray-400 mb-4"></div>
             <div className="flex justify-between text-sm mb-2">

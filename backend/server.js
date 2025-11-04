@@ -499,6 +499,56 @@ app.put('/api/settings/ppn', authenticateToken, authorizeRoles('admin'), async (
     }
 });
 
+// --- Restaurant Settings Endpoints ---
+
+// Get restaurant settings (public)
+app.get('/api/restaurant-settings', async (req, res) => {
+    try {
+        const sql = "SELECT restaurant_name, restaurant_slogan FROM app_settings ORDER BY id LIMIT 1";
+        const [rows] = await db.query(sql);
+        if (rows.length > 0) {
+            res.json({
+                "message": "success",
+                "data": rows[0]
+            });
+        } else {
+            // Return default values if no settings found
+            res.json({
+                "message": "success",
+                "data": { restaurant_name: 'Trz Kasir Apps', restaurant_slogan: 'Aplikasi kasir modern cepat dan keren' }
+            });
+        }
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
+// Update restaurant settings (admin only)
+app.put('/api/restaurant-settings', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        const { restaurant_name, restaurant_slogan } = req.body;
+        if (!restaurant_name || !restaurant_slogan) {
+            return res.status(400).json({ "error": "Restaurant name and slogan are required." });
+        }
+
+        const sql = `UPDATE app_settings SET restaurant_name = ?, restaurant_slogan = ? WHERE id = (SELECT id FROM (SELECT id FROM app_settings ORDER BY id LIMIT 1) as t)`;
+        const params = [restaurant_name, restaurant_slogan];
+        const [result] = await db.query(sql, params);
+
+        if (result.affectedRows === 0) {
+            // If no rows were affected, it might mean no settings exist yet. Insert them.
+            const insertSql = 'INSERT INTO app_settings (restaurant_name, restaurant_slogan) VALUES (?, ?)';
+            await db.query(insertSql, params);
+            res.json({ message: "Restaurant settings inserted successfully!", data: { restaurant_name, restaurant_slogan } });
+        } else {
+            res.json({ message: "Restaurant settings updated successfully!", data: { restaurant_name, restaurant_slogan } });
+        }
+
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
 // --- App Settings (Open Graph) Endpoints ---
 
 // Get app settings (public)
