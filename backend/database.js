@@ -161,7 +161,7 @@ const setupDatabase = async () => {
     const createCategoriesTable = `
       CREATE TABLE IF NOT EXISTS categories (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL UNIQUE
+        name VARCHAR(191) NOT NULL UNIQUE
       );
     `;
     await connection.query(createCategoriesTable);
