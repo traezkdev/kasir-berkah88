@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs'); // Import bcryptjs
 const jwt = require('jsonwebtoken'); // Import jsonwebtoken
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 app.use(cors({
@@ -15,6 +16,18 @@ app.use(cors({
   optionsSuccessStatus: 204
 }));
 app.use(express.json());
+// Error handling for JSON parsing
+app.use((err, req, res, next) => {
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+        console.error('Bad JSON:', err.message);
+        return res.status(400).json({ error: 'Invalid JSON payload' });
+    }
+    next();
+});
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+});
 app.use('/public/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // Multer storage configuration
@@ -37,14 +50,22 @@ const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey'; // Fallback fo
 
 // Auth Middleware
 const authenticateToken = (req, res, next) => {
+    console.log('Executing authenticateToken middleware');
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-    if (token == null) return res.status(401).json({ error: "Authentication token required" });
+    if (token == null) {
+        console.log('Authentication token missing');
+        return res.status(401).json({ error: "Authentication token required" });
+    }
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.status(401).json({ error: "Invalid or expired token" });
+        if (err) {
+            console.log('Invalid or expired token:', err.message);
+            return res.status(401).json({ error: "Invalid or expired token" });
+        }
         req.user = user; // Attach user payload to request (userId, username, role)
+        console.log('Token authenticated. User:', req.user.username, 'Role:', req.user.role);
         next();
     });
 };
@@ -52,9 +73,12 @@ const authenticateToken = (req, res, next) => {
 // Auth Middleware for Role-Based Access Control
 const authorizeRoles = (...roles) => {
     return (req, res, next) => {
+        console.log('Executing authorizeRoles middleware. Required roles:', roles, 'User role:', req.user ? req.user.role : 'N/A');
         if (!req.user || !req.user.role || !roles.includes(req.user.role)) {
+            console.log('Forbidden: Insufficient permissions for user:', req.user ? req.user.username : 'N/A');
             return res.status(403).json({ error: "Forbidden: Insufficient permissions" });
         }
+        console.log('Authorization successful.');
         next();
     };
 };
@@ -259,7 +283,7 @@ app.get('/api/settings/logo', async (req, res) => {
             // Return a default logo if not set
             res.json({
                 "message": "success",
-                "data": { "logo_url": "/assets/images/logoberkah88.png" }
+                "data": { "logo_url": null }
             });
         }
     } catch (err) {
@@ -344,6 +368,42 @@ app.put("/api/settings/master-password", authenticateToken, authorizeRoles('admi
     }
 });
 
+app.put("/api/settings/registration", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        console.log('Received PUT request to /api/settings/registration');
+        console.log('req.body:', req.body);
+        console.log('typeof req.body.enabled:', typeof req.body.enabled);
+        const { enabled } = req.body;
+        let booleanEnabled;
+
+        if (typeof enabled === 'boolean') {
+            booleanEnabled = enabled;
+        } else if (typeof enabled === 'string') {
+            if (enabled === 'true') {
+                booleanEnabled = true;
+            } else if (enabled === 'false') {
+                booleanEnabled = false;
+            }
+        } else {
+            return res.status(400).json({ error: "'enabled' must be a boolean or string 'true'/'false'" });
+        }
+
+        const selectSql = 'SELECT * FROM settings WHERE `key` = ?';
+        const [rows] = await db.query(selectSql, ['registration_enabled']);
+
+        if (rows.length > 0) {
+            const updateSql = 'UPDATE settings SET `value` = ? WHERE `key` = ?';
+            await db.query(updateSql, [booleanEnabled.toString(), 'registration_enabled']);
+        } else {
+            const insertSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?)';
+            await db.query(insertSql, ['registration_enabled', booleanEnabled.toString()]);
+        }
+        res.json({ message: "Registration setting updated successfully", data: { enabled: booleanEnabled } });
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
 // Update a specific setting by key
 app.put('/api/settings/:key', authenticateToken, authorizeRoles('admin'), async (req, res) => {
     try {
@@ -385,6 +445,31 @@ app.post('/api/settings/logo', authenticateToken, authorizeRoles('admin'), uploa
             message: 'Logo updated successfully!', 
             data: { logo_url: logoUrl } 
         });
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// Delete logo_url setting
+app.delete('/api/settings/logo', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        // Get current logo URL from settings
+        const [rows] = await db.query("SELECT value FROM settings WHERE `key` = ?", ['logo_url']);
+        const currentLogoPath = rows.length > 0 ? rows[0].value : null;
+
+        if (currentLogoPath && currentLogoPath.startsWith('/public/uploads/')) {
+            const filePath = path.join(__dirname, currentLogoPath);
+            // Check if file exists before attempting to delete
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath); // Delete the file
+            }
+        }
+
+        // Update database to remove logo_url
+        const sql = 'DELETE FROM settings WHERE `key` = ?';
+        await db.query(sql, ['logo_url']);
+
+        res.json({ message: 'Logo deleted successfully!' });
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
     }
@@ -1484,9 +1569,24 @@ app.put("/api/settings/header-title", authenticateToken, authorizeRoles('admin')
 // Enable/disable registration
 app.put("/api/settings/registration", authenticateToken, authorizeRoles('admin'), async (req, res) => {
     try {
+        console.log('Received PUT request to /api/settings/registration');
+        console.log('req.body:', req.body);
+        console.log('typeof req.body.enabled:', typeof req.body.enabled);
         const { enabled } = req.body;
-        if (typeof enabled !== 'boolean') {
-            return res.status(400).json({ error: "'enabled' must be a boolean" });
+        let booleanEnabled;
+
+        if (typeof enabled === 'boolean') {
+            booleanEnabled = enabled;
+        } else if (typeof enabled === 'string') {
+            if (enabled === 'true') {
+                booleanEnabled = true;
+            } else if (enabled === 'false') {
+                booleanEnabled = false;
+            } else {
+                return res.status(400).json({ error: "'enabled' must be a boolean or string 'true'/'false'" });
+            }
+        } else {
+            return res.status(400).json({ error: "'enabled' must be a boolean or string 'true'/'false'" });
         }
 
         const selectSql = 'SELECT * FROM settings WHERE `key` = ?';
@@ -1494,12 +1594,12 @@ app.put("/api/settings/registration", authenticateToken, authorizeRoles('admin')
 
         if (rows.length > 0) {
             const updateSql = 'UPDATE settings SET `value` = ? WHERE `key` = ?';
-            await db.query(updateSql, [enabled.toString(), 'registration_enabled']);
+            await db.query(updateSql, [booleanEnabled.toString(), 'registration_enabled']);
         } else {
             const insertSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?)';
-            await db.query(insertSql, ['registration_enabled', enabled.toString()]);
+            await db.query(insertSql, ['registration_enabled', booleanEnabled.toString()]);
         }
-        res.json({ message: "Registration setting updated successfully", data: { enabled } });
+        res.json({ message: "Registration setting updated successfully", data: { enabled: booleanEnabled } });
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
     }
