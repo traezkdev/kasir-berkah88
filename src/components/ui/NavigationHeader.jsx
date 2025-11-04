@@ -91,7 +91,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
           {/* Logo Section */}
           <div className="flex items-center space-x-4">
             <Link to="/" className="flex items-center space-x-3">
-                            <img src={logoUrl} alt="Logo" className="w-8 h-8 rounded-lg" />
+                            <img src={logoUrl} alt="Logo" className="w-8 h-8 rounded-lg" onError={(e) => { e.target.style.display = 'none'; }} />
               <div>
                 <h1 className="text-xl font-semibold text-text-primary">{headerTitle}</h1>
               </div>
