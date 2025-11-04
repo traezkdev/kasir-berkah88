@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs'); // Import bcryptjs
 const jwt = require('jsonwebtoken'); // Import jsonwebtoken
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 app.use(cors({
@@ -15,6 +16,15 @@ app.use(cors({
   optionsSuccessStatus: 204
 }));
 app.use(express.json());
+// Error handling for JSON parsing
+app.use((err, req, res, next) => {
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+        console.error('Bad JSON:', err.message);
+        return res.status(400).json({ error: 'Invalid JSON payload' });
+    }
+    next();
+});
+
 app.use('/public/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // Multer storage configuration
@@ -37,14 +47,22 @@ const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey'; // Fallback fo
 
 // Auth Middleware
 const authenticateToken = (req, res, next) => {
+
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-    if (token == null) return res.status(401).json({ error: "Authentication token required" });
+    if (token == null) {
+        console.log('Authentication token missing');
+        return res.status(401).json({ error: "Authentication token required" });
+    }
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.status(401).json({ error: "Invalid or expired token" });
+        if (err) {
+            console.log('Invalid or expired token:', err.message);
+            return res.status(401).json({ error: "Invalid or expired token" });
+        }
         req.user = user; // Attach user payload to request (userId, username, role)
+
         next();
     });
 };
@@ -52,9 +70,12 @@ const authenticateToken = (req, res, next) => {
 // Auth Middleware for Role-Based Access Control
 const authorizeRoles = (...roles) => {
     return (req, res, next) => {
+
         if (!req.user || !req.user.role || !roles.includes(req.user.role)) {
+            console.log('Forbidden: Insufficient permissions for user:', req.user ? req.user.username : 'N/A');
             return res.status(403).json({ error: "Forbidden: Insufficient permissions" });
         }
+
         next();
     };
 };
@@ -259,7 +280,7 @@ app.get('/api/settings/logo', async (req, res) => {
             // Return a default logo if not set
             res.json({
                 "message": "success",
-                "data": { "logo_url": "/assets/images/logoberkah88.png" }
+                "data": { "logo_url": null }
             });
         }
     } catch (err) {
@@ -344,12 +365,47 @@ app.put("/api/settings/master-password", authenticateToken, authorizeRoles('admi
     }
 });
 
+app.put("/api/settings/registration", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+
+
+        const { enabled } = req.body;
+        let booleanEnabled;
+
+        if (typeof enabled === 'boolean') {
+            booleanEnabled = enabled;
+        } else if (typeof enabled === 'string') {
+            if (enabled === 'true') {
+                booleanEnabled = true;
+            } else if (enabled === 'false') {
+                booleanEnabled = false;
+            }
+        } else {
+            return res.status(400).json({ error: "'enabled' must be a boolean or string 'true'/'false'" });
+        }
+
+        const selectSql = 'SELECT * FROM settings WHERE `key` = ?';
+        const [rows] = await db.query(selectSql, ['registration_enabled']);
+
+        if (rows.length > 0) {
+            const updateSql = 'UPDATE settings SET `value` = ? WHERE `key` = ?';
+            await db.query(updateSql, [booleanEnabled.toString(), 'registration_enabled']);
+        } else {
+            const insertSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?)';
+            await db.query(insertSql, ['registration_enabled', booleanEnabled.toString()]);
+        }
+        res.json({ message: "Registration setting updated successfully", data: { enabled: booleanEnabled } });
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
 // Update a specific setting by key
 app.put('/api/settings/:key', authenticateToken, authorizeRoles('admin'), async (req, res) => {
     try {
         const { key } = req.params;
         const { value } = req.body;
-        if (value === undefined) {
+        if (value === undefined || value === null || value.toString().trim() === '') {
             return res.status(400).json({ "error": "Value is required" });
         }
 
@@ -362,7 +418,7 @@ app.put('/api/settings/:key', authenticateToken, authorizeRoles('admin'), async 
             const dateSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
             await db.query(dateSql, ['initial_capital_date', now]);
         }
-        
+
         res.json({ message: "Setting updated successfully", data: { key, value } });
 
     } catch (err) {
@@ -385,6 +441,31 @@ app.post('/api/settings/logo', authenticateToken, authorizeRoles('admin'), uploa
             message: 'Logo updated successfully!', 
             data: { logo_url: logoUrl } 
         });
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// Delete logo_url setting
+app.delete('/api/settings/logo', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        // Get current logo URL from settings
+        const [rows] = await db.query("SELECT value FROM settings WHERE `key` = ?", ['logo_url']);
+        const currentLogoPath = rows.length > 0 ? rows[0].value : null;
+
+        if (currentLogoPath && currentLogoPath.startsWith('/public/uploads/')) {
+            const filePath = path.join(__dirname, currentLogoPath);
+            // Check if file exists before attempting to delete
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath); // Delete the file
+            }
+        }
+
+        // Update database to remove logo_url
+        const sql = 'DELETE FROM settings WHERE `key` = ?';
+        await db.query(sql, ['logo_url']);
+
+        res.json({ message: 'Logo deleted successfully!' });
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
     }
@@ -1433,60 +1514,29 @@ app.put('/api/settings/last_monthly_reset_date', authenticateToken, authorizeRol
     }
 });
 
-// Update website title
-app.put("/api/settings/title", authenticateToken, authorizeRoles('admin'), async (req, res) => {
-    try {
-        const { title } = req.body;
-        if (!title) {
-            return res.status(400).json({ error: "Title is required" });
-        }
 
-        const selectSql = 'SELECT * FROM settings WHERE `key` = ?';
-        const [rows] = await db.query(selectSql, ['website_title']);
 
-        if (rows.length > 0) {
-            const updateSql = 'UPDATE settings SET `value` = ? WHERE `key` = ?';
-            await db.query(updateSql, [title, 'website_title']);
-        } else {
-            const insertSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?)';
-            await db.query(insertSql, ['website_title', title]);
-        }
-                res.json({ message: "Website title updated successfully", data: { title } });
-    } catch (err) {
-        res.status(500).json({ error: err.message, stack: err.stack });
-    }
-});
 
-// Update header title
-app.put("/api/settings/header-title", authenticateToken, authorizeRoles('admin'), async (req, res) => {
-    try {
-        const { title } = req.body;
-        if (!title) {
-            return res.status(400).json({ error: "Judul header diperlukan" });
-        }
-
-        const selectSql = 'SELECT * FROM settings WHERE `key` = ?';
-        const [rows] = await db.query(selectSql, ['header_title']);
-
-        if (rows.length > 0) {
-            const updateSql = 'UPDATE settings SET `value` = ? WHERE `key` = ?';
-            await db.query(updateSql, [title, 'header_title']);
-        } else {
-            const insertSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?)';
-            await db.query(insertSql, ['header_title', title]);
-        }
-        res.json({ message: "Judul header berhasil diperbarui", data: { title } });
-    } catch (err) {
-        res.status(500).json({ error: err.message, stack: err.stack });
-    }
-});
 
 // Enable/disable registration
 app.put("/api/settings/registration", authenticateToken, authorizeRoles('admin'), async (req, res) => {
     try {
+        console.log('req.body:', req.body);
         const { enabled } = req.body;
-        if (typeof enabled !== 'boolean') {
-            return res.status(400).json({ error: "'enabled' must be a boolean" });
+        let booleanEnabled;
+
+        if (typeof enabled === 'boolean') {
+            booleanEnabled = enabled;
+        } else if (typeof enabled === 'string') {
+            if (enabled === 'true') {
+                booleanEnabled = true;
+            } else if (enabled === 'false') {
+                booleanEnabled = false;
+            } else {
+                return res.status(400).json({ error: "'enabled' must be a boolean or string 'true'/'false'" });
+            }
+        } else {
+            return res.status(400).json({ error: "'enabled' must be a boolean or string 'true'/'false'" });
         }
 
         const selectSql = 'SELECT * FROM settings WHERE `key` = ?';
@@ -1494,39 +1544,18 @@ app.put("/api/settings/registration", authenticateToken, authorizeRoles('admin')
 
         if (rows.length > 0) {
             const updateSql = 'UPDATE settings SET `value` = ? WHERE `key` = ?';
-            await db.query(updateSql, [enabled.toString(), 'registration_enabled']);
+            await db.query(updateSql, [booleanEnabled.toString(), 'registration_enabled']);
         } else {
             const insertSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?)';
-            await db.query(insertSql, ['registration_enabled', enabled.toString()]);
+            await db.query(insertSql, ['registration_enabled', booleanEnabled.toString()]);
         }
-        res.json({ message: "Registration setting updated successfully", data: { enabled } });
+        res.json({ message: "Registration setting updated successfully", data: { enabled: booleanEnabled } });
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
     }
 });
 
-// Update web description
-app.put('/api/settings/description', authenticateToken, authorizeRoles('admin'), async (req, res) => {
-    try {
-        const { description } = req.body;
-        if (!description) {
-            return res.status(400).json({ message: 'Description is required.' });
-        }
-        const selectSql = 'SELECT * FROM settings WHERE `key` = ?';
-        const [rows] = await db.query(selectSql, ['web_description']);
 
-        if (rows.length > 0) {
-            const updateSql = 'UPDATE settings SET `value` = ? WHERE `key` = ?';
-            await db.query(updateSql, [description, 'web_description']);
-        } else {
-            const insertSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?)';
-            await db.query(insertSql, ['web_description', description]);
-        }
-        res.json({ message: 'Web description updated successfully!', data: { web_description: description } });
-    } catch (err) {
-        res.status(500).json({ error: err.message, stack: err.stack });
-    }
-});
 
 // Upload favicon
 app.post('/api/settings/favicon/', authenticateToken, authorizeRoles('admin'), upload.single('favicon'), async (req, res) => {
@@ -1640,26 +1669,32 @@ app.put("/api/admin/users/:id/role", authenticateToken, authorizeRoles('admin'),
 
 // Delete all transactions, expenses, and reset menu item stock
 app.delete("/api/admin/data/all", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    const connection = await db.getConnection();
     try {
         const { masterPassword } = req.body;
         if (!masterPassword) {
             return res.status(400).json({ error: "Master password is required" });
         }
 
-        const [masterPassRow] = await db.query('SELECT value FROM settings WHERE `key` = ?', ['master_password']);
+        const [masterPassRow] = await connection.query('SELECT value FROM settings WHERE `key` = ?', ['master_password']);
         const storedMasterPassword = masterPassRow.length > 0 ? masterPassRow[0].value : null;
 
         if (!storedMasterPassword || !(await bcrypt.compare(masterPassword, storedMasterPassword))) {
             return res.status(401).json({ error: "Kata sandi master salah" });
         }
 
-        await db.query('TRUNCATE TABLE transactions');
-        await db.query('TRUNCATE TABLE expenses');
-        await db.query('UPDATE menu_items SET stock = 0'); // Reset stock
+        await connection.beginTransaction();
+        await connection.query('TRUNCATE TABLE transactions');
+        await connection.query('TRUNCATE TABLE expenses');
+        await connection.query('UPDATE menu_items SET stock = 0'); // Reset stock
+        await connection.commit();
 
         res.json({ message: "All transactions, expenses, and menu item stock have been cleared." });
     } catch (err) {
+        await connection.rollback();
         res.status(500).json({ error: err.message, stack: err.stack });
+    } finally {
+        connection.release();
     }
 });
 

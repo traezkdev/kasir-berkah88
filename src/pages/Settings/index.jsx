@@ -56,6 +56,7 @@ const Settings = ({ headerTitle }) => {
   const [newHeaderTitle, setNewHeaderTitle] = useState('');
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState('');
+  const [currentLogoUrl, setCurrentLogoUrl] = useState('');
   const [registrationEnabled, setRegistrationEnabled] = useState(false);
   const [adminUsername, setAdminUsername] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
@@ -84,6 +85,7 @@ const Settings = ({ headerTitle }) => {
   const [showDeleteUserConfirmation, setShowDeleteUserConfirmation] = useState(false);
   const [userToDeleteId, setUserToDeleteId] = useState(null);
   const [userToDeleteUsername, setUserToDeleteUsername] = useState('');
+  const [showDeleteLogoConfirmation, setShowDeleteLogoConfirmation] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
   const [cashierDashboardTitle, setCashierDashboardTitle] = useState('');
   const [newCashierDashboardTitle, setNewCashierDashboardTitle] = useState('');
@@ -124,6 +126,15 @@ const Settings = ({ headerTitle }) => {
         setInitialCapital(data.data.initial_capital || '');
         setCashierDashboardTitle(data.data.cashier_dashboard_title || 'Dasbor Kasir');
         setNewCashierDashboardTitle(data.data.cashier_dashboard_title || 'Dasbor Kasir');
+
+        // Fetch current logo URL
+        const logoResponse = await authFetch(`${apiUrl}/api/settings/logo`);
+        const logoData = await logoResponse.json();
+        if (logoResponse.ok && logoData.data.logo_url) {
+          setCurrentLogoUrl(`${apiUrl}${logoData.data.logo_url}`);
+        } else {
+          setCurrentLogoUrl(''); // No logo or failed to fetch
+        }
       } else {
         setError(data.error || 'Failed to fetch settings');
       }
@@ -154,6 +165,24 @@ const Settings = ({ headerTitle }) => {
     e.preventDefault();
     clearMessages();
     setIsLoading(true);
+
+    // Validation for title-related settings to prevent empty values
+    if (endpoint === '/api/settings/header-title' && (!body.title || body.title.trim() === '')) {
+      setError('Judul header tidak boleh kosong');
+      setIsLoading(false);
+      return;
+    }
+    if (endpoint === '/api/settings/title' && (!body.title || body.title.trim() === '')) {
+      setError('Judul situs web tidak boleh kosong');
+      setIsLoading(false);
+      return;
+    }
+    if (endpoint === '/api/settings/cashier_dashboard_title' && (!body.value || body.value.trim() === '')) {
+      setError('Judul dasbor kasir tidak boleh kosong');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const response = await authFetch(`${apiUrl}${endpoint}`, {
         method: 'PUT',
@@ -198,6 +227,26 @@ const Settings = ({ headerTitle }) => {
         setTimeout(() => window.location.reload(), 2000);
       } else {
         setError(data.error || 'Gagal mengunggah logo');
+      }
+    } catch (err) {
+      setError('Kesalahan jaringan atau server tidak dapat dijangkau');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleDeleteLogo = async () => {
+    clearMessages();
+    setIsLoading(true);
+    setShowDeleteLogoConfirmation(false); // Close modal immediately
+    try {
+      const response = await authFetch(`${apiUrl}/api/settings/logo`, { method: 'DELETE' });
+      const data = await response.json();
+      if (response.ok) {
+        setMessage('Logo berhasil dihapus! Halaman akan dimuat ulang.');
+        setTimeout(() => window.location.reload(), 2000);
+      } else {
+        setError(data.error || 'Gagal menghapus logo');
       }
     } catch (err) {
       setError('Kesalahan jaringan atau server tidak dapat dijangkau');
@@ -433,6 +482,10 @@ const Settings = ({ headerTitle }) => {
     setIsConfirmationModalOpen(true);
   };
 
+  const confirmDeleteLogo = () => {
+    setShowDeleteLogoConfirmation(true);
+  };
+
   const breadcrumbs = [{ name: 'Beranda', path: '/main-dashboard' }, { name: 'Pengaturan', path: '/settings' }];
   const isAdmin = userRole === 'admin';
 
@@ -490,14 +543,14 @@ const Settings = ({ headerTitle }) => {
       </SettingsModal>
 
       <SettingsModal title="Ubah Judul Situs Web" isOpen={activeModal === 'websiteTitle'} onClose={handleModalClose}>
-        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/title', { title: newWebsiteTitle }, 'Judul situs berhasil diperbarui!')} className="space-y-4">
+        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/website_title', { value: newWebsiteTitle }, 'Judul situs berhasil diperbarui!')} className="space-y-4">
           <Input label="Judul Situs Web Baru" name="newWebsiteTitle" type="text" value={newWebsiteTitle} onChange={(e) => setNewWebsiteTitle(e.target.value)} required />
           <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
         </form>
       </SettingsModal>
 
       <SettingsModal title="Ubah Judul Header Web" isOpen={activeModal === 'headerTitle'} onClose={handleModalClose}>
-        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/header-title', { title: newHeaderTitle }, 'Judul header berhasil diperbarui!')} className="space-y-4">
+        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/header_title', { value: newHeaderTitle }, 'Judul header berhasil diperbarui!')} className="space-y-4">
           <Input label="Judul Header Baru" name="newHeaderTitle" type="text" value={newHeaderTitle} onChange={(e) => setNewHeaderTitle(e.target.value)} required />
           <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
         </form>
@@ -505,8 +558,17 @@ const Settings = ({ headerTitle }) => {
 
       <SettingsModal title="Ganti Logo Header" isOpen={activeModal === 'logo'} onClose={handleModalClose}>
         <form onSubmit={handleLogoUpload} className="space-y-6">
-          <Input label="Pilih File Logo (PNG, JPG)" name="logoFile" type="file" accept=".png, .jpg, .jpeg" onChange={handleLogoFileChange} />
-          {logoPreview && <img src={logoPreview} alt="Pratinjau Logo" className="w-24 h-24 rounded-lg object-cover mx-auto border border-dashed p-1" />}
+          {currentLogoUrl && (
+            <div className="flex flex-col items-center space-y-4">
+              <p className="text-sm text-text-secondary">Logo Saat Ini:</p>
+              <img src={currentLogoUrl} alt="Logo Saat Ini" className="w-24 h-24 rounded-lg object-cover border border-dashed p-1" />
+              <Button type="button" variant="destructive" onClick={confirmDeleteLogo} disabled={isLoading}>
+                <AppIcon name="Trash2" className="w-4 h-4 mr-2" /> Hapus Logo
+              </Button>
+            </div>
+          )}
+          <Input label="Pilih File Logo Baru (PNG, JPG)" name="logoFile" type="file" accept=".png, .jpg, .jpeg" onChange={handleLogoFileChange} />
+          {logoPreview && <img src={logoPreview} alt="Pratinjau Logo Baru" className="w-24 h-24 rounded-lg object-cover mx-auto border border-dashed p-1" />}
           <Button type="submit" className="w-full" disabled={isLoading || !logoFile}>{isLoading ? 'Mengunggah...' : 'Unggah dan Simpan'}</Button>
         </form>
       </SettingsModal>
@@ -519,7 +581,7 @@ const Settings = ({ headerTitle }) => {
       </SettingsModal>
 
       <SettingsModal title="Ubah Deskripsi Web" isOpen={activeModal === 'webDescription'} onClose={handleModalClose}>
-        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/description', { description: webDescription }, 'Deskripsi web berhasil diperbarui!')} className="space-y-4">
+        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/web_description', { value: webDescription }, 'Deskripsi web berhasil diperbarui!')} className="space-y-4">
           <textarea value={webDescription} onChange={(e) => setWebDescription(e.target.value)} rows="4" className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="Masukkan deskripsi web..."></textarea>
           <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
         </form>
@@ -731,6 +793,16 @@ const Settings = ({ headerTitle }) => {
         title="Konfirmasi Pembaruan Data"
         message="Apakah Anda yakin ingin menandai semua data sebagai telah diperbarui? Tindakan ini akan mencatat waktu saat ini sebagai waktu pembaruan terakhir."
         confirmText="Ya, Tandai Sudah Diperbarui"
+        cancelText="Batal"
+      />
+
+      <ConfirmationModal
+        isOpen={showDeleteLogoConfirmation}
+        onClose={() => setShowDeleteLogoConfirmation(false)}
+        onConfirm={handleDeleteLogo}
+        title="Konfirmasi Penghapusan Logo"
+        message="Apakah Anda yakin ingin menghapus logo? Ini akan membuat header tanpa gambar. Tindakan ini tidak dapat dibatalkan."
+        confirmText="Ya, Hapus Logo"
         cancelText="Batal"
       />
 

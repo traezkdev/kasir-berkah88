@@ -11,7 +11,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
   const isNativePlatform = Capacitor.isNativePlatform();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState(null);
-  const [logoUrl, setLogoUrl] = useState('/assets/images/logoberkah88.png'); // Default logo
+  const [logoUrl, setLogoUrl] = useState(''); // Initialize with empty string
   const location = useLocation();
 
   useEffect(() => {
@@ -19,17 +19,19 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
       try {
         const response = await fetch(`${apiUrl}/api/settings/logo`);
         const data = await response.json();
-        if (response.ok && data.data.logo_url) {
+        if (response.ok && typeof data.data.logo_url === 'string' && data.data.logo_url.length > 0) {
             // Prepend API URL if the path is relative
             if (data.data.logo_url.startsWith('/public')) {
               setLogoUrl(`${apiUrl}${data.data.logo_url}`);
             } else {
               setLogoUrl(data.data.logo_url);
             }
+        } else {
+          setLogoUrl(''); // Explicitly set to empty if no logo is returned or it's an empty string
         }
       } catch (error) {
         console.error('Failed to fetch logo:', error);
-        // Keep the default logo on error
+        setLogoUrl(''); // Set to empty on error as well
       }
     };
 
@@ -91,7 +93,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
           {/* Logo Section */}
           <div className="flex items-center space-x-4">
             <Link to="/" className="flex items-center space-x-3">
-                            <img src={logoUrl} alt="Logo" className="w-8 h-8 rounded-lg" />
+                            {logoUrl && <img src={logoUrl} alt="Logo" className="w-8 h-8 rounded-lg" onError={(e) => { e.target.style.display = 'none'; }} />}
               <div>
                 <h1 className="text-xl font-semibold text-text-primary">{headerTitle}</h1>
               </div>
