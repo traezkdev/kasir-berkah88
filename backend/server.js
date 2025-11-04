@@ -1514,29 +1514,7 @@ app.put('/api/settings/last_monthly_reset_date', authenticateToken, authorizeRol
     }
 });
 
-// Update website title
-app.put("/api/settings/title", authenticateToken, authorizeRoles('admin'), async (req, res) => {
-    try {
-        const { title } = req.body;
-        if (!title) {
-            return res.status(400).json({ error: "Title is required" });
-        }
 
-        const selectSql = 'SELECT * FROM settings WHERE `key` = ?';
-        const [rows] = await db.query(selectSql, ['website_title']);
-
-        if (rows.length > 0) {
-            const updateSql = 'UPDATE settings SET `value` = ? WHERE `key` = ?';
-            await db.query(updateSql, [title, 'website_title']);
-        } else {
-            const insertSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?)';
-            await db.query(insertSql, ['website_title', title]);
-        }
-                res.json({ message: "Website title updated successfully", data: { title } });
-    } catch (err) {
-        res.status(500).json({ error: err.message, stack: err.stack });
-    }
-});
 
 
 
@@ -1577,28 +1555,7 @@ app.put("/api/settings/registration", authenticateToken, authorizeRoles('admin')
     }
 });
 
-// Update web description
-app.put('/api/settings/description', authenticateToken, authorizeRoles('admin'), async (req, res) => {
-    try {
-        const { description } = req.body;
-        if (!description) {
-            return res.status(400).json({ message: 'Description is required.' });
-        }
-        const selectSql = 'SELECT * FROM settings WHERE `key` = ?';
-        const [rows] = await db.query(selectSql, ['web_description']);
 
-        if (rows.length > 0) {
-            const updateSql = 'UPDATE settings SET `value` = ? WHERE `key` = ?';
-            await db.query(updateSql, [description, 'web_description']);
-        } else {
-            const insertSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?)';
-            await db.query(insertSql, ['web_description', description]);
-        }
-        res.json({ message: 'Web description updated successfully!', data: { web_description: description } });
-    } catch (err) {
-        res.status(500).json({ error: err.message, stack: err.stack });
-    }
-});
 
 // Upload favicon
 app.post('/api/settings/favicon/', authenticateToken, authorizeRoles('admin'), upload.single('favicon'), async (req, res) => {

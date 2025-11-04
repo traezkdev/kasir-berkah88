@@ -543,7 +543,7 @@ const Settings = ({ headerTitle }) => {
       </SettingsModal>
 
       <SettingsModal title="Ubah Judul Situs Web" isOpen={activeModal === 'websiteTitle'} onClose={handleModalClose}>
-        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/title', { title: newWebsiteTitle }, 'Judul situs berhasil diperbarui!')} className="space-y-4">
+        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/website_title', { value: newWebsiteTitle }, 'Judul situs berhasil diperbarui!')} className="space-y-4">
           <Input label="Judul Situs Web Baru" name="newWebsiteTitle" type="text" value={newWebsiteTitle} onChange={(e) => setNewWebsiteTitle(e.target.value)} required />
           <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
         </form>
@@ -581,7 +581,7 @@ const Settings = ({ headerTitle }) => {
       </SettingsModal>
 
       <SettingsModal title="Ubah Deskripsi Web" isOpen={activeModal === 'webDescription'} onClose={handleModalClose}>
-        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/description', { description: webDescription }, 'Deskripsi web berhasil diperbarui!')} className="space-y-4">
+        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/web_description', { value: webDescription }, 'Deskripsi web berhasil diperbarui!')} className="space-y-4">
           <textarea value={webDescription} onChange={(e) => setWebDescription(e.target.value)} rows="4" className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="Masukkan deskripsi web..."></textarea>
           <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
         </form>
