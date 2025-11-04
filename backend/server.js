@@ -1669,26 +1669,32 @@ app.put("/api/admin/users/:id/role", authenticateToken, authorizeRoles('admin'),
 
 // Delete all transactions, expenses, and reset menu item stock
 app.delete("/api/admin/data/all", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    const connection = await db.getConnection();
     try {
         const { masterPassword } = req.body;
         if (!masterPassword) {
             return res.status(400).json({ error: "Master password is required" });
         }
 
-        const [masterPassRow] = await db.query('SELECT value FROM settings WHERE `key` = ?', ['master_password']);
+        const [masterPassRow] = await connection.query('SELECT value FROM settings WHERE `key` = ?', ['master_password']);
         const storedMasterPassword = masterPassRow.length > 0 ? masterPassRow[0].value : null;
 
         if (!storedMasterPassword || !(await bcrypt.compare(masterPassword, storedMasterPassword))) {
             return res.status(401).json({ error: "Kata sandi master salah" });
         }
 
-        await db.query('TRUNCATE TABLE transactions');
-        await db.query('TRUNCATE TABLE expenses');
-        await db.query('UPDATE menu_items SET stock = 0'); // Reset stock
+        await connection.beginTransaction();
+        await connection.query('TRUNCATE TABLE transactions');
+        await connection.query('TRUNCATE TABLE expenses');
+        await connection.query('UPDATE menu_items SET stock = 0'); // Reset stock
+        await connection.commit();
 
         res.json({ message: "All transactions, expenses, and menu item stock have been cleared." });
     } catch (err) {
+        await connection.rollback();
         res.status(500).json({ error: err.message, stack: err.stack });
+    } finally {
+        connection.release();
     }
 });
 
