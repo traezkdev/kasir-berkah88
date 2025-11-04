@@ -2,14 +2,24 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-// Helper function to calculate total stock
+// Helper function to calculate total stock (original, for actual stock data)
 const calculateTotalStock = (data) => {
   return data.reduce((sum, item) => sum + (item.stock || 0), 0);
 };
 
-// New helper function to calculate total stock price
+// Helper function to calculate total stock price (original, for actual stock data)
 const calculateTotalPriceOfStock = (data) => {
   return data.reduce((sum, item) => sum + ((item.stock || 0) * (item.price || 0)), 0);
+};
+
+// New helper function to calculate total sold items from prepared data
+const calculateTotalSoldItems = (data) => {
+  return data.reduce((sum, item) => sum + (item['Terjual'] || 0), 0);
+};
+
+// New helper function to calculate total revenue from prepared sold items data
+const calculateTotalRevenueFromSoldItems = (data) => {
+  return data.reduce((sum, item) => sum + (item['Pendapatan'] || 0), 0);
 };
 
 // New helper function to calculate total amount (for expenses)
@@ -110,10 +120,12 @@ export const exportToExcel = (data, filename = 'data') => {
     return;
   }
 
-  // Original logic for single-type data (menu items, expenses)
+  // Original logic for single-type data (menu items, expenses, or sold items)
   const isExpenseData = filename.includes('Pengeluaran'); // Simple check
+  const isSoldStockData = filename.includes('Stok_Terjual'); // Check for sold stock data
+  const isTopSellingData = filename.includes('Menu_Terlaris'); // New check for top selling items data
 
-  let title = "Laporan Stok Menu";
+  let title;
   let summaryRows = [];
 
   if (isExpenseData) {
@@ -121,25 +133,44 @@ export const exportToExcel = (data, filename = 'data') => {
     const totalAmount = calculateTotalAmount(data);
     summaryRows = [
       [], // Empty row before summary
-      ['Total Pengeluaran:', totalAmount.toLocaleString('id-ID')] // Summary row for total amount
+      ['Total Pengeluaran:', totalAmount.toLocaleString('id-ID')]
+    ];
+  } else if (isSoldStockData) {
+    title = "Laporan Stok Menu Terjual";
+    const totalSoldItems = calculateTotalSoldItems(data);
+    const totalRevenueFromSoldItems = calculateTotalRevenueFromSoldItems(data);
+    summaryRows = [
+      [], // Empty row before summary
+      ['Total Item Terjual:', totalSoldItems],
+      ['Total Pendapatan:', formatCurrency(totalRevenueFromSoldItems)]
+    ];
+  } else if (isTopSellingData) { // Handle top selling items data summary
+    title = "Laporan Menu Terlaris";
+    const totalSoldItems = data.reduce((sum, item) => sum + (item['Terjual'] || 0), 0);
+    const totalRevenueFromSoldItems = data.reduce((sum, item) => sum + (item['Pendapatan'] || 0), 0);
+    summaryRows = [
+      [], // Empty row before summary
+      ['Total Item Terjual:', totalSoldItems.toString()],
+      ['Total Pendapatan:', formatCurrency(totalRevenueFromSoldItems)]
     ];
   } else {
+    title = "Laporan Stok Menu"; // Default title for original stock data
     const totalStock = calculateTotalStock(data);
     const totalPriceOfStock = calculateTotalPriceOfStock(data);
     summaryRows = [
       [], // Empty row before summary
       ['Total Stok:', totalStock],
-      ['Total Harga Stok:', totalPriceOfStock.toLocaleString('id-ID')]
+      ['Total Harga Stok:', formatCurrency(totalPriceOfStock)]
     ];
   }
 
   // Prepare data for Excel
   const ws_data = [
-    [title], // Title row
-    [], // Empty row for spacing
-    Object.keys(data[0] || {}), // Headers
-    ...data.map(item => Object.values(item)), // Data rows
-    ...summaryRows // Add dynamic summary rows
+    [title],
+    [],
+    Object.keys(data[0] || {}),
+    ...data.map(item => Object.values(item)),
+    ...summaryRows
   ];
 
   const ws = XLSX.utils.aoa_to_sheet(ws_data);
@@ -156,12 +187,12 @@ export const exportToExcel = (data, filename = 'data') => {
   }
 
   // Auto-width columns
-  const headerRowIndex = 2; // Headers are on the 3rd row (index 2)
+  const headerRowIndex = 2;
   const max_width = ws_data[headerRowIndex].map((header, i) => Math.max(...ws_data.map(row => (row[i] ? row[i].toString().length : 0)), header.length));
-  ws['!cols'] = max_width.map(w => ({ wch: w + 2 })); // Add some padding
+  ws['!cols'] = max_width.map(w => ({ wch: w + 2 }));
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, isExpenseData ? "Pengeluaran" : "Stok Menu");
+  XLSX.utils.book_append_sheet(wb, ws, isExpenseData ? "Pengeluaran" : (isSoldStockData ? "Stok Terjual" : (isTopSellingData ? "Menu Terlaris" : "Stok Menu")));
   XLSX.writeFile(wb, `${filename}.xlsx`);
 };
 
@@ -177,7 +208,7 @@ export const exportToPdf = (data, filename = 'data') => {
     doc.setTextColor(100);
     doc.text(`Tanggal Export: ${new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}`, 14, 30);
 
-    let finalY = 40; // Starting Y position for the first table
+    let finalY = 40;
     data.forEach(section => {
       // Calculate required space for title (~15mm) + at least one table row (~7mm) + margin (~20mm)
       const requiredSpace = 15 + 7 + 20; 
@@ -187,7 +218,7 @@ export const exportToPdf = (data, filename = 'data') => {
       // Also, ensure it's not the very first section on the very first page
       if (finalY > 40 && remainingPageSpace < requiredSpace) { 
         doc.addPage();
-        finalY = 20; // Reset Y position for new page, leaving space for header
+        finalY = 20;
       }
 
       // Add section title
@@ -213,7 +244,7 @@ export const exportToPdf = (data, filename = 'data') => {
         alternateRowStyles: {
           fillColor: [240, 240, 240],
         },
-        margin: { bottom: 20 }, // Add bottom margin to prevent overlap with footer
+        margin: { bottom: 20 },
         didDrawPage: function (data) {
           // Footer
           let str = "Halaman " + doc.internal.getNumberOfPages();
@@ -221,8 +252,8 @@ export const exportToPdf = (data, filename = 'data') => {
           doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 10);
         }
       });
-      finalY = doc.lastAutoTable.finalY; // Update Y position for the next table
-      finalY += 10; // Add some space between tables
+      finalY = doc.lastAutoTable.finalY;
+      finalY += 10;
     });
 
     doc.save(`${filename}.pdf`);
@@ -230,6 +261,7 @@ export const exportToPdf = (data, filename = 'data') => {
   }
 
   const isExpenseData = filename.includes('Pengeluaran'); // Simple check
+  const isTopSellingData = filename.includes('Menu_Terlaris'); // New check for top selling items data
 
   let title = "Laporan Stok Menu";
   let summaryLines = [];
@@ -238,14 +270,22 @@ export const exportToPdf = (data, filename = 'data') => {
     title = "Laporan Pengeluaran";
     const totalAmount = calculateTotalAmount(data);
     summaryLines = [
-      `Total Pengeluaran: Rp ${totalAmount.toLocaleString('id-ID')}`
+      `Total Pengeluaran: ${formatCurrency(totalAmount)}`
+    ];
+  } else if (isTopSellingData) {
+    title = "Laporan Menu Terlaris";
+    const totalSoldItems = data.reduce((sum, item) => sum + (item['Terjual'] || 0), 0);
+    const totalRevenueFromSoldItems = data.reduce((sum, item) => sum + (item['Pendapatan'] || 0), 0);
+    summaryLines = [
+      `Total Item Terjual: ${totalSoldItems}`,
+      `Total Pendapatan: ${formatCurrency(totalRevenueFromSoldItems)}`
     ];
   } else {
     const totalStock = calculateTotalStock(data);
     const totalPriceOfStock = calculateTotalPriceOfStock(data);
     summaryLines = [
       `Total Stok: ${totalStock}`,
-      `Total Harga Stok: Rp ${totalPriceOfStock.toLocaleString('id-ID')}`
+      `Total Harga Stok: ${formatCurrency(totalPriceOfStock)}`
     ];
   }
 
@@ -345,7 +385,16 @@ export const prepareTopSellingItemsForExport = (topItems) => {
   }));
 };
 
+export const prepareSoldStockDataForExport = (soldItems) => {
+  return soldItems.map(item => ({
+    'Nama Menu': item.name,
+    'Terjual': item.sold,
+    'Pendapatan': parseFloat(item.revenue || 0),
+  }));
+};
+
 export const prepareCombinedDataForExport = (reportData) => {
+
   const { sales, expenses, stock } = reportData;
   const sections = [];
 
@@ -357,9 +406,9 @@ export const prepareCombinedDataForExport = (reportData) => {
     title: 'Analisis Gabungan',
     headers: ['Keterangan', 'Nilai'],
     rows: [
-      ['Modal Awal', `Rp ${parseFloat(sales.initialCapital || 0).toLocaleString('id-ID')}`],
-      ['Modal Berjalan', `Rp ${parseFloat(sales.workingCapital || 0).toLocaleString('id-ID')}`],
-      ['Laba Bersih (Periode Ini)', `Rp ${parseFloat(netProfit || 0).toLocaleString('id-ID')}`],
+      ['Modal Awal', formatCurrency(sales.initialCapital || 0)],
+      ['Modal Berjalan', formatCurrency(sales.workingCapital || 0)],
+      ['Laba Bersih (Periode Ini)', formatCurrency(netProfit || 0)],
       ['Pertumbuhan Modal (dari Laba Bersih)', `${capitalGrowth.toFixed(1)}%`]
     ],
   });
@@ -370,7 +419,7 @@ export const prepareCombinedDataForExport = (reportData) => {
     headers: ['Keterangan', 'Nilai'],
     rows: [
       ['Total Pendapatan', formatCurrency(sales.totalRevenue)],
-      ['Total Transaksi', sales.totalTransactions],
+      ['Total Transaksi', sales.totalTransactions.toString()],
       ['Rata-rata Order', formatCurrency(sales.averageOrder)],
     ],
   });
@@ -379,7 +428,7 @@ export const prepareCombinedDataForExport = (reportData) => {
   sections.push({
     title: 'Menu Terlaris',
     headers: ['Nama Menu', 'Terjual', 'Pendapatan'],
-    rows: sales.topItems.map(item => [item.name, item.sold, item.revenue]),
+    rows: sales.topItems.map(item => [item.name, item.sold.toString(), formatCurrency(item.revenue)]),
   });
 
   // Expense Summary
@@ -387,9 +436,9 @@ export const prepareCombinedDataForExport = (reportData) => {
     title: 'Ringkasan Pengeluaran',
     headers: ['Keterangan', 'Nilai'],
     rows: [
-      ['Total Pengeluaran', expenses.summary.totalExpenses],
-      ['Kategori Aktif', expenses.summary.categories],
-      ['Rata-rata Harian', expenses.summary.averageDaily],
+      ['Total Pengeluaran', formatCurrency(expenses.summary.totalExpenses)],
+      ['Kategori Aktif', expenses.summary.categories.toString()],
+      ['Rata-rata Harian', formatCurrency(expenses.summary.averageDaily)],
     ],
   });
 
@@ -401,7 +450,7 @@ export const prepareCombinedDataForExport = (reportData) => {
       new Date(item.date).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' }),
       item.name,
       item.category,
-      item.amount,
+      formatCurrency(item.amount),
     ]),
   });
 
@@ -410,9 +459,9 @@ export const prepareCombinedDataForExport = (reportData) => {
     title: 'Ringkasan Stok',
     headers: ['Keterangan', 'Nilai'],
     rows: [
-      ['Total Nilai Stok', stock.totalValue],
-      ['Jumlah Item', stock.totalItems],
-      ['Stok Menipis', stock.lowStockItems],
+      ['Total Nilai Stok', formatCurrency(stock.totalValue)],
+      ['Jumlah Item', stock.totalItems.toString()],
+      ['Stok Menipis', stock.lowStockItems.toString()],
     ],
   });
 
@@ -420,7 +469,7 @@ export const prepareCombinedDataForExport = (reportData) => {
   sections.push({
     title: 'Item Stok Menipis',
     headers: ['Nama Menu', 'Stok', 'Harga'],
-    rows: stock.lowStock.map(item => [item.name, item.stock, item.price]),
+    rows: stock.lowStock.map(item => [item.name, item.stock.toString(), formatCurrency(item.price)]),
   });
 
   return sections;

@@ -1,37 +1,52 @@
 import React from 'react';
 import ReportCard from './ReportCard';
 import Icon from '../../../components/AppIcon';
+import { exportToExcel, exportToPdf, prepareSoldStockDataForExport } from '../../../utils/exportUtils';
 
 const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
 
-const StockReportSection = ({ data, onExportStock }) => {
+const StockReportSection = ({ data }) => {
   if (!data) return null;
 
-  const { totalValue, totalItems, lowStockItems, lowStock } = data;
+  const { totalValue, totalItems, lowStockItems, items, lowStock } = data;
 
   const stockMetrics = [
     { label: 'Total Nilai Stok', value: formatCurrency(totalValue) },
-    { label: 'Jumlah Item', value: totalItems },
-    { label: 'Stok Menipis', value: lowStockItems }
+    { label: 'Jumlah Item Terjual', value: totalItems }, // Changed label to reflect filtered data
+    { label: 'Stok Menipis (Saat Ini)', value: lowStockItems } // Clarify this is current stock
+  ];
+
+  const handleExportPdfStock = () => {
+    const formattedStockData = prepareSoldStockDataForExport(items);
+    exportToPdf(formattedStockData, 'Laporan_Stok_Terjual');
+  };
+
+  const handleExportExcelStock = () => {
+    const formattedStockData = prepareSoldStockDataForExport(items);
+    exportToExcel(formattedStockData, 'Laporan_Stok_Terjual');
+  };
+
+  const exportOptions = [
+    { label: 'Export PDF', onClick: handleExportPdfStock },
+    { label: 'Export Excel', onClick: handleExportExcelStock },
   ];
 
   return (
     <ReportCard
       title="Laporan Stok"
-      description="Analisis inventori dan performa produk"
+      description="Analisis inventori dan performa produk berdasarkan penjualan"
       icon="Package"
       iconColor="text-primary"
       iconBgColor="bg-primary/10"
       metrics={stockMetrics}
-      onExport={onExportStock} // This is still a mock function
-      exportLabel="Export Stok"
+      exportOptions={exportOptions}
     >
       <div className="space-y-6">
         {/* Low Stock Alert */}
         <div>
           <h4 className="text-sm font-medium text-text-primary mb-3 flex items-center">
             <Icon name="AlertTriangle" size={16} className="text-warning mr-2" />
-            Stok Menipis
+            Stok Menipis (Saat Ini)
           </h4>
           <div className="space-y-2">
             {lowStock && lowStock.map((item, index) => (
