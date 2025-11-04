@@ -358,7 +358,9 @@ const setupDatabase = async () => {
         id INT AUTO_INCREMENT PRIMARY KEY,
         og_title VARCHAR(255) NOT NULL,
         og_description TEXT,
-        og_image_url VARCHAR(255)
+        og_image_url VARCHAR(255),
+        restaurant_name VARCHAR(255) DEFAULT 'Trz Kasir Apps',
+        restaurant_slogan VARCHAR(255) DEFAULT 'Aplikasi kasir modern cepat dan keren'
       );
     `;
     await connection.query(createAppSettingsTable);
@@ -368,10 +370,38 @@ const setupDatabase = async () => {
     const [settingsRows] = await connection.query('SELECT id FROM app_settings LIMIT 1');
     if (settingsRows.length === 0) {
       await connection.query(
-        'INSERT INTO app_settings (og_title, og_description, og_image_url) VALUES (?, ?, ?)',
-        ['Kasir Berkah 88', 'Aplikasi kasir modern untuk bisnis Anda.', '/no_image.png']
+        'INSERT INTO app_settings (og_title, og_description, og_image_url, restaurant_name, restaurant_slogan) VALUES (?, ?, ?, ?, ?)',
+        ['Kasir Berkah 88', 'Aplikasi kasir modern untuk bisnis Anda.', '/no_image.png', 'Trz Kasir Apps', 'Aplikasi kasir modern cepat dan keren']
       );
       console.log('Default app settings inserted.');
+    }
+
+    // Check and add restaurant_name column to app_settings if it doesn't exist
+    const checkRestaurantNameColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'app_settings' AND COLUMN_NAME = 'restaurant_name';
+    `;
+    const addRestaurantNameColumn = `
+      ALTER TABLE app_settings ADD COLUMN restaurant_name VARCHAR(255) DEFAULT 'Trz Kasir Apps';
+    `;
+    const [restaurantNameRows] = await connection.query(checkRestaurantNameColumn);
+    if (restaurantNameRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addRestaurantNameColumn);
+      console.log('Added restaurant_name column to app_settings table.');
+    }
+
+    // Check and add restaurant_slogan column to app_settings if it doesn't exist
+    const checkRestaurantSloganColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'app_settings' AND COLUMN_NAME = 'restaurant_slogan';
+    `;
+    const addRestaurantSloganColumn = `
+      ALTER TABLE app_settings ADD COLUMN restaurant_slogan VARCHAR(255) DEFAULT 'Aplikasi kasir modern cepat dan keren';
+    `;
+    const [restaurantSloganRows] = await connection.query(checkRestaurantSloganColumn);
+    if (restaurantSloganRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addRestaurantSloganColumn);
+      console.log('Added restaurant_slogan column to app_settings table.');
     }
 
     connection.release();
