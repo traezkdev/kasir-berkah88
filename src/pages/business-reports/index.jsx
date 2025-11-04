@@ -126,9 +126,38 @@ const BusinessReports = ({ headerTitle }) => {
         .sort((a, b) => b.revenue - a.revenue)
 ;
 
-      // Stock Report Data
-      const totalStockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
-      const lowStockItems = menuItems.filter(i => i.stock > 0 && i.stock <= 5);
+      // Stock Report Data (based on items sold within the filtered period)
+      let totalItemsSold = 0;
+      let totalValueSold = 0;
+      const itemsSoldMap = new Map(); // To aggregate quantities and revenues of sold items
+
+      filteredTransactions.forEach(t => {
+        try {
+          const items = typeof t.items === 'string' ? JSON.parse(t.items) : t.items;
+          if (Array.isArray(items)) {
+            items.forEach(item => {
+              const itemPrice = parseFloat(item.price || 0);
+              const quantity = item.quantity || 0;
+
+              totalItemsSold += quantity;
+              totalValueSold += quantity * itemPrice;
+
+              if (itemsSoldMap.has(item.name)) {
+                const existing = itemsSoldMap.get(item.name);
+                existing.sold += quantity;
+                existing.revenue += quantity * itemPrice;
+              } else {
+                itemsSoldMap.set(item.name, { name: item.name, sold: quantity, revenue: quantity * itemPrice });
+              }
+            });
+          }
+        } catch (e) {
+          console.error("Failed to parse transaction items for stock report:", e);
+        }
+      });
+
+      // For 'lowStockItems', we still use the current menuItems as it represents current inventory status
+      const currentLowStockItems = menuItems.filter(i => i.stock > 0 && i.stock <= 5);
 
       // Expense Report Data
       const totalExpenses = filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
@@ -177,11 +206,11 @@ const BusinessReports = ({ headerTitle }) => {
           workingCapital,
         },
         stock: {
-          totalValue: totalStockValue,
-          totalItems: menuItems.length,
-          lowStockItems: lowStockItems.length,
-          items: menuItems,
-          lowStock: lowStockItems,
+          totalValue: totalValueSold, // Now reflects value of items sold in period
+          totalItems: totalItemsSold, // Now reflects total items sold in period
+          lowStockItems: currentLowStockItems.length, // Still based on current stock
+          items: Array.from(itemsSoldMap.values()), // Items sold in the period
+          lowStock: currentLowStockItems, // Still based on current stock
         },
         expenses: {
           summary: {
