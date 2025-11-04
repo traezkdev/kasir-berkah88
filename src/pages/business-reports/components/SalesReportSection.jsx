@@ -1,10 +1,12 @@
 import React from 'react';
 import ReportCard from './ReportCard';
 import Icon from '../../../components/AppIcon';
+import Button from '../../../components/ui/Button';
+import { exportToExcel, exportToPdf, prepareCombinedDataForExport, prepareTopSellingItemsForExport } from '../../../utils/exportUtils';
 
 const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
 
-const SalesReportSection = ({ data, onExportSales }) => {
+const SalesReportSection = ({ data }) => {
   if (!data) return null;
 
   const { totalRevenue, totalTransactions, averageOrder, topItems } = data;
@@ -15,6 +17,53 @@ const SalesReportSection = ({ data, onExportSales }) => {
     { label: 'Rata-rata Order', value: formatCurrency(averageOrder) }
   ];
 
+  const handleExportPdfSales = () => {
+    const combinedData = prepareCombinedDataForExport({
+      sales: {
+        totalRevenue,
+        totalTransactions,
+        averageOrder,
+        topItems,
+        initialCapital: 0, 
+        workingCapital: 0, 
+      },
+      expenses: { summary: {}, items: [] }, 
+      stock: { totalValue: 0, totalItems: 0, lowStockItems: 0, lowStock: [] }, 
+    });
+    exportToPdf(combinedData, 'Laporan_Penjualan');
+  };
+
+  const handleExportExcelSales = () => {
+    const combinedData = prepareCombinedDataForExport({
+      sales: {
+        totalRevenue,
+        totalTransactions,
+        averageOrder,
+        topItems,
+        initialCapital: 0, 
+        workingCapital: 0, 
+      },
+      expenses: { summary: {}, items: [] }, 
+      stock: { totalValue: 0, totalItems: 0, lowStockItems: 0, lowStock: [] }, 
+    });
+    exportToExcel(combinedData, 'Laporan_Penjualan');
+  };
+
+  const handleExportPdfTopItems = () => {
+    const formattedTopItems = prepareTopSellingItemsForExport(topItems);
+    exportToPdf(formattedTopItems, 'Menu_Terlaris');
+  };
+
+  const handleExportExcelTopItems = () => {
+    const formattedTopItems = prepareTopSellingItemsForExport(topItems);
+    exportToExcel(formattedTopItems, 'Menu_Terlaris');
+  };
+
+  const exportOptions = [
+    { label: 'Export PDF', onClick: handleExportPdfSales },
+    { label: 'Export Excel', onClick: handleExportExcelSales },
+  ];
+
   return (
     <ReportCard
       title="Laporan Penjualan"
@@ -23,15 +72,35 @@ const SalesReportSection = ({ data, onExportSales }) => {
       iconColor="text-success"
       iconBgColor="bg-success/10 dark:bg-success/20"
       metrics={salesMetrics}
-      onExport={onExportSales} // This is still a mock function
-      exportLabel="Export Penjualan"
+      exportOptions={exportOptions}
     >
       <div className="space-y-6">
-        <div>
-          <h4 className="text-sm font-medium text-text-primary mb-3 flex items-center dark:text-white">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-sm font-medium text-text-primary flex items-center dark:text-white">
             <Icon name="Star" size={16} className="text-accent mr-2" />
             Menu Terlaris
           </h4>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportPdfTopItems}
+              iconName="FileText"
+              className="shrink-0"
+            >
+              PDF
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportExcelTopItems}
+              iconName="FileSpreadsheet"
+              className="shrink-0"
+            >
+              Excel
+            </Button>
+          </div>
+        </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -57,7 +126,6 @@ const SalesReportSection = ({ data, onExportSales }) => {
               </tbody>
             </table>
           </div>
-        </div>
       </div>
     </ReportCard>
   );

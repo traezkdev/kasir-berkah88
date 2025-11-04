@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
@@ -9,10 +9,24 @@ const ReportCard = ({
   iconColor = 'text-primary',
   iconBgColor = 'bg-primary/10 dark:bg-primary/20',
   metrics = [], 
-  onExport,
-  exportLabel = 'Export',
+  exportOptions = [], // New prop for multiple export options
   children 
 }) => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownRef]);
+
   return (
     <div className="bg-card rounded-lg border border-border shadow-elevation-1 hover:shadow-elevation-2 transition-shadow duration-200">
       <div className="p-6">
@@ -26,17 +40,38 @@ const ReportCard = ({
               <p className="text-sm text-text-secondary dark:text-gray-400">{description}</p>
             </div>
           </div>
-          {onExport && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onExport}
-              iconName="Download"
-              iconPosition="left"
-              className="shrink-0"
-            >
-              {exportLabel}
-            </Button>
+          {exportOptions.length > 0 && (
+            <div className="relative" ref={dropdownRef}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                iconName="Download"
+                iconPosition="left"
+                className="shrink-0"
+              >
+                Export
+              </Button>
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-10 dark:bg-gray-800">
+                  <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+                    {exportOptions.map((option, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          option.onClick();
+                          setIsDropdownOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white"
+                        role="menuitem"
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
 

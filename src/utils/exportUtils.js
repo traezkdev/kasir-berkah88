@@ -337,6 +337,14 @@ export const prepareStockDataForExport = (menuItems) => {
   }));
 };
 
+export const prepareTopSellingItemsForExport = (topItems) => {
+  return topItems.map(item => ({
+    'Nama Menu': item.name,
+    'Terjual': item.sold,
+    'Pendapatan': parseFloat(item.revenue || 0),
+  }));
+};
+
 export const prepareCombinedDataForExport = (reportData) => {
   const { sales, expenses, stock } = reportData;
   const sections = [];
