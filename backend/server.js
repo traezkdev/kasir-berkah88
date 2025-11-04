@@ -24,10 +24,7 @@ app.use((err, req, res, next) => {
     }
     next();
 });
-app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    next();
-});
+
 app.use('/public/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // Multer storage configuration
@@ -50,7 +47,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey'; // Fallback fo
 
 // Auth Middleware
 const authenticateToken = (req, res, next) => {
-    console.log('Executing authenticateToken middleware');
+
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
@@ -65,7 +62,7 @@ const authenticateToken = (req, res, next) => {
             return res.status(401).json({ error: "Invalid or expired token" });
         }
         req.user = user; // Attach user payload to request (userId, username, role)
-        console.log('Token authenticated. User:', req.user.username, 'Role:', req.user.role);
+
         next();
     });
 };
@@ -73,12 +70,12 @@ const authenticateToken = (req, res, next) => {
 // Auth Middleware for Role-Based Access Control
 const authorizeRoles = (...roles) => {
     return (req, res, next) => {
-        console.log('Executing authorizeRoles middleware. Required roles:', roles, 'User role:', req.user ? req.user.role : 'N/A');
+
         if (!req.user || !req.user.role || !roles.includes(req.user.role)) {
             console.log('Forbidden: Insufficient permissions for user:', req.user ? req.user.username : 'N/A');
             return res.status(403).json({ error: "Forbidden: Insufficient permissions" });
         }
-        console.log('Authorization successful.');
+
         next();
     };
 };
@@ -370,9 +367,8 @@ app.put("/api/settings/master-password", authenticateToken, authorizeRoles('admi
 
 app.put("/api/settings/registration", authenticateToken, authorizeRoles('admin'), async (req, res) => {
     try {
-        console.log('Received PUT request to /api/settings/registration');
-        console.log('req.body:', req.body);
-        console.log('typeof req.body.enabled:', typeof req.body.enabled);
+
+
         const { enabled } = req.body;
         let booleanEnabled;
 
@@ -1569,9 +1565,7 @@ app.put("/api/settings/header-title", authenticateToken, authorizeRoles('admin')
 // Enable/disable registration
 app.put("/api/settings/registration", authenticateToken, authorizeRoles('admin'), async (req, res) => {
     try {
-        console.log('Received PUT request to /api/settings/registration');
         console.log('req.body:', req.body);
-        console.log('typeof req.body.enabled:', typeof req.body.enabled);
         const { enabled } = req.body;
         let booleanEnabled;
 
