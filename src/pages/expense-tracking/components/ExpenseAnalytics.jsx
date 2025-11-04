@@ -12,6 +12,16 @@ const ExpenseAnalytics = ({ expenses = [], className = "" }) => {
     })?.format(amount);
   };
 
+  const categoryTranslations = {
+    supplies: 'Persediaan',
+    inventory: 'Inventaris',
+    operational: 'Operasional',
+    equipment: 'Peralatan',
+    transport: 'Transportasi',
+    maintenance: 'Pemeliharaan',
+    utilities: 'Utilitas',
+  };
+
   // Generate category breakdown data
   const getCategoryBreakdown = () => {
     const categoryTotals = {};
@@ -24,7 +34,7 @@ const ExpenseAnalytics = ({ expenses = [], className = "" }) => {
     const totalExpensesSum = expenses?.reduce((sum, exp) => sum + parseFloat(exp?.amount || 0), 0);
 
     return Object.entries(categoryTotals)?.map(([category, amount]) => ({
-        category,
+        category: categoryTranslations[category] || category,
         amount,
         percentage: ((amount / totalExpensesSum) * 100)?.toFixed(1)
       }))?.sort((a, b) => b?.amount - a?.amount);
