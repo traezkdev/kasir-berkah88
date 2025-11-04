@@ -13,13 +13,15 @@ const ExpenseAnalytics = ({ expenses = [], className = "" }) => {
   };
 
   const categoryTranslations = {
-    supplies: 'Persediaan',
-    inventory: 'Inventaris',
-    operational: 'Operasional',
+    supplies: 'Bahan Baku & Supplies',
+    electricity_water: 'Listrik & Air',
+    inventory_purchase: 'Pembelian Stok',
     equipment: 'Peralatan',
-    transport: 'Transportasi',
-    maintenance: 'Pemeliharaan',
-    utilities: 'Utilitas',
+    maintenance_repair: 'Perawatan & Perbaikan',
+    transportation: 'Transportasi',
+    marketing: 'Promosi & Marketing',
+    other_operational: 'Operasional Lainnya',
+    miscellaneous: 'Lain-lain',
   };
 
   // Generate category breakdown data
@@ -33,11 +35,16 @@ const ExpenseAnalytics = ({ expenses = [], className = "" }) => {
 
     const totalExpensesSum = expenses?.reduce((sum, exp) => sum + parseFloat(exp?.amount || 0), 0);
 
-    return Object.entries(categoryTotals)?.map(([category, amount]) => ({
-        category: categoryTranslations[category] || category,
+    const allCategoriesData = Object.keys(categoryTranslations)?.map(key => {
+      const amount = categoryTotals[key] || 0;
+      return {
+        category: categoryTranslations[key],
         amount,
-        percentage: ((amount / totalExpensesSum) * 100)?.toFixed(1)
-      }))?.sort((a, b) => b?.amount - a?.amount);
+        percentage: totalExpensesSum > 0 ? ((amount / totalExpensesSum) * 100)?.toFixed(1) : 0
+      };
+    });
+
+    return allCategoriesData?.sort((a, b) => b?.amount - a?.amount);
   };
 
   // Generate daily expenses for the last 7 days
