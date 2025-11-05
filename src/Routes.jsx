@@ -82,7 +82,7 @@ const AppRoutes = () => {
       <Route path="/cashier-dashboard/transaction-history" element={<ProtectedRoute allowedRoles={['kasir']}><CashierTransactionHistory /></ProtectedRoute>} />
 
       {/* Other User Routes */}
-      <Route path="/sales-transaction-processing" element={<ProtectedRoute allowedRoles={['user']}><SalesTransactionProcessing /></ProtectedRoute>} />
+      <Route path="/sales-transaction-processing" element={<ProtectedRoute allowedRoles={['admin', 'kasir', 'user']}><SalesTransactionProcessing /></ProtectedRoute>} />
       <Route path="/order-confirmation" element={<ProtectedRoute allowedRoles={['user']}><OrderConfirmationPage /></ProtectedRoute>} />
       <Route path="/receipt" element={<ProtectedRoute allowedRoles={['admin', 'user']}><ReceiptPage /></ProtectedRoute>} />
 
