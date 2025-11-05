@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaUserCircle, FaBars } from 'react-icons/fa';
 import authFetch from '../../../utils/authFetch';
+import DarkModeToggle from '../../ui/DarkModeToggle';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -35,6 +36,7 @@ const Header = ({ toggleSidebar }) => {
       </div>
       <div className="flex items-center">
         <span className="mr-4 text-gray-600 dark:text-gray-300 hidden sm:block">Selamat datang, {user.username || user.name}</span>
+        <DarkModeToggle />
         <Link to="/profile" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
           {user.avatar_url ? (
             <img src={avatarSrc} alt="Profile" className="h-6 w-6 rounded-full object-cover" />
