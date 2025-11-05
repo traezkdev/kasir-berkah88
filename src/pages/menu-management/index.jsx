@@ -15,7 +15,10 @@ import authFetch from '../../utils/authFetch'; // Add this import
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
+import { useTheme } from '../../contexts/ThemeContext';
+
 const MenuManagement = ({ headerTitle }) => {
+  const { theme } = useTheme();
   const [menuItems, setMenuItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
@@ -251,8 +254,8 @@ Powered by Kasir Berkah 88`;
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />
-        <div className="pt-16">
+        {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
+        <div className={`${theme === 'default' ? 'pt-16' : ''}`}>
           
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
@@ -266,13 +269,14 @@ Powered by Kasir Berkah 88`;
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
       <Helmet>
         <title>Menu Management - Kasir Berkah 88</title>
         <meta name="description" content="Kelola menu dan inventori warung dengan mudah. Tambah, edit, dan hapus menu dengan tracking stok otomatis." />
       </Helmet>
 
-      <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />
+
+      {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
       {notification && (
         <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg z-[1002] ${
           notification.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
@@ -281,10 +285,10 @@ Powered by Kasir Berkah 88`;
         </div>
       )}
       
-      <div className="pt-16">
+      <div className={`${theme === 'default' ? 'pt-16' : ''}`}>
         
         
-        <main className="container mx-auto px-4 lg:px-6 py-6 pb-20 lg:pb-6">
+        <main className={theme === 'default' ? "container mx-auto px-4 lg:px-6 py-6 pb-20 lg:pb-6" : ""}>
           {/* Breadcrumb */}
           <div className="mb-6">
             <BreadcrumbNavigation />

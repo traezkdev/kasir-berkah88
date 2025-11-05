@@ -7,6 +7,8 @@ import './styles/tailwind.css';
 
 import ThemeProvider from './components/ThemeProvider';
 
+import { ThemeProvider as LayoutThemeProvider } from './contexts/ThemeContext';
+
 // Easter egg for the developer console
 console.log(
   '%c Crafted with ❤️ by M Alfin Firdaus (traezkdev) %c',
@@ -19,7 +21,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <HelmetProvider>
       <BrowserRouter>
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-          <App />
+          <LayoutThemeProvider>
+            <App />
+          </LayoutThemeProvider>
         </ThemeProvider>
       </BrowserRouter>
     </HelmetProvider>

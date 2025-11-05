@@ -10,7 +10,10 @@ import NoteCard from './components/NoteCard';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 
+import { useTheme } from '../../contexts/ThemeContext';
+
 const NotesPage = () => {
+  const { theme } = useTheme();
   const [notes, setNotes] = useState([]);
   const [filteredNotes, setFilteredNotes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -103,8 +106,8 @@ const NotesPage = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 pt-24 pb-32">
-      <NavigationHeader title="Catatan Saya" />
+    <div className={theme === 'default' ? "container mx-auto p-4 pb-32 pt-24" : ""}>
+      {theme === 'default' && <NavigationHeader title="Catatan Saya" />}
       <BreadcrumbNavigation className="mb-4" />
       
       <div className="flex justify-between items-center mb-6 gap-4">

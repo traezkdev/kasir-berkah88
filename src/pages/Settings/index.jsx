@@ -50,7 +50,10 @@ const SettingsCard = ({ icon, title, description, onClick, disabled = false }) =
   </div>
 );
 
+import { useTheme } from '../../contexts/ThemeContext';
+
 const Settings = ({ headerTitle }) => {
+  const { theme, toggleTheme } = useTheme();
   // --- States ---
   const [websiteTitle, setWebsiteTitle] = useState('');
   const [newWebsiteTitle, setNewWebsiteTitle] = useState('');
@@ -526,9 +529,9 @@ const Settings = ({ headerTitle }) => {
 
   return (
     <div className="flex flex-col h-screen">
-      <NavigationHeader title="Pengaturan" headerTitle={headerTitle} />
-      <main className="flex-grow pt-16">
-        <div className="max-w-7xl mx-auto px-4 lg:px-8 py-8">
+      {theme === 'default' && <NavigationHeader title="Pengaturan" headerTitle={headerTitle} />}
+      <main className={`flex-grow ${theme === 'default' ? 'pt-16' : ''}`}>
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-8 py-8" : ""}>
           <BreadcrumbNavigation paths={breadcrumbs} />
           <header className="mt-6 mb-8">
             <h1 className="text-2xl lg:text-4xl font-bold tracking-tight text-text-primary flex items-center gap-3">
@@ -555,6 +558,7 @@ const Settings = ({ headerTitle }) => {
                 onClick={() => setIsRestaurantSettingsModalOpen(true)}
                 disabled={!isAdmin}
               />
+              <SettingsCard icon="Layout" title={`Beralih ke Tema ${theme === 'default' ? 'Admin' : 'Bawaan'}`} description={`Tema saat ini: ${theme === 'default' ? 'Bawaan' : 'Admin'}. Klik untuk mengganti.`} onClick={toggleTheme} />
               <SettingsCard icon="List" title="Kelola Kategori Menu" description="Tambah, ubah, atau hapus kategori untuk item menu." onClick={() => setActiveModal('categoryManagement')} disabled={!isAdmin} />
             </div>
           </div>

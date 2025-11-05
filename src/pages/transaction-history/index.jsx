@@ -23,7 +23,10 @@ import * as XLSX from 'xlsx';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
+import { useTheme } from '../../contexts/ThemeContext';
+
 const TransactionHistory = ({ headerTitle }) => {
+  const { theme } = useTheme();
   const exportContentRef = useRef(null); // Add this line
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
@@ -481,13 +484,13 @@ const TransactionHistory = ({ headerTitle }) => {
 
   return (
 
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
 
-      <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />
+      {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
 
-      <main className="pt-16 pb-20 lg:pb-8">
+      <main className={`${theme === 'default' ? 'pt-16' : ''} pb-20 lg:pb-8`}>
 
-        <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6">
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 py-6" : ""}>
 
           <div className="mb-6">
 
@@ -509,7 +512,7 @@ const TransactionHistory = ({ headerTitle }) => {
 
 
 
-          <div className="space-y-6" ref={exportContentRef}>
+          <div className="space-y-6 bg-card p-4 rounded-lg shadow-md" ref={exportContentRef}>
 
             <div className="bg-card p-4 rounded-lg shadow-md">
               <div className="flex justify-center space-x-4 mb-4">

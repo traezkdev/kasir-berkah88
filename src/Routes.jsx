@@ -45,31 +45,47 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return children;
 };
 
-const AppRoutes = ({ headerTitle }) => {
+import DynamicLayout from './components/DynamicLayout';
+
+const AppRoutes = () => {
   return (
     <Routes>
       {/* Public Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/" element={<GuestCheckout />} />
-      <Route path="/main-dashboard" element={<ProtectedRoute allowedRoles={['admin', 'user']}><MainDashboard headerTitle={headerTitle} /></ProtectedRoute>} />
+
+      {/* Admin Dashboard Routes */}
+      <Route 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <DynamicLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/main-dashboard" element={<MainDashboard />} />
+        <Route path="/menu-management" element={<MenuManagement />} />
+        <Route path="/expense-tracking" element={<ExpenseTracking />} />
+        <Route path="/transaction-history" element={<TransactionHistory />} />
+        <Route path="/business-reports" element={<BusinessReports />} />
+        <Route path="/profile" element={<UserProfile />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/credits" element={<Credits />} />
+        <Route path="/notes" element={<NotesPage />} />
+        <Route path="/calculator" element={<CalculatorPage />} />
+        <Route path="/employee-list" element={<EmployeeListPage />} />
+        <Route path="/hpp" element={<Hpp />} />
+      </Route>
+
+      {/* Cashier Routes */}
       <Route path="/cashier-dashboard" element={<ProtectedRoute allowedRoles={['kasir']}><CashierDashboard /></ProtectedRoute>} />
-      <Route path="/cashier-dashboard/transaction-history" element={<ProtectedRoute allowedRoles={['kasir']}><CashierTransactionHistory headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/sales-transaction-processing" element={<ProtectedRoute allowedRoles={['admin', 'user']}><SalesTransactionProcessing headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/menu-management" element={<ProtectedRoute allowedRoles={['admin', 'user']}><MenuManagement headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/expense-tracking" element={<ProtectedRoute allowedRoles={['admin', 'user']}><ExpenseTracking headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/transaction-history" element={<ProtectedRoute allowedRoles={['admin', 'user']}><TransactionHistory headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/business-reports" element={<ProtectedRoute allowedRoles={['admin', 'user']}><BusinessReports headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/profile" element={<ProtectedRoute allowedRoles={['admin', 'user']}><UserProfile headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute allowedRoles={['admin', 'user']}><Settings headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/credits" element={<ProtectedRoute allowedRoles={['admin', 'user']}><Credits headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/notes" element={<ProtectedRoute allowedRoles={['admin', 'user']}><NotesPage headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/order-confirmation" element={<ProtectedRoute allowedRoles={['admin', 'user']}><OrderConfirmationPage headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/calculator" element={<ProtectedRoute allowedRoles={['admin', 'user']}><CalculatorPage headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/employee-list" element={<ProtectedRoute allowedRoles={['admin', 'user']}><EmployeeListPage headerTitle={headerTitle} /></ProtectedRoute>} />
-      <Route path="/hpp" element={<ProtectedRoute allowedRoles={['admin', 'user']}><Hpp headerTitle={headerTitle} /></ProtectedRoute>} />
+      <Route path="/cashier-dashboard/transaction-history" element={<ProtectedRoute allowedRoles={['kasir']}><CashierTransactionHistory /></ProtectedRoute>} />
+
+      {/* Other User Routes */}
+      <Route path="/sales-transaction-processing" element={<ProtectedRoute allowedRoles={['admin', 'kasir', 'user']}><SalesTransactionProcessing /></ProtectedRoute>} />
+      <Route path="/order-confirmation" element={<ProtectedRoute allowedRoles={['user']}><OrderConfirmationPage /></ProtectedRoute>} />
       <Route path="/receipt" element={<ProtectedRoute allowedRoles={['admin', 'user']}><ReceiptPage /></ProtectedRoute>} />
-      
+
       {/* Catch all other routes */}
       <Route path="*" element={<NotFound />} />
     </Routes>
