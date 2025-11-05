@@ -83,7 +83,7 @@ const AppRoutes = () => {
 
       {/* Other User Routes */}
       <Route path="/sales-transaction-processing" element={<ProtectedRoute allowedRoles={['admin', 'kasir', 'user']}><SalesTransactionProcessing /></ProtectedRoute>} />
-      <Route path="/order-confirmation" element={<ProtectedRoute allowedRoles={['user']}><OrderConfirmationPage /></ProtectedRoute>} />
+      <Route path="/order-confirmation" element={<ProtectedRoute allowedRoles={['admin', 'kasir', 'user']}><OrderConfirmationPage /></ProtectedRoute>} />
       <Route path="/receipt" element={<ProtectedRoute allowedRoles={['admin', 'user']}><ReceiptPage /></ProtectedRoute>} />
 
       {/* Catch all other routes */}
