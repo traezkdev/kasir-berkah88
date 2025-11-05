@@ -106,7 +106,7 @@ const NotesPage = () => {
   };
 
   return (
-    <div className={`container mx-auto p-4 pb-32 ${theme === 'default' ? 'pt-24' : ''}`}>
+    <div className={theme === 'default' ? "container mx-auto p-4 pb-32 pt-24" : ""}>
       {theme === 'default' && <NavigationHeader title="Catatan Saya" />}
       <BreadcrumbNavigation className="mb-4" />
       

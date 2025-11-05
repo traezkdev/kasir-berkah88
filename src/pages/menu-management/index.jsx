@@ -287,7 +287,7 @@ Powered by Kasir Berkah 88`;
       <div className={`${theme === 'default' ? 'pt-16' : ''}`}>
         
         
-        <main className="container mx-auto px-4 lg:px-6 py-6 pb-20 lg:pb-6">
+        <main className={theme === 'default' ? "container mx-auto px-4 lg:px-6 py-6 pb-20 lg:pb-6" : ""}>
           {/* Breadcrumb */}
           <div className="mb-6">
             <BreadcrumbNavigation />

@@ -531,7 +531,7 @@ const Settings = ({ headerTitle }) => {
     <div className="flex flex-col h-screen">
       {theme === 'default' && <NavigationHeader title="Pengaturan" headerTitle={headerTitle} />}
       <main className={`flex-grow ${theme === 'default' ? 'pt-16' : ''}`}>
-        <div className="max-w-7xl mx-auto px-4 lg:px-8 py-8">
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-8 py-8" : ""}>
           <BreadcrumbNavigation paths={breadcrumbs} />
           <header className="mt-6 mb-8">
             <h1 className="text-2xl lg:text-4xl font-bold tracking-tight text-text-primary flex items-center gap-3">

@@ -490,7 +490,7 @@ const TransactionHistory = ({ headerTitle }) => {
 
       <main className={`${theme === 'default' ? 'pt-16' : ''} pb-20 lg:pb-8`}>
 
-        <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6">
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 py-6" : ""}>
 
           <div className="mb-6">
 

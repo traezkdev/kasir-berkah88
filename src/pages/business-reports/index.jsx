@@ -278,7 +278,7 @@ const BusinessReports = ({ headerTitle }) => {
     <div className="min-h-screen bg-background">
       {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
       <main className={`${theme === 'default' ? 'pt-20' : ''} pb-24 lg:pb-8`}>
-        <div className="max-w-7xl mx-auto px-4 lg:px-6">
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
           {/* Header Section */}
           <div className="mb-6">
             <BreadcrumbNavigation className="mb-4" />

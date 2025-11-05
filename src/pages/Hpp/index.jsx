@@ -66,7 +66,7 @@ const Hpp = ({ headerTitle }) => {
         <NavigationHeader headerTitle={headerTitle} />
       )}
       <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'pt-16' : ''}`}>
-        <div className="container mx-auto p-4">
+        <div className={theme === 'default' ? "container mx-auto p-4" : ""}>
           <BreadcrumbNavigation className="mb-4" />
           <h1 className="text-2xl font-bold mb-4">Kalkulator HPP (Harga Pokok Penjualan)</h1>
           <div className="bg-background-card p-4 rounded-lg shadow">
