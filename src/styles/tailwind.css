@@ -134,6 +134,11 @@
   .font-mono {
     font-family: 'JetBrains Mono', monospace;
   }
+
+  .admin-no-scroll {
+    overflow: hidden;
+    height: 100%;
+  }
 }
 
 @layer components {

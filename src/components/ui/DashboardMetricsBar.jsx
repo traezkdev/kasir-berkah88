@@ -76,13 +76,13 @@ const DashboardMetricsBar = ({
   }
 
   return (
-    <div className="bg-background border-b border-border shadow-elevation-1">
+    <div className="bg-[#FFFFFF] dark:bg-[#0F172A] border-b border-border shadow-elevation-1 rounded-xl">
       <div className="px-4 lg:px-6 py-4">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {metricItems?.map((item) => {
             const metric = metrics?.[item?.key];
             return (
-              <div key={item?.key} className={`${item.gradient} text-white rounded-lg p-4 hover:shadow-xl transition-shadow duration-300 ease-in-out overflow-hidden`}>
+              <div key={item?.key} className={`${item.gradient} text-white rounded-xl p-4 hover:shadow-xl transition-shadow duration-300 ease-in-out overflow-hidden`}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="p-2 rounded-md bg-white/20">
                     <Icon name={item?.icon} size={20} className="text-white" />

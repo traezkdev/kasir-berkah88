@@ -8,6 +8,7 @@ import './styles/tailwind.css';
 import ThemeProvider from './components/ThemeProvider';
 
 import { ThemeProvider as LayoutThemeProvider } from './contexts/ThemeContext';
+import { DarkModeProvider } from './contexts/DarkModeContext';
 
 // Easter egg for the developer console
 console.log(
@@ -21,9 +22,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <HelmetProvider>
       <BrowserRouter>
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-          <LayoutThemeProvider>
-            <App />
-          </LayoutThemeProvider>
+          <DarkModeProvider>
+            <LayoutThemeProvider>
+              <App />
+            </LayoutThemeProvider>
+          </DarkModeProvider>
         </ThemeProvider>
       </BrowserRouter>
     </HelmetProvider>

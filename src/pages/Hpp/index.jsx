@@ -69,7 +69,7 @@ const Hpp = ({ headerTitle }) => {
         <div className={theme === 'default' ? "container mx-auto p-4" : ""}>
           <BreadcrumbNavigation className="mb-4" />
           <h1 className="text-2xl font-bold mb-4">Kalkulator HPP (Harga Pokok Penjualan)</h1>
-          <div className={`${theme === 'default' ? 'bg-background-card' : 'bg-transparent'} p-4 rounded-lg shadow`}>
+          <div className="bg-[#FFFFFF] dark:bg-[#0F172A] p-4 rounded-xl shadow">
             {/* Desktop View: Table */}
             <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-border">
