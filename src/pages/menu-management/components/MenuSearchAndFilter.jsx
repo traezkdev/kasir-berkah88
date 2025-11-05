@@ -3,6 +3,7 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { exportToExcel, exportToPdf } from '../../../utils/exportUtils';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 const MenuSearchAndFilter = ({ 
   searchTerm, 
@@ -14,6 +15,7 @@ const MenuSearchAndFilter = ({
   activeFilter,
   onFilterChange
 }) => {
+  const { theme } = useTheme();
   const [showExportMenu, setShowExportMenu] = useState(false);
 
   const filterOptions = [
@@ -37,7 +39,7 @@ const MenuSearchAndFilter = ({
   };
 
   return (
-    <div className="bg-card rounded-lg shadow-elevation-1 border border-border p-4 mb-6">
+    <div className={`${theme === 'default' ? 'bg-card' : 'bg-transparent'} rounded-lg shadow-elevation-1 border border-border p-4 mb-6`}>
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
         {/* Search */}
         <div className="flex-1 lg:max-w-md">

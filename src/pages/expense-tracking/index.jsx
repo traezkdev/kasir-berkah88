@@ -344,7 +344,7 @@ const ExpenseTracking = ({ headerTitle }) => {
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
       {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
       {notification && (
         <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg z-[1002] ${

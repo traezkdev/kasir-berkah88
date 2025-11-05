@@ -414,7 +414,7 @@ const MainDashboard = ({ headerTitle }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
       {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
       <div className={`${theme === 'default' ? 'pt-16' : ''}`}>
         <DashboardMetricsBar metrics={dashboardData.dashboardMetrics} />
@@ -497,7 +497,7 @@ const MainDashboard = ({ headerTitle }) => {
             </div>
 
             {/* Status Banner */}
-            <div className="mt-8 bg-gradient-to-r from-primary/10 to-success/10 rounded-lg p-4 border border-primary/20">
+            <div className={`mt-8 ${theme === 'default' ? 'bg-gradient-to-r from-primary/10 to-success/10' : 'bg-card'} rounded-lg p-4 border border-primary/20`}>
               <div className="flex flex-col items-center text-center sm:flex-row sm:justify-between sm:text-left gap-y-2">
                 {/* Left Part: Icon and Text */}
                 <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3">

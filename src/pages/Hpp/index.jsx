@@ -61,7 +61,7 @@ const Hpp = ({ headerTitle }) => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
       {theme === 'default' && (
         <NavigationHeader headerTitle={headerTitle} />
       )}
@@ -69,7 +69,7 @@ const Hpp = ({ headerTitle }) => {
         <div className={theme === 'default' ? "container mx-auto p-4" : ""}>
           <BreadcrumbNavigation className="mb-4" />
           <h1 className="text-2xl font-bold mb-4">Kalkulator HPP (Harga Pokok Penjualan)</h1>
-          <div className="bg-background-card p-4 rounded-lg shadow">
+          <div className={`${theme === 'default' ? 'bg-background-card' : 'bg-transparent'} p-4 rounded-lg shadow`}>
             {/* Desktop View: Table */}
             <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-border">
@@ -82,7 +82,7 @@ const Hpp = ({ headerTitle }) => {
                     <th scope="col" className="relative px-6 py-3"><span className="sr-only">Edit</span></th>
                   </tr>
                 </thead>
-                <tbody className="bg-card divide-y divide-border">
+                <tbody className={`${theme === 'default' ? 'bg-card' : 'bg-transparent'} divide-y divide-border`}>
                   {Array.isArray(menuItems) && menuItems.map((item) => (
                     <tr key={item.id} className="text-card-foreground">
                       <td className="px-6 py-4 whitespace-nowrap">{item.name}</td>
@@ -119,7 +119,7 @@ const Hpp = ({ headerTitle }) => {
             {/* Mobile View: Cards */}
             <div className="md:hidden space-y-4">
               {Array.isArray(menuItems) && menuItems.map((item) => (
-                <div key={item.id} className="bg-card border border-border p-4 rounded-lg shadow-sm">
+                <div key={item.id} className={`${theme === 'default' ? 'bg-card' : 'bg-transparent'} border border-border p-4 rounded-lg shadow-sm`}>
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="font-bold text-lg text-card-foreground mb-2">{item.name}</h3>
                     {editingId !== item.id && (

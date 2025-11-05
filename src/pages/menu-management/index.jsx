@@ -269,11 +269,12 @@ Powered by Kasir Berkah 88`;
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
       <Helmet>
         <title>Menu Management - Kasir Berkah 88</title>
         <meta name="description" content="Kelola menu dan inventori warung dengan mudah. Tambah, edit, dan hapus menu dengan tracking stok otomatis." />
       </Helmet>
+
 
       {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
       {notification && (

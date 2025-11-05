@@ -1,8 +1,10 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 const RecentTransactionsList = ({ transactions = [], onViewAll }) => {
+  const { theme } = useTheme();
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -37,7 +39,7 @@ const RecentTransactionsList = ({ transactions = [], onViewAll }) => {
 
   if (transactions?.length === 0) {
     return (
-      <div className="bg-card rounded-lg p-6 shadow-elevation-1 border border-border">
+      <div className={`${theme === 'default' ? 'bg-card' : 'bg-transparent'} rounded-lg p-6 shadow-elevation-1 border border-border`}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-text-primary">Transaksi Terbaru</h2>
         </div>
@@ -51,7 +53,7 @@ const RecentTransactionsList = ({ transactions = [], onViewAll }) => {
   }
 
   return (
-    <div className="bg-card rounded-lg p-4 shadow-elevation-1 border border-border">
+    <div className={`${theme === 'default' ? 'bg-card' : 'bg-transparent'} rounded-lg p-4 shadow-elevation-1 border border-border`}>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-text-primary">Transaksi Terbaru</h2>
         <Button
