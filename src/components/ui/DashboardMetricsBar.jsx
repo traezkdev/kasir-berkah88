@@ -76,7 +76,7 @@ const DashboardMetricsBar = ({
   }
 
   return (
-    <div className="bg-[#0F172A] border-b border-border shadow-elevation-1 rounded-xl">
+    <div className="bg-[#FFFFFF] dark:bg-[#0F172A] border-b border-border shadow-elevation-1 rounded-xl">
       <div className="px-4 lg:px-6 py-4">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {metricItems?.map((item) => {
