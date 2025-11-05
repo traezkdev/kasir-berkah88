@@ -353,10 +353,10 @@ const ExpenseTracking = ({ headerTitle }) => {
           {notification.message}
         </div>
       )}
-      <div className={`${theme === 'default' ? '' : ''}`}>
+      <div className={`${theme === 'default' ? 'pt-16' : 'pt-16'}`}>
         <main className="pb-20 lg:pb-8">
           <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 space-y-6" : "space-y-6"}>
-            <BreadcrumbNavigation />
+            <BreadcrumbNavigation className="mt-4" />
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
                 <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">Tracking Pengeluaran</h1>
