@@ -24,7 +24,10 @@ const EmployeeCard = ({ employee }) => (
     </div>
 );
 
+import { useTheme } from '../../contexts/ThemeContext';
+
 const EmployeeListPage = () => {
+    const { theme } = useTheme();
     const [employees, setEmployees] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -59,8 +62,8 @@ const EmployeeListPage = () => {
     }
 
     return (
-        <div className="container mx-auto p-4 pt-24 pb-32">
-            <NavigationHeader title="Struktur Organisasi" />
+        <div className={`container mx-auto p-4 pb-32 ${theme === 'default' ? 'pt-24' : ''}`}>
+            {theme === 'default' && <NavigationHeader title="Struktur Organisasi" />}
             <h2 className="text-3xl font-bold text-center mb-8">Daftar Karyawan</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {employees.map(employee => (

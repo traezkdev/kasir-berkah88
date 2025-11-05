@@ -17,7 +17,10 @@ import { exportToExcel, exportToPdf, prepareCombinedDataForExport } from '../../
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
+import { useTheme } from '../../contexts/ThemeContext';
+
 const BusinessReports = ({ headerTitle }) => {
+  const { theme } = useTheme();
   const [selectedDateRange, setSelectedDateRange] = useState({
     startDate: new Date(),
     endDate: new Date(),
@@ -273,8 +276,8 @@ const BusinessReports = ({ headerTitle }) => {
 
   return (
     <div className="min-h-screen bg-background">
-      <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />
-      <main className="pt-20 pb-24 lg:pb-8">
+      {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
+      <main className={`${theme === 'default' ? 'pt-20' : ''} pb-24 lg:pb-8`}>
         <div className="max-w-7xl mx-auto px-4 lg:px-6">
           {/* Header Section */}
           <div className="mb-6">

@@ -15,7 +15,10 @@ import authFetch from '../../utils/authFetch'; // Add this import
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
+import { useTheme } from '../../contexts/ThemeContext';
+
 const MainDashboard = ({ headerTitle }) => {
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
 
@@ -412,8 +415,8 @@ const MainDashboard = ({ headerTitle }) => {
 
   return (
     <div className="min-h-screen bg-background">
-      <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />
-      <div className="pt-16">
+      {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
+      <div className={`${theme === 'default' ? 'pt-16' : ''}`}>
         <DashboardMetricsBar metrics={dashboardData.dashboardMetrics} />
         <main className="pb-20 lg:pb-8">
           <div className="max-w-7xl mx-auto px-4 lg:px-6">

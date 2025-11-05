@@ -23,7 +23,10 @@ import { startOfWeek, endOfWeek } from 'date-fns';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
+import { useTheme } from '../../contexts/ThemeContext';
+
 const ExpenseTracking = ({ headerTitle }) => {
+  const { theme } = useTheme();
   const [expenses, setExpenses] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -342,7 +345,7 @@ const ExpenseTracking = ({ headerTitle }) => {
 
   return (
     <div className="min-h-screen bg-background">
-      <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} /> 
+      {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
       {notification && (
         <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg z-[1002] ${
           notification.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
@@ -350,7 +353,7 @@ const ExpenseTracking = ({ headerTitle }) => {
           {notification.message}
         </div>
       )}
-      <div className="pt-16">
+      <div className={`${theme === 'default' ? 'pt-16' : ''}`}>
         <main className="pt-6 lg:pt-8 pb-20 lg:pb-8">
           <div className="max-w-7xl mx-auto px-4 lg:px-6 space-y-6">
             <BreadcrumbNavigation />

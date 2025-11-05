@@ -23,7 +23,10 @@ import * as XLSX from 'xlsx';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
+import { useTheme } from '../../contexts/ThemeContext';
+
 const TransactionHistory = ({ headerTitle }) => {
+  const { theme } = useTheme();
   const exportContentRef = useRef(null); // Add this line
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
@@ -483,9 +486,9 @@ const TransactionHistory = ({ headerTitle }) => {
 
     <div className="min-h-screen bg-background">
 
-      <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />
+      {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
 
-      <main className="pt-16 pb-20 lg:pb-8">
+      <main className={`${theme === 'default' ? 'pt-16' : ''} pb-20 lg:pb-8`}>
 
         <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6">
 
