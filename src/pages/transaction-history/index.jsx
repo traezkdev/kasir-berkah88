@@ -484,7 +484,7 @@ const TransactionHistory = ({ headerTitle }) => {
 
   return (
 
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
 
       {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
 
@@ -512,7 +512,7 @@ const TransactionHistory = ({ headerTitle }) => {
 
 
 
-          <div className="space-y-6" ref={exportContentRef}>
+          <div className="space-y-6 bg-card p-4 rounded-lg shadow-md" ref={exportContentRef}>
 
             <div className="bg-card p-4 rounded-lg shadow-md">
               <div className="flex justify-center space-x-4 mb-4">

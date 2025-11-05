@@ -275,7 +275,7 @@ const BusinessReports = ({ headerTitle }) => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
       <main className={`${theme === 'default' ? 'pt-20' : ''} pb-24 lg:pb-8`}>
         <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
@@ -308,7 +308,7 @@ const BusinessReports = ({ headerTitle }) => {
               <p className="text-text-secondary">Memuat data laporan...</p>
             </div>
           ) : reportData ? (
-            <div className="space-y-8 mt-6">
+            <div className="space-y-8 mt-6 bg-card p-4 rounded-lg shadow-md">
               <SalesReportSection data={reportData.sales} />
               <StockReportSection data={reportData.stock} />
               <ExpenseReportSection data={reportData.expenses} />
