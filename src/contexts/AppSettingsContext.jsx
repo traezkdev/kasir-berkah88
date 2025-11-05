@@ -11,6 +11,12 @@ export const AppSettingsProvider = ({ children }) => {
 
   useEffect(() => {
     const fetchHeaderTitle = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.log('No token found, skipping app settings fetch.');
+        return; // Skip fetch if no token
+      }
+
       try {
         const response = await authFetch(`${apiUrl}/api/all-settings`);
         const data = await response.json();
