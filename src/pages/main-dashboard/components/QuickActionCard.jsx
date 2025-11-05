@@ -13,16 +13,16 @@ const QuickActionCard = ({ title, description, icon, route, color = 'primary', d
   };
 
   const colorClasses = {
-    primary: 'border-primary/20 hover:border-primary/30',
-    success: 'border-success/20 hover:border-success/30',
-    accent: 'border-accent/20 hover:border-accent/30',
-    secondary: 'border-secondary/20 hover:border-secondary/30',
-    destructive: 'border-destructive/20 hover:border-destructive/30'
+    primary: 'hover:border-primary',
+    success: 'hover:border-success',
+    accent: 'hover:border-accent',
+    secondary: 'hover:border-secondary',
+    destructive: 'hover:border-destructive'
   };
 
   return (
     <div 
-      className={`bg-white ${colorClasses?.[color]} rounded-lg p-4 border-2 transition-all duration-200 cursor-pointer hover:shadow-elevation-2 ${
+      className={`bg-card border border-border rounded-lg p-4 transition-all duration-200 cursor-pointer hover:shadow-elevation-2 ${colorClasses?.[color]} ${
         disabled ? 'opacity-50 cursor-not-allowed' : ''
       }`}
       onClick={handleClick}
