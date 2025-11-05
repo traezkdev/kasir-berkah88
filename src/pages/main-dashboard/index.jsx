@@ -10,7 +10,7 @@ import RecentTransactionsList from './components/RecentTransactionsList';
 import BusinessSummaryCard from './components/BusinessSummaryCard';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
-import DarkModeToggle from '../../components/ui/DarkModeToggle';
+// import DarkModeToggle from '../../components/ui/DarkModeToggle';
 import authFetch from '../../utils/authFetch'; // Add this import
 
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -533,7 +533,7 @@ const MainDashboard = ({ headerTitle }) => {
             </div>
 
             <div className="mt-8 flex flex-col justify-center items-center">
-              
+              {/* <DarkModeToggle /> */}
               <p className="mt-2 text-sm text-text-secondary">Website App ini di buat oleh M Alfin Firdaus</p>
             </div>
           </div>
