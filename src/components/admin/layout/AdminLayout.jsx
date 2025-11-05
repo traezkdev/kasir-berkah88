@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
@@ -7,6 +7,13 @@ import { useAppSettings } from '../../../contexts/AppSettingsContext';
 const AdminLayout = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const { headerTitle } = useAppSettings();
+
+  useEffect(() => {
+    document.body.classList.add('admin-no-scroll');
+    return () => {
+      document.body.classList.remove('admin-no-scroll');
+    };
+  }, []);
 
   const toggleSidebar = () => {
     setSidebarOpen(!isSidebarOpen);

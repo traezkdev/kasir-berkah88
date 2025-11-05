@@ -39,7 +39,7 @@ const RecentTransactionsList = ({ transactions = [], onViewAll }) => {
 
   if (transactions?.length === 0) {
     return (
-      <div className={`${theme === 'default' ? 'bg-card' : 'bg-transparent'} rounded-lg p-6 shadow-elevation-1 border border-border`}>
+      <div className="bg-white rounded-lg p-6 shadow-elevation-1 border border-border">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-text-primary">Transaksi Terbaru</h2>
         </div>
@@ -53,7 +53,7 @@ const RecentTransactionsList = ({ transactions = [], onViewAll }) => {
   }
 
   return (
-    <div className={`${theme === 'default' ? 'bg-card' : 'bg-transparent'} rounded-lg p-4 shadow-elevation-1 border border-border`}>
+    <div className="bg-white rounded-lg p-4 shadow-elevation-1 border border-border">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-text-primary">Transaksi Terbaru</h2>
         <Button
