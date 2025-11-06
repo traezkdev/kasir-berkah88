@@ -16,7 +16,7 @@ const StickyThemeSwitcher = () => {
   return (
     <button
       onClick={handleSwitchToAdminTheme}
-      className="fixed bottom-16 right-4 bg-primary text-white p-3 rounded-full shadow-lg hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary-dark z-50"
+      className="hidden md:block fixed bottom-16 right-4 bg-primary text-white p-3 rounded-full shadow-lg hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary-dark z-50"
       aria-label="Switch to Admin Theme"
     >
       <FaPalette className="h-6 w-6" />
