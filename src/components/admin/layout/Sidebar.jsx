@@ -29,6 +29,10 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
             <FaClipboardList className="mr-3" />
             Riwayat Transaksi
           </NavLink>
+          <NavLink to="/order-confirmation" className={({ isActive }) => `${navLinkClasses} ${isActive ? activeLinkClasses : ''}`} onClick={toggleSidebar}>
+            <FaClipboardList className="mr-3" />
+            Konfirmasi Pesanan
+          </NavLink>
           <NavLink to="/business-reports" className={({ isActive }) => `${navLinkClasses} ${isActive ? activeLinkClasses : ''}`} onClick={toggleSidebar}>
             <FaChartLine className="mr-3" />
             Laporan Bisnis
