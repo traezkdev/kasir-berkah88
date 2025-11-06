@@ -24,14 +24,14 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl })
           alt={item.name}
           className="w-full h-32 object-cover"
         />
-        {item.discount > 0 && (
-          <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-            Diskon {item.discount * 100}%
+        {!!item.is_featured && (
+          <span className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center z-10">
+            <Icon name="Star" size={14} className="mr-1 text-yellow-400" fill="currentColor" /> Unggulan
           </span>
         )}
-        {item.is_featured && (
-          <span className="absolute top-2 left-2 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center">
-            <Icon name="Star" size={14} className="mr-1" /> Unggulan
+        {item.discount > 0 && (
+          <span className={`absolute ${!!item.is_featured ? 'top-10' : 'top-2'} right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10`}>
+            Diskon {item.discount * 100}%
           </span>
         )}
       </div>
