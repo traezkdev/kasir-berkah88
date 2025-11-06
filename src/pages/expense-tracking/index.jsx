@@ -403,17 +403,17 @@ const ExpenseTracking = ({ headerTitle }) => {
       {/* Bulk Delete Confirmation Modal */}
       {showBulkDeleteConfirmModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1002] p-4">
-          <div className="bg-white rounded-lg shadow-elevation-3 max-w-md w-full">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-elevation-3 max-w-md w-full">
             <div className="p-6">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="p-2 bg-destructive/10 rounded-lg">
                   <Icon name="AlertTriangle" size={24} className="text-destructive" />
                 </div>
-                <h3 className="text-lg font-semibold text-text-primary">Konfirmasi Hapus Pengeluaran</h3>
+                <h3 className="text-lg font-semibold text-text-primary dark:text-white">Konfirmasi Hapus Pengeluaran</h3>
               </div>
               
               <div className="mb-6">
-                <p className="text-text-secondary mb-3">
+                <p className="text-text-secondary dark:text-gray-300 mb-3">
                   Apakah Anda yakin ingin menghapus semua pengeluaran? Tindakan ini tidak dapat dibatalkan.
                 </p>
                 <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3 mb-4">
@@ -427,7 +427,7 @@ const ExpenseTracking = ({ headerTitle }) => {
                 
                 {/* Password Input */}
                 <div>
-                  <label htmlFor="password-confirm" className="text-sm font-medium text-text-primary">
+                  <label htmlFor="password-confirm" className="text-sm font-medium text-text-primary dark:text-gray-300">
                     Masukkan kata sandi untuk konfirmasi:
                   </label>
                   <Input
