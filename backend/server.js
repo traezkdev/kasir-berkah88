@@ -164,7 +164,68 @@ app.put('/api/menu-items/reorder', authenticateToken, authorizeRoles('admin'), a
 
 // Update a menu item
 app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'), upload.single('image'), async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        let itemData;
+        let image_url = null;
 
+        if (req.file) {
+            // If image is uploaded, data comes in req.body.data as JSON string
+            itemData = JSON.parse(req.body.data);
+            image_url = `/public/uploads/${req.file.filename}`;
+        } else {
+            // If no new image, data comes directly in req.body as JSON
+            itemData = req.body;
+        }
+
+        const { name, price, stock, category, hpp, discount, is_featured } = itemData;
+
+        // Fetch current item data to get old image_url if no new image is uploaded
+        if (!req.file) {
+            const [currentRows] = await db.query('SELECT image_url FROM menu_items WHERE id = ?', [id]);
+            if (currentRows.length > 0) {
+                image_url = currentRows[0].image_url;
+            }
+        } else {
+            // If a new image is uploaded, delete the old one
+            const [oldImageRows] = await db.query('SELECT image_url FROM menu_items WHERE id = ?', [id]);
+            if (oldImageRows.length > 0 && oldImageRows[0].image_url) {
+                const oldImagePath = path.join(__dirname, oldImageRows[0].image_url);
+                if (fs.existsSync(oldImagePath)) {
+                    fs.unlinkSync(oldImagePath);
+                }
+            }
+        }
+
+        // Ensure is_featured is always an integer 0 or 1
+        const final_is_featured = is_featured ? 1 : 0;
+
+        const sql = `UPDATE menu_items SET
+           name = COALESCE(?, name),
+           price = COALESCE(?, price),
+           stock = COALESCE(?, stock),
+           category = COALESCE(?, category),
+           image_url = COALESCE(?, image_url),
+           hpp = COALESCE(?, hpp),
+           discount = COALESCE(?, discount),
+           is_featured = COALESCE(?, is_featured)
+           WHERE id = ?`;
+        const params = [name, price, stock, category, image_url, hpp, discount, final_is_featured, id];
+        const [result] = await db.query(sql, params);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ "error": "Menu item not found" });
+        }
+
+        res.json({
+            "message": "success",
+            "data": { id, ...itemData, image_url },
+            "changes": result.affectedRows
+        });
+    } catch (err) {
+        console.error("Error updating menu item:", err);
+        res.status(400).json({ "error": err.message });
+    }
 });
 
 // Delete a menu item
