@@ -107,7 +107,7 @@ const ExpenseHistoryTable = ({
 
   if (expenses?.length === 0 && !isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow-elevation-2 border border-slate-200">
+      <div className="bg-card rounded-lg shadow-md border dark:bg-dark-card dark:border-dark-border dark:shadow-dark-md">
         <div className="p-8 text-center">
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
             <Icon name="Receipt" size={32} className="text-text-secondary" />
@@ -354,7 +354,7 @@ const ExpenseHistoryTable = ({
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
-          <div className="bg-white rounded-lg shadow-elevation-3 max-w-md w-full">
+          <div className="bg-card dark:bg-dark-card rounded-lg shadow-elevation-3 max-w-md w-full">
             <div className="p-6">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="p-2 bg-destructive/10 rounded-lg">
@@ -390,7 +390,7 @@ const ExpenseHistoryTable = ({
       {/* Bulk Delete Confirmation Modal */}
       {showBulkDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
-          <div className="bg-white rounded-lg shadow-elevation-3 max-w-md w-full">
+          <div className="bg-card dark:bg-dark-card rounded-lg shadow-elevation-3 max-w-md w-full">
             <div className="p-6">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="p-2 bg-destructive/10 rounded-lg">
