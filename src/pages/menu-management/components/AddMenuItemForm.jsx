@@ -123,7 +123,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
   };
 
   return (
-    <div className={`${theme === 'default' ? 'bg-card' : 'bg-transparent'} rounded-lg shadow-elevation-1 border border-border p-6 mb-6`}>
+    <div className="bg-card rounded-lg shadow-elevation-1 border border-border p-6 mb-6">
       <div className="flex items-center space-x-3 mb-6">
         <div className="p-2 bg-primary/10 rounded-lg">
           <Icon name={isEditing ? "Edit" : "Plus"} size={20} className="text-primary" />
