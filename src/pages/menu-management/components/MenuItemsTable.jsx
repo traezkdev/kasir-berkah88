@@ -3,6 +3,7 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 const MenuItemsTable = ({ 
   menuItems, 
@@ -14,6 +15,7 @@ const MenuItemsTable = ({
   onEditItem,
   onMoveItem
 }) => {
+  const { theme } = useTheme();
   const [selectedItems, setSelectedItems] = useState([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
 
