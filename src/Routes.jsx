@@ -75,15 +75,8 @@ const AppRoutes = () => {
         <Route path="/calculator" element={<CalculatorPage />} />
         <Route path="/employee-list" element={<EmployeeListPage />} />
         <Route path="/hpp" element={<Hpp />} />
+        <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
       </Route>
-
-      {/* Cashier Routes */}
-      <Route path="/cashier-dashboard" element={<ProtectedRoute allowedRoles={['kasir']}><CashierDashboard /></ProtectedRoute>} />
-      <Route path="/cashier-dashboard/transaction-history" element={<ProtectedRoute allowedRoles={['kasir']}><CashierTransactionHistory /></ProtectedRoute>} />
-
-      {/* Other User Routes */}
-      <Route path="/sales-transaction-processing" element={<ProtectedRoute allowedRoles={['admin', 'kasir', 'user']}><SalesTransactionProcessing /></ProtectedRoute>} />
-      <Route path="/order-confirmation" element={<ProtectedRoute allowedRoles={['admin', 'kasir', 'user']}><OrderConfirmationPage /></ProtectedRoute>} />
       <Route path="/receipt" element={<ProtectedRoute allowedRoles={['admin', 'user']}><ReceiptPage /></ProtectedRoute>} />
 
       {/* Catch all other routes */}
