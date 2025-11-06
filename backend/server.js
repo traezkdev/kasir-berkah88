@@ -87,7 +87,7 @@ const authorizeRoles = (...roles) => {
 // Get all menu items
 app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir'), async (req, res, next) => {
     try {
-        const sql = "select id, name, price, stock, category, image_url, hpp, discount, updatedAt from menu_items";
+        const sql = "select id, name, price, stock, category, image_url, hpp, discount, is_featured, updatedAt from menu_items";
         const [rows] = await db.query(sql);
         res.json({
             "message": "success",
@@ -101,16 +101,27 @@ app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'g
 // Add a new menu item
 app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin'), upload.single('image'), async (req, res, next) => {
     try {
-        const { id, name, price, stock, category, hpp, discount } = req.body;
-        // Image URL is now derived from the uploaded file
+        let itemData;
+        if (req.file) {
+            // If image is uploaded, data comes in req.body.data as JSON string
+            itemData = JSON.parse(req.body.data);
+        } else {
+            // If no image, data comes directly in req.body as JSON
+            itemData = req.body;
+        }
+
+        const { id, name, price, stock, category, hpp, discount, is_featured } = itemData;
         const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
 
-        const sql = 'INSERT INTO menu_items (id, name, price, stock, category, image_url, hpp, discount) VALUES (?,?,?,?,?,?,?,?)';
-        const params = [id, name, price, stock, category, image_url, hpp, discount || 0];
+        // Ensure is_featured is always an integer 0 or 1
+        const final_is_featured = is_featured ? 1 : 0; // Convert to 1 or 0 explicitly
+
+        const sql = 'INSERT INTO menu_items (id, name, price, stock, category, image_url, hpp, discount, is_featured) VALUES (?,?,?,?,?,?,?,?,?)';
+        const params = [id, name, price, stock, category, image_url, hpp, discount, final_is_featured]; // is_featured is already 0 or 1
         const [result] = await db.query(sql, params);
         res.json({
             "message": "success",
-            "data": { ...req.body, image_url },
+            "data": { ...itemData, image_url },
             "id": result.insertId
         });
     } catch (err) {
@@ -121,27 +132,39 @@ app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin'), 
 // Update a menu item
 app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'), upload.single('image'), async (req, res, next) => {
     try {
-        const { name, price, stock, category, hpp, discount } = req.body;
+        let itemData;
+        if (req.file) {
+            // If image is uploaded, data comes in req.body.data as JSON string
+            itemData = JSON.parse(req.body.data);
+        } else {
+            // If no image, data comes directly in req.body as JSON
+            itemData = req.body;
+        }
+
+        const { name, price, stock, category, hpp, discount, is_featured } = itemData;
         const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
 
-        const sql = `UPDATE menu_items set 
-           name = COALESCE(?,name), 
-           price = COALESCE(?,price), 
-           stock = COALESCE(?,stock), 
-           category = COALESCE(?,category), 
-           image_url = COALESCE(?,image_url), 
-           hpp = COALESCE(?,hpp), 
-           discount = COALESCE(?,discount) 
+        // Ensure is_featured is always an integer 0 or 1
+        const final_is_featured = is_featured ? 1 : 0; // Convert to 1 or 0 explicitly
+
+        const sql = `UPDATE menu_items set
+           name = COALESCE(?,name),
+           price = COALESCE(?,price),
+           stock = COALESCE(?,stock),
+           category = COALESCE(?,category),
+           image_url = COALESCE(?,image_url),
+           hpp = COALESCE(?,hpp),
+           discount = COALESCE(?,discount),
+           is_featured = ?
            WHERE id = ?`;
-        const params = [name, price, stock, category, image_url, hpp, discount, req.params.id];
+        const params = [name, price, stock, category, image_url, hpp, discount, final_is_featured, req.params.id];
         const [result] = await db.query(sql, params);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: "Menu item not found or no changes made." });
         }
 
-        // Fetch the updated item to include the automatically updated 'updatedAt' timestamp
-        const [updatedItemRows] = await db.query("SELECT id, name, price, stock, category, image_url, hpp, discount, updatedAt FROM menu_items WHERE id = ?", [req.params.id]);
+        const [updatedItemRows] = await db.query("SELECT id, name, price, stock, category, image_url, hpp, discount, is_featured, updatedAt FROM menu_items WHERE id = ?", [req.params.id]);
 
         if (updatedItemRows.length > 0) {
             res.json({ message: "success", data: updatedItemRows[0], changes: result.affectedRows });

@@ -306,6 +306,20 @@ const setupDatabase = async () => {
       console.log('Added discount column to menu_items table.');
     }
 
+    // Check and add is_featured column to menu_items if it doesn't exist
+    const checkIsFeaturedColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'menu_items' AND COLUMN_NAME = 'is_featured';
+    `;
+    const addIsFeaturedColumn = `
+      ALTER TABLE menu_items ADD COLUMN is_featured TINYINT(1) DEFAULT 0;
+    `;
+    const [isFeaturedRows] = await connection.query(checkIsFeaturedColumn);
+    if (isFeaturedRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addIsFeaturedColumn);
+      console.log('Added is_featured column to menu_items table.');
+    }
+
     // Check and add user_id column to transactions if it doesn't exist
     const checkUserIdColumn = `
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS

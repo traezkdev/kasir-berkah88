@@ -20,6 +20,7 @@ const EditMenuItemModal = ({
         image_url: menuItem.image_url,
         image: null,
         discount: menuItem.discount ? menuItem.discount.toString() : '0.00', // Add discount
+        is_featured: !!menuItem.is_featured, // Add is_featured and ensure it's a boolean
       };
     }
     return {};
@@ -35,6 +36,7 @@ const EditMenuItemModal = ({
         image_url: menuItem.image_url,
         image: null,
         discount: menuItem.discount ? menuItem.discount.toString() : '0.00', // Add discount
+        is_featured: !!menuItem.is_featured, // Add is_featured and ensure it's a boolean
       });
     } else {
       setFormData({}); // Clear form data when menuItem is null
@@ -46,6 +48,8 @@ const EditMenuItemModal = ({
   const handleFormChange = ({ name, value, files }) => {
     if (name === 'image') {
       setFormData({ ...formData, [name]: files[0] });
+    } else if (name === 'is_featured') {
+      setFormData({ ...formData, [name]: value }); // value here is already boolean from AddMenuItemForm
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -64,6 +68,7 @@ const EditMenuItemModal = ({
       category: formData.category,
       image: formData.image, // Pass the file object if new image selected
       discount: parseFloat(formData.discount || '0.00'), // Add discount
+      is_featured: formData.is_featured, // Add is_featured
     };
     await onSave(menuItem.id, dataToSave);
     onClose(); // Close modal after saving

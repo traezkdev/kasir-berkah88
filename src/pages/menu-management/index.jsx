@@ -75,52 +75,99 @@ const MenuManagement = ({ headerTitle }) => {
   
 
   const handleAddItem = async (itemData) => {
-    const formData = new FormData();
     const newId = `M-${Date.now()}`;
-    formData.append('id', newId);
-    Object.keys(itemData).forEach(key => {
-      formData.append(key, itemData[key]);
-    });
+    const dataToSend = {
+      id: newId,
+      name: itemData.name,
+      price: parseFloat(itemData.price),
+      stock: parseInt(itemData.stock),
+      category: itemData.category,
+      hpp: parseFloat(itemData.hpp || 0),
+      discount: parseFloat(itemData.discount || 0),
+      is_featured: itemData.is_featured ? 1 : 0, // Ensure 0 or 1
+    };
+
+    let body;
+    let headers = {};
+
+    if (itemData.image) {
+      const formData = new FormData();
+      formData.append('image', itemData.image);
+      // Append other data as a JSON string
+      formData.append('data', JSON.stringify(dataToSend));
+      body = formData;
+      // No Content-Type header for FormData, browser sets it automatically
+    } else {
+      // Send as JSON if no image
+      body = JSON.stringify(dataToSend);
+      headers['Content-Type'] = 'application/json';
+    }
 
     try {
       const response = await authFetch(`${apiUrl}/api/menu-items`, {
         method: 'POST',
-        body: formData,
+        headers: headers,
+        body: body,
       });
       const result = await response.json();
       if (result.message === 'success') {
-        fetchMenuItems(); // Refetch to get the item with the new image URL
+        setTimeout(() => {
+          fetchMenuItems();
+        }, 100); 
       } else {
         console.error('Failed to add item:', result.error);
+        showNotification(`Gagal menambah item: ${result.error}`, 'error');
       }
     } catch (error) {
       console.error('Error adding item:', error);
+      showNotification(`Error menambah item: ${error.message}`, 'error');
     }
   };
 
   const handleUpdateItem = async (id, updatedData) => {
-    const formData = new FormData();
-    Object.keys(updatedData).forEach(key => {
-      if (key === 'image' && !updatedData[key]) {
-        // Don't append null or undefined image
-        return;
-      }
-      formData.append(key, updatedData[key]);
-    });
+    const dataToSend = {
+      name: updatedData.name,
+      price: parseFloat(updatedData.price),
+      stock: parseInt(updatedData.stock),
+      category: updatedData.category,
+      hpp: parseFloat(updatedData.hpp || 0),
+      discount: parseFloat(updatedData.discount || 0),
+      is_featured: updatedData.is_featured ? 1 : 0, // Ensure 0 or 1
+    };
+
+    let body;
+    let headers = {};
+
+    if (updatedData.image) {
+      const formData = new FormData();
+      formData.append('image', updatedData.image);
+      // Append other data as a JSON string
+      formData.append('data', JSON.stringify(dataToSend));
+      body = formData;
+    } else {
+      // Send as JSON if no new image
+      body = JSON.stringify(dataToSend);
+      headers['Content-Type'] = 'application/json';
+    }
 
     try {
       const response = await authFetch(`${apiUrl}/api/menu-items/${id}`, {
         method: 'PUT',
-        body: formData,
+        headers: headers,
+        body: body,
       });
       const result = await response.json();
       if (result.message === 'success') {
-        fetchMenuItems(); // Refetch to get the latest data
+        setTimeout(() => {
+          fetchMenuItems();
+        }, 100);
       } else {
         console.error('Failed to update item:', result.error);
+        showNotification(`Gagal memperbarui item: ${result.error}`, 'error');
       }
     } catch (error) {
       console.error('Error updating item:', error);
+      showNotification(`Error memperbarui item: ${error.message}`, 'error');
     }
   };
 
