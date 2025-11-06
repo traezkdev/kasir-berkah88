@@ -354,7 +354,7 @@ const ExpenseHistoryTable = ({
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
-          <div className="bg-white rounded-lg shadow-elevation-3 max-w-md w-full">
+          <div className="bg-card dark:bg-dark-card rounded-lg shadow-elevation-3 max-w-md w-full">
             <div className="p-6">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="p-2 bg-destructive/10 rounded-lg">
@@ -390,7 +390,7 @@ const ExpenseHistoryTable = ({
       {/* Bulk Delete Confirmation Modal */}
       {showBulkDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
-          <div className="bg-white rounded-lg shadow-elevation-3 max-w-md w-full">
+          <div className="bg-card dark:bg-dark-card rounded-lg shadow-elevation-3 max-w-md w-full">
             <div className="p-6">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="p-2 bg-destructive/10 rounded-lg">
