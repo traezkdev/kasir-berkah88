@@ -12,8 +12,11 @@ const apiUrl = import.meta.env.VITE_API_URL;
 
 import { useNavigate } from 'react-router-dom';
 
+import { useTheme } from '../../contexts/ThemeContext';
+
 const SalesTransactionProcessing = ({ headerTitle }) => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const [cart, setCart] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -213,53 +216,51 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <NavigationHeader onToggleSidebar={handleToggleSidebar} headerTitle={headerTitle} />
-      <div className="pt-16">
-        <main className="pt-6 lg:pt-8 pb-20 lg:pb-8">
-          <div className="max-w-7xl mx-auto px-4 lg:px-6 space-y-6">
-            <BreadcrumbNavigation />
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">Transaksi Penjualan</h1>
-                <p className="text-text-secondary mt-1">
-                  Proses transaksi penjualan dengan cepat dan efisien.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <SalesForm 
-                  menuItems={menuItems} 
-                  onIncrementItem={handleIncrementItem} 
-                  onDecrementItem={handleDecrementItem} 
-                  cart={cart} 
-                  userRole={userRole} 
-                  apiUrl={apiUrl} 
-                />
-              </div>
-              <div className="lg:col-span-1">
-                <OrderSummary
-                  cart={cart}
-                  menuItems={menuItems}
-                  onUpdateQuantity={handleUpdateQuantity}
-                  onRemoveFromCart={handleRemoveFromCart}
-                  onClearCart={handleClearCart}
-                  onProcessPayment={handleProcessPayment}
-                  isLoading={isLoading}
-                  isEmployeeMeal={isEmployeeMeal}
-                  setIsEmployeeMeal={setIsEmployeeMeal}
-                  paymentMethod={paymentMethod}
-                  setPaymentMethod={setPaymentMethod}
-                  userRole={userRole}
-                  ignoreStock={ignoreStock}
-                  setIgnoreStock={setIgnoreStock}
-                />
-              </div>
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
+      {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
+      <div className={`${theme === 'default' ? 'pt-16' : ''}`}>
+        <div className={`max-w-7xl mx-auto ${theme === 'default' ? 'px-4' : ''} lg:px-6 space-y-6 py-4 pb-20`}>
+          <BreadcrumbNavigation />
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">Transaksi Penjualan</h1>
+              <p className="text-text-secondary mt-1">
+                Proses transaksi penjualan dengan cepat dan efisien.
+              </p>
             </div>
           </div>
-        </main>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <SalesForm 
+                menuItems={menuItems} 
+                onIncrementItem={handleIncrementItem} 
+                onDecrementItem={handleDecrementItem} 
+                cart={cart} 
+                userRole={userRole} 
+                apiUrl={apiUrl} 
+              />
+            </div>
+            <div className="lg:col-span-1">
+              <OrderSummary
+                cart={cart}
+                menuItems={menuItems}
+                onUpdateQuantity={handleUpdateQuantity}
+                onRemoveFromCart={handleRemoveFromCart}
+                onClearCart={handleClearCart}
+                onProcessPayment={handleProcessPayment}
+                isLoading={isLoading}
+                isEmployeeMeal={isEmployeeMeal}
+                setIsEmployeeMeal={setIsEmployeeMeal}
+                paymentMethod={paymentMethod}
+                setPaymentMethod={setPaymentMethod}
+                userRole={userRole}
+                ignoreStock={ignoreStock}
+                setIgnoreStock={setIgnoreStock}
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
