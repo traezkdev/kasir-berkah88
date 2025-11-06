@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import NavigationHeader from '../../components/ui/NavigationHeader';
+
 import Button from '../../components/ui/Button';
 
 const CalculatorPage = () => {
@@ -77,7 +77,7 @@ const CalculatorPage = () => {
 
     return (
         <div className="container mx-auto p-4 pt-24 pb-32">
-            <NavigationHeader title="Kalkulator" />
+
             <div className="bg-white p-6 rounded-lg shadow-lg max-w-sm mx-auto">
                 <div className="bg-gray-100 rounded-lg p-4 mb-4 text-right min-h-[6rem]">
                     <div className="text-gray-500 text-lg">{displayValue}</div>

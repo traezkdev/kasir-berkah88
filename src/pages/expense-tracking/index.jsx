@@ -353,16 +353,20 @@ const ExpenseTracking = ({ headerTitle }) => {
           {notification.message}
         </div>
       )}
-      <div className={`${theme === 'default' ? 'pt-16' : 'pt-16'}`}>
+      <div className={`${theme === 'default' ? '' : ''}`}>
         <main className="pb-20 lg:pb-8">
           <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 space-y-6" : "space-y-6"}>
-            <BreadcrumbNavigation className="mt-4" />
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">Tracking Pengeluaran</h1>
-                <p className="text-sm text-text-secondary mt-1">
-                  Kelola dan pantau pengeluaran bisnis untuk analisis keuangan yang akurat
-                </p>
+            <div className="mb-6">
+              <BreadcrumbNavigation className="mb-4" />
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h1 className="text-2xl lg:text-3xl font-bold text-text-primary mb-2">
+                    Tracking Pengeluaran
+                  </h1>
+                  <p className="text-text-secondary">
+                    Kelola dan pantau pengeluaran bisnis untuk analisis keuangan yang akurat
+                  </p>
+                </div>
               </div>
             </div>
             <ExpenseSummaryCard {...summaryMetrics} />
