@@ -15,6 +15,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
     category: '', // Changed default to empty
     image: null,
     discount: '', // New discount field
+    is_featured: false, // New is_featured field
   });
   const [categories, setCategories] = useState([]); // State for categories
 
@@ -42,7 +43,10 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
 
   useEffect(() => {
     if (initialData) {
-      setFormData(initialData);
+      setFormData({
+        ...initialData,
+        is_featured: !!initialData.is_featured, // Ensure is_featured is always a boolean
+      });
     } else {
       // Reset form when initialData is cleared (e.g., modal closed)
       setFormData({
@@ -52,6 +56,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
         category: categories.length > 0 ? categories[0].name.toLowerCase() : '',
         image: null,
         discount: '', // Include discount in reset
+        is_featured: false, // Include is_featured in reset
       });
     }
   }, [initialData, categories]);
@@ -74,9 +79,15 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
     }
 
     if (onFormChange) {
-      onFormChange({ name, value, files });
+      if (name === 'is_featured') {
+        onFormChange({ name, value: e.target.checked, files });
+      } else {
+        onFormChange({ name, value, files });
+      }
     } else if (name === 'image') {
       setFormData({ ...formData, [name]: files[0] });
+    } else if (name === 'is_featured') {
+      setFormData({ ...formData, [name]: e.target.checked });
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -130,7 +141,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               type="text"
               name="name"
               placeholder="Contoh: Nasi Gudeg"
-              value={formData?.name}
+              value={formData?.name ?? ''}
               onChange={handleChange}
               required
               className="w-full"
@@ -141,7 +152,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
             <Select
               label="Kategori"
               name="category"
-              value={formData?.category}
+              value={formData?.category ?? ''}
               onChange={handleChange}
               required
               className="w-full"
@@ -155,7 +166,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               type="number"
               name="stock"
               placeholder="0"
-              value={formData?.stock}
+              value={formData?.stock ?? ''}
               onChange={handleChange}
               min="0"
               required
@@ -169,7 +180,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               type="number"
               name="price"
               placeholder="0"
-              value={formData?.price}
+              value={formData?.price ?? ''}
               onChange={handleChange}
               required
               className="w-full"
@@ -181,13 +192,24 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               type="number"
               name="discount"
               placeholder="0.00"
-              value={formData?.discount}
+              value={formData?.discount ?? ''}
               onChange={handleChange}
               min="0"
               max="1"
               step="0.01"
               className="w-full"
             />
+          </div>
+          <div className="col-span-2 flex items-center">
+            <input
+              type="checkbox"
+              id="is_featured"
+              name="is_featured"
+              checked={!!formData?.is_featured}
+              onChange={handleChange}
+              className="mr-2 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+            />
+            <label htmlFor="is_featured" className="text-sm font-medium text-foreground">Menu Unggulan</label>
           </div>
           <div className="col-span-2">
             <label htmlFor="image" className="block text-sm font-medium text-foreground">Gambar Produk</label>
@@ -223,7 +245,15 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               type="button"
               variant="outline"
               onClick={() => {
-                setFormData({ name: '', stock: '', price: '', category: categories.length > 0 ? categories[0].name.toLowerCase() : '', image: null, discount: '' });
+        setFormData({
+          name: '',
+          price: '',
+          stock: '',
+          category: categories.length > 0 ? categories[0].name.toLowerCase() : '',
+          image: null,
+          discount: '',
+          is_featured: false,
+        });
                 setErrors({});
               }}
               iconName="RotateCcw"

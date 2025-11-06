@@ -30,7 +30,8 @@ const setupDatabase = async () => {
         price DECIMAL(10, 2) NOT NULL,
         stock INT NOT NULL,
         category VARCHAR(255),
-        image_url VARCHAR(255)
+      updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      order_index INTEGER DEFAULT 0
       );
     `;
 
@@ -135,6 +136,20 @@ const setupDatabase = async () => {
 
     // Execute the create table statements
     await connection.query(createMenuItemsTable);
+
+    // Check and add order_index column to menu_items if it doesn't exist
+    const checkOrderIndexColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'menu_items' AND COLUMN_NAME = 'order_index';
+    `;
+    const addOrderIndexColumn = `
+      ALTER TABLE menu_items ADD COLUMN order_index INTEGER DEFAULT 0;
+    `;
+    const [orderIndexRows] = await connection.query(checkOrderIndexColumn);
+    if (orderIndexRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addOrderIndexColumn);
+      console.log('Added order_index column to menu_items table.');
+    }
 
     await connection.query(createSettingsTable);
 
@@ -304,6 +319,20 @@ const setupDatabase = async () => {
     if (discountRows[0]['COUNT(*)'] === 0) {
       await connection.query(addDiscountColumn);
       console.log('Added discount column to menu_items table.');
+    }
+
+    // Check and add is_featured column to menu_items if it doesn't exist
+    const checkIsFeaturedColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'menu_items' AND COLUMN_NAME = 'is_featured';
+    `;
+    const addIsFeaturedColumn = `
+      ALTER TABLE menu_items ADD COLUMN is_featured TINYINT(1) DEFAULT 0;
+    `;
+    const [isFeaturedRows] = await connection.query(checkIsFeaturedColumn);
+    if (isFeaturedRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addIsFeaturedColumn);
+      console.log('Added is_featured column to menu_items table.');
     }
 
     // Check and add user_id column to transactions if it doesn't exist

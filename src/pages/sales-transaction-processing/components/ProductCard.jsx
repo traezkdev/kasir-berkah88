@@ -2,7 +2,8 @@ import React from 'react';
 import Button from '../../../components/ui/Button';
 import AppImage from '../../../components/AppImage';
 import { cn } from '../../../utils/cn';
-import { Plus, Minus } from 'lucide-react';
+import { Plus, Minus, Star } from 'lucide-react';
+import Icon from '../../../components/AppIcon';
 
 const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl }) => {
   const itemInCart = cart.find(cartItem => cartItem.id === item.id);
@@ -23,8 +24,13 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl })
           alt={item.name}
           className="w-full h-32 object-cover"
         />
+        {!!item.is_featured && (
+          <span className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center z-10">
+            <Icon name="Star" size={14} className="mr-1 text-yellow-400" fill="currentColor" /> Unggulan
+          </span>
+        )}
         {item.discount > 0 && (
-          <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+          <span className={`absolute ${!!item.is_featured ? 'top-10' : 'top-2'} right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10`}>
             Diskon {item.discount * 100}%
           </span>
         )}

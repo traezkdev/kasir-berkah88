@@ -9,6 +9,14 @@ const SalesForm = ({ menuItems, onIncrementItem, onDecrementItem, cart, userRole
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const sortedMenuItems = filteredMenuItems.sort((a, b) => {
+    // Item unggulan (is_featured: true) muncul lebih dulu
+    if (a.is_featured && !b.is_featured) return -1;
+    if (!a.is_featured && b.is_featured) return 1;
+    // Urutan default jika keduanya unggulan atau tidak unggulan
+    return 0;
+  });
+
   return (
     <div className="bg-card rounded-lg shadow-lg p-6">
       <Input
@@ -19,7 +27,7 @@ const SalesForm = ({ menuItems, onIncrementItem, onDecrementItem, cart, userRole
         className="w-full mb-6"
       />
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {filteredMenuItems.map(item => (
+        {sortedMenuItems.map(item => (
           <ProductCard 
             key={item.id} 
             item={item} 
