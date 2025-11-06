@@ -4,6 +4,7 @@ import Icon from '../../../components/AppIcon';
 import { Checkbox } from '../../../components/ui/Checkbox';
 import Select from '../../../components/ui/Select'; // Import Select
 import authFetch from '../../../utils/authFetch';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -23,6 +24,7 @@ const OrderSummary = ({
   ignoreStock,
   setIgnoreStock
 }) => {
+  const { theme } = useTheme();
   const [ppnRate, setPpnRate] = useState(0.11); // Default PPN rate
   const [isEditingTotal, setIsEditingTotal] = useState(false);
   const [customTotal, setCustomTotal] = useState(null);
@@ -150,7 +152,7 @@ const OrderSummary = ({
   const disablePaymentButton = isLoading || !isCartValid();
 
   return (
-    <div className="bg-card rounded-lg shadow-lg p-6 lg:sticky lg:top-20">
+    <div className={`bg-card rounded-lg shadow-lg p-6 lg:sticky ${theme === 'admin' ? 'lg:top-0' : ''}`}>
       <h2 className="text-xl font-bold text-foreground mb-4">Ringkasan Pesanan</h2>
       
       {cart.length === 0 ? (
