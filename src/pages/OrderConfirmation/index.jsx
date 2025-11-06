@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTheme } from '../../contexts/ThemeContext';
+import NavigationHeader from '../../components/ui/NavigationHeader';
 
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import authFetch from '../../utils/authFetch';
@@ -6,7 +8,8 @@ import OrderCard from './components/OrderCard';
 import ConfirmationModal from '../../components/ui/ConfirmationModal';
 import Button from '../../components/ui/Button'; // Import Button
 
-const OrderConfirmationPage = () => {
+const OrderConfirmationPage = ({ headerTitle }) => {
+    const { theme } = useTheme();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -197,9 +200,8 @@ const OrderConfirmationPage = () => {
     };
 
     return (
-        <div className="container mx-auto p-4">
-
-            <BreadcrumbNavigation className="mb-4" />
+        <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
+            {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
             {notification && (
                 <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg z-[1002] ${
                     notification.type === 'success' ? 'bg-success text-success-foreground' : 'bg-destructive text-destructive-foreground'
@@ -207,65 +209,66 @@ const OrderConfirmationPage = () => {
                     {notification.message}
                 </div>
             )}
-            <div className="bg-card p-6 rounded-lg shadow-lg">
-                <h1 className="text-2xl font-bold mb-4">Manajemen Pesanan Masuk</h1>
-                
-                <div className="border-b border-border mb-4">
-                    <nav className="-mb-px flex justify-around">
-                        <button
-                            onClick={() => setActiveTab('pending')}
-                            className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                                activeTab === 'pending' 
-                                ? 'border-primary text-primary' 
-                                : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
-                            }`}>
-                            Menunggu Konfirmasi
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('accepted')}
-                            className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                                activeTab === 'accepted' 
-                                ? 'border-primary text-primary' 
-                                : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
-                            }`}>
-                            Diterima
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('rejected')}
-                            className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                                activeTab === 'rejected' 
-                                ? 'border-primary text-primary' 
-                                : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
-                            }`}>
-                            Ditolak
-                        </button>
-                    </nav>
-                </div>
-
-                {(activeTab === 'pending' || activeTab === 'rejected' || activeTab === 'accepted') && filteredOrders.length > 0 && (
-                    <div className="flex justify-end mb-4">
-                        <Button
-                            variant="destructive"
-                            onClick={() => openConfirmationModal(activeTab, 'delete', true)}
-                        >
-                            Hapus Semua {activeTab === 'pending' ? 'Menunggu Konfirmasi' : (activeTab === 'rejected' ? 'Ditolak' : 'Diterima')}
-                        </Button>
+            <div className={`${theme === 'default' ? 'pt-20' : ''}`}>
+                <div className={`container mx-auto ${theme === 'default' ? 'px-4' : ''} lg:px-6 space-y-6 py-4 pb-20`}>
+                    <BreadcrumbNavigation className="mb-4" />
+                    <div className="bg-card p-6 rounded-lg shadow-lg">
+                        <h1 className="text-2xl font-bold mb-4">Manajemen Pesanan Masuk</h1>
+                        <div className="border-b border-border mb-4">
+                            <nav className="-mb-px flex justify-around">
+                                <button
+                                    onClick={() => setActiveTab('pending')}
+                                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                                        activeTab === 'pending' 
+                                        ? 'border-primary text-primary' 
+                                        : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
+                                    }`}>
+                                    Menunggu Konfirmasi
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('accepted')}
+                                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                                        activeTab === 'accepted' 
+                                        ? 'border-primary text-primary' 
+                                        : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
+                                    }`}>
+                                    Diterima
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('rejected')}
+                                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                                        activeTab === 'rejected' 
+                                        ? 'border-primary text-primary' 
+                                        : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
+                                    }`}>
+                                    Ditolak
+                                </button>
+                            </nav>
+                        </div>
+                        {(activeTab === 'pending' || activeTab === 'rejected' || activeTab === 'accepted') && filteredOrders.length > 0 && (
+                            <div className="flex justify-end mb-4">
+                                <Button
+                                    variant="destructive"
+                                    onClick={() => openConfirmationModal(activeTab, 'delete', true)}
+                                >
+                                    Hapus Semua {activeTab === 'pending' ? 'Menunggu Konfirmasi' : (activeTab === 'rejected' ? 'Ditolak' : 'Diterima')}
+                                </Button>
+                            </div>
+                        )}
+                        <div>
+                            {renderContent()}
+                        </div>
                     </div>
-                )}
-
-                <div>
-                    {renderContent()}
+                    <ConfirmationModal
+                        isOpen={modalState.isOpen}
+                        onClose={closeConfirmationModal}
+                        onConfirm={handleConfirmAction}
+                        title={modalState.title}
+                        message={modalState.message}
+                        isDestructive={modalState.isDestructive}
+                    />
                 </div>
             </div>
-
-            <ConfirmationModal
-                isOpen={modalState.isOpen}
-                onClose={closeConfirmationModal}
-                onConfirm={handleConfirmAction}
-                title={modalState.title}
-                message={modalState.message}
-                isDestructive={modalState.isDestructive}
-            />
         </div>
     );
 };

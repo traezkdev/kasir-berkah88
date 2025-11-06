@@ -4,12 +4,15 @@ import Routes from "./Routes";
 import ScrollToTop from './components/ScrollToTop';
 import ThemeProvider from './components/ThemeProvider';
 import { Toaster } from 'react-hot-toast';
+import { useTheme } from './contexts/ThemeContext';
 import StickyDarkModeToggle from './components/ui/StickyDarkModeToggle';
+import StickyThemeSwitcher from './components/ui/StickyThemeSwitcher';
 import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 function App() {
+  const { theme } = useTheme();
   const location = useLocation();
 
   // Hide floating action button on login and register pages
@@ -51,7 +54,8 @@ function App() {
     <AppSettingsProvider>
       <Toaster position="bottom-center" reverseOrder={false} />
       <Routes />
-      {location.pathname !== '/cashier-dashboard' && <StickyDarkModeToggle />}
+      {location.pathname !== '/cashier-dashboard' && <StickyThemeSwitcher />}
+      {theme === 'default' && location.pathname !== '/cashier-dashboard' && <StickyDarkModeToggle />}
     </AppSettingsProvider>
   );
 }

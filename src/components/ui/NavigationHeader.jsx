@@ -3,12 +3,20 @@ import { Link, useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import Icon from '../AppIcon';
 import Button from './Button';
+import { FaUserShield } from 'react-icons/fa';
+import { useTheme } from '../../contexts/ThemeContext';
 import DarkModeToggle from './DarkModeToggle';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = "Kasir Berkah 88" }) => {
+  const { setTheme } = useTheme();
   const isNativePlatform = Capacitor.isNativePlatform();
+
+  const handleSwitchToAdminTheme = () => {
+    setTheme('admin');
+  };
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState(null);
   const [logoUrl, setLogoUrl] = useState(''); // Initialize with empty string
@@ -155,6 +163,15 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
                 </Link>
               ))}
             </nav>
+            <div className="p-4">
+              <button
+                onClick={handleSwitchToAdminTheme}
+                className="flex items-center space-x-3 px-3 py-3 rounded-md text-sm font-medium transition-colors duration-200 text-text-secondary hover:text-text-primary hover:bg-muted w-full"
+              >
+                <FaUserShield className="h-5 w-5" />
+                <span>Switch to Admin Theme</span>
+              </button>
+            </div>
           </div>
         )}
       </header>

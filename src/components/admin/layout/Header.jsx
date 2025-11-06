@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaUserCircle, FaBars } from 'react-icons/fa';
+import { FaUserCircle, FaBars, FaDesktop } from 'react-icons/fa';
 import authFetch from '../../../utils/authFetch';
 import DarkModeToggle from '../../ui/DarkModeToggle';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const Header = ({ toggleSidebar }) => {
+  const { setTheme } = useTheme();
   const [user, setUser] = useState({ name: 'Admin', avatar_url: null });
+
+  const handleSwitchToDefaultTheme = () => {
+    setTheme('default');
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -36,7 +42,10 @@ const Header = ({ toggleSidebar }) => {
       </div>
       <div className="flex items-center">
         <span className="mr-4 text-gray-600 dark:text-gray-300 hidden sm:block">Selamat datang, {user.username || user.name}</span>
-        <DarkModeToggle />
+        <DarkModeToggle className="mr-2" />
+        <button onClick={handleSwitchToDefaultTheme} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 mr-2">
+          <FaDesktop className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+        </button>
         <Link to="/profile" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
           {user.avatar_url ? (
             <img src={avatarSrc} alt="Profile" className="h-6 w-6 rounded-full object-cover" />

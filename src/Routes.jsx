@@ -76,6 +76,7 @@ const AppRoutes = () => {
         <Route path="/employee-list" element={<EmployeeListPage />} />
         <Route path="/hpp" element={<Hpp />} />
         <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+        <Route path="/sales-transaction-processing" element={<SalesTransactionProcessing />} />
       </Route>
       <Route path="/receipt" element={<ProtectedRoute allowedRoles={['admin', 'user']}><ReceiptPage /></ProtectedRoute>} />
 
