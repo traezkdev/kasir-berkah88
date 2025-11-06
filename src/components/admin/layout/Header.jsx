@@ -42,8 +42,8 @@ const Header = ({ toggleSidebar }) => {
       </div>
       <div className="flex items-center">
         <span className="mr-4 text-gray-600 dark:text-gray-300 hidden sm:block">Selamat datang, {user.username || user.name}</span>
-        <DarkModeToggle />
-        <button onClick={handleSwitchToDefaultTheme} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 ml-2">
+        <DarkModeToggle className="mr-2" />
+        <button onClick={handleSwitchToDefaultTheme} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 mr-2">
           <FaDesktop className="h-6 w-6 text-gray-600 dark:text-gray-300" />
         </button>
         <Link to="/profile" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
