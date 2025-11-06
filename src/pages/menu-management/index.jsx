@@ -270,6 +270,45 @@ Powered by Kasir Berkah 88`;
     setEditingMenuItem(item);
   };
 
+  const handleMoveItem = (id, direction) => {
+    setMenuItems(prevItems => {
+      const newItems = [...prevItems];
+      const index = newItems.findIndex(item => item.id === id);
+
+      if (index === -1) return prevItems;
+
+      if (direction === 'up' && index > 0) {
+        [newItems[index - 1], newItems[index]] = [newItems[index], newItems[index - 1]];
+      } else if (direction === 'down' && index < newItems.length - 1) {
+        [newItems[index + 1], newItems[index]] = [newItems[index], newItems[index + 1]];
+      }
+      // Panggil API untuk menyimpan urutan baru
+      const itemIds = newItems.map(item => item.id);
+      authFetch(`${apiUrl}/api/menu-items/reorder`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ itemIds }),
+      })
+      .then(response => response.json())
+      .then(result => {
+        if (result.message === 'success') {
+          showNotification('Urutan menu berhasil diperbarui!', 'success');
+        } else {
+          console.error('Failed to reorder items:', result.error);
+          showNotification(`Gagal memperbarui urutan menu: ${result.error}`, 'error');
+        }
+      })
+      .catch(error => {
+        console.error('Error reordering items:', error);
+        showNotification(`Error memperbarui urutan menu: ${error.message}`, 'error');
+      });
+
+      return newItems;
+    });
+  };
+
   const filteredMenuItems = menuItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -376,6 +415,7 @@ Powered by Kasir Berkah 88`;
             userRole={userRole}
             apiUrl={apiUrl}
             onEditItem={handleEditMenuItem}
+            onMoveItem={handleMoveItem}
           />
         </main>
 

@@ -141,7 +141,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               type="text"
               name="name"
               placeholder="Contoh: Nasi Gudeg"
-              value={formData?.name}
+              value={formData?.name ?? ''}
               onChange={handleChange}
               required
               className="w-full"
@@ -152,7 +152,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
             <Select
               label="Kategori"
               name="category"
-              value={formData?.category}
+              value={formData?.category ?? ''}
               onChange={handleChange}
               required
               className="w-full"
@@ -166,7 +166,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               type="number"
               name="stock"
               placeholder="0"
-              value={formData?.stock}
+              value={formData?.stock ?? ''}
               onChange={handleChange}
               min="0"
               required
@@ -180,7 +180,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               type="number"
               name="price"
               placeholder="0"
-              value={formData?.price}
+              value={formData?.price ?? ''}
               onChange={handleChange}
               required
               className="w-full"
@@ -192,7 +192,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               type="number"
               name="discount"
               placeholder="0.00"
-              value={formData?.discount}
+              value={formData?.discount ?? ''}
               onChange={handleChange}
               min="0"
               max="1"
