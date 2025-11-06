@@ -875,6 +875,34 @@ app.put("/api/expenses/:id", authenticateToken, authorizeRoles('user', 'admin'),
     }
 });
 
+// Delete all expenses (with master password confirmation)
+app.delete("/api/expenses/all", authenticateToken, authorizeRoles('admin'), async (req, res, next) => {
+    try {
+        const { password } = req.body;
+
+        if (!password) {
+            return res.status(400).json({ error: "Master password is required for this action." });
+        }
+
+        // Fetch the stored master password hash from the settings table
+        const [masterPassRow] = await db.query('SELECT `value` FROM settings WHERE `key` = ?', ['master_password']);
+        const storedMasterPassword = masterPassRow.length > 0 ? masterPassRow[0].value : null;
+
+        // Check if master password exists and if the provided password is valid
+        if (!storedMasterPassword || !(await bcrypt.compare(password, storedMasterPassword))) {
+            return res.status(401).json({ error: "Kata sandi master salah. Silakan coba lagi." });
+        }
+
+        // If password is valid, proceed with deletion
+        const sql = 'TRUNCATE TABLE expenses';
+        await db.query(sql);
+        res.json({ message: "all deleted" });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
 // Delete an expense
 app.delete("/api/expenses/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
     try {
@@ -884,17 +912,6 @@ app.delete("/api/expenses/:id", authenticateToken, authorizeRoles('user', 'admin
             return res.status(404).json({ "error": "Expense not found" });
         }
         res.json({ "message": "deleted", changes: result.affectedRows });
-    } catch (err) {
-        res.status(400).json({ "error": err.message });
-    }
-});
-
-// Delete all expenses
-app.delete("/api/expenses", authenticateToken, authorizeRoles('admin'), async (req, res, next) => {
-    try {
-        const sql = 'TRUNCATE TABLE expenses';
-        await db.query(sql);
-        res.json({ "message": "all deleted" });
     } catch (err) {
         res.status(400).json({ "error": err.message });
     }

@@ -235,22 +235,27 @@ const ExpenseTracking = ({ headerTitle }) => {
   };
 
   const handleConfirmBulkDelete = async () => {
-    if (password !== 'berkah88') {
-      setPasswordError('Kata sandi salah. Silakan coba lagi.');
-      return;
-    }
+    setPasswordError(''); // Reset error message
 
     try {
-      const response = await authFetch(`${apiUrl}/api/expenses`, {
+      const response = await authFetch(`${apiUrl}/api/expenses/all`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
       });
+
       const result = await response.json();
-      if (result.message === 'all deleted') {
+
+      if (response.ok) {
         fetchExpenses(); // Refetch to show an empty list
         showNotification('Semua pengeluaran berhasil dihapus!', 'success');
+        setShowBulkDeleteConfirmModal(false); // Close modal on success
       } else {
+        // Set password error from server response
+        setPasswordError(result.error || 'Gagal menghapus pengeluaran.');
         console.error('Failed to bulk delete expenses:', result.error);
-        showNotification('Gagal menghapus semua pengeluaran.', 'error');
       }
     } catch (error) {
       console.error('Error bulk deleting expenses:', error);

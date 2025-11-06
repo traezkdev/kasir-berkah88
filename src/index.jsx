@@ -5,8 +5,6 @@ import { HelmetProvider } from 'react-helmet-async';
 import App from './App';
 import './styles/tailwind.css';
 
-import ThemeProvider from './components/ThemeProvider';
-
 import { ThemeProvider as LayoutThemeProvider } from './contexts/ThemeContext';
 import { DarkModeProvider } from './contexts/DarkModeContext';
 
@@ -21,13 +19,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <HelmetProvider>
       <BrowserRouter>
-        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
           <DarkModeProvider>
             <LayoutThemeProvider>
               <App />
             </LayoutThemeProvider>
           </DarkModeProvider>
-        </ThemeProvider>
       </BrowserRouter>
     </HelmetProvider>
   </React.StrictMode>

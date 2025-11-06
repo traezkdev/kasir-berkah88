@@ -107,7 +107,7 @@ const ExpenseHistoryTable = ({
 
   if (expenses?.length === 0 && !isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow-elevation-2 border border-slate-200">
+      <div className="bg-card rounded-lg shadow-md border dark:bg-dark-card dark:border-dark-border dark:shadow-dark-md">
         <div className="p-8 text-center">
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
             <Icon name="Receipt" size={32} className="text-text-secondary" />
