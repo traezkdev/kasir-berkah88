@@ -433,6 +433,33 @@ const setupDatabase = async () => {
       console.log('Added restaurant_slogan column to app_settings table.');
     }
 
+    // --- Optimasi: Tambahkan Indeks untuk Peningkatan Performa ---
+    const addIndexIfNotExists = async (connection, tableName, indexName, columns) => {
+      const checkIndexQuery = `
+        SELECT COUNT(1) as count
+        FROM information_schema.statistics 
+        WHERE table_schema = DATABASE() 
+        AND table_name = ? 
+        AND index_name = ?;
+      `;
+      const addIndexQuery = `ALTER TABLE \`${tableName}\` ADD INDEX \`${indexName}\`(${columns});`;
+
+      const [rows] = await connection.query(checkIndexQuery, [tableName, indexName]);
+      if (rows[0].count === 0) {
+        await connection.query(addIndexQuery);
+        console.log(`Added index ${indexName} to ${tableName} table.`);
+      }
+    };
+
+    console.log('Checking and adding indexes for performance optimization...');
+    await addIndexIfNotExists(connection, 'transactions', 'idx_timestamp', 'timestamp');
+    await addIndexIfNotExists(connection, 'transactions', 'idx_user_id', 'user_id');
+    await addIndexIfNotExists(connection, 'expenses', 'idx_date', 'date');
+    await addIndexIfNotExists(connection, 'menu_items', 'idx_category', 'category');
+    await addIndexIfNotExists(connection, 'orders', 'idx_created_at', 'created_at');
+    console.log('Index optimization check complete.');
+    // --- Akhir Optimasi Indeks ---
+
     connection.release();
 
   } catch (error) {

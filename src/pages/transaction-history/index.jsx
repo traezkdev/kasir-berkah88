@@ -27,9 +27,9 @@ import { useTheme } from '../../contexts/ThemeContext';
 
 const TransactionHistory = ({ headerTitle }) => {
   const { theme } = useTheme();
-  const exportContentRef = useRef(null); // Add this line
-  const [transactions, setTransactions] = useState([]);
-  const [filteredTransactions, setFilteredTransactions] = useState([]);
+  const exportContentRef = useRef(null);
+  const [transactions, setTransactions] = useState([]); // Will hold one page of data
+  const [pagination, setPagination] = useState(null); // For pagination info from backend
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
     paymentMethod: 'all',
@@ -40,33 +40,85 @@ const TransactionHistory = ({ headerTitle }) => {
     endDate: ''
   });
   const [isExporting, setIsExporting] = useState(false);
-  const [userRole, setUserRole] = useState(null); // New state for user role
+  const [userRole, setUserRole] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(20);
-  
+  const itemsPerPage = 20; // Fixed to match backend
+
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState(null);
-  const [chartFilterType, setChartFilterType] = useState('daily'); // New state for chart filter
-  const [currentDailyDate, setCurrentDailyDate] = useState(new Date()); // State for current date in daily view
+  const [chartFilterType, setChartFilterType] = useState('daily');
+  const [currentDailyDate, setCurrentDailyDate] = useState(new Date());
 
+  const navigate = useNavigate();
 
-  const navigate = useNavigate(); // Initialize useNavigate
+  // Load transactions from API based on page and filters
+  const fetchTransactions = async (page) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const params = new URLSearchParams({
+      page: page,
+      limit: itemsPerPage,
+    });
+    if (dateRange.startDate) {
+        params.append('startDate', new Date(dateRange.startDate).toISOString().split('T')[0]);
+    }
+    if (dateRange.endDate) {
+        params.append('endDate', new Date(dateRange.endDate).toISOString().split('T')[0]);
+    }
+
+    try {
+      const response = await authFetch(`${apiUrl}/api/transactions?${params.toString()}`);
+      const data = await response.json();
+      if (data.message === 'success') {
+        const parsedTransactions = data.data.map(t => ({
+          ...t,
+          timestamp: new Date(t.timestamp),
+          items: Array.isArray(t.items) ? t.items : JSON.parse(t.items || '[]')
+        }));
+        setTransactions(parsedTransactions);
+        setPagination(data.pagination);
+      } else {
+        console.error('Failed to fetch transactions:', data.error);
+        setTransactions([]);
+        setPagination(null);
+      }
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      setTransactions([]);
+      setPagination(null);
+    }
+  };
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  
+  useEffect(() => {
+    fetchTransactions(currentPage);
+  }, [currentPage, dateRange]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = JSON.parse(atob(token.split('.')[1]));
+        setUserRole(decodedToken.role);
+      } catch (e) {
+        console.error("Error decoding token in TransactionHistory:", e);
+        setUserRole(null);
+      }
+    } else {
+      setUserRole(null);
+    }
+  }, []);
+
   const handleTransactionClick = (transaction) => {
     setSelectedTransaction(transaction);
     setIsReceiptModalOpen(true);
@@ -98,7 +150,7 @@ const TransactionHistory = ({ headerTitle }) => {
       });
       const data = await response.json();
       if (data.message === 'success') {
-        fetchTransactions(); // Refresh the list
+        fetchTransactions(currentPage); // Refresh the current page
         handleCloseEditModal();
       } else {
         console.error('Failed to update transaction:', data.error);
@@ -108,75 +160,31 @@ const TransactionHistory = ({ headerTitle }) => {
     }
   };
 
-
-  // Load transactions from API
-  const fetchTransactions = async () => { // Moved outside useEffect
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    try {
-      const response = await authFetch(`${apiUrl}/api/transactions`);
-      const data = await response.json();
-      if (data.message === 'success') {
-        const parsedTransactions = data.data.map(t => ({
-          ...t,
-          timestamp: new Date(t.timestamp),
-          items: Array.isArray(t.items) ? t.items : JSON.parse(t.items || '[]')
-        }));
-        setTransactions(parsedTransactions);
-      } else {
-        console.error('Failed to fetch transactions:', data.error);
-        setTransactions([]); // Set to empty array on failure
-      }
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
-      setTransactions([]); // Set to empty array on network error
-    }
-  };
-
-  useEffect(() => {
-    fetchTransactions();
-
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const decodedToken = JSON.parse(atob(token.split('.')[1]));
-        setUserRole(decodedToken.role);
-      } catch (e) {
-        console.error("Error decoding token in TransactionHistory:", e);
-        setUserRole(null);
-      }
-    } else {
-      setUserRole(null);
-    }
-  }, []);
-
-  
-
-  // Filter transactions based on search, filters, and date range
-  const applyFilters = useMemo(() => {
+  // Client-side filtering is now applied only on the current page's data
+  const currentItems = useMemo(() => {
     let filtered = [...transactions];
 
     // Search filter
     if (searchTerm) {
-      filtered = filtered?.filter(transaction => 
-        transaction?.items?.some(item => 
-          item?.name?.toLowerCase()?.includes(searchTerm?.toLowerCase())
+      filtered = filtered.filter(transaction => 
+        transaction.items.some(item => 
+          item.name.toLowerCase().includes(searchTerm.toLowerCase())
         ) || 
-        transaction?.total?.toString()?.includes(searchTerm) ||
-        transaction?.id?.toLowerCase()?.includes(searchTerm?.toLowerCase())
+        transaction.total.toString().includes(searchTerm) ||
+        transaction.id.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Payment method filter
-    if (filters?.paymentMethod !== 'all') {
-      filtered = filtered?.filter(transaction => transaction.payment_method === filters.paymentMethod);
+    if (filters.paymentMethod !== 'all') {
+      filtered = filtered.filter(transaction => transaction.payment_method === filters.paymentMethod);
     }
 
     // Amount range filter
-    if (filters?.amountRange !== 'all') {
-      filtered = filtered?.filter(transaction => {
-        const amount = transaction?.total;
-        switch (filters?.amountRange) {
+    if (filters.amountRange !== 'all') {
+      filtered = filtered.filter(transaction => {
+        const amount = transaction.total;
+        switch (filters.amountRange) {
           case '0-50000':
             return amount >= 0 && amount <= 50000;
           case '50000-100000':
@@ -190,59 +198,24 @@ const TransactionHistory = ({ headerTitle }) => {
         }
       });
     }
-
-    // Date range filter
-    if (dateRange?.startDate || dateRange?.endDate) {
-      filtered = filtered?.filter(transaction => {
-        const transactionDate = new Date(transaction.timestamp);
-        const startDate = dateRange?.startDate ? new Date(dateRange.startDate) : null;
-        const endDate = dateRange?.endDate ? new Date(dateRange.endDate) : null;
-
-        // Normalize transactionDate to start of day for comparison
-        transactionDate.setHours(0, 0, 0, 0);
-
-        if (startDate) startDate.setHours(0, 0, 0, 0);
-        if (endDate) endDate.setHours(23, 59, 59, 999);
-
-        if (startDate && endDate) {
-          return transactionDate >= startDate && transactionDate <= endDate;
-        } else if (startDate) {
-          return transactionDate >= startDate;
-        } else if (endDate) {
-          return transactionDate <= endDate;
-        }
-        return true;
-      });
-    }
-
-    // Sort by timestamp (newest first)
-    filtered?.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
+    // Date range filtering and sorting are now done on the backend.
     return filtered;
-  }, [transactions, searchTerm, filters, dateRange]);
+  }, [transactions, searchTerm, filters]);
 
-  useEffect(() => {
-    setFilteredTransactions(applyFilters);
-  }, [applyFilters]);
-
-  // Calculate summary statistics
+  // Summary stats are now based on the total items from pagination
   const summaryStats = useMemo(() => {
-    const totalTransactions = filteredTransactions?.length;
-    const totalRevenue = filteredTransactions?.filter(t => t.payment_method !== 'Makan Karyawan')?.reduce((sum, t) => sum + parseFloat(t?.total || 0), 0);
-    const employeeMealCount = filteredTransactions?.filter(t => t.payment_method === 'Makan Karyawan')?.length;
+    const totalTransactions = pagination?.totalItems || 0;
+    // Note: The stats below are calculated on the full dataset and would require a separate, unfiltered API call for full accuracy.
+    // For this implementation, we will show the total count from pagination, but revenue/meal count will be for the current page only.
+    const totalRevenueOnPage = transactions.filter(t => t.payment_method !== 'Makan Karyawan').reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+    const employeeMealCountOnPage = transactions.filter(t => t.payment_method === 'Makan Karyawan').length;
 
     return {
       totalTransactions,
-      totalRevenue,
-      employeeMealCount
+      totalRevenue: totalRevenueOnPage,
+      employeeMealCount: employeeMealCountOnPage
     };
-  }, [filteredTransactions]);
-
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = useMemo(() => {
-    return filteredTransactions.slice(indexOfFirstItem, indexOfLastItem);
-  }, [filteredTransactions, indexOfFirstItem, indexOfLastItem]);
+  }, [transactions, pagination]);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -281,7 +254,7 @@ const TransactionHistory = ({ headerTitle }) => {
       });
       const data = await response.json();
       if (data.message === 'deleted') {
-        setTransactions(prev => prev.filter(t => t.id !== transactionId));
+        fetchTransactions(currentPage); // Refetch current page
       } else {
         console.error('Failed to delete transaction:', data.error);
       }
@@ -297,7 +270,11 @@ const TransactionHistory = ({ headerTitle }) => {
       });
       const data = await response.json();
       if (data.message === 'all deleted') {
-        setTransactions([]);
+        if (currentPage !== 1) {
+          setCurrentPage(1);
+        } else {
+          fetchTransactions(1);
+        }
       } else {
         console.error('Failed to clear transactions:', data.error);
       }
@@ -313,9 +290,9 @@ const TransactionHistory = ({ headerTitle }) => {
       // Simulate export process
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      const dataToExport = prepareTransactionDataForExport(filteredTransactions);
+      const dataToExport = prepareTransactionDataForExport(currentItems);
 
-      const totalRevenue = filteredTransactions?.filter(t => !t?.isEmployeeMeal)?.reduce((sum, t) => sum + parseFloat(t?.total || 0), 0);
+      const totalRevenue = currentItems?.filter(t => !t?.isEmployeeMeal)?.reduce((sum, t) => sum + parseFloat(t?.total || 0), 0);
 
       if (format === 'excel') {
         const ws_data = [
@@ -380,7 +357,7 @@ const TransactionHistory = ({ headerTitle }) => {
         ws['!cols'] = max_width.map(w => ({ wch: w + 2 })); // Add some padding
 
         // Add footer with total transactions
-        const totalTransactions = filteredTransactions?.length;
+        const totalTransactions = currentItems?.length;
 
         const footerRowIndex = ws_data.length;
         ws_data.push([]); // Empty row for spacing
@@ -457,7 +434,7 @@ const TransactionHistory = ({ headerTitle }) => {
         doc.save(`riwayat-transaksi-${new Date()?.toISOString()?.split('T')?.[0]}.pdf`);
       }
       
-      console.log(`Exported ${filteredTransactions?.length} transactions as ${format}`);
+      console.log(`Exported ${currentItems?.length} transactions as ${format}`);
     } catch (error) {
 
       console.error('Export failed:', error);
@@ -562,18 +539,31 @@ const TransactionHistory = ({ headerTitle }) => {
 
 
 
-            <BulkActions
+                        <BulkActions
 
-              onClearAllTransactions={handleClearAllTransactions}
 
-              onExportTransactions={handleExportTransactions}
 
-              transactionCount={filteredTransactions?.length}
+                          onClearAllTransactions={handleClearAllTransactions}
 
-              isExporting={isExporting}
-              userRole={userRole}
 
-            />
+
+                          onExportTransactions={handleExportTransactions}
+
+
+
+                          transactionCount={currentItems.length}
+
+
+
+                          isExporting={isExporting}
+
+
+
+                          userRole={userRole}
+
+
+
+                        />
 
 
 
@@ -593,7 +583,7 @@ const TransactionHistory = ({ headerTitle }) => {
 
             <Pagination
               itemsPerPage={itemsPerPage}
-              totalItems={filteredTransactions.length}
+              totalItems={pagination?.totalItems || 0}
               paginate={paginate}
               currentPage={currentPage}
             />
