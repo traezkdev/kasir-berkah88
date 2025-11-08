@@ -80,11 +80,14 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
   });
 
   const subtotalAmount = transaction.items.reduce((sum, item) => {
-    const discountedPrice = Number(item.price) * (1 - (Number(item.discount) || 0));
-    return sum + (discountedPrice * Number(item.quantity));
+    const itemPrice = Number(item.price) || 0;
+    const itemQuantity = Number(item.quantity) || 0;
+    // Assuming item.price is the discounted price, so we just sum it up
+    return sum + (itemPrice * itemQuantity);
   }, 0);
 
-
+  // Calculate PPN based on the difference between total and the corrected subtotal
+  const ppnAmount = transaction.total - subtotalAmount;
 
   return (
     <>
@@ -115,30 +118,45 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
             <h3 className="font-semibold mb-2 text-gray-900">Detail Item:</h3>
             <div className="space-y-2">
               {transaction.items.map((item) => {
-                const originalPrice = Number(item.price) * Number(item.quantity);
-                const discountedPrice = originalPrice * (1 - (item.discount || 0));
+                // item.price is the discounted price per unit.
+                const discountedLinePrice = (Number(item.price) || 0) * (Number(item.quantity) || 0);
+                
+                // Calculate the original price for display purposes by reversing the discount.
+                const originalLinePrice = item.discount > 0 && (1 - Number(item.discount)) > 0
+                  ? discountedLinePrice / (1 - Number(item.discount))
+                  : discountedLinePrice;
+
                 return (
                   <div key={item.id} className="flex justify-between text-sm">
                     <span className="text-gray-900">
                       {item.name} <span className="text-gray-500">x{item.quantity}</span>
                       {item.discount > 0 && (
-                        <span className="text-red-500 ml-2">({item.discount * 100}% Diskon)</span>
+                        <span className="text-red-500 ml-2">({(item.discount * 100).toFixed(0)}% Diskon)</span>
                       )}
                     </span>
                     <span className="text-gray-900">
                       {item.discount > 0 && (
-                        <span className="line-through text-gray-500 mr-1">Rp {originalPrice.toLocaleString("id-ID")}</span>
+                        <span className="line-through text-gray-500 mr-1">
+                          Rp {originalLinePrice.toLocaleString("id-ID")}
+                        </span>
                       )}
-                      Rp {discountedPrice.toLocaleString("id-ID")}
+                      Rp {discountedLinePrice.toLocaleString("id-ID")}
                     </span>
                   </div>
                 );
-              })}            </div>
+              })}
+            </div>
             <div className="border-b border-dashed border-gray-400 my-4"></div>
             <div className="flex justify-between font-semibold text-sm mb-2">
               <span className="text-gray-900">Subtotal:</span>
               <span className="text-gray-900">Rp {Number(subtotalAmount).toLocaleString("id-ID")}</span>
             </div>
+            {ppnAmount > 0 && (
+              <div className="flex justify-between font-semibold text-sm mb-2">
+                <span className="text-gray-900">PPN:</span>
+                <span className="text-gray-900">Rp {ppnAmount.toLocaleString("id-ID")}</span>
+              </div>
+            )}
             <div className="flex justify-between font-semibold">
               <span className="text-lg text-gray-900">TOTAL:</span>
               <span className="text-lg text-black">Rp {Number(transaction.total).toLocaleString("id-ID")}</span>
