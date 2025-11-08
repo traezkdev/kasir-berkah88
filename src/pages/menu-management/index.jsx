@@ -9,6 +9,7 @@ import MenuItemsTable from './components/MenuItemsTable';
 import MenuSummaryCards from './components/MenuSummaryCards';
 import MenuSearchAndFilter from './components/MenuSearchAndFilter';
 import EditMenuItemModal from './components/EditMenuItemModal';
+import Pagination from '../../components/ui/Pagination'; // Add this import
 
 import Button from '../../components/ui/Button';
 import authFetch from '../../utils/authFetch'; // Add this import
@@ -26,6 +27,9 @@ const MenuManagement = ({ headerTitle }) => {
   const [userRole, setUserRole] = useState(null); // New state for user role
   const [notification, setNotification] = useState(null);
   const [editingMenuItem, setEditingMenuItem] = useState(null); // State for item being edited
+  const [pagination, setPagination] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   const showNotification = (message, type) => {
     setNotification({ message, type });
@@ -34,30 +38,46 @@ const MenuManagement = ({ headerTitle }) => {
     }, 3000); // Hide after 3 seconds
   };
 
-  const fetchMenuItems = async () => { // Moved outside useEffect
+  const fetchMenuItems = async (page, filter) => {
     const token = localStorage.getItem('token');
     if (!token) return;
     setIsLoading(true);
+
+    const params = new URLSearchParams({
+      page: page,
+      limit: itemsPerPage,
+    });
+    
+    // Only add category filter if it's one of the specific categories for the backend
+    if (['makanan', 'minuman', 'lainnya'].includes(filter)) {
+      params.append('category', filter);
+    }
+
     try {
-      const response = await authFetch(`${apiUrl}/api/menu-items`);
+      const response = await authFetch(`${apiUrl}/api/menu-items?${params.toString()}`);
       const data = await response.json();
       if (data.message === 'success') {
         setMenuItems(data.data);
+        setPagination(data.pagination);
       } else {
         console.error('Failed to fetch menu items:', data.error);
         setMenuItems([]);
+        setPagination(null);
       }
     } catch (error) {
       console.error('Error fetching menu items:', error);
       setMenuItems([]);
+      setPagination(null);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchMenuItems();
+    fetchMenuItems(currentPage, activeFilter);
+  }, [currentPage, activeFilter]);
 
+  useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
       try {
@@ -111,9 +131,9 @@ const MenuManagement = ({ headerTitle }) => {
       });
       const result = await response.json();
       if (result.message === 'success') {
-        setTimeout(() => {
-          fetchMenuItems();
-        }, 100); 
+        fetchMenuItems(1, 'all');
+        setCurrentPage(1);
+        setActiveFilter('all');
       } else {
         console.error('Failed to add item:', result.error);
         showNotification(`Gagal menambah item: ${result.error}`, 'error');
@@ -158,9 +178,7 @@ const MenuManagement = ({ headerTitle }) => {
       });
       const result = await response.json();
       if (result.message === 'success') {
-        setTimeout(() => {
-          fetchMenuItems();
-        }, 100);
+        fetchMenuItems(currentPage, activeFilter);
       } else {
         console.error('Failed to update item:', result.error);
         showNotification(`Gagal memperbarui item: ${result.error}`, 'error');
@@ -178,7 +196,7 @@ const MenuManagement = ({ headerTitle }) => {
       });
       const result = await response.json();
       if (result.message === 'deleted') {
-        setMenuItems(prev => prev.filter(item => item.id !== id));
+        fetchMenuItems(currentPage, activeFilter);
       } else {
         console.error('Failed to delete item:', result.error);
       }
@@ -199,7 +217,7 @@ const MenuManagement = ({ headerTitle }) => {
       const successfulDeletes = responses.every(res => res.ok);
 
       if (successfulDeletes) {
-        setMenuItems(prev => prev.filter(item => !ids.includes(item.id)));
+        fetchMenuItems(currentPage, activeFilter);
       } else {
         console.error('Failed to delete some items.');
       }
@@ -266,6 +284,8 @@ Powered by Kasir Berkah 88`;
 
   
 
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
   const handleEditMenuItem = (item) => {
     setEditingMenuItem(item);
   };
@@ -312,7 +332,8 @@ Powered by Kasir Berkah 88`;
   const filteredMenuItems = menuItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
 
-    if (activeFilter === 'all') {
+    // The backend handles category filtering. Here we only handle search and stock status.
+    if (activeFilter === 'all' || ['makanan', 'minuman', 'lainnya'].includes(activeFilter)) {
       return matchesSearch;
     }
     if (activeFilter === 'available') {
@@ -323,16 +344,6 @@ Powered by Kasir Berkah 88`;
     }
     if (activeFilter === 'out') {
       return matchesSearch && item.stock === 0;
-    }
-    // Add category filters
-    if (activeFilter === 'makanan') {
-      return matchesSearch && item.category === 'makanan';
-    }
-    if (activeFilter === 'minuman') {
-      return matchesSearch && item.category === 'minuman';
-    }
-    if (activeFilter === 'lainnya') {
-      return matchesSearch && item.category === 'lainnya';
     }
     return false;
   });
@@ -417,6 +428,16 @@ Powered by Kasir Berkah 88`;
             onEditItem={handleEditMenuItem}
             onMoveItem={handleMoveItem}
           />
+
+          {/* Pagination */}
+          <div className="mt-6">
+            <Pagination
+              itemsPerPage={itemsPerPage}
+              totalItems={pagination?.totalItems || 0}
+              paginate={paginate}
+              currentPage={currentPage}
+            />
+          </div>
         </main>
 
         {/* Quick Action Panel */}

@@ -84,13 +84,41 @@ const authorizeRoles = (...roles) => {
 
 // --- Menu Items Endpoints ---
 
-// Get all menu items
+// Get all menu items with pagination and category filtering
 app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir'), async (req, res) => {
     try {
-        const [rows] = await db.query('SELECT * FROM menu_items ORDER BY order_index ASC');
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 20;
+        const category = req.query.category;
+        const offset = (page - 1) * limit;
+
+        let whereClause = '';
+        let queryParams = [];
+        if (category) {
+            whereClause = 'WHERE category = ?';
+            queryParams.push(category);
+        }
+
+        // Query to get total count
+        const countSql = `SELECT COUNT(*) as totalItems FROM menu_items ${whereClause}`;
+        const [countRows] = await db.query(countSql, queryParams);
+        const totalItems = countRows[0].totalItems;
+        const totalPages = Math.ceil(totalItems / limit);
+
+        // Query to get paginated data
+        const dataSql = `SELECT * FROM menu_items ${whereClause} ORDER BY order_index ASC LIMIT ? OFFSET ?`;
+        const [rows] = await db.query(dataSql, [...queryParams, limit, offset]);
+        
         res.json({
             "message": "success",
-            "data": rows
+            "data": rows,
+            "pagination": {
+                "currentPage": page,
+                "totalPages": totalPages,
+                "totalItems": totalItems,
+                "limit": limit,
+                "category": category || null
+            }
         });
     } catch (err) {
         res.status(500).json({ "error": err.message });
@@ -674,9 +702,20 @@ app.post('/api/app-settings', authenticateToken, authorizeRoles('admin'), upload
 
 // --- Transaction Endpoints ---
 
-// Get all transactions
+// Get all transactions with pagination
 app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir'), async (req, res, next) => {
     try {
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 20;
+        const offset = (page - 1) * limit;
+
+        // Query to get total count of transactions
+        const countSql = 'SELECT COUNT(*) as totalItems FROM transactions';
+        const [countRows] = await db.query(countSql);
+        const totalItems = countRows[0].totalItems;
+        const totalPages = Math.ceil(totalItems / limit);
+
+        // Query to get paginated transactions
         const sql = `
             SELECT 
                 t.*, 
@@ -684,16 +723,25 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
             FROM transactions t
             LEFT JOIN users u ON t.user_id = u.id
             ORDER BY t.timestamp DESC
+            LIMIT ?
+            OFFSET ?
         `;
-        const [rows] = await db.query(sql);
-        // The mysql2 driver with JSON column support will autoparse the string
+        const [rows] = await db.query(sql, [limit, offset]);
+        
         const transactions = rows.map(row => ({
             ...row,
             isEmployeeMeal: row.isEmployeeMeal === 1,
         }));
+
         res.json({
             "message": "success",
-            "data": transactions
+            "data": transactions,
+            "pagination": {
+                "currentPage": page,
+                "totalPages": totalPages,
+                "totalItems": totalItems,
+                "limit": limit
+            }
         });
     } catch (err) {
         res.status(500).json({ "error": err.message });
@@ -881,21 +929,57 @@ app.delete("/api/transactions", authenticateToken, authorizeRoles('admin'), asyn
 
 // --- Expense Endpoints ---
 
-// Get all expenses
+// Get all expenses with pagination and date range filtering
 app.get("/api/expenses", authenticateToken, authorizeRoles('user', 'admin', 'guest'), async (req, res, next) => {
     try {
-        const sql = `
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 20;
+        const { startDate, endDate } = req.query;
+        const offset = (page - 1) * limit;
+
+        let whereClauses = [];
+        let queryParams = [];
+
+        if (startDate) {
+            whereClauses.push('e.date >= ?');
+            queryParams.push(startDate);
+        }
+        if (endDate) {
+            whereClauses.push('e.date <= ?');
+            queryParams.push(endDate);
+        }
+
+        const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+        // Query to get total count
+        const countSql = `SELECT COUNT(*) as totalItems FROM expenses e ${whereSql}`;
+        const [countRows] = await db.query(countSql, queryParams);
+        const totalItems = countRows[0].totalItems;
+        const totalPages = Math.ceil(totalItems / limit);
+
+        // Query to get paginated data
+        const dataSql = `
             SELECT 
                 e.*, 
                 u.username AS recorded_by
             FROM expenses e
             LEFT JOIN users u ON e.user_id = u.id
+            ${whereSql}
             ORDER BY e.date DESC
+            LIMIT ?
+            OFFSET ?
         `;
-        const [rows] = await db.query(sql);
+        const [rows] = await db.query(dataSql, [...queryParams, limit, offset]);
+        
         res.json({
             "message": "success",
-            "data": rows
+            "data": rows,
+            "pagination": {
+                "currentPage": page,
+                "totalPages": totalPages,
+                "totalItems": totalItems,
+                "limit": limit
+            }
         });
     } catch (err) {
         res.status(500).json({ "error": err.message });
@@ -1155,12 +1239,42 @@ app.post("/api/orders", async (req, res) => {
         res.status(500).json({ error: err.message, stack: err.stack });
     }
 });
-// Get all orders (admin and user access)
+// Get all orders with pagination and status filtering
 app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user'), async (req, res) => {
     try {
-        const sql = "SELECT * FROM orders ORDER BY created_at DESC";
-        const [rows] = await db.query(sql);
-        res.json({ message: "success", data: rows });
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 20;
+        const status = req.query.status;
+        const offset = (page - 1) * limit;
+
+        let whereClause = '';
+        let queryParams = [];
+        if (status) {
+            whereClause = 'WHERE status = ?';
+            queryParams.push(status);
+        }
+
+        // Query to get total count
+        const countSql = `SELECT COUNT(*) as totalItems FROM orders ${whereClause}`;
+        const [countRows] = await db.query(countSql, queryParams);
+        const totalItems = countRows[0].totalItems;
+        const totalPages = Math.ceil(totalItems / limit);
+
+        // Query to get paginated data
+        const dataSql = `SELECT * FROM orders ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+        const [rows] = await db.query(dataSql, [...queryParams, limit, offset]);
+        
+        res.json({
+            "message": "success",
+            "data": rows,
+            "pagination": {
+                "currentPage": page,
+                "totalPages": totalPages,
+                "totalItems": totalItems,
+                "limit": limit,
+                "status": status || null
+            }
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
