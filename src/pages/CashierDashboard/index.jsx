@@ -294,7 +294,7 @@ export default function CashierDashboard() {
           </button>
           <button
             className="p-2 md:px-4 md:py-2 rounded-full md:rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center"
-            onClick={() => navigate('/cashier-dashboard/transaction-history')}
+            onClick={() => navigate('/cashier-transaction-history')}
             title="Riwayat Transaksi"
           >
             <FiList className="h-6 w-6 md:hidden" />
@@ -361,7 +361,7 @@ export default function CashierDashboard() {
                     <div className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">Tersedia</div>
                   )}
                   <img
-                    src={item.image_url ? `${apiUrl}${item.image_url}` : '/public/assets/images/no_image.png'}
+                    src={item.image_url ? `${apiUrl}${item.image_url}` : '/assets/images/no_image.png'}
                     alt={item.name}
                     className="w-full h-32 object-cover rounded-md mb-2"
                   />

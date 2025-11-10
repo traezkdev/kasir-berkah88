@@ -21,6 +21,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 const MenuManagement = ({ headerTitle }) => {
   const { theme } = useTheme();
   const [menuItems, setMenuItems] = useState([]);
+  const [allMenuItems, setAllMenuItems] = useState([]); // State for all menu items
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(false);
@@ -36,6 +37,22 @@ const MenuManagement = ({ headerTitle }) => {
     setTimeout(() => {
       setNotification(null);
     }, 3000); // Hide after 3 seconds
+  };
+
+  const fetchAllMenuItems = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const response = await authFetch(`${apiUrl}/api/menu-items/all`);
+      const data = await response.json();
+      if (data.message === 'success') {
+        setAllMenuItems(data.data);
+      } else {
+        console.error('Failed to fetch all menu items:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching all menu items:', error);
+    }
   };
 
   const fetchMenuItems = async (page, filter) => {
@@ -78,6 +95,7 @@ const MenuManagement = ({ headerTitle }) => {
   }, [currentPage, activeFilter]);
 
   useEffect(() => {
+    fetchAllMenuItems(); // Fetch all items on initial load
     const token = localStorage.getItem('token');
     if (token) {
       try {
@@ -132,6 +150,7 @@ const MenuManagement = ({ headerTitle }) => {
       const result = await response.json();
       if (result.message === 'success') {
         fetchMenuItems(1, 'all');
+        fetchAllMenuItems(); // Refetch all items
         setCurrentPage(1);
         setActiveFilter('all');
       } else {
@@ -179,6 +198,7 @@ const MenuManagement = ({ headerTitle }) => {
       const result = await response.json();
       if (result.message === 'success') {
         fetchMenuItems(currentPage, activeFilter);
+        fetchAllMenuItems(); // Refetch all items
       } else {
         console.error('Failed to update item:', result.error);
         showNotification(`Gagal memperbarui item: ${result.error}`, 'error');
@@ -197,6 +217,7 @@ const MenuManagement = ({ headerTitle }) => {
       const result = await response.json();
       if (result.message === 'deleted') {
         fetchMenuItems(currentPage, activeFilter);
+        fetchAllMenuItems(); // Refetch all items
       } else {
         console.error('Failed to delete item:', result.error);
       }
@@ -218,6 +239,7 @@ const MenuManagement = ({ headerTitle }) => {
 
       if (successfulDeletes) {
         fetchMenuItems(currentPage, activeFilter);
+        fetchAllMenuItems(); // Refetch all items
       } else {
         console.error('Failed to delete some items.');
       }
@@ -245,7 +267,7 @@ const MenuManagement = ({ headerTitle }) => {
   };
 
   const handleShareStock = () => {
-    const availableItems = menuItems.filter(item => item.stock > 0);
+    const availableItems = allMenuItems.filter(item => item.stock > 0); // Use allMenuItems
 
     if (availableItems.length === 0) {
       showNotification('Tidak ada stok yang tersedia untuk dibagikan.', 'error');
@@ -401,7 +423,7 @@ Powered by Kasir Berkah 88`;
           </div>
 
           {/* Summary Cards */}
-          <MenuSummaryCards menuItems={menuItems} />
+          <MenuSummaryCards menuItems={allMenuItems} />
 
           {/* Add Menu Form */}
           <AddMenuItemForm onAddItem={handleAddItem} userRole={userRole} />
@@ -410,7 +432,7 @@ Powered by Kasir Berkah 88`;
           <MenuSearchAndFilter
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
-            menuItems={menuItems}
+            menuItems={allMenuItems}
             onExportData={handleExportData}
             onShareStock={handleShareStock}
             activeFilter={activeFilter}

@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import { FiArrowLeft } from 'react-icons/fi';
 import DarkModeToggle from '../../components/ui/DarkModeToggle';
+import { jwtDecode } from 'jwt-decode';
 
 
 import TransactionFilters from '../transaction-history/components/TransactionFilters';
@@ -137,7 +137,7 @@ const CashierTransactionHistory = ({ headerTitle }) => {
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        const decodedToken = JSON.parse(atob(token.split('.')[1]));
+        const decodedToken = jwtDecode(token);
         setUserRole(decodedToken.role);
       } catch (e) {
         console.error("Error decoding token in CashierTransactionHistory:", e);
@@ -472,7 +472,7 @@ const CashierTransactionHistory = ({ headerTitle }) => {
 
     { label: 'Dashboard Kasir', path: '/cashier-dashboard', isActive: false },
 
-    { label: 'Riwayat Transaksi', path: '/cashier-dashboard/transaction-history', isActive: true }
+    { label: 'Riwayat Transaksi', path: '/cashier-transaction-history', isActive: true }
 
   ];
 
@@ -539,7 +539,7 @@ const CashierTransactionHistory = ({ headerTitle }) => {
               onRowClick={handleTransactionClick}
 
               isMobile={isMobile}
-              userRole="guest"
+              userRole={userRole}
 
             />
 
