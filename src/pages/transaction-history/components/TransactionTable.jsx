@@ -55,6 +55,9 @@ const TransactionTable = ({ transactions, onDeleteTransaction, onEditTransaction
               <th className="px-4 py-3 text-left text-sm font-medium text-text-primary dark:text-gray-100">
                 Kasir
               </th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary dark:text-gray-100">
+                Aksi
+              </th>
 
             </tr>
           </thead>

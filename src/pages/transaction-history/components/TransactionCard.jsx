@@ -207,40 +207,38 @@ const TransactionCard = ({ transaction, onDelete, onEdit, isMobile = false, user
         )}
       </td>
       {showDeleteConfirm && (
-        <td colSpan="6" className="absolute inset-0">
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
-            <div className="bg-card rounded-lg p-6 max-w-md w-full">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 bg-destructive/10 rounded-full">
-                  <Icon name="AlertTriangle" size={20} className="text-destructive" />
-                </div>
-                <h3 className="text-lg font-semibold text-text-primary">
-                  Hapus Transaksi
-                </h3>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
+          <div className="bg-card rounded-lg p-6 max-w-sm w-full">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="p-2 bg-destructive/10 rounded-full">
+                <Icon name="AlertTriangle" size={20} className="text-destructive" />
               </div>
-              <p className="text-text-secondary mb-6">
-                Apakah Anda yakin ingin menghapus transaksi #{transaction?.id}? 
-                Tindakan ini tidak dapat dibatalkan.
-              </p>
-              <div className="flex space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(false); }}
-                  className="flex-1"
-                >
-                  Batal
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={handleDelete}
-                  className="flex-1"
-                >
-                  Hapus
-                </Button>
-              </div>
+              <h3 className="text-lg font-semibold text-text-primary">
+                Hapus Transaksi
+              </h3>
+            </div>
+            <p className="text-text-secondary mb-6">
+              Apakah Anda yakin ingin menghapus transaksi #{transaction?.id}? 
+              Tindakan ini tidak dapat dibatalkan.
+            </p>
+            <div className="flex space-x-3">
+              <Button
+                variant="outline"
+                onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(false); }}
+                className="flex-1"
+              >
+                Batal
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                className="flex-1"
+              >
+                Hapus
+              </Button>
             </div>
           </div>
-        </td>
+        </div>
       )}
     </tr>
   );

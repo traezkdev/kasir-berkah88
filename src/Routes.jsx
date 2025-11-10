@@ -35,7 +35,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     const userRole = decodedToken.role;
 
     if (allowedRoles && !allowedRoles.includes(userRole)) {
-      return <Navigate to="/login" replace />;
+      return <Navigate to="*" replace />;
     }
   } catch (error) {
     console.error("Error decoding token:", error);
@@ -78,7 +78,19 @@ const AppRoutes = () => {
         <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
         <Route path="/sales-transaction-processing" element={<SalesTransactionProcessing />} />
       </Route>
-      <Route path="/receipt" element={<ProtectedRoute allowedRoles={['admin', 'user']}><ReceiptPage /></ProtectedRoute>} />
+
+      {/* Cashier Dashboard Routes */}
+      <Route 
+        element={
+          <ProtectedRoute allowedRoles={['kasir']}>
+            <DynamicLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/cashier-dashboard" element={<CashierDashboard />} />
+        <Route path="/cashier-transaction-history" element={<CashierTransactionHistory />} />
+      </Route>
+      <Route path="/receipt" element={<ProtectedRoute allowedRoles={['admin', 'kasir']}><ReceiptPage /></ProtectedRoute>} />
 
       {/* Catch all other routes */}
       <Route path="*" element={<NotFound />} />

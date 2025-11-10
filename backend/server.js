@@ -125,6 +125,20 @@ app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'g
     }
 });
 
+// Get all menu items without pagination
+app.get("/api/menu-items/all", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res) => {
+    try {
+        const sql = "SELECT * FROM menu_items ORDER BY order_index ASC";
+        const [rows] = await db.query(sql);
+        res.json({
+            "message": "success",
+            "data": rows
+        });
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
 // Add a new menu item
 app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin'), upload.single('image'), async (req, res, next) => {
     try {
