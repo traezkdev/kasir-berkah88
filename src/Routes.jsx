@@ -58,7 +58,7 @@ const AppRoutes = () => {
       {/* Admin Dashboard Routes */}
       <Route 
         element={
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={['admin', 'user']}>
             <DynamicLayout />
           </ProtectedRoute>
         }

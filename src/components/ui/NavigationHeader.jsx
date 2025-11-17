@@ -96,7 +96,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
 
   return (
     <>
-      <header className={`fixed top-0 left-0 right-0 z-[1001] bg-card border-b border-border shadow-elevation-1 ${isNativePlatform ? 'pt-8' : ''}`}>
+      <header className={`fixed top-0 left-0 right-0 z-30 bg-card border-b border-border shadow-elevation-1 ${isNativePlatform ? 'pt-8' : ''}`}>
         <div className="flex items-center justify-between h-16 px-4 lg:px-6">
           {/* Logo Section */}
           <div className="flex items-center space-x-4">
@@ -176,7 +176,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
         )}
       </header>
       {/* Mobile Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 z-1000 bg-card border-t border-border shadow-elevation-2 lg:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-30 bg-card border-t border-border shadow-elevation-2 lg:hidden">
         <nav className="flex items-center justify-around py-2">
           {navigationItems?.slice(0, 5)?.map((item) => (
             <Link
