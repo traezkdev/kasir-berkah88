@@ -90,7 +90,7 @@ const AppRoutes = () => {
         <Route path="/cashier-dashboard" element={<CashierDashboard />} />
         <Route path="/cashier-transaction-history" element={<CashierTransactionHistory />} />
       </Route>
-      <Route path="/receipt" element={<ProtectedRoute allowedRoles={['admin', 'kasir']}><ReceiptPage /></ProtectedRoute>} />
+      <Route path="/receipt" element={<ProtectedRoute allowedRoles={['admin', 'kasir', 'user']}><ReceiptPage /></ProtectedRoute>} />
 
       {/* Catch all other routes */}
       <Route path="*" element={<NotFound />} />
