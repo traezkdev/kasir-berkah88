@@ -92,7 +92,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
   return (
     <>
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity"
+        className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity backdrop-blur-sm"
         onClick={onClose}
       ></div>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
