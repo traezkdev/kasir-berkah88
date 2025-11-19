@@ -1296,7 +1296,7 @@ app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user'), async
 
 // Update an order's status (admin only)
 
-app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'user', 'kasir'), async (req, res) => {
 
     const { status } = req.body;
 
