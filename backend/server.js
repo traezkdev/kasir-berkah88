@@ -197,8 +197,6 @@ app.get("/api/menu-items/all", authenticateToken, authorizeRoles('user', 'admin'
 app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin'), upload.single('image'), async (req, res, next) => {
     let connection;
     try {
-        console.log("POST /api/menu-items req.body:", JSON.stringify(req.body, null, 2));
-        console.log("POST /api/menu-items req.file:", req.file);
         connection = await db.getConnection();
         await connection.beginTransaction();
 
@@ -281,8 +279,6 @@ app.put('/api/menu-items/reorder', authenticateToken, authorizeRoles('admin'), a
 app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'), upload.single('image'), async (req, res, next) => {
     let connection;
     try {
-        console.log("PUT /api/menu-items/:id req.body:", JSON.stringify(req.body, null, 2));
-        console.log("PUT /api/menu-items/:id req.file:", req.file);
         const { id } = req.params;
         connection = await db.getConnection();
         await connection.beginTransaction();
@@ -989,16 +985,17 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
 // Update a transaction
 app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
     try {
-        const { total, ppn, isEmployeeMeal, payment_method } = req.body;
+        const { total, ppn, isEmployeeMeal, payment_method, timestamp } = req.body;
         const { id } = req.params;
 
         const sql = `UPDATE transactions SET 
            total = COALESCE(?, total), 
            ppn = COALESCE(?, ppn), 
            isEmployeeMeal = COALESCE(?, isEmployeeMeal), 
-           payment_method = COALESCE(?, payment_method) 
+           payment_method = COALESCE(?, payment_method),
+           timestamp = COALESCE(?, timestamp) 
            WHERE id = ?`;
-        const params = [total, ppn, isEmployeeMeal ? 1 : 0, payment_method, id];
+        const params = [total, ppn, isEmployeeMeal ? 1 : 0, payment_method, timestamp ? new Date(timestamp) : null, id];
         const [result] = await db.query(sql, params);
 
         if (result.affectedRows === 0) {
@@ -1035,6 +1032,28 @@ app.delete("/api/transactions", authenticateToken, authorizeRoles('admin'), asyn
 
 
 // --- Expense Endpoints ---
+
+// Get all expenses without pagination
+app.get("/api/expenses/all", authenticateToken, authorizeRoles('user', 'admin', 'guest'), async (req, res) => {
+    try {
+        const dataSql = `
+            SELECT 
+                e.*, 
+                u.username AS recorded_by
+            FROM expenses e
+            LEFT JOIN users u ON e.user_id = u.id
+            ORDER BY e.date DESC
+        `;
+        const [rows] = await db.query(dataSql);
+        
+        res.json({
+            "message": "success",
+            "data": rows,
+        });
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
 
 // Get all expenses with pagination and date range filtering
 app.get("/api/expenses", authenticateToken, authorizeRoles('user', 'admin', 'guest'), async (req, res, next) => {

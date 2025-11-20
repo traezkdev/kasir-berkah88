@@ -29,7 +29,7 @@ const MainDashboard = ({ headerTitle }) => {
       const [transRes, menuRes, expenseRes, settingsRes] = await Promise.all([
         authFetch(`${apiUrl}/api/transactions`),
         authFetch(`${apiUrl}/api/menu-items`),
-        authFetch(`${apiUrl}/api/expenses`),
+        authFetch(`${apiUrl}/api/expenses/all`), // Fetch all expenses
         authFetch(`${apiUrl}/api/all-settings`)
       ]);
 
@@ -152,12 +152,9 @@ const MainDashboard = ({ headerTitle }) => {
       const initialCapitalDate = settings?.initial_capital_date ? new Date(settings.initial_capital_date) : null;
       let workingCapital = 0;
   
-      const allTimeTransactions = initialCapitalDate
-        ? transactions.filter(t => new Date(t.timestamp) >= initialCapitalDate)
-        : transactions;
-      const allTimeRelevantExpenses = initialCapitalDate
-        ? expenses.filter(e => new Date(e.date) >= initialCapitalDate)
-        : expenses;
+      // For "All Time" metrics, consider all transactions and expenses regardless of initial_capital_date
+      const allTimeTransactions = transactions; 
+      const allTimeRelevantExpenses = expenses;
   
       const allTimeRevenue = allTimeTransactions
         .filter(t => t.payment_method !== 'Makan Karyawan')

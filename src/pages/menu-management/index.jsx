@@ -125,7 +125,7 @@ const MenuManagement = ({ headerTitle }) => {
       is_featured: itemData.is_featured ? 1 : 0, // Ensure 0 or 1
       options: itemData.options || [], // Include options
     };
-    console.log("handleAddItem payload:", dataToSend); // Debugging log
+    await onAddItem(formData);
 
     let body;
     let headers = {};
@@ -173,12 +173,10 @@ const MenuManagement = ({ headerTitle }) => {
       category: updatedData.category,
       hpp: parseFloat(updatedData.hpp || 0),
       discount: parseFloat(updatedData.discount || 0),
-      is_featured: updatedData.is_featured ? 1 : 0, // Ensure 0 or 1
-      options: updatedData.options || [], // Include options
-    };
-    console.log("handleUpdateItem payload:", dataToSend); // Debugging log
-
-    let body;
+            is_featured: updatedData.is_featured ? 1 : 0, // Ensure 0 or 1
+            options: updatedData.options || [], // Include options
+          };
+          let body;
     let headers = {};
 
     if (updatedData.image) {
