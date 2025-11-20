@@ -789,7 +789,7 @@ app.get("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
 // Create a new transaction
 app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res, next) => {
     try {
-        const { items, total: frontendTotal, ppn: frontendPpn, ignoreStock, cashPaid, change, isEmployeeMeal, payment_method, manual_discount } = req.body;
+        const { items, ignoreStock, cashPaid, change } = req.body;
         const errors = [];
         if (!items) {
             errors.push("No items specified");
@@ -825,6 +825,7 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
                 const newNumber = lastNumber + 1;
                 newTransactionId = 'TRZ' + newNumber.toString().padStart(3, '0');
             } else {
+                // This should not happen if the query is correct, but as a fallback
                 newTransactionId = 'TRZ001';
             }
         } else {
@@ -832,12 +833,13 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
         }
         // --- End Generate New Transaction ID ---
 
-        // Backend calculation for reference or fallback
+        // Define data and sql BEFORE params
+        // Recalculate total and PPN on the backend to ensure accuracy
         let calculatedSubtotal = 0;
-        const itemsWithDiscount = items.map(item => {
+        const itemsWithDiscount = req.body.items.map(item => {
             const discountedPrice = item.price * (1 - (item.discount || 0));
             calculatedSubtotal += discountedPrice * item.quantity;
-            return { ...item, price: discountedPrice };
+            return { ...item, price: discountedPrice }; // Store discounted price in items for consistency
         });
 
         const [ppnSetting] = await db.query("SELECT value FROM settings WHERE `key` = 'ppn'");
@@ -845,29 +847,22 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
         const calculatedPpn = calculatedSubtotal * ppnRate;
         const calculatedTotal = calculatedSubtotal + calculatedPpn;
 
-        // Use frontend's total if provided, otherwise use backend's calculation
-        const finalTotal = frontendTotal !== undefined ? frontendTotal : calculatedTotal;
-        // The stored PPN should reflect the calculated amount based on items, even if total is overridden.
-        const finalPpnAmount = calculatedPpn;
-
-
         const data = {
             id: newTransactionId,
             timestamp: new Date(),
-            items: JSON.stringify(itemsWithDiscount),
-            total: finalTotal,
-            ppn: finalPpnAmount,
-            isEmployeeMeal: isEmployeeMeal ? 1 : 0,
-            payment_method: payment_method || 'Tunai',
-            ignore_stock: ignoreStock ? 1 : 0,
-            cash_paid: cashPaid || 0,
-            change: change || 0,
-            user_id: req.user.userId,
-            manual_discount: manual_discount || 0
+            items: JSON.stringify(itemsWithDiscount), // Store items with discounted prices
+            total: calculatedTotal,
+            ppn: calculatedPpn,
+            isEmployeeMeal: req.body.isEmployeeMeal ? 1 : 0,
+            payment_method: req.body.payment_method || 'Tunai',
+            ignore_stock: req.body.ignoreStock ? 1 : 0,
+            cash_paid: req.body.cashPaid || 0,
+            change: req.body.change || 0,
+            user_id: req.user.userId // Add user_id from authenticated user
         };
-        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock, cash_paid, `change`, user_id, manual_discount) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)';
+        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock, cash_paid, `change`, user_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)';
 
-        const params = [data.id, data.timestamp, data.items, data.total, data.ppn, data.isEmployeeMeal, data.payment_method, data.ignore_stock, data.cash_paid, data.change, data.user_id, data.manual_discount];
+        const params = [data.id, data.timestamp, data.items, data.total, data.ppn, data.isEmployeeMeal, data.payment_method, data.ignore_stock, data.cash_paid, data.change, data.user_id];
         const [result] = await db.query(sql, params);
 
         if (!ignoreStock) {
