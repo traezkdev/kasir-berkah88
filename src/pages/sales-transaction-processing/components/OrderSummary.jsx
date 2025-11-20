@@ -28,11 +28,13 @@ const OrderSummary = ({
   const [ppnRate, setPpnRate] = useState(0.11); // Default PPN rate
   const [isEditingTotal, setIsEditingTotal] = useState(false);
   const [customTotal, setCustomTotal] = useState(null);
+  const [isTotalOverridden, setIsTotalOverridden] = useState(false);
   const [cashPaid, setCashPaid] = useState('');
   const [change, setChange] = useState(0);
   const [moneyShortage, setMoneyShortage] = useState(0);
   const [selectedCashOption, setSelectedCashOption] = useState('custom'); // Default to custom
   const [customCashInput, setCustomCashInput] = useState(''); // For custom input
+  const [manualDiscount, setManualDiscount] = useState(0);
 
   useEffect(() => {
     let currentCashPaid = 0;
@@ -91,11 +93,27 @@ const OrderSummary = ({
     return sum + (discountedPrice * itemQuantity);
   }, 0);
   const tax = subtotal * ppnRate;
-  const total = subtotal + tax;
+  const calculatedTotal = subtotal + tax;
 
   useEffect(() => {
-    setCustomTotal(total);
-  }, [total]);
+    // Setiap kali item di keranjang berubah, override manual dibatalkan
+    setIsTotalOverridden(false);
+  }, [cart]);
+
+  useEffect(() => {
+    // Jika total tidak di-override secara manual, maka ikuti nilai kalkulasi.
+    if (!isTotalOverridden) {
+      setCustomTotal(calculatedTotal);
+    }
+  }, [calculatedTotal, isTotalOverridden]);
+
+  useEffect(() => {
+    if (isTotalOverridden && calculatedTotal > customTotal) {
+      setManualDiscount(calculatedTotal - customTotal);
+    } else {
+      setManualDiscount(0);
+    }
+  }, [isTotalOverridden, calculatedTotal, customTotal]);
 
   const paymentMethodOptions = [
     { value: 'Tunai', label: 'Tunai' },
@@ -208,6 +226,12 @@ const OrderSummary = ({
               <p></p>
               <p>Rp {tax.toLocaleString('id-ID')}</p>
             </div>
+            {manualDiscount > 0 && (
+              <div className="flex justify-between text-red-500">
+                <p>Diskon</p>
+                <p>- Rp {manualDiscount.toLocaleString('id-ID')}</p>
+              </div>
+            )}
             <div className="flex justify-between items-center font-bold text-lg">
               <p>Total</p>
               {isEditingTotal ? (
@@ -218,10 +242,16 @@ const OrderSummary = ({
                     onChange={(e) => setCustomTotal(parseFloat(e.target.value))}
                     className="w-32 text-right border border-input rounded-md px-2 py-1 text-foreground bg-background"
                   />
-                  <Button variant="ghost" size="icon" onClick={() => { setIsEditingTotal(false); setCustomTotal(total); }}>
+                  <Button variant="ghost" size="icon" onClick={() => {
+                    setIsEditingTotal(false);
+                    setIsTotalOverridden(false); // Batalkan override
+                  }}>
                     <Icon name="X" size={16} />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => setIsEditingTotal(false)}>
+                  <Button variant="ghost" size="icon" onClick={() => {
+                    setIsEditingTotal(false);
+                    setIsTotalOverridden(true); // Terapkan override
+                  }}>
                     <Icon name="Check" size={16} />
                   </Button>
                 </div>
@@ -317,6 +347,7 @@ const OrderSummary = ({
                 ppn: ppnRate,
                 cashPaid: paymentMethod === 'Tunai' ? parseFloat(cashPaid) || 0 : 0,
                 change: paymentMethod === 'Tunai' ? change : 0,
+                manual_discount: manualDiscount,
               })} 
               className="w-full"
               loading={isLoading}
