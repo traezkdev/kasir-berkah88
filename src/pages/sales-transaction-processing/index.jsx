@@ -182,6 +182,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       ignoreStock: ignoreStock,
       cashPaid: paymentData.cashPaid,
       change: paymentData.change,
+      manual_discount: paymentData.manual_discount,
     };
 
     try {
