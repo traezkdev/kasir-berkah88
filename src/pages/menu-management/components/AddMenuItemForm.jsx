@@ -101,7 +101,6 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
       return;
     }
     try {
-      console.log("Submitting form data:", formData); // Debugging log
       await onAddItem(formData);
       if (!isEditing) {
         setFormData({

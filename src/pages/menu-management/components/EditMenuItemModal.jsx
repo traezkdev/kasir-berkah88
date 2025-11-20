@@ -61,7 +61,6 @@ const EditMenuItemModal = ({
       is_featured: finalFormData.is_featured,
       options: finalFormData.options || [], // Include options in the save payload
     };
-    console.log("Submitting from Edit Modal:", dataToSave); // Debugging log
     await onSave(menuItem.id, dataToSave);
     onClose();
   };

@@ -197,8 +197,6 @@ app.get("/api/menu-items/all", authenticateToken, authorizeRoles('user', 'admin'
 app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin'), upload.single('image'), async (req, res, next) => {
     let connection;
     try {
-        console.log("POST /api/menu-items req.body:", JSON.stringify(req.body, null, 2));
-        console.log("POST /api/menu-items req.file:", req.file);
         connection = await db.getConnection();
         await connection.beginTransaction();
 
@@ -281,8 +279,6 @@ app.put('/api/menu-items/reorder', authenticateToken, authorizeRoles('admin'), a
 app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'), upload.single('image'), async (req, res, next) => {
     let connection;
     try {
-        console.log("PUT /api/menu-items/:id req.body:", JSON.stringify(req.body, null, 2));
-        console.log("PUT /api/menu-items/:id req.file:", req.file);
         const { id } = req.params;
         connection = await db.getConnection();
         await connection.beginTransaction();

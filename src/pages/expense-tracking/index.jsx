@@ -66,11 +66,11 @@ const ExpenseTracking = ({ headerTitle }) => {
         if (data.message === 'success') {
           setAllExpenses(data.data);
         } else {
-          console.error('Failed to fetch all expenses:', data.error);
+          // console.error('Failed to fetch all expenses:', data.error);
           setAllExpenses([]);
         }
       } catch (error) {
-        console.error('Error fetching all expenses:', error);
+        // console.error('Error fetching all expenses:', error);
         setAllExpenses([]);
       }
     };
@@ -87,11 +87,11 @@ const ExpenseTracking = ({ headerTitle }) => {
           setExpenses(data.data);
           setPagination(data.pagination); // Set pagination data
         } else {
-          console.error('Failed to fetch expenses:', data.error);
+          // console.error('Failed to fetch expenses:', data.error);
           setExpenses([]);
         }
       } catch (error) {
-        console.error('Error fetching expenses:', error);
+        // console.error('Error fetching expenses:', error);
         setExpenses([]);
       } finally {
         setIsLoading(false);
@@ -206,13 +206,13 @@ const ExpenseTracking = ({ headerTitle }) => {
             setCurrentPage(1); // This will trigger the useEffect for fetching paginated expenses
           }
         } else {
-          console.error('Failed to add expense:', result.error || 'Unknown error');
+          // console.error('Failed to add expense:', result.error || 'Unknown error');
         }
       } else {
         console.error('Failed to add expense (HTTP error):', result.error || result.message || 'Unknown error');
       }
     } catch (error) {
-      console.error('Error adding expense:', error);
+      // console.error('Error adding expense:', error);
     } finally {
       setIsLoading(false);
     }
@@ -235,10 +235,10 @@ const ExpenseTracking = ({ headerTitle }) => {
         fetchAllExpenses(); // Refetch all for summary
         handleCloseEditModal();
       } else {
-        console.error('Failed to update expense:', result.error);
+        // console.error('Failed to update expense:', result.error);
       }
     } catch (error) {
-      console.error('Error updating expense:', error);
+      // console.error('Error updating expense:', error);
     } finally {
       setIsLoading(false);
     }
@@ -254,10 +254,10 @@ const ExpenseTracking = ({ headerTitle }) => {
         fetchExpenses(currentPage); // Refetch to update the list
         fetchAllExpenses(); // Refetch all for summary
       } else {
-        console.error('Failed to delete expense:', result.error);
+        // console.error('Failed to delete expense:', result.error);
       }
     } catch (error) {
-      console.error('Error deleting expense:', error);
+      // console.error('Error deleting expense:', error);
     }
   };
 
@@ -293,10 +293,10 @@ const ExpenseTracking = ({ headerTitle }) => {
       } else {
         // Set password error from server response
         setPasswordError(result.error || 'Gagal menghapus pengeluaran.');
-        console.error('Failed to bulk delete expenses:', result.error);
+        // console.error('Failed to bulk delete expenses:', result.error);
       }
     } catch (error) {
-      console.error('Error bulk deleting expenses:', error);
+      // console.error('Error bulk deleting expenses:', error);
       showNotification('Terjadi kesalahan saat menghapus pengeluaran.', 'error');
     } finally {
       setShowBulkDeleteConfirmModal(false); // Close modal
@@ -327,7 +327,7 @@ const ExpenseTracking = ({ headerTitle }) => {
         showNotification('Data pengeluaran berhasil diekspor ke PDF!', 'success');
       }
     } catch (error) {
-      console.error('Error exporting data:', error);
+      // console.error('Error exporting data:', error);
       showNotification('Gagal mengekspor data. Silakan coba lagi.', 'error');
     }
   };
