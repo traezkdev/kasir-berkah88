@@ -33,7 +33,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      const response = await authFetch(`${apiUrl}/api/menu-items`);
+      const response = await authFetch(`${apiUrl}/api/menu-items/all`);
       const data = await response.json();
       if (data.message === 'success') {
         setMenuItems(data.data);
