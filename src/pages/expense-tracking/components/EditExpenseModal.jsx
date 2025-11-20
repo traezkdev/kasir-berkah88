@@ -10,9 +10,10 @@ const EditExpenseModal = ({ isOpen, onClose, expense, onUpdateExpense, isLoading
 
   useEffect(() => {
     if (expense) {
-      // Format date to YYYY-MM-DD for the input field
-      const formattedDate = expense.date ? formatInTimeZone(new Date(expense.date), 'Asia/Jakarta', 'yyyy-MM-dd') : '';
-      setFormData({ ...expense, date: formattedDate });
+      // Format date to YYYY-MM-DDTHH:MM for datetime-local input
+      const date = new Date(expense.date);
+      const formattedDateTime = date.toISOString().slice(0, 16); // "YYYY-MM-DDTHH:MM"
+      setFormData({ ...expense, date: formattedDateTime });
     } else {
       setFormData({});
     }
@@ -43,72 +44,14 @@ const EditExpenseModal = ({ isOpen, onClose, expense, onUpdateExpense, isLoading
     e.preventDefault();
 
     if (!expense || !formData.date) {
-      onUpdateExpense(formData);
+      alert('Tanggal dan waktu pengeluaran wajib diisi.'); // Added alert for clarity
       return;
     }
 
-    // Extract original time components in 'Asia/Jakarta' timezone
-    const originalExpenseDate = new Date(expense.date);
-    const originalHour = formatInTimeZone(originalExpenseDate, 'Asia/Jakarta', 'HH');
-    const originalMinute = formatInTimeZone(originalExpenseDate, 'Asia/Jakarta', 'mm');
-    const originalSecond = formatInTimeZone(originalExpenseDate, 'Asia/Jakarta', 'ss');
-
-    // Combine the new date (from formData.date) with the original time components
-    // and explicitly state it's in 'Asia/Jakarta' timezone for correct interpretation.
-    // We construct a string that new Date() can parse, then convert to ISOString.
-    const combinedDateTimeString = `${formData.date}T${originalHour}:${originalMinute}:${originalSecond}`;
-
-    // Create a Date object. This will be interpreted as local time if no timezone is specified.
-    // To ensure it's treated as 'Asia/Jakarta' time, we need to be careful.
-    // A robust way is to use a library function that creates a date in a specific timezone.
-    // Since zonedTimeToUtc is problematic, we'll rely on the backend to correctly interpret
-    // the ISO string, assuming it's always UTC.
-
-    // The most reliable way to send a specific date and time (e.g., 2025-10-10 11:06:00 in Jakarta) to a backend
-    // is to convert it to its equivalent UTC ISO string.
-    // We can construct a Date object that represents this specific instant in time.
-    // The `new Date()` constructor with a string like 'YYYY-MM-DDTHH:mm:ss' without 'Z' or offset
-    // will be parsed as local time. We need to adjust for that.
-
-    // Let's create a Date object that represents the desired date and time in 'Asia/Jakarta'
-    // and then convert it to UTC.
-    const [year, month, day] = formData.date.split('-').map(Number);
-
-    // Create a Date object in the local timezone, then adjust it to represent the 'Asia/Jakarta' time.
-    // This is a bit tricky without zonedTimeToUtc.
-    // A simpler approach is to send the date string with timezone info if possible, or let backend handle.
-
-    // Given the constraints, the most straightforward approach is to construct a Date object
-    // that represents the desired moment in 'Asia/Jakarta' and then convert it to UTC.
-    // We can use the `Date` constructor with individual components, which defaults to local time.
-    // Then, we need to adjust it to reflect 'Asia/Jakarta' time.
-
-    // Let's try to construct a Date object that represents the exact moment in 'Asia/Jakarta'
-    // and then convert it to UTC. This is the most robust way without `zonedTimeToUtc`.
-    const dateInJakarta = new Date(
-      Date.UTC(year, month - 1, day, parseInt(originalHour, 10), parseInt(originalMinute, 10), parseInt(originalSecond, 10))
-    );
-
-    // Now, we need to adjust this UTC date to be the equivalent of the 'Asia/Jakarta' time.
-    // This is where the timezone offset comes in. 'Asia/Jakarta' is UTC+7.
-    // So, if we want 11:06:00 in Jakarta, we need to send 04:06:00 UTC.
-    // The `Date.UTC` constructor already creates a UTC date.
-    // The `originalHour`, `originalMinute`, `originalSecond` are already in 'Asia/Jakarta' time.
-    // So, we need to subtract the UTC offset of 'Asia/Jakarta' from the hour to get the UTC hour.
-
-    // Get the UTC offset for 'Asia/Jakarta' (which is +7 hours)
-    // This is a constant, but can be dynamic if needed.
-    const jakartaUtcOffsetHours = 7;
-
-    const utcHour = parseInt(originalHour, 10) - jakartaUtcOffsetHours;
-
-    const finalDateInUtc = new Date(
-      Date.UTC(year, month - 1, day, utcHour, parseInt(originalMinute, 10), parseInt(originalSecond, 10))
-    );
-
     const updatedFormData = {
       ...formData,
-      date: finalDateInUtc.toISOString(), // Send as ISO string (UTC) to backend
+      // Directly use the datetime-local value and convert to ISO string
+      date: new Date(formData.date).toISOString(), 
     };
     onUpdateExpense(updatedFormData);
   };
@@ -147,9 +90,9 @@ const EditExpenseModal = ({ isOpen, onClose, expense, onUpdateExpense, isLoading
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
-                label="Tanggal"
+                label="Tanggal & Waktu"
                 name="date"
-                type="date"
+                type="datetime-local"
                 value={formData.date || ''}
                 onChange={handleChange}
                 required

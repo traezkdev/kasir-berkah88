@@ -139,21 +139,21 @@ const TransactionHistory = ({ headerTitle }) => {
     setTransactionToEdit(null);
   };
 
-  const handleUpdateTransaction = async (updatedTransaction) => {
+  const handleUpdateTransaction = async (id, updatedData) => {
     try {
-      const response = await authFetch(`${apiUrl}/api/transactions/${updatedTransaction.id}`, {
+      const response = await authFetch(`${apiUrl}/api/transactions/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updatedTransaction),
+        body: JSON.stringify(updatedData),
       });
-      const data = await response.json();
-      if (data.message === 'success') {
+      const result = await response.json();
+      if (result.message === 'success') {
         fetchTransactions(currentPage); // Refresh the current page
         handleCloseEditModal();
       } else {
-        console.error('Failed to update transaction:', data.error);
+        console.error('Failed to update transaction:', result.error);
       }
     } catch (error) {
       console.error('Error updating transaction:', error);
@@ -605,7 +605,7 @@ const TransactionHistory = ({ headerTitle }) => {
         isOpen={isEditModalOpen}
         onClose={handleCloseEditModal}
         transaction={transactionToEdit}
-        onSave={handleUpdateTransaction}
+        onUpdateTransaction={handleUpdateTransaction}
       />
 
     </div>

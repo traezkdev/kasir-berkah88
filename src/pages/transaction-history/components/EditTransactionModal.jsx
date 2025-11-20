@@ -1,102 +1,161 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
-import { Checkbox } from '../../../components/ui/Checkbox';
-import Select from '../../../components/ui/Select';
+import Icon from '../../../components/AppIcon';
+import Select from '../../../components/ui/Select'; // Assuming Select component exists
 
-const EditTransactionModal = ({ isOpen, onClose, transaction, onSave }) => {
-    const [editedTransaction, setEditedTransaction] = useState(transaction);
+const EditTransactionModal = ({
+  isOpen,
+  onClose,
+  transaction,
+  onUpdateTransaction,
+  isLoading,
+}) => {
+  const [formData, setFormData] = useState({
+    timestamp: '',
+    total: '',
+    ppn: '',
+    isEmployeeMeal: false,
+    payment_method: 'Tunai',
+    manual_discount: '',
+  });
 
-    useEffect(() => {
-        setEditedTransaction(transaction);
-    }, [transaction]);
+  useEffect(() => {
+    if (transaction) {
+      const date = new Date(transaction.timestamp);
+      const formattedDate = date.toISOString().slice(0, 16); // "YYYY-MM-DDTHH:MM"
 
-    if (!isOpen || !editedTransaction) return null;
+      setFormData({
+        timestamp: formattedDate,
+        total: transaction.total.toString(),
+        ppn: transaction.ppn.toString(),
+        payment_method: transaction.payment_method || 'Tunai',
+        manual_discount: transaction.manual_discount ? transaction.manual_discount.toString() : '0',
+      });
+    }
+  }, [transaction]);
 
-    const handleChange = (e) => {
-        // Check if the event is from a custom Select component (which passes value directly)
-        if (typeof e === 'string') {
-            setEditedTransaction(prev => ({
-                ...prev,
-                payment_method: e // e is the selected value from Select
-            }));
-        } else if (e && e.target) { // Standard event object from Input or Checkbox
-            const { name, value, type, checked } = e.target;
-            setEditedTransaction(prev => ({
-                ...prev,
-                [name]: type === 'checkbox' ? checked : value
-            }));
-        } else if (typeof e === 'boolean') { // For Checkbox onCheckedChange if it passes boolean directly
-            // This case is for the Checkbox component if it passes a boolean directly
-            // Assuming it's for isEmployeeMeal based on previous context
-            setEditedTransaction(prev => ({
-                ...prev,
-                isEmployeeMeal: e
-            }));
-        }
+  if (!isOpen) return null;
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleSelectChange = (name, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.timestamp || !formData.total) {
+      alert('Tanggal, waktu, dan total transaksi wajib diisi.');
+      return;
+    }
+
+    const updatedTimestamp = new Date(formData.timestamp).toISOString();
+    const isEmployeeMealValue = formData.payment_method === 'Makan Karyawan' ? 1 : 0;
+
+    const dataToUpdate = {
+      timestamp: updatedTimestamp,
+      total: parseFloat(formData.total),
+      ppn: parseFloat(formData.ppn),
+      isEmployeeMeal: isEmployeeMealValue, // Derived from payment_method
+      payment_method: formData.payment_method,
+      manual_discount: parseFloat(formData.manual_discount),
     };
 
-    const handleSave = () => {
-        onSave(editedTransaction);
-    };
+    await onUpdateTransaction(transaction.id, dataToUpdate);
+    onClose();
+  };
 
-    const paymentMethodOptions = [
-        { value: 'Tunai', label: 'Tunai' },
-        { value: 'Gojek', label: 'Gojek' },
-        { value: 'Transfer', label: 'Transfer' },
-        { value: 'Makan Karyawan', label: 'Makan Karyawan' },
-    ];
+  const paymentMethodOptions = [
+    { value: 'Tunai', label: 'Tunai' },
+    { value: 'Gojek', label: 'Gojek' },
+    { value: 'Transfer', label: 'Transfer' },
+    { value: 'Makan Karyawan', label: 'Makan Karyawan' },
+  ];
 
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            <div className="bg-card p-6 rounded-lg shadow-lg w-full max-w-md">
-                <h2 className="text-xl font-bold mb-4">Edit Transaksi #{editedTransaction.id}</h2>
-                <form>
-                    <div className="mb-4">
-                        <label className="block text-text-secondary text-sm font-bold mb-2" htmlFor="total">Total</label>
-                        <Input
-                            id="total"
-                            name="total"
-                            type="number"
-                            value={editedTransaction.total}
-                            onChange={handleChange}
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-card-foreground leading-tight focus:outline-none focus:shadow-outline"
-                        />
-                    </div>
-                    <div className="mb-4">
-                        <label className="block text-text-secondary text-sm font-bold mb-2" htmlFor="ppn">PPN</label>
-                        <Input
-                            id="ppn"
-                            name="ppn"
-                            type="number"
-                            step="0.01"
-                            value={editedTransaction.ppn}
-                            onChange={handleChange}
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-card-foreground leading-tight focus:outline-none focus:shadow-outline"
-                        />
-                    </div>
-                    <div className="mb-4">
-                        <label className="block text-text-secondary text-sm font-bold mb-2" htmlFor="payment_method">Metode Pembayaran</label>
-                        <Select
-                            id="payment_method"
-                            name="payment_method"
-                            value={editedTransaction.payment_method}
-                            onChange={handleChange}
-                            options={paymentMethodOptions}
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-card-foreground leading-tight focus:outline-none focus:shadow-outline"
-                        >
-                        </Select>
-                    </div>
-
-                    
-                    <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={onClose}>Batal</Button>
-                        <Button onClick={handleSave}>Simpan Perubahan</Button>
-                    </div>
-                </form>
-            </div>
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50">
+      <div className="bg-card rounded-lg shadow-xl p-6 w-full max-w-lg mx-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-foreground">Edit Transaksi #{transaction?.id}</h2>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <Icon name="X" size={20} />
+          </Button>
         </div>
-    );
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Input
+              label="Tanggal & Waktu Transaksi"
+              type="datetime-local"
+              name="timestamp"
+              value={formData.timestamp}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div>
+            <Input
+              label="Total Transaksi"
+              type="number"
+              name="total"
+              value={formData.total}
+              onChange={handleChange}
+              required
+              step="0.01"
+            />
+          </div>
+          <div>
+            <Input
+              label="PPN"
+              type="number"
+              name="ppn"
+              value={formData.ppn}
+              onChange={handleChange}
+              required
+              step="0.01"
+            />
+          </div>
+          <div>
+            <Input
+              label="Diskon Manual"
+              type="number"
+              name="manual_discount"
+              value={formData.manual_discount}
+              onChange={handleChange}
+              step="0.01"
+            />
+          </div>
+          <div>
+            <Select
+              label="Metode Pembayaran"
+              name="payment_method"
+              value={formData.payment_method}
+              onChange={(value) => handleSelectChange('payment_method', value)}
+              options={paymentMethodOptions}
+              required
+            />
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Batal
+            </Button>
+            <Button type="submit" loading={isLoading}>
+              Simpan Perubahan
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 };
 
 export default EditTransactionModal;

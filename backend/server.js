@@ -985,16 +985,17 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
 // Update a transaction
 app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
     try {
-        const { total, ppn, isEmployeeMeal, payment_method } = req.body;
+        const { total, ppn, isEmployeeMeal, payment_method, timestamp } = req.body;
         const { id } = req.params;
 
         const sql = `UPDATE transactions SET 
            total = COALESCE(?, total), 
            ppn = COALESCE(?, ppn), 
            isEmployeeMeal = COALESCE(?, isEmployeeMeal), 
-           payment_method = COALESCE(?, payment_method) 
+           payment_method = COALESCE(?, payment_method),
+           timestamp = COALESCE(?, timestamp) 
            WHERE id = ?`;
-        const params = [total, ppn, isEmployeeMeal ? 1 : 0, payment_method, id];
+        const params = [total, ppn, isEmployeeMeal ? 1 : 0, payment_method, timestamp ? new Date(timestamp) : null, id];
         const [result] = await db.query(sql, params);
 
         if (result.affectedRows === 0) {
