@@ -95,23 +95,51 @@ app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'g
         let whereClause = '';
         let queryParams = [];
         if (category) {
-            whereClause = 'WHERE category = ?';
+            whereClause = 'WHERE mi.category = ?';
             queryParams.push(category);
         }
 
         // Query to get total count
-        const countSql = `SELECT COUNT(*) as totalItems FROM menu_items ${whereClause}`;
+        const countSql = `SELECT COUNT(*) as totalItems FROM menu_items mi ${whereClause}`;
         const [countRows] = await db.query(countSql, queryParams);
         const totalItems = countRows[0].totalItems;
         const totalPages = Math.ceil(totalItems / limit);
 
-        // Query to get paginated data
-        const dataSql = `SELECT * FROM menu_items ${whereClause} ORDER BY order_index ASC LIMIT ? OFFSET ?`;
+        // Query to get paginated data with options
+        const dataSql = `
+            SELECT 
+                mi.*,
+                COALESCE(
+                    (
+                        SELECT JSON_ARRAYAGG(
+                            JSON_OBJECT(
+                                'id', mio.id, 
+                                'name', mio.name, 
+                                'price_adjustment', mio.price_adjustment
+                            )
+                        )
+                        FROM menu_item_options mio 
+                        WHERE mio.menu_item_id = mi.id
+                    ),
+                    '[]'
+                ) AS options
+            FROM menu_items mi
+            ${whereClause}
+            ORDER BY mi.order_index ASC 
+            LIMIT ? OFFSET ?;
+        `;
+        
         const [rows] = await db.query(dataSql, [...queryParams, limit, offset]);
         
+        // Parse the options string for each item
+        const data = rows.map(row => ({
+            ...row,
+            options: JSON.parse(row.options) // COALESCE guarantees a parsable string
+        }));
+
         res.json({
             "message": "success",
-            "data": rows,
+            "data": data,
             "pagination": {
                 "currentPage": page,
                 "totalPages": totalPages,
@@ -128,11 +156,37 @@ app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'g
 // Get all menu items without pagination
 app.get("/api/menu-items/all", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res) => {
     try {
-        const sql = "SELECT * FROM menu_items ORDER BY order_index ASC";
+        const sql = `
+            SELECT 
+                mi.*,
+                COALESCE(
+                    (
+                        SELECT JSON_ARRAYAGG(
+                            JSON_OBJECT(
+                                'id', mio.id, 
+                                'name', mio.name, 
+                                'price_adjustment', mio.price_adjustment
+                            )
+                        )
+                        FROM menu_item_options mio 
+                        WHERE mio.menu_item_id = mi.id
+                    ),
+                    '[]'
+                ) AS options
+            FROM menu_items mi
+            ORDER BY mi.order_index ASC;
+        `;
         const [rows] = await db.query(sql);
+
+        // Parse the options string for each item
+        const data = rows.map(row => ({
+            ...row,
+            options: JSON.parse(row.options) // No need for ternary, COALESCE guarantees a string
+        }));
+
         res.json({
             "message": "success",
-            "data": rows
+            "data": data
         });
     } catch (err) {
         res.status(500).json({ "error": err.message });
@@ -141,32 +195,51 @@ app.get("/api/menu-items/all", authenticateToken, authorizeRoles('user', 'admin'
 
 // Add a new menu item
 app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin'), upload.single('image'), async (req, res, next) => {
+    let connection;
     try {
+        console.log("POST /api/menu-items req.body:", JSON.stringify(req.body, null, 2));
+        console.log("POST /api/menu-items req.file:", req.file);
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
         let itemData;
         if (req.file) {
-            // If image is uploaded, data comes in req.body.data as JSON string
             itemData = JSON.parse(req.body.data);
         } else {
-            // If no image, data comes directly in req.body as JSON
             itemData = req.body;
         }
 
-        const { id, name, price, stock, category, hpp, discount, is_featured } = itemData;
+        const { id, name, price, stock, category, hpp, discount, is_featured, options } = itemData;
         const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
+        const final_is_featured = is_featured ? 1 : 0;
 
-        // Ensure is_featured is always an integer 0 or 1
-        const final_is_featured = is_featured ? 1 : 0; // Convert to 1 or 0 explicitly
+        const menuItemSql = 'INSERT INTO menu_items (id, name, price, stock, category, image_url, hpp, discount, is_featured) VALUES (?,?,?,?,?,?,?,?,?)';
+        const menuItemParams = [id, name, price, stock, category, image_url, hpp, discount, final_is_featured];
+        await connection.query(menuItemSql, menuItemParams);
 
-        const sql = 'INSERT INTO menu_items (id, name, price, stock, category, image_url, hpp, discount, is_featured) VALUES (?,?,?,?,?,?,?,?,?)';
-        const params = [id, name, price, stock, category, image_url, hpp, discount, final_is_featured]; // is_featured is already 0 or 1
-        const [result] = await db.query(sql, params);
-        res.json({
+        if (options && Array.isArray(options) && options.length > 0) {
+            const optionSql = 'INSERT INTO menu_item_options (menu_item_id, name, price_adjustment) VALUES ?';
+            const optionValues = options.map(opt => [id, opt.name, opt.price_adjustment || 0]);
+            await connection.query(optionSql, [optionValues]);
+        }
+
+        await connection.commit();
+        
+        res.status(201).json({
             "message": "success",
             "data": { ...itemData, image_url },
-            "id": result.insertId
         });
+
     } catch (err) {
+        if (connection) {
+            await connection.rollback();
+        }
+        console.error("Error adding menu item:", err);
         res.status(400).json({ "error": err.message });
+    } finally {
+        if (connection) {
+            connection.release();
+        }
     }
 });
 
@@ -206,67 +279,82 @@ app.put('/api/menu-items/reorder', authenticateToken, authorizeRoles('admin'), a
 
 // Update a menu item
 app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'), upload.single('image'), async (req, res, next) => {
+    let connection;
     try {
+        console.log("PUT /api/menu-items/:id req.body:", JSON.stringify(req.body, null, 2));
+        console.log("PUT /api/menu-items/:id req.file:", req.file);
         const { id } = req.params;
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
         let itemData;
         let image_url = null;
 
         if (req.file) {
-            // If image is uploaded, data comes in req.body.data as JSON string
             itemData = JSON.parse(req.body.data);
             image_url = `/public/uploads/${req.file.filename}`;
         } else {
-            // If no new image, data comes directly in req.body as JSON
             itemData = req.body;
         }
 
-        const { name, price, stock, category, hpp, discount, is_featured } = itemData;
+        const { name, price, stock, category, hpp, discount, is_featured, options } = itemData;
 
-        // Fetch current item data to get old image_url if no new image is uploaded
-        if (!req.file) {
-            const [currentRows] = await db.query('SELECT image_url FROM menu_items WHERE id = ?', [id]);
-            if (currentRows.length > 0) {
-                image_url = currentRows[0].image_url;
-            }
-        } else {
-            // If a new image is uploaded, delete the old one
-            const [oldImageRows] = await db.query('SELECT image_url FROM menu_items WHERE id = ?', [id]);
-            if (oldImageRows.length > 0 && oldImageRows[0].image_url) {
-                const oldImagePath = path.join(__dirname, oldImageRows[0].image_url);
-                if (fs.existsSync(oldImagePath)) {
-                    fs.unlinkSync(oldImagePath);
-                }
-            }
+        // Fetch current item to get old image_url if a new one is uploaded
+        const [currentRows] = await connection.query('SELECT image_url FROM menu_items WHERE id = ?', [id]);
+        let old_image_url = null;
+        if (currentRows.length > 0) {
+            old_image_url = currentRows[0].image_url;
         }
 
-        // Ensure is_featured is always an integer 0 or 1
+        if (req.file && old_image_url) {
+            const oldImagePath = path.join(__dirname, old_image_url);
+            if (fs.existsSync(oldImagePath)) {
+                fs.unlinkSync(oldImagePath);
+            }
+        }
+        
         const final_is_featured = is_featured ? 1 : 0;
+        const final_image_url = image_url !== null ? image_url : old_image_url;
 
-        const sql = `UPDATE menu_items SET
-           name = COALESCE(?, name),
-           price = COALESCE(?, price),
-           stock = COALESCE(?, stock),
-           category = COALESCE(?, category),
-           image_url = COALESCE(?, image_url),
-           hpp = COALESCE(?, hpp),
-           discount = COALESCE(?, discount),
-           is_featured = COALESCE(?, is_featured)
+        const menuItemSql = `UPDATE menu_items SET
+           name = ?, price = ?, stock = ?, category = ?, image_url = ?,
+           hpp = ?, discount = ?, is_featured = ?
            WHERE id = ?`;
-        const params = [name, price, stock, category, image_url, hpp, discount, final_is_featured, id];
-        const [result] = await db.query(sql, params);
+        const menuItemParams = [name, price, stock, category, final_image_url, hpp, discount, final_is_featured, id];
+        const [result] = await connection.query(menuItemSql, menuItemParams);
 
         if (result.affectedRows === 0) {
+            await connection.rollback();
             return res.status(404).json({ "error": "Menu item not found" });
         }
 
+        // Delete old options
+        await connection.query('DELETE FROM menu_item_options WHERE menu_item_id = ?', [id]);
+
+        // Add new options if they exist
+        if (options && Array.isArray(options) && options.length > 0) {
+            const optionSql = 'INSERT INTO menu_item_options (menu_item_id, name, price_adjustment) VALUES ?';
+            const optionValues = options.map(opt => [id, opt.name, opt.price_adjustment || 0]);
+            await connection.query(optionSql, [optionValues]);
+        }
+
+        await connection.commit();
+
         res.json({
             "message": "success",
-            "data": { id, ...itemData, image_url },
+            "data": { id, ...itemData, image_url: final_image_url },
             "changes": result.affectedRows
         });
     } catch (err) {
+        if (connection) {
+            await connection.rollback();
+        }
         console.error("Error updating menu item:", err);
         res.status(400).json({ "error": err.message });
+    } finally {
+        if (connection) {
+            connection.release();
+        }
     }
 });
 

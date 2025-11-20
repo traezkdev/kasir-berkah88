@@ -10,21 +10,7 @@ const EditMenuItemModal = ({
   onSave,
   userRole,
 }) => {
-  const [formData, setFormData] = useState(() => {
-    if (menuItem) {
-      return {
-        name: menuItem.name,
-        price: menuItem.price.toString(),
-        stock: menuItem.stock.toString(),
-        category: menuItem.category,
-        image_url: menuItem.image_url,
-        image: null,
-        discount: menuItem.discount ? menuItem.discount.toString() : '0.00', // Add discount
-        is_featured: !!menuItem.is_featured, // Add is_featured and ensure it's a boolean
-      };
-    }
-    return {};
-  });
+  const [formData, setFormData] = useState(null);
 
   useEffect(() => {
     if (menuItem) {
@@ -35,43 +21,49 @@ const EditMenuItemModal = ({
         category: menuItem.category,
         image_url: menuItem.image_url,
         image: null,
-        discount: menuItem.discount ? menuItem.discount.toString() : '0.00', // Add discount
-        is_featured: !!menuItem.is_featured, // Add is_featured and ensure it's a boolean
+        discount: menuItem.discount ? menuItem.discount.toString() : '0.00',
+        is_featured: !!menuItem.is_featured,
+        options: menuItem.options || [], // Initialize options
       });
     } else {
-      setFormData({}); // Clear form data when menuItem is null
+      setFormData(null); // Clear form data when modal is closed
     }
   }, [menuItem]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !formData) return null;
 
   const handleFormChange = ({ name, value, files }) => {
+    const newFormData = { ...formData };
     if (name === 'image') {
-      setFormData({ ...formData, [name]: files[0] });
+      newFormData[name] = files[0];
     } else if (name === 'is_featured') {
-      setFormData({ ...formData, [name]: value }); // value here is already boolean from AddMenuItemForm
+      newFormData[name] = value;
     } else {
-      setFormData({ ...formData, [name]: value });
+      newFormData[name] = value;
     }
+    setFormData(newFormData);
   };
+  
+  // This function will be called by the child form on any change
+  const handleFullFormChange = (updatedFormData) => {
+    setFormData(updatedFormData);
+  }
 
-  const handleCategoryChange = (value) => {
-    setFormData({ ...formData, category: value });
-  };
-
-  const handleSubmit = async () => {
-    // Prepare data for onSave
+  const handleSubmit = async (finalFormData) => {
+    // The AddMenuItemForm now manages its own state, so we receive the final state on submit
     const dataToSave = {
-      name: formData.name,
-      price: parseFloat(formData.price),
-      stock: parseInt(formData.stock),
-      category: formData.category,
-      image: formData.image, // Pass the file object if new image selected
-      discount: parseFloat(formData.discount || '0.00'), // Add discount
-      is_featured: formData.is_featured, // Add is_featured
+      name: finalFormData.name,
+      price: parseFloat(finalFormData.price),
+      stock: parseInt(finalFormData.stock),
+      category: finalFormData.category,
+      image: finalFormData.image,
+      discount: parseFloat(finalFormData.discount || '0.00'),
+      is_featured: finalFormData.is_featured,
+      options: finalFormData.options || [], // Include options in the save payload
     };
+    console.log("Submitting from Edit Modal:", dataToSave); // Debugging log
     await onSave(menuItem.id, dataToSave);
-    onClose(); // Close modal after saving
+    onClose();
   };
 
   return (
@@ -85,11 +77,14 @@ const EditMenuItemModal = ({
         </div>
         <AddMenuItemForm
           initialData={formData}
-          onAddItem={handleSubmit} // Reusing onAddItem for submission
+          onAddItem={handleSubmit} // The form will call this with its final state
           userRole={userRole}
           isEditing={true}
-          onCategoryChange={handleCategoryChange}
-          onFormChange={handleFormChange}
+          // The form now manages its own state, so direct change handlers are less critical
+          // However, if you need to react to changes in the modal, you can use onFormChange
+          onFormChange={(field) => {
+              setFormData(prev => ({...prev, [field.name]: field.value}))
+          }}
         />
       </div>
     </div>

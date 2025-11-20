@@ -100,6 +100,16 @@ const MenuItemsTable = ({
                 {!!item?.is_featured && <Icon name="Star" size={16} className="text-yellow-500 ml-2" title="Menu Unggulan" />}
               </h3>
               <p className="text-xs text-muted-foreground">{item?.category}</p>
+              {/* Display options for mobile view */}
+              {item.options && item.options.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {item.options.map(opt => (
+                    <span key={opt.id || opt.name} className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded-full">
+                      {opt.name} (+{formatCurrency(opt.price_adjustment)})
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -240,7 +250,21 @@ const MenuItemsTable = ({
                     <Icon name="ChevronDown" size={16} />
                   </Button>
                 </div>
-              </td><td className="p-4"><img src={item?.image_url ? `${apiUrl}${item.image_url}` : '/assets/images/no_image.png'} alt={item?.name} className="w-16 h-16 object-cover rounded-md" onError={(e) => { e.target.onerror = null; e.target.src='/assets/images/no_image.png'}}/></td><td className="p-4"><span className="font-medium text-foreground">{item?.name}</span></td><td className="p-4"><span className="font-medium text-foreground">{item?.category}</span></td><td className="p-4"><span className="font-mono font-medium">{item?.stock}</span></td><td className="p-4"><span className="font-mono font-medium">{formatCurrency(item?.price)}</span></td><td className="p-4 text-center"> {/* New data cell */}{item?.discount > 0 ? (<span className="font-mono font-medium text-success">{`${(item?.discount * 100).toFixed(0)}%`}</span>) : (<span className="text-muted-foreground">-</span>)}</td><td className="p-4">{item?.is_featured ? <Icon name="Star" size={18} className="text-yellow-500" title="Menu Unggulan" /> : '-'}</td><td className="p-4"><span className={`px-3 py-1 rounded-full text-sm font-medium ${stockStatus?.color} ${stockStatus?.bg}`}>{stockStatus?.label}</span></td><td className="p-4 text-sm text-muted-foreground">{item.updatedAt ? (!isNaN(new Date(item.updatedAt)) ? new Date(item.updatedAt).toLocaleDateString('id-ID', {day: '2-digit',month: '2-digit',year: 'numeric',hour: '2-digit',minute: '2-digit'}) : `Invalid Date: ${item.updatedAt}`) : '-'}</td><td className="p-4"><div className="flex items-center justify-center space-x-2">{userRole !== 'guest' && (<Button variant="ghost" size="xs" onClick={() => onEditItem(item)} iconName="Edit"/>)}{userRole !== 'guest' && (<Button variant="destructive" size="xs" onClick={() => setShowDeleteConfirm(item?.id)} iconName="Trash2"/>)}</div></td></tr>);
+              </td><td className="p-4"><img src={item?.image_url ? `${apiUrl}${item.image_url}` : '/assets/images/no_image.png'} alt={item?.name} className="w-16 h-16 object-cover rounded-md" onError={(e) => { e.target.onerror = null; e.target.src='/assets/images/no_image.png'}}/></td><td className="p-4">
+                <div className="flex flex-col">
+                  <span className="font-medium text-foreground">{item?.name}</span>
+                  {/* Display options for desktop view */}
+                  {item.options && item.options.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {item.options.map(opt => (
+                        <span key={opt.id || opt.name} className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded-full">
+                          {opt.name} (+{formatCurrency(opt.price_adjustment)})
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </td><td className="p-4"><span className="font-medium text-foreground">{item?.category}</span></td><td className="p-4"><span className="font-mono font-medium">{item?.stock}</span></td><td className="p-4"><span className="font-mono font-medium">{formatCurrency(item?.price)}</span></td><td className="p-4 text-center"> {/* New data cell */}{item?.discount > 0 ? (<span className="font-mono font-medium text-success">{`${(item?.discount * 100).toFixed(0)}%`}</span>) : (<span className="text-muted-foreground">-</span>)}</td><td className="p-4">{item?.is_featured ? <Icon name="Star" size={18} className="text-yellow-500" title="Menu Unggulan" /> : '-'}</td><td className="p-4"><span className={`px-3 py-1 rounded-full text-sm font-medium ${stockStatus?.color} ${stockStatus?.bg}`}>{stockStatus?.label}</span></td><td className="p-4 text-sm text-muted-foreground">{item.updatedAt ? (!isNaN(new Date(item.updatedAt)) ? new Date(item.updatedAt).toLocaleDateString('id-ID', {day: '2-digit',month: '2-digit',year: 'numeric',hour: '2-digit',minute: '2-digit'}) : `Invalid Date: ${item.updatedAt}`) : '-'}</td><td className="p-4"><div className="flex items-center justify-center space-x-2">{userRole !== 'guest' && (<Button variant="ghost" size="xs" onClick={() => onEditItem(item)} iconName="Edit"/>)}{userRole !== 'guest' && (<Button variant="destructive" size="xs" onClick={() => setShowDeleteConfirm(item?.id)} iconName="Trash2"/>)}</div></td></tr>);
             })}
           </tbody>
         </table>

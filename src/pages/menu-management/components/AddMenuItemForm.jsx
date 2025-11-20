@@ -12,14 +12,14 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
     name: '',
     price: '',
     stock: '',
-    category: '', // Changed default to empty
+    category: '',
     image: null,
-    discount: '', // New discount field
-    is_featured: false, // New is_featured field
+    discount: '',
+    is_featured: false,
+    options: [], // Add options to initial state
   });
-  const [categories, setCategories] = useState([]); // State for categories
+  const [categories, setCategories] = useState([]);
 
-  // Fetch categories from API
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -27,7 +27,6 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
         const data = await response.json();
         if (response.ok) {
           setCategories(data.data);
-          // Set default category if not editing and categories are fetched
           if (!isEditing && data.data.length > 0) {
             setFormData(prev => ({ ...prev, category: data.data[0].name.toLowerCase() }));
           }
@@ -45,74 +44,73 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
     if (initialData) {
       setFormData({
         ...initialData,
-        is_featured: !!initialData.is_featured, // Ensure is_featured is always a boolean
+        is_featured: !!initialData.is_featured,
+        options: initialData.options || [],
       });
     } else {
-      // Reset form when initialData is cleared (e.g., modal closed)
       setFormData({
         name: '',
         price: '',
         stock: '',
         category: categories.length > 0 ? categories[0].name.toLowerCase() : '',
         image: null,
-        discount: '', // Include discount in reset
-        is_featured: false, // Include is_featured in reset
+        discount: '',
+        is_featured: false,
+        options: [],
       });
     }
   }, [initialData, categories]);
+
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
-    let name, value, files;
-
-    if (e && e.target) {
-      // It's an event object from a standard input
-      ({ name, value, files } = e.target);
-    } else {
-      // It's a direct value from the Select component
-      name = 'category';
-      value = e;
-      if (onCategoryChange) {
-        onCategoryChange(value);
-      }
-    }
-
+    const { name, value, type, checked, files } = e.target;
+    const val = type === 'checkbox' ? checked : (type === 'file' ? files[0] : value);
+    setFormData(prev => ({ ...prev, [name]: val }));
     if (onFormChange) {
-      if (name === 'is_featured') {
-        onFormChange({ name, value: e.target.checked, files });
-      } else {
-        onFormChange({ name, value, files });
-      }
-    } else if (name === 'image') {
-      setFormData({ ...formData, [name]: files[0] });
-    } else if (name === 'is_featured') {
-      setFormData({ ...formData, [name]: e.target.checked });
-    } else {
-      setFormData({ ...formData, [name]: value });
+      onFormChange({ name, value: val, files });
     }
   };
 
+  const handleOptionChange = (index, e) => {
+    const { name, value } = e.target;
+    const newOptions = [...formData.options];
+    newOptions[index][name] = value;
+    setFormData(prev => ({ ...prev, options: newOptions }));
+  };
+
+  const addOption = () => {
+    setFormData(prev => ({
+      ...prev,
+      options: [...prev.options, { name: '', price_adjustment: '' }],
+    }));
+  };
+
+  const removeOption = (index) => {
+    const newOptions = formData.options.filter((_, i) => i !== index);
+    setFormData(prev => ({ ...prev, options: newOptions }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    // Simple validation
     if (!formData.name || !formData.price || !formData.stock || !formData.category) {
       console.error("Please fill all fields");
       setIsSubmitting(false);
       return;
     }
     try {
+      console.log("Submitting form data:", formData); // Debugging log
       await onAddItem(formData);
       if (!isEditing) {
-        // Reset form only if not in editing mode
         setFormData({
           name: '',
           price: '',
           stock: '',
           category: 'makanan',
           image: null,
+          options: [],
         });
       }
     } catch (error) {
@@ -134,7 +132,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
         </div>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Input
               label="Nama Menu"
@@ -144,22 +142,18 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               value={formData?.name ?? ''}
               onChange={handleChange}
               required
-              className="w-full"
             />
           </div>
-
           <div>
             <Select
               label="Kategori"
               name="category"
               value={formData?.category ?? ''}
-              onChange={handleChange}
+              onChange={(value) => handleChange({ target: { name: 'category', value } })}
               required
-              className="w-full"
               options={categories.map(cat => ({ value: cat.name.toLowerCase(), label: cat.name }))}
             />
           </div>
-          
           <div>
             <Input
               label="Stok"
@@ -170,10 +164,8 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               onChange={handleChange}
               min="0"
               required
-              className="w-full"
             />
           </div>
-          
           <div>
             <Input
               label="Harga (Rp)"
@@ -183,7 +175,6 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               value={formData?.price ?? ''}
               onChange={handleChange}
               required
-              className="w-full"
             />
           </div>
           <div>
@@ -197,10 +188,9 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               min="0"
               max="1"
               step="0.01"
-              className="w-full"
             />
           </div>
-          <div className="col-span-2 flex items-center">
+          <div className="flex items-center">
             <input
               type="checkbox"
               id="is_featured"
@@ -211,7 +201,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
             />
             <label htmlFor="is_featured" className="text-sm font-medium text-foreground">Menu Unggulan</label>
           </div>
-          <div className="col-span-2">
+          <div className="md:col-span-2">
             <label htmlFor="image" className="block text-sm font-medium text-foreground">Gambar Produk</label>
             <Input
               type="file"
@@ -227,6 +217,40 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
           </div>
         </div>
 
+        {/* --- Menu Options/Toppings --- */}
+        <div className="md:col-span-2 pt-4">
+          <h3 className="text-lg font-medium text-foreground mb-2">Opsi / Topping Menu</h3>
+          <div className="space-y-3">
+            {formData.options.map((option, index) => (
+              <div key={index} className="flex items-center gap-2 p-2 border border-border rounded-md">
+                <Input
+                  type="text"
+                  name="name"
+                  placeholder="Nama Opsi (e.g., Dada, Paha)"
+                  value={option.name}
+                  onChange={(e) => handleOptionChange(index, e)}
+                  className="flex-grow"
+                />
+                <Input
+                  type="number"
+                  name="price_adjustment"
+                  placeholder="Penyesuaian Harga (Rp)"
+                  value={option.price_adjustment}
+                  onChange={(e) => handleOptionChange(index, e)}
+                  className="w-48"
+                />
+                <Button type="button" variant="destructive" size="sm" onClick={() => removeOption(index)}>
+                  Hapus
+                </Button>
+              </div>
+            ))}
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={addOption} className="mt-3">
+            <Icon name="Plus" className="mr-2" />
+            Tambah Opsi
+          </Button>
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-3 pt-4">
           <Button
             type="submit"
@@ -239,23 +263,11 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
           >
             {isSubmitting ? (isEditing ? 'Menyimpan...' : 'Menambahkan...') : (isEditing ? 'Simpan Perubahan' : 'Tambah Menu')}
           </Button>
-          
           {!isEditing && (
             <Button
               type="button"
               variant="outline"
-              onClick={() => {
-        setFormData({
-          name: '',
-          price: '',
-          stock: '',
-          category: categories.length > 0 ? categories[0].name.toLowerCase() : '',
-          image: null,
-          discount: '',
-          is_featured: false,
-        });
-                setErrors({});
-              }}
+              onClick={() => setFormData({ name: '', price: '', stock: '', category: 'makanan', image: null, discount: '', is_featured: false, options: [] })}
               iconName="RotateCcw"
               iconPosition="left"
               className="sm:w-auto"

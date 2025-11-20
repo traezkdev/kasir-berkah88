@@ -35,6 +35,16 @@ const setupDatabase = async () => {
       );
     `;
 
+    const createMenuItemOptionsTable = `
+      CREATE TABLE IF NOT EXISTS menu_item_options (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        menu_item_id VARCHAR(255) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        price_adjustment DECIMAL(10, 2) DEFAULT 0,
+        FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE
+      );
+    `;
+
     const createSettingsTable = 
       'CREATE TABLE IF NOT EXISTS settings (' +
       '`key` VARCHAR(255) PRIMARY KEY,' +
@@ -150,6 +160,10 @@ const setupDatabase = async () => {
       await connection.query(addOrderIndexColumn);
       console.log('Added order_index column to menu_items table.');
     }
+
+    // Create menu_item_options table
+    await connection.query(createMenuItemOptionsTable);
+    console.log('menu_item_options table is ready.');
 
     await connection.query(createSettingsTable);
 
@@ -470,6 +484,7 @@ const setupDatabase = async () => {
     await addIndexIfNotExists(connection, 'transactions', 'idx_user_id', 'user_id');
     await addIndexIfNotExists(connection, 'expenses', 'idx_date', 'date');
     await addIndexIfNotExists(connection, 'menu_items', 'idx_category', 'category');
+    await addIndexIfNotExists(connection, 'menu_item_options', 'idx_menu_item_id', 'menu_item_id');
     await addIndexIfNotExists(connection, 'orders', 'idx_created_at', 'created_at');
     console.log('Index optimization check complete.');
     // --- Akhir Optimasi Indeks ---
