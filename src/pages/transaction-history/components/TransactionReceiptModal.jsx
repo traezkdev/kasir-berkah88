@@ -79,10 +79,15 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
     minute: "2-digit",
   });
 
-  const ppnAmount = Number(transaction.ppn) || 0;
-  const manualDiscountAmount = Number(transaction.manual_discount) || 0;
-  // Subtotal is derived by taking the final total, removing tax, and adding back the discount.
-  const subtotalAmount = Number(transaction.total) - ppnAmount + manualDiscountAmount;
+  const subtotalAmount = transaction.items.reduce((sum, item) => {
+    const itemPrice = Number(item.price) || 0;
+    const itemQuantity = Number(item.quantity) || 0;
+    // Assuming item.price is the discounted price, so we just sum it up
+    return sum + (itemPrice * itemQuantity);
+  }, 0);
+
+  // Calculate PPN based on the difference between total and the corrected subtotal
+  const ppnAmount = transaction.total - subtotalAmount;
 
   return (
     <>
@@ -150,12 +155,6 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
               <div className="flex justify-between font-semibold text-sm mb-2">
                 <span className="text-gray-900">PPN:</span>
                 <span className="text-gray-900">Rp {ppnAmount.toLocaleString("id-ID")}</span>
-              </div>
-            )}
-            {manualDiscountAmount > 0 && (
-              <div className="flex justify-between font-semibold text-sm mb-2 text-red-500">
-                <span className="text-red-500">Diskon:</span>
-                <span className="text-red-500">- Rp {manualDiscountAmount.toLocaleString("id-ID")}</span>
               </div>
             )}
             <div className="flex justify-between font-semibold">
