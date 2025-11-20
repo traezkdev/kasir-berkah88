@@ -26,57 +26,77 @@ const apiUrl = import.meta.env.VITE_API_URL;
 import { useTheme } from '../../contexts/ThemeContext';
 
 const ExpenseTracking = ({ headerTitle }) => {
-  const { theme } = useTheme();
-  const [expenses, setExpenses] = useState([]);
-  const [menuItems, setMenuItems] = useState([]);
-  const [transactions, setTransactions] = useState([]);
-  const [dashboardMetrics, setDashboardMetrics] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [userRole, setUserRole] = useState(null); // New state for user role
-  const [notification, setNotification] = useState(null); // New state for notification
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingExpense, setEditingExpense] = useState(null);
-  const [showBulkDeleteConfirmModal, setShowBulkDeleteConfirmModal] = useState(false); // New state
-  const [bulkDeleteTarget, setBulkDeleteTarget] = useState(null); // New state
-  const [password, setPassword] = useState(''); // State for password
-  const [passwordError, setPasswordError] = useState(''); // State for password error
-
-  // Pagination states
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(20); // Display 20 items per page
-
-  const [pagination, setPagination] = useState(null);
-
-  const showNotification = (message, type) => {
-    setNotification({ message, type });
-    setTimeout(() => {
-      setNotification(null);
-    }, 3000); // Hide after 3 seconds
-  };
-
-  // Define fetch functions outside useEffects
-  const fetchExpenses = async (page) => {
-    const token = localStorage.getItem('token');
-    if (!token) return; // Exit if no token
-    setIsLoading(true);
-    try {
-      const response = await authFetch(`${apiUrl}/api/expenses?page=${page}&limit=${itemsPerPage}`);
-      const data = await response.json();
-      if (data.message === 'success') {
-        setExpenses(data.data);
-        setPagination(data.pagination); // Set pagination data
-      } else {
-        console.error('Failed to fetch expenses:', data.error);
-        setExpenses([]);
+    const { theme } = useTheme();
+    const [expenses, setExpenses] = useState([]); // For paginated table
+    const [allExpenses, setAllExpenses] = useState([]); // For summary cards and analytics
+    const [menuItems, setMenuItems] = useState([]);
+    const [transactions, setTransactions] = useState([]);
+    const [dashboardMetrics, setDashboardMetrics] = useState({});
+    const [isLoading, setIsLoading] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [userRole, setUserRole] = useState(null); // New state for user role
+    const [notification, setNotification] = useState(null); // New state for notification
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingExpense, setEditingExpense] = useState(null);
+    const [showBulkDeleteConfirmModal, setShowBulkDeleteConfirmModal] = useState(false); // New state
+    const [bulkDeleteTarget, setBulkDeleteTarget] = useState(null); // New state
+    const [password, setPassword] = useState(''); // State for password
+    const [passwordError, setPasswordError] = useState(''); // State for password error
+  
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(20); // Display 20 items per page
+    const [pagination, setPagination] = useState(null);
+  
+    const showNotification = (message, type) => {
+      setNotification({ message, type });
+      setTimeout(() => {
+        setNotification(null);
+      }, 3000); // Hide after 3 seconds
+    };
+  
+    // Fetches ALL expenses for summary cards
+    const fetchAllExpenses = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      // No loading state change here to not interfere with table loading
+      try {
+        const response = await authFetch(`${apiUrl}/api/expenses/all`);
+        const data = await response.json();
+        if (data.message === 'success') {
+          setAllExpenses(data.data);
+        } else {
+          console.error('Failed to fetch all expenses:', data.error);
+          setAllExpenses([]);
+        }
+      } catch (error) {
+        console.error('Error fetching all expenses:', error);
+        setAllExpenses([]);
       }
-    } catch (error) {
-      console.error('Error fetching expenses:', error);
-      setExpenses([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
+  
+    // Fetches paginated expenses for the table
+    const fetchExpenses = async (page) => {
+      const token = localStorage.getItem('token');
+      if (!token) return; // Exit if no token
+      setIsLoading(true);
+      try {
+        const response = await authFetch(`${apiUrl}/api/expenses?page=${page}&limit=${itemsPerPage}`);
+        const data = await response.json();
+        if (data.message === 'success') {
+          setExpenses(data.data);
+          setPagination(data.pagination); // Set pagination data
+        } else {
+          console.error('Failed to fetch expenses:', data.error);
+          setExpenses([]);
+        }
+      } catch (error) {
+        console.error('Error fetching expenses:', error);
+        setExpenses([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
   const fetchMenuItems = async () => {
     const token = localStorage.getItem('token');
@@ -116,6 +136,7 @@ const ExpenseTracking = ({ headerTitle }) => {
 
   // Call fetch functions inside useEffects
   useEffect(() => {
+    fetchAllExpenses();
     fetchMenuItems();
     fetchTransactions();
 
@@ -178,7 +199,12 @@ const ExpenseTracking = ({ headerTitle }) => {
 
       if (response.ok) {
         if (result.message === 'success') {
-          fetchExpenses(); // Refetch to get the latest list
+          fetchAllExpenses(); // Refetch all for summary
+          if (currentPage === 1) {
+            fetchExpenses(1);
+          } else {
+            setCurrentPage(1); // This will trigger the useEffect for fetching paginated expenses
+          }
         } else {
           console.error('Failed to add expense:', result.error || 'Unknown error');
         }
@@ -205,7 +231,8 @@ const ExpenseTracking = ({ headerTitle }) => {
       });
       const result = await response.json();
       if (result.message === 'success') {
-        fetchExpenses();
+        fetchExpenses(currentPage); // Refetch current page for table
+        fetchAllExpenses(); // Refetch all for summary
         handleCloseEditModal();
       } else {
         console.error('Failed to update expense:', result.error);
@@ -224,7 +251,8 @@ const ExpenseTracking = ({ headerTitle }) => {
       });
       const result = await response.json();
       if (result.message === 'deleted') {
-        fetchExpenses(); // Refetch to update the list
+        fetchExpenses(currentPage); // Refetch to update the list
+        fetchAllExpenses(); // Refetch all for summary
       } else {
         console.error('Failed to delete expense:', result.error);
       }
@@ -254,7 +282,12 @@ const ExpenseTracking = ({ headerTitle }) => {
       const result = await response.json();
 
       if (response.ok) {
-        fetchExpenses(); // Refetch to show an empty list
+        fetchAllExpenses(); // Refetch all for summary
+        if (currentPage === 1) {
+          fetchExpenses(1);
+        } else {
+          setCurrentPage(1);
+        }
         showNotification('Semua pengeluaran berhasil dihapus!', 'success');
         setShowBulkDeleteConfirmModal(false); // Close modal on success
       } else {
@@ -284,7 +317,8 @@ const ExpenseTracking = ({ headerTitle }) => {
 
   const handleExportData = (format, data) => {
     try {
-      const dataToExport = prepareExpenseDataForExport(data);
+      // Intentionally using allExpenses for export
+      const dataToExport = prepareExpenseDataForExport(allExpenses);
       if (format === 'excel') {
         exportToExcel(dataToExport, 'Laporan_Pengeluaran');
         showNotification('Data pengeluaran berhasil diekspor ke Excel!', 'success');
@@ -299,13 +333,13 @@ const ExpenseTracking = ({ headerTitle }) => {
   };
 
   const calculateSummaryMetrics = () => {
-    const totalExpenses = expenses?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
-    const expenseCount = expenses?.length;
+    const totalExpenses = allExpenses?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
+    const expenseCount = allExpenses?.length;
 
     const today = new Date();
     const todayFormatted = formatInTimeZone(today, 'Asia/Jakarta', 'yyyy-MM-dd');
 
-    const todayExpenses = expenses?.filter(expense => {
+    const todayExpenses = allExpenses?.filter(expense => {
         const expenseDateFormatted = formatInTimeZone(new Date(expense.date), 'Asia/Jakarta', 'yyyy-MM-dd');
         return expenseDateFormatted === todayFormatted;
       })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
@@ -313,14 +347,14 @@ const ExpenseTracking = ({ headerTitle }) => {
     const startOfCurrentWeek = startOfWeek(today, { weekStartsOn: 1 }); // Monday as start of week
     const endOfCurrentWeek = endOfWeek(today, { weekStartsOn: 1 }); // Sunday as end of week
 
-    const weeklyExpenses = expenses?.filter(expense => {
+    const weeklyExpenses = allExpenses?.filter(expense => {
         const expenseDate = new Date(expense.date);
         return expenseDate >= startOfCurrentWeek && expenseDate <= endOfCurrentWeek;
       })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
     
     const startOfCurrentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const endOfCurrentMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    const monthlyExpenses = expenses?.filter(expense => {
+    const monthlyExpenses = allExpenses?.filter(expense => {
       const expenseDate = new Date(expense.date);
       // Adjust for timezone issues by comparing dates in the correct timezone
       return expenseDate.getMonth() === today.getMonth() && expenseDate.getFullYear() === today.getFullYear();
@@ -376,7 +410,7 @@ const ExpenseTracking = ({ headerTitle }) => {
             </div>
             <ExpenseSummaryCard {...summaryMetrics} />
             <ExpenseEntryForm onAddExpense={handleAddExpense} isLoading={isLoading} userRole={userRole} />
-            {expenses?.length > 0 && <ExpenseAnalytics expenses={expenses} />}
+            {allExpenses?.length > 0 && <ExpenseAnalytics expenses={allExpenses} />}
             <ExpenseHistoryTable
               expenses={expenses} // Pass expenses directly
               onDeleteExpense={handleDeleteExpense}

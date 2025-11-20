@@ -1036,6 +1036,28 @@ app.delete("/api/transactions", authenticateToken, authorizeRoles('admin'), asyn
 
 // --- Expense Endpoints ---
 
+// Get all expenses without pagination
+app.get("/api/expenses/all", authenticateToken, authorizeRoles('user', 'admin', 'guest'), async (req, res) => {
+    try {
+        const dataSql = `
+            SELECT 
+                e.*, 
+                u.username AS recorded_by
+            FROM expenses e
+            LEFT JOIN users u ON e.user_id = u.id
+            ORDER BY e.date DESC
+        `;
+        const [rows] = await db.query(dataSql);
+        
+        res.json({
+            "message": "success",
+            "data": rows,
+        });
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
 // Get all expenses with pagination and date range filtering
 app.get("/api/expenses", authenticateToken, authorizeRoles('user', 'admin', 'guest'), async (req, res, next) => {
     try {
