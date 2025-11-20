@@ -46,6 +46,8 @@ const ExpenseTracking = ({ headerTitle }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20); // Display 20 items per page
 
+  const [pagination, setPagination] = useState(null);
+
   const showNotification = (message, type) => {
     setNotification({ message, type });
     setTimeout(() => {
@@ -54,16 +56,16 @@ const ExpenseTracking = ({ headerTitle }) => {
   };
 
   // Define fetch functions outside useEffects
-  const fetchExpenses = async () => {
+  const fetchExpenses = async (page) => {
     const token = localStorage.getItem('token');
     if (!token) return; // Exit if no token
     setIsLoading(true);
     try {
-      const response = await authFetch(`${apiUrl}/api/expenses`);
+      const response = await authFetch(`${apiUrl}/api/expenses?page=${page}&limit=${itemsPerPage}`);
       const data = await response.json();
       if (data.message === 'success') {
-
         setExpenses(data.data);
+        setPagination(data.pagination); // Set pagination data
       } else {
         console.error('Failed to fetch expenses:', data.error);
         setExpenses([]);
@@ -114,7 +116,6 @@ const ExpenseTracking = ({ headerTitle }) => {
 
   // Call fetch functions inside useEffects
   useEffect(() => {
-    fetchExpenses();
     fetchMenuItems();
     fetchTransactions();
 
@@ -131,6 +132,10 @@ const ExpenseTracking = ({ headerTitle }) => {
       setUserRole(null);
     }
   }, []);
+
+  useEffect(() => {
+    fetchExpenses(currentPage);
+  }, [currentPage]);
 
   useEffect(() => {
     if (transactions.length > 0 && menuItems.length > 0) {
@@ -340,11 +345,6 @@ const ExpenseTracking = ({ headerTitle }) => {
     setSidebarOpen(prev => !prev);
   };
 
-  // Get current expenses for pagination
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentExpenses = expenses.slice(indexOfFirstItem, indexOfLastItem);
-
   // Change page
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -378,7 +378,7 @@ const ExpenseTracking = ({ headerTitle }) => {
             <ExpenseEntryForm onAddExpense={handleAddExpense} isLoading={isLoading} userRole={userRole} />
             {expenses?.length > 0 && <ExpenseAnalytics expenses={expenses} />}
             <ExpenseHistoryTable
-              expenses={currentExpenses} // Pass currentExpenses for pagination
+              expenses={expenses} // Pass expenses directly
               onDeleteExpense={handleDeleteExpense}
               onBulkDelete={handleBulkDelete}
               onExportData={handleExportData}
@@ -389,7 +389,7 @@ const ExpenseTracking = ({ headerTitle }) => {
             <div className="flex justify-center mt-4">
               <Pagination
                 itemsPerPage={itemsPerPage}
-                totalItems={expenses.length}
+                totalItems={pagination?.totalItems || 0}
                 paginate={paginate}
                 currentPage={currentPage}
               />
