@@ -293,6 +293,20 @@ const setupDatabase = async () => {
       console.log('Added cash_paid and change columns to transactions table.');
     }
 
+    // Check and add manual_discount column to transactions if it doesn't exist
+    const checkManualDiscountColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'manual_discount';
+    `;
+    const addManualDiscountColumn = `
+      ALTER TABLE transactions ADD COLUMN manual_discount DECIMAL(10, 2) DEFAULT 0;
+    `;
+    const [manualDiscountRows] = await connection.query(checkManualDiscountColumn);
+    if (manualDiscountRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addManualDiscountColumn);
+      console.log('Added manual_discount column to transactions table.');
+    }
+
     // Check and add hpp column to menu_items if it doesn't exist
     const checkHppColumn = `
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
