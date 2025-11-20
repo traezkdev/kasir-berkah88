@@ -33,7 +33,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      const response = await authFetch(`${apiUrl}/api/menu-items`);
+      const response = await authFetch(`${apiUrl}/api/menu-items/all`);
       const data = await response.json();
       if (data.message === 'success') {
         setMenuItems(data.data);
@@ -182,6 +182,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       ignoreStock: ignoreStock,
       cashPaid: paymentData.cashPaid,
       change: paymentData.change,
+      manual_discount: paymentData.manual_discount,
     };
 
     try {
