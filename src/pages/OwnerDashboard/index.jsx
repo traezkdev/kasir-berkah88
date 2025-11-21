@@ -8,6 +8,8 @@ import Button from '../../components/ui/Button';
 import MetricsCard from '../main-dashboard/components/MetricsCard'; // Re-use MetricsCard
 import DepositModal from '../../components/ui/DepositModal'; // Import DepositModal
 import ExpenseModal from '../../components/ui/ExpenseModal'; // Import ExpenseModal
+import EditTransactionDescriptionModal from '../../components/ui/EditTransactionDescriptionModal'; // Import EditTransactionDescriptionModal
+import ConfirmationModal from '../../components/ui/ConfirmationModal'; // Import ConfirmationModal
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -19,6 +21,10 @@ const OwnerDashboard = ({ headerTitle }) => {
     const [error, setError] = useState(null);
     const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false); // State untuk modal edit
+    const [transactionToEdit, setTransactionToEdit] = useState(null); // State untuk transaksi yang diedit
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false); // State untuk konfirmasi hapus
+    const [transactionToDelete, setTransactionToDelete] = useState(null); // State untuk transaksi yang dihapus
 
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('id-ID', {
@@ -112,6 +118,60 @@ const OwnerDashboard = ({ headerTitle }) => {
         }
     };
 
+    // --- Edit and Delete Transaction Handlers ---
+    const handleEditClick = (transaction) => {
+        setTransactionToEdit(transaction);
+        setIsEditModalOpen(true);
+    };
+
+    const handleDeleteClick = (transaction) => {
+        setTransactionToDelete(transaction);
+        setIsDeleteConfirmOpen(true);
+    };
+
+    const handleSaveEditedDescription = async (id, newDescription) => {
+        try {
+            const response = await authFetch(`${apiUrl}/api/accounts/transactions/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ description: newDescription }),
+            });
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || 'Gagal mengedit deskripsi transaksi');
+            }
+            alert('Deskripsi transaksi berhasil diperbarui!');
+            setIsEditModalOpen(false);
+            setTransactionToEdit(null);
+            fetchOwnerAccountData(); // Refresh data
+        } catch (err) {
+            alert(`Error: ${err.message}`);
+            console.error("Error editing transaction:", err);
+        }
+    };
+
+    const handleConfirmDelete = async () => {
+        try {
+            const response = await authFetch(`${apiUrl}/api/accounts/transactions/${transactionToDelete.id}`, {
+                method: 'DELETE',
+            });
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || 'Gagal menghapus transaksi');
+            }
+            alert('Transaksi berhasil dihapus!');
+            setIsDeleteConfirmOpen(false);
+            setTransactionToDelete(null);
+            fetchOwnerAccountData(); // Refresh data
+        } catch (err) {
+            alert(`Error: ${err.message}`);
+            console.error("Error deleting transaction:", err);
+        }
+    };
+    // --- End Edit and Delete Transaction Handlers ---
+
     if (loading) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center">
@@ -186,9 +246,17 @@ const OwnerDashboard = ({ headerTitle }) => {
                                                 {new Date(transaction.created_at).toLocaleString()} oleh {transaction.created_by_username}
                                             </p>
                                         </div>
-                                        <p className={`font-semibold ${transaction.type === 'deposit' ? 'text-success' : 'text-destructive'}`}>
-                                            {transaction.type === 'deposit' ? '+' : '-'} {formatCurrency(transaction.amount)}
-                                        </p>
+                                        <div className="flex items-center gap-2"> {/* Container for amount and buttons */}
+                                            <p className={`font-semibold ${transaction.type === 'deposit' ? 'text-success' : 'text-destructive'}`}>
+                                                {transaction.type === 'deposit' ? '+' : '-'} {formatCurrency(transaction.amount)}
+                                            </p>
+                                            <Button variant="ghost" size="icon" onClick={() => handleEditClick(transaction)}>
+                                                <Icon name="Edit" className="h-4 w-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(transaction)}>
+                                                <Icon name="Trash2" className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                        </div>
                                     </li>
                                 ))}
                             </ul>
@@ -210,6 +278,21 @@ const OwnerDashboard = ({ headerTitle }) => {
                 onClose={() => setIsExpenseModalOpen(false)}
                 onSave={handleSaveExpense}
                 accountType="owner"
+            />
+            <EditTransactionDescriptionModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                onSave={handleSaveEditedDescription}
+                transaction={transactionToEdit}
+            />
+            <ConfirmationModal
+                isOpen={isDeleteConfirmOpen}
+                onClose={() => setIsDeleteConfirmOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="Hapus Transaksi"
+                message={`Apakah Anda yakin ingin menghapus transaksi "${transactionToDelete?.description || transactionToDelete?.type}" senilai ${formatCurrency(transactionToDelete?.amount || 0)}?`}
+                confirmText="Hapus"
+                isDestructive={true}
             />
         </div>
     );

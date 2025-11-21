@@ -1435,6 +1435,109 @@ app.post("/api/accounts/expense", authenticateToken, async (req, res) => {
 });
 
 
+// PUT Update Account Transaction (only description)
+app.put("/api/accounts/transactions/:id", authenticateToken, async (req, res) => {
+    let connection;
+    try {
+        const { id } = req.params;
+        const { description } = req.body;
+        const userId = req.user.userId;
+
+        if (!description || description.trim() === '') {
+            return res.status(400).json({ error: "Description is required and cannot be empty" });
+        }
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // Get transaction details
+        const [transRows] = await connection.query('SELECT * FROM account_transactions WHERE id = ?', [id]);
+        if (transRows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ error: "Transaction not found" });
+        }
+        const transaction = transRows[0];
+
+        // Check ownership or admin role
+        if (transaction.created_by_user_id !== userId && req.user.role !== 'admin') {
+            await connection.rollback();
+            return res.status(403).json({ error: "Forbidden: You are not authorized to edit this transaction" });
+        }
+
+        await connection.query('UPDATE account_transactions SET description = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?', [description, id]);
+
+        await connection.commit();
+        res.json({ message: "Transaction updated successfully", data: { id, description } });
+
+    } catch (err) {
+        if (connection) {
+            await connection.rollback();
+        }
+        console.error('Error updating account transaction:', err);
+        res.status(500).json({ error: err.message, stack: err.stack });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// DELETE Account Transaction
+app.delete("/api/accounts/transactions/:id", authenticateToken, async (req, res) => {
+    let connection;
+    try {
+        const { id } = req.params;
+        const userId = req.user.userId;
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // Get transaction details
+        const [transRows] = await connection.query('SELECT * FROM account_transactions WHERE id = ? FOR UPDATE', [id]);
+        if (transRows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ error: "Transaction not found" });
+        }
+        const transaction = transRows[0];
+
+        // Check ownership or admin role
+        if (transaction.created_by_user_id !== userId && req.user.role !== 'admin') {
+            await connection.rollback();
+            return res.status(403).json({ error: "Forbidden: You are not authorized to delete this transaction" });
+        }
+
+        // Revert balance based on transaction type
+        if (transaction.type === 'deposit') {
+            await connection.query(
+                'UPDATE accounts SET balance = balance - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                [transaction.amount, transaction.account_id]
+            );
+        } else if (transaction.type === 'expense') {
+            await connection.query(
+                'UPDATE accounts SET balance = balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                [transaction.amount, transaction.account_id]
+            );
+        } else {
+            await connection.rollback();
+            return res.status(500).json({ error: "Unknown transaction type" });
+        }
+
+        // Delete transaction record
+        await connection.query('DELETE FROM account_transactions WHERE id = ?', [id]);
+
+        await connection.commit();
+        res.json({ message: "Transaction deleted successfully", data: { id } });
+
+    } catch (err) {
+        if (connection) {
+            await connection.rollback();
+        }
+        console.error('Error deleting account transaction:', err);
+        res.status(500).json({ error: err.message, stack: err.stack });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+
 // --- Notes Endpoints ---
 
 // Get all notes for all users

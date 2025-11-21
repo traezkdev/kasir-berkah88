@@ -7,6 +7,7 @@ import './styles/tailwind.css';
 
 import { ThemeProvider as LayoutThemeProvider } from './contexts/ThemeContext';
 import { DarkModeProvider } from './contexts/DarkModeContext';
+import { ToastProvider } from './components/ui/ToastNotification'; // <--- Import ToastProvider
 
 // Easter egg for the developer console
 console.log(
@@ -21,7 +22,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <BrowserRouter>
           <DarkModeProvider>
             <LayoutThemeProvider>
-              <App />
+              <ToastProvider> {/* <--- Bungkus dengan ToastProvider */}
+                <App />
+              </ToastProvider>
             </LayoutThemeProvider>
           </DarkModeProvider>
       </BrowserRouter>
