@@ -26,22 +26,30 @@ const MainDashboard = ({ headerTitle }) => {
     const token = localStorage.getItem('token');
     if (!token) return; // Exit if no token
     try {
-      const [transRes, menuRes, expenseRes, settingsRes] = await Promise.all([
-        authFetch(`${apiUrl}/api/transactions`),
+      const [paginatedTransRes, allTransRes, menuRes, expenseRes, settingsRes] = await Promise.all([
+        authFetch(`${apiUrl}/api/transactions`), // This fetches paginated transactions (default limit 20)
+        authFetch(`${apiUrl}/api/transactions/all`), // Fetch all transactions for all-time metrics
         authFetch(`${apiUrl}/api/menu-items`),
         authFetch(`${apiUrl}/api/expenses/all`), // Fetch all expenses
         authFetch(`${apiUrl}/api/all-settings`)
       ]);
 
-      let transactionsData = [];
+      let paginatedTransactionsData = [];
+      let allTransactionsData = [];
       let menuItemsData = [];
       let expensesData = [];
       let settingsData = {};
 
-      // Handle transactions data
-      const transactions = await transRes.json();
-      if (transRes.ok && transactions.message === 'success') {
-        transactionsData = transactions.data;
+      // Handle paginated transactions data (for recent transactions list)
+      const paginatedTransactions = await paginatedTransRes.json();
+      if (paginatedTransRes.ok && paginatedTransactions.message === 'success') {
+        paginatedTransactionsData = paginatedTransactions.data;
+      }
+
+      // Handle all transactions data (for all-time metrics)
+      const allTransactions = await allTransRes.json();
+      if (allTransRes.ok && allTransactions.message === 'success') {
+        allTransactionsData = allTransactions.data;
       }
 
       // Handle menu items data
@@ -64,13 +72,12 @@ const MainDashboard = ({ headerTitle }) => {
 
       // Process data if menu items are available (always expected)
       // and other data is fetched (or empty if not available)
-      if (menuItemsData.length > 0 || transactionsData.length > 0 || expensesData.length > 0) {
-        processDashboardData(transactionsData, menuItemsData, expensesData, settingsData);
+      if (menuItemsData.length > 0 || paginatedTransactionsData.length > 0 || allTransactionsData.length > 0 || expensesData.length > 0) {
+        processDashboardData(paginatedTransactionsData, allTransactionsData, menuItemsData, expensesData, settingsData);
       } else {
-        console.error("No dashboard data fetched successfully.");
         // Optionally, set dashboardData to an empty state to stop loading spinner
         setDashboardData({
-          metrics: { totalRevenue: 0, totalExpenses: 0, stockValue: 0, netProfit: 0 },
+          metrics: { totalRevenue: 0, totalExpenses: 0, stockValue: 0, netProfit: 0, workingCapital: 0, allTimeRevenue: 0, allTimeExpenses: 0, allTimeNetProfit: 0 },
           todayStats: { transactions: 0, itemsSold: 0, averageOrder: 0, peakHour: 'N/A' },
           recentTransactions: [],
           dashboardMetrics: {
@@ -81,12 +88,11 @@ const MainDashboard = ({ headerTitle }) => {
           }
         });
       }
-
     } catch (error) {
       console.error("Error during dashboard data fetch:", error);
       // In case of network error, stop loading and show empty data
       setDashboardData({
-        metrics: { totalRevenue: 0, totalExpenses: 0, stockValue: 0, netProfit: 0 },
+        metrics: { totalRevenue: 0, totalExpenses: 0, stockValue: 0, netProfit: 0, workingCapital: 0, allTimeRevenue: 0, allTimeExpenses: 0, allTimeNetProfit: 0 }, // Ensure all metrics are initialized
         todayStats: { transactions: 0, itemsSold: 0, averageOrder: 0, peakHour: 'N/A' },
         recentTransactions: [],
         dashboardMetrics: {
@@ -136,7 +142,7 @@ const MainDashboard = ({ headerTitle }) => {
     }
   }, []); // Empty dependency array to run once on mount
 
-    const processDashboardData = (transactions, menuItems, expenses, settings) => {
+    const processDashboardData = (paginatedTransactions, allTransactions, menuItems, expenses, settings) => {
       const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
@@ -153,7 +159,7 @@ const MainDashboard = ({ headerTitle }) => {
       let workingCapital = 0;
   
       // For "All Time" metrics, consider all transactions and expenses regardless of initial_capital_date
-      const allTimeTransactions = transactions; 
+      const allTimeTransactions = allTransactions; 
       const allTimeRelevantExpenses = expenses;
   
       const allTimeRevenue = allTimeTransactions
@@ -167,7 +173,8 @@ const MainDashboard = ({ headerTitle }) => {
       }
   
       // --- Monthly Metrics for Dashboard ---
-      const monthlyTransactions = transactions.filter(t => {
+      // Use allTransactions for monthly metrics to ensure complete data
+      const monthlyTransactions = allTransactions.filter(t => {
         const transactionDate = new Date(t.timestamp);
         return (
           transactionDate.getMonth() === currentMonth &&
@@ -191,12 +198,13 @@ const MainDashboard = ({ headerTitle }) => {
       const netProfit = totalRevenue - totalExpenses;
   
       // --- Daily Stats Calculation ---
-      const todayTransactions = transactions.filter(t => new Date(t.timestamp).toDateString() === todayString && t.payment_method !== 'Makan Karyawan');
+      // Use allTransactions for today's stats to ensure complete data for the day.
+      const todayTransactions = allTransactions.filter(t => new Date(t.timestamp).toDateString() === todayString && t.payment_method !== 'Makan Karyawan');
       const todaySales = todayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
       const averageOrderToday = todayTransactions.length > 0 ? todaySales / todayTransactions.length : 0;
   
       // Yesterday's Data
-      const yesterdayTransactions = transactions.filter(t => new Date(t.timestamp).toDateString() === yesterdayString && t.payment_method !== 'Makan Karyawan');
+      const yesterdayTransactions = allTransactions.filter(t => new Date(t.timestamp).toDateString() === yesterdayString && t.payment_method !== 'Makan Karyawan');
       const yesterdaySales = yesterdayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
       const averageOrderYesterday = yesterdayTransactions.length > 0 ? yesterdaySales / yesterdayTransactions.length : 0;
   
@@ -234,7 +242,7 @@ const MainDashboard = ({ headerTitle }) => {
         }
       }).reduce((sum, i) => sum + (i.quantity || 0), 0);
       const lowStockItems = menuItems.filter(item => item.stock <= 5 && item.stock > 0).length;
-      const recentTransactions = transactions.slice(0, 6);
+      const recentTransactions = paginatedTransactions.slice(0, 6); // Use paginated for recent list
   
       setDashboardData({
         metrics: {
@@ -360,8 +368,8 @@ const MainDashboard = ({ headerTitle }) => {
       description: 'Modal awal + pendapatan - pengeluaran'
     },
     {
-      title: 'Pendapatan Bulan Ini',
-      value: formatCurrency(dashboardData.metrics.totalRevenue),
+      title: 'Pendapatan Hari Ini',
+      value: dashboardData.dashboardMetrics.todaySales.value,
       icon: 'TrendingUp',
       color: 'success',
       description: 'Tidak termasuk makan karyawan'

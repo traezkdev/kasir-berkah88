@@ -804,7 +804,7 @@ app.post('/api/app-settings', authenticateToken, authorizeRoles('admin'), upload
 app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir'), async (req, res, next) => {
     try {
         const page = parseInt(req.query.page, 10) || 1;
-        const limit = parseInt(req.query.limit, 10) || 20;
+        const limit = parseInt(req.query.limit, 10) || 20; // Default limit of 20
         const offset = (page - 1) * limit;
 
         // Query to get total count of transactions
@@ -824,7 +824,7 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
             LIMIT ?
             OFFSET ?
         `;
-        const [rows] = await db.query(sql, [limit, offset]);
+        const [rows] = await db.query(sql, [limit, offset]); 
         
         const transactions = rows.map(row => ({
             ...row,
@@ -840,6 +840,33 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
                 "totalItems": totalItems,
                 "limit": limit
             }
+        });
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
+// Get all transactions without pagination (for all-time metrics)
+app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir'), async (req, res, next) => {
+    try {
+        const sql = `
+            SELECT 
+                t.*, 
+                u.username AS cashier_name
+            FROM transactions t
+            LEFT JOIN users u ON t.user_id = u.id
+            ORDER BY t.timestamp DESC
+        `;
+        const [rows] = await db.query(sql);
+        
+        const transactions = rows.map(row => ({
+            ...row,
+            isEmployeeMeal: row.isEmployeeMeal === 1,
+        }));
+
+        res.json({
+            "message": "success",
+            "data": transactions
         });
     } catch (err) {
         res.status(500).json({ "error": err.message });
