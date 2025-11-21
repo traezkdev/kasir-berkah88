@@ -48,9 +48,9 @@ const BusinessReports = ({ headerTitle }) => {
       }
       try {
         const [transRes, menuRes, expenseRes, settingsRes] = await Promise.all([
-          authFetch(`${apiUrl}/api/transactions`),
-          authFetch(`${apiUrl}/api/menu-items`),
-          authFetch(`${apiUrl}/api/expenses`),
+          authFetch(`${apiUrl}/api/transactions/all`),
+          authFetch(`${apiUrl}/api/menu-items/all`),
+          authFetch(`${apiUrl}/api/expenses/all`),
           authFetch(`${apiUrl}/api/all-settings`)
         ]);
 

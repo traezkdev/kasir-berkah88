@@ -865,7 +865,18 @@ app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admi
     try {
         const sql = `
             SELECT 
-                t.*, 
+                t.id,
+                DATE_FORMAT(t.timestamp, '%Y-%m-%d %H:%i:%s+07:00') AS timestamp,
+                t.items,
+                t.total,
+                t.ppn,
+                t.isEmployeeMeal,
+                t.payment_method,
+                t.cash_paid,
+                t.change,
+                t.order_id,
+                t.user_id,
+                t.manual_discount,
                 u.username AS cashier_name
             FROM transactions t
             LEFT JOIN users u ON t.user_id = u.id
@@ -1079,7 +1090,13 @@ app.get("/api/expenses/all", authenticateToken, authorizeRoles('user', 'admin', 
     try {
         const dataSql = `
             SELECT 
-                e.*, 
+                e.id,
+                e.name,
+                e.amount,
+                e.category,
+                DATE_FORMAT(e.date, '%Y-%m-%d %H:%i:%s+07:00') AS date,
+                e.notes,
+                e.user_id,
                 u.username AS recorded_by
             FROM expenses e
             LEFT JOIN users u ON e.user_id = u.id

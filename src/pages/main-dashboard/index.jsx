@@ -298,6 +298,7 @@ const MainDashboard = ({ headerTitle }) => {
           allTimeRevenue,
           allTimeExpenses,
           allTimeNetProfit,
+          initialCapital, // Add initialCapital here
           // Other
           stockValue,
           ownerBalance: ownerAccountData?.account?.balance || 0,
@@ -405,6 +406,13 @@ const MainDashboard = ({ headerTitle }) => {
 
   const metricsData = [
     {
+      title: 'Modal Awal',
+      value: formatCurrency(dashboardData.metrics.initialCapital),
+      icon: 'PiggyBank', // Changed to PiggyBank for initial capital
+      color: 'primary',
+      description: 'Jumlah modal awal yang disetor'
+    },
+    {
       title: 'Modal Berjalan',
       value: formatCurrency(dashboardData.metrics.workingCapital),
       icon: 'Wallet',
@@ -412,12 +420,19 @@ const MainDashboard = ({ headerTitle }) => {
       description: 'Modal awal + pendapatan + nilai stok - pengeluaran'
     },
     {
-      title: 'Pendapatan Hari Ini',
-      value: dashboardData.dashboardMetrics.todaySales.value,
+      title: 'Pendapatan',
+      value: formatCurrency(dashboardData.metrics.allTimeRevenue), // Assuming this refers to total revenue
+      icon: 'BarChart',
+      color: 'success',
+      description: 'Total pendapatan dari semua transaksi'
+    },
+    {
+      title: 'Modal Akhir Saat Ini',
+      value: formatCurrency(dashboardData.metrics.initialCapital + dashboardData.metrics.allTimeRevenue - dashboardData.metrics.allTimeExpenses),
       icon: 'TrendingUp',
       color: 'success',
-      description: 'Tidak termasuk makan karyawan'
-    },
+      description: 'Modal awal + pendapatan - pengeluaran'
+    }, // Add comma here
     {
       title: 'Pengeluaran Bulan Ini',
       value: formatCurrency(dashboardData.metrics.totalExpenses),

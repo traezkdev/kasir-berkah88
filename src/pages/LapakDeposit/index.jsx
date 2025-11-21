@@ -223,7 +223,7 @@ const LapakDeposit = ({ headerTitle }) => {
                         {/* Other lapak-specific metrics can go here */}
                     </div>
 
-                    <div className="flex gap-4 mb-8">
+                    <div className="flex flex-wrap justify-start gap-4 mb-8">
                         <Button variant="primary" iconName="Plus" onClick={handleAddDeposit}>
                             Tambah Deposit
                         </Button>
