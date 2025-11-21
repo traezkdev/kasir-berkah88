@@ -80,6 +80,23 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
     if (item.guestRestricted && userRole === 'guest') {
       return false;
     }
+
+    // Hide specific items for 'owner' role when on '/owner-dashboard'
+    if (userRole === 'owner' && location.pathname === '/owner-dashboard') {
+      const ownerHiddenPaths = [
+        '/main-dashboard',
+        '/sales-transaction-processing',
+        '/menu-management',
+        '/expense-tracking',
+        '/transaction-history',
+        '/order-confirmation',
+        '/notes',
+        '/profile'
+      ];
+      if (ownerHiddenPaths.includes(item.path)) {
+        return false;
+      }
+    }
     return true;
   });
 
