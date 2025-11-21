@@ -7,6 +7,7 @@ import DateRangeSelector from './components/DateRangeSelector';
 import StockReportSection from './components/StockReportSection';
 import SalesReportSection from './components/SalesReportSection';
 import ExpenseReportSection from './components/ExpenseReportSection';
+import EmployeeMealReportSection from './components/EmployeeMealReportSection';
 import CombinedAnalyticsSection from './components/CombinedAnalyticsSection';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
@@ -164,6 +165,38 @@ const BusinessReports = ({ headerTitle }) => {
       const totalExpenses = filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
       const expenseCategories = [...new Set(filteredExpenses.map(e => e.category))].length;
 
+      // Employee Meals Data
+      const employeeMealsTransactions = transactions.filter(t => t.payment_method === 'Makan Karyawan' && filterByDate(t));
+      
+      let totalItemsServedInEmployeeMeals = 0;
+      let estimatedValueEmployeeMeals = 0;
+      const employeeMealItems = []; // For detailed table
+
+      employeeMealsTransactions.forEach(t => {
+        try {
+          const items = typeof t.items === 'string' ? JSON.parse(t.items) : t.items;
+          if (Array.isArray(items)) {
+            items.forEach(item => {
+              const itemPrice = parseFloat(item.price || 0);
+              const quantity = item.quantity || 0;
+
+              totalItemsServedInEmployeeMeals += quantity;
+              estimatedValueEmployeeMeals += quantity * itemPrice;
+
+              employeeMealItems.push({
+                date: formatInTimeZone(new Date(t.timestamp), 'Asia/Jakarta', 'dd/MM/yyyy'),
+                name: item.name,
+                quantity: quantity,
+                estimatedValue: quantity * itemPrice
+              });
+            });
+          }
+        } catch (e) {
+          console.error("Failed to parse transaction items for employee meals:", e);
+        }
+      });
+
+
       const startOfDayStartDate = new Date(selectedDateRange.startDate);
       
       const endOfDayEndDate = new Date(selectedDateRange.endDate);
@@ -220,6 +253,14 @@ const BusinessReports = ({ headerTitle }) => {
             averageDaily: averageDailyExpenses
           },
           items: filteredExpenses
+        },
+        employeeMeals: {
+          summary: {
+            totalMeals: employeeMealsTransactions.length,
+            totalItemsServed: totalItemsServedInEmployeeMeals,
+            estimatedValue: estimatedValueEmployeeMeals
+          },
+          items: employeeMealItems
         }
       });
     };
@@ -310,6 +351,7 @@ const BusinessReports = ({ headerTitle }) => {
               <SalesReportSection data={reportData.sales} />
               <StockReportSection data={reportData.stock} />
               <ExpenseReportSection data={reportData.expenses} />
+              <EmployeeMealReportSection data={reportData.employeeMeals} />
               <CombinedAnalyticsSection salesData={reportData.sales} stockData={reportData.stock} expensesData={reportData.expenses} onExportCombined={handleExportCombinedData} />
               <div className="bg-card rounded-lg border border-border shadow-elevation-1 p-6 mt-6">
                 <p className="text-sm text-text-secondary mb-4 text-center dark:text-gray-400">Export laporan gabungan untuk analisis lebih lanjut.</p>
