@@ -167,9 +167,11 @@ const MainDashboard = ({ headerTitle }) => {
         .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
       const allTimeExpenses = allTimeRelevantExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
       const allTimeNetProfit = allTimeRevenue - allTimeExpenses;
+
+      const stockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
   
       if (!isNaN(initialCapital)) {
-          workingCapital = initialCapital + allTimeNetProfit;
+          workingCapital = initialCapital + allTimeNetProfit + stockValue;
       }
   
       // --- Monthly Metrics for Dashboard ---
@@ -194,7 +196,7 @@ const MainDashboard = ({ headerTitle }) => {
       });
   
       const totalExpenses = monthlyExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
-      const stockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
+
       const netProfit = totalRevenue - totalExpenses;
   
       // --- Daily Stats Calculation ---
@@ -365,7 +367,7 @@ const MainDashboard = ({ headerTitle }) => {
       value: formatCurrency(dashboardData.metrics.workingCapital),
       icon: 'Wallet',
       color: 'info',
-      description: 'Modal awal + pendapatan - pengeluaran'
+      description: 'Modal awal + pendapatan + nilai stok - pengeluaran'
     },
     {
       title: 'Pendapatan Hari Ini',

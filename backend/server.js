@@ -1499,33 +1499,107 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
 
 
 
-            // 2. Stock Validation
-
-            for (const item of items) {
-
-                const [menuItemRows] = await connection.query('SELECT name, stock FROM menu_items WHERE id = ?', [item.id]);
-
-                if (menuItemRows.length === 0) {
-
-                    await connection.rollback();
-
-                    return res.status(400).json({ error: `Menu item dengan ID ${item.id} tidak ditemukan.` });
-
-                }
-
-                if (menuItemRows[0].stock < item.quantity) {
-
-                    await connection.rollback();
-
-                    return res.status(400).json({ error: `Stok untuk ${menuItemRows[0].name} tidak mencukupi. Tersedia: ${menuItemRows[0].stock}, Diminta: ${item.quantity}` });
-
-                }
-
-            }
+                        // 2. Stock Validation
 
 
 
-            // 3. Stock Reduction
+                        const missingItemIds = [];
+
+
+
+                        const insufficientStockItems = [];
+
+
+
+            
+
+
+
+                        for (const item of items) {
+
+
+
+                            const [menuItemRows] = await connection.query('SELECT name, stock FROM menu_items WHERE id = ?', [item.id]);
+
+
+
+                            if (menuItemRows.length === 0) {
+
+
+
+                                missingItemIds.push(item.id);
+
+
+
+                            } else if (menuItemRows[0].stock < item.quantity) {
+
+
+
+                                insufficientStockItems.push(`${menuItemRows[0].name} (Tersedia: ${menuItemRows[0].stock}, Diminta: ${item.quantity})`);
+
+
+
+                            }
+
+
+
+                        }
+
+
+
+            
+
+
+
+                        if (missingItemIds.length > 0 || insufficientStockItems.length > 0) {
+
+
+
+                            await connection.rollback();
+
+
+
+                            let errorMessage = "Pesanan tidak dapat diterima karena masalah stok:\n";
+
+
+
+                            if (missingItemIds.length > 0) {
+
+
+
+                                errorMessage += `- Item menu tidak ditemukan: ${missingItemIds.join(', ')}.\n`;
+
+
+
+                            }
+
+
+
+                            if (insufficientStockItems.length > 0) {
+
+
+
+                                errorMessage += `- Stok tidak mencukupi untuk: ${insufficientStockItems.join('; ')}.\n`;
+
+
+
+                            }
+
+
+
+                            return res.status(400).json({ error: errorMessage.trim() });
+
+
+
+                        }
+
+
+
+            
+
+
+
+                        // 3. Stock Reduction
 
             for (const item of items) {
 
