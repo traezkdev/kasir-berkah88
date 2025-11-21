@@ -90,7 +90,7 @@ const LapakDeposit = ({ headerTitle }) => {
             setIsDepositModalOpen(false);
             fetchLapakAccountData(); // Refresh data
         } catch (err) {
-            alert(`Error: ${err.message}`);
+            showToast(`Error: ${err.message}`, 'error');
             console.error("Error saving deposit:", err);
         }
     };
@@ -116,7 +116,7 @@ const LapakDeposit = ({ headerTitle }) => {
             setIsExpenseModalOpen(false);
             fetchLapakAccountData(); // Refresh data
         } catch (err) {
-            alert(`Error: ${err.message}`);
+            showToast(`Error: ${err.message}`, 'error');
             console.error("Error saving expense:", err);
         }
     };
@@ -145,12 +145,12 @@ const LapakDeposit = ({ headerTitle }) => {
                 const errData = await response.json();
                 throw new Error(errData.error || 'Gagal mengedit deskripsi transaksi');
             }
-            alert('Deskripsi transaksi berhasil diperbarui!');
+            showToast('Deskripsi transaksi berhasil diperbarui!', 'success');
             setIsEditModalOpen(false);
             setTransactionToEdit(null);
             fetchLapakAccountData(); // Refresh data
         } catch (err) {
-            alert(`Error: ${err.message}`);
+            showToast(`Error: ${err.message}`, 'error');
             console.error("Error editing transaction:", err);
         }
     };
@@ -169,7 +169,7 @@ const LapakDeposit = ({ headerTitle }) => {
             setTransactionToDelete(null);
             fetchLapakAccountData(); // Refresh data
         } catch (err) {
-            alert(`Error: ${err.message}`);
+            showToast(`Error: ${err.message}`, 'error');
             console.error("Error deleting transaction:", err);
         }
     };

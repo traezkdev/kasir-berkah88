@@ -10,6 +10,7 @@ import DepositModal from '../../components/ui/DepositModal'; // Import DepositMo
 import ExpenseModal from '../../components/ui/ExpenseModal'; // Import ExpenseModal
 import EditTransactionDescriptionModal from '../../components/ui/EditTransactionDescriptionModal'; // Import EditTransactionDescriptionModal
 import ConfirmationModal from '../../components/ui/ConfirmationModal'; // Import ConfirmationModal
+import { useToast } from '../../components/ui/ToastNotification'; // <--- Import useToast
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -25,6 +26,8 @@ const OwnerDashboard = ({ headerTitle }) => {
     const [transactionToEdit, setTransactionToEdit] = useState(null); // State untuk transaksi yang diedit
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false); // State untuk konfirmasi hapus
     const [transactionToDelete, setTransactionToDelete] = useState(null); // State untuk transaksi yang dihapus
+
+    const { showToast } = useToast(); // <--- Panggil useToast
 
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('id-ID', {
@@ -83,11 +86,11 @@ const OwnerDashboard = ({ headerTitle }) => {
                 const errData = await response.json();
                 throw new Error(errData.error || 'Gagal menambahkan deposit');
             }
-            alert('Deposit berhasil ditambahkan!');
+            showToast('Deposit berhasil ditambahkan!', 'success');
             setIsDepositModalOpen(false);
             fetchOwnerAccountData(); // Refresh data
         } catch (err) {
-            alert(`Error: ${err.message}`);
+            showToast(`Error: ${err.message}`, 'error');
             console.error("Error saving deposit:", err);
         }
     };
@@ -109,11 +112,11 @@ const OwnerDashboard = ({ headerTitle }) => {
                 const errData = await response.json();
                 throw new Error(errData.error || 'Gagal mencatat pengeluaran');
             }
-            alert('Pengeluaran berhasil dicatat!');
+            showToast('Pengeluaran berhasil dicatat!', 'success');
             setIsExpenseModalOpen(false);
             fetchOwnerAccountData(); // Refresh data
         } catch (err) {
-            alert(`Error: ${err.message}`);
+            showToast(`Error: ${err.message}`, 'error');
             console.error("Error saving expense:", err);
         }
     };
@@ -142,12 +145,12 @@ const OwnerDashboard = ({ headerTitle }) => {
                 const errData = await response.json();
                 throw new Error(errData.error || 'Gagal mengedit deskripsi transaksi');
             }
-            alert('Deskripsi transaksi berhasil diperbarui!');
+            showToast('Deskripsi transaksi berhasil diperbarui!', 'success');
             setIsEditModalOpen(false);
             setTransactionToEdit(null);
             fetchOwnerAccountData(); // Refresh data
         } catch (err) {
-            alert(`Error: ${err.message}`);
+            showToast(`Error: ${err.message}`, 'error');
             console.error("Error editing transaction:", err);
         }
     };
@@ -161,12 +164,12 @@ const OwnerDashboard = ({ headerTitle }) => {
                 const errData = await response.json();
                 throw new Error(errData.error || 'Gagal menghapus transaksi');
             }
-            alert('Transaksi berhasil dihapus!');
+            showToast('Transaksi berhasil dihapus!', 'success');
             setIsDeleteConfirmOpen(false);
             setTransactionToDelete(null);
             fetchOwnerAccountData(); // Refresh data
         } catch (err) {
-            alert(`Error: ${err.message}`);
+            showToast(`Error: ${err.message}`, 'error');
             console.error("Error deleting transaction:", err);
         }
     };
