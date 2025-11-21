@@ -18,6 +18,7 @@ const OwnerDashboard = ({ headerTitle }) => {
     const { theme } = useTheme();
     const navigate = useNavigate();
     const [ownerAccount, setOwnerAccount] = useState(null);
+    const [lapakAccount, setLapakAccount] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
@@ -39,8 +40,7 @@ const OwnerDashboard = ({ headerTitle }) => {
     };
 
     const fetchOwnerAccountData = async () => {
-        setLoading(true);
-        setError(null);
+        setError(null); // Clear previous errors
         try {
             const response = await authFetch(`${apiUrl}/api/accounts/owner_deposit`);
             if (!response.ok) {
@@ -52,13 +52,34 @@ const OwnerDashboard = ({ headerTitle }) => {
         } catch (err) {
             console.error("Error fetching owner account data:", err);
             setError(err.message);
-        } finally {
-            setLoading(false);
+        }
+    };
+
+    const fetchLapakAccountData = async () => {
+        try {
+            const response = await authFetch(`${apiUrl}/api/accounts/lapak_deposit`);
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || 'Failed to fetch lapak account data');
+            }
+            const data = await response.json();
+            setLapakAccount(data.data);
+        } catch (err) {
+            console.error("Error fetching lapak account data for owner dashboard:", err);
+            // We don't set global error state here as owner dashboard should still load even if lapak fails
         }
     };
 
     useEffect(() => {
-        fetchOwnerAccountData();
+        const fetchAllData = async () => {
+            setLoading(true);
+            await Promise.all([
+                fetchOwnerAccountData(),
+                fetchLapakAccountData()
+            ]);
+            setLoading(false);
+        };
+        fetchAllData();
     }, []);
 
     const handleAddDeposit = () => {
@@ -218,6 +239,13 @@ const OwnerDashboard = ({ headerTitle }) => {
                             icon="Wallet"
                             color="success"
                             description="Total dana tersedia untuk owner"
+                        />
+                        <MetricsCard
+                            title="Saldo Lapak"
+                            value={formatCurrency(lapakAccount?.account?.balance || 0)}
+                            icon="Wallet"
+                            color="info"
+                            description="Total dana tersedia untuk operasional lapak"
                         />
                         {/* Other owner-specific metrics can go here */}
                     </div>
