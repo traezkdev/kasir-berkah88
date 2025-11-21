@@ -71,7 +71,7 @@ const OrderConfirmationPage = ({ headerTitle }) => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ status: newStatus, items: itemIds }), // Mengirim array ID
+                body: JSON.stringify({ status: newStatus, items: parsedItems }), // Mengirim array item lengkap
             });
 
             const res = await response.json();
