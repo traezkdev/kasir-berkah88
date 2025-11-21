@@ -12,6 +12,7 @@ import TransactionReceiptModal from './components/TransactionReceiptModal'; // I
 import EditTransactionModal from './components/EditTransactionModal'; // Import the new edit modal
 import TransactionChart from './components/TransactionChart'; // Import TransactionChart
 
+import MetricsCard from '../main-dashboard/components/MetricsCard'; // Import MetricsCard
 import authFetch from '../../utils/authFetch';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -24,6 +25,15 @@ import * as XLSX from 'xlsx';
 const apiUrl = import.meta.env.VITE_API_URL;
 
 import { useTheme } from '../../contexts/ThemeContext';
+
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  })?.format(amount);
+};
 
 const TransactionHistory = ({ headerTitle }) => {
   const { theme } = useTheme();
@@ -51,12 +61,53 @@ const TransactionHistory = ({ headerTitle }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState(null);
   const [chartFilterType, setChartFilterType] = useState('daily');
-  const [currentDailyDate, setCurrentDailyDate] = useState(new Date());
+  // Removed currentDailyDate and its handlers as chart will now display all data for the selected period
+
+  const [allTransactionsForChart, setAllTransactionsForChart] = useState([]); // New state for chart data
 
   const navigate = useNavigate();
 
-  // Load transactions from API based on page and filters
-  const fetchTransactions = async (page) => {
+  // Function to fetch all transactions for the chart based on date range and filter type
+  const fetchAllTransactionsForChart = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const params = new URLSearchParams();
+
+    // The filter type (daily, weekly, monthly) will be handled client-side in TransactionChart
+    if (dateRange.endDate) {
+        params.append('endDate', new Date(dateRange.endDate).toISOString().split('T')[0]);
+    } else {
+        // If no endDate is set, default to today (local date) to ensure current day's data is always included
+        const today = new Date();
+        const localTodayString = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
+        params.append('endDate', localTodayString);
+    }
+
+    try {
+      // Request all transactions by not setting limit
+      const url = `${apiUrl}/api/transactions/all?${params.toString()}`;
+      const response = await authFetch(url); // Use /all endpoint for non-paginated
+      const data = await response.json();
+      if (data.message === 'success') {
+        const parsedTransactions = data.data.map(t => ({
+          ...t,
+          timestamp: new Date(t.timestamp),
+          items: Array.isArray(t.items) ? t.items : JSON.parse(t.items || '[]')
+        }));
+        setAllTransactionsForChart(parsedTransactions);
+      } else {
+        console.error('Failed to fetch all transactions for chart:', data.error);
+        setAllTransactionsForChart([]);
+      }
+    } catch (error) {
+      console.error('Error fetching all transactions for chart:', error);
+      setAllTransactionsForChart([]);
+    }
+  };
+
+  // Load transactions from API based on page and filters (for the table)
+  const fetchPaginatedTransactions = async (page) => {
     const token = localStorage.getItem('token');
     if (!token) return;
 
@@ -101,8 +152,13 @@ const TransactionHistory = ({ headerTitle }) => {
   }, []);
 
   useEffect(() => {
-    fetchTransactions(currentPage);
+    fetchPaginatedTransactions(currentPage);
   }, [currentPage, dateRange]);
+
+  // Fetch all transactions for the chart whenever dateRange changes
+  useEffect(() => {
+    fetchAllTransactionsForChart();
+  }, [dateRange]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -150,7 +206,7 @@ const TransactionHistory = ({ headerTitle }) => {
       });
       const result = await response.json();
       if (result.message === 'success') {
-        fetchTransactions(currentPage); // Refresh the current page
+        fetchPaginatedTransactions(currentPage); // Refresh the current page
         handleCloseEditModal();
       } else {
         console.error('Failed to update transaction:', result.error);
@@ -254,7 +310,7 @@ const TransactionHistory = ({ headerTitle }) => {
       });
       const data = await response.json();
       if (data.message === 'deleted') {
-        fetchTransactions(currentPage); // Refetch current page
+        fetchPaginatedTransactions(currentPage); // Refetch current page
       } else {
         console.error('Failed to delete transaction:', data.error);
       }
@@ -273,7 +329,7 @@ const TransactionHistory = ({ headerTitle }) => {
         if (currentPage !== 1) {
           setCurrentPage(1);
         } else {
-          fetchTransactions(1);
+          fetchPaginatedTransactions(1);
         }
       } else {
         console.error('Failed to clear transactions:', data.error);
@@ -459,6 +515,91 @@ const TransactionHistory = ({ headerTitle }) => {
 
 
 
+
+  const revenueMetrics = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const getStartOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+    const getEndOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+
+    const todayStart = getStartOfDay(new Date()); // Get start of today in local time
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(todayStart.getDate() - 1); // Derives yesterday directly from todayStart
+
+    const getYesterdayRange = () => {
+      return { start: yesterdayStart, end: getEndOfDay(yesterdayStart) };
+    };
+
+    const getThisWeekRange = () => {
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
+      return { start: getStartOfDay(startOfWeek), end: getEndOfDay(new Date()) };
+    };
+
+    const getThisMonthRange = () => {
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      return { start: getStartOfDay(startOfMonth), end: getEndOfDay(new Date()) };
+    };
+
+    const calculateRevenueForPeriod = (transactions, startDate, endDate, debugLabel = '') => {
+      let sum = 0;
+      transactions
+        .filter(t => t.payment_method !== 'Makan Karyawan')
+        .filter(t => {
+          const transactionDate = new Date(t.timestamp);
+          const isIncluded = transactionDate >= startDate && transactionDate <= endDate;
+          return isIncluded;
+        })
+        .forEach(t => {
+          sum += parseFloat(t.total || 0);
+        });
+        return sum;
+    };
+
+    const todayRange = { start: getStartOfDay(today), end: getEndOfDay(today) };
+    const yesterdayRange = getYesterdayRange();
+    const thisWeekRange = getThisWeekRange();
+    const thisMonthRange = getThisMonthRange();
+
+    const revenueToday = calculateRevenueForPeriod(allTransactionsForChart, todayRange.start, todayRange.end);
+    const revenueYesterday = calculateRevenueForPeriod(allTransactionsForChart, yesterdayRange.start, yesterdayRange.end);
+    const revenueThisWeek = calculateRevenueForPeriod(allTransactionsForChart, thisWeekRange.start, thisWeekRange.end);
+    const revenueThisMonth = calculateRevenueForPeriod(allTransactionsForChart, thisMonthRange.start, thisMonthRange.end);
+
+    return [
+      {
+        title: 'Pendapatan Hari Ini',
+        value: formatCurrency(revenueToday),
+        icon: 'TrendingUp',
+        color: 'success',
+        description: 'Total pendapatan dari transaksi hari ini.'
+      },
+      {
+        title: 'Pendapatan Kemarin',
+        value: formatCurrency(revenueYesterday),
+        icon: 'DollarSign',
+        color: 'info',
+        description: 'Total pendapatan dari transaksi kemarin.'
+      },
+      {
+        title: 'Pendapatan Minggu Ini',
+        value: formatCurrency(revenueThisWeek),
+        icon: 'Calendar',
+        color: 'primary',
+        description: 'Total pendapatan dari transaksi minggu ini.'
+      },
+      {
+        title: 'Pendapatan Bulan Ini',
+        value: formatCurrency(revenueThisMonth),
+        icon: 'CalendarDays',
+        color: 'accent',
+        description: 'Total pendapatan dari transaksi bulan ini.'
+      }
+    ];
+  }, [allTransactionsForChart]);
+
+
   return (
 
     <div className="min-h-screen">
@@ -487,39 +628,25 @@ const TransactionHistory = ({ headerTitle }) => {
 
           </div>
 
-
-
-          <div className="space-y-6 bg-card p-4 rounded-lg shadow-md" ref={exportContentRef}>
-
-            <div className="bg-card p-4 rounded-lg shadow-md">
-              <div className="flex justify-center space-x-4 mb-4">
-                <button
-                  onClick={() => setChartFilterType('daily')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium ${chartFilterType === 'daily' ? 'bg-blue-500 text-white dark:bg-blue-700 dark:text-gray-100' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'}`}
-                >
-                  Harian
-                </button>
-                <button
-                  onClick={() => setChartFilterType('weekly')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium ${chartFilterType === 'weekly' ? 'bg-blue-500 text-white dark:bg-blue-700 dark:text-gray-100' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'}`}
-                >
-                  Mingguan
-                </button>
-                <button
-                  onClick={() => setChartFilterType('monthly')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium ${chartFilterType === 'monthly' ? 'bg-blue-500 text-white dark:bg-blue-700 dark:text-gray-100' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'}`}
-                >
-                  Bulanan
-                </button>
-              </div>
-              <TransactionChart 
-                transactions={transactions} 
-                filterType={chartFilterType} 
-                currentDailyDate={currentDailyDate}
-                onNextDayRange={handleNextDayRange}
-                onPrevDayRange={handlePrevDayRange}
-              />
+          {/* Revenue Metrics Section */}
+          <div className="mb-6">
+            <h2 className="text-xl lg:text-2xl font-semibold text-text-primary mb-4">
+              Ringkasan Pendapatan
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {revenueMetrics.map((metric, index) => (
+                <MetricsCard
+                  key={index}
+                  title={metric.title}
+                  value={metric.value}
+                  icon={metric.icon}
+                  color={metric.color}
+                  description={metric.description}
+                />
+              ))}
             </div>
+          </div>
+          {/* End Revenue Metrics Section */}
 
             <TransactionFilters
 
@@ -588,10 +715,9 @@ const TransactionHistory = ({ headerTitle }) => {
               currentPage={currentPage}
             />
 
-          </div>
+
 
         </div>
-
       </main>
 
       

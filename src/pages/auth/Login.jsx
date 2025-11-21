@@ -41,10 +41,10 @@ const Login = () => {
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        const decodedToken = jwtDecode(token);
-        const userRole = decodedToken.role;
         if (userRole === 'kasir') {
           navigate('/cashier-dashboard');
+        } else if (userRole === 'owner') {
+          navigate('/owner-dashboard');
         } else {
           navigate('/main-dashboard');
         }
@@ -83,6 +83,8 @@ const Login = () => {
         const userRole = decodedToken.role;
         if (userRole === 'kasir') {
           navigate('/cashier-dashboard');
+        } else if (userRole === 'owner') {
+          navigate('/owner-dashboard');
         } else {
           navigate('/main-dashboard');
         }

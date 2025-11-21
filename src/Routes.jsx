@@ -22,6 +22,8 @@ import CalculatorPage from './pages/Calculator'; // Import CalculatorPage
 import EmployeeListPage from './pages/EmployeeList'; // Import EmployeeListPage
 import ReceiptPage from './pages/receipt'; // Import ReceiptPage
 import Hpp from './pages/Hpp'; // Import Hpp
+import OwnerDashboard from './pages/OwnerDashboard'; // Import OwnerDashboard
+import LapakDeposit from './pages/LapakDeposit'; // Import LapakDeposit
 
 // ProtectedRoute component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -58,7 +60,7 @@ const AppRoutes = () => {
       {/* Admin Dashboard Routes */}
       <Route 
         element={
-          <ProtectedRoute allowedRoles={['admin', 'user']}>
+          <ProtectedRoute allowedRoles={['admin', 'user', 'owner']}>
             <DynamicLayout />
           </ProtectedRoute>
         }
@@ -90,7 +92,28 @@ const AppRoutes = () => {
         <Route path="/cashier-dashboard" element={<CashierDashboard />} />
         <Route path="/cashier-transaction-history" element={<CashierTransactionHistory />} />
       </Route>
+      {/* Lapak Deposit Routes (Accessible by Admin, User, Kasir, Owner) */}
+      <Route 
+        element={
+          <ProtectedRoute allowedRoles={['admin', 'user', 'kasir', 'owner']}>
+            <DynamicLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/lapak-deposit" element={<LapakDeposit />} />
+      </Route>
       <Route path="/receipt" element={<ProtectedRoute allowedRoles={['admin', 'kasir', 'user']}><ReceiptPage /></ProtectedRoute>} />
+
+      {/* Owner Dashboard Routes */}
+      <Route 
+        element={
+          <ProtectedRoute allowedRoles={['owner']}>
+            <DynamicLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/owner-dashboard" element={<OwnerDashboard headerTitle="Dashboard Owner" />} />
+      </Route>
 
       {/* Catch all other routes */}
       <Route path="*" element={<NotFound />} />

@@ -80,6 +80,20 @@ const authorizeRoles = (...roles) => {
     };
 };
 
+const authorizeAccountAccess = (accountType) => {
+    return (req, res, next) => {
+        const userRole = req.user.role;
+        
+        if (accountType === 'lapak' && (userRole === 'admin' || userRole === 'user' || userRole === 'kasir')) {
+            next();
+        } else if (accountType === 'owner' && (userRole === 'admin' || userRole === 'owner')) {
+            next();
+        } else {
+            return res.status(403).json({ error: "Forbidden: Insufficient permissions for this account type" });
+        }
+    };
+};
+
 // API Endpoints
 
 // --- Menu Items Endpoints ---
@@ -851,7 +865,18 @@ app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admi
     try {
         const sql = `
             SELECT 
-                t.*, 
+                t.id,
+                DATE_FORMAT(t.timestamp, '%Y-%m-%d %H:%i:%s+07:00') AS timestamp,
+                t.items,
+                t.total,
+                t.ppn,
+                t.isEmployeeMeal,
+                t.payment_method,
+                t.cash_paid,
+                t.change,
+                t.order_id,
+                t.user_id,
+                t.manual_discount,
                 u.username AS cashier_name
             FROM transactions t
             LEFT JOIN users u ON t.user_id = u.id
@@ -1065,7 +1090,13 @@ app.get("/api/expenses/all", authenticateToken, authorizeRoles('user', 'admin', 
     try {
         const dataSql = `
             SELECT 
-                e.*, 
+                e.id,
+                e.name,
+                e.amount,
+                e.category,
+                DATE_FORMAT(e.date, '%Y-%m-%d %H:%i:%s+07:00') AS date,
+                e.notes,
+                e.user_id,
                 u.username AS recorded_by
             FROM expenses e
             LEFT JOIN users u ON e.user_id = u.id
@@ -1225,6 +1256,301 @@ app.delete("/api/expenses/:id", authenticateToken, authorizeRoles('user', 'admin
         res.json({ "message": "deleted", changes: result.affectedRows });
     } catch (err) {
         res.status(400).json({ "error": err.message });
+    }
+});
+
+
+// --- Account Endpoints for Deposit and Expenses ---
+
+// Helper to get account ID by name and authorize
+const getAccountAndAuthorize = async (req, res, accountName, allowedRoles) => {
+    const [accountRows] = await db.query('SELECT * FROM accounts WHERE name = ?', [accountName]);
+    if (accountRows.length === 0) {
+        res.status(404).json({ error: "Account not found" });
+        return null;
+    }
+    const account = accountRows[0];
+
+    // Check if the user has the necessary role for this account type
+    const userRole = req.user.role;
+    if (!allowedRoles.includes(userRole)) {
+        res.status(403).json({ error: "Forbidden: Insufficient permissions for this account" });
+        return null;
+    }
+    return account;
+};
+
+// GET Account Balance and Transactions
+app.get("/api/accounts/:accountName", authenticateToken, async (req, res) => {
+    try {
+        const { accountName } = req.params;
+        let allowedRoles;
+
+        if (accountName === 'lapak_deposit') {
+            allowedRoles = ['admin', 'user', 'kasir', 'owner']; // Owner can also view lapak deposit
+        } else if (accountName === 'owner_deposit') {
+            allowedRoles = ['admin', 'owner'];
+        } else {
+            return res.status(400).json({ error: "Invalid account name" });
+        }
+
+        const account = await getAccountAndAuthorize(req, res, accountName, allowedRoles);
+        if (!account) return; // Response already sent by helper
+
+        // Fetch transactions for this account
+        const [transactions] = await db.query(
+            `SELECT at.*, u.username as created_by_username 
+             FROM account_transactions at 
+             JOIN users u ON at.created_by_user_id = u.id 
+             WHERE at.account_id = ? ORDER BY at.created_at DESC`,
+            [account.id]
+        );
+
+        res.json({
+            message: "success",
+            data: {
+                account: {
+                    id: account.id,
+                    name: account.name,
+                    balance: account.balance,
+                    type: account.type,
+                    updated_at: account.updated_at
+                },
+                transactions: transactions
+            }
+        });
+
+    } catch (err) {
+        console.error('Error fetching account data:', err);
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+
+// POST Deposit to Account
+app.post("/api/accounts/deposit", authenticateToken, async (req, res) => {
+    let connection;
+    try {
+        const { account_name, amount, description } = req.body;
+        const created_by_user_id = req.user.userId;
+
+        if (!account_name || !amount || amount <= 0) {
+            return res.status(400).json({ error: "Account name and a positive amount are required." });
+        }
+
+        let allowedRoles;
+        if (account_name === 'lapak_deposit') {
+            allowedRoles = ['admin', 'user', 'kasir'];
+        } else if (account_name === 'owner_deposit') {
+            allowedRoles = ['admin', 'owner'];
+        } else {
+            return res.status(400).json({ error: "Invalid account name" });
+        }
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        const account = await getAccountAndAuthorize({ ...req, connection }, res, account_name, allowedRoles);
+        if (!account) {
+            await connection.rollback();
+            return;
+        }
+
+        // Update account balance
+        await connection.query(
+            'UPDATE accounts SET balance = balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            [amount, account.id]
+        );
+
+        // Record transaction
+        await connection.query(
+            'INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id) VALUES (?, ?, ?, ?, ?)',
+            [account.id, 'deposit', amount, description, created_by_user_id]
+        );
+
+        await connection.commit();
+
+        res.status(201).json({
+            message: "Deposit successful",
+            data: { account_name, amount, description }
+        });
+
+    } catch (err) {
+        if (connection) {
+            await connection.rollback();
+        }
+        console.error('Error processing deposit:', err);
+        res.status(500).json({ error: err.message, stack: err.stack });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// POST Expense from Account
+app.post("/api/accounts/expense", authenticateToken, async (req, res) => {
+    let connection;
+    try {
+        const { account_name, amount, description } = req.body;
+        const created_by_user_id = req.user.userId;
+
+        if (!account_name || !amount || amount <= 0) {
+            return res.status(400).json({ error: "Account name and a positive amount are required." });
+        }
+
+        let allowedRoles;
+        if (account_name === 'lapak_deposit') {
+            allowedRoles = ['admin', 'user', 'kasir'];
+        } else if (account_name === 'owner_deposit') {
+            allowedRoles = ['admin', 'owner'];
+        } else {
+            return res.status(400).json({ error: "Invalid account name" });
+        }
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        const account = await getAccountAndAuthorize({ ...req, connection }, res, account_name, allowedRoles);
+        if (!account) {
+            await connection.rollback();
+            return;
+        }
+
+        // Check if sufficient balance
+        if (account.balance < amount) {
+            await connection.rollback();
+            return res.status(400).json({ error: "Insufficient balance in account" });
+        }
+
+        // Update account balance
+        await connection.query(
+            'UPDATE accounts SET balance = balance - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            [amount, account.id]
+        );
+
+        // Record transaction
+        await connection.query(
+            'INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id) VALUES (?, ?, ?, ?, ?)',
+            [account.id, 'expense', amount, description, created_by_user_id]
+        );
+
+        await connection.commit();
+
+        res.status(201).json({
+            message: "Expense recorded successfully",
+            data: { account_name, amount, description }
+        });
+
+    } catch (err) {
+        if (connection) {
+            await connection.rollback();
+        }
+        console.error('Error processing expense:', err);
+        res.status(500).json({ error: err.message, stack: err.stack });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+
+// PUT Update Account Transaction (only description)
+app.put("/api/accounts/transactions/:id", authenticateToken, async (req, res) => {
+    let connection;
+    try {
+        const { id } = req.params;
+        const { description } = req.body;
+        const userId = req.user.userId;
+
+        if (!description || description.trim() === '') {
+            return res.status(400).json({ error: "Description is required and cannot be empty" });
+        }
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // Get transaction details
+        const [transRows] = await connection.query('SELECT * FROM account_transactions WHERE id = ?', [id]);
+        if (transRows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ error: "Transaction not found" });
+        }
+        const transaction = transRows[0];
+
+        // Check ownership or admin role
+        if (transaction.created_by_user_id !== userId && req.user.role !== 'admin') {
+            await connection.rollback();
+            return res.status(403).json({ error: "Forbidden: You are not authorized to edit this transaction" });
+        }
+
+        await connection.query('UPDATE account_transactions SET description = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?', [description, id]);
+
+        await connection.commit();
+        res.json({ message: "Transaction updated successfully", data: { id, description } });
+
+    } catch (err) {
+        if (connection) {
+            await connection.rollback();
+        }
+        console.error('Error updating account transaction:', err);
+        res.status(500).json({ error: err.message, stack: err.stack });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// DELETE Account Transaction
+app.delete("/api/accounts/transactions/:id", authenticateToken, async (req, res) => {
+    let connection;
+    try {
+        const { id } = req.params;
+        const userId = req.user.userId;
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // Get transaction details
+        const [transRows] = await connection.query('SELECT * FROM account_transactions WHERE id = ? FOR UPDATE', [id]);
+        if (transRows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ error: "Transaction not found" });
+        }
+        const transaction = transRows[0];
+
+        // Check ownership or admin role
+        if (transaction.created_by_user_id !== userId && req.user.role !== 'admin') {
+            await connection.rollback();
+            return res.status(403).json({ error: "Forbidden: You are not authorized to delete this transaction" });
+        }
+
+        // Revert balance based on transaction type
+        if (transaction.type === 'deposit') {
+            await connection.query(
+                'UPDATE accounts SET balance = balance - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                [transaction.amount, transaction.account_id]
+            );
+        } else if (transaction.type === 'expense') {
+            await connection.query(
+                'UPDATE accounts SET balance = balance + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                [transaction.amount, transaction.account_id]
+            );
+        } else {
+            await connection.rollback();
+            return res.status(500).json({ error: "Unknown transaction type" });
+        }
+
+        // Delete transaction record
+        await connection.query('DELETE FROM account_transactions WHERE id = ?', [id]);
+
+        await connection.commit();
+        res.json({ message: "Transaction deleted successfully", data: { id } });
+
+    } catch (err) {
+        if (connection) {
+            await connection.rollback();
+        }
+        console.error('Error deleting account transaction:', err);
+        res.status(500).json({ error: err.message, stack: err.stack });
+    } finally {
+        if (connection) connection.release();
     }
 });
 

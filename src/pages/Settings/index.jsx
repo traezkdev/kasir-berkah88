@@ -560,6 +560,8 @@ const Settings = ({ headerTitle }) => {
               />
               <SettingsCard icon="Layout" title={`Beralih ke Tema ${theme === 'default' ? 'Admin' : 'Bawaan'}`} description={`Tema saat ini: ${theme === 'default' ? 'Bawaan' : 'Admin'}. Klik untuk mengganti.`} onClick={toggleTheme} />
               <SettingsCard icon="List" title="Kelola Kategori Menu" description="Tambah, ubah, atau hapus kategori untuk item menu." onClick={() => setActiveModal('categoryManagement')} disabled={!isAdmin} />
+              {/* Card baru untuk Pengeluaran Lapak */}
+              <SettingsCard icon="Wallet" title="Pengeluaran Lapak" description="Kelola uang masuk dan keluar untuk operasional lapak." onClick={() => navigate('/lapak-deposit')} disabled={!isAdmin && userRole !== 'user' && userRole !== 'kasir' && userRole !== 'owner'} />
             </div>
           </div>
 

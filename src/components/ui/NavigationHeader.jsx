@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import Icon from '../AppIcon';
 import Button from './Button';
-import { FaUserShield } from 'react-icons/fa';
 import { useTheme } from '../../contexts/ThemeContext';
 import DarkModeToggle from './DarkModeToggle';
 
@@ -12,9 +11,11 @@ const apiUrl = import.meta.env.VITE_API_URL;
 const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = "Kasir Berkah 88" }) => {
   const { setTheme } = useTheme();
   const isNativePlatform = Capacitor.isNativePlatform();
+  const navigate = useNavigate(); // Declare navigate here
 
-  const handleSwitchToAdminTheme = () => {
-    setTheme('admin');
+  const handleLogout = () => {
+    localStorage.removeItem('token'); // Clear the token
+    navigate('/login'); // Redirect to login page
   };
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -80,6 +81,23 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
     if (item.guestRestricted && userRole === 'guest') {
       return false;
     }
+
+    // Hide specific items for 'owner' role when on '/owner-dashboard'
+    if (userRole === 'owner' && location.pathname === '/owner-dashboard') {
+      const ownerHiddenPaths = [
+        '/main-dashboard',
+        '/sales-transaction-processing',
+        '/menu-management',
+        '/expense-tracking',
+        '/transaction-history',
+        '/order-confirmation',
+        '/notes',
+        '/profile'
+      ];
+      if (ownerHiddenPaths.includes(item.path)) {
+        return false;
+      }
+    }
     return true;
   });
 
@@ -132,6 +150,17 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
               <div className="lg:hidden">
                 <DarkModeToggle />
               </div>
+              {/* Logout button for desktop */}
+              {location.pathname === '/owner-dashboard' && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleLogout}
+                  className="hidden lg:flex"
+                >
+                  <Icon name="LogOut" size={20} />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -164,13 +193,16 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
               ))}
             </nav>
             <div className="p-4">
-              <button
-                onClick={handleSwitchToAdminTheme}
-                className="flex items-center space-x-3 px-3 py-3 rounded-md text-sm font-medium transition-colors duration-200 text-text-secondary hover:text-text-primary hover:bg-muted w-full"
-              >
-                <FaUserShield className="h-5 w-5" />
-                <span>Switch to Admin Theme</span>
-              </button>
+              {/* Logout button for mobile */}
+              {location.pathname === '/owner-dashboard' && (
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center space-x-3 px-3 py-3 rounded-md text-sm font-medium transition-colors duration-200 text-text-secondary hover:text-text-primary hover:bg-muted w-full mt-2"
+                >
+                  <Icon name="LogOut" size={20} />
+                  <span>Logout</span>
+                </button>
+              )}
             </div>
           </div>
         )}

@@ -1,89 +1,27 @@
 import React from 'react';
-import Button from './Button'; // Assuming Button is in the same directory
-import { Check, X, AlertTriangle, Info } from 'lucide-react';
+import Button from './Button';
+import Icon from '../AppIcon';
 
-const ConfirmationModal = ({
-    isOpen,
-    onClose,
-    onConfirm,
-    title,
-    message,
-    confirmText = 'Ya, Lanjutkan',
-    cancelText = 'Batal',
-    type = 'confirm' // new prop: 'confirm', 'success', 'error'
-}) => {
+const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, confirmText = 'Ya', cancelText = 'Batal', isDestructive = true }) => {
     if (!isOpen) return null;
 
-    let iconComponent;
-    let iconBgClass;
-    let iconColorClass;
-    let confirmButtonVariant;
-    let confirmButtonText;
-
-    switch (type) {
-        case 'success':
-            iconComponent = <Check size={24} />;
-            iconBgClass = 'bg-success/10 dark:bg-success/20';
-            iconColorClass = 'text-success';
-            confirmButtonVariant = 'success';
-            confirmButtonText = 'OK';
-            break;
-        case 'error':
-            iconComponent = <X size={24} />;
-            iconBgClass = 'bg-destructive/10 dark:bg-destructive/20';
-            iconColorClass = 'text-destructive';
-            confirmButtonVariant = 'destructive';
-            confirmButtonText = 'Tutup';
-            break;
-        case 'confirm':
-        default:
-            iconComponent = <AlertTriangle size={24} />;
-            iconBgClass = 'bg-primary/10 dark:bg-primary/20';
-            iconColorClass = 'text-primary';
-            confirmButtonVariant = 'default';
-            confirmButtonText = confirmText;
-            break;
-    }
-
     return (
-        <div
-            className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-[2001]"
-            onClick={onClose}
-        >
-                        <div 
-                            className="bg-card rounded-lg shadow-xl p-6 w-full max-w-sm mx-4 text-center" 
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full ${iconBgClass} sm:h-10 sm:w-10">
-                                {iconComponent}
-                            </div>
-                            <div className="mt-3 text-center">
-                                <h3 className="text-lg leading-6 font-bold text-text-primary" id="modal-title">
-                                    {title}
-                                </h3>
-                                <div className="mt-2">
-                                    <p className="text-sm text-text-secondary">
-                                        {message}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="mt-5 sm:mt-4 flex w-full justify-center gap-3">                    <Button
-                        variant={confirmButtonVariant}
-                        onClick={type === 'confirm' ? onConfirm : onClose} // For success/error, just close
-                    >
-                        {confirmButtonText}
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-card p-6 rounded-lg shadow-xl w-full max-w-sm">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold text-text-primary">{title}</h2>
+                    <Button variant="ghost" size="icon" onClick={onClose}>
+                        <Icon name="X" className="h-4 w-4" />
                     </Button>
-                    {type === 'confirm' && (
-                        <Button
-                            variant="outline"
-                            onClick={onClose}
-                        >
-                            {cancelText}
-                        </Button>
-                    )}
+                </div>
+                <p className="text-text-secondary mb-6">{message}</p>
+                <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={onClose}>{cancelText}</Button>
+                    <Button variant={isDestructive ? "destructive" : "primary"} onClick={onConfirm}>{confirmText}</Button>
                 </div>
             </div>
         </div>
     );
 };
+
 export default ConfirmationModal;
