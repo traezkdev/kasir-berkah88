@@ -1,0 +1,73 @@
+import React, { useState } from 'react';
+import Button from './Button';
+import Icon from '../AppIcon';
+
+const ExpenseModal = ({ isOpen, onClose, onSave, accountType }) => {
+    const [amount, setAmount] = useState('');
+    const [description, setDescription] = useState('');
+    const [error, setError] = useState('');
+
+    const handleSave = () => {
+        const parsedAmount = parseFloat(amount);
+        if (isNaN(parsedAmount) || parsedAmount <= 0) {
+            setError('Jumlah harus angka positif.');
+            return;
+        }
+        if (!description.trim()) {
+            setError('Deskripsi pengeluaran tidak boleh kosong.');
+            return;
+        }
+        onSave(parsedAmount, description);
+        setAmount('');
+        setDescription('');
+        setError('');
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-card p-6 rounded-lg shadow-xl w-full max-w-md">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold text-text-primary">Catat Pengeluaran {accountType === 'owner' ? 'Owner' : 'Lapak'}</h2>
+                    <Button variant="ghost" size="icon" onClick={onClose}>
+                        <Icon name="X" className="h-4 w-4" />
+                    </Button>
+                </div>
+                <div className="space-y-4">
+                    <div>
+                        <label htmlFor="amount" className="block text-sm font-medium text-text-secondary mb-1">Jumlah</label>
+                        <input
+                            type="number"
+                            id="amount"
+                            value={amount}
+                            onChange={(e) => { setAmount(e.target.value); setError(''); }}
+                            className="w-full p-2 border border-border rounded-md bg-background text-text-primary focus:ring-primary focus:border-primary"
+                            placeholder="Contoh: 50000"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="description" className="block text-sm font-medium text-text-secondary mb-1">Deskripsi</label>
+                        <textarea
+                            id="description"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            className="w-full p-2 border border-border rounded-md bg-background text-text-primary focus:ring-primary focus:border-primary"
+                            rows="3"
+                            placeholder="Misal: Beli makan, Biaya transportasi"
+                            required
+                        ></textarea>
+                    </div>
+                    {error && <p className="text-red-500 text-sm">{error}</p>}
+                    <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={onClose}>Batal</Button>
+                        <Button variant="destructive" onClick={handleSave}>Catat Pengeluaran</Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default ExpenseModal;

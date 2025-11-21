@@ -93,7 +93,7 @@ const setupDatabase = async () => {
         id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(255) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
-        role ENUM('admin', 'user', 'kasir', 'guest') DEFAULT 'user'
+        role ENUM('admin', 'user', 'kasir', 'guest', 'owner') DEFAULT 'user'
       );
     `;
 
@@ -184,6 +184,61 @@ const setupDatabase = async () => {
     console.log('notes table is ready.');
     await connection.query(createEmployeesTable);
     console.log('employees table is ready.');
+
+    const createAccountsTable = `
+      CREATE TABLE IF NOT EXISTS accounts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(191) NOT NULL UNIQUE,
+        balance DECIMAL(10, 2) DEFAULT 0.00,
+        type ENUM('lapak', 'owner') NOT NULL,
+        user_id INT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+      );
+    `;
+
+    const createAccountTransactionsTable = `
+      CREATE TABLE IF NOT EXISTS account_transactions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        account_id INT NOT NULL,
+        type ENUM('deposit', 'expense') NOT NULL,
+        amount DECIMAL(10, 2) NOT NULL,
+        description TEXT,
+        created_by_user_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+        FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+    `;
+
+    await connection.query(createAccountsTable);
+    console.log('accounts table is ready.');
+
+    await connection.query(createAccountTransactionsTable);
+    console.log('account_transactions table is ready.');
+
+    // Insert default accounts if tables are empty
+    const [lapakAccountRows] = await connection.query('SELECT id FROM accounts WHERE name = ?', ['lapak_deposit']);
+    if (lapakAccountRows.length === 0) {
+      await connection.query(
+        'INSERT INTO accounts (name, balance, type) VALUES (?, ?, ?)',
+        ['lapak_deposit', 0.00, 'lapak']
+      );
+      console.log('Default "lapak_deposit" account created.');
+    }
+
+    const [ownerAccountRows] = await connection.query('SELECT id FROM accounts WHERE name = ?', ['owner_deposit']);
+    if (ownerAccountRows.length === 0) {
+      // For owner account, we can link it to an existing 'admin' user or leave user_id as NULL
+      // For now, let's leave user_id as NULL as it's a general owner account, not tied to a specific user
+      await connection.query(
+        'INSERT INTO accounts (name, balance, type) VALUES (?, ?, ?)',
+        ['owner_deposit', 0.00, 'owner']
+      );
+      console.log('Default "owner_deposit" account created.');
+    }
+
     await connection.query(createOrdersTable);
     console.log('orders table is ready.');
 
@@ -232,7 +287,7 @@ const setupDatabase = async () => {
     } else {
       // If the column exists, modify it to the new ENUM type
       const alterRoleToEnum = `
-        ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'user', 'kasir', 'guest') DEFAULT 'user';
+        ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'user', 'kasir', 'guest', 'owner') DEFAULT 'user';
       `;
       await connection.query(alterRoleToEnum);
       console.log('Modified role column to ENUM type.');

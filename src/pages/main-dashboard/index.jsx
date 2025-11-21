@@ -22,62 +22,103 @@ const MainDashboard = ({ headerTitle }) => {
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
 
-  const fetchData = async (currentUserRole) => { // Add currentUserRole parameter
-    const token = localStorage.getItem('token');
-    if (!token) return; // Exit if no token
-    try {
-      const [paginatedTransRes, allTransRes, menuRes, expenseRes, settingsRes] = await Promise.all([
-        authFetch(`${apiUrl}/api/transactions`), // This fetches paginated transactions (default limit 20)
-        authFetch(`${apiUrl}/api/transactions/all`), // Fetch all transactions for all-time metrics
-        authFetch(`${apiUrl}/api/menu-items`),
-        authFetch(`${apiUrl}/api/expenses/all`), // Fetch all expenses
-        authFetch(`${apiUrl}/api/all-settings`)
-      ]);
-
-      let paginatedTransactionsData = [];
-      let allTransactionsData = [];
-      let menuItemsData = [];
-      let expensesData = [];
-      let settingsData = {};
-
-      // Handle paginated transactions data (for recent transactions list)
-      const paginatedTransactions = await paginatedTransRes.json();
-      if (paginatedTransRes.ok && paginatedTransactions.message === 'success') {
-        paginatedTransactionsData = paginatedTransactions.data;
-      }
+      const fetchData = async (currentUserRole) => { // Add currentUserRole parameter
+      const token = localStorage.getItem('token');
+      if (!token) return; // Exit if no token
+      try {
+        const [paginatedTransRes, allTransRes, menuRes, expenseRes, settingsRes, ownerAccountRes] = await Promise.all([
+          authFetch(`${apiUrl}/api/transactions`), // This fetches paginated transactions (default limit 20)
+          authFetch(`${apiUrl}/api/transactions/all`), // Fetch all transactions for all-time metrics
+          authFetch(`${apiUrl}/api/menu-items`),
+          authFetch(`${apiUrl}/api/expenses/all`), // Fetch all expenses
+          authFetch(`${apiUrl}/api/all-settings`),
+          authFetch(`${apiUrl}/api/accounts/owner_deposit`) // <--- Tambah ini
+        ]);
+  
+        let paginatedTransactionsData = [];
+        let allTransactionsData = [];
+        let menuItemsData = [];
+        let expensesData = [];
+        let settingsData = {};
+        let ownerAccountData = null; // <--- Tambah ini
+  
+              // Handle paginated transactions data (for recent transactions list)
+  
+              if (paginatedTransRes.ok) {
+  
+                const paginatedTransactions = await paginatedTransRes.json();
+  
+                if (paginatedTransactions.message === 'success') {
+  
+                  paginatedTransactionsData = paginatedTransactions.data;
+  
+                }
+  
+              } else {
+  
+                console.error("Failed to fetch paginated transactions:", paginatedTransRes.status, paginatedTransRes.statusText);
+  
+              }
 
       // Handle all transactions data (for all-time metrics)
-      const allTransactions = await allTransRes.json();
-      if (allTransRes.ok && allTransactions.message === 'success') {
-        allTransactionsData = allTransactions.data;
+      if (allTransRes.ok) {
+        const allTransactions = await allTransRes.json();
+        if (allTransRes.ok && allTransactions.message === 'success') {
+          allTransactionsData = allTransactions.data;
+        }
+      } else {
+        console.error("Failed to fetch all transactions:", allTransRes.status, allTransRes.statusText);
       }
 
       // Handle menu items data
-      const menuItems = await menuRes.json();
-      if (menuRes.ok && menuItems.message === 'success') {
-        menuItemsData = menuItems.data;
+      if (menuRes.ok) {
+        const menuItems = await menuRes.json();
+        if (menuRes.ok && menuItems.message === 'success') {
+          menuItemsData = menuItems.data;
+        }
+      } else {
+        console.error("Failed to fetch menu items:", menuRes.status, menuRes.statusText);
       }
 
       // Handle expenses data
-      const expenses = await expenseRes.json();
-      if (expenseRes.ok && expenses.message === 'success') {
-        expensesData = expenses.data;
+      if (expenseRes.ok) {
+        const expenses = await expenseRes.json();
+        if (expenseRes.ok && expenses.message === 'success') {
+          expensesData = expenses.data;
+        }
+      } else {
+        console.error("Failed to fetch expenses:", expenseRes.status, expenseRes.statusText);
       }
 
       // Handle settings data
-      const settings = await settingsRes.json();
-      if (settingsRes.ok && settings.message === 'success') {
-        settingsData = settings.data;
+      if (settingsRes.ok) {
+        const settings = await settingsRes.json();
+        if (settingsRes.ok && settings.message === 'success') {
+          settingsData = settings.data;
+        }
+      } else {
+        console.error("Failed to fetch settings:", settingsRes.status, settingsRes.statusText);
       }
+
+      // Handle owner account data
+      if (ownerAccountRes.ok) {
+        const ownerAccount = await ownerAccountRes.json();
+        if (ownerAccountRes.ok && ownerAccount.message === 'success') {
+          ownerAccountData = ownerAccount.data;
+        }
+      } else {
+        console.error("Failed to fetch owner account data:", ownerAccountRes.status, ownerAccountRes.statusText);
+      }
+
 
       // Process data if menu items are available (always expected)
       // and other data is fetched (or empty if not available)
       if (menuItemsData.length > 0 || paginatedTransactionsData.length > 0 || allTransactionsData.length > 0 || expensesData.length > 0) {
-        processDashboardData(paginatedTransactionsData, allTransactionsData, menuItemsData, expensesData, settingsData);
+        processDashboardData(paginatedTransactionsData, allTransactionsData, menuItemsData, expensesData, settingsData, ownerAccountData);
       } else {
         // Optionally, set dashboardData to an empty state to stop loading spinner
         setDashboardData({
-          metrics: { totalRevenue: 0, totalExpenses: 0, stockValue: 0, netProfit: 0, workingCapital: 0, allTimeRevenue: 0, allTimeExpenses: 0, allTimeNetProfit: 0 },
+          metrics: { totalRevenue: 0, totalExpenses: 0, stockValue: 0, netProfit: 0, workingCapital: 0, allTimeRevenue: 0, allTimeExpenses: 0, allTimeNetProfit: 0, ownerBalance: 0 },
           todayStats: { transactions: 0, itemsSold: 0, averageOrder: 0, peakHour: 'N/A' },
           recentTransactions: [],
           dashboardMetrics: {
@@ -92,7 +133,7 @@ const MainDashboard = ({ headerTitle }) => {
       console.error("Error during dashboard data fetch:", error);
       // In case of network error, stop loading and show empty data
       setDashboardData({
-        metrics: { totalRevenue: 0, totalExpenses: 0, stockValue: 0, netProfit: 0, workingCapital: 0, allTimeRevenue: 0, allTimeExpenses: 0, allTimeNetProfit: 0 }, // Ensure all metrics are initialized
+        metrics: { totalRevenue: 0, totalExpenses: 0, stockValue: 0, netProfit: 0, workingCapital: 0, allTimeRevenue: 0, allTimeExpenses: 0, allTimeNetProfit: 0, ownerBalance: 0 }, // Ensure all metrics are initialized
         todayStats: { transactions: 0, itemsSold: 0, averageOrder: 0, peakHour: 'N/A' },
         recentTransactions: [],
         dashboardMetrics: {
@@ -142,7 +183,7 @@ const MainDashboard = ({ headerTitle }) => {
     }
   }, []); // Empty dependency array to run once on mount
 
-    const processDashboardData = (paginatedTransactions, allTransactions, menuItems, expenses, settings) => {
+    const processDashboardData = (paginatedTransactions, allTransactions, menuItems, expenses, settings, ownerAccountData) => {
       const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
@@ -259,6 +300,7 @@ const MainDashboard = ({ headerTitle }) => {
           allTimeNetProfit,
           // Other
           stockValue,
+          ownerBalance: ownerAccountData?.account?.balance || 0,
         },
         todayStats: {
           transactions: todayTransactions.length,
@@ -389,6 +431,13 @@ const MainDashboard = ({ headerTitle }) => {
       icon: 'Package',
       color: 'primary',
       description: 'Berdasarkan harga jual'
+    },
+    {
+      title: 'Saldo Owner',
+      value: formatCurrency(dashboardData.metrics.ownerBalance),
+      icon: 'Wallet', 
+      color: 'success',
+      description: 'Dana pribadi owner'
     },
     {
       title: 'Keuntungan Bersih',
