@@ -1,15 +1,18 @@
 import React from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { FaPalette } from 'react-icons/fa';
+import { useLocation } from 'react-router-dom';
 
 const StickyThemeSwitcher = () => {
   const { theme, setTheme } = useTheme();
+  const location = useLocation();
 
   const handleSwitchToAdminTheme = () => {
     setTheme('admin');
   };
 
-  if (theme !== 'default') {
+  // Hide the switcher if the current path is /owner-dashboard or if the theme is not default
+  if (location.pathname === '/owner-dashboard' || theme !== 'default') {
     return null;
   }
 
