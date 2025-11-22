@@ -465,7 +465,7 @@ const MainDashboard = ({ headerTitle }) => {
       value: formatCurrency(dashboardData.metrics.ownerBalance),
       icon: 'Wallet', 
       color: 'success',
-      description: 'Dana pribadi owner'
+      description: 'Dana lapak Di Owner'
     },
     {
       title: 'Saldo Lapak',
