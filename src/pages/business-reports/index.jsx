@@ -160,6 +160,9 @@ const BusinessReports = ({ headerTitle }) => {
 
       // For 'lowStockItems', we still use the current menuItems as it represents current inventory status
       const currentLowStockItems = menuItems.filter(i => i.stock > 0 && i.stock <= 5);
+      
+      // Calculate the total value of current stock based on selling price
+      const currentStockValue = menuItems.reduce((sum, item) => sum + (Number(item?.stock || 0) * Number(item?.price || 0)), 0);
 
       // Expense Report Data
       const totalExpenses = filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
@@ -243,6 +246,7 @@ const BusinessReports = ({ headerTitle }) => {
           totalValue: totalValueSold, // Now reflects value of items sold in period
           totalItems: totalItemsSold, // Now reflects total items sold in period
           lowStockItems: currentLowStockItems.length, // Still based on current stock
+          currentStockValue: currentStockValue, // Add the new value here
           items: Array.from(itemsSoldMap.values()), // Items sold in the period
           lowStock: currentLowStockItems, // Still based on current stock
         },

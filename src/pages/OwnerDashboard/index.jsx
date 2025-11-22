@@ -228,7 +228,7 @@ const OwnerDashboard = ({ headerTitle }) => {
                             Dashboard Owner
                         </h1>
                         <p className="text-text-secondary mt-1">
-                            Kelola keuangan pribadi owner di sini.
+                            Cash flow Kerongkongan berkah 88
                         </p>
                     </div>
 
