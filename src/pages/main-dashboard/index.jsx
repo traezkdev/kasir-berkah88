@@ -238,7 +238,7 @@ const MainDashboard = ({ headerTitle }) => {
   
       const totalExpenses = monthlyExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
 
-      const netProfit = totalRevenue - totalExpenses;
+      const netProfit = totalRevenue - totalExpenses + stockValue;
   
       // --- Daily Stats Calculation ---
       // Use allTransactions for today's stats to ensure complete data for the day.
@@ -455,11 +455,11 @@ const MainDashboard = ({ headerTitle }) => {
       description: 'Dana pribadi owner'
     },
     {
-      title: 'Keuntungan Bersih',
+      title: 'Keuntungan Kotor',
       value: formatCurrency(dashboardData.metrics.netProfit),
       icon: 'DollarSign',
       color: 'accent',
-      description: 'Pendapatan - pengeluaran'
+      description: 'Pendapatan - pengeluaran + nilai stok'
     },
     {
       title: 'Total Pendapatan (Semua Waktu)',
