@@ -37,7 +37,7 @@ const BulkActions = ({
   ];
 
   return (
-    <div className="bg-gradient-to-br from-green-400 to-blue-500 text-white rounded-lg overflow-hidden border-b border-border p-4 lg:p-6">
+    <div className="my-6 bg-gradient-to-br from-green-400 to-blue-500 text-white rounded-lg overflow-hidden border-b border-border p-4 lg:p-6">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="text-sm text-white">
           Menampilkan {transactionCount} transaksi

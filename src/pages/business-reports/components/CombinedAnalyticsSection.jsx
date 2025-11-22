@@ -14,7 +14,7 @@ const CombinedAnalyticsSection = ({ salesData, stockData, expensesData, onExport
   const capitalGrowth = initialCapital > 0 ? (netProfit / initialCapital) * 100 : 0;
 
   const analyticsMetrics = [
-    { label: 'Laba Bersih (Revenue)', value: formatCurrency(netProfit) },
+    { label: 'Laba Bersih', value: formatCurrency(netProfit) },
     { label: 'Margin Keuntungan', value: `${profitMargin.toFixed(1)}%` },
     { label: 'Pertumbuhan Modal', value: `${capitalGrowth.toFixed(1)}%` },
   ];

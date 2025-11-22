@@ -61,7 +61,7 @@ const Pagination = ({ itemsPerPage, totalItems, paginate, currentPage }) => {
 
   return (
     <nav>
-      <ul className='flex justify-center items-center space-x-1.5'>
+      <ul className='mt-6 flex justify-center items-center space-x-1.5'>
         <li>
           <Button 
             onClick={handlePrevious} 
