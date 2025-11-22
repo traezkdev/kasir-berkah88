@@ -19,11 +19,16 @@ const EditTransactionModal = ({
     payment_method: 'Tunai',
     manual_discount: '',
   });
+  const [originalTotal, setOriginalTotal] = useState(0);
 
   useEffect(() => {
     if (transaction) {
       const date = new Date(transaction.timestamp);
-      const formattedDate = date.toISOString().slice(0, 16); // "YYYY-MM-DDTHH:MM"
+      const formattedDate = date.toISOString().slice(0, 16);
+
+      // Calculate the original total before any manual discount was applied
+      const initialTotal = parseFloat(transaction.total) + parseFloat(transaction.manual_discount || 0);
+      setOriginalTotal(initialTotal);
 
       setFormData({
         timestamp: formattedDate,
@@ -34,6 +39,31 @@ const EditTransactionModal = ({
       });
     }
   }, [transaction]);
+
+  // Effect to recalculate total when manual_discount changes
+  useEffect(() => {
+    // Only run if the modal is open and we have an original total
+    if (isOpen && originalTotal > 0) {
+      const discount = parseFloat(formData.manual_discount || 0);
+      
+      // Ensure discount is not greater than the original total
+      if (discount > originalTotal) {
+        // Optionally, you can reset the discount or show an error
+        // For now, we'll just cap it at the original total
+        setFormData(prev => ({
+          ...prev,
+          manual_discount: originalTotal.toString(),
+          total: '0.00'
+        }));
+      } else {
+        const newTotal = originalTotal - discount;
+        setFormData(prev => ({
+          ...prev,
+          total: newTotal.toFixed(2)
+        }));
+      }
+    }
+  }, [formData.manual_discount, originalTotal, isOpen]);
 
   if (!isOpen) return null;
 
