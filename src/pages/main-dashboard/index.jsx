@@ -26,13 +26,14 @@ const MainDashboard = ({ headerTitle }) => {
       const token = localStorage.getItem('token');
       if (!token) return; // Exit if no token
       try {
-        const [paginatedTransRes, allTransRes, menuRes, expenseRes, settingsRes, ownerAccountRes] = await Promise.all([
+        const [paginatedTransRes, allTransRes, menuRes, expenseRes, settingsRes, ownerAccountRes, lapakAccountRes] = await Promise.all([
           authFetch(`${apiUrl}/api/transactions`), // This fetches paginated transactions (default limit 20)
           authFetch(`${apiUrl}/api/transactions/all`), // Fetch all transactions for all-time metrics
           authFetch(`${apiUrl}/api/menu-items`),
           authFetch(`${apiUrl}/api/expenses/all`), // Fetch all expenses
           authFetch(`${apiUrl}/api/all-settings`),
-          authFetch(`${apiUrl}/api/accounts/owner_deposit`) // <--- Tambah ini
+          authFetch(`${apiUrl}/api/accounts/owner_deposit`), // <--- Tambah ini
+          authFetch(`${apiUrl}/api/accounts/lapak_deposit`)
         ]);
   
         let paginatedTransactionsData = [];
@@ -41,6 +42,7 @@ const MainDashboard = ({ headerTitle }) => {
         let expensesData = [];
         let settingsData = {};
         let ownerAccountData = null; // <--- Tambah ini
+        let lapakAccountData = null;
   
               // Handle paginated transactions data (for recent transactions list)
   
@@ -110,15 +112,25 @@ const MainDashboard = ({ headerTitle }) => {
         console.error("Failed to fetch owner account data:", ownerAccountRes.status, ownerAccountRes.statusText);
       }
 
+      // Handle lapak account data
+      if (lapakAccountRes.ok) {
+        const lapakAccount = await lapakAccountRes.json();
+        if (lapakAccountRes.ok && lapakAccount.message === 'success') {
+          lapakAccountData = lapakAccount.data;
+        }
+      } else {
+        console.error("Failed to fetch lapak account data:", lapakAccountRes.status, lapakAccountRes.statusText);
+      }
+
 
       // Process data if menu items are available (always expected)
       // and other data is fetched (or empty if not available)
       if (menuItemsData.length > 0 || paginatedTransactionsData.length > 0 || allTransactionsData.length > 0 || expensesData.length > 0) {
-        processDashboardData(paginatedTransactionsData, allTransactionsData, menuItemsData, expensesData, settingsData, ownerAccountData);
+        processDashboardData(paginatedTransactionsData, allTransactionsData, menuItemsData, expensesData, settingsData, ownerAccountData, lapakAccountData);
       } else {
         // Optionally, set dashboardData to an empty state to stop loading spinner
         setDashboardData({
-          metrics: { totalRevenue: 0, totalExpenses: 0, stockValue: 0, netProfit: 0, workingCapital: 0, allTimeRevenue: 0, allTimeExpenses: 0, allTimeNetProfit: 0, ownerBalance: 0 },
+          metrics: { totalRevenue: 0, totalExpenses: 0, stockValue: 0, netProfit: 0, workingCapital: 0, allTimeRevenue: 0, allTimeExpenses: 0, allTimeNetProfit: 0, ownerBalance: 0, lapakBalance: 0 },
           todayStats: { transactions: 0, itemsSold: 0, averageOrder: 0, peakHour: 'N/A' },
           recentTransactions: [],
           dashboardMetrics: {
@@ -183,7 +195,7 @@ const MainDashboard = ({ headerTitle }) => {
     }
   }, []); // Empty dependency array to run once on mount
 
-    const processDashboardData = (paginatedTransactions, allTransactions, menuItems, expenses, settings, ownerAccountData) => {
+    const processDashboardData = (paginatedTransactions, allTransactions, menuItems, expenses, settings, ownerAccountData, lapakAccountData) => {
       const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
@@ -302,6 +314,7 @@ const MainDashboard = ({ headerTitle }) => {
           // Other
           stockValue,
           ownerBalance: ownerAccountData?.account?.balance || 0,
+          lapakBalance: lapakAccountData?.account?.balance || 0,
         },
         todayStats: {
           transactions: todayTransactions.length,
@@ -453,6 +466,13 @@ const MainDashboard = ({ headerTitle }) => {
       icon: 'Wallet', 
       color: 'success',
       description: 'Dana pribadi owner'
+    },
+    {
+      title: 'Saldo Lapak',
+      value: formatCurrency(dashboardData.metrics.lapakBalance),
+      icon: 'Wallet',
+      color: 'info',
+      description: 'Total dana tersedia untuk operasional lapak'
     },
     {
       title: 'Keuntungan Kotor',
