@@ -125,7 +125,6 @@ const MenuManagement = ({ headerTitle }) => {
       is_featured: itemData.is_featured ? 1 : 0, // Ensure 0 or 1
       options: itemData.options || [], // Include options
     };
-    await onAddItem(formData);
 
     let body;
     let headers = {};
