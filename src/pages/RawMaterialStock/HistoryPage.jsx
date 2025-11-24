@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import moment from 'moment';
 import { FaFilter, FaSyncAlt } from 'react-icons/fa';
+import { useTheme } from '../../contexts/ThemeContext'; // Import useTheme
+import NavigationHeader from '../../components/ui/NavigationHeader'; // Import NavigationHeader
 
 const RawMaterialStockHistory = () => {
   const [history, setHistory] = useState([]);
   const [rawMaterials, setRawMaterials] = useState([]); // Untuk dropdown filter bahan
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { theme } = useTheme(); // Gunakan hook useTheme
 
   // Filter states
   const [filterMaterialId, setFilterMaterialId] = useState('');
@@ -86,7 +89,11 @@ const RawMaterialStockHistory = () => {
   }
 
   return (
-    <div className="p-4 md:p-6">
+    <>
+      {theme !== 'admin' && (
+        <NavigationHeader />
+      )}
+      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 ${theme !== 'admin' ? 'mt-16' : ''}`}>
       <h1 className="text-2xl font-bold mb-4">Riwayat Stok Bahan Mentah</h1>
 
       {/* Filter Section */}
@@ -216,7 +223,8 @@ const RawMaterialStockHistory = () => {
           </tbody>
         </table>
       </div>
-    </div>
+      </div> {/* Penutup untuk div container utama */}
+    </>
   );
 };
 

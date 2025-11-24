@@ -104,7 +104,7 @@ const RawMaterialStockDashboard = () => {
   return (
     <>
       {theme !== 'admin' && (
-        <NavigationHeader headerTitle="Manajemen Stok Bahan Mentah" />
+        <NavigationHeader />
       )}
       <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 ${theme !== 'admin' ? 'mt-16' : ''}`}>
       <h1 className="text-2xl font-bold mb-4">Dashboard Stok Bahan Mentah</h1>
@@ -164,12 +164,12 @@ const RawMaterialStockDashboard = () => {
                     {material.min_stock_level}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {material.current_stock < material.min_stock_level && (
+                    {Number(material.current_stock) < Number(material.min_stock_level) && (
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 flex items-center">
                         <FaExclamationTriangle className="mr-1" /> Stok Menipis!
                       </span>
                     )}
-                    {material.current_stock >= material.min_stock_level && (
+                    {Number(material.current_stock) >= Number(material.min_stock_level) && (
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                         Cukup
                       </span>
