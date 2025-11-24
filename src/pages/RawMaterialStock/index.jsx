@@ -176,7 +176,7 @@ const RawMaterialStockDashboard = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {/* Stok Standar/Hari */}
-                    {parseInt(material.standard_stock_per_day)} {material.unit}
+                    {parseInt(material.standard_stock_per_day)} pcs
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {Number(material.current_stock) < Number(material.min_stock_level) && (
@@ -262,7 +262,7 @@ const RawMaterialStockDashboard = () => {
                                 </div>
                                 <div>
                                   <p className="font-medium">Stok Standar/Hari:</p>
-                                  <p>{parseInt(material.standard_stock_per_day)} {material.unit}</p>
+                                  <p>{parseInt(material.standard_stock_per_day)} pcs</p>
                                 </div>
                               </div>
                 <div className="flex justify-end space-x-2">

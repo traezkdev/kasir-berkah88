@@ -233,17 +233,6 @@ app.get("/api/raw-materials/history", authenticateToken, authorizeRoles('admin',
     }
 });
 
-// TEMPORARY ENDPOINT: Get raw materials table schema
-app.get("/api/raw-materials/columns", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
-    try {
-        const [rows] = await db.query("SHOW COLUMNS FROM raw_materials");
-        res.json({ message: "success", data: rows });
-    } catch (err) {
-        console.error("Error fetching raw materials columns:", err);
-        res.status(500).json({ error: err.message });
-    }
-});
-
 // --- Menu Items Endpoints ---
 
 // Get all menu items with pagination and category filtering
