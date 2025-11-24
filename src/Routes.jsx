@@ -26,6 +26,7 @@ import OwnerDashboard from './pages/OwnerDashboard'; // Import OwnerDashboard
 import LapakDeposit from './pages/LapakDeposit'; // Import LapakDeposit
 import RawMaterialStockDashboard from './pages/RawMaterialStock'; // Import RawMaterialStockDashboard
 import RawMaterialStockHistory from './pages/RawMaterialStock/HistoryPage'; // Import RawMaterialStockHistory
+import OwnerProfile from './pages/OwnerProfile'; // Import OwnerProfile
 
 // ProtectedRoute component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -125,6 +126,7 @@ const AppRoutes = () => {
         }
       >
         <Route path="/owner-dashboard" element={<OwnerDashboard headerTitle="Dashboard Owner" />} />
+        <Route path="/owner-profile" element={<OwnerProfile />} />
       </Route>
 
       {/* Catch all other routes */}

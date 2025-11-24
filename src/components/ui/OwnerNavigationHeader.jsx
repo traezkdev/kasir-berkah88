@@ -65,7 +65,7 @@ const OwnerNavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTit
 
   const allNavigationItems = [
     { label: 'Dashboard Owner', path: '/owner-dashboard', icon: 'BriefcaseBusiness', roles: ['owner'] },
-    { label: 'Profil', path: '/profile', icon: 'User', roles: ['owner'] },
+    { label: 'Profil Owner', path: '/owner-profile', icon: 'User', roles: ['owner'] },
   ];
 
 
@@ -124,16 +124,7 @@ const OwnerNavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTit
                 <DarkModeToggle />
               </div>
               {/* Logout button for desktop */}
-              {location.pathname === '/owner-dashboard' && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleLogout}
-                  className="hidden lg:flex"
-                >
-                  <Icon name="LogOut" size={20} />
-                </Button>
-              )}
+
               <Button
                 variant="ghost"
                 size="icon"

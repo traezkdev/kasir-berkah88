@@ -234,7 +234,7 @@ const GuestCheckout = () => {
                             <DarkModeToggle />
                         </div>
                         {isLoggedIn && (
-                            <Link to="/main-dashboard">
+                            <Link to="/login">
                                 <Button variant="outline" className="flex items-center">
                                     <LayoutDashboard className="h-5 w-5 lg:hidden" /> {/* Icon for mobile */}
                                     <span className="hidden lg:inline">Dashboard</span> {/* Text for larger screens */}
