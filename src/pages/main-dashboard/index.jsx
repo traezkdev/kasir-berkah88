@@ -26,14 +26,15 @@ const MainDashboard = ({ headerTitle }) => {
       const token = localStorage.getItem('token');
       if (!token) return; // Exit if no token
       try {
-        const [paginatedTransRes, allTransRes, menuRes, expenseRes, settingsRes, ownerAccountRes, lapakAccountRes] = await Promise.all([
+        const [paginatedTransRes, allTransRes, menuRes, expenseRes, settingsRes, ownerAccountRes, lapakAccountRes, rawMaterialsRes] = await Promise.all([
           authFetch(`${apiUrl}/api/transactions`), // This fetches paginated transactions (default limit 20)
           authFetch(`${apiUrl}/api/transactions/all`), // Fetch all transactions for all-time metrics
-          authFetch(`${apiUrl}/api/menu-items`),
+          authFetch(`${apiUrl}/api/menu-items/all`),
           authFetch(`${apiUrl}/api/expenses/all`), // Fetch all expenses
           authFetch(`${apiUrl}/api/all-settings`),
-          authFetch(`${apiUrl}/api/accounts/owner_deposit`), // <--- Tambah ini
-          authFetch(`${apiUrl}/api/accounts/lapak_deposit`)
+          authFetch(`${apiUrl}/api/accounts/owner_deposit`),
+          authFetch(`${apiUrl}/api/accounts/lapak_deposit`),
+          authFetch(`${apiUrl}/api/raw-materials`) // Fetch raw materials
         ]);
   
         let paginatedTransactionsData = [];
@@ -41,8 +42,9 @@ const MainDashboard = ({ headerTitle }) => {
         let menuItemsData = [];
         let expensesData = [];
         let settingsData = {};
-        let ownerAccountData = null; // <--- Tambah ini
+        let ownerAccountData = null;
         let lapakAccountData = null;
+        let rawMaterialsData = []; // Initialize rawMaterialsData
   
               // Handle paginated transactions data (for recent transactions list)
   
@@ -122,15 +124,26 @@ const MainDashboard = ({ headerTitle }) => {
         console.error("Failed to fetch lapak account data:", lapakAccountRes.status, lapakAccountRes.statusText);
       }
 
+      // Handle raw materials data
+      if (rawMaterialsRes.ok) {
+        const rawMaterials = await rawMaterialsRes.json();
+        if (rawMaterialsRes.ok && rawMaterials.message === 'success') {
+          rawMaterialsData = rawMaterials.data;
+        }
+      } else {
+        console.error("Failed to fetch raw materials data:", rawMaterialsRes.status, rawMaterialsRes.statusText);
+      }
+
+
 
       // Process data if menu items are available (always expected)
       // and other data is fetched (or empty if not available)
-      if (menuItemsData.length > 0 || paginatedTransactionsData.length > 0 || allTransactionsData.length > 0 || expensesData.length > 0) {
-        processDashboardData(paginatedTransactionsData, allTransactionsData, menuItemsData, expensesData, settingsData, ownerAccountData, lapakAccountData);
+      if (menuItemsData.length > 0 || paginatedTransactionsData.length > 0 || allTransactionsData.length > 0 || expensesData.length > 0 || rawMaterialsData.length > 0) {
+        processDashboardData(paginatedTransactionsData, allTransactionsData, menuItemsData, expensesData, settingsData, ownerAccountData, lapakAccountData, rawMaterialsData);
       } else {
         // Optionally, set dashboardData to an empty state to stop loading spinner
         setDashboardData({
-          metrics: { totalRevenue: 0, totalExpenses: 0, stockValue: 0, netProfit: 0, workingCapital: 0, allTimeRevenue: 0, allTimeExpenses: 0, allTimeNetProfit: 0, ownerBalance: 0, lapakBalance: 0 },
+          metrics: { totalRevenue: 0, totalExpenses: 0, stockValue: 0, netProfit: 0, workingCapital: 0, allTimeRevenue: 0, allTimeExpenses: 0, allTimeNetProfit: 0, ownerBalance: 0, lapakBalance: 0, rawMaterialStockValue: 0 },
           todayStats: { transactions: 0, itemsSold: 0, averageOrder: 0, peakHour: 'N/A' },
           recentTransactions: [],
           dashboardMetrics: {
@@ -195,7 +208,7 @@ const MainDashboard = ({ headerTitle }) => {
     }
   }, []); // Empty dependency array to run once on mount
 
-    const processDashboardData = (paginatedTransactions, allTransactions, menuItems, expenses, settings, ownerAccountData, lapakAccountData) => {
+    const processDashboardData = (paginatedTransactions, allTransactions, menuItems, expenses, settings, ownerAccountData, lapakAccountData, rawMaterialsData) => {
       const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
@@ -221,10 +234,12 @@ const MainDashboard = ({ headerTitle }) => {
       const allTimeExpenses = allTimeRelevantExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
       const allTimeNetProfit = allTimeRevenue - allTimeExpenses;
 
-      const stockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
-  
+      const totalMenuStockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
+      const rawMaterialStockValue = rawMaterialsData.reduce((sum, m) => sum + (parseInt(m.current_stock || 0) * parseFloat(m.price_per_item || 0)), 0);
+      const stockValue = totalMenuStockValue; // Only menu stock value
+
       if (!isNaN(initialCapital)) {
-          workingCapital = initialCapital + allTimeNetProfit + stockValue;
+          workingCapital = initialCapital + allTimeRevenue + totalMenuStockValue - allTimeExpenses;
       }
   
       // --- Monthly Metrics for Dashboard ---
@@ -250,7 +265,7 @@ const MainDashboard = ({ headerTitle }) => {
   
       const totalExpenses = monthlyExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
 
-      const netProfit = totalRevenue - totalExpenses + stockValue;
+      const netProfit = totalRevenue - totalExpenses + totalMenuStockValue + rawMaterialStockValue;
   
       // --- Daily Stats Calculation ---
       // Use allTransactions for today's stats to ensure complete data for the day.
@@ -312,7 +327,7 @@ const MainDashboard = ({ headerTitle }) => {
           allTimeNetProfit,
           initialCapital, // Add initialCapital here
           // Other
-          stockValue,
+          stockValue, // Now only totalMenuStockValue
           ownerBalance: ownerAccountData?.account?.balance || 0,
           lapakBalance: lapakAccountData?.account?.balance || 0,
         },
@@ -479,7 +494,7 @@ const MainDashboard = ({ headerTitle }) => {
       value: formatCurrency(dashboardData.metrics.netProfit),
       icon: 'DollarSign',
       color: 'accent',
-      description: 'Pendapatan - pengeluaran + nilai stok'
+      description: 'Pendapatan - pengeluaran + nilai stok menu + nilai stok mentah'
     },
     {
       title: 'Total Pendapatan (Semua Waktu)',
