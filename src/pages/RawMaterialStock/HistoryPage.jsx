@@ -302,6 +302,15 @@ const RawMaterialStockHistory = () => {
                   <span className="font-medium">Keterangan:</span> {record.notes}
                 </p>
               )}
+              <div className="flex justify-end mt-2">
+                <button
+                  onClick={() => handleDeleteHistoryEntry(record.id)}
+                  className="text-red-600 hover:text-red-900 p-2 rounded-full bg-red-100"
+                  title="Hapus Riwayat"
+                >
+                  <FaTrash />
+                </button>
+              </div>
             </div>
           ))
         ) : (
