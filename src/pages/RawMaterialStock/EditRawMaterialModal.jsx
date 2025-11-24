@@ -12,9 +12,9 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated }) 
 
   useEffect(() => {
     if (isOpen && material) {
-      setName(material.name);
-      setUnit(material.unit);
-      setMinStockLevel(material.min_stock_level);
+      setName(material.name || ''); // Pastikan selalu string
+      setUnit(material.unit || '');   // Pastikan selalu string
+      setMinStockLevel(material.min_stock_level !== undefined && material.min_stock_level !== null ? material.min_stock_level : ''); // Pastikan string atau angka
       setError(null);
     }
   }, [isOpen, material]);

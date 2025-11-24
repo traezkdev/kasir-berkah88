@@ -4,18 +4,23 @@ import { FaPlus, FaSignInAlt, FaSignOutAlt, FaEdit, FaTrash, FaExclamationTriang
 import { useNavigate } from 'react-router-dom';
 import StockInModal from './StockInModal';
 import StockOutModal from './StockOutModal';
-import EditRawMaterialModal from './EditRawMaterialModal'; // Import EditRawMaterialModal
+import EditRawMaterialModal from './EditRawMaterialModal';
+import AddRawMaterialModal from './AddRawMaterialModal'; // Import AddRawMaterialModal
+import { useTheme } from '../../contexts/ThemeContext'; // Import useTheme
+import NavigationHeader from '../../components/ui/NavigationHeader'; // Import NavigationHeader
 
 const RawMaterialStockDashboard = () => {
   const [rawMaterials, setRawMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const { theme } = useTheme(); // Gunakan hook useTheme
 
-  // State untuk modal stok masuk/keluar/edit
+  // State untuk modal stok masuk/keluar/edit/tambah
   const [isStockInModalOpen, setIsStockInModalOpen] = useState(false);
   const [isStockOutModalOpen, setIsStockOutModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Tambahkan state ini
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false); // Tambahkan state ini
   const [selectedMaterial, setSelectedMaterial] = useState(null);
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -53,14 +58,19 @@ const RawMaterialStockDashboard = () => {
   };
 
   const handleEditClick = (material) => {
-    setSelectedMaterial(material); // Set material yang akan diedit
-    setIsEditModalOpen(true);     // Buka modal edit
+    setSelectedMaterial(material);
+    setIsEditModalOpen(true);
+  };
+
+  const handleAddMaterialClick = () => { // Fungsi baru untuk tombol tambah
+    setIsAddModalOpen(true);
   };
 
   const handleCloseModals = () => {
     setIsStockInModalOpen(false);
     setIsStockOutModalOpen(false);
-    setIsEditModalOpen(false); // Tambahkan ini
+    setIsEditModalOpen(false);
+    setIsAddModalOpen(false); // Tambahkan ini
     setSelectedMaterial(null);
     fetchRawMaterials(); // Refresh data setelah modal ditutup dan transaksi dilakukan
   };
@@ -92,134 +102,146 @@ const RawMaterialStockDashboard = () => {
   }
 
   return (
-    <div className="p-4 md:p-6">
-      <h1 className="text-2xl font-bold mb-4">Dashboard Stok Bahan Mentah</h1>
-      
-      <div className="flex justify-between items-center mb-4">
-        <button
-          onClick={() => console.log("Tambah Bahan Mentah Baru")} // TODO: Implementasi modal tambah bahan baru
-          className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded flex items-center"
-        >
-          <FaPlus className="mr-2" /> Tambah Bahan Mentah Baru
-        </button>
-        <button
-          onClick={() => navigate('/raw-material-stock/history')} // Navigasi ke halaman riwayat
-          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded flex items-center"
-        >
-          Lihat Riwayat Stok
-        </button>
-      </div>
-
-      <div className="overflow-x-auto bg-white rounded-lg shadow p-4">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Nama Bahan
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Stok Saat Ini
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Satuan
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Min. Stok
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Aksi
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {rawMaterials.map((material) => (
-              <tr key={material.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {material.name}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {material.current_stock}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {material.unit}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {material.min_stock_level}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {material.current_stock < material.min_stock_level && (
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 flex items-center">
-                      <FaExclamationTriangle className="mr-1" /> Stok Menipis!
-                    </span>
-                  )}
-                  {material.current_stock >= material.min_stock_level && (
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                      Cukup
-                    </span>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => handleStockInClick(material)}
-                    className="text-indigo-600 hover:text-indigo-900 mr-3"
-                    title="Stok Masuk"
-                  >
-                    <FaSignInAlt />
-                  </button>
-                  <button
-                    onClick={() => handleStockOutClick(material)}
-                    className="text-yellow-600 hover:text-yellow-900 mr-3"
-                    title="Stok Keluar"
-                  >
-                    <FaSignOutAlt />
-                  </button>
-                  <button
-                    onClick={() => handleEditClick(material)}
-                    className="text-blue-600 hover:text-blue-900 mr-3"
-                    title="Edit Bahan"
-                  >
-                    <FaEdit />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteClick(material.id)}
-                    className="text-red-600 hover:text-red-900"
-                    title="Hapus Bahan"
-                  >
-                    <FaTrash />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {selectedMaterial && (
-        <>
-          <StockInModal
-            isOpen={isStockInModalOpen}
-            onClose={handleCloseModals}
-            material={selectedMaterial}
-            onStockUpdated={fetchRawMaterials}
-          />
-          <StockOutModal
-            isOpen={isStockOutModalOpen}
-            onClose={handleCloseModals}
-            material={selectedMaterial}
-            onStockUpdated={fetchRawMaterials}
-          />
-          <EditRawMaterialModal
-            isOpen={isEditModalOpen}
-            onClose={handleCloseModals}
-            material={selectedMaterial}
-            onMaterialUpdated={fetchRawMaterials}
-          />
-        </>
+    <>
+      {theme !== 'admin' && (
+        <NavigationHeader headerTitle="Manajemen Stok Bahan Mentah" />
       )}
-    </div>
+      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 ${theme !== 'admin' ? 'mt-16' : ''}`}>
+      <h1 className="text-2xl font-bold mb-4">Dashboard Stok Bahan Mentah</h1>
+        
+        <div className="flex justify-between items-center mb-4">
+          <button
+            onClick={handleAddMaterialClick} // Panggil fungsi baru
+            className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded flex items-center"
+          >
+            <FaPlus className="mr-2" /> Tambah Bahan Mentah Baru
+          </button>
+          <button
+            onClick={() => navigate('/raw-material-stock/history')} // Navigasi ke halaman riwayat
+            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded flex items-center"
+          >
+            Lihat Riwayat Stok
+          </button>
+        </div>
+
+        <div className="overflow-x-auto bg-white rounded-lg shadow p-4">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Nama Bahan
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Stok Saat Ini
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Satuan
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Min. Stok
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Aksi
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {rawMaterials.map((material) => (
+                <tr key={material.id}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {material.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {material.current_stock}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {material.unit}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {material.min_stock_level}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {material.current_stock < material.min_stock_level && (
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 flex items-center">
+                        <FaExclamationTriangle className="mr-1" /> Stok Menipis!
+                      </span>
+                    )}
+                    {material.current_stock >= material.min_stock_level && (
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        Cukup
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                      onClick={() => handleStockInClick(material)}
+                      className="text-indigo-600 hover:text-indigo-900 mr-3"
+                      title="Stok Masuk"
+                    >
+                      <FaSignInAlt />
+                    </button>
+                    <button
+                      onClick={() => handleStockOutClick(material)}
+                      className="text-yellow-600 hover:text-yellow-900 mr-3"
+                      title="Stok Keluar"
+                    >
+                      <FaSignOutAlt />
+                    </button>
+                    <button
+                      onClick={() => handleEditClick(material)}
+                      className="text-blue-600 hover:text-blue-900 mr-3"
+                      title="Edit Bahan"
+                    >
+                      <FaEdit />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteClick(material.id)}
+                      className="text-red-600 hover:text-red-900"
+                      title="Hapus Bahan"
+                    >
+                      <FaTrash />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {selectedMaterial && (
+          <>
+            <StockInModal
+              isOpen={isStockInModalOpen}
+              onClose={handleCloseModals}
+              material={selectedMaterial}
+              onStockUpdated={fetchRawMaterials}
+            />
+            <StockOutModal
+              isOpen={isStockOutModalOpen}
+              onClose={handleCloseModals}
+              material={selectedMaterial}
+              onStockUpdated={fetchRawMaterials}
+            />
+            <EditRawMaterialModal
+              isOpen={isEditModalOpen}
+              onClose={handleCloseModals}
+              material={selectedMaterial}
+              onMaterialUpdated={fetchRawMaterials}
+            />
+          </>
+        )}
+
+        {/* Add Raw Material Modal */}
+        <AddRawMaterialModal
+          isOpen={isAddModalOpen}
+          onClose={handleCloseModals}
+          onMaterialAdded={fetchRawMaterials}
+        />
+      </div>
+    </>
   );
 };
 

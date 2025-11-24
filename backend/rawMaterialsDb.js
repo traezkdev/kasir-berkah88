@@ -5,11 +5,13 @@ const createRawMaterialsTables = async () => {
   const connection = await pool.getConnection();
   try {
     // Tabel untuk menyimpan daftar bahan mentah
+    await connection.query(`DROP TABLE IF EXISTS raw_material_stock_history`);
+    await connection.query(`DROP TABLE IF EXISTS raw_materials`);
     await connection.query(`
       CREATE TABLE IF NOT EXISTS raw_materials (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL UNIQUE,
-        unit VARCHAR(50) NOT NULL,
+        name VARCHAR(191) NOT NULL UNIQUE, -- Mengurangi panjang untuk mengatasi ER_TOO_LONG_KEY
+        unit VARCHAR(100) NOT NULL,       -- Menambah fleksibilitas untuk unit
         current_stock DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
         min_stock_level DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

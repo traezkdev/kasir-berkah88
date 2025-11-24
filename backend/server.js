@@ -124,8 +124,8 @@ app.post("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner
         await connection.beginTransaction();
 
         // Insert the new material
-        const stock = initial_stock || 0;
-        const minStock = min_stock_level || 0;
+        const stock = parseFloat(initial_stock) || 0; // Pastikan ini adalah angka
+        const minStock = parseFloat(min_stock_level) || 0; // Pastikan ini adalah angka
         const insertMaterialSql = 'INSERT INTO raw_materials (name, unit, current_stock, min_stock_level) VALUES (?, ?, ?, ?)';
         const [result] = await connection.query(insertMaterialSql, [name, unit, stock, minStock]);
         const newMaterialId = result.insertId;
@@ -145,10 +145,11 @@ app.post("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner
 
     } catch (err) {
         await connection.rollback();
+        console.error("Error adding new raw material:", err); // Log error secara detail
         if (err.code === 'ER_DUP_ENTRY') {
             return res.status(409).json({ error: "Raw material with this name already exists" });
         }
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: "Terjadi kesalahan server saat menambahkan bahan mentah baru." }); // Pesan error generik untuk klien
     } finally {
         connection.release();
     }
