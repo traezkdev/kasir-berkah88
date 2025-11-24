@@ -8,13 +8,15 @@ import EditRawMaterialModal from './EditRawMaterialModal';
 import AddRawMaterialModal from './AddRawMaterialModal'; // Import AddRawMaterialModal
 import { useTheme } from '../../contexts/ThemeContext'; // Import useTheme
 import NavigationHeader from '../../components/ui/NavigationHeader'; // Import NavigationHeader
+import useNotification from '../../hooks/useNotification'; // Import useNotification
 
 const RawMaterialStockDashboard = () => {
   const [rawMaterials, setRawMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null); // Keep local error state for initial fetch
   const navigate = useNavigate();
   const { theme } = useTheme(); // Gunakan hook useTheme
+  const { message, error: notificationError, showMessage, showError } = useNotification(); // Use notification hook
 
   // State untuk modal stok masuk/keluar/edit/tambah
   const [isStockInModalOpen, setIsStockInModalOpen] = useState(false);
@@ -85,10 +87,10 @@ const RawMaterialStockDashboard = () => {
           }
         });
         fetchRawMaterials(); // Refresh daftar bahan mentah
-        alert("Bahan mentah berhasil dihapus.");
+        showMessage("Bahan mentah berhasil dihapus.");
       } catch (err) {
         console.error("Error deleting raw material:", err);
-        alert("Gagal menghapus bahan mentah.");
+        showError("Gagal menghapus bahan mentah.");
       }
     }
   };
@@ -309,18 +311,24 @@ const RawMaterialStockDashboard = () => {
               onClose={handleCloseModals}
               material={selectedMaterial}
               onStockUpdated={fetchRawMaterials}
+              showMessage={showMessage} // Pass showMessage
+              showError={showError}   // Pass showError
             />
             <StockOutModal
               isOpen={isStockOutModalOpen}
               onClose={handleCloseModals}
               material={selectedMaterial}
               onStockUpdated={fetchRawMaterials}
+              showMessage={showMessage} // Pass showMessage
+              showError={showError}   // Pass showError
             />
             <EditRawMaterialModal
               isOpen={isEditModalOpen}
               onClose={handleCloseModals}
               material={selectedMaterial}
               onMaterialUpdated={fetchRawMaterials}
+              showMessage={showMessage} // Pass showMessage
+              showError={showError}   // Pass showError
             />
           </>
         )}
@@ -330,8 +338,12 @@ const RawMaterialStockDashboard = () => {
           isOpen={isAddModalOpen}
           onClose={handleCloseModals}
           onMaterialAdded={fetchRawMaterials}
+          showMessage={showMessage} // Pass showMessage
+          showError={showError}   // Pass showError
         />
       </div>
+      {message && <div className="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{message}</div>}
+      {notificationError && <div className="fixed bottom-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{notificationError}</div>}
     </>
   );
 };

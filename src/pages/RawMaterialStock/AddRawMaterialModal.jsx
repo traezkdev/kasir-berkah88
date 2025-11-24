@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded }) => {
+const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, showError }) => {
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('');
   const [customUnit, setCustomUnit] = useState('pcs'); // New state for custom unit
@@ -61,12 +61,12 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded }) => {
           Authorization: `Bearer ${token}`,
         },
       });
-      alert("Bahan mentah baru berhasil ditambahkan!");
+      showMessage("Bahan mentah baru berhasil ditambahkan!");
       onMaterialAdded(); // Memberi tahu parent komponen untuk me-refresh data
       onClose();
     } catch (err) {
       console.error("Error adding raw material:", err);
-      setError(err.response?.data?.error || "Gagal menambahkan bahan mentah baru. Mungkin nama sudah ada.");
+      showError(err.response?.data?.error || "Gagal menambahkan bahan mentah baru. Mungkin nama sudah ada.");
     } finally {
       setLoading(false);
     }

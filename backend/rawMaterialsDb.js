@@ -208,6 +208,54 @@ const getStockHistory = async (filters = {}) => {
   }
 };
 
+const deleteStockHistoryEntry = async (historyId) => {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // 1. Get history entry details to revert stock
+    const [historyRows] = await connection.query(
+      `SELECT material_id, type, quantity FROM raw_material_stock_history WHERE id = ? FOR UPDATE`,
+      [historyId]
+    );
+
+    if (historyRows.length === 0) {
+      throw new Error('Stock history entry not found.');
+    }
+
+    const { material_id, type, quantity } = historyRows[0];
+
+    // 2. Revert stock in raw_materials table
+    if (type === 'in') {
+      // If stock was 'in', subtract quantity from current_stock
+      await connection.query(
+        `UPDATE raw_materials SET current_stock = current_stock - ? WHERE id = ?`,
+        [quantity, material_id]
+      );
+    } else if (type === 'out') {
+      // If stock was 'out', add quantity back to current_stock
+      await connection.query(
+        `UPDATE raw_materials SET current_stock = current_stock + ? WHERE id = ?`,
+        [quantity, material_id]
+      );
+    }
+
+    // 3. Delete the history entry
+    const [result] = await connection.query(
+      `DELETE FROM raw_material_stock_history WHERE id = ?`,
+      [historyId]
+    );
+
+    await connection.commit();
+    return result;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+};
+
 module.exports = {
   addRawMaterial,
   getRawMaterials,
@@ -217,4 +265,5 @@ module.exports = {
   addStockIn,
   addStockOut,
   getStockHistory,
+  deleteStockHistoryEntry, // Export the new function
 };

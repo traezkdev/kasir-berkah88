@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated }) => {
+const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, showMessage, showError }) => {
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('');
   const [customUnit, setCustomUnit] = useState(''); // New state for custom unit
@@ -53,12 +53,12 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated }) 
           Authorization: `Bearer ${token}`,
         },
       });
-      alert("Bahan mentah berhasil diperbarui!");
+      showMessage("Bahan mentah berhasil diperbarui!");
       onMaterialUpdated(); // Memberi tahu parent komponen untuk me-refresh data
       onClose();
     } catch (err) {
       console.error("Error updating raw material:", err);
-      setError(err.response?.data?.error || "Gagal memperbarui bahan mentah.");
+      showError(err.response?.data?.error || "Gagal memperbarui bahan mentah.");
     } finally {
       setLoading(false);
     }

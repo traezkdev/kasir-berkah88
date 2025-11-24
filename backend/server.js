@@ -15,6 +15,7 @@ const {
   addStockIn,
   addStockOut,
   getStockHistory,
+  deleteStockHistoryEntry, // New import
 } = require('./rawMaterialsDb');
 
 const app = express();
@@ -229,6 +230,22 @@ app.get("/api/raw-materials/history", authenticateToken, authorizeRoles('admin',
         res.json({ message: "success", data: history });
     } catch (err) {
         console.error("Error fetching stock history:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete a raw material stock history entry
+app.delete("/api/raw-materials/history/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await deleteStockHistoryEntry(id);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Stock history entry not found" });
+        }
+        res.json({ message: "Stock history entry deleted successfully" });
+    } catch (err) {
+        console.error("Error deleting stock history entry:", err);
         res.status(500).json({ error: err.message });
     }
 });
