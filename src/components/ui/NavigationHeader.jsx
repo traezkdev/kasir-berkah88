@@ -63,41 +63,97 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
   }, [location.pathname]); // Re-run when path changes (e.g., after login/logout)
 
   const allNavigationItems = [
-    { label: 'Dashboard', path: '/main-dashboard', icon: 'LayoutDashboard' },
-    { label: 'Penjualan', path: '/sales-transaction-processing', icon: 'ShoppingCart' },
-    { label: 'Menu', path: '/menu-management', icon: 'UtensilsCrossed' },
-    { label: 'Pengeluaran', path: '/expense-tracking', icon: 'Receipt' },
-    { label: 'Laporan', path: '/transaction-history', icon: 'FileText' },
-    { label: 'Konfirmasi Pesanan', path: '/order-confirmation', icon: 'ClipboardCheck' },
-    { label: 'Catatan', path: '/notes', icon: 'Notebook' },
-    { label: 'Profil', path: '/profile', icon: 'User' },
-    { label: 'Settings', path: '/settings', icon: 'Settings', adminOnly: true },
+    { label: 'Dashboard Utama', path: '/main-dashboard', icon: 'LayoutDashboard', roles: ['admin', 'user'] },
+    { label: 'Dashboard Owner', path: '/owner-dashboard', icon: 'BriefcaseBusiness', roles: ['owner'] },
+    { label: 'Dashboard Kasir', path: '/cashier-dashboard', icon: 'ScanBarcode', roles: ['kasir'] },
+    { label: 'Penjualan', path: '/sales-transaction-processing', icon: 'ShoppingCart', roles: ['admin', 'user', 'kasir'] },
+    { label: 'Menu', path: '/menu-management', icon: 'UtensilsCrossed', roles: ['admin', 'user'] },
+    { label: 'Stok Bahan Mentah', path: '/raw-material-stock', icon: 'Package', roles: ['admin', 'user', 'owner'] },
+    { label: 'Pengeluaran', path: '/expense-tracking', icon: 'Receipt', roles: ['admin', 'user'] },
+    { label: 'Laporan Transaksi', path: '/transaction-history', icon: 'FileText', roles: ['admin', 'user'] },
+    { label: 'Laporan Bisnis', path: '/business-reports', icon: 'BarChart3', roles: ['admin', 'owner'] },
+    { label: 'Konfirmasi Pesanan', path: '/order-confirmation', icon: 'ClipboardCheck', roles: ['admin', 'user'] },
+    { label: 'Catatan', path: '/notes', icon: 'Notebook', roles: ['admin', 'user'] },
+    { label: 'Profil', path: '/profile', icon: 'User', roles: ['admin', 'user', 'owner', 'kasir'] },
+    { label: 'Pengaturan', path: '/settings', icon: 'Settings', roles: ['admin'] },
+    { label: 'Lapak Deposit', path: '/lapak-deposit', icon: 'Wallet', roles: ['admin', 'user', 'kasir', 'owner'] },
+    { label: 'History Stok Bahan Mentah', path: '/raw-material-stock/history', icon: 'History', roles: ['admin', 'user', 'owner'] }
   ];
 
+  const ownerNavPaths = [
+    '/owner-dashboard',
+    '/raw-material-stock',
+    '/raw-material-stock/history',
+    '/business-reports',
+    '/profile',
+    '/lapak-deposit'
+  ];
+
+  const isOwnerNavMode = userRole === 'owner' && ownerNavPaths.includes(location.pathname);
+
   const navigationItems = allNavigationItems.filter(item => {
-    if (item.adminOnly && userRole !== 'admin') {
-      return false;
-    }
-    if (item.guestRestricted && userRole === 'guest') {
+    // Basic role check
+    if (item.roles && !item.roles.includes(userRole)) {
       return false;
     }
 
-    // Hide specific items for 'owner' role when on '/owner-dashboard'
-    if (userRole === 'owner' && location.pathname === '/owner-dashboard') {
-      const ownerHiddenPaths = [
-        '/main-dashboard',
-        '/sales-transaction-processing',
-        '/menu-management',
-        '/expense-tracking',
-        '/transaction-history',
-        '/order-confirmation',
-        '/notes',
-        '/profile'
-      ];
-      if (ownerHiddenPaths.includes(item.path)) {
-        return false;
+    // Owner specific navigation filtering
+    if (userRole === 'owner') {
+      if (isOwnerNavMode) {
+        // In owner navigation mode, only show items relevant to owner (defined in ownerNavPaths implicitly by filtering against allNavigationItems with owner roles)
+        return ownerNavPaths.includes(item.path);
+      } else {
+        // If owner is not in ownerNavMode, hide owner-specific dashboard links
+        const ownerSpecificDashboards = ['/owner-dashboard', '/raw-material-stock', '/business-reports', '/lapak-deposit'];
+        if (ownerSpecificDashboards.includes(item.path)) {
+            return false;
+        }
       }
     }
+
+    // Hide specific items for other roles if they are trying to access owner-only pages
+    if (item.path === '/owner-dashboard' && userRole !== 'owner') {
+        return false;
+    }
+
+    // Hide cashiers dashboard from non-cashiers
+    if (item.path === '/cashier-dashboard' && userRole !== 'kasir') {
+        return false;
+    }
+    // Hide main dashboard from kasir and owner
+    if (item.path === '/main-dashboard' && (userRole === 'kasir' || userRole === 'owner')) {
+        return false;
+    }
+
+    // Hide Penjualan (sales-transaction-processing) from owner
+    if (item.path === '/sales-transaction-processing' && userRole === 'owner') {
+      return false;
+    }
+
+    // Hide Menu (menu-management) from owner
+    if (item.path === '/menu-management' && userRole === 'owner') {
+      return false;
+    }
+
+    // Hide Pengeluaran (expense-tracking) from owner
+    if (item.path === '/expense-tracking' && userRole === 'owner') {
+      return false;
+    }
+    // Hide Laporan Transaksi (transaction-history) from owner
+    if (item.path === '/transaction-history' && userRole === 'owner') {
+      return false;
+    }
+
+    // Hide Konfirmasi Pesanan (order-confirmation) from owner
+    if (item.path === '/order-confirmation' && userRole === 'owner') {
+      return false;
+    }
+
+    // Hide Catatan (notes) from owner
+    if (item.path === '/notes' && userRole === 'owner') {
+      return false;
+    }
+
     return true;
   });
 
