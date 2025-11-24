@@ -4,7 +4,8 @@ import axios from 'axios';
 const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded }) => {
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('');
-  const [initialStock, setInitialStock] = useState('');
+  const [pricePerItem, setPricePerItem] = useState('');
+  const [standardStockPerDay, setStandardStockPerDay] = useState('');
   const [minStockLevel, setMinStockLevel] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -15,7 +16,8 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded }) => {
     if (isOpen) {
       setName('');
       setUnit('');
-      setInitialStock('');
+      setPricePerItem('');
+      setStandardStockPerDay('');
       setMinStockLevel('');
       setError(null);
     }
@@ -27,8 +29,12 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded }) => {
       setError("Nama dan satuan bahan mentah tidak boleh kosong.");
       return;
     }
-    if (parseFloat(initialStock) < 0) {
-      setError("Stok awal tidak boleh negatif.");
+    if (parseFloat(pricePerItem) < 0) {
+      setError("Harga per item tidak boleh negatif.");
+      return;
+    }
+    if (parseFloat(standardStockPerDay) < 0) {
+      setError("Stok standar per hari tidak boleh negatif.");
       return;
     }
     if (parseFloat(minStockLevel) < 0) {
@@ -44,8 +50,9 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded }) => {
       await axios.post(`${API_BASE_URL}/api/raw-materials`, {
         name,
         unit,
-        initial_stock: parseFloat(initialStock) || 0,
         min_stock_level: parseFloat(minStockLevel) || 0,
+        price_per_item: parseFloat(pricePerItem) || 0,
+        standard_stock_per_day: parseFloat(standardStockPerDay) || 0,
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -92,13 +99,25 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded }) => {
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="initialStock" className="block text-gray-700 text-sm font-bold mb-2">Stok Awal (Opsional)</label>
+            <label htmlFor="pricePerItem" className="block text-gray-700 text-sm font-bold mb-2">Harga per Item (Opsional)</label>
             <input
               type="number"
-              id="initialStock"
+              id="pricePerItem"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={initialStock}
-              onChange={(e) => setInitialStock(e.target.value)}
+              value={pricePerItem}
+              onChange={(e) => setPricePerItem(e.target.value)}
+              min="0"
+              step="0.01"
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="standardStockPerDay" className="block text-gray-700 text-sm font-bold mb-2">Stok Standar per Hari (Opsional)</label>
+            <input
+              type="number"
+              id="standardStockPerDay"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              value={standardStockPerDay}
+              onChange={(e) => setStandardStockPerDay(e.target.value)}
               min="0"
               step="0.01"
             />

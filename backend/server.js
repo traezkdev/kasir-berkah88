@@ -6,10 +6,16 @@ const jwt = require('jsonwebtoken'); // Import jsonwebtoken
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { createRawMaterialsTables } = require('./rawMaterialsDb');
-
-// Initialize database tables for the raw material stock system
-createRawMaterialsTables();
+const {
+  addRawMaterial,
+  getRawMaterials,
+  getRawMaterialById,
+  updateRawMaterial,
+  deleteRawMaterial,
+  addStockIn,
+  addStockOut,
+  getStockHistory,
+} = require('./rawMaterialsDb');
 
 const app = express();
 app.use(cors({
@@ -105,8 +111,8 @@ const authorizeAccountAccess = (accountType) => {
 // Get all raw materials
 app.get("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner', 'user', 'kasir'), async (req, res) => {
     try {
-        const [rows] = await db.query("SELECT * FROM raw_materials ORDER BY name ASC");
-        res.json({ message: "success", data: rows });
+        const rawMaterials = await getRawMaterials();
+        res.json({ message: "success", data: rawMaterials });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -114,44 +120,27 @@ app.get("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner'
 
 // Add a new raw material
 app.post("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
-    const connection = await db.getConnection();
     try {
-        const { name, unit, initial_stock, min_stock_level } = req.body;
+        const { name, unit, min_stock_level, price_per_item, standard_stock_per_day } = req.body;
         if (!name || !unit) {
             return res.status(400).json({ error: "Name and unit are required" });
         }
 
-        await connection.beginTransaction();
-
-        // Insert the new material
-        const stock = parseFloat(initial_stock) || 0; // Pastikan ini adalah angka
-        const minStock = parseFloat(min_stock_level) || 0; // Pastikan ini adalah angka
-        const insertMaterialSql = 'INSERT INTO raw_materials (name, unit, current_stock, min_stock_level) VALUES (?, ?, ?, ?)';
-        const [result] = await connection.query(insertMaterialSql, [name, unit, stock, minStock]);
-        const newMaterialId = result.insertId;
-
-        // If there's an initial stock, create a history record for it
-        if (stock > 0) {
-            const insertHistorySql = 'INSERT INTO raw_material_stock_history (material_id, type, quantity, transaction_date, notes) VALUES (?, ?, ?, ?, ?)';
-            await connection.query(insertHistorySql, [newMaterialId, 'in', stock, new Date(), 'Stok awal']);
-        }
-
-        await connection.commit();
+        // Gunakan fungsi addRawMaterial dari rawMaterialsDb
+        const result = await addRawMaterial(name, unit, parseFloat(min_stock_level) || 0, parseFloat(price_per_item) || 0, parseFloat(standard_stock_per_day) || 0);
         
+        // Asumsi result mengandung insertId jika berhasil
         res.status(201).json({
             message: "Raw material added successfully",
-            data: { id: newMaterialId, name, unit, current_stock: stock, min_stock_level: minStock },
+            data: { id: result.insertId, name, unit, min_stock_level, price_per_item, standard_stock_per_day },
         });
 
     } catch (err) {
-        await connection.rollback();
-        console.error("Error adding new raw material:", err); // Log error secara detail
-        if (err.code === 'ER_DUP_ENTRY') {
+        console.error("Error adding new raw material:", err);
+        if (err.message && err.message.includes('ER_DUP_ENTRY')) { // Cek pesan error dari fungsi db
             return res.status(409).json({ error: "Raw material with this name already exists" });
         }
-        res.status(500).json({ error: "Terjadi kesalahan server saat menambahkan bahan mentah baru." }); // Pesan error generik untuk klien
-    } finally {
-        connection.release();
+        res.status(500).json({ error: err.message || "Terjadi kesalahan server saat menambahkan bahan mentah baru." });
     }
 });
 
@@ -160,17 +149,16 @@ app.post("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner
 app.put("/api/raw-materials/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, unit, min_stock_level } = req.body;
+        const { name, unit, min_stock_level, price_per_item, standard_stock_per_day } = req.body;
 
-        const sql = 'UPDATE raw_materials SET name = ?, unit = ?, min_stock_level = ? WHERE id = ?';
-        const [result] = await db.query(sql, [name, unit, min_stock_level, id]);
+        const result = await updateRawMaterial(id, name, unit, parseFloat(min_stock_level) || 0, parseFloat(price_per_item) || 0, parseFloat(standard_stock_per_day) || 0);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: "Raw material not found" });
         }
-        res.json({ message: "success", data: { id, name, unit, min_stock_level } });
+        res.json({ message: "success", data: { id, name, unit, min_stock_level, price_per_item, standard_stock_per_day } });
     } catch (err) {
-        if (err.code === 'ER_DUP_ENTRY') {
+        if (err.message && err.message.includes('ER_DUP_ENTRY')) {
             return res.status(409).json({ error: "Raw material with this name already exists" });
         }
         res.status(500).json({ error: err.message });
@@ -181,10 +169,8 @@ app.put("/api/raw-materials/:id", authenticateToken, authorizeRoles('admin', 'ow
 app.delete("/api/raw-materials/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
         const { id } = req.params;
-        // The database is set up with ON DELETE CASCADE, 
-        // so deleting a material will also delete its stock history.
-        const sql = 'DELETE FROM raw_materials WHERE id = ?';
-        const [result] = await db.query(sql, [id]);
+        // Gunakan fungsi deleteRawMaterial dari rawMaterialsDb
+        const result = await deleteRawMaterial(id);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: "Raw material not found" });
@@ -197,134 +183,66 @@ app.delete("/api/raw-materials/:id", authenticateToken, authorizeRoles('admin', 
 
 // Record a stock-in transaction
 app.post("/api/raw-materials/stock-in", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
-    const { material_id, quantity, transaction_date, notes } = req.body;
-    if (!material_id || !quantity || quantity <= 0 || !transaction_date) {
-        return res.status(400).json({ error: "Material ID, positive quantity, and transaction date are required" });
-    }
-
-    const connection = await db.getConnection();
     try {
-        await connection.beginTransaction();
+        const { material_id, quantity, price_per_unit, transaction_date, notes } = req.body;
+        if (!material_id || !quantity || quantity <= 0 || !transaction_date) {
+            return res.status(400).json({ error: "Material ID, positive quantity, and transaction date are required" });
+        }
 
-        // Add stock to the material
-        const updateStockSql = 'UPDATE raw_materials SET current_stock = current_stock + ? WHERE id = ?';
-        await connection.query(updateStockSql, [quantity, material_id]);
-
-        // Record the transaction in history
-        const historySql = 'INSERT INTO raw_material_stock_history (material_id, type, quantity, transaction_date, notes) VALUES (?, ?, ?, ?, ?)';
-        await connection.query(historySql, [material_id, 'in', quantity, transaction_date, notes]);
-
-        await connection.commit();
-        res.status(200).json({ message: "Stock-in recorded successfully" });
+        // Gunakan fungsi addStockIn dari rawMaterialsDb
+        const result = await addStockIn(material_id, parseFloat(quantity), parseFloat(price_per_unit) || 0, transaction_date, notes);
+        res.status(200).json(result);
 
     } catch (err) {
-        await connection.rollback();
+        console.error("Error recording stock-in:", err);
         res.status(500).json({ error: err.message });
-    } finally {
-        connection.release();
     }
 });
 
 // Record a stock-out transaction
 app.post("/api/raw-materials/stock-out", authenticateToken, authorizeRoles('admin', 'owner', 'user'), async (req, res) => {
-    const { material_id, quantity, transaction_date, notes } = req.body;
-    if (!material_id || !quantity || quantity <= 0 || !transaction_date) {
-        return res.status(400).json({ error: "Material ID, positive quantity, and transaction date are required" });
-    }
-
-    const connection = await db.getConnection();
     try {
-        await connection.beginTransaction();
-
-        // Check current stock
-        const [materialRows] = await connection.query('SELECT current_stock FROM raw_materials WHERE id = ? FOR UPDATE', [material_id]);
-        if (materialRows.length === 0) {
-            await connection.rollback();
-            return res.status(404).json({ error: "Raw material not found" });
+        const { material_id, quantity, price_per_unit, transaction_date, notes } = req.body;
+        if (!material_id || !quantity || quantity <= 0 || !transaction_date) {
+            return res.status(400).json({ error: "Material ID, positive quantity, and transaction date are required" });
         }
 
-        const currentStock = materialRows[0].current_stock;
-        if (currentStock < quantity) {
-            await connection.rollback();
-            return res.status(400).json({ error: `Insufficient stock. Available: ${currentStock}, Requested: ${quantity}` });
-        }
-
-        // Reduce stock from the material
-        const updateStockSql = 'UPDATE raw_materials SET current_stock = current_stock - ? WHERE id = ?';
-        await connection.query(updateStockSql, [quantity, material_id]);
-
-        // Record the transaction in history
-        const historySql = 'INSERT INTO raw_material_stock_history (material_id, type, quantity, transaction_date, notes) VALUES (?, ?, ?, ?, ?)';
-        await connection.query(historySql, [material_id, 'out', quantity, transaction_date, notes]);
-
-        await connection.commit();
-        res.status(200).json({ message: "Stock-out recorded successfully" });
+        // Gunakan fungsi addStockOut dari rawMaterialsDb
+        const result = await addStockOut(material_id, parseFloat(quantity), parseFloat(price_per_unit) || 0, transaction_date, notes);
+        res.status(200).json(result);
 
     } catch (err) {
-        await connection.rollback();
+        console.error("Error recording stock-out:", err);
+        // addStockOut akan melempar error dengan pesan yang sesuai, tangkap di sini
+        if (err.message && err.message.includes('Insufficient stock')) {
+            return res.status(400).json({ error: err.message });
+        }
         res.status(500).json({ error: err.message });
-    } finally {
-        connection.release();
     }
 });
 
 // Get raw material stock history with filtering
 app.get("/api/raw-materials/history", authenticateToken, authorizeRoles('admin', 'owner', 'user'), async (req, res) => {
     try {
-        const { material_id, type, startDate, endDate } = req.query;
-
-        let query = `
-            SELECT 
-                h.id,
-                h.material_id,
-                m.name as material_name,
-                m.unit as material_unit,
-                h.type,
-                h.quantity,
-                h.transaction_date,
-                h.notes,
-                h.created_at
-            FROM raw_material_stock_history h
-            JOIN raw_materials m ON h.material_id = m.id
-        `;
-        
-        const whereClauses = [];
-        const params = [];
-
-        if (material_id) {
-            whereClauses.push('h.material_id = ?');
-            params.push(material_id);
-        }
-        if (type) {
-            whereClauses.push('h.type = ?');
-            params.push(type);
-        }
-        if (startDate) {
-            whereClauses.push('h.transaction_date >= ?');
-            params.push(startDate);
-        }
-        if (endDate) {
-            // Add 1 day to endDate to include the whole day
-            const endOfDay = new Date(endDate);
-            endOfDay.setDate(endOfDay.getDate() + 1);
-            whereClauses.push('h.transaction_date < ?');
-            params.push(endOfDay);
-        }
-
-        if (whereClauses.length > 0) {
-            query += ' WHERE ' + whereClauses.join(' AND ');
-        }
-
-        query += ' ORDER BY h.transaction_date DESC';
-
-        const [rows] = await db.query(query, params);
-        res.json({ message: "success", data: rows });
-
+        const filters = req.query; // material_id, type, startDate, endDate
+        const history = await getStockHistory(filters);
+        res.json({ message: "success", data: history });
     } catch (err) {
+        console.error("Error fetching stock history:", err);
         res.status(500).json({ error: err.message });
     }
 });
 
+// TEMPORARY ENDPOINT: Get raw materials table schema
+app.get("/api/raw-materials/columns", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const [rows] = await db.query("SHOW COLUMNS FROM raw_materials");
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        console.error("Error fetching raw materials columns:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
 
 // --- Menu Items Endpoints ---
 

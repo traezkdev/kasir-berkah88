@@ -4,6 +4,7 @@ import moment from 'moment';
 
 const StockInModal = ({ isOpen, onClose, material, onStockUpdated }) => {
   const [quantity, setQuantity] = useState('');
+  const [pricePerUnit, setPricePerUnit] = useState(''); // State baru untuk harga per unit
   const [transactionDate, setTransactionDate] = useState(moment().format('YYYY-MM-DDTHH:mm'));
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
@@ -14,6 +15,7 @@ const StockInModal = ({ isOpen, onClose, material, onStockUpdated }) => {
   useEffect(() => {
     if (isOpen) {
       setQuantity('');
+      setPricePerUnit(''); // Reset pricePerUnit
       setTransactionDate(moment().format('YYYY-MM-DDTHH:mm'));
       setNotes('');
       setError(null);
@@ -39,6 +41,7 @@ const StockInModal = ({ isOpen, onClose, material, onStockUpdated }) => {
       await axios.post(`${API_BASE_URL}/api/raw-materials/stock-in`, {
         material_id: material.id,
         quantity: parseFloat(quantity),
+        price_per_unit: parseFloat(pricePerUnit) || 0,
         transaction_date: transactionDate,
         notes,
       }, {
@@ -75,6 +78,19 @@ const StockInModal = ({ isOpen, onClose, material, onStockUpdated }) => {
               min="0.01"
               step="0.01"
               required
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="pricePerUnit" className="block text-gray-700 text-sm font-bold mb-2">Harga per Unit (Opsional)</label>
+            <input
+              type="number"
+              id="pricePerUnit"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              value={pricePerUnit}
+              onChange={(e) => setPricePerUnit(e.target.value)}
+              min="0"
+              step="0.01"
+              placeholder={`Default: ${material.price_per_item ? parseFloat(material.price_per_item).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }) : '0'}`}
             />
           </div>
           <div className="mb-4">

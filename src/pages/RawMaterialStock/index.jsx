@@ -142,6 +142,12 @@ const RawMaterialStockDashboard = () => {
                   Min. Stok
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Harga per Item
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Stok Standar/Hari
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -163,6 +169,14 @@ const RawMaterialStockDashboard = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {parseInt(material.min_stock_level)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {/* Harga per Item */}
+                    {parseFloat(material.price_per_item).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {/* Stok Standar/Hari */}
+                    {parseInt(material.standard_stock_per_day)} {material.unit}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {Number(material.current_stock) < Number(material.min_stock_level) && (
@@ -240,7 +254,18 @@ const RawMaterialStockDashboard = () => {
                                   <p className="font-medium">Min. Stok:</p>
                                   <p>{parseInt(material.min_stock_level)} {material.unit}</p>
                                 </div>
-                              </div>                <div className="flex justify-end space-x-2">
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-sm text-gray-700 pb-2 mb-2 border-b border-gray-200">
+                                <div>
+                                  <p className="font-medium">Harga per Item:</p>
+                                  <p>{parseFloat(material.price_per_item).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}</p>
+                                </div>
+                                <div>
+                                  <p className="font-medium">Stok Standar/Hari:</p>
+                                  <p>{parseInt(material.standard_stock_per_day)} {material.unit}</p>
+                                </div>
+                              </div>
+                <div className="flex justify-end space-x-2">
                   <button
                     onClick={() => handleStockInClick(material)}
                     className="text-indigo-600 hover:text-indigo-900 p-2 rounded-full bg-indigo-100"

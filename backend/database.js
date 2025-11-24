@@ -185,6 +185,95 @@ const setupDatabase = async () => {
     await connection.query(createEmployeesTable);
     console.log('employees table is ready.');
 
+    const createRawMaterialsTable = `
+      CREATE TABLE IF NOT EXISTS raw_materials (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL UNIQUE,
+        unit VARCHAR(50) NOT NULL,
+        current_stock DECIMAL(10, 2) DEFAULT 0.00,
+        min_stock_level DECIMAL(10, 2) DEFAULT 0.00,
+        price_per_item DECIMAL(10, 2) DEFAULT 0.00,
+        standard_stock_per_day DECIMAL(10, 2) DEFAULT 0.00,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `;
+    await connection.query(createRawMaterialsTable);
+    console.log('raw_materials table is ready.');
+
+    // Check and add price_per_item column to raw_materials if it doesn't exist
+    const checkPricePerItemColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'raw_materials' AND COLUMN_NAME = 'price_per_item';
+    `;
+    const addPricePerItemColumn = `
+      ALTER TABLE raw_materials ADD COLUMN price_per_item DECIMAL(10, 2) DEFAULT 0.00;
+    `;
+    const [pricePerItemRows] = await connection.query(checkPricePerItemColumn);
+    if (pricePerItemRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addPricePerItemColumn);
+      console.log('Added price_per_item column to raw_materials table.');
+    }
+
+    // Check and add standard_stock_per_day column to raw_materials if it doesn't exist
+    const checkStandardStockPerDayColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'raw_materials' AND COLUMN_NAME = 'standard_stock_per_day';
+    `;
+    const addStandardStockPerDayColumn = `
+      ALTER TABLE raw_materials ADD COLUMN standard_stock_per_day DECIMAL(10, 2) DEFAULT 0.00;
+    `;
+    const [standardStockPerDayRows] = await connection.query(checkStandardStockPerDayColumn);
+    if (standardStockPerDayRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addStandardStockPerDayColumn);
+      console.log('Added standard_stock_per_day column to raw_materials table.');
+    }
+
+    const createRawMaterialStockHistoryTable = `
+      CREATE TABLE IF NOT EXISTS raw_material_stock_history (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        material_id INT NOT NULL,
+        type ENUM('in', 'out') NOT NULL,
+        quantity DECIMAL(10, 2) NOT NULL,
+        price_per_unit DECIMAL(10, 2) DEFAULT 0.00,
+        total_price DECIMAL(10, 2) DEFAULT 0.00,
+        notes TEXT,
+        transaction_date DATETIME NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (material_id) REFERENCES raw_materials(id) ON DELETE CASCADE
+      );
+    `;
+    await connection.query(createRawMaterialStockHistoryTable);
+    console.log('raw_material_stock_history table is ready.');
+
+    // Check and add price_per_unit column to raw_material_stock_history if it doesn't exist
+    const checkPricePerUnitHistoryColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'raw_material_stock_history' AND COLUMN_NAME = 'price_per_unit';
+    `;
+    const addPricePerUnitHistoryColumn = `
+      ALTER TABLE raw_material_stock_history ADD COLUMN price_per_unit DECIMAL(10, 2) DEFAULT 0.00;
+    `;
+    const [pricePerUnitHistoryRows] = await connection.query(checkPricePerUnitHistoryColumn);
+    if (pricePerUnitHistoryRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addPricePerUnitHistoryColumn);
+      console.log('Added price_per_unit column to raw_material_stock_history table.');
+    }
+
+    // Check and add total_price column to raw_material_stock_history if it doesn't exist
+    const checkTotalPriceHistoryColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'raw_material_stock_history' AND COLUMN_NAME = 'total_price';
+    `;
+    const addTotalPriceHistoryColumn = `
+      ALTER TABLE raw_material_stock_history ADD COLUMN total_price DECIMAL(10, 2) DEFAULT 0.00;
+    `;
+    const [totalPriceHistoryRows] = await connection.query(checkTotalPriceHistoryColumn);
+    if (totalPriceHistoryRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addTotalPriceHistoryColumn);
+      console.log('Added total_price column to raw_material_stock_history table.');
+    }
+
     const createAccountsTable = `
       CREATE TABLE IF NOT EXISTS accounts (
         id INT AUTO_INCREMENT PRIMARY KEY,

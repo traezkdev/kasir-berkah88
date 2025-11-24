@@ -5,6 +5,8 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated }) 
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('');
   const [minStockLevel, setMinStockLevel] = useState('');
+  const [pricePerItem, setPricePerItem] = useState('');
+  const [standardStockPerDay, setStandardStockPerDay] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -15,6 +17,8 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated }) 
       setName(material.name || ''); // Pastikan selalu string
       setUnit(material.unit || '');   // Pastikan selalu string
       setMinStockLevel(material.min_stock_level !== undefined && material.min_stock_level !== null ? parseInt(material.min_stock_level) : ''); // Ubah ke integer
+      setPricePerItem(material.price_per_item !== undefined && material.price_per_item !== null ? parseFloat(material.price_per_item) : '');
+      setStandardStockPerDay(material.standard_stock_per_day !== undefined && material.standard_stock_per_day !== null ? parseInt(material.standard_stock_per_day) : '');
       setError(null);
     }
   }, [isOpen, material]);
@@ -39,6 +43,8 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated }) 
         name,
         unit,
         min_stock_level: parseFloat(minStockLevel),
+        price_per_item: parseFloat(pricePerItem),
+        standard_stock_per_day: parseFloat(standardStockPerDay),
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -92,6 +98,32 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated }) 
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               value={minStockLevel}
               onChange={(e) => setMinStockLevel(e.target.value)}
+              min="0"
+              step="0.01"
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="pricePerItem" className="block text-gray-700 text-sm font-bold mb-2">Harga per Item</label>
+            <input
+              type="number"
+              id="pricePerItem"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              value={pricePerItem}
+              onChange={(e) => setPricePerItem(e.target.value)}
+              min="0"
+              step="0.01"
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="standardStockPerDay" className="block text-gray-700 text-sm font-bold mb-2">Stok Standar per Hari</label>
+            <input
+              type="number"
+              id="standardStockPerDay"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              value={standardStockPerDay}
+              onChange={(e) => setStandardStockPerDay(e.target.value)}
               min="0"
               step="0.01"
               required
