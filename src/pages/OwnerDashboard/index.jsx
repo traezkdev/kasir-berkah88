@@ -57,8 +57,6 @@ const OwnerDashboard = ({ headerTitle }) => {
     const fetchOwnerAccountData = async () => {
         setError(null); // Clear previous errors
         try {
-            const currentToken = localStorage.getItem('token');
-            console.log("DEBUG OwnerDashboard: Token before fetchOwnerAccountData:", currentToken ? "Present" : "Missing");
             const response = await authFetch(`${apiUrl}/api/accounts/owner_deposit`);
             if (!response.ok) {
                 const errData = await response.json();
@@ -74,8 +72,6 @@ const OwnerDashboard = ({ headerTitle }) => {
 
     const fetchLapakAccountData = async () => {
         try {
-            const currentToken = localStorage.getItem('token');
-            console.log("DEBUG OwnerDashboard: Token before fetchLapakAccountData:", currentToken ? "Present" : "Missing");
             const response = await authFetch(`${apiUrl}/api/accounts/lapak_deposit`);
             if (!response.ok) {
                 const errData = await response.json();
@@ -105,12 +101,12 @@ const OwnerDashboard = ({ headerTitle }) => {
             setIsLoadingReport(true);
             const token = localStorage.getItem('token');
             if (!token) {
-                console.log("DEBUG OwnerDashboard: Token Missing for fetchReportInitialData. Skipping fetch.");
+                // console.log("DEBUG OwnerDashboard: Token Missing for fetchReportInitialData. Skipping fetch.");
                 setIsLoadingReport(false);
                 return;
             }
             try {
-                console.log("DEBUG OwnerDashboard: Token before fetchReportInitialData calls:", token ? "Present" : "Missing");
+                // console.log("DEBUG OwnerDashboard: Token before fetchReportInitialData calls:", token ? "Present" : "Missing");
                 const [transRes, menuRes, expenseRes, settingsRes] = await Promise.all([
                     authFetch(`${apiUrl}/api/transactions/all`),
                     authFetch(`${apiUrl}/api/menu-items/all`),
