@@ -67,7 +67,7 @@ const OwnerNavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTit
     { label: 'Dashboard Owner', path: '/owner-dashboard', icon: 'BriefcaseBusiness', roles: ['owner'] },
     { label: 'Profil Owner', path: '/owner-profile', icon: 'User', roles: ['owner'] },
     { label: 'Stok Bahan Baku Owner', path: '/owner-raw-material-stock', icon: 'Package', roles: ['owner'] },
-    { label: 'Riwayat Stok Bahan Baku Owner', path: '/owner-raw-material-stock/history', icon: 'History', roles: ['owner'] },
+
   ];
 
 
