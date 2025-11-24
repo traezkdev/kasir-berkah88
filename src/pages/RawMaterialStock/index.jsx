@@ -230,9 +230,8 @@ const RawMaterialStockDashboard = () => {
           </table>
         </div>
 
-        {/* Card View for Mobile */}
-        <div className="block sm:hidden space-y-4 mt-4">
-          {rawMaterials.map((material) => (
+              {/* Card View for Mobile */}
+              <div className="block sm:hidden space-y-4 mt-4 pb-24">          {rawMaterials.map((material) => (
             <div key={material.id} className="bg-white rounded-lg shadow p-4 border border-gray-200">
               <div className="flex justify-between items-center pb-2 mb-2 border-b border-gray-200">
                 <p className="text-lg font-bold text-gray-900">{material.name}</p>

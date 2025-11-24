@@ -195,8 +195,9 @@ const getStockHistory = async (filters = {}) => {
       params.push(filters.startDate);
     }
     if (filters.endDate) {
+      // To include the entire end day, add ' 23:59:59'
       query += ` AND rmsh.transaction_date <= ?`;
-      params.push(filters.endDate);
+      params.push(`${filters.endDate} 23:59:59`);
     }
 
     query += ` ORDER BY rmsh.transaction_date DESC`;
