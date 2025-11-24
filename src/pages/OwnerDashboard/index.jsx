@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authFetch from '../../utils/authFetch';
 import { useTheme } from '../../contexts/ThemeContext';
-import NavigationHeader from '../../components/ui/NavigationHeader';
+import OwnerNavigationHeader from '../../components/ui/OwnerNavigationHeader';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import MetricsCard from '../main-dashboard/components/MetricsCard'; // Re-use MetricsCard
@@ -403,9 +403,9 @@ const OwnerDashboard = ({ headerTitle }) => {
 
     return (
         <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
-            {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle || 'Dashboard Owner'} />}
-            <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'pt-16' : ''}`}>
-                <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
+            <OwnerNavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle || 'Dashboard Owner'} />
+            <main className={`pb-20 lg:pb-8 pt-16`}>
+                <div className="max-w-7xl mx-auto px-4 lg:px-6">
                     <div className="mb-6 mt-4">
                         <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
                             Dashboard Owner

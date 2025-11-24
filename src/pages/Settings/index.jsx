@@ -562,6 +562,7 @@ const Settings = ({ headerTitle }) => {
               <SettingsCard icon="List" title="Kelola Kategori Menu" description="Tambah, ubah, atau hapus kategori untuk item menu." onClick={() => setActiveModal('categoryManagement')} disabled={!isAdmin} />
               {/* Card baru untuk Pengeluaran Lapak */}
               <SettingsCard icon="Wallet" title="Pengeluaran Lapak" description="Kelola uang masuk dan keluar untuk operasional lapak." onClick={() => navigate('/lapak-deposit')} disabled={!isAdmin && userRole !== 'user' && userRole !== 'kasir' && userRole !== 'owner'} />
+              <SettingsCard icon="ClipboardCheck" title="Konfirmasi Pesanan" description="Akses halaman konfirmasi pesanan." onClick={() => navigate('/order-confirmation')} disabled={!isAdmin && userRole !== 'user' && userRole !== 'kasir'} />
               <SettingsCard icon="Package" title="Stok Bahan Baku" description="Kelola persediaan bahan baku produk Anda." onClick={() => navigate('/raw-material-stock')} disabled={!isAdmin} />
             </div>
           </div>

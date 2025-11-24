@@ -63,41 +63,36 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
   }, [location.pathname]); // Re-run when path changes (e.g., after login/logout)
 
   const allNavigationItems = [
-    { label: 'Dashboard', path: '/main-dashboard', icon: 'LayoutDashboard' },
-    { label: 'Penjualan', path: '/sales-transaction-processing', icon: 'ShoppingCart' },
-    { label: 'Menu', path: '/menu-management', icon: 'UtensilsCrossed' },
-    { label: 'Pengeluaran', path: '/expense-tracking', icon: 'Receipt' },
-    { label: 'Laporan', path: '/transaction-history', icon: 'FileText' },
-    { label: 'Konfirmasi Pesanan', path: '/order-confirmation', icon: 'ClipboardCheck' },
-    { label: 'Catatan', path: '/notes', icon: 'Notebook' },
-    { label: 'Profil', path: '/profile', icon: 'User' },
-    { label: 'Settings', path: '/settings', icon: 'Settings', adminOnly: true },
+    { label: 'Dashboard', path: '/main-dashboard', icon: 'LayoutDashboard', roles: ['admin', 'user'] },
+    { label: 'Dashboard Kasir', path: '/cashier-dashboard', icon: 'ScanBarcode', roles: ['kasir'] },
+    { label: 'Penjualan', path: '/sales-transaction-processing', icon: 'ShoppingCart', roles: ['admin', 'user', 'kasir'] },
+    { label: 'Menu', path: '/menu-management', icon: 'UtensilsCrossed', roles: ['admin', 'user'] },
+    { label: 'Pengeluaran', path: '/expense-tracking', icon: 'Receipt', roles: ['admin', 'user'] },
+    { label: 'Transaksi', path: '/transaction-history', icon: 'ListOrdered', roles: ['admin', 'user', 'kasir'] },
+
+    { label: 'Catatan', path: '/notes', icon: 'Notebook', roles: ['admin', 'user'] },
+    { label: 'Profil', path: '/profile', icon: 'User', roles: ['admin', 'user', 'kasir'] },
+    { label: 'Pengaturan', path: '/settings', icon: 'Settings', roles: ['admin'] },
+
   ];
 
+
+
   const navigationItems = allNavigationItems.filter(item => {
-    if (item.adminOnly && userRole !== 'admin') {
-      return false;
-    }
-    if (item.guestRestricted && userRole === 'guest') {
+    // Basic role check
+    if (item.roles && !item.roles.includes(userRole)) {
       return false;
     }
 
-    // Hide specific items for 'owner' role when on '/owner-dashboard'
-    if (userRole === 'owner' && location.pathname === '/owner-dashboard') {
-      const ownerHiddenPaths = [
-        '/main-dashboard',
-        '/sales-transaction-processing',
-        '/menu-management',
-        '/expense-tracking',
-        '/transaction-history',
-        '/order-confirmation',
-        '/notes',
-        '/profile'
-      ];
-      if (ownerHiddenPaths.includes(item.path)) {
+    // Hide cashiers dashboard from non-cashiers
+    if (item.path === '/cashier-dashboard' && userRole !== 'kasir') {
         return false;
-      }
     }
+    // Hide main dashboard from kasir
+    if (item.path === '/main-dashboard' && userRole === 'kasir') {
+        return false;
+    }
+
     return true;
   });
 
@@ -151,16 +146,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
                 <DarkModeToggle />
               </div>
               {/* Logout button for desktop */}
-              {location.pathname === '/owner-dashboard' && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleLogout}
-                  className="hidden lg:flex"
-                >
-                  <Icon name="LogOut" size={20} />
-                </Button>
-              )}
+
               <Button
                 variant="ghost"
                 size="icon"
@@ -206,15 +192,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
                   <span>Beralih ke tema admin</span>
               </button>
               {/* Logout button for mobile */}
-              {location.pathname === '/owner-dashboard' && (
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center space-x-3 px-3 py-3 rounded-md text-sm font-medium transition-colors duration-200 text-text-secondary hover:text-text-primary hover:bg-muted w-full mt-2"
-                >
-                  <Icon name="LogOut" size={20} />
-                  <span>Logout</span>
-                </button>
-              )}
+
             </div>
           </div>
         )}

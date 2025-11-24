@@ -9,6 +9,17 @@ import AddRawMaterialModal from './AddRawMaterialModal'; // Import AddRawMateria
 import { useTheme } from '../../contexts/ThemeContext'; // Import useTheme
 import NavigationHeader from '../../components/ui/NavigationHeader'; // Import NavigationHeader
 import useNotification from '../../hooks/useNotification'; // Import useNotification
+import MetricsCard from '../main-dashboard/components/MetricsCard'; // Import MetricsCard
+import Icon from '../../components/AppIcon'; // Import Icon
+
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+  })?.format(amount);
+};
 
 const RawMaterialStockDashboard = () => {
   const [rawMaterials, setRawMaterials] = useState([]);
@@ -103,6 +114,12 @@ const RawMaterialStockDashboard = () => {
     return <div className="p-4 md:p-6 text-center text-red-500">{error}</div>;
   }
 
+  // Calculate metrics
+  const totalStockQuantity = rawMaterials.reduce((sum, material) => sum + parseInt(material.current_stock || 0), 0);
+  const totalStockValue = rawMaterials.reduce((sum, material) => sum + (parseInt(material.current_stock || 0) * parseFloat(material.price_per_item || 0)), 0);
+  const lowStockItemsCount = rawMaterials.filter(material => Number(material.current_stock) < Number(material.min_stock_level)).length;
+
+
   return (
     <>
       {theme !== 'admin' && (
@@ -111,6 +128,31 @@ const RawMaterialStockDashboard = () => {
       <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 ${theme !== 'admin' ? 'mt-16' : ''}`}>
       <h1 className="text-2xl font-bold mb-4">Dashboard Stok Bahan Mentah</h1>
         
+        {/* Metrics Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          <MetricsCard
+            title="Total Kuantitas Stok"
+            value={`${totalStockQuantity} Item`}
+            icon="Package"
+            color="primary"
+            description="Jumlah total semua bahan mentah"
+          />
+          <MetricsCard
+            title="Total Nilai Stok"
+            value={formatCurrency(totalStockValue)}
+            icon="DollarSign"
+            color="success"
+            description="Estimasi nilai total bahan mentah"
+          />
+          <MetricsCard
+            title="Bahan Stok Menipis"
+            value={`${lowStockItemsCount} Jenis`}
+            icon="AlertCircle"
+            color="destructive"
+            description="Jumlah jenis bahan di bawah stok minimum"
+          />
+        </div>
+
         <div className="flex flex-col sm:flex-row sm:justify-between items-center mb-4 gap-2">
           <button
             onClick={handleAddMaterialClick} // Panggil fungsi baru
