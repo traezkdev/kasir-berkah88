@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode'; // Import jwtDecode
+import { jwtDecode } from 'jwt-decode';
+
 import MainDashboard from './pages/main-dashboard';
 import CashierDashboard from './pages/CashierDashboard';
 import SalesTransactionProcessing from './pages/sales-transaction-processing';
@@ -10,23 +11,25 @@ import TransactionHistory from './pages/transaction-history';
 import CashierTransactionHistory from './pages/CashierTransactionHistory';
 import BusinessReports from './pages/business-reports';
 import NotFound from './pages/NotFound';
-import Login from './pages/auth/Login'; // Import Login
-import Register from './pages/auth/Register'; // Import Register
-import UserProfile from './pages/UserProfile'; // Import UserProfile
-import Settings from './pages/Settings'; // Import Settings
-import Credits from './pages/Credits'; // Import Credits
-import GuestCheckout from './pages/GuestCheckout'; // Import GuestCheckout
-import NotesPage from './pages/Notes'; // Import NotesPage
-import OrderConfirmationPage from './pages/OrderConfirmation'; // Import OrderConfirmationPage
-import CalculatorPage from './pages/Calculator'; // Import CalculatorPage
-import EmployeeListPage from './pages/EmployeeList'; // Import EmployeeListPage
-import ReceiptPage from './pages/receipt'; // Import ReceiptPage
-import Hpp from './pages/Hpp'; // Import Hpp
-import OwnerDashboard from './pages/OwnerDashboard'; // Import OwnerDashboard
-import LapakDeposit from './pages/LapakDeposit'; // Import LapakDeposit
-import RawMaterialStockDashboard from './pages/RawMaterialStock'; // Import RawMaterialStockDashboard
-import RawMaterialStockHistory from './pages/RawMaterialStock/HistoryPage'; // Import RawMaterialStockHistory
-import OwnerProfile from './pages/OwnerProfile'; // Import OwnerProfile
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import UserProfile from './pages/UserProfile';
+import Settings from './pages/Settings';
+import Credits from './pages/Credits';
+import GuestCheckout from './pages/GuestCheckout';
+import NotesPage from './pages/Notes';
+import OrderConfirmationPage from './pages/OrderConfirmation';
+import CalculatorPage from './pages/Calculator';
+import EmployeeListPage from './pages/EmployeeList';
+import ReceiptPage from './pages/receipt';
+import Hpp from './pages/Hpp';
+import OwnerDashboard from './pages/OwnerDashboard';
+import LapakDeposit from './pages/LapakDeposit';
+import RawMaterialStockDashboard from './pages/RawMaterialStock';
+import RawMaterialStockHistory from './pages/RawMaterialStock/HistoryPage';
+import OwnerRawMaterialStockDashboard from './pages/OwnerRawMaterialStock';
+import OwnerRawMaterialStockHistory from './pages/OwnerRawMaterialStock/HistoryPage';
+import OwnerProfile from './pages/OwnerProfile';
 
 // ProtectedRoute component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -127,6 +130,8 @@ const AppRoutes = () => {
       >
         <Route path="/owner-dashboard" element={<OwnerDashboard headerTitle="Dashboard Owner" />} />
         <Route path="/owner-profile" element={<OwnerProfile />} />
+        <Route path="/owner-raw-material-stock" element={<OwnerRawMaterialStockDashboard />} />
+        <Route path="/owner-raw-material-stock/history" element={<OwnerRawMaterialStockHistory />} />
       </Route>
 
       {/* Catch all other routes */}

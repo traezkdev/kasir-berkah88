@@ -63,12 +63,13 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
   }, [location.pathname]); // Re-run when path changes (e.g., after login/logout)
 
   const allNavigationItems = [
-    { label: 'Dashboard Utama', path: '/main-dashboard', icon: 'LayoutDashboard', roles: ['admin', 'user'] },
+    { label: 'Dashboard', path: '/main-dashboard', icon: 'LayoutDashboard', roles: ['admin', 'user'] },
     { label: 'Dashboard Kasir', path: '/cashier-dashboard', icon: 'ScanBarcode', roles: ['kasir'] },
     { label: 'Penjualan', path: '/sales-transaction-processing', icon: 'ShoppingCart', roles: ['admin', 'user', 'kasir'] },
     { label: 'Menu', path: '/menu-management', icon: 'UtensilsCrossed', roles: ['admin', 'user'] },
     { label: 'Pengeluaran', path: '/expense-tracking', icon: 'Receipt', roles: ['admin', 'user'] },
-    { label: 'Konfirmasi Pesanan', path: '/order-confirmation', icon: 'ClipboardCheck', roles: ['admin', 'user'] },
+    { label: 'Transaksi', path: '/transaction-history', icon: 'ListOrdered', roles: ['admin', 'user', 'kasir'] },
+
     { label: 'Catatan', path: '/notes', icon: 'Notebook', roles: ['admin', 'user'] },
     { label: 'Profil', path: '/profile', icon: 'User', roles: ['admin', 'user', 'kasir'] },
     { label: 'Pengaturan', path: '/settings', icon: 'Settings', roles: ['admin'] },
