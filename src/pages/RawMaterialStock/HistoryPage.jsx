@@ -23,6 +23,10 @@ const RawMaterialStockHistory = () => {
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
 
+  // State for ConfirmationModal
+  const [showDeleteConfirmationModal, setShowDeleteConfirmationModal] = useState(false);
+  const [historyEntryToDelete, setHistoryEntryToDelete] = useState(null);
+
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
   useEffect(() => {
@@ -85,21 +89,29 @@ const RawMaterialStockHistory = () => {
     setTimeout(fetchStockHistory, 0); // Panggil setelah state di-update
   };
 
-  const handleDeleteHistoryEntry = async (historyId) => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus entri riwayat stok ini? Tindakan ini akan mengembalikan stok bahan mentah terkait.")) {
-      try {
-        const token = localStorage.getItem('token');
-        await axios.delete(`${API_BASE_URL}/api/raw-materials/history/${historyId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        showMessage("Entri riwayat stok berhasil dihapus dan stok dikembalikan.");
-        fetchStockHistory(); // Refresh data setelah penghapusan
-      } catch (err) {
-        console.error("Error deleting stock history entry:", err);
-        showError(err.response?.data?.error || "Gagal menghapus entri riwayat stok.");
-      }
+  const handleDeleteHistoryEntry = (historyId) => {
+    setHistoryEntryToDelete(historyId);
+    setShowDeleteConfirmationModal(true);
+  };
+
+  const confirmDeleteHistoryEntry = async () => {
+    setShowDeleteConfirmationModal(false); // Close modal immediately
+    if (!historyEntryToDelete) return; // Should not happen
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_BASE_URL}/api/raw-materials/history/${historyEntryToDelete}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      showMessage("Entri riwayat stok berhasil dihapus dan stok dikembalikan.");
+      fetchStockHistory(); // Refresh data setelah penghapusan
+    } catch (err) {
+      console.error("Error deleting stock history entry:", err);
+      showError(err.response?.data?.error || "Gagal menghapus entri riwayat stok.");
+    } finally {
+      setHistoryEntryToDelete(null);
     }
   };
 
@@ -301,6 +313,16 @@ const RawMaterialStockHistory = () => {
       </div> {/* Penutup untuk div container utama */}
       {message && <div className="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{message}</div>}
       {notificationError && <div className="fixed bottom-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{notificationError}</div>}
+
+      <ConfirmationModal
+        isOpen={showDeleteConfirmationModal}
+        onClose={() => setShowDeleteConfirmationModal(false)}
+        onConfirm={confirmDeleteHistoryEntry}
+        title="Hapus Entri Riwayat Stok"
+        message="Apakah Anda yakin ingin menghapus entri riwayat stok ini? Tindakan ini akan mengembalikan stok bahan mentah terkait. Ini tidak dapat dibatalkan."
+        confirmText="Ya, Hapus"
+        cancelText="Batal"
+      />
     </>
   );
 };
