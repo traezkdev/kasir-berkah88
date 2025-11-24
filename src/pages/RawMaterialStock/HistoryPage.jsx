@@ -99,15 +99,13 @@ const RawMaterialStockHistory = () => {
       <h1 className="text-2xl font-bold mb-4">Riwayat Stok Bahan Mentah</h1>
       
       {/* Tombol Kembali */}
-      {theme !== 'admin' && ( // Hanya tampilkan di tema non-admin
-        <button
-          onClick={() => navigate('/raw-material-stock')}
-          className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center mb-4"
-        >
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-          Kembali ke Dashboard Stok
-        </button>
-      )}
+      <button
+        onClick={() => navigate('/raw-material-stock')}
+        className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center mb-4"
+      >
+        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+        Kembali ke Dashboard Stok
+      </button>
 
       {/* Filter Section */}
       <form onSubmit={handleFilterSubmit} className="bg-white p-4 rounded-lg shadow-md mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -238,10 +236,10 @@ const RawMaterialStockHistory = () => {
       </div>
 
       {/* Card View for Mobile */}
-      <div className="block sm:hidden space-y-4 mt-4 px-4 lg:pb-0 pb-24">
+      <div className="block sm:hidden space-y-4 mt-4 lg:pb-0 pb-24">
         {history.length > 0 ? (
           history.map((record) => (
-            <div key={record.id} className="bg-white rounded-lg shadow p-4 border border-gray-200">
+            <div key={record.id} className="bg-white rounded-lg shadow-md p-4 border border-gray-200 mb-4 w-full">
               <p className="text-sm text-gray-500 mb-1">
                 <span className="font-medium">Tanggal:</span> {moment(record.transaction_date).format('DD MMMM YYYY, HH:mm')}
               </p>

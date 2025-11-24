@@ -231,17 +231,16 @@ const RawMaterialStockDashboard = () => {
                     )}
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-sm text-gray-700 mb-4">
-                  <div>
-                    <p className="font-medium">Stok Saat Ini:</p>
-                    <p>{parseInt(material.current_stock)} {material.unit}</p>
-                  </div>
-                  <div>
-                    <p className="font-medium">Min. Stok:</p>
-                    <p>{parseInt(material.min_stock_level)} {material.unit}</p>
-                  </div>
-                </div>
-                <div className="flex justify-end space-x-2">
+                              <div className="grid grid-cols-2 gap-2 text-sm text-gray-700 pb-2 mb-2 border-b border-gray-200">
+                                <div>
+                                  <p className="font-medium">Stok Saat Ini:</p>
+                                  <p>{parseInt(material.current_stock)} {material.unit}</p>
+                                </div>
+                                <div>
+                                  <p className="font-medium">Min. Stok:</p>
+                                  <p>{parseInt(material.min_stock_level)} {material.unit}</p>
+                                </div>
+                              </div>                <div className="flex justify-end space-x-2">
                   <button
                     onClick={() => handleStockInClick(material)}
                     className="text-indigo-600 hover:text-indigo-900 p-2 rounded-full bg-indigo-100"
