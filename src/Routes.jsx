@@ -38,6 +38,14 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     const decodedToken = jwtDecode(token);
     const userRole = decodedToken.role;
 
+    // Check token expiration
+    const currentTime = Date.now() / 1000; // current time in seconds
+    if (decodedToken.exp < currentTime) {
+      console.warn("Token expired, redirecting to login.");
+      localStorage.removeItem('token');
+      return <Navigate to="/login" replace />;
+    }
+
     if (allowedRoles && !allowedRoles.includes(userRole)) {
       return <Navigate to="*" replace />;
     }
