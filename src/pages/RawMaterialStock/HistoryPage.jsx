@@ -176,8 +176,8 @@ const RawMaterialStockHistory = () => {
       </form>
 
       {/* Table View for Larger Screens */}
-      <div className="overflow-x-auto p-4 lg:pb-0 pb-24 hidden sm:block">
-        <table className="min-w-full divide-y divide-gray-200 bg-white rounded-lg shadow block">
+      <div className="overflow-x-auto bg-white rounded-lg shadow p-4 lg:pb-0 pb-24 hidden sm:block">
+        <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
