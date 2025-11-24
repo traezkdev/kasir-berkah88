@@ -64,24 +64,18 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
 
   const allNavigationItems = [
     { label: 'Dashboard Utama', path: '/main-dashboard', icon: 'LayoutDashboard', roles: ['admin', 'user'] },
-    { label: 'Dashboard Owner', path: '/owner-dashboard', icon: 'BriefcaseBusiness', roles: ['owner'] },
     { label: 'Dashboard Kasir', path: '/cashier-dashboard', icon: 'ScanBarcode', roles: ['kasir'] },
     { label: 'Penjualan', path: '/sales-transaction-processing', icon: 'ShoppingCart', roles: ['admin', 'user', 'kasir'] },
     { label: 'Menu', path: '/menu-management', icon: 'UtensilsCrossed', roles: ['admin', 'user'] },
     { label: 'Pengeluaran', path: '/expense-tracking', icon: 'Receipt', roles: ['admin', 'user'] },
     { label: 'Konfirmasi Pesanan', path: '/order-confirmation', icon: 'ClipboardCheck', roles: ['admin', 'user'] },
     { label: 'Catatan', path: '/notes', icon: 'Notebook', roles: ['admin', 'user'] },
-    { label: 'Profil', path: '/profile', icon: 'User', roles: ['admin', 'user', 'owner', 'kasir'] },
+    { label: 'Profil', path: '/profile', icon: 'User', roles: ['admin', 'user', 'kasir'] },
     { label: 'Pengaturan', path: '/settings', icon: 'Settings', roles: ['admin'] },
 
   ];
 
-  const ownerNavPaths = [
-    '/owner-dashboard',
-    '/profile'
-  ];
 
-  const isOwnerNavMode = userRole === 'owner' && ownerNavPaths.includes(location.pathname);
 
   const navigationItems = allNavigationItems.filter(item => {
     // Basic role check
@@ -89,61 +83,13 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
       return false;
     }
 
-    // Owner specific navigation filtering
-    if (userRole === 'owner') {
-      if (isOwnerNavMode) {
-        // In owner navigation mode, only show items relevant to owner (defined in ownerNavPaths implicitly by filtering against allNavigationItems with owner roles)
-        return ownerNavPaths.includes(item.path);
-      } else {
-        // If owner is not in ownerNavMode, hide owner-specific dashboard links
-        const ownerSpecificDashboards = ['/owner-dashboard'];
-        if (ownerSpecificDashboards.includes(item.path)) {
-            return false;
-        }
-      }
-    }
-
-    // Hide specific items for other roles if they are trying to access owner-only pages
-    if (item.path === '/owner-dashboard' && userRole !== 'owner') {
-        return false;
-    }
-
     // Hide cashiers dashboard from non-cashiers
     if (item.path === '/cashier-dashboard' && userRole !== 'kasir') {
         return false;
     }
-    // Hide main dashboard from kasir and owner
-    if (item.path === '/main-dashboard' && (userRole === 'kasir' || userRole === 'owner')) {
+    // Hide main dashboard from kasir
+    if (item.path === '/main-dashboard' && userRole === 'kasir') {
         return false;
-    }
-
-    // Hide Penjualan (sales-transaction-processing) from owner
-    if (item.path === '/sales-transaction-processing' && userRole === 'owner') {
-      return false;
-    }
-
-    // Hide Menu (menu-management) from owner
-    if (item.path === '/menu-management' && userRole === 'owner') {
-      return false;
-    }
-
-    // Hide Pengeluaran (expense-tracking) from owner
-    if (item.path === '/expense-tracking' && userRole === 'owner') {
-      return false;
-    }
-    // Hide Laporan Transaksi (transaction-history) from owner
-    if (item.path === '/transaction-history' && userRole === 'owner') {
-      return false;
-    }
-
-    // Hide Konfirmasi Pesanan (order-confirmation) from owner
-    if (item.path === '/order-confirmation' && userRole === 'owner') {
-      return false;
-    }
-
-    // Hide Catatan (notes) from owner
-    if (item.path === '/notes' && userRole === 'owner') {
-      return false;
     }
 
     return true;
@@ -199,16 +145,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
                 <DarkModeToggle />
               </div>
               {/* Logout button for desktop */}
-              {location.pathname === '/owner-dashboard' && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleLogout}
-                  className="hidden lg:flex"
-                >
-                  <Icon name="LogOut" size={20} />
-                </Button>
-              )}
+
               <Button
                 variant="ghost"
                 size="icon"
@@ -254,15 +191,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
                   <span>Beralih ke tema admin</span>
               </button>
               {/* Logout button for mobile */}
-              {location.pathname === '/owner-dashboard' && (
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center space-x-3 px-3 py-3 rounded-md text-sm font-medium transition-colors duration-200 text-text-secondary hover:text-text-primary hover:bg-muted w-full mt-2"
-                >
-                  <Icon name="LogOut" size={20} />
-                  <span>Logout</span>
-                </button>
-              )}
+
             </div>
           </div>
         )}
