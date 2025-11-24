@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import moment from 'moment';
 
-const StockInModal = ({ isOpen, onClose, material, onStockUpdated }) => {
+const StockInModal = ({ isOpen, onClose, material, onStockUpdated, showMessage, showError }) => {
   const [quantity, setQuantity] = useState('');
   const [pricePerUnit, setPricePerUnit] = useState(''); // State baru untuk harga per unit
   const [transactionDate, setTransactionDate] = useState(moment().format('YYYY-MM-DDTHH:mm'));
@@ -49,12 +49,12 @@ const StockInModal = ({ isOpen, onClose, material, onStockUpdated }) => {
           Authorization: `Bearer ${token}`,
         },
       });
-      alert("Stok masuk berhasil dicatat!");
+      showMessage("Stok masuk berhasil dicatat!");
       onStockUpdated(); // Memberi tahu parent komponen untuk me-refresh data
       onClose();
     } catch (err) {
       console.error("Error recording stock-in:", err);
-      setError(err.response?.data?.error || "Gagal mencatat stok masuk.");
+      showError(err.response?.data?.error || "Gagal mencatat stok masuk.");
     } finally {
       setLoading(false);
     }

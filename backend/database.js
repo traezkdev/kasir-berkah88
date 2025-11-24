@@ -201,6 +201,19 @@ const setupDatabase = async () => {
     await connection.query(createRawMaterialsTable);
     console.log('raw_materials table is ready.');
 
+    const checkCustomUnitColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'raw_materials' AND COLUMN_NAME = 'custom_unit';
+    `;
+    const addCustomUnitColumn = `
+      ALTER TABLE raw_materials ADD COLUMN custom_unit VARCHAR(50) DEFAULT 'pcs';
+    `;
+    const [customUnitRows] = await connection.query(checkCustomUnitColumn);
+    if (customUnitRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addCustomUnitColumn);
+      console.log('Added custom_unit column to raw_materials table.');
+    }
+
     // Check and add price_per_item column to raw_materials if it doesn't exist
     const checkPricePerItemColumn = `
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS

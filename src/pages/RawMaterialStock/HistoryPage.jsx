@@ -1,24 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import moment from 'moment';
-import { FaFilter, FaSyncAlt } from 'react-icons/fa';
+import { FaFilter, FaSyncAlt, FaTrash } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import { useTheme } from '../../contexts/ThemeContext'; // Import useTheme
 import NavigationHeader from '../../components/ui/NavigationHeader'; // Import NavigationHeader
+import useNotification from '../../hooks/useNotification'; // Import useNotification
+import ConfirmationModal from '../../components/ui/ConfirmationModal'; // Import ConfirmationModal
 
 const RawMaterialStockHistory = () => {
   const [history, setHistory] = useState([]);
   const [rawMaterials, setRawMaterials] = useState([]); // Untuk dropdown filter bahan
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null); // Keep local error state for initial fetch
   const { theme } = useTheme(); // Gunakan hook useTheme
   const navigate = useNavigate(); // Inisialisasi useNavigate
+  const { message, error: notificationError, showMessage, showError } = useNotification(); // Use notification hook
 
   // Filter states
   const [filterMaterialId, setFilterMaterialId] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
+
+  // State for ConfirmationModal
+  const [showDeleteConfirmationModal, setShowDeleteConfirmationModal] = useState(false);
+  const [historyEntryToDelete, setHistoryEntryToDelete] = useState(null);
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
@@ -80,6 +87,32 @@ const RawMaterialStockHistory = () => {
     setFilterEndDate('');
     // Re-fetch history with cleared filters
     setTimeout(fetchStockHistory, 0); // Panggil setelah state di-update
+  };
+
+  const handleDeleteHistoryEntry = (historyId) => {
+    setHistoryEntryToDelete(historyId);
+    setShowDeleteConfirmationModal(true);
+  };
+
+  const confirmDeleteHistoryEntry = async () => {
+    setShowDeleteConfirmationModal(false); // Close modal immediately
+    if (!historyEntryToDelete) return; // Should not happen
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_BASE_URL}/api/raw-materials/history/${historyEntryToDelete}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      showMessage("Entri riwayat stok berhasil dihapus dan stok dikembalikan.");
+      fetchStockHistory(); // Refresh data setelah penghapusan
+    } catch (err) {
+      console.error("Error deleting stock history entry:", err);
+      showError(err.response?.data?.error || "Gagal menghapus entri riwayat stok.");
+    } finally {
+      setHistoryEntryToDelete(null);
+    }
   };
 
   if (loading) {
@@ -196,6 +229,9 @@ const RawMaterialStockHistory = () => {
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Keterangan
               </th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Aksi
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -221,6 +257,15 @@ const RawMaterialStockHistory = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {record.notes}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                      onClick={() => handleDeleteHistoryEntry(record.id)}
+                      className="text-red-600 hover:text-red-900"
+                      title="Hapus Riwayat"
+                    >
+                      <FaTrash />
+                    </button>
                   </td>
                 </tr>
               ))
@@ -266,6 +311,18 @@ const RawMaterialStockHistory = () => {
         )}
       </div>
       </div> {/* Penutup untuk div container utama */}
+      {message && <div className="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{message}</div>}
+      {notificationError && <div className="fixed bottom-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{notificationError}</div>}
+
+      <ConfirmationModal
+        isOpen={showDeleteConfirmationModal}
+        onClose={() => setShowDeleteConfirmationModal(false)}
+        onConfirm={confirmDeleteHistoryEntry}
+        title="Hapus Entri Riwayat Stok"
+        message="Apakah Anda yakin ingin menghapus entri riwayat stok ini? Tindakan ini akan mengembalikan stok bahan mentah terkait. Ini tidak dapat dibatalkan."
+        confirmText="Ya, Hapus"
+        cancelText="Batal"
+      />
     </>
   );
 };

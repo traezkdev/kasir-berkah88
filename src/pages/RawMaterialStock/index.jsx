@@ -8,13 +8,15 @@ import EditRawMaterialModal from './EditRawMaterialModal';
 import AddRawMaterialModal from './AddRawMaterialModal'; // Import AddRawMaterialModal
 import { useTheme } from '../../contexts/ThemeContext'; // Import useTheme
 import NavigationHeader from '../../components/ui/NavigationHeader'; // Import NavigationHeader
+import useNotification from '../../hooks/useNotification'; // Import useNotification
 
 const RawMaterialStockDashboard = () => {
   const [rawMaterials, setRawMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null); // Keep local error state for initial fetch
   const navigate = useNavigate();
   const { theme } = useTheme(); // Gunakan hook useTheme
+  const { message, error: notificationError, showMessage, showError } = useNotification(); // Use notification hook
 
   // State untuk modal stok masuk/keluar/edit/tambah
   const [isStockInModalOpen, setIsStockInModalOpen] = useState(false);
@@ -85,10 +87,10 @@ const RawMaterialStockDashboard = () => {
           }
         });
         fetchRawMaterials(); // Refresh daftar bahan mentah
-        alert("Bahan mentah berhasil dihapus.");
+        showMessage("Bahan mentah berhasil dihapus.");
       } catch (err) {
         console.error("Error deleting raw material:", err);
-        alert("Gagal menghapus bahan mentah.");
+        showError("Gagal menghapus bahan mentah.");
       }
     }
   };
@@ -164,7 +166,9 @@ const RawMaterialStockDashboard = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {parseInt(material.current_stock)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer"
+                      onClick={() => handleEditClick(material)}
+                  >
                     {material.unit}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -176,7 +180,7 @@ const RawMaterialStockDashboard = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {/* Stok Standar/Hari */}
-                    {parseInt(material.standard_stock_per_day)} pcs
+                    {parseInt(material.standard_stock_per_day)} {material.custom_unit}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {Number(material.current_stock) < Number(material.min_stock_level) && (
@@ -226,9 +230,8 @@ const RawMaterialStockDashboard = () => {
           </table>
         </div>
 
-        {/* Card View for Mobile */}
-        <div className="block sm:hidden space-y-4 mt-4">
-          {rawMaterials.map((material) => (
+              {/* Card View for Mobile */}
+              <div className="block sm:hidden space-y-4 mt-4 pb-24">          {rawMaterials.map((material) => (
             <div key={material.id} className="bg-white rounded-lg shadow p-4 border border-gray-200">
               <div className="flex justify-between items-center pb-2 mb-2 border-b border-gray-200">
                 <p className="text-lg font-bold text-gray-900">{material.name}</p>
@@ -248,11 +251,11 @@ const RawMaterialStockDashboard = () => {
                               <div className="grid grid-cols-2 gap-2 text-sm text-gray-700 pb-2 mb-2 border-b border-gray-200">
                                 <div>
                                   <p className="font-medium">Stok Saat Ini:</p>
-                                  <p>{parseInt(material.current_stock)} {material.unit}</p>
+                                  <p onClick={() => handleEditClick(material)} className="cursor-pointer">{parseInt(material.current_stock)} {material.unit}</p>
                                 </div>
                                 <div>
                                   <p className="font-medium">Min. Stok:</p>
-                                  <p>{parseInt(material.min_stock_level)} {material.unit}</p>
+                                  <p onClick={() => handleEditClick(material)} className="cursor-pointer">{parseInt(material.min_stock_level)} {material.unit}</p>
                                 </div>
                               </div>
                               <div className="grid grid-cols-2 gap-2 text-sm text-gray-700 pb-2 mb-2 border-b border-gray-200">
@@ -262,7 +265,7 @@ const RawMaterialStockDashboard = () => {
                                 </div>
                                 <div>
                                   <p className="font-medium">Stok Standar/Hari:</p>
-                                  <p>{parseInt(material.standard_stock_per_day)} pcs</p>
+                                  <p>{parseInt(material.standard_stock_per_day)} {material.custom_unit}</p>
                                 </div>
                               </div>
                 <div className="flex justify-end space-x-2">
@@ -307,18 +310,24 @@ const RawMaterialStockDashboard = () => {
               onClose={handleCloseModals}
               material={selectedMaterial}
               onStockUpdated={fetchRawMaterials}
+              showMessage={showMessage} // Pass showMessage
+              showError={showError}   // Pass showError
             />
             <StockOutModal
               isOpen={isStockOutModalOpen}
               onClose={handleCloseModals}
               material={selectedMaterial}
               onStockUpdated={fetchRawMaterials}
+              showMessage={showMessage} // Pass showMessage
+              showError={showError}   // Pass showError
             />
             <EditRawMaterialModal
               isOpen={isEditModalOpen}
               onClose={handleCloseModals}
               material={selectedMaterial}
               onMaterialUpdated={fetchRawMaterials}
+              showMessage={showMessage} // Pass showMessage
+              showError={showError}   // Pass showError
             />
           </>
         )}
@@ -328,8 +337,12 @@ const RawMaterialStockDashboard = () => {
           isOpen={isAddModalOpen}
           onClose={handleCloseModals}
           onMaterialAdded={fetchRawMaterials}
+          showMessage={showMessage} // Pass showMessage
+          showError={showError}   // Pass showError
         />
       </div>
+      {message && <div className="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{message}</div>}
+      {notificationError && <div className="fixed bottom-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{notificationError}</div>}
     </>
   );
 };

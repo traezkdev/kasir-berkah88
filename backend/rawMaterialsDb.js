@@ -1,11 +1,11 @@
 const pool = require('./database'); // Menggunakan koneksi pool yang sudah ada
 
-const addRawMaterial = async (name, unit, min_stock_level, price_per_item, standard_stock_per_day) => {
+const addRawMaterial = async (name, unit, custom_unit, min_stock_level, price_per_item, standard_stock_per_day) => {
   const connection = await pool.getConnection();
   try {
     const [result] = await connection.query(
-      `INSERT INTO raw_materials (name, unit, min_stock_level, price_per_item, standard_stock_per_day) VALUES (?, ?, ?, ?, ?)`,
-      [name, unit, min_stock_level, price_per_item, standard_stock_per_day]
+      `INSERT INTO raw_materials (name, unit, custom_unit, min_stock_level, price_per_item, standard_stock_per_day) VALUES (?, ?, ?, ?, ?, ?)`,
+      [name, unit, custom_unit, min_stock_level, price_per_item, standard_stock_per_day]
     );
     return result;
   } finally {
@@ -17,7 +17,7 @@ const getRawMaterials = async () => {
   const connection = await pool.getConnection();
   try {
     const [rows] = await connection.query(`
-      SELECT id, name, unit, current_stock, min_stock_level, price_per_item, standard_stock_per_day
+      SELECT id, name, unit, custom_unit, current_stock, min_stock_level, price_per_item, standard_stock_per_day
       FROM raw_materials
     `);
     return rows;
@@ -30,7 +30,7 @@ const getRawMaterialById = async (id) => {
   const connection = await pool.getConnection();
   try {
     const [rows] = await connection.query(
-      `SELECT id, name, unit, current_stock, min_stock_level, price_per_item, standard_stock_per_day FROM raw_materials WHERE id = ?`,
+      `SELECT id, name, unit, custom_unit, current_stock, min_stock_level, price_per_item, standard_stock_per_day FROM raw_materials WHERE id = ?`,
       [id]
     );
     return rows[0]; // Mengembalikan satu objek bahan mentah
@@ -39,12 +39,12 @@ const getRawMaterialById = async (id) => {
   }
 };
 
-const updateRawMaterial = async (id, name, unit, min_stock_level, price_per_item, standard_stock_per_day) => {
+const updateRawMaterial = async (id, name, unit, custom_unit, min_stock_level, price_per_item, standard_stock_per_day) => {
   const connection = await pool.getConnection();
   try {
     const [result] = await connection.query(
-      `UPDATE raw_materials SET name = ?, unit = ?, min_stock_level = ?, price_per_item = ?, standard_stock_per_day = ? WHERE id = ?`,
-      [name, unit, min_stock_level, price_per_item, standard_stock_per_day, id]
+      `UPDATE raw_materials SET name = ?, unit = ?, custom_unit = ?, min_stock_level = ?, price_per_item = ?, standard_stock_per_day = ? WHERE id = ?`,
+      [name, unit, custom_unit, min_stock_level, price_per_item, standard_stock_per_day, id]
     );
     return result;
   } finally {
@@ -195,14 +195,63 @@ const getStockHistory = async (filters = {}) => {
       params.push(filters.startDate);
     }
     if (filters.endDate) {
+      // To include the entire end day, add ' 23:59:59'
       query += ` AND rmsh.transaction_date <= ?`;
-      params.push(filters.endDate);
+      params.push(`${filters.endDate} 23:59:59`);
     }
 
     query += ` ORDER BY rmsh.transaction_date DESC`;
 
     const [rows] = await connection.query(query, params);
     return rows;
+  } finally {
+    connection.release();
+  }
+};
+
+const deleteStockHistoryEntry = async (historyId) => {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // 1. Get history entry details to revert stock
+    const [historyRows] = await connection.query(
+      `SELECT material_id, type, quantity FROM raw_material_stock_history WHERE id = ? FOR UPDATE`,
+      [historyId]
+    );
+
+    if (historyRows.length === 0) {
+      throw new Error('Stock history entry not found.');
+    }
+
+    const { material_id, type, quantity } = historyRows[0];
+
+    // 2. Revert stock in raw_materials table
+    if (type === 'in') {
+      // If stock was 'in', subtract quantity from current_stock
+      await connection.query(
+        `UPDATE raw_materials SET current_stock = current_stock - ? WHERE id = ?`,
+        [quantity, material_id]
+      );
+    } else if (type === 'out') {
+      // If stock was 'out', add quantity back to current_stock
+      await connection.query(
+        `UPDATE raw_materials SET current_stock = current_stock + ? WHERE id = ?`,
+        [quantity, material_id]
+      );
+    }
+
+    // 3. Delete the history entry
+    const [result] = await connection.query(
+      `DELETE FROM raw_material_stock_history WHERE id = ?`,
+      [historyId]
+    );
+
+    await connection.commit();
+    return result;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
   } finally {
     connection.release();
   }
@@ -217,4 +266,5 @@ module.exports = {
   addStockIn,
   addStockOut,
   getStockHistory,
+  deleteStockHistoryEntry, // Export the new function
 };
