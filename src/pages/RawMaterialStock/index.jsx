@@ -164,7 +164,9 @@ const RawMaterialStockDashboard = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {parseInt(material.current_stock)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer"
+                      onClick={() => handleEditClick(material)}
+                  >
                     {material.unit}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -176,7 +178,7 @@ const RawMaterialStockDashboard = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {/* Stok Standar/Hari */}
-                    {parseInt(material.standard_stock_per_day)} pcs
+                    {parseInt(material.standard_stock_per_day)} {material.custom_unit}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {Number(material.current_stock) < Number(material.min_stock_level) && (
@@ -248,11 +250,11 @@ const RawMaterialStockDashboard = () => {
                               <div className="grid grid-cols-2 gap-2 text-sm text-gray-700 pb-2 mb-2 border-b border-gray-200">
                                 <div>
                                   <p className="font-medium">Stok Saat Ini:</p>
-                                  <p>{parseInt(material.current_stock)} {material.unit}</p>
+                                  <p onClick={() => handleEditClick(material)} className="cursor-pointer">{parseInt(material.current_stock)} {material.unit}</p>
                                 </div>
                                 <div>
                                   <p className="font-medium">Min. Stok:</p>
-                                  <p>{parseInt(material.min_stock_level)} {material.unit}</p>
+                                  <p onClick={() => handleEditClick(material)} className="cursor-pointer">{parseInt(material.min_stock_level)} {material.unit}</p>
                                 </div>
                               </div>
                               <div className="grid grid-cols-2 gap-2 text-sm text-gray-700 pb-2 mb-2 border-b border-gray-200">
@@ -262,7 +264,7 @@ const RawMaterialStockDashboard = () => {
                                 </div>
                                 <div>
                                   <p className="font-medium">Stok Standar/Hari:</p>
-                                  <p>{parseInt(material.standard_stock_per_day)} pcs</p>
+                                  <p>{parseInt(material.standard_stock_per_day)} {material.custom_unit}</p>
                                 </div>
                               </div>
                 <div className="flex justify-end space-x-2">

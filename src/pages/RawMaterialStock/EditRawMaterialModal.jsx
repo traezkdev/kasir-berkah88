@@ -4,6 +4,7 @@ import axios from 'axios';
 const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated }) => {
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('');
+  const [customUnit, setCustomUnit] = useState(''); // New state for custom unit
   const [minStockLevel, setMinStockLevel] = useState('');
   const [pricePerItem, setPricePerItem] = useState('');
   const [standardStockPerDay, setStandardStockPerDay] = useState('');
@@ -16,6 +17,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated }) 
     if (isOpen && material) {
       setName(material.name || ''); // Pastikan selalu string
       setUnit(material.unit || '');   // Pastikan selalu string
+      setCustomUnit(material.custom_unit || 'pcs'); // Populate custom unit
       setMinStockLevel(material.min_stock_level !== undefined && material.min_stock_level !== null ? parseInt(material.min_stock_level) : ''); // Ubah ke integer
       setPricePerItem(material.price_per_item !== undefined && material.price_per_item !== null ? parseFloat(material.price_per_item) : '');
       setStandardStockPerDay(material.standard_stock_per_day !== undefined && material.standard_stock_per_day !== null ? parseInt(material.standard_stock_per_day) : '');
@@ -42,6 +44,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated }) 
       await axios.put(`${API_BASE_URL}/api/raw-materials/${material.id}`, {
         name,
         unit,
+        custom_unit: customUnit, // Include custom_unit
         min_stock_level: parseFloat(minStockLevel),
         price_per_item: parseFloat(pricePerItem),
         standard_stock_per_day: parseFloat(standardStockPerDay),
@@ -88,6 +91,17 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated }) 
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
               required
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="customUnit" className="block text-gray-700 text-sm font-bold mb-2">Satuan (Untuk Tampilan, Contoh: potong, buah)</label>
+            <input
+              type="text"
+              id="customUnit"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              value={customUnit}
+              onChange={(e) => setCustomUnit(e.target.value)}
+              placeholder="Contoh: pcs, potong, buah"
             />
           </div>
           <div className="mb-4">

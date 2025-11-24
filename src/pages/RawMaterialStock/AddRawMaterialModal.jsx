@@ -4,6 +4,7 @@ import axios from 'axios';
 const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded }) => {
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('');
+  const [customUnit, setCustomUnit] = useState('pcs'); // New state for custom unit
   const [pricePerItem, setPricePerItem] = useState('');
   const [standardStockPerDay, setStandardStockPerDay] = useState('');
   const [minStockLevel, setMinStockLevel] = useState('');
@@ -16,6 +17,7 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded }) => {
     if (isOpen) {
       setName('');
       setUnit('');
+      setCustomUnit('pcs'); // Reset custom unit
       setPricePerItem('');
       setStandardStockPerDay('');
       setMinStockLevel('');
@@ -50,6 +52,7 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded }) => {
       await axios.post(`${API_BASE_URL}/api/raw-materials`, {
         name,
         unit,
+        custom_unit: customUnit, // Include custom_unit
         min_stock_level: parseFloat(minStockLevel) || 0,
         price_per_item: parseFloat(pricePerItem) || 0,
         standard_stock_per_day: parseFloat(standardStockPerDay) || 0,
@@ -96,6 +99,17 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded }) => {
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
               required
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="customUnit" className="block text-gray-700 text-sm font-bold mb-2">Satuan (Untuk Tampilan, Contoh: potong, buah)</label>
+            <input
+              type="text"
+              id="customUnit"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              value={customUnit}
+              onChange={(e) => setCustomUnit(e.target.value)}
+              placeholder="Contoh: pcs, potong, buah"
             />
           </div>
           <div className="mb-4">

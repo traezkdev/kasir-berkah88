@@ -1,11 +1,11 @@
 const pool = require('./database'); // Menggunakan koneksi pool yang sudah ada
 
-const addRawMaterial = async (name, unit, min_stock_level, price_per_item, standard_stock_per_day) => {
+const addRawMaterial = async (name, unit, custom_unit, min_stock_level, price_per_item, standard_stock_per_day) => {
   const connection = await pool.getConnection();
   try {
     const [result] = await connection.query(
-      `INSERT INTO raw_materials (name, unit, min_stock_level, price_per_item, standard_stock_per_day) VALUES (?, ?, ?, ?, ?)`,
-      [name, unit, min_stock_level, price_per_item, standard_stock_per_day]
+      `INSERT INTO raw_materials (name, unit, custom_unit, min_stock_level, price_per_item, standard_stock_per_day) VALUES (?, ?, ?, ?, ?, ?)`,
+      [name, unit, custom_unit, min_stock_level, price_per_item, standard_stock_per_day]
     );
     return result;
   } finally {
@@ -17,7 +17,7 @@ const getRawMaterials = async () => {
   const connection = await pool.getConnection();
   try {
     const [rows] = await connection.query(`
-      SELECT id, name, unit, current_stock, min_stock_level, price_per_item, standard_stock_per_day
+      SELECT id, name, unit, custom_unit, current_stock, min_stock_level, price_per_item, standard_stock_per_day
       FROM raw_materials
     `);
     return rows;
@@ -30,7 +30,7 @@ const getRawMaterialById = async (id) => {
   const connection = await pool.getConnection();
   try {
     const [rows] = await connection.query(
-      `SELECT id, name, unit, current_stock, min_stock_level, price_per_item, standard_stock_per_day FROM raw_materials WHERE id = ?`,
+      `SELECT id, name, unit, custom_unit, current_stock, min_stock_level, price_per_item, standard_stock_per_day FROM raw_materials WHERE id = ?`,
       [id]
     );
     return rows[0]; // Mengembalikan satu objek bahan mentah
@@ -39,12 +39,12 @@ const getRawMaterialById = async (id) => {
   }
 };
 
-const updateRawMaterial = async (id, name, unit, min_stock_level, price_per_item, standard_stock_per_day) => {
+const updateRawMaterial = async (id, name, unit, custom_unit, min_stock_level, price_per_item, standard_stock_per_day) => {
   const connection = await pool.getConnection();
   try {
     const [result] = await connection.query(
-      `UPDATE raw_materials SET name = ?, unit = ?, min_stock_level = ?, price_per_item = ?, standard_stock_per_day = ? WHERE id = ?`,
-      [name, unit, min_stock_level, price_per_item, standard_stock_per_day, id]
+      `UPDATE raw_materials SET name = ?, unit = ?, custom_unit = ?, min_stock_level = ?, price_per_item = ?, standard_stock_per_day = ? WHERE id = ?`,
+      [name, unit, custom_unit, min_stock_level, price_per_item, standard_stock_per_day, id]
     );
     return result;
   } finally {
