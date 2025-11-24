@@ -30,6 +30,10 @@ const OwnerDashboard = ({ headerTitle }) => {
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false); // State untuk konfirmasi hapus
     const [transactionToDelete, setTransactionToDelete] = useState(null); // State untuk transaksi yang dihapus
 
+    // State untuk Pagination Transaksi Owner
+    const [currentPage, setCurrentPage] = useState(1);
+    const [transactionsPerPage] = useState(10); // 10 transaksi per halaman
+
     // New states for Business Reports
     const [selectedDateRange, setSelectedDateRange] = useState({
         startDate: new Date(),
@@ -357,6 +361,24 @@ const OwnerDashboard = ({ headerTitle }) => {
         setSelectedDateRange(dateRange);
     };
 
+    // Logika Pagination
+    const indexOfLastTransaction = currentPage * transactionsPerPage;
+    const indexOfFirstTransaction = indexOfLastTransaction - transactionsPerPage;
+    const currentTransactions = ownerAccount?.transactions?.slice(indexOfFirstTransaction, indexOfLastTransaction) || [];
+    const totalPages = Math.ceil((ownerAccount?.transactions?.length || 0) / transactionsPerPage);
+
+    const nextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
+
+    const prevPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center">
@@ -424,34 +446,58 @@ const OwnerDashboard = ({ headerTitle }) => {
                     <div className="bg-card p-4 rounded-md shadow">
                         <h2 className="text-xl font-semibold text-text-primary mb-4">Riwayat Transaksi Owner</h2>
                         {ownerAccount?.transactions?.length > 0 ? (
-                            <ul className="divide-y divide-border">
-                                {ownerAccount.transactions.map((transaction) => (
-                                    <li key={transaction.id} className="py-3 flex justify-between items-center">
-                                        <div>
-                                            <p className="text-text-primary font-medium">
-                                                {transaction.type === 'deposit' ? 'Deposit masuk' : 'Pengeluaran'}
-                                            </p>
-                                            <p className="text-sm text-text-secondary">
-                                                {transaction.description || 'Tidak ada deskripsi'}
-                                            </p>
-                                            <p className="text-xs text-text-tertiary">
-                                                {new Date(transaction.created_at).toLocaleString()} oleh {transaction.created_by_username}
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center gap-2"> {/* Container for amount and buttons */}
-                                            <p className={`font-semibold ${transaction.type === 'deposit' ? 'text-success' : 'text-destructive'}`}>
-                                                {transaction.type === 'deposit' ? '+' : '-'} {formatCurrency(transaction.amount)}
-                                            </p>
-                                            <Button variant="ghost" size="icon" onClick={() => handleEditClick(transaction)}>
-                                                <Icon name="Edit" className="h-4 w-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(transaction)}>
-                                                <Icon name="Trash2" className="h-4 w-4 text-destructive" />
-                                            </Button>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
+                            <>
+                                <ul className="divide-y divide-border">
+                                    {currentTransactions.map((transaction) => (
+                                        <li key={transaction.id} className="py-3 flex justify-between items-center">
+                                            <div>
+                                                <p className="text-text-primary font-medium">
+                                                    {transaction.type === 'deposit' ? 'Deposit masuk' : 'Pengeluaran'}
+                                                </p>
+                                                <p className="text-sm text-text-secondary">
+                                                    {transaction.description || 'Tidak ada deskripsi'}
+                                                </p>
+                                                <p className="text-xs text-text-tertiary">
+                                                    {new Date(transaction.created_at).toLocaleString()} oleh {transaction.created_by_username}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-2"> {/* Container for amount and buttons */}
+                                                <p className={`font-semibold ${transaction.type === 'deposit' ? 'text-success' : 'text-destructive'}`}>
+                                                    {transaction.type === 'deposit' ? '+' : '-'} {formatCurrency(transaction.amount)}
+                                                </p>
+                                                <Button variant="ghost" size="icon" onClick={() => handleEditClick(transaction)}>
+                                                    <Icon name="Edit" className="h-4 w-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(transaction)}>
+                                                    <Icon name="Trash2" className="h-4 w-4 text-destructive" />
+                                                </Button>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+
+                                {totalPages > 1 && (
+                                    <div className="flex justify-between items-center mt-4">
+                                        <Button
+                                            variant="outline"
+                                            onClick={prevPage}
+                                            disabled={currentPage === 1}
+                                        >
+                                            Sebelumnya
+                                        </Button>
+                                        <span className="text-sm text-text-secondary">
+                                            Halaman {currentPage} dari {totalPages}
+                                        </span>
+                                        <Button
+                                            variant="outline"
+                                            onClick={nextPage}
+                                            disabled={currentPage === totalPages}
+                                        >
+                                            Berikutnya
+                                        </Button>
+                                    </div>
+                                )}
+                            </>
                         ) : (
                             <p className="text-text-secondary">Belum ada transaksi.</p>
                         )}
