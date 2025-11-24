@@ -155,13 +155,13 @@ const RawMaterialStockDashboard = () => {
                     {material.name}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {material.current_stock}
+                    {parseInt(material.current_stock)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {material.unit}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {material.min_stock_level}
+                    {parseInt(material.min_stock_level)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {Number(material.current_stock) < Number(material.min_stock_level) && (

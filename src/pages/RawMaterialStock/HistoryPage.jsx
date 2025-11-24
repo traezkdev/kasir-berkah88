@@ -203,7 +203,7 @@ const RawMaterialStockHistory = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {record.quantity}
+                    {parseInt(record.quantity)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {record.material_unit}
