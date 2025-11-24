@@ -328,7 +328,7 @@ const RawMaterialStockHistory = () => {
         onClose={() => setShowDeleteConfirmationModal(false)}
         onConfirm={confirmDeleteHistoryEntry}
         title="Hapus Entri Riwayat Stok"
-        message="Apakah Anda yakin ingin menghapus entri riwayat stok ini? Tindakan ini akan mengembalikan stok bahan mentah terkait. Ini tidak dapat dibatalkan."
+        message="Apakah Anda yakin ingin menghapus entri riwayat stok ini? Tindakan ini tidak akan mengembalikan stok bahan mentah terkait. Ini tidak dapat dibatalkan."
         confirmText="Ya, Hapus"
         cancelText="Batal"
       />

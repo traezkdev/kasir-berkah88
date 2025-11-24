@@ -214,9 +214,9 @@ const deleteStockHistoryEntry = async (historyId) => {
   try {
     await connection.beginTransaction();
 
-    // 1. Get history entry details to revert stock
+    // 1. Get history entry details to ensure it exists
     const [historyRows] = await connection.query(
-      `SELECT material_id, type, quantity FROM raw_material_stock_history WHERE id = ? FOR UPDATE`,
+      `SELECT id FROM raw_material_stock_history WHERE id = ?`, // No need to SELECT FOR UPDATE if not reverting stock
       [historyId]
     );
 
@@ -224,24 +224,7 @@ const deleteStockHistoryEntry = async (historyId) => {
       throw new Error('Stock history entry not found.');
     }
 
-    const { material_id, type, quantity } = historyRows[0];
-
-    // 2. Revert stock in raw_materials table
-    if (type === 'in') {
-      // If stock was 'in', subtract quantity from current_stock
-      await connection.query(
-        `UPDATE raw_materials SET current_stock = current_stock - ? WHERE id = ?`,
-        [quantity, material_id]
-      );
-    } else if (type === 'out') {
-      // If stock was 'out', add quantity back to current_stock
-      await connection.query(
-        `UPDATE raw_materials SET current_stock = current_stock + ? WHERE id = ?`,
-        [quantity, material_id]
-      );
-    }
-
-    // 3. Delete the history entry
+    // 2. Delete the history entry directly
     const [result] = await connection.query(
       `DELETE FROM raw_material_stock_history WHERE id = ?`,
       [historyId]
