@@ -162,9 +162,9 @@ const RawMaterialStockHistory = () => {
         </div>
       </form>
 
-      {/* History Table */}
-      <div className="overflow-x-auto bg-white rounded-lg shadow p-4">
-        <table className="min-w-full divide-y divide-gray-200">
+      {/* Table View for Larger Screens */}
+      <div className="overflow-x-auto p-4 lg:pb-0 pb-24 hidden sm:block">
+        <table className="min-w-full divide-y divide-gray-200 bg-white rounded-lg shadow block">
           <thead className="bg-gray-50">
             <tr>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -222,6 +222,37 @@ const RawMaterialStockHistory = () => {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Card View for Mobile */}
+      <div className="block sm:hidden space-y-4 mt-4 px-4 lg:pb-0 pb-24">
+        {history.length > 0 ? (
+          history.map((record) => (
+            <div key={record.id} className="bg-white rounded-lg shadow p-4 border border-gray-200">
+              <p className="text-sm text-gray-500 mb-1">
+                <span className="font-medium">Tanggal:</span> {moment(record.transaction_date).format('DD MMMM YYYY, HH:mm')}
+              </p>
+              <p className="text-lg font-bold text-gray-900 mb-1">{record.material_name}</p>
+              <div className="flex items-center mb-2">
+                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${record.type === 'in' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} mr-2`}>
+                  {record.type === 'in' ? 'Masuk' : 'Keluar'}
+                </span>
+                <p className="text-sm text-gray-700">
+                  <span className="font-medium">Jumlah:</span> {parseInt(record.quantity)} {record.material_unit}
+                </p>
+              </div>
+              {record.notes && (
+                <p className="text-sm text-gray-700">
+                  <span className="font-medium">Keterangan:</span> {record.notes}
+                </p>
+              )}
+            </div>
+          ))
+        ) : (
+          <div className="text-center text-gray-500 mt-4">
+            Tidak ada riwayat stok yang ditemukan.
+          </div>
+        )}
       </div>
       </div> {/* Penutup untuk div container utama */}
     </>
