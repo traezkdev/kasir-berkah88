@@ -11,11 +11,15 @@ const MenuSummaryCards = ({ menuItems }) => {
   ];
 
   const calculateSummary = () => {
-    const totalItems = menuItems?.length;
-    const totalStock = menuItems?.reduce((sum, item) => sum + item?.stock, 0);
-    const totalValue = menuItems?.reduce((sum, item) => sum + (item?.stock * item?.price), 0);
-    const lowStockItems = menuItems?.filter(item => item?.stock <= 5 && item?.stock > 0)?.length;
-    const outOfStockItems = menuItems?.filter(item => item?.stock === 0)?.length;
+    if (!menuItems) {
+      return { totalItems: 0, totalStock: 0, totalValue: 0, lowStockItems: 0, outOfStockItems: 0 };
+    }
+    
+    const totalItems = menuItems.length;
+    const totalStock = menuItems.reduce((sum, item) => sum + Number(item?.stock || 0), 0);
+    const totalValue = menuItems.reduce((sum, item) => sum + (Number(item?.stock || 0) * Number(item?.price || 0)), 0);
+    const lowStockItems = menuItems.filter(item => Number(item?.stock || 0) <= 5 && Number(item?.stock || 0) > 0).length;
+    const outOfStockItems = menuItems.filter(item => Number(item?.stock || 0) === 0).length;
 
     return {
       totalItems,

@@ -8,12 +8,13 @@ const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { style: 'curre
 const StockReportSection = ({ data }) => {
   if (!data) return null;
 
-  const { totalValue, totalItems, lowStockItems, items, lowStock } = data;
+  const { totalValue, totalItems, lowStockItems, items, lowStock, currentStockValue } = data;
 
   const stockMetrics = [
-    { label: 'Total Nilai Stok', value: formatCurrency(totalValue) },
-    { label: 'Jumlah Item Terjual', value: totalItems }, // Changed label to reflect filtered data
-    { label: 'Stok Menipis (Saat Ini)', value: lowStockItems } // Clarify this is current stock
+    { label: 'Total Nilai Stok (Saat Ini)', value: formatCurrency(currentStockValue) },
+    { label: 'Nilai Item Terjual', value: formatCurrency(totalValue) },
+    { label: 'Jumlah Item Terjual', value: totalItems },
+    { label: 'Stok Menipis (Saat Ini)', value: lowStockItems }
   ];
 
   const handleExportPdfStock = () => {

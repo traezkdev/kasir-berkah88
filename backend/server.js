@@ -6,6 +6,16 @@ const jwt = require('jsonwebtoken'); // Import jsonwebtoken
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const {
+  addRawMaterial,
+  getRawMaterials,
+  getRawMaterialById,
+  updateRawMaterial,
+  deleteRawMaterial,
+  addStockIn,
+  addStockOut,
+  getStockHistory,
+} = require('./rawMaterialsDb');
 
 const app = express();
 app.use(cors({
@@ -95,6 +105,133 @@ const authorizeAccountAccess = (accountType) => {
 };
 
 // API Endpoints
+
+// --- Raw Materials Endpoints ---
+
+// Get all raw materials
+app.get("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner', 'user', 'kasir'), async (req, res) => {
+    try {
+        const rawMaterials = await getRawMaterials();
+        res.json({ message: "success", data: rawMaterials });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Add a new raw material
+app.post("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { name, unit, min_stock_level, price_per_item, standard_stock_per_day } = req.body;
+        if (!name || !unit) {
+            return res.status(400).json({ error: "Name and unit are required" });
+        }
+
+        // Gunakan fungsi addRawMaterial dari rawMaterialsDb
+        const result = await addRawMaterial(name, unit, parseFloat(min_stock_level) || 0, parseFloat(price_per_item) || 0, parseFloat(standard_stock_per_day) || 0);
+        
+        // Asumsi result mengandung insertId jika berhasil
+        res.status(201).json({
+            message: "Raw material added successfully",
+            data: { id: result.insertId, name, unit, min_stock_level, price_per_item, standard_stock_per_day },
+        });
+
+    } catch (err) {
+        console.error("Error adding new raw material:", err);
+        if (err.message && err.message.includes('ER_DUP_ENTRY')) { // Cek pesan error dari fungsi db
+            return res.status(409).json({ error: "Raw material with this name already exists" });
+        }
+        res.status(500).json({ error: err.message || "Terjadi kesalahan server saat menambahkan bahan mentah baru." });
+    }
+});
+
+
+// Update a raw material
+app.put("/api/raw-materials/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, unit, min_stock_level, price_per_item, standard_stock_per_day } = req.body;
+
+        const result = await updateRawMaterial(id, name, unit, parseFloat(min_stock_level) || 0, parseFloat(price_per_item) || 0, parseFloat(standard_stock_per_day) || 0);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Raw material not found" });
+        }
+        res.json({ message: "success", data: { id, name, unit, min_stock_level, price_per_item, standard_stock_per_day } });
+    } catch (err) {
+        if (err.message && err.message.includes('ER_DUP_ENTRY')) {
+            return res.status(409).json({ error: "Raw material with this name already exists" });
+        }
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete a raw material
+app.delete("/api/raw-materials/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Gunakan fungsi deleteRawMaterial dari rawMaterialsDb
+        const result = await deleteRawMaterial(id);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Raw material not found" });
+        }
+        res.json({ message: "Raw material and its history deleted successfully" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Record a stock-in transaction
+app.post("/api/raw-materials/stock-in", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { material_id, quantity, price_per_unit, transaction_date, notes } = req.body;
+        if (!material_id || !quantity || quantity <= 0 || !transaction_date) {
+            return res.status(400).json({ error: "Material ID, positive quantity, and transaction date are required" });
+        }
+
+        // Gunakan fungsi addStockIn dari rawMaterialsDb
+        const result = await addStockIn(material_id, parseFloat(quantity), parseFloat(price_per_unit) || 0, transaction_date, notes);
+        res.status(200).json(result);
+
+    } catch (err) {
+        console.error("Error recording stock-in:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Record a stock-out transaction
+app.post("/api/raw-materials/stock-out", authenticateToken, authorizeRoles('admin', 'owner', 'user'), async (req, res) => {
+    try {
+        const { material_id, quantity, price_per_unit, transaction_date, notes } = req.body;
+        if (!material_id || !quantity || quantity <= 0 || !transaction_date) {
+            return res.status(400).json({ error: "Material ID, positive quantity, and transaction date are required" });
+        }
+
+        // Gunakan fungsi addStockOut dari rawMaterialsDb
+        const result = await addStockOut(material_id, parseFloat(quantity), parseFloat(price_per_unit) || 0, transaction_date, notes);
+        res.status(200).json(result);
+
+    } catch (err) {
+        console.error("Error recording stock-out:", err);
+        // addStockOut akan melempar error dengan pesan yang sesuai, tangkap di sini
+        if (err.message && err.message.includes('Insufficient stock')) {
+            return res.status(400).json({ error: err.message });
+        }
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get raw material stock history with filtering
+app.get("/api/raw-materials/history", authenticateToken, authorizeRoles('admin', 'owner', 'user'), async (req, res) => {
+    try {
+        const filters = req.query; // material_id, type, startDate, endDate
+        const history = await getStockHistory(filters);
+        res.json({ message: "success", data: history });
+    } catch (err) {
+        console.error("Error fetching stock history:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
 
 // --- Menu Items Endpoints ---
 

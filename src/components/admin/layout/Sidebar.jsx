@@ -53,6 +53,10 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
             <FaFileInvoiceDollar className="mr-3" />
             Pengeluaran Lapak
           </NavLink>
+          <NavLink to="/raw-material-stock" className={({ isActive }) => `${navLinkClasses} ${isActive ? activeLinkClasses : ''}`} onClick={toggleSidebar}>
+            <FaBoxOpen className="mr-3" /> {/* Menggunakan FaBoxOpen karena FaBoxes tidak terdaftar */}
+            Stok Bahan Mentah
+          </NavLink>
           <NavLink to="/hpp" className={({ isActive }) => `${navLinkClasses} ${isActive ? activeLinkClasses : ''}`} onClick={toggleSidebar}>
             <FaCalculator className="mr-3" />
             Perhitungan HPP

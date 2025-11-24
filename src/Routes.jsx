@@ -24,6 +24,8 @@ import ReceiptPage from './pages/receipt'; // Import ReceiptPage
 import Hpp from './pages/Hpp'; // Import Hpp
 import OwnerDashboard from './pages/OwnerDashboard'; // Import OwnerDashboard
 import LapakDeposit from './pages/LapakDeposit'; // Import LapakDeposit
+import RawMaterialStockDashboard from './pages/RawMaterialStock'; // Import RawMaterialStockDashboard
+import RawMaterialStockHistory from './pages/RawMaterialStock/HistoryPage'; // Import RawMaterialStockHistory
 
 // ProtectedRoute component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -79,6 +81,8 @@ const AppRoutes = () => {
         <Route path="/hpp" element={<Hpp />} />
         <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
         <Route path="/sales-transaction-processing" element={<SalesTransactionProcessing />} />
+        <Route path="/raw-material-stock" element={<RawMaterialStockDashboard />} />
+        <Route path="/raw-material-stock/history" element={<RawMaterialStockHistory />} />
       </Route>
 
       {/* Cashier Dashboard Routes */}
