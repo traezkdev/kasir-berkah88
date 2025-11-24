@@ -4,7 +4,7 @@ import moment from 'moment';
 
 const StockOutModal = ({ isOpen, onClose, material, onStockUpdated }) => {
   const [quantity, setQuantity] = useState('');
-  const [transactionDate, setTransactionDate] = useState(moment().format('YYYY-MM-DD'));
+  const [transactionDate, setTransactionDate] = useState(moment().format('YYYY-MM-DDTHH:mm'));
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -14,7 +14,7 @@ const StockOutModal = ({ isOpen, onClose, material, onStockUpdated }) => {
   useEffect(() => {
     if (isOpen) {
       setQuantity('');
-      setTransactionDate(moment().format('YYYY-MM-DD'));
+      setTransactionDate(moment().format('YYYY-MM-DDTHH:mm'));
       setNotes('');
       setError(null);
     }
@@ -80,12 +80,12 @@ const StockOutModal = ({ isOpen, onClose, material, onStockUpdated }) => {
               step="0.01"
               required
             />
-            <p className="text-gray-600 text-xs mt-1">Stok tersedia: {material.current_stock} {material.unit}</p>
+            <p className="text-gray-600 text-xs mt-1">Stok tersedia: {parseInt(material.current_stock)} {material.unit}</p>
           </div>
           <div className="mb-4">
             <label htmlFor="transactionDate" className="block text-gray-700 text-sm font-bold mb-2">Tanggal Transaksi</label>
             <input
-              type="date"
+              type="datetime-local"
               id="transactionDate"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               value={transactionDate}

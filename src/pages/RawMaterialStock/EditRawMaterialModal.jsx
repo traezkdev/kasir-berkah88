@@ -14,7 +14,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated }) 
     if (isOpen && material) {
       setName(material.name || ''); // Pastikan selalu string
       setUnit(material.unit || '');   // Pastikan selalu string
-      setMinStockLevel(material.min_stock_level !== undefined && material.min_stock_level !== null ? material.min_stock_level : ''); // Pastikan string atau angka
+      setMinStockLevel(material.min_stock_level !== undefined && material.min_stock_level !== null ? parseInt(material.min_stock_level) : ''); // Ubah ke integer
       setError(null);
     }
   }, [isOpen, material]);
