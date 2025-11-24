@@ -109,16 +109,16 @@ const RawMaterialStockDashboard = () => {
       <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 ${theme !== 'admin' ? 'mt-16' : ''}`}>
       <h1 className="text-2xl font-bold mb-4">Dashboard Stok Bahan Mentah</h1>
         
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col sm:flex-row sm:justify-between items-center mb-4 gap-2">
           <button
             onClick={handleAddMaterialClick} // Panggil fungsi baru
-            className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded flex items-center"
+            className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded flex items-center w-full sm:w-auto"
           >
             <FaPlus className="mr-2" /> Tambah Bahan Mentah Baru
           </button>
           <button
             onClick={() => navigate('/raw-material-stock/history')} // Navigasi ke halaman riwayat
-            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded flex items-center"
+            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded flex items-center w-full sm:w-auto"
           >
             Lihat Riwayat Stok
           </button>
