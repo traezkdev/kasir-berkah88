@@ -68,25 +68,17 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
     { label: 'Dashboard Kasir', path: '/cashier-dashboard', icon: 'ScanBarcode', roles: ['kasir'] },
     { label: 'Penjualan', path: '/sales-transaction-processing', icon: 'ShoppingCart', roles: ['admin', 'user', 'kasir'] },
     { label: 'Menu', path: '/menu-management', icon: 'UtensilsCrossed', roles: ['admin', 'user'] },
-    { label: 'Stok Bahan Mentah', path: '/raw-material-stock', icon: 'Package', roles: ['admin', 'user', 'owner'] },
     { label: 'Pengeluaran', path: '/expense-tracking', icon: 'Receipt', roles: ['admin', 'user'] },
-    { label: 'Laporan Transaksi', path: '/transaction-history', icon: 'FileText', roles: ['admin', 'user'] },
-    { label: 'Laporan Bisnis', path: '/business-reports', icon: 'BarChart3', roles: ['admin', 'owner'] },
     { label: 'Konfirmasi Pesanan', path: '/order-confirmation', icon: 'ClipboardCheck', roles: ['admin', 'user'] },
     { label: 'Catatan', path: '/notes', icon: 'Notebook', roles: ['admin', 'user'] },
     { label: 'Profil', path: '/profile', icon: 'User', roles: ['admin', 'user', 'owner', 'kasir'] },
     { label: 'Pengaturan', path: '/settings', icon: 'Settings', roles: ['admin'] },
-    { label: 'Lapak Deposit', path: '/lapak-deposit', icon: 'Wallet', roles: ['admin', 'user', 'kasir', 'owner'] },
-    { label: 'History Stok Bahan Mentah', path: '/raw-material-stock/history', icon: 'History', roles: ['admin', 'user', 'owner'] }
+
   ];
 
   const ownerNavPaths = [
     '/owner-dashboard',
-    '/raw-material-stock',
-    '/raw-material-stock/history',
-    '/business-reports',
-    '/profile',
-    '/lapak-deposit'
+    '/profile'
   ];
 
   const isOwnerNavMode = userRole === 'owner' && ownerNavPaths.includes(location.pathname);
@@ -104,7 +96,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
         return ownerNavPaths.includes(item.path);
       } else {
         // If owner is not in ownerNavMode, hide owner-specific dashboard links
-        const ownerSpecificDashboards = ['/owner-dashboard', '/raw-material-stock', '/business-reports', '/lapak-deposit'];
+        const ownerSpecificDashboards = ['/owner-dashboard'];
         if (ownerSpecificDashboards.includes(item.path)) {
             return false;
         }
