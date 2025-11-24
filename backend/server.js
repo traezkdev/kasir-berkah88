@@ -72,8 +72,11 @@ const authenticateToken = (req, res, next) => {
             console.log('Invalid or expired token:', err.message);
             return res.status(401).json({ error: "Invalid or expired token" });
         }
-        req.user = user; // Attach user payload to request (userId, username, role)
-
+        req.user = {
+            userId: user.userId,
+            username: user.username,
+            role: user.role.trim() // Trim whitespace from the role
+        };
         next();
     });
 };
@@ -322,7 +325,7 @@ app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'g
 });
 
 // Get all menu items without pagination
-app.get("/api/menu-items/all", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res) => {
+app.get("/api/menu-items/all", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'owner'), async (req, res) => {
     try {
         const sql = `
             SELECT 
@@ -1015,7 +1018,7 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
 });
 
 // Get all transactions without pagination (for all-time metrics)
-app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir'), async (req, res, next) => {
+app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'owner'), async (req, res, next) => {
     try {
         const sql = `
             SELECT 
@@ -1241,7 +1244,7 @@ app.delete("/api/transactions", authenticateToken, authorizeRoles('admin'), asyn
 // --- Expense Endpoints ---
 
 // Get all expenses without pagination
-app.get("/api/expenses/all", authenticateToken, authorizeRoles('user', 'admin', 'guest'), async (req, res) => {
+app.get("/api/expenses/all", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'owner'), async (req, res) => {
     try {
         const dataSql = `
             SELECT 
@@ -1428,6 +1431,8 @@ const getAccountAndAuthorize = async (req, res, accountName, allowedRoles) => {
 
     // Check if the user has the necessary role for this account type
     const userRole = req.user.role;
+    // console.log(`DEBUG: Account name: ${accountName}, User Role: '${userRole}', Allowed Roles: ${JSON.stringify(allowedRoles)}`); // ADDED DEBUG LOG
+
     if (!allowedRoles.includes(userRole)) {
         res.status(403).json({ error: "Forbidden: Insufficient permissions for this account" });
         return null;
@@ -2423,7 +2428,7 @@ app.get("/api/settings", async (req, res) => {
 });
 
 // Get all settings (protected)
-app.get("/api/all-settings", authenticateToken, authorizeRoles('user', 'admin', 'guest'), async (req, res) => {
+app.get("/api/all-settings", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'owner'), async (req, res) => {
     try {
         const sql = "SELECT `key`, `value` FROM settings";
         const [rows] = await db.query(sql);

@@ -37,25 +37,26 @@ const Login = () => {
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        if (userRole === 'kasir') {
-          navigate('/cashier-dashboard');
-        } else if (userRole === 'owner') {
-          navigate('/owner-dashboard');
-        } else {
-          navigate('/main-dashboard');
+      useEffect(() => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const decodedToken = jwtDecode(token);
+          const userRole = decodedToken.role;
+          if (userRole === 'kasir') {
+            navigate('/cashier-dashboard');
+          } else if (userRole === 'owner') {
+            navigate('/owner-dashboard');
+          } else {
+            navigate('/main-dashboard');
+          }
+        } catch (error) {
+          console.error("Error decoding token in useEffect:", error);
+          localStorage.removeItem('token');
+          navigate('/login');
         }
-      } catch (error) {
-        console.error("Error decoding token in useEffect:", error);
-        localStorage.removeItem('token');
-        navigate('/login');
       }
-    }
-  }, [navigate]);
-
+    }, [navigate]);
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
