@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import moment from 'moment';
 import { FaFilter, FaSyncAlt } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import { useTheme } from '../../contexts/ThemeContext'; // Import useTheme
 import NavigationHeader from '../../components/ui/NavigationHeader'; // Import NavigationHeader
 
@@ -11,6 +12,7 @@ const RawMaterialStockHistory = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { theme } = useTheme(); // Gunakan hook useTheme
+  const navigate = useNavigate(); // Inisialisasi useNavigate
 
   // Filter states
   const [filterMaterialId, setFilterMaterialId] = useState('');
@@ -95,6 +97,17 @@ const RawMaterialStockHistory = () => {
       )}
       <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 ${theme !== 'admin' ? 'mt-16' : ''}`}>
       <h1 className="text-2xl font-bold mb-4">Riwayat Stok Bahan Mentah</h1>
+      
+      {/* Tombol Kembali */}
+      {theme !== 'admin' && ( // Hanya tampilkan di tema non-admin
+        <button
+          onClick={() => navigate('/raw-material-stock')}
+          className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center mb-4"
+        >
+          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+          Kembali ke Dashboard Stok
+        </button>
+      )}
 
       {/* Filter Section */}
       <form onSubmit={handleFilterSubmit} className="bg-white p-4 rounded-lg shadow-md mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
