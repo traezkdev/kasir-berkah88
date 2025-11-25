@@ -86,10 +86,15 @@ const BusinessReports = ({ headerTitle }) => {
     const processReportData = () => {
                 const filterByDate = (item) => {
                 const itemDate = new Date(item.timestamp || item.date);
-                const startDate = selectedDateRange.startDate;
-                const endDate = selectedDateRange.endDate;
+                const startDate = new Date(selectedDateRange.startDate);
+                const endDate = new Date(selectedDateRange.endDate);
       
-                return itemDate >= startDate && itemDate <= endDate;
+                // Format dates to YYYY-MM-DD in Asia/Jakarta timezone for comparison
+                const formattedItemDate = formatInTimeZone(itemDate, 'Asia/Jakarta', 'yyyy-MM-dd');
+                const formattedStartDate = formatInTimeZone(startDate, 'Asia/Jakarta', 'yyyy-MM-dd');
+                const formattedEndDate = formatInTimeZone(endDate, 'Asia/Jakarta', 'yyyy-MM-dd');
+      
+                return formattedItemDate >= formattedStartDate && formattedItemDate <= formattedEndDate;
               };
       const filteredTransactions = transactions.filter(filterByDate);
       const filteredExpenses = expenses.filter(filterByDate);

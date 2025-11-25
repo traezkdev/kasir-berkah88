@@ -64,11 +64,9 @@ const OwnerNavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTit
   }, [location.pathname]); // Re-run when path changes (e.g., after login/logout)
 
   const allNavigationItems = [
-    { label: 'Dashboard', path: '/owner-dashboard', icon: 'BriefcaseBusiness', roles: ['owner'] },
-    { label: 'Uang Bisnis', path: '/uang-bisnis', icon: 'DollarSign', roles: ['owner'] },
-    { label: 'Laporan Bisnis', path: '/owner/business-reports', icon: 'BarChart3', roles: ['owner'] },
-    { label: 'Profil', path: '/owner-profile', icon: 'User', roles: ['owner'] },
-    { label: 'Stok Mentah', path: '/owner-raw-material-stock', icon: 'Package', roles: ['owner'] },
+    { label: 'Dashboard Owner', path: '/owner-dashboard', icon: 'BriefcaseBusiness', roles: ['owner'] },
+    { label: 'Profil Owner', path: '/owner-profile', icon: 'User', roles: ['owner'] },
+    { label: 'Stok Bahan Baku Owner', path: '/owner-raw-material-stock', icon: 'Package', roles: ['owner'] },
 
   ];
 
