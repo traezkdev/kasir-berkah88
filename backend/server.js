@@ -118,7 +118,8 @@ app.get("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner'
         const rawMaterials = await getRawMaterials();
         res.json({ message: "success", data: rawMaterials });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error("Error fetching raw materials:", err);
+        res.status(500).json({ error: err.message, stack: err.stack });
     }
 });
 

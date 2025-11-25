@@ -188,7 +188,7 @@ const setupDatabase = async () => {
     const createRawMaterialsTable = `
       CREATE TABLE IF NOT EXISTS raw_materials (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL UNIQUE,
+        name VARCHAR(191) NOT NULL UNIQUE,
         unit VARCHAR(50) NOT NULL,
         current_stock DECIMAL(10, 2) DEFAULT 0.00,
         min_stock_level DECIMAL(10, 2) DEFAULT 0.00,
@@ -200,6 +200,84 @@ const setupDatabase = async () => {
     `;
     await connection.query(createRawMaterialsTable);
     console.log('raw_materials table is ready.');
+
+    // Check and add name column to raw_materials if it doesn't exist
+    const checkNameColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'raw_materials' AND COLUMN_NAME = 'name';
+    `;
+    const addNameColumnNullable = `
+      ALTER TABLE raw_materials ADD COLUMN name VARCHAR(191) NULL;
+    `;
+    const updateExistingNames = `
+      UPDATE raw_materials SET name = CONCAT('material_', id) WHERE name IS NULL;
+    `;
+    const alterNameNotNull = `
+      ALTER TABLE raw_materials MODIFY COLUMN name VARCHAR(191) NOT NULL;
+    `;
+    const addNameUniqueConstraint = `
+      ALTER TABLE raw_materials ADD CONSTRAINT unique_name UNIQUE (name);
+    `;
+    const [nameRows] = await connection.query(checkNameColumn);
+    if (nameRows[0]['COUNT(*)'] === 0) {
+      console.log('Adding name column to raw_materials table.');
+      await connection.query(addNameColumnNullable);
+      await connection.query(updateExistingNames); // Populate existing nulls
+      await connection.query(alterNameNotNull);
+      await connection.query(addNameUniqueConstraint);
+      console.log('Added name column and constraints to raw_materials table.');
+    }
+
+    // Check and add unit column to raw_materials if it doesn't exist
+    const checkUnitColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'raw_materials' AND COLUMN_NAME = 'unit';
+    `;
+    const addUnitColumnNullable = `
+      ALTER TABLE raw_materials ADD COLUMN unit VARCHAR(50) NULL;
+    `;
+    const updateExistingUnits = `
+      UPDATE raw_materials SET unit = 'pcs' WHERE unit IS NULL;
+    `;
+    const alterUnitNotNull = `
+      ALTER TABLE raw_materials MODIFY COLUMN unit VARCHAR(50) NOT NULL;
+    `;
+    const [unitRows] = await connection.query(checkUnitColumn);
+    if (unitRows[0]['COUNT(*)'] === 0) {
+      console.log('Adding unit column to raw_materials table.');
+      await connection.query(addUnitColumnNullable);
+      await connection.query(updateExistingUnits);
+      await connection.query(alterUnitNotNull);
+      console.log('Added unit column and constraints to raw_materials table.');
+    }
+
+    // Check and add current_stock column to raw_materials if it doesn't exist
+    const checkCurrentStockColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'raw_materials' AND COLUMN_NAME = 'current_stock';
+    `;
+    const addCurrentStockColumn = `
+      ALTER TABLE raw_materials ADD COLUMN current_stock DECIMAL(10, 2) DEFAULT 0.00;
+    `;
+    const [currentStockRows] = await connection.query(checkCurrentStockColumn);
+    if (currentStockRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addCurrentStockColumn);
+      console.log('Added current_stock column to raw_materials table.');
+    }
+
+    // Check and add min_stock_level column to raw_materials if it doesn't exist
+    const checkMinStockLevelColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'raw_materials' AND COLUMN_NAME = 'min_stock_level';
+    `;
+    const addMinStockLevelColumn = `
+      ALTER TABLE raw_materials ADD COLUMN min_stock_level DECIMAL(10, 2) DEFAULT 0.00;
+    `;
+    const [minStockLevelRows] = await connection.query(checkMinStockLevelColumn);
+    if (minStockLevelRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addMinStockLevelColumn);
+      console.log('Added min_stock_level column to raw_materials table.');
+    }
 
     const checkCustomUnitColumn = `
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
