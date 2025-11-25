@@ -65,6 +65,7 @@ const OwnerNavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTit
 
   const allNavigationItems = [
     { label: 'Dashboard', path: '/owner-dashboard', icon: 'BriefcaseBusiness', roles: ['owner'] },
+    { label: 'Uang Bisnis', path: '/uang-bisnis', icon: 'DollarSign', roles: ['owner'] },
     { label: 'Laporan Bisnis', path: '/owner/business-reports', icon: 'BarChart3', roles: ['owner'] },
     { label: 'Profil', path: '/owner-profile', icon: 'User', roles: ['owner'] },
     { label: 'Stok Mentah', path: '/owner-raw-material-stock', icon: 'Package', roles: ['owner'] },

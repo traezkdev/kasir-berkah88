@@ -31,6 +31,7 @@ import OwnerRawMaterialStockDashboard from './pages/OwnerRawMaterialStock';
 import OwnerRawMaterialStockHistory from './pages/OwnerRawMaterialStock/HistoryPage';
 import OwnerProfile from './pages/OwnerProfile';
 import OwnerBusinessReports from './pages/OwnerBusinessReports';
+import UangBisnis from './pages/UangBisnis';
 
 // ProtectedRoute component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -130,6 +131,7 @@ const AppRoutes = () => {
         }
       >
         <Route path="/owner-dashboard" element={<OwnerDashboard headerTitle="Dashboard Owner" />} />
+        <Route path="/uang-bisnis" element={<UangBisnis headerTitle="Uang Bisnis" />} />
         <Route path="/owner/business-reports" element={<OwnerBusinessReports headerTitle="Laporan Bisnis Owner" />} />
         <Route path="/owner-profile" element={<OwnerProfile />} />
         <Route path="/owner-raw-material-stock" element={<OwnerRawMaterialStockDashboard />} />
