@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Icon from '../AppIcon';
-import { jwtDecode } from 'jwt-decode'; // Add this import
 
 const BreadcrumbNavigation = ({ customPath = null, className = "" }) => {
   const location = useLocation();
@@ -13,14 +12,8 @@ const BreadcrumbNavigation = ({ customPath = null, className = "" }) => {
     '/menu-management': 'Menu',
     '/expense-tracking': 'Pengeluaran',
     '/transaction-history': 'Riwayat Transaksi',
-    '/business-reports': 'Laporan Bisnis', // This will now be primarily for admin/user
-    '/order-confirmation': 'Konfirmasi Pesanan',
-    // Owner-specific routes
-    '/owner-dashboard': 'Dashboard Owner',
-    '/owner-profile': 'Profil Owner',
-    '/owner-raw-material-stock': 'Stok Bahan Baku Owner',
-    '/owner-raw-material-stock/history': 'Riwayat Stok Bahan Baku Owner',
-    '/owner/business-reports': 'Laporan Bisnis Owner', // Explicitly define for owner
+    '/business-reports': 'Laporan Bisnis',
+    '/order-confirmation': 'Konfirmasi Pesanan'
   };
 
   const generateBreadcrumbs = () => {
@@ -28,51 +21,23 @@ const BreadcrumbNavigation = ({ customPath = null, className = "" }) => {
       return customPath;
     }
 
-    let userRole = null;
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const decodedToken = jwtDecode(token);
-        userRole = decodedToken.role;
-      } catch (e) {
-        console.error("Error decoding token in BreadcrumbNavigation:", e);
-      }
-    }
-
-    const dashboardPath = userRole === 'owner' ? '/owner-dashboard' : '/main-dashboard';
-    const dashboardLabel = userRole === 'owner' ? 'Dashboard Owner' : 'Dashboard';
-
     const pathSegments = location?.pathname?.split('/')?.filter(segment => segment);
     
-    // Check if it's the root or specific dashboard paths
-    if (pathSegments?.length === 0 || location?.pathname === '/main-dashboard' || location?.pathname === '/owner-dashboard') {
-      return [{ label: dashboardLabel, path: dashboardPath, isActive: true }];
+    if (pathSegments?.length === 0 || location?.pathname === '/main-dashboard') {
+      return [{ label: 'Dashboard', path: '/main-dashboard', isActive: true }];
     }
 
     const breadcrumbs = [
-      { label: dashboardLabel, path: dashboardPath, isActive: false }
+      { label: 'Dashboard', path: '/main-dashboard', isActive: false }
     ];
 
     let currentPath = '';
     pathSegments?.forEach((segment, index) => {
       currentPath += `/${segment}`;
       const isLast = index === pathSegments?.length - 1;
-
-      // Skip adding '/owner' as a separate breadcrumb if it's just a prefix for other owner routes
-      if (currentPath === '/owner' && !isLast) {
-          return; // Skip this segment
-      }
       
-      let segmentLabel = routeLabels?.[currentPath];
-      if (!segmentLabel && currentPath.startsWith('/owner/')) {
-          segmentLabel = segment?.replace(/-/g, ' ')?.split(' ')?.map(word => word?.charAt(0)?.toUpperCase() + word?.slice(1))?.join(' ');
-      }
-      if (!segmentLabel) {
-          segmentLabel = segment?.charAt(0)?.toUpperCase() + segment?.slice(1);
-      }
-
       breadcrumbs?.push({
-        label: segmentLabel,
+        label: routeLabels?.[currentPath] || segment?.charAt(0)?.toUpperCase() + segment?.slice(1),
         path: currentPath,
         isActive: isLast
       });

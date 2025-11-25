@@ -1,33 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { FaPalette } from 'react-icons/fa';
 import { useLocation } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
 
 const StickyThemeSwitcher = () => {
   const { theme, setTheme } = useTheme();
   const location = useLocation();
-  const [userRole, setUserRole] = useState(null);
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const decodedToken = jwtDecode(token);
-        setUserRole(decodedToken.role);
-      } catch (error) {
-        console.error("Error decoding token in StickyThemeSwitcher:", error);
-        setUserRole(null); // Clear role if decoding fails
-      }
-    }
-  }, []);
 
   const handleSwitchToAdminTheme = () => {
     setTheme('admin');
   };
 
-  // Hide the switcher if the current path is /owner-dashboard, if the theme is not default, or if the user is an owner
-  if (location.pathname === '/owner-dashboard' || theme !== 'default' || userRole === 'owner') {
+  // Hide the switcher if the current path is /owner-dashboard or if the theme is not default
+  if (location.pathname === '/owner-dashboard' || theme !== 'default') {
     return null;
   }
 
