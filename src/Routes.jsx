@@ -30,8 +30,6 @@ import RawMaterialStockHistory from './pages/RawMaterialStock/HistoryPage';
 import OwnerRawMaterialStockDashboard from './pages/OwnerRawMaterialStock';
 import OwnerRawMaterialStockHistory from './pages/OwnerRawMaterialStock/HistoryPage';
 import OwnerProfile from './pages/OwnerProfile';
-import OwnerBusinessReports from './pages/OwnerBusinessReports';
-import UangBisnis from './pages/UangBisnis';
 
 // ProtectedRoute component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -76,7 +74,7 @@ const AppRoutes = () => {
       {/* Admin Dashboard Routes */}
       <Route 
         element={
-          <ProtectedRoute allowedRoles={['admin', 'user']}>
+          <ProtectedRoute allowedRoles={['admin', 'user', 'owner']}>
             <DynamicLayout />
           </ProtectedRoute>
         }
@@ -131,8 +129,6 @@ const AppRoutes = () => {
         }
       >
         <Route path="/owner-dashboard" element={<OwnerDashboard headerTitle="Dashboard Owner" />} />
-        <Route path="/uang-bisnis" element={<UangBisnis headerTitle="Uang Bisnis" />} />
-        <Route path="/owner/business-reports" element={<OwnerBusinessReports headerTitle="Laporan Bisnis Owner" />} />
         <Route path="/owner-profile" element={<OwnerProfile />} />
         <Route path="/owner-raw-material-stock" element={<OwnerRawMaterialStockDashboard />} />
         <Route path="/owner-raw-material-stock/history" element={<OwnerRawMaterialStockHistory />} />
