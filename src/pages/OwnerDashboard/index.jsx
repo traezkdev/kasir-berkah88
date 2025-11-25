@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 import OwnerNavigationHeader from '../../components/ui/OwnerNavigationHeader';
-import MetricsCard from '../main-dashboard/components/MetricsCard';
+import QuickActionCard from '../main-dashboard/components/QuickActionCard';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 
 const OwnerDashboard = ({ headerTitle }) => {
@@ -13,7 +13,7 @@ const OwnerDashboard = ({ headerTitle }) => {
     const ownerFeatures = [
         {
             title: "Uang Bisnis",
-            value: "Kelola Arus Kas",
+            // value: "Kelola Arus Kas", // Not used by QuickActionCard
             icon: "DollarSign",
             color: "success",
             description: "Pantau saldo, deposit, dan pengeluaran",
@@ -21,7 +21,7 @@ const OwnerDashboard = ({ headerTitle }) => {
         },
         {
             title: "Laporan Bisnis",
-            value: "Lihat Detail",
+            // value: "Lihat Detail", // Not used by QuickActionCard
             icon: "BarChart3",
             color: "primary",
             description: "Analisis komprehensif performa bisnis",
@@ -30,7 +30,7 @@ const OwnerDashboard = ({ headerTitle }) => {
         // Add more features here as needed
         {
             title: "Stok Bahan Baku",
-            value: "Cek & Kelola",
+            // value: "Cek & Kelola", // Not used by QuickActionCard
             icon: "Archive",
             color: "warning",
             description: "Manajemen stok bahan baku mentah",
@@ -38,7 +38,7 @@ const OwnerDashboard = ({ headerTitle }) => {
         },
         {
             title: "Manajemen Menu",
-            value: "Atur & Ubah",
+            // value: "Atur & Ubah", // Not used by QuickActionCard
             icon: "BookCopy",
             color: "info",
             description: "Kelola daftar menu dan harga",
@@ -63,15 +63,14 @@ const OwnerDashboard = ({ headerTitle }) => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                         {ownerFeatures.map((feature, index) => (
-                            <div key={index} onClick={() => navigate(feature.path)} className="cursor-pointer transform hover:scale-105 transition-transform duration-300">
-                                <MetricsCard
-                                    title={feature.title}
-                                    value={feature.value}
-                                    icon={feature.icon}
-                                    color={feature.color}
-                                    description={feature.description}
-                                />
-                            </div>
+                            <QuickActionCard
+                                key={index}
+                                title={feature.title}
+                                description={feature.description}
+                                icon={feature.icon}
+                                route={feature.path}
+                                color={feature.color}
+                            />
                         ))}
                     </div>
                 </div>
