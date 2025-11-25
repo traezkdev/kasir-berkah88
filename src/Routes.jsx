@@ -31,7 +31,7 @@ import OwnerRawMaterialStockDashboard from './pages/OwnerRawMaterialStock';
 import OwnerRawMaterialStockHistory from './pages/OwnerRawMaterialStock/HistoryPage';
 import OwnerProfile from './pages/OwnerProfile';
 import OwnerBusinessReports from './pages/owner-business-reports/index.jsx';
-import UangBisnis from './pages/UangBisnis';
+import UangBisnis from './pages/UangBisnis/index.jsx';
 
 // ProtectedRoute component
 const ProtectedRoute = ({ children, allowedRoles }) => {
