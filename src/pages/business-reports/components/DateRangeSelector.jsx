@@ -18,27 +18,37 @@ const DateRangeSelector = ({ onDateRangeChange, selectedRange = 'today' }) => {
   const handlePresetSelect = (range) => {
     setActiveRange(range);
     
-    const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
     let startDate, endDate;
 
     switch (range) {
       case 'today':
-        startDate = endDate = today;
+        startDate = new Date(now);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(now);
+        endDate.setHours(23, 59, 59, 999);
         break;
       case 'yesterday':
-        const yesterday = new Date(today);
-        yesterday?.setDate(yesterday?.getDate() - 1);
-        startDate = endDate = yesterday;
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        startDate = new Date(yesterday);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(yesterday);
+        endDate.setHours(23, 59, 59, 999);
         break;
       case 'week':
-        startDate = new Date(today);
-        startDate?.setDate(startDate?.getDate() - 7);
-        endDate = today;
+        endDate = new Date(now);
+        endDate.setHours(23, 59, 59, 999);
+        startDate = new Date(now);
+        startDate.setDate(startDate.getDate() - 6);
+        startDate.setHours(0, 0, 0, 0);
         break;
       case 'month':
-        startDate = new Date(today);
-        startDate?.setDate(startDate?.getDate() - 30);
-        endDate = today;
+        endDate = new Date(now);
+        endDate.setHours(23, 59, 59, 999);
+        startDate = new Date(now);
+        startDate.setDate(startDate.getDate() - 29);
+        startDate.setHours(0, 0, 0, 0);
         break;
       default:
         return;
@@ -47,11 +57,21 @@ const DateRangeSelector = ({ onDateRangeChange, selectedRange = 'today' }) => {
     onDateRangeChange({ startDate, endDate, range });
   };
 
-  const handleCustomDateChange = () => {
-    if (customStartDate && customEndDate) {
+  const handleCustomDateChange = (startDateStr, endDateStr) => {
+    if (startDateStr && endDateStr) {
+      // Parse date parts to avoid timezone issues with `new Date(string)`
+      const startParts = startDateStr.split('-').map(p => parseInt(p, 10));
+      const endParts = endDateStr.split('-').map(p => parseInt(p, 10));
+
+      const startDate = new Date(startParts[0], startParts[1] - 1, startParts[2]);
+      startDate.setHours(0, 0, 0, 0);
+
+      const endDate = new Date(endParts[0], endParts[1] - 1, endParts[2]);
+      endDate.setHours(23, 59, 59, 999);
+      
       onDateRangeChange({
-        startDate: new Date(customStartDate),
-        endDate: new Date(customEndDate),
+        startDate,
+        endDate,
         range: 'custom'
       });
     }
@@ -78,16 +98,23 @@ const DateRangeSelector = ({ onDateRangeChange, selectedRange = 'today' }) => {
             type="date"
             label="Tanggal Mulai"
             value={customStartDate}
-            onChange={(e) => setCustomStartDate(e?.target?.value)}
+            onChange={(e) => {
+              const newStartDate = e.target.value;
+              setCustomStartDate(newStartDate);
+              if (newStartDate && customEndDate) {
+                handleCustomDateChange(newStartDate, customEndDate);
+              }
+            }}
           />
           <Input
             type="date"
             label="Tanggal Akhir"
             value={customEndDate}
             onChange={(e) => {
-              setCustomEndDate(e?.target?.value);
-              if (customStartDate && e?.target?.value) {
-                setTimeout(handleCustomDateChange, 100);
+              const newEndDate = e.target.value;
+              setCustomEndDate(newEndDate);
+              if (customStartDate && newEndDate) {
+                handleCustomDateChange(customStartDate, newEndDate);
               }
             }}
           />

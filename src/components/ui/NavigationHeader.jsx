@@ -69,10 +69,9 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
     { label: 'Menu', path: '/menu-management', icon: 'UtensilsCrossed', roles: ['admin', 'user'] },
     { label: 'Pengeluaran', path: '/expense-tracking', icon: 'Receipt', roles: ['admin', 'user'] },
     { label: 'Transaksi', path: '/transaction-history', icon: 'ListOrdered', roles: ['admin', 'user', 'kasir'] },
-
     { label: 'Catatan', path: '/notes', icon: 'Notebook', roles: ['admin', 'user'] },
     { label: 'Profil', path: '/profile', icon: 'User', roles: ['admin', 'user', 'kasir'] },
-    { label: 'Pengaturan', path: '/settings', icon: 'Settings', roles: ['admin'] },
+    { label: 'Pengaturan', path: '/settings', icon: 'Settings', roles: ['admin'] }, 
 
   ];
 

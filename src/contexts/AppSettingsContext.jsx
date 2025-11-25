@@ -13,7 +13,7 @@ export const AppSettingsProvider = ({ children }) => {
     const fetchHeaderTitle = async () => {
       const token = localStorage.getItem('token');
       if (!token) {
-        console.log('No token found, skipping app settings fetch.');
+    
         return; // Skip fetch if no token
       }
 

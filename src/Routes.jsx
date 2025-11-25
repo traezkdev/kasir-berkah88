@@ -23,13 +23,15 @@ import CalculatorPage from './pages/Calculator';
 import EmployeeListPage from './pages/EmployeeList';
 import ReceiptPage from './pages/receipt';
 import Hpp from './pages/Hpp';
-import OwnerDashboard from './pages/OwnerDashboard';
+import OwnerDashboard from './pages/owner-dashboard/index.jsx';
 import LapakDeposit from './pages/LapakDeposit';
 import RawMaterialStockDashboard from './pages/RawMaterialStock';
 import RawMaterialStockHistory from './pages/RawMaterialStock/HistoryPage';
 import OwnerRawMaterialStockDashboard from './pages/OwnerRawMaterialStock';
 import OwnerRawMaterialStockHistory from './pages/OwnerRawMaterialStock/HistoryPage';
 import OwnerProfile from './pages/OwnerProfile';
+import OwnerBusinessReports from './pages/owner-business-reports/index.jsx';
+import UangBisnis from './pages/uang-bisnis/index.jsx';
 
 // ProtectedRoute component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -74,7 +76,7 @@ const AppRoutes = () => {
       {/* Admin Dashboard Routes */}
       <Route 
         element={
-          <ProtectedRoute allowedRoles={['admin', 'user', 'owner']}>
+          <ProtectedRoute allowedRoles={['admin', 'user']}>
             <DynamicLayout />
           </ProtectedRoute>
         }
@@ -129,6 +131,8 @@ const AppRoutes = () => {
         }
       >
         <Route path="/owner-dashboard" element={<OwnerDashboard headerTitle="Dashboard Owner" />} />
+        <Route path="/uang-bisnis" element={<UangBisnis headerTitle="Uang Bisnis" />} />
+        <Route path="/owner/business-reports" element={<OwnerBusinessReports headerTitle="Laporan Bisnis Owner" />} />
         <Route path="/owner-profile" element={<OwnerProfile />} />
         <Route path="/owner-raw-material-stock" element={<OwnerRawMaterialStockDashboard />} />
         <Route path="/owner-raw-material-stock/history" element={<OwnerRawMaterialStockHistory />} />
