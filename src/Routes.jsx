@@ -30,7 +30,7 @@ import RawMaterialStockHistory from './pages/RawMaterialStock/HistoryPage';
 import OwnerRawMaterialStockDashboard from './pages/OwnerRawMaterialStock';
 import OwnerRawMaterialStockHistory from './pages/OwnerRawMaterialStock/HistoryPage';
 import OwnerProfile from './pages/OwnerProfile';
-import OwnerBusinessReports from './pages/OwnerBusinessReports';
+import OwnerBusinessReports from './pages/OwnerBusinessReports/index.jsx';
 import UangBisnis from './pages/UangBisnis';
 
 // ProtectedRoute component
