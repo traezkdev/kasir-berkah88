@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaPlus, FaSignInAlt, FaSignOutAlt, FaEdit, FaTrash, FaExclamationTriangle } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaExclamationTriangle } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import StockInModal from '../RawMaterialStock/StockInModal';
-import StockOutModal from '../RawMaterialStock/StockOutModal';
 import EditRawMaterialModal from '../RawMaterialStock/EditRawMaterialModal';
 import AddRawMaterialModal from '../RawMaterialStock/AddRawMaterialModal';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -29,8 +27,6 @@ const OwnerRawMaterialStockDashboard = () => {
   const { theme } = useTheme();
   const { message, error: notificationError, showMessage, showError } = useNotification();
 
-  const [isStockInModalOpen, setIsStockInModalOpen] = useState(false);
-  const [isStockOutModalOpen, setIsStockOutModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
@@ -59,16 +55,6 @@ const OwnerRawMaterialStockDashboard = () => {
     }
   };
 
-  const handleStockInClick = (material) => {
-    setSelectedMaterial(material);
-    setIsStockInModalOpen(true);
-  };
-
-  const handleStockOutClick = (material) => {
-    setSelectedMaterial(material);
-    setIsStockOutModalOpen(true);
-  };
-
   const handleEditClick = (material) => {
     setSelectedMaterial(material);
     setIsEditModalOpen(true);
@@ -79,8 +65,6 @@ const OwnerRawMaterialStockDashboard = () => {
   };
 
   const handleCloseModals = () => {
-    setIsStockInModalOpen(false);
-    setIsStockOutModalOpen(false);
     setIsEditModalOpen(false);
     setIsAddModalOpen(false);
     setSelectedMaterial(null);
@@ -115,7 +99,7 @@ const OwnerRawMaterialStockDashboard = () => {
 
   const totalStockQuantity = rawMaterials.reduce((sum, material) => sum + parseInt(material.current_stock || 0), 0);
   const totalStockValue = rawMaterials.reduce((sum, material) => sum + (parseInt(material.current_stock || 0) * parseFloat(material.price_per_item || 0)), 0);
-  const lowStockItemsCount = rawMaterials.filter(material => Number(material.current_stock) < Number(material.min_stock_level)).length;
+  const lowStockItemsCount = rawMaterials.filter(material => Number(material.current_stock) < Number(material.stok_minimum)).length;
 
 
   return (
@@ -177,7 +161,10 @@ const OwnerRawMaterialStockDashboard = () => {
                   Satuan
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Min. Stok
+                  Stok Min
+                </th>
+                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Saran Pembelian
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Harga per Item
@@ -208,7 +195,10 @@ const OwnerRawMaterialStockDashboard = () => {
                     {material.unit}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {parseInt(material.min_stock_level)}
+                    {parseInt(material.stok_minimum)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {parseInt(material.suggestion_purchase_quantity)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {parseFloat(material.price_per_item).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
@@ -217,32 +207,18 @@ const OwnerRawMaterialStockDashboard = () => {
                     {parseInt(material.standard_stock_per_day)} {material.custom_unit}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {Number(material.current_stock) < Number(material.min_stock_level) && (
+                    {Number(material.current_stock) < Number(material.stok_minimum) && (
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 flex items-center">
                         <FaExclamationTriangle className="mr-1" /> Stok Menipis!
                       </span>
                     )}
-                    {Number(material.current_stock) >= Number(material.min_stock_level) && (
+                    {Number(material.current_stock) >= Number(material.stok_minimum) && (
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                         Cukup
                       </span>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => handleStockInClick(material)}
-                      className="text-indigo-600 hover:text-indigo-900 mr-3"
-                      title="Stok Masuk"
-                    >
-                      <FaSignInAlt />
-                    </button>
-                    <button
-                      onClick={() => handleStockOutClick(material)}
-                      className="text-yellow-600 hover:text-yellow-900 mr-3"
-                      title="Stok Keluar"
-                    >
-                      <FaSignOutAlt />
-                    </button>
                     <button
                       onClick={() => handleEditClick(material)}
                       className="text-blue-600 hover:text-blue-900 mr-3"
@@ -269,12 +245,12 @@ const OwnerRawMaterialStockDashboard = () => {
               <div className="flex justify-between items-center pb-2 mb-2 border-b border-gray-200">
                 <p className="text-lg font-bold text-gray-900">{material.name}</p>
                 <div className="flex-shrink-0">
-                  {Number(material.current_stock) < Number(material.min_stock_level) && (
+                  {Number(material.current_stock) < Number(material.stok_minimum) && (
                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
                       Stok Menipis!
                     </span>
                   )}
-                  {Number(material.current_stock) >= Number(material.min_stock_level) && (
+                  {Number(material.current_stock) >= Number(material.stok_minimum) && (
                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                         Cukup
                       </span>
@@ -287,35 +263,21 @@ const OwnerRawMaterialStockDashboard = () => {
                                   <p onClick={() => handleEditClick(material)} className="cursor-pointer">{parseInt(material.current_stock)} {material.unit}</p>
                                 </div>
                                 <div>
-                                  <p className="font-medium">Min. Stok:</p>
-                                  <p onClick={() => handleEditClick(material)} className="cursor-pointer">{parseInt(material.min_stock_level)} {material.unit}</p>
+                                  <p className="font-medium">Stok Min:</p>
+                                  <p onClick={() => handleEditClick(material)} className="cursor-pointer">{parseInt(material.stok_minimum)} {material.unit}</p>
                                 </div>
                               </div>
                               <div className="grid grid-cols-2 gap-2 text-sm text-gray-700 pb-2 mb-2 border-b border-gray-200">
                                 <div>
+                                  <p className="font-medium">Saran Pembelian:</p>
+                                  <p>{parseInt(material.suggestion_purchase_quantity)} {material.unit}</p>
+                                </div>
+                                <div>
                                   <p className="font-medium">Harga per Item:</p>
                                   <p>{parseFloat(material.price_per_item).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}</p>
                                 </div>
-                                <div>
-                                  <p className="font-medium">Stok Standar/Hari:</p>
-                                  <p>{parseInt(material.standard_stock_per_day)} {material.custom_unit}</p>
-                                </div>
                               </div>
                 <div className="flex justify-end space-x-2">
-                  <button
-                    onClick={() => handleStockInClick(material)}
-                    className="text-indigo-600 hover:text-indigo-900 p-2 rounded-full bg-indigo-100"
-                    title="Stok Masuk"
-                  >
-                    <FaSignInAlt />
-                  </button>
-                  <button
-                    onClick={() => handleStockOutClick(material)}
-                    className="text-yellow-600 hover:text-yellow-900 p-2 rounded-full bg-yellow-100"
-                    title="Stok Keluar"
-                  >
-                    <FaSignOutAlt />
-                  </button>
                   <button
                     onClick={() => handleEditClick(material)}
                     className="text-blue-600 hover:text-blue-900 p-2 rounded-full bg-blue-100"
@@ -337,23 +299,6 @@ const OwnerRawMaterialStockDashboard = () => {
 
 
         {selectedMaterial && (
-          <>
-            <StockInModal
-              isOpen={isStockInModalOpen}
-              onClose={handleCloseModals}
-              material={selectedMaterial}
-              onStockUpdated={fetchRawMaterials}
-              showMessage={showMessage}
-              showError={showError}
-            />
-            <StockOutModal
-              isOpen={isStockOutModalOpen}
-              onClose={handleCloseModals}
-              material={selectedMaterial}
-              onStockUpdated={fetchRawMaterials}
-              showMessage={showMessage}
-              showError={showError}
-            />
             <EditRawMaterialModal
               isOpen={isEditModalOpen}
               onClose={handleCloseModals}
@@ -362,7 +307,6 @@ const OwnerRawMaterialStockDashboard = () => {
               showMessage={showMessage}
               showError={showError}
             />
-          </>
         )}
 
         <AddRawMaterialModal

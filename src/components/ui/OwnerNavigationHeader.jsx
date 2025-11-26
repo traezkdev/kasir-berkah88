@@ -5,6 +5,9 @@ import Icon from '../AppIcon';
 import Button from './Button';
 import { useTheme } from '../../contexts/ThemeContext';
 import DarkModeToggle from './DarkModeToggle';
+import { FaBell } from 'react-icons/fa';
+import authFetch from '../../utils/authFetch';
+
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -21,6 +24,7 @@ const OwnerNavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTit
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState(null);
   const [logoUrl, setLogoUrl] = useState(''); // Initialize with empty string
+  const [lowStockCount, setLowStockCount] = useState(0);
   const location = useLocation();
 
   useEffect(() => {
@@ -45,7 +49,23 @@ const OwnerNavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTit
       return null; // Add a return statement here
     };
 
+    const fetchLowStockCount = async () => {
+      try {
+        const response = await authFetch(`${apiUrl}/api/stock-alerts/count`);
+        const data = await response.json();
+        if (response.ok && data.data) {
+          setLowStockCount(data.data.low_stock_count);
+        }
+      } catch (error) {
+        console.error("Error fetching low stock count:", error);
+      }
+    };
+
     fetchLogo();
+    fetchLowStockCount();
+    const interval = setInterval(fetchLowStockCount, 60000); // Check every 60 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -67,9 +87,9 @@ const OwnerNavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTit
     { label: 'Dashboard', path: '/owner-dashboard', icon: 'BriefcaseBusiness', roles: ['owner'] },
     { label: 'Uang Bisnis', path: '/uang-bisnis', icon: 'DollarSign', roles: ['owner'] },
     { label: 'Laporan Bisnis', path: '/owner/business-reports', icon: 'BarChart3', roles: ['owner'] },
-    { label: 'Profil', path: '/owner-profile', icon: 'User', roles: ['owner'] },
     { label: 'Stok Mentah', path: '/owner-raw-material-stock', icon: 'Package', roles: ['owner'] },
-
+    { label: 'Stok Kritis', path: '/critical-stock', icon: 'AlertTriangle', roles: ['owner', 'admin'] },
+    { label: 'Profil', path: '/owner-profile', icon: 'User', roles: ['owner'] },
   ];
 
 
@@ -88,6 +108,8 @@ const OwnerNavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTit
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
+
+
 
   return (
     <>
@@ -111,13 +133,18 @@ const OwnerNavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTit
                 <Link
                   key={item?.path}
                   to={item?.path}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 relative ${
                     isActiveRoute(item?.path)
                       ? 'bg-primary text-primary-foreground' :'text-text-secondary hover:text-text-primary hover:bg-muted'
                   }`}
                 >
                   <Icon name={item?.icon} size={18} />
                   <span>{item?.label}</span>
+                  {item.path === '/critical-stock' && lowStockCount > 0 && (
+                     <span className="absolute top-1 right-1 block h-4 w-4 transform -translate-y-1/2 translate-x-1/2 rounded-full bg-red-600 text-white text-xs flex items-center justify-center">
+                      {lowStockCount}
+                    </span>
+                  )}
                 </Link>
               ))}
             </nav>
@@ -150,13 +177,18 @@ const OwnerNavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTit
                   key={item?.path}
                   to={item?.path}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex items-center space-x-3 px-3 py-3 rounded-md text-sm font-medium transition-colors duration-200 ${
+                  className={`flex items-center space-x-3 px-3 py-3 rounded-md text-sm font-medium transition-colors duration-200 relative ${
                     isActiveRoute(item?.path)
                       ? 'bg-primary text-primary-foreground' :'text-text-secondary hover:text-text-primary hover:bg-muted'
                   }`}
                 >
                   <Icon name={item?.icon} size={20} />
                   <span>{item?.label}</span>
+                   {item.path === '/critical-stock' && lowStockCount > 0 && (
+                     <span className="absolute top-2 right-2 block h-4 w-4 rounded-full bg-red-600 text-white text-xs flex items-center justify-center">
+                      {lowStockCount}
+                    </span>
+                  )}
                 </Link>
               ))}
             </nav>
@@ -190,24 +222,28 @@ const OwnerNavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTit
       {/* Mobile Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-30 bg-card border-t border-border shadow-elevation-2 lg:hidden">
         <nav className="flex items-center justify-around py-2">
-          {navigationItems?.slice(0, 5)?.map((item) => (
-            <Link
-              key={item?.path}
-              to={item?.path}
-              className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-md transition-colors duration-200 min-h-44 ${
-                isActiveRoute(item?.path)
-                  ? 'text-primary' :'text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              <Icon 
-                name={item?.icon} 
-                size={20} 
-                color={isActiveRoute(item?.path) ? 'var(--color-primary)' : 'currentColor'}
-              />
-              <span className="text-xs font-medium">{item?.label}</span>
-            </Link>
-          ))}
-        </nav>
+                    {navigationItems?.slice(0, 5)?.map((item) => (
+                      item.path !== '/owner-raw-material-stock' && (
+                        <Link
+                          key={item?.path}
+                          to={item?.path}
+                          className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-md transition-colors duration-200 min-h-44 relative ${
+                            isActiveRoute(item?.path)
+                              ? 'text-primary' :'text-text-secondary hover:text-text-primary'
+                          }`}
+                        >
+                          <Icon
+                            name={item?.icon}
+                            size={20}
+                            color={isActiveRoute(item?.path) ? 'var(--color-primary)' : 'currentColor'}
+                          />
+                          <span className="text-xs font-medium">{item?.label}</span>
+                          {item.path === '/critical-stock' && lowStockCount > 0 && (
+                            <span className="absolute top-1 right-1 block h-3 w-3 rounded-full bg-red-600 border-2 border-card"></span>
+                          )}
+                        </Link>
+                      )
+                    ))}        </nav>
       </div>
     </>
   );

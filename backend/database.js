@@ -191,7 +191,8 @@ const setupDatabase = async () => {
         name VARCHAR(191) NOT NULL UNIQUE,
         unit VARCHAR(50) NOT NULL,
         current_stock DECIMAL(10, 2) DEFAULT 0.00,
-        min_stock_level DECIMAL(10, 2) DEFAULT 0.00,
+        stok_minimum DECIMAL(10, 2) DEFAULT 0.00,
+        suggestion_purchase_quantity DECIMAL(10, 2) DEFAULT 0.00,
         price_per_item DECIMAL(10, 2) DEFAULT 0.00,
         standard_stock_per_day DECIMAL(10, 2) DEFAULT 0.00,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -265,18 +266,48 @@ const setupDatabase = async () => {
       console.log('Added current_stock column to raw_materials table.');
     }
 
-    // Check and add min_stock_level column to raw_materials if it doesn't exist
-    const checkMinStockLevelColumn = `
+    // Check and add stok_minimum column to raw_materials if it doesn't exist
+    const checkStokMinimumColumn = `
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'raw_materials' AND COLUMN_NAME = 'min_stock_level';
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'raw_materials' AND COLUMN_NAME = 'stok_minimum';
     `;
-    const addMinStockLevelColumn = `
-      ALTER TABLE raw_materials ADD COLUMN min_stock_level DECIMAL(10, 2) DEFAULT 0.00;
+    const [stokMinimumRows] = await connection.query(checkStokMinimumColumn);
+    if (stokMinimumRows[0]['COUNT(*)'] === 0) {
+      // Check if old column 'min_stock_level' exists
+      const checkOldMinStockLevelColumn = `
+        SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'raw_materials' AND COLUMN_NAME = 'min_stock_level';
+      `;
+      const [oldMinStockRows] = await connection.query(checkOldMinStockLevelColumn);
+      if (oldMinStockRows[0]['COUNT(*)'] > 0) {
+        // Rename old column to new column
+        const renameMinStockLevelColumn = `
+          ALTER TABLE raw_materials CHANGE COLUMN min_stock_level stok_minimum DECIMAL(10, 2) DEFAULT 0.00;
+        `;
+        await connection.query(renameMinStockLevelColumn);
+        console.log('Renamed min_stock_level column to stok_minimum in raw_materials table.');
+      } else {
+        // Add the new column if neither old nor new exists
+        const addStokMinimumColumn = `
+          ALTER TABLE raw_materials ADD COLUMN stok_minimum DECIMAL(10, 2) DEFAULT 0.00;
+        `;
+        await connection.query(addStokMinimumColumn);
+        console.log('Added stok_minimum column to raw_materials table.');
+      }
+    }
+    
+    // Check and add suggestion_purchase_quantity column to raw_materials if it doesn't exist
+    const checkSuggestionPurchaseQuantityColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'raw_materials' AND COLUMN_NAME = 'suggestion_purchase_quantity';
     `;
-    const [minStockLevelRows] = await connection.query(checkMinStockLevelColumn);
-    if (minStockLevelRows[0]['COUNT(*)'] === 0) {
-      await connection.query(addMinStockLevelColumn);
-      console.log('Added min_stock_level column to raw_materials table.');
+    const addSuggestionPurchaseQuantityColumn = `
+      ALTER TABLE raw_materials ADD COLUMN suggestion_purchase_quantity DECIMAL(10, 2) DEFAULT 0.00;
+    `;
+    const [suggestionPurchaseQuantityRows] = await connection.query(checkSuggestionPurchaseQuantityColumn);
+    if (suggestionPurchaseQuantityRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addSuggestionPurchaseQuantityColumn);
+      console.log('Added suggestion_purchase_quantity column to raw_materials table.');
     }
 
     const checkCustomUnitColumn = `
@@ -319,6 +350,21 @@ const setupDatabase = async () => {
       await connection.query(addStandardStockPerDayColumn);
       console.log('Added standard_stock_per_day column to raw_materials table.');
     }
+
+    const createMenuRecipesTable = `
+      CREATE TABLE IF NOT EXISTS menu_recipes (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        menu_item_id VARCHAR(255) NOT NULL,
+        raw_material_id INT NOT NULL,
+        quantity DECIMAL(10, 2) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE,
+        FOREIGN KEY (raw_material_id) REFERENCES raw_materials(id) ON DELETE CASCADE
+      );
+    `;
+    await connection.query(createMenuRecipesTable);
+    console.log('menu_recipes table is ready.');
 
     const createRawMaterialStockHistoryTable = `
       CREATE TABLE IF NOT EXISTS raw_material_stock_history (

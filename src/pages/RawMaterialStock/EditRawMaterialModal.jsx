@@ -4,10 +4,12 @@ import axios from 'axios';
 const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, showMessage, showError }) => {
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('');
-  const [customUnit, setCustomUnit] = useState(''); // New state for custom unit
-  const [minStockLevel, setMinStockLevel] = useState('');
+  const [customUnit, setCustomUnit] = useState('');
+  const [stokMinimum, setStokMinimum] = useState('');
   const [pricePerItem, setPricePerItem] = useState('');
   const [standardStockPerDay, setStandardStockPerDay] = useState('');
+  const [suggestionPurchaseQuantity, setSuggestionPurchaseQuantity] = useState('');
+  const [currentStock, setCurrentStock] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -15,12 +17,14 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
 
   useEffect(() => {
     if (isOpen && material) {
-      setName(material.name || ''); // Pastikan selalu string
-      setUnit(material.unit || '');   // Pastikan selalu string
-      setCustomUnit(material.custom_unit || 'pcs'); // Populate custom unit
-      setMinStockLevel(material.min_stock_level !== undefined && material.min_stock_level !== null ? parseInt(material.min_stock_level) : ''); // Ubah ke integer
-      setPricePerItem(material.price_per_item !== undefined && material.price_per_item !== null ? parseFloat(material.price_per_item) : '');
-      setStandardStockPerDay(material.standard_stock_per_day !== undefined && material.standard_stock_per_day !== null ? parseInt(material.standard_stock_per_day) : '');
+      setName(material.name || '');
+      setUnit(material.unit || '');
+      setCustomUnit(material.custom_unit || 'pcs');
+      setStokMinimum(material.stok_minimum ?? '');
+      setPricePerItem(material.price_per_item ?? '');
+      setStandardStockPerDay(material.standard_stock_per_day ?? '');
+      setSuggestionPurchaseQuantity(material.suggestion_purchase_quantity ?? '');
+      setCurrentStock(material.current_stock ?? '');
       setError(null);
     }
   }, [isOpen, material]);
@@ -31,7 +35,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
       setError("Nama dan satuan tidak boleh kosong.");
       return;
     }
-    if (parseFloat(minStockLevel) < 0) {
+    if (parseFloat(stokMinimum) < 0) {
       setError("Batas stok minimum tidak boleh negatif.");
       return;
     }
@@ -44,17 +48,19 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
       await axios.put(`${API_BASE_URL}/api/raw-materials/${material.id}`, {
         name,
         unit,
-        custom_unit: customUnit, // Include custom_unit
-        min_stock_level: parseFloat(minStockLevel),
-        price_per_item: parseFloat(pricePerItem),
-        standard_stock_per_day: parseFloat(standardStockPerDay),
+        custom_unit: customUnit,
+        stok_minimum: parseFloat(stokMinimum) || 0,
+        price_per_item: parseFloat(pricePerItem) || 0,
+        standard_stock_per_day: parseFloat(standardStockPerDay) || 0,
+        suggestion_purchase_quantity: parseFloat(suggestionPurchaseQuantity) || 0,
+        current_stock: parseFloat(currentStock) || 0,
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
       showMessage("Bahan mentah berhasil diperbarui!");
-      onMaterialUpdated(); // Memberi tahu parent komponen untuk me-refresh data
+      onMaterialUpdated();
       onClose();
     } catch (err) {
       console.error("Error updating raw material:", err);
@@ -83,6 +89,19 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
             />
           </div>
           <div className="mb-4">
+            <label htmlFor="currentStock" className="block text-gray-700 text-sm font-bold mb-2">Stok Saat Ini</label>
+            <input
+              type="number"
+              id="currentStock"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              value={currentStock}
+              onChange={(e) => setCurrentStock(e.target.value)}
+              min="0"
+              step="0.01"
+              required
+            />
+          </div>
+          <div className="mb-4">
             <label htmlFor="unit" className="block text-gray-700 text-sm font-bold mb-2">Satuan</label>
             <input
               type="text"
@@ -105,16 +124,28 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="minStockLevel" className="block text-gray-700 text-sm font-bold mb-2">Batas Stok Minimum</label>
+            <label htmlFor="stokMinimum" className="block text-gray-700 text-sm font-bold mb-2">Stok Minimum</label>
             <input
               type="number"
-              id="minStockLevel"
+              id="stokMinimum"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={minStockLevel}
-              onChange={(e) => setMinStockLevel(e.target.value)}
+              value={stokMinimum}
+              onChange={(e) => setStokMinimum(e.target.value)}
               min="0"
               step="0.01"
               required
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="suggestionPurchaseQuantity" className="block text-gray-700 text-sm font-bold mb-2">Saran Kuantitas Pembelian</label>
+            <input
+              type="number"
+              id="suggestionPurchaseQuantity"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              value={suggestionPurchaseQuantity}
+              onChange={(e) => setSuggestionPurchaseQuantity(e.target.value)}
+              min="0"
+              step="0.01"
             />
           </div>
           <div className="mb-4">
