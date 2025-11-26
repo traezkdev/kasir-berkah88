@@ -75,13 +75,11 @@ const TransactionHistory = ({ headerTitle }) => {
     const params = new URLSearchParams();
 
     // The filter type (daily, weekly, monthly) will be handled client-side in TransactionChart
+    if (dateRange.startDate) {
+        params.append('startDate', dateRange.startDate);
+    }
     if (dateRange.endDate) {
-        params.append('endDate', new Date(dateRange.endDate).toISOString().split('T')[0]);
-    } else {
-        // If no endDate is set, default to today (local date) to ensure current day's data is always included
-        const today = new Date();
-        const localTodayString = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
-        params.append('endDate', localTodayString);
+        params.append('endDate', dateRange.endDate);
     }
 
     try {
@@ -116,10 +114,10 @@ const TransactionHistory = ({ headerTitle }) => {
       limit: itemsPerPage,
     });
     if (dateRange.startDate) {
-        params.append('startDate', new Date(dateRange.startDate).toISOString().split('T')[0]);
+        params.append('startDate', dateRange.startDate);
     }
     if (dateRange.endDate) {
-        params.append('endDate', new Date(dateRange.endDate).toISOString().split('T')[0]);
+        params.append('endDate', dateRange.endDate);
     }
 
     try {
