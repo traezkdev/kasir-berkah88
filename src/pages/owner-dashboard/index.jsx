@@ -35,14 +35,6 @@ const OwnerDashboard = ({ headerTitle }) => {
             color: "warning",
             description: "Manajemen stok bahan baku mentah",
             path: "/owner-raw-material-stock"
-        },
-        {
-            title: "Manajemen Menu",
-            // value: "Atur & Ubah", // Not used by QuickActionCard
-            icon: "BookCopy",
-            color: "info",
-            description: "Kelola daftar menu dan harga",
-            path: "/menu-management"
         }
     ];
 
