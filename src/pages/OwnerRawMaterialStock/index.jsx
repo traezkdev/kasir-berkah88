@@ -139,12 +139,7 @@ const OwnerRawMaterialStockDashboard = () => {
           >
             <FaPlus className="mr-2" /> Tambah Bahan Mentah Baru
           </button>
-          <button
-            onClick={() => navigate('/owner-raw-material-stock/history')}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded flex items-center w-full sm:w-auto"
-          >
-            Lihat Riwayat Stok Bahan Mentah Owner
-          </button>
+          
         </div>
 
         <div className="overflow-x-auto bg-white rounded-lg shadow p-4 hidden sm:block">
