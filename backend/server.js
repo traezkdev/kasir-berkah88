@@ -1003,27 +1003,44 @@ app.post('/api/app-settings', authenticateToken, authorizeRoles('admin'), upload
 app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir'), async (req, res, next) => {
     try {
         const page = parseInt(req.query.page, 10) || 1;
-        const limit = parseInt(req.query.limit, 10) || 20; // Default limit of 20
+        const limit = parseInt(req.query.limit, 10) || 20;
+        const { startDate, endDate } = req.query;
         const offset = (page - 1) * limit;
 
+        let whereClauses = [];
+        let queryParams = [];
+
+        if (startDate) {
+            whereClauses.push('t.timestamp >= ?');
+            queryParams.push(startDate);
+        }
+        if (endDate) {
+            // Adjust the end date to include the entire day
+            whereClauses.push('t.timestamp <= ?');
+            queryParams.push(`${endDate} 23:59:59`);
+        }
+
+        const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
         // Query to get total count of transactions
-        const countSql = 'SELECT COUNT(*) as totalItems FROM transactions';
-        const [countRows] = await db.query(countSql);
+        const countSql = `SELECT COUNT(*) as totalItems FROM transactions t ${whereSql}`;
+        const [countRows] = await db.query(countSql, queryParams);
         const totalItems = countRows[0].totalItems;
         const totalPages = Math.ceil(totalItems / limit);
 
         // Query to get paginated transactions
-        const sql = `
+        const dataSql = `
             SELECT 
                 t.*, 
                 u.username AS cashier_name
             FROM transactions t
             LEFT JOIN users u ON t.user_id = u.id
+            ${whereSql}
             ORDER BY t.timestamp DESC
             LIMIT ?
             OFFSET ?
         `;
-        const [rows] = await db.query(sql, [limit, offset]); 
+        const [rows] = await db.query(dataSql, [...queryParams, limit, offset]); 
         
         const transactions = rows.map(row => ({
             ...row,

@@ -20,11 +20,49 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
       setName(material.name || '');
       setUnit(material.unit || '');
       setCustomUnit(material.custom_unit || 'pcs');
-      setStokMinimum(material.stok_minimum ?? '');
+      const stokMinVal = parseFloat(material.stok_minimum);
+      if (!isNaN(stokMinVal)) {
+        if (stokMinVal % 1 !== 0) {
+          setStokMinimum(stokMinVal);
+        } else {
+          setStokMinimum(parseInt(stokMinVal, 10));
+        }
+      } else {
+        setStokMinimum('');
+      }
       setPricePerItem(material.price_per_item ?? '');
-      setStandardStockPerDay(material.standard_stock_per_day ?? '');
-      setSuggestionPurchaseQuantity(material.suggestion_purchase_quantity ?? '');
-      setCurrentStock(material.current_stock ?? '');
+      const standardStockVal = parseFloat(material.standard_stock_per_day);
+      if (!isNaN(standardStockVal)) {
+        if (standardStockVal % 1 !== 0) {
+          setStandardStockPerDay(standardStockVal);
+        } else {
+          setStandardStockPerDay(parseInt(standardStockVal, 10));
+        }
+      } else {
+        setStandardStockPerDay('');
+      }
+      const suggestionVal = parseFloat(material.suggestion_purchase_quantity);
+      if (!isNaN(suggestionVal)) {
+        if (suggestionVal % 1 !== 0) {
+          setSuggestionPurchaseQuantity(suggestionVal);
+        } else {
+          setSuggestionPurchaseQuantity(parseInt(suggestionVal, 10));
+        }
+      } else {
+        setSuggestionPurchaseQuantity('');
+      }
+      
+      const stockValue = parseFloat(material.current_stock);
+      if (!isNaN(stockValue)) {
+        if (stockValue % 1 !== 0) {
+          setCurrentStock(stockValue);
+        } else {
+          setCurrentStock(parseInt(stockValue, 10));
+        }
+      } else {
+        setCurrentStock('');
+      }
+      
       setError(null);
     }
   }, [isOpen, material]);
@@ -97,7 +135,6 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
               value={currentStock}
               onChange={(e) => setCurrentStock(e.target.value)}
               min="0"
-              step="0.01"
               required
             />
           </div>
@@ -132,7 +169,6 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
               value={stokMinimum}
               onChange={(e) => setStokMinimum(e.target.value)}
               min="0"
-              step="0.01"
               required
             />
           </div>
@@ -145,7 +181,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
               value={suggestionPurchaseQuantity}
               onChange={(e) => setSuggestionPurchaseQuantity(e.target.value)}
               min="0"
-              step="0.01"
+              required
             />
           </div>
           <div className="mb-4">
@@ -170,7 +206,6 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
               value={standardStockPerDay}
               onChange={(e) => setStandardStockPerDay(e.target.value)}
               min="0"
-              step="0.01"
               required
             />
           </div>
