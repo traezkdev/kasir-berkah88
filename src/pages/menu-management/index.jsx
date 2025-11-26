@@ -9,6 +9,7 @@ import MenuItemsTable from './components/MenuItemsTable';
 import MenuSummaryCards from './components/MenuSummaryCards';
 import MenuSearchAndFilter from './components/MenuSearchAndFilter';
 import EditMenuItemModal from './components/EditMenuItemModal';
+import RecipeManagementModal from './RecipeManagementModal'; // Import the new modal
 import Pagination from '../../components/ui/Pagination'; // Add this import
 
 import Button from '../../components/ui/Button';
@@ -28,15 +29,21 @@ const MenuManagement = ({ headerTitle }) => {
   const [userRole, setUserRole] = useState(null); // New state for user role
   const [notification, setNotification] = useState(null);
   const [editingMenuItem, setEditingMenuItem] = useState(null); // State for item being edited
+  const [isRecipeModalOpen, setRecipeModalOpen] = useState(false); // State for recipe modal
+  const [selectedMenuItemForRecipe, setSelectedMenuItemForRecipe] = useState(null); // State for recipe item
   const [pagination, setPagination] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
-  const showNotification = (message, type) => {
+  const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
     setTimeout(() => {
       setNotification(null);
     }, 3000); // Hide after 3 seconds
+  };
+  
+  const showError = (message) => {
+    showNotification(message, 'error');
   };
 
   const fetchAllMenuItems = async () => {
@@ -312,6 +319,17 @@ Powered by Kasir Berkah 88`;
   const handleEditMenuItem = (item) => {
     setEditingMenuItem(item);
   };
+  
+  const handleOpenRecipeModal = (item) => {
+    setSelectedMenuItemForRecipe(item);
+    setRecipeModalOpen(true);
+  };
+
+  const handleCloseRecipeModal = () => {
+    setRecipeModalOpen(false);
+    setSelectedMenuItemForRecipe(null);
+  };
+
 
   const handleMoveItem = (id, direction) => {
     setMenuItems(prevItems => {
@@ -450,6 +468,7 @@ Powered by Kasir Berkah 88`;
             apiUrl={apiUrl}
             onEditItem={handleEditMenuItem}
             onMoveItem={handleMoveItem}
+            onOpenRecipeModal={handleOpenRecipeModal}
           />
 
           {/* Pagination */}
@@ -474,6 +493,16 @@ Powered by Kasir Berkah 88`;
           menuItem={editingMenuItem}
           onSave={handleUpdateItem}
           userRole={userRole}
+        />
+      )}
+      
+      {selectedMenuItemForRecipe && (
+        <RecipeManagementModal
+          isOpen={isRecipeModalOpen}
+          onClose={handleCloseRecipeModal}
+          menuItem={selectedMenuItemForRecipe}
+          showMessage={showNotification}
+          showError={showError}
         />
       )}
     </div>
