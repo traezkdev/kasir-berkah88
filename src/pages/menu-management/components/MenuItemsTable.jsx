@@ -9,11 +9,11 @@ const MenuItemsTable = ({
   menuItems, 
   onUpdateItem, 
   onDeleteItem, 
-
   userRole,
   apiUrl,
   onEditItem,
-  onMoveItem
+  onMoveItem,
+  onOpenRecipeModal
 }) => {
   const { theme } = useTheme();
 
@@ -148,6 +148,17 @@ const MenuItemsTable = ({
           <div className="flex items-center space-x-2">
             {userRole !== 'guest' && (
               <Button
+                variant="outline"
+                size="xs"
+                onClick={() => onOpenRecipeModal(item)}
+                iconName="BookText"
+                iconPosition="left"
+              >
+                Resep
+              </Button>
+            )}
+            {userRole !== 'guest' && (
+              <Button
                 variant="ghost"
                 size="xs"
                 onClick={() => onEditItem(item)}
@@ -224,7 +235,7 @@ const MenuItemsTable = ({
       {/* Desktop Table View */}
       <div className="hidden lg:block overflow-x-auto">
         <table className="w-full table-fixed">
-          <thead className="bg-muted"><tr><th className="text-left p-4 w-20">Urutan</th><th className="text-left p-4 font-medium text-foreground">Gambar</th><th className="text-left p-4 font-medium text-foreground">Nama Menu</th><th className="text-left p-4 font-medium text-foreground">Kategori</th><th className="text-left p-4 font-medium text-foreground w-20">Stok</th><th className="text-left p-4 font-medium text-foreground">Harga</th><th className="text-left p-4 font-medium text-foreground">Diskon</th><th className="text-left py-4 font-medium text-foreground">Unggulan</th><th className="text-left p-4 font-medium text-foreground">Status</th><th className="text-left p-4 font-medium text-foreground">Terakhir Diperbarui</th><th className="text-center p-4 font-medium text-foreground w-32">Aksi</th></tr></thead>
+          <thead className="bg-muted"><tr><th className="text-left p-4 w-20">Urutan</th><th className="text-left p-4 font-medium text-foreground">Gambar</th><th className="text-left p-4 font-medium text-foreground">Nama Menu</th><th className="text-left p-4 font-medium text-foreground">Kategori</th><th className="text-left p-4 font-medium text-foreground w-20">Stok</th><th className="text-left p-4 font-medium text-foreground">Harga</th><th className="text-left p-4 font-medium text-foreground">Diskon</th><th className="text-left py-4 font-medium text-foreground">Unggulan</th><th className="text-left p-4 font-medium text-foreground">Status</th><th className="text-left p-4 font-medium text-foreground">Terakhir Diperbarui</th><th className="text-center p-4 font-medium text-foreground w-40">Aksi</th></tr></thead>
           <tbody className="divide-y divide-border">
             {menuItems?.map(item => {
               const stockStatus = getStockStatus(item?.stock);
@@ -264,7 +275,7 @@ const MenuItemsTable = ({
                     </div>
                   )}
                 </div>
-              </td><td className="p-4"><span className="font-medium text-foreground">{item?.category}</span></td><td className="p-4"><span className="font-mono font-medium">{item?.stock}</span></td><td className="p-4"><span className="font-mono font-medium">{formatCurrency(item?.price)}</span></td><td className="p-4 text-center"> {/* New data cell */}{item?.discount > 0 ? (<span className="font-mono font-medium text-success">{`${(item?.discount * 100).toFixed(0)}%`}</span>) : (<span className="text-muted-foreground">-</span>)}</td><td className="p-4">{item?.is_featured ? <Icon name="Star" size={18} className="text-yellow-500" title="Menu Unggulan" /> : '-'}</td><td className="p-4"><span className={`px-3 py-1 rounded-full text-sm font-medium ${stockStatus?.color} ${stockStatus?.bg}`}>{stockStatus?.label}</span></td><td className="p-4 text-sm text-muted-foreground">{item.updatedAt ? (!isNaN(new Date(item.updatedAt)) ? new Date(item.updatedAt).toLocaleDateString('id-ID', {day: '2-digit',month: '2-digit',year: 'numeric',hour: '2-digit',minute: '2-digit'}) : `Invalid Date: ${item.updatedAt}`) : '-'}</td><td className="p-4"><div className="flex items-center justify-center space-x-2">{userRole !== 'guest' && (<Button variant="ghost" size="xs" onClick={() => onEditItem(item)} iconName="Edit"/>)}{userRole !== 'guest' && (<Button variant="destructive" size="xs" onClick={() => setShowDeleteConfirm(item?.id)} iconName="Trash2"/>)}</div></td></tr>);
+              </td><td className="p-4"><span className="font-medium text-foreground">{item?.category}</span></td><td className="p-4"><span className="font-mono font-medium">{item?.stock}</span></td><td className="p-4"><span className="font-mono font-medium">{formatCurrency(item?.price)}</span></td><td className="p-4 text-center"> {/* New data cell */}{item?.discount > 0 ? (<span className="font-mono font-medium text-success">{`${(item?.discount * 100).toFixed(0)}%`}</span>) : (<span className="text-muted-foreground">-</span>)}</td><td className="p-4">{item?.is_featured ? <Icon name="Star" size={18} className="text-yellow-500" title="Menu Unggulan" /> : '-'}</td><td className="p-4"><span className={`px-3 py-1 rounded-full text-sm font-medium ${stockStatus?.color} ${stockStatus?.bg}`}>{stockStatus?.label}</span></td><td className="p-4 text-sm text-muted-foreground">{item.updatedAt ? (!isNaN(new Date(item.updatedAt)) ? new Date(item.updatedAt).toLocaleDateString('id-ID', {day: '2-digit',month: '2-digit',year: 'numeric',hour: '2-digit',minute: '2-digit'}) : `Invalid Date: ${item.updatedAt}`) : '-'}</td><td className="p-4"><div className="flex items-center justify-center space-x-1">{userRole !== 'guest' && (<Button variant="outline" size="xs" onClick={() => onOpenRecipeModal(item)} iconName="BookText"/>)}{userRole !== 'guest' && (<Button variant="ghost" size="xs" onClick={() => onEditItem(item)} iconName="Edit"/>)}{userRole !== 'guest' && (<Button variant="destructive" size="xs" onClick={() => setShowDeleteConfirm(item?.id)} iconName="Trash2"/>)}</div></td></tr>);
             })}
           </tbody>
         </table>

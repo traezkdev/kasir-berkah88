@@ -12,10 +12,13 @@ const {
   getRawMaterialById,
   updateRawMaterial,
   deleteRawMaterial,
-  addStockIn,
-  addStockOut,
   getStockHistory,
-  deleteStockHistoryEntry, // New import
+  deleteStockHistoryEntry,
+  getLowStockRawMaterials,
+  getLowStockRawMaterialsCount,
+  addMenuRecipe,
+  getMenuRecipes,
+  deleteMenuRecipe,
 } = require('./rawMaterialsDb');
 
 const app = express();
@@ -126,18 +129,18 @@ app.get("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner'
 // Add a new raw material
 app.post("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
-        const { name, unit, custom_unit, min_stock_level, price_per_item, standard_stock_per_day } = req.body;
+        const { name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity } = req.body;
         if (!name || !unit) { // custom_unit can be optional for now, assuming a default will be set
             return res.status(400).json({ error: "Name and unit are required" });
         }
 
         // Gunakan fungsi addRawMaterial dari rawMaterialsDb
-        const result = await addRawMaterial(name, unit, custom_unit || 'pcs', parseFloat(min_stock_level) || 0, parseFloat(price_per_item) || 0, parseFloat(standard_stock_per_day) || 0);
+        const result = await addRawMaterial(name, unit, custom_unit || 'pcs', parseFloat(stok_minimum) || 0, parseFloat(price_per_item) || 0, parseFloat(standard_stock_per_day) || 0, parseFloat(suggestion_purchase_quantity) || 0);
         
         // Asumsi result mengandung insertId jika berhasil
         res.status(201).json({
             message: "Raw material added successfully",
-            data: { id: result.insertId, name, unit, custom_unit, min_stock_level, price_per_item, standard_stock_per_day },
+            data: { id: result.insertId, name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity },
         });
 
     } catch (err) {
@@ -154,14 +157,14 @@ app.post("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner
 app.put("/api/raw-materials/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, unit, custom_unit, min_stock_level, price_per_item, standard_stock_per_day } = req.body;
+        const { name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, current_stock } = req.body;
 
-        const result = await updateRawMaterial(id, name, unit, custom_unit || 'pcs', parseFloat(min_stock_level) || 0, parseFloat(price_per_item) || 0, parseFloat(standard_stock_per_day) || 0);
+        const result = await updateRawMaterial(id, name, unit, custom_unit || 'pcs', parseFloat(stok_minimum) || 0, parseFloat(price_per_item) || 0, parseFloat(standard_stock_per_day) || 0, parseFloat(suggestion_purchase_quantity) || 0, parseFloat(current_stock));
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: "Raw material not found" });
         }
-        res.json({ message: "success", data: { id, name, unit, custom_unit, min_stock_level, price_per_item, standard_stock_per_day } });
+        res.json({ message: "success", data: { id, name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, current_stock } });
     } catch (err) {
         if (err.message && err.message.includes('ER_DUP_ENTRY')) {
             return res.status(409).json({ error: "Raw material with this name already exists" });
@@ -182,46 +185,6 @@ app.delete("/api/raw-materials/:id", authenticateToken, authorizeRoles('admin', 
         }
         res.json({ message: "Raw material and its history deleted successfully" });
     } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// Record a stock-in transaction
-app.post("/api/raw-materials/stock-in", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
-    try {
-        const { material_id, quantity, price_per_unit, transaction_date, notes } = req.body;
-        if (!material_id || !quantity || quantity <= 0 || !transaction_date) {
-            return res.status(400).json({ error: "Material ID, positive quantity, and transaction date are required" });
-        }
-
-        // Gunakan fungsi addStockIn dari rawMaterialsDb
-        const result = await addStockIn(material_id, parseFloat(quantity), parseFloat(price_per_unit) || 0, transaction_date, notes);
-        res.status(200).json(result);
-
-    } catch (err) {
-        console.error("Error recording stock-in:", err);
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// Record a stock-out transaction
-app.post("/api/raw-materials/stock-out", authenticateToken, authorizeRoles('admin', 'owner', 'user'), async (req, res) => {
-    try {
-        const { material_id, quantity, price_per_unit, transaction_date, notes } = req.body;
-        if (!material_id || !quantity || quantity <= 0 || !transaction_date) {
-            return res.status(400).json({ error: "Material ID, positive quantity, and transaction date are required" });
-        }
-
-        // Gunakan fungsi addStockOut dari rawMaterialsDb
-        const result = await addStockOut(material_id, parseFloat(quantity), parseFloat(price_per_unit) || 0, transaction_date, notes);
-        res.status(200).json(result);
-
-    } catch (err) {
-        console.error("Error recording stock-out:", err);
-        // addStockOut akan melempar error dengan pesan yang sesuai, tangkap di sini
-        if (err.message && err.message.includes('Insufficient stock')) {
-            return res.status(400).json({ error: err.message });
-        }
         res.status(500).json({ error: err.message });
     }
 });
@@ -250,6 +213,70 @@ app.delete("/api/raw-materials/history/:id", authenticateToken, authorizeRoles('
         res.json({ message: "Stock history entry deleted successfully" });
     } catch (err) {
         console.error("Error deleting stock history entry:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- Stock Alert Endpoints ---
+app.get("/api/stock-alerts", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const lowStockMaterials = await getLowStockRawMaterials();
+        res.json({ message: "success", data: lowStockMaterials });
+    } catch (err) {
+        console.error("Error fetching low stock materials:", err);
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+app.get("/api/stock-alerts/count", authenticateToken, authorizeRoles('admin', 'owner', 'user', 'kasir'), async (req, res) => {
+    try {
+        const count = await getLowStockRawMaterialsCount();
+        res.json({ message: "success", data: count });
+    } catch (err) {
+        console.error("Error fetching low stock materials count:", err);
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// --- Menu Recipes Endpoints ---
+app.get("/api/menu-recipes/:menu_item_id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { menu_item_id } = req.params;
+        const recipes = await getMenuRecipes(menu_item_id);
+        res.json({ message: "success", data: recipes });
+    } catch (err) {
+        console.error("Error fetching menu recipes:", err);
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+app.post("/api/menu-recipes", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { menu_item_id, raw_material_id, quantity } = req.body;
+        if (!menu_item_id || !raw_material_id || !quantity) {
+            return res.status(400).json({ error: "menu_item_id, raw_material_id, and quantity are required" });
+        }
+        const result = await addMenuRecipe(menu_item_id, raw_material_id, quantity);
+        res.status(201).json({
+            message: "Menu recipe added successfully",
+            data: { id: result.insertId, menu_item_id, raw_material_id, quantity },
+        });
+    } catch (err) {
+        console.error("Error adding menu recipe:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete("/api/menu-recipes/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await deleteMenuRecipe(id);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Menu recipe not found" });
+        }
+        res.json({ message: "Menu recipe deleted successfully" });
+    } catch (err) {
+        console.error("Error deleting menu recipe:", err);
         res.status(500).json({ error: err.message });
     }
 });

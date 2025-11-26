@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaUserCircle, FaBars, FaDesktop } from 'react-icons/fa';
+import { FaUserCircle, FaBars, FaDesktop, FaBell } from 'react-icons/fa';
 import authFetch from '../../../utils/authFetch';
 import DarkModeToggle from '../../ui/DarkModeToggle';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -10,6 +10,7 @@ const apiUrl = import.meta.env.VITE_API_URL;
 const Header = ({ toggleSidebar }) => {
   const { setTheme } = useTheme();
   const [user, setUser] = useState({ name: 'Admin', avatar_url: null });
+  const [lowStockCount, setLowStockCount] = useState(0);
 
   const handleSwitchToDefaultTheme = () => {
     setTheme('default');
@@ -27,7 +28,24 @@ const Header = ({ toggleSidebar }) => {
         console.error("Error fetching user data:", error);
       }
     };
+
+    const fetchLowStockCount = async () => {
+      try {
+        const response = await authFetch(`${apiUrl}/api/stock-alerts/count`);
+        const data = await response.json();
+        if (response.ok && data.data) {
+          setLowStockCount(data.data.low_stock_count);
+        }
+      } catch (error) {
+        console.error("Error fetching low stock count:", error);
+      }
+    };
+
     fetchUserData();
+    fetchLowStockCount(); // Initial fetch
+    const interval = setInterval(fetchLowStockCount, 60000); // Fetch every 60 seconds
+
+    return () => clearInterval(interval); // Cleanup on unmount
   }, []);
 
   const avatarSrc = user.avatar_url ? `${apiUrl}${user.avatar_url}` : '/assets/images/no_image.png';
@@ -46,6 +64,16 @@ const Header = ({ toggleSidebar }) => {
         <button onClick={handleSwitchToDefaultTheme} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 mr-2">
           <FaDesktop className="h-6 w-6 text-gray-600 dark:text-gray-300" />
         </button>
+        
+        <Link to="/critical-stock" className="relative p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 mr-2">
+          <FaBell className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+          {lowStockCount > 0 && (
+            <span className="absolute top-0 right-0 block h-4 w-4 transform -translate-y-1/2 translate-x-1/2 rounded-full bg-red-600 text-white text-xs flex items-center justify-center">
+              {lowStockCount}
+            </span>
+          )}
+        </Link>
+
         <Link to="/profile" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
           {user.avatar_url ? (
             <img src={avatarSrc} alt="Profile" className="h-6 w-6 rounded-full object-cover" />

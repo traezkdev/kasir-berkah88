@@ -4,10 +4,11 @@ import axios from 'axios';
 const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, showError }) => {
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('');
-  const [customUnit, setCustomUnit] = useState('pcs'); // New state for custom unit
+  const [customUnit, setCustomUnit] = useState('pcs');
   const [pricePerItem, setPricePerItem] = useState('');
   const [standardStockPerDay, setStandardStockPerDay] = useState('');
-  const [minStockLevel, setMinStockLevel] = useState('');
+  const [stokMinimum, setStokMinimum] = useState('');
+  const [suggestionPurchaseQuantity, setSuggestionPurchaseQuantity] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -17,10 +18,11 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
     if (isOpen) {
       setName('');
       setUnit('');
-      setCustomUnit('pcs'); // Reset custom unit
+      setCustomUnit('pcs');
       setPricePerItem('');
       setStandardStockPerDay('');
-      setMinStockLevel('');
+      setStokMinimum('');
+      setSuggestionPurchaseQuantity('');
       setError(null);
     }
   }, [isOpen]);
@@ -31,16 +33,8 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
       setError("Nama dan satuan bahan mentah tidak boleh kosong.");
       return;
     }
-    if (parseFloat(pricePerItem) < 0) {
-      setError("Harga per item tidak boleh negatif.");
-      return;
-    }
-    if (parseFloat(standardStockPerDay) < 0) {
-      setError("Stok standar per hari tidak boleh negatif.");
-      return;
-    }
-    if (parseFloat(minStockLevel) < 0) {
-      setError("Batas stok minimum tidak boleh negatif.");
+    if (parseFloat(pricePerItem) < 0 || parseFloat(standardStockPerDay) < 0 || parseFloat(stokMinimum) < 0 || parseFloat(suggestionPurchaseQuantity) < 0) {
+      setError("Nilai numerik tidak boleh negatif.");
       return;
     }
 
@@ -52,17 +46,18 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
       await axios.post(`${API_BASE_URL}/api/raw-materials`, {
         name,
         unit,
-        custom_unit: customUnit, // Include custom_unit
-        min_stock_level: parseFloat(minStockLevel) || 0,
+        custom_unit: customUnit,
+        stok_minimum: parseFloat(stokMinimum) || 0,
         price_per_item: parseFloat(pricePerItem) || 0,
         standard_stock_per_day: parseFloat(standardStockPerDay) || 0,
+        suggestion_purchase_quantity: parseFloat(suggestionPurchaseQuantity) || 0,
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
       showMessage("Bahan mentah baru berhasil ditambahkan!");
-      onMaterialAdded(); // Memberi tahu parent komponen untuk me-refresh data
+      onMaterialAdded();
       onClose();
     } catch (err) {
       console.error("Error adding raw material:", err);
@@ -137,13 +132,25 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="minStockLevel" className="block text-gray-700 text-sm font-bold mb-2">Batas Stok Minimum (Opsional)</label>
+            <label htmlFor="stokMinimum" className="block text-gray-700 text-sm font-bold mb-2">Stok Minimum (Opsional)</label>
             <input
               type="number"
-              id="minStockLevel"
+              id="stokMinimum"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={minStockLevel}
-              onChange={(e) => setMinStockLevel(e.target.value)}
+              value={stokMinimum}
+              onChange={(e) => setStokMinimum(e.target.value)}
+              min="0"
+              step="0.01"
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="suggestionPurchaseQuantity" className="block text-gray-700 text-sm font-bold mb-2">Saran Kuantitas Pembelian (Opsional)</label>
+            <input
+              type="number"
+              id="suggestionPurchaseQuantity"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              value={suggestionPurchaseQuantity}
+              onChange={(e) => setSuggestionPurchaseQuantity(e.target.value)}
               min="0"
               step="0.01"
             />

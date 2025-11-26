@@ -1,11 +1,11 @@
 const pool = require('./database'); // Menggunakan koneksi pool yang sudah ada
 
-const addRawMaterial = async (name, unit, custom_unit, min_stock_level, price_per_item, standard_stock_per_day) => {
+const addRawMaterial = async (name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity) => {
   const connection = await pool.getConnection();
   try {
     const [result] = await connection.query(
-      `INSERT INTO raw_materials (name, unit, custom_unit, min_stock_level, price_per_item, standard_stock_per_day) VALUES (?, ?, ?, ?, ?, ?)`,
-      [name, unit, custom_unit, min_stock_level, price_per_item, standard_stock_per_day]
+      `INSERT INTO raw_materials (name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity]
     );
     return result;
   } finally {
@@ -17,7 +17,7 @@ const getRawMaterials = async () => {
   const connection = await pool.getConnection();
   try {
     const [rows] = await connection.query(`
-      SELECT id, name, unit, custom_unit, current_stock, min_stock_level, price_per_item, standard_stock_per_day
+      SELECT id, name, unit, custom_unit, current_stock, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity
       FROM raw_materials
     `);
     return rows;
@@ -30,7 +30,7 @@ const getRawMaterialById = async (id) => {
   const connection = await pool.getConnection();
   try {
     const [rows] = await connection.query(
-      `SELECT id, name, unit, custom_unit, current_stock, min_stock_level, price_per_item, standard_stock_per_day FROM raw_materials WHERE id = ?`,
+      `SELECT id, name, unit, custom_unit, current_stock, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity FROM raw_materials WHERE id = ?`,
       [id]
     );
     return rows[0]; // Mengembalikan satu objek bahan mentah
@@ -39,12 +39,12 @@ const getRawMaterialById = async (id) => {
   }
 };
 
-const updateRawMaterial = async (id, name, unit, custom_unit, min_stock_level, price_per_item, standard_stock_per_day) => {
+const updateRawMaterial = async (id, name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, current_stock) => {
   const connection = await pool.getConnection();
   try {
     const [result] = await connection.query(
-      `UPDATE raw_materials SET name = ?, unit = ?, custom_unit = ?, min_stock_level = ?, price_per_item = ?, standard_stock_per_day = ? WHERE id = ?`,
-      [name, unit, custom_unit, min_stock_level, price_per_item, standard_stock_per_day, id]
+      `UPDATE raw_materials SET name = ?, unit = ?, custom_unit = ?, stok_minimum = ?, price_per_item = ?, standard_stock_per_day = ?, suggestion_purchase_quantity = ?, current_stock = ? WHERE id = ?`,
+      [name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, current_stock, id]
     );
     return result;
   } finally {
@@ -60,99 +60,6 @@ const deleteRawMaterial = async (id) => {
       [id]
     );
     return result;
-  } finally {
-    connection.release();
-  }
-};
-
-const addStockIn = async (material_id, quantity, price_per_unit, transaction_date, notes) => {
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
-
-    // 1. Dapatkan harga per item jika tidak disediakan, atau gunakan yang disediakan
-    let actual_price_per_unit = price_per_unit;
-    if (!actual_price_per_unit) {
-      const [materialRows] = await connection.query(
-        `SELECT price_per_item FROM raw_materials WHERE id = ?`,
-        [material_id]
-      );
-      if (materialRows.length > 0) {
-        actual_price_per_unit = materialRows[0].price_per_item;
-      } else {
-        throw new Error('Material not found or price_per_unit not provided.');
-      }
-    }
-
-    // 2. Hitung total_price
-    const total_price = quantity * actual_price_per_unit;
-
-    // 3. Update current_stock di tabel raw_materials
-    await connection.query(
-      `UPDATE raw_materials SET current_stock = current_stock + ? WHERE id = ?`,
-      [quantity, material_id]
-    );
-
-    // 4. Masukkan entri baru ke tabel raw_material_stock_history
-    await connection.query(
-      `INSERT INTO raw_material_stock_history (material_id, type, quantity, price_per_unit, total_price, transaction_date, notes) VALUES (?, 'in', ?, ?, ?, ?, ?)`,
-      [material_id, quantity, actual_price_per_unit, total_price, transaction_date, notes]
-    );
-
-    await connection.commit();
-    return { success: true, message: 'Stock-in recorded successfully.' };
-  } catch (error) {
-    await connection.rollback();
-    throw error;
-  } finally {
-    connection.release();
-  }
-};
-
-const addStockOut = async (material_id, quantity, price_per_unit, transaction_date, notes) => {
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
-
-    // 1. Dapatkan stok saat ini dan harga per item
-    const [materialRows] = await connection.query(
-      `SELECT current_stock, price_per_item FROM raw_materials WHERE id = ?`,
-      [material_id]
-    );
-
-    if (materialRows.length === 0) {
-      throw new Error('Material not found.');
-    }
-
-    const { current_stock, price_per_item } = materialRows[0];
-
-    // 2. Validasi stok keluar
-    if (current_stock < quantity) {
-      throw new Error('Jumlah keluar melebihi stok yang tersedia.');
-    }
-
-    // 3. Gunakan harga per unit yang disediakan atau fallback ke price_per_item
-    let actual_price_per_unit = price_per_unit || price_per_item;
-    // Untuk stok keluar, total_price bisa dianggap negatif atau 0 tergantung kebutuhan akuntansi
-    const total_price = quantity * actual_price_per_unit; // Ini akan menjadi nilai positif, indikasi pengeluaran
-
-    // 4. Update current_stock di tabel raw_materials
-    await connection.query(
-      `UPDATE raw_materials SET current_stock = current_stock - ? WHERE id = ?`,
-      [quantity, material_id]
-    );
-
-    // 5. Masukkan entri baru ke tabel raw_material_stock_history
-    await connection.query(
-      `INSERT INTO raw_material_stock_history (material_id, type, quantity, price_per_unit, total_price, transaction_date, notes) VALUES (?, 'out', ?, ?, ?, ?, ?)`,
-      [material_id, quantity, actual_price_per_unit, total_price, transaction_date, notes]
-    );
-
-    await connection.commit();
-    return { success: true, message: 'Stock-out recorded successfully.' };
-  } catch (error) {
-    await connection.rollback();
-    throw error;
   } finally {
     connection.release();
   }
@@ -240,14 +147,104 @@ const deleteStockHistoryEntry = async (historyId) => {
   }
 };
 
+const getLowStockRawMaterials = async () => {
+  const connection = await pool.getConnection();
+  try {
+    const [rows] = await connection.query(`
+      SELECT 
+        rm.id, 
+        rm.name, 
+        rm.current_stock, 
+        rm.stok_minimum,
+        rm.suggestion_purchase_quantity,
+        rm.unit,
+        (
+          SELECT 
+            FLOOR(rm.current_stock / mr.quantity) 
+          FROM menu_recipes mr 
+          WHERE mr.raw_material_id = rm.id 
+          ORDER BY mr.quantity DESC 
+          LIMIT 1
+        ) as estimated_menu_portions
+      FROM raw_materials rm
+      WHERE rm.current_stock <= rm.stok_minimum
+    `);
+    return rows;
+  } finally {
+    connection.release();
+  }
+};
+
+// Get the count of low stock raw materials
+const getLowStockRawMaterialsCount = async () => {
+  const connection = await pool.getConnection();
+  try {
+    const [rows] = await connection.query(`
+      SELECT COUNT(*) as low_stock_count
+      FROM raw_materials
+      WHERE current_stock <= stok_minimum AND stok_minimum > 0
+    `);
+    return rows[0];
+  } finally {
+    connection.release();
+  }
+};
+
+// --- Menu Recipes Functions ---
+const addMenuRecipe = async (menu_item_id, raw_material_id, quantity) => {
+  const connection = await pool.getConnection();
+  try {
+    const [result] = await connection.query(
+      `INSERT INTO menu_recipes (menu_item_id, raw_material_id, quantity) VALUES (?, ?, ?)`,
+      [menu_item_id, raw_material_id, quantity]
+    );
+    return result;
+  } finally {
+    connection.release();
+  }
+};
+
+const getMenuRecipes = async (menu_item_id) => {
+  const connection = await pool.getConnection();
+  try {
+    const [rows] = await connection.query(
+      `SELECT mr.id, mr.raw_material_id, rm.name as raw_material_name, mr.quantity, rm.unit
+       FROM menu_recipes mr
+       JOIN raw_materials rm ON mr.raw_material_id = rm.id
+       WHERE mr.menu_item_id = ?`,
+      [menu_item_id]
+    );
+    return rows;
+  } finally {
+    connection.release();
+  }
+};
+
+const deleteMenuRecipe = async (id) => {
+  const connection = await pool.getConnection();
+  try {
+    const [result] = await connection.query(
+      `DELETE FROM menu_recipes WHERE id = ?`,
+      [id]
+    );
+    return result;
+  } finally {
+    connection.release();
+  }
+};
+
+
 module.exports = {
   addRawMaterial,
   getRawMaterials,
   getRawMaterialById,
   updateRawMaterial,
   deleteRawMaterial,
-  addStockIn,
-  addStockOut,
   getStockHistory,
-  deleteStockHistoryEntry, // Export the new function
+  deleteStockHistoryEntry,
+  getLowStockRawMaterials,
+  getLowStockRawMaterialsCount,
+  addMenuRecipe,
+  getMenuRecipes,
+  deleteMenuRecipe,
 };
