@@ -117,7 +117,7 @@ const RawMaterialStockDashboard = () => {
   // Calculate metrics
   const totalStockQuantity = rawMaterials.reduce((sum, material) => sum + parseInt(material.current_stock || 0), 0);
   const totalStockValue = rawMaterials.reduce((sum, material) => sum + (parseInt(material.current_stock || 0) * parseFloat(material.price_per_item || 0)), 0);
-  const lowStockItemsCount = rawMaterials.filter(material => Number(material.current_stock) < Number(material.min_stock_level)).length;
+  const lowStockItemsCount = rawMaterials.filter(material => Number(material.current_stock) < Number(material.stok_minimum)).length;
 
 
   return (
@@ -160,12 +160,7 @@ const RawMaterialStockDashboard = () => {
           >
             <FaPlus className="mr-2" /> Tambah Bahan Mentah Baru
           </button>
-          <button
-            onClick={() => navigate('/raw-material-stock/history')} // Navigasi ke halaman riwayat
-            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded flex items-center w-full sm:w-auto"
-          >
-            Lihat Riwayat Stok
-          </button>
+
         </div>
 
         {/* Table View for Larger Screens */}
@@ -183,7 +178,10 @@ const RawMaterialStockDashboard = () => {
                   Satuan
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Min. Stok
+                  Stok Min
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Saran Pembelian
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Harga per Item
@@ -214,7 +212,10 @@ const RawMaterialStockDashboard = () => {
                     {material.unit}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {parseInt(material.min_stock_level)}
+                    {parseInt(material.stok_minimum)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {parseInt(material.suggestion_purchase_quantity)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {/* Harga per Item */}
@@ -225,32 +226,20 @@ const RawMaterialStockDashboard = () => {
                     {parseInt(material.standard_stock_per_day)} {material.custom_unit}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {Number(material.current_stock) < Number(material.min_stock_level) && (
+                    {Number(material.current_stock) < Number(material.stok_minimum) && (
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 flex items-center">
                         <FaExclamationTriangle className="mr-1" /> Stok Menipis!
                       </span>
                     )}
-                    {Number(material.current_stock) >= Number(material.min_stock_level) && (
+                    {Number(material.current_stock) >= Number(material.stok_minimum) && (
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                         Cukup
                       </span>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => handleStockInClick(material)}
-                      className="text-indigo-600 hover:text-indigo-900 mr-3"
-                      title="Stok Masuk"
-                    >
-                      <FaSignInAlt />
-                    </button>
-                    <button
-                      onClick={() => handleStockOutClick(material)}
-                      className="text-yellow-600 hover:text-yellow-900 mr-3"
-                      title="Stok Keluar"
-                    >
-                      <FaSignOutAlt />
-                    </button>
+
+
                     <button
                       onClick={() => handleEditClick(material)}
                       className="text-blue-600 hover:text-blue-900 mr-3"
@@ -278,12 +267,12 @@ const RawMaterialStockDashboard = () => {
               <div className="flex justify-between items-center pb-2 mb-2 border-b border-gray-200">
                 <p className="text-lg font-bold text-gray-900">{material.name}</p>
                 <div className="flex-shrink-0">
-                  {Number(material.current_stock) < Number(material.min_stock_level) && (
+                  {Number(material.current_stock) < Number(material.stok_minimum) && (
                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
                       Stok Menipis!
                     </span>
                   )}
-                  {Number(material.current_stock) >= Number(material.min_stock_level) && (
+                  {Number(material.current_stock) >= Number(material.stok_minimum) && (
                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                         Cukup
                       </span>
@@ -296,11 +285,15 @@ const RawMaterialStockDashboard = () => {
                                   <p onClick={() => handleEditClick(material)} className="cursor-pointer">{parseInt(material.current_stock)} {material.unit}</p>
                                 </div>
                                 <div>
-                                  <p className="font-medium">Min. Stok:</p>
-                                  <p onClick={() => handleEditClick(material)} className="cursor-pointer">{parseInt(material.min_stock_level)} {material.unit}</p>
+                                  <p className="font-medium">Stok Min:</p>
+                                  <p onClick={() => handleEditClick(material)} className="cursor-pointer">{parseInt(material.stok_minimum)} {material.unit}</p>
                                 </div>
                               </div>
                               <div className="grid grid-cols-2 gap-2 text-sm text-gray-700 pb-2 mb-2 border-b border-gray-200">
+                                <div>
+                                  <p className="font-medium">Saran Pembelian:</p>
+                                  <p>{parseInt(material.suggestion_purchase_quantity)} {material.unit}</p>
+                                </div>
                                 <div>
                                   <p className="font-medium">Harga per Item:</p>
                                   <p>{parseFloat(material.price_per_item).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}</p>
