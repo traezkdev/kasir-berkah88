@@ -135,7 +135,7 @@ const AppRoutes = () => {
       >
         <Route path="/owner-dashboard" element={<OwnerDashboard headerTitle="Dashboard Owner" />} />
         <Route path="/uang-bisnis" element={<UangBisnis headerTitle="Uang Bisnis" />} />
-        <Route path="/owner/business-reports" element={<OwnerBusinessReports headerTitle="Laporan Bisnis Owner" />} />
+        <Route path="/owner/business-reports" element={<OwnerBusinessReports headerTitle="Laporan Bisnis" />} />
         <Route path="/owner-profile" element={<OwnerProfile />} />
         <Route path="/owner-raw-material-stock" element={<OwnerRawMaterialStockDashboard />} />
         <Route path="/owner-raw-material-stock/history" element={<OwnerRawMaterialStockHistory />} />

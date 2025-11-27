@@ -20,7 +20,7 @@ const BreadcrumbNavigation = ({ customPath = null, className = "" }) => {
     '/owner-profile': 'Profil Owner',
     '/owner-raw-material-stock': 'Stok Bahan Baku Owner',
     '/owner-raw-material-stock/history': 'Riwayat Stok Bahan Baku Owner',
-    '/owner/business-reports': 'Laporan Bisnis Owner', // Explicitly define for owner
+    '/owner/business-reports': 'Laporan Bisnis', // Explicitly define for owner
   };
 
   const generateBreadcrumbs = () => {
