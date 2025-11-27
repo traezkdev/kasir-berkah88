@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import NavigationHeader from '../../components/ui/NavigationHeader';
-import { FaSync, FaExclamationTriangle } from 'react-icons/fa';
+import { FaSync, FaExclamationTriangle, FaArrowLeft } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 
 const MainCriticalStockPage = () => {
   const [lowStockItems, setLowStockItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
@@ -39,7 +41,13 @@ const MainCriticalStockPage = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 mt-16">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6">
           <h1 className="text-2xl font-bold mb-4 sm:mb-0">Daftar Pembelian Stok (Stok Kritis)</h1>
-          <div className="w-full sm:w-auto"> {/* Wrapper for the button */}
+          <div className="flex items-center gap-2"> {/* New div for buttons */}
+            <button
+              onClick={() => navigate('/raw-material-stock')}
+              className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded flex items-center w-full sm:w-auto"
+            >
+              <FaArrowLeft className="mr-2" /> Kembali
+            </button>
             <button
               onClick={fetchLowStockItems}
               className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded flex items-center justify-center w-full sm:w-auto"
