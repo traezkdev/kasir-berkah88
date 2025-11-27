@@ -160,6 +160,12 @@ const RawMaterialStockDashboard = () => {
           >
             <FaPlus className="mr-2" /> Tambah Bahan Mentah Baru
           </button>
+          <button
+            onClick={() => navigate('/main-critical-stock')}
+            className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded flex items-center w-full sm:w-auto"
+          >
+            <FaExclamationTriangle className="mr-2" /> Lihat Stok Kritis
+          </button>
 
         </div>
 
