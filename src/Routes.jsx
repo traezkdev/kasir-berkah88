@@ -33,6 +33,7 @@ import OwnerProfile from './pages/OwnerProfile';
 import OwnerBusinessReports from './pages/owner-business-reports/index.jsx';
 import UangBisnis from './pages/uang-bisnis/index.jsx';
 import CriticalStockPage from './pages/CriticalStock';
+import MainCriticalStockPage from './pages/MainCriticalStock';
 
 // ProtectedRoute component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -98,6 +99,7 @@ const AppRoutes = () => {
         <Route path="/sales-transaction-processing" element={<SalesTransactionProcessing />} />
         <Route path="/raw-material-stock" element={<RawMaterialStockDashboard />} />
         <Route path="/raw-material-stock/history" element={<RawMaterialStockHistory />} />
+        <Route path="/main-critical-stock" element={<MainCriticalStockPage />} />
       </Route>
 
       {/* Cashier Dashboard Routes */}
@@ -137,16 +139,6 @@ const AppRoutes = () => {
         <Route path="/owner-profile" element={<OwnerProfile />} />
         <Route path="/owner-raw-material-stock" element={<OwnerRawMaterialStockDashboard />} />
         <Route path="/owner-raw-material-stock/history" element={<OwnerRawMaterialStockHistory />} />
-      </Route>
-
-      {/* Routes for Admin and Owner */}
-      <Route 
-        element={
-          <ProtectedRoute allowedRoles={['admin', 'owner']}>
-            <DynamicLayout />
-          </ProtectedRoute>
-        }
-      >
         <Route path="/critical-stock" element={<CriticalStockPage />} />
       </Route>
 
