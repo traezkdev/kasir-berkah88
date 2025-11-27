@@ -304,20 +304,8 @@ const RawMaterialStockDashboard = () => {
                                 </div>
                               </div>
                 <div className="flex justify-end space-x-2">
-                  <button
-                    onClick={() => handleStockInClick(material)}
-                    className="text-indigo-600 hover:text-indigo-900 p-2 rounded-full bg-indigo-100"
-                    title="Stok Masuk"
-                  >
-                    <FaSignInAlt />
-                  </button>
-                  <button
-                    onClick={() => handleStockOutClick(material)}
-                    className="text-yellow-600 hover:text-yellow-900 p-2 rounded-full bg-yellow-100"
-                    title="Stok Keluar"
-                  >
-                    <FaSignOutAlt />
-                  </button>
+
+
                   <button
                     onClick={() => handleEditClick(material)}
                     className="text-blue-600 hover:text-blue-900 p-2 rounded-full bg-blue-100"
