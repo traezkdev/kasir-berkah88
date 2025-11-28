@@ -6,12 +6,16 @@ import { Plus, Minus, Star } from 'lucide-react';
 import Icon from '../../../components/AppIcon';
 
 const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl }) => {
-  const itemInCart = cart.find(cartItem => cartItem.id === item.id);
-  const quantityInCart = itemInCart ? itemInCart.quantity : 0;
-  const effectiveStock = item.stock - quantityInCart;
-
-  const isOutOfStock = item.stock === 0; // Base stock check for initial state
+  // Calculate the total quantity of this item across all its variations in the cart
+  const itemsInCart = cart.filter(cartItem => cartItem.id === item.id);
+  const quantityInCart = itemsInCart.reduce((sum, cartItem) => sum + cartItem.quantity, 0);
+  
   const canIncrement = item.stock > quantityInCart;
+  const isOutOfStock = item.stock === 0;
+
+  // For decrementing, we need to target a specific cart item.
+  // A reasonable default is to target the last variation of this item added to the cart.
+  const lastItemVariationInCart = itemsInCart.length > 0 ? itemsInCart[itemsInCart.length - 1] : null;
 
   return (
     <div className={cn(
@@ -37,7 +41,20 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl })
       </div>
       <div className="p-4 flex flex-col flex-grow">
         <h3 className="text-md font-semibold text-text-primary flex-grow min-h-[40px]">{item.name}</h3>
-        <p className="text-sm text-text-secondary">Rp {item.price?.toLocaleString('id-ID')}</p>
+        <div className="min-h-[36px]">
+          {item.discount > 0 ? (
+            <>
+              <p className="text-xs text-gray-500 line-through">
+                Rp {item.price?.toLocaleString('id-ID')}
+              </p>
+              <p className="text-sm font-semibold text-red-600">
+                Rp {(item.price * (1 - item.discount)).toLocaleString('id-ID')}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-text-secondary">Rp {item.price?.toLocaleString('id-ID')}</p>
+          )}
+        </div>
         <p className="text-xs text-text-secondary mt-1">Stok: {item.stock}</p>
         
         <div className="mt-4">
@@ -47,7 +64,7 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl })
             <div className="flex items-center justify-center">
               <Button
                 variant="outline" size="icon" className="rounded-r-none h-9 w-9"
-                onClick={() => onDecrement(item)}
+                onClick={() => lastItemVariationInCart && onDecrement(lastItemVariationInCart.cartItemId)}
                 disabled={userRole === 'guest'}
               >
                 <Minus size={16} />

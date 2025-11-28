@@ -76,44 +76,48 @@ const OrderSummary = ({
   }, []);
 
   const subtotal = cart.reduce((sum, cartItem) => {
-    const menuItem = menuItems.find(menu => menu.id === cartItem.id);
-    if (!menuItem) {
-      return sum; // Skip if menu item not found
-    }
-
-    const itemPrice = parseFloat(menuItem?.price || 0);
-    const itemQuantity = Number(cartItem?.quantity || 0);
-    const itemDiscount = parseFloat(menuItem?.discount || 0); // Get discount from menuItem
-
-    if (isNaN(itemPrice) || isNaN(itemQuantity) || isNaN(itemDiscount)) {
-        return sum; // Skip invalid items
-    }
-
-    const discountedPrice = itemPrice * (1 - itemDiscount);
-    return sum + (discountedPrice * itemQuantity);
+    return sum + (cartItem.finalPrice * cartItem.quantity);
   }, 0);
-  const tax = subtotal * ppnRate;
-  const calculatedTotal = subtotal + tax;
+
+  // This effect calculates the manual discount when the total is overridden by the user
+  useEffect(() => {
+    // When cart changes, manual override is cancelled, which will trigger the 'else' block here
+    if (isTotalOverridden && customTotal !== null) {
+      // Reverse calculate the discount from the final total
+      // customTotal = (subtotal - manualDiscount) * (1 + ppnRate)
+      // => manualDiscount = subtotal - (customTotal / (1 + ppnRate))
+      const derivedDiscount = subtotal - (customTotal / (1 + ppnRate));
+      // Only set the discount if it's a positive value (a real discount)
+      // and if the value is different, to avoid infinite loops.
+      if (derivedDiscount > 0 && manualDiscount.toFixed(2) !== derivedDiscount.toFixed(2)) {
+         setManualDiscount(derivedDiscount);
+      } else if (derivedDiscount <= 0 && manualDiscount !== 0) {
+         setManualDiscount(0);
+      }
+    } else {
+       if (manualDiscount !== 0) {
+        // If there's no override, reset the discount from this source
+        setManualDiscount(0);
+       }
+    }
+  }, [isTotalOverridden, customTotal, subtotal, ppnRate, manualDiscount]);
+
+  // All calculations are now based on subtotal and the stateful manualDiscount
+  const subtotalAfterDiscount = subtotal - manualDiscount;
+  const tax = subtotalAfterDiscount > 0 ? subtotalAfterDiscount * ppnRate : 0;
+  const calculatedTotal = subtotalAfterDiscount + tax;
 
   useEffect(() => {
-    // Setiap kali item di keranjang berubah, override manual dibatalkan
+    // When the cart changes, cancel any manual total override
     setIsTotalOverridden(false);
   }, [cart]);
 
   useEffect(() => {
-    // Jika total tidak di-override secara manual, maka ikuti nilai kalkulasi.
+    // When not manually overridden, the displayed total should follow the calculation
     if (!isTotalOverridden) {
       setCustomTotal(calculatedTotal);
     }
   }, [calculatedTotal, isTotalOverridden]);
-
-  useEffect(() => {
-    if (isTotalOverridden && calculatedTotal > customTotal) {
-      setManualDiscount(calculatedTotal - customTotal);
-    } else {
-      setManualDiscount(0);
-    }
-  }, [isTotalOverridden, calculatedTotal, customTotal]);
 
   const paymentMethodOptions = [
     { value: 'Tunai', label: 'Tunai' },
@@ -178,20 +182,27 @@ const OrderSummary = ({
       ) : (
         <div className="space-y-4">
           {cart.map(item => (
-            <div key={item.id} className="flex items-center justify-between">
+            <div key={item.cartItemId} className="flex items-start justify-between">
               <div>
                 <p className="font-semibold">{item.name}</p>
-                <p className="text-sm text-muted-foreground">Rp {item.price?.toLocaleString('id-ID')}</p>
+                {item.selectedOptions && item.selectedOptions.length > 0 && (
+                  <div className="text-xs text-muted-foreground pl-2">
+                    {item.selectedOptions.map(opt => (
+                      <p key={opt.id}>+ {opt.name}</p>
+                    ))}
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground">Rp {item.finalPrice?.toLocaleString('id-ID')}</p>
               </div>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
                   min="1"
                   value={item.quantity}
-                  onChange={(e) => onUpdateQuantity(item.id, parseInt(e.target.value, 10) || 0)}
+                  onChange={(e) => onUpdateQuantity(item.cartItemId, parseInt(e.target.value, 10) || 0)}
                   className="w-16 text-center border border-input rounded-md text-foreground bg-background"
                 />
-                <Button variant="ghost" size="icon" onClick={() => onRemoveFromCart(item.id)}>
+                <Button variant="ghost" size="icon" onClick={() => onRemoveFromCart(item.cartItemId)}>
                   <Icon name="Trash2" size={16} />
                 </Button>
               </div>
@@ -344,7 +355,7 @@ const OrderSummary = ({
             <Button 
               onClick={() => onProcessPayment({ 
                 total: customTotal, 
-                ppn: ppnRate,
+                ppn: tax,
                 cashPaid: paymentMethod === 'Tunai' ? parseFloat(cashPaid) || 0 : 0,
                 change: paymentMethod === 'Tunai' ? change : 0,
                 manual_discount: manualDiscount,

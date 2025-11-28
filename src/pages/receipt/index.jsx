@@ -87,12 +87,25 @@ const ReceiptPage = () => {
 
   const ppnAmount = Number(transaction.ppn) || 0;
   const manualDiscountAmount = Number(transaction.manual_discount) || 0;
-  // Subtotal is derived by taking the final total, removing tax, and adding back the discount.
-  const subtotalAmount = Number(transaction.total) - ppnAmount + manualDiscountAmount;
+
+  // Calculate subtotal based on original prices (basePrice + options) for all items
+  const subtotalBeforeAllDiscounts = transaction.items.reduce((sum, item) => {
+    const originalBasePrice = Number(item.basePrice) || 0;
+    const optionAdjustment = item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0);
+    const pricePerUnitBeforeDiscount = originalBasePrice + optionAdjustment; // Price per unit before any discount
+    return sum + (pricePerUnitBeforeDiscount * (Number(item.quantity) || 0));
+  }, 0);
+
+  // Subtotal after item-level discounts, before manual discount and PPN
+  const subtotalAfterItemDiscounts = transaction.items.reduce((sum, item) => {
+    const pricePerUnitAfterDiscount = Number(item.price) || 0; // item.price is already finalPrice (after item discount & options)
+    return sum + (pricePerUnitAfterDiscount * (Number(item.quantity) || 0));
+  }, 0);
+
 
   return (
     <>
-      <div className="bg-gray-100 dark:bg-gray-900 min-h-screen flex flex-col items-center justify-center p-4">
+      <div className="bg-background min-h-screen flex flex-col items-center justify-center p-4">
         <div id="receipt-container" className="relative bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col">
           <div ref={receiptRef} className="p-6 overflow-y-auto bg-white">
             <div className="text-center mb-6">
@@ -111,31 +124,40 @@ const ReceiptPage = () => {
             <div className="border-b border-dashed border-gray-400 mb-4"></div>
             <h3 className="font-semibold mb-2 text-gray-900">Detail Item:</h3>
             <div className="space-y-2">
-              {transaction.items.map((item) => {
-                // item.price is the discounted price per unit.
-                const discountedLinePrice = (Number(item.price) || 0) * (Number(item.quantity) || 0);
-                
-                // Calculate the original price for display purposes by reversing the discount.
-                const originalLinePrice = item.discount > 0 && (1 - Number(item.discount)) > 0
-                  ? discountedLinePrice / (1 - Number(item.discount))
-                  : discountedLinePrice;
+              {transaction.items.map((item, index) => {
+                // item.price here is the final price per unit (after options and discount)
+                const pricePerUnitAfterDiscount = Number(item.price) || 0;
+                const lineTotalAfterDiscount = pricePerUnitAfterDiscount * (Number(item.quantity) || 0);
+            
+                // Calculate original price per unit including options but before discount
+                const originalBasePrice = Number(item.basePrice) || 0;
+                const optionAdjustment = item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0);
+                const originalPricePerUnitBeforeDiscount = originalBasePrice + optionAdjustment;
+                const lineTotalBeforeDiscount = originalPricePerUnitBeforeDiscount * (Number(item.quantity) || 0);
 
                 return (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span className="text-gray-900">
-                      {item.name} <span className="text-gray-500">x{item.quantity}</span>
+                  <div key={index} className="text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-900">
+                        {item.name} <span className="text-gray-500">x{item.quantity}</span>
+                      </span>
                       {item.discount > 0 && (
                         <span className="text-red-500 ml-2">({(item.discount * 100).toFixed(0)}% Diskon)</span>
                       )}
-                    </span>
-                    <span className="text-gray-900">
-                      {item.discount > 0 && (
-                        <span className="line-through text-gray-500 mr-1">
-                          Rp {originalLinePrice.toLocaleString("id-ID")}
-                        </span>
-                      )}
-                      Rp {discountedLinePrice.toLocaleString("id-ID")}
-                    </span>
+                      <span className="text-gray-900 flex items-baseline gap-2 justify-end">
+                        {item.discount > 0 && (
+                            <span className="line-through text-gray-500 text-xs">
+                                Rp {lineTotalBeforeDiscount.toLocaleString("id-ID")}
+                            </span>
+                        )}
+                        <span>Rp {lineTotalAfterDiscount.toLocaleString("id-ID")}</span>
+                      </span>
+                    </div>
+                    {item.options && item.options.length > 0 && (
+                      <div className="pl-4 text-xs text-gray-500">
+                        {item.options.map(opt => `+ ${opt.name}`).join(', ')}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -143,8 +165,14 @@ const ReceiptPage = () => {
             <div className="border-b border-dashed border-gray-400 my-4"></div>
             <div className="flex justify-between font-semibold text-sm mb-2">
               <span className="text-gray-900">Subtotal:</span>
-              <span className="text-gray-900">Rp {Number(subtotalAmount).toLocaleString("id-ID")}</span>
+              <span className="text-gray-900">Rp {Number(subtotalBeforeAllDiscounts).toLocaleString("id-ID")}</span>
             </div>
+            {subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts > 0 && (
+              <div className="flex justify-between font-semibold text-sm mb-2 text-red-500"> {/* Diskon biasanya merah */}
+                <span className="text-gray-900">Diskon Item:</span>
+                <span className="text-gray-900">- Rp {(subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts).toLocaleString("id-ID")}</span>
+              </div>
+            )}
             {ppnAmount > 0 && (
               <div className="flex justify-between font-semibold text-sm mb-2">
                 <span className="text-gray-900">PPN:</span>
@@ -153,13 +181,13 @@ const ReceiptPage = () => {
             )}
             {manualDiscountAmount > 0 && (
               <div className="flex justify-between font-semibold text-sm mb-2 text-red-500">
-                <span className="text-red-500">Diskon:</span>
+                <span className="text-red-500">Diskon Manual:</span> {/* Ubah menjadi Diskon Manual */}
                 <span className="text-red-500">- Rp {manualDiscountAmount.toLocaleString("id-ID")}</span>
               </div>
             )}
             <div className="flex justify-between font-semibold">
               <span className="text-lg text-gray-900">TOTAL:</span>
-              <span className="text-lg text-black">Rp {Number(transaction.total).toLocaleString("id-ID")}</span>
+              <span className="text-lg text-gray-900">Rp {Number(transaction.total).toLocaleString("id-ID")}</span>
             </div>
             <div className="border-b border-dashed border-gray-400 my-4"></div>
             
@@ -187,7 +215,7 @@ const ReceiptPage = () => {
               <p>Terima kasih telah berbelanja!</p>
             </div>
           </div>
-          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-b-lg flex items-center justify-between print:hidden">
+          <div className="p-4 bg-muted/50 dark:bg-gray-900 rounded-b-lg flex items-center justify-between print:hidden">
             <Button variant="outline" onClick={() => navigate('/sales-transaction-processing')} className="flex items-center gap-2">
                 <ArrowLeft size={16} />
                 Kembali

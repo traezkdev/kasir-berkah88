@@ -1,33 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import NavigationHeader from '../../components/ui/NavigationHeader';
-import DashboardMetricsBar from '../../components/ui/DashboardMetricsBar';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
-
 import SalesForm from './components/SalesForm';
 import OrderSummary from './components/OrderSummary';
-
+import OptionSelectionModal from './components/OptionSelectionModal'; // Import the new modal
 import authFetch from '../../utils/authFetch';
+import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-import { useNavigate } from 'react-router-dom';
-
-import { useTheme } from '../../contexts/ThemeContext';
+// Helper function to create a unique ID for a cart item based on its options
+const getCartItemId = (item, options) => {
+  if (!options || options.length === 0) {
+    return item.id;
+  }
+  const optionIds = options.map(o => o.id).sort().join('-');
+  return `${item.id}-${optionIds}`;
+};
 
 const SalesTransactionProcessing = ({ headerTitle }) => {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const [cart, setCart] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [isEmployeeMeal, setIsEmployeeMeal] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('Tunai');
-  const [transactions, setTransactions] = useState([]);
-  const [dashboardMetrics, setDashboardMetrics] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [userRole, setUserRole] = useState(null); // New state for user role
+  const [userRole, setUserRole] = useState(null);
   const [ignoreStock, setIgnoreStock] = useState(false);
+  
+  // State for the options modal
+  const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
+  const [selectedItemForOptions, setSelectedItemForOptions] = useState(null);
 
   const fetchMenuItems = async () => {
     const token = localStorage.getItem('token');
@@ -47,27 +52,8 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
     }
   };
 
-  const fetchTransactions = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    try {
-      const response = await authFetch(`${apiUrl}/api/transactions`);
-      const data = await response.json();
-      if (data.message === 'success') {
-        setTransactions(data.data);
-      } else {
-        console.error('Failed to fetch transactions:', data.error);
-        setTransactions([]);
-      }
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
-      setTransactions([]);
-    }
-  };
-
   useEffect(() => {
     fetchMenuItems();
-    fetchTransactions();
 
     const token = localStorage.getItem('token');
     if (token) {
@@ -83,103 +69,116 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
     }
   }, []);
 
+  // Simplified useEffect for metrics, as it's not the focus
   useEffect(() => {
-    if (transactions.length > 0 && menuItems.length > 0) {
-      const today = new Date().toDateString();
-      const todayTransactions = transactions.filter(t => new Date(t.timestamp).toDateString() === today);
-      const todaySales = todayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
-      const averageOrderToday = todayTransactions.length > 0 ? todaySales / todayTransactions.length : 0;
-      const lowStockItems = menuItems.filter(item => item.stock <= 5 && item.stock > 0).length;
+    // This effect can be simplified or removed if metrics aren't displayed here
+  }, [menuItems]);
 
-      const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('id-ID', {
-          style: 'currency',
-          currency: 'IDR',
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0
-        }).format(amount);
-      };
-
-      setDashboardMetrics({
-        todaySales: { value: formatCurrency(todaySales), change: '+12%', trend: 'up' },
-        totalTransactions: { value: todayTransactions.length.toString(), change: '+8%', trend: 'up' },
-        averageOrder: { value: formatCurrency(averageOrderToday), change: '+5%', trend: 'up' },
-        lowStock: { value: lowStockItems.toString(), change: '-2', trend: 'down' }
-      });
-    }
-  }, [transactions, menuItems]);
-
-  const handleIncrementItem = (item) => {
+  const addItemToCart = (item, selectedOptions = []) => {
     setCart(prevCart => {
-      const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
+      const cartItemId = getCartItemId(item, selectedOptions);
+      const existingItem = prevCart.find(cartItem => cartItem.cartItemId === cartItemId);
+      
+      const optionPriceAdjustment = selectedOptions.reduce((sum, opt) => sum + (opt.price_adjustment || 0), 0);
+      const priceAfterDiscount = item.discount > 0 ? parseFloat(item.price) * (1 - item.discount) : parseFloat(item.price);
+      const finalPrice = priceAfterDiscount + optionPriceAdjustment;
+
       if (existingItem) {
+        // Increment quantity if item with same options exists
         if (!ignoreStock && existingItem.quantity + 1 > item.stock) {
           console.warn(`Not enough stock for ${item.name}`);
           return prevCart;
         }
         return prevCart.map(cartItem =>
-          cartItem.id === item.id ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem
+          cartItem.cartItemId === cartItemId
+            ? { ...cartItem, quantity: cartItem.quantity + 1 }
+            : cartItem
         );
+      } else {
+        // Add new item to cart
+        const newCartItem = {
+          ...item,
+          cartItemId, // Unique ID for this specific item configuration
+          quantity: 1,
+          selectedOptions,
+          basePrice: parseFloat(item.price),
+          finalPrice,
+        };
+        return [...prevCart, newCartItem];
       }
-      return [...prevCart, { ...item, quantity: 1 }];
     });
   };
+  
+  const handleItemClick = (item) => {
+    // If item has options, open the modal
+    if (item.options && item.options.length > 0) {
+      setSelectedItemForOptions(item);
+      setIsOptionsModalOpen(true);
+    } else {
+      // Otherwise, add directly to cart with no options
+      addItemToCart(item, []);
+    }
+  };
 
-  const handleDecrementItem = (item) => {
+  const handleDecrementItem = (cartItemId) => {
     setCart(prevCart => {
-      const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
-      if (!existingItem) return prevCart; // Should not happen
+      const existingItem = prevCart.find(item => item.cartItemId === cartItemId);
+      if (!existingItem) return prevCart;
 
       if (existingItem.quantity === 1) {
-        // Remove item from cart if quantity is 1
-        return prevCart.filter(cartItem => cartItem.id !== item.id);
+        return prevCart.filter(item => item.cartItemId !== cartItemId);
       } else {
-        // Decrement quantity
-        return prevCart.map(cartItem =>
-          cartItem.id === item.id ? { ...cartItem, quantity: cartItem.quantity - 1 } : cartItem
+        return prevCart.map(item =>
+          item.cartItemId === cartItemId ? { ...item, quantity: item.quantity - 1 } : item
         );
       }
     });
   };
 
-  const handleRemoveFromCart = (itemId) => {
-    setCart(prevCart => prevCart.filter(item => item.id !== itemId));
+  const handleRemoveFromCart = (cartItemId) => {
+    setCart(prevCart => prevCart.filter(item => item.cartItemId !== cartItemId));
   };
 
-  const handleUpdateQuantity = (itemId, quantity) => {
-    if (quantity < 0) {
-      return;
-    }
+  const handleUpdateQuantity = (cartItemId, quantity) => {
+    if (quantity < 0) return;
+
+    setCart(prevCart => {
+      const cartItem = prevCart.find(item => item.cartItemId === cartItemId);
+      const menuItem = menuItems.find(item => item.id === cartItem.id); // Original menu item for stock check
+
+      if (!ignoreStock && menuItem && quantity > menuItem.stock) {
+        console.warn(`Not enough stock for ${menuItem.name}. Available: ${menuItem.stock}`);
+        return prevCart.map(item => (item.cartItemId === cartItemId ? { ...item, quantity: menuItem.stock } : item));
+      } else if (quantity === 0) {
+        return prevCart.filter(item => item.cartItemId !== cartItemId);
+      } else {
+        return prevCart.map(item => (item.cartItemId === cartItemId ? { ...item, quantity } : item));
+      }
+    });
+  };
   
-    const menuItem = menuItems.find(item => item.id === itemId);
-    if (!ignoreStock && menuItem && quantity > menuItem.stock) {
-      // Optionally, show an error message
-      console.warn(`Not enough stock for ${menuItem.name}. Available: ${menuItem.stock}`);
-      // You might want to cap the quantity to the available stock
-      setCart(prevCart =>
-        prevCart.map(item => (item.id === itemId ? { ...item, quantity: menuItem.stock } : item))
-      );
-    } else {
-      setCart(prevCart =>
-        prevCart.map(item => (item.id === itemId ? { ...item, quantity } : item))
-      );
-    }
-  };
-
-  const handleClearCart = () => {
-    setCart([]);
-  };
+  const handleClearCart = () => setCart([]);
 
   const handleProcessPayment = async (paymentData) => {
     setIsLoading(true);
+
+    const transactionItems = cart.map(item => ({
+      id: item.id,
+      name: item.name,
+      quantity: item.quantity,
+      price: item.finalPrice, // Use the final price per item
+      basePrice: item.basePrice, // Include basePrice for receipt display
+      discount: item.discount,   // Include discount for receipt display
+      options: item.selectedOptions.map(opt => ({ name: opt.name, price_adjustment: opt.price_adjustment }))
+    }));
     
     const transaction = {
-      items: cart,
+      items: transactionItems,
       total: paymentData.total,
       ppn: paymentData.ppn,
-      isEmployeeMeal: isEmployeeMeal,
+      isEmployeeMeal,
       payment_method: paymentMethod,
-      ignoreStock: ignoreStock,
+      ignoreStock,
       cashPaid: paymentData.cashPaid,
       change: paymentData.change,
       manual_discount: paymentData.manual_discount,
@@ -188,19 +187,15 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
     try {
       const response = await authFetch(`${apiUrl}/api/transactions/`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(transaction),
       });
 
       const result = await response.json();
-
       if (result.message === 'success') {
-        console.log('Transaction saved successfully');
         setCart([]);
         setIsEmployeeMeal(false);
-        fetchMenuItems(); // Re-fetch menu items for updated stock
+        fetchMenuItems();
         navigate('/receipt', { state: { transaction: result.data } });
       } else {
         console.error('Failed to save transaction:', result.error);
@@ -212,30 +207,24 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
     }
   };
 
-  const handleToggleSidebar = () => {
-    setSidebarOpen(prev => !prev);
-  };
-
   return (
     <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
       {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
       <div className={`${theme === 'default' ? 'pt-16' : ''}`}>
         <div className={`max-w-7xl mx-auto ${theme === 'default' ? 'px-4' : ''} lg:px-6 space-y-6 py-4 pb-20`}>
           <BreadcrumbNavigation />
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">Transaksi Penjualan</h1>
-              <p className="text-text-secondary mt-1">
-                Proses transaksi penjualan dengan cepat dan efisien.
-              </p>
-            </div>
+          <div>
+            <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">Transaksi Penjualan</h1>
+            <p className="text-text-secondary mt-1">
+              Proses transaksi penjualan dengan cepat dan efisien.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <SalesForm 
                 menuItems={menuItems} 
-                onIncrementItem={handleIncrementItem} 
+                onIncrementItem={handleItemClick} // Use the new handler
                 onDecrementItem={handleDecrementItem} 
                 cart={cart} 
                 userRole={userRole} 
@@ -263,6 +252,12 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
           </div>
         </div>
       </div>
+      <OptionSelectionModal
+        isOpen={isOptionsModalOpen}
+        onClose={() => setIsOptionsModalOpen(false)}
+        item={selectedItemForOptions}
+        onAddToCartWithOptions={addItemToCart}
+      />
     </div>
   );
 };

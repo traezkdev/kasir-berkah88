@@ -1186,7 +1186,7 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
         // Backend calculation for reference or fallback
         let calculatedSubtotal = 0;
         const itemsWithDiscount = items.map(item => {
-            const discountedPrice = item.price * (1 - (item.discount || 0));
+            const discountedPrice = item.price; // item.price is already the final price after item-level discount from frontend
             calculatedSubtotal += discountedPrice * item.quantity;
             return { ...item, price: discountedPrice };
         });
