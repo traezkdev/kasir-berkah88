@@ -141,7 +141,7 @@ const OwnerNavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTit
                   <Icon name={item?.icon} size={18} />
                   <span>{item?.label}</span>
                   {item.path === '/critical-stock' && lowStockCount > 0 && (
-                     <span className="absolute top-1 right-1 block h-4 w-4 transform -translate-y-1/2 translate-x-1/2 rounded-full bg-red-600 text-white text-xs flex items-center justify-center">
+                     <span className="absolute top-1 right-1 h-4 w-4 transform -translate-y-1/2 translate-x-1/2 rounded-full bg-red-600 text-white text-xs flex items-center justify-center">
                       {lowStockCount}
                     </span>
                   )}
@@ -185,7 +185,7 @@ const OwnerNavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTit
                   <Icon name={item?.icon} size={20} />
                   <span>{item?.label}</span>
                    {item.path === '/critical-stock' && lowStockCount > 0 && (
-                     <span className="absolute top-2 right-2 block h-4 w-4 rounded-full bg-red-600 text-white text-xs flex items-center justify-center">
+                     <span className="absolute top-2 right-2 h-4 w-4 rounded-full bg-red-600 text-white text-xs flex items-center justify-center">
                       {lowStockCount}
                     </span>
                   )}
@@ -239,7 +239,7 @@ const OwnerNavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTit
                           />
                           <span className="text-xs font-medium">{item?.label}</span>
                           {item.path === '/critical-stock' && lowStockCount > 0 && (
-                            <span className="absolute top-1 right-1 block h-3 w-3 rounded-full bg-red-600 border-2 border-card"></span>
+                            <span className="absolute top-1 right-1 h-3 w-3 rounded-full bg-red-600 border-2 border-card"></span>
                           )}
                         </Link>
                       )
