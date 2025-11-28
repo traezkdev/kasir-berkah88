@@ -26,14 +26,16 @@ const OwnerDashboard = ({ headerTitle }) => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [allTransRes, menuRes, expenseRes, ownerAccountRes, lapakAccountRes, rawMaterialsRes, criticalItemsRes] = await Promise.all([
+                const [allTransRes, menuRes, expenseRes, ownerAccountRes, lapakAccountRes, rawMaterialsRes, criticalItemsRes, allSettingsRes, allMenuItemsRes] = await Promise.all([
                     authFetch(`${apiUrl}/api/transactions/all`),
                     authFetch(`${apiUrl}/api/menu-items/all`),
                     authFetch(`${apiUrl}/api/expenses/all`),
                     authFetch(`${apiUrl}/api/accounts/owner_deposit`),
                     authFetch(`${apiUrl}/api/accounts/lapak_deposit`),
                     authFetch(`${apiUrl}/api/raw-materials`),
-                    authFetch(`${apiUrl}/api/stock-alerts/count`)
+                    authFetch(`${apiUrl}/api/stock-alerts/count`),
+                    authFetch(`${apiUrl}/api/all-settings`),
+                    authFetch(`${apiUrl}/api/menu-items/all`) // Fetch all menu items
                 ]);
 
                 const allTransactions = allTransRes.ok ? (await allTransRes.json()).data : [];
@@ -43,8 +45,10 @@ const OwnerDashboard = ({ headerTitle }) => {
                 const lapakAccountData = lapakAccountRes.ok ? (await lapakAccountRes.json()).data : { account: { balance: 0 } };
                 const rawMaterials = rawMaterialsRes.ok ? (await rawMaterialsRes.json()).data : [];
                 const criticalItemsCount = criticalItemsRes.ok ? (await criticalItemsRes.json()).data.low_stock_count : 0;
+                const allSettings = allSettingsRes.ok ? (await allSettingsRes.json()).data : {};
+                const allMenuItems = allMenuItemsRes.ok ? (await allMenuItemsRes.json()).data : []; // Get all menu items data
 
-                processDashboardData(allTransactions, menuItems, expenses, ownerAccountData, lapakAccountData, rawMaterials, criticalItemsCount);
+                processDashboardData(allTransactions, menuItems, expenses, ownerAccountData, lapakAccountData, rawMaterials, criticalItemsCount, allSettings, allMenuItems);
 
             } catch (error) {
                 console.error("Error fetching dashboard data:", error);
@@ -55,7 +59,7 @@ const OwnerDashboard = ({ headerTitle }) => {
         fetchData();
     }, []);
 
-    const processDashboardData = (allTransactions, menuItems, expenses, ownerAccountData, lapakAccountData, rawMaterials, criticalItemsCount) => {
+    const processDashboardData = (allTransactions, menuItems, expenses, ownerAccountData, lapakAccountData, rawMaterials, criticalItemsCount, allSettings, allMenuItems) => {
         const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
         const currentMonth = today.getMonth();
         const currentYear = today.getFullYear();
@@ -65,7 +69,7 @@ const OwnerDashboard = ({ headerTitle }) => {
             return transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear;
         });
 
-        const totalRevenue = monthlyTransactions
+        const totalMonthlyRevenue = monthlyTransactions
             .filter(t => t.payment_method !== 'Makan Karyawan')
             .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
 
@@ -73,21 +77,36 @@ const OwnerDashboard = ({ headerTitle }) => {
             const expenseDate = new Date(e.date);
             return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
         });
-
-        const totalExpenses = monthlyExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
         
+        const totalMonthlyExpenses = monthlyExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+
         const rawMaterialStockValue = rawMaterials.reduce((sum, m) => sum + (parseInt(m.current_stock || 0) * parseFloat(m.price_per_item || 0)), 0);
         
-        const netProfit = totalRevenue - totalExpenses;
+        const monthlyNetProfit = totalMonthlyRevenue - totalMonthlyExpenses;
+
+        // Lifetime calculations
+        const initialCapital = parseFloat(allSettings.initial_capital || 0);
+        const totalLifetimeRevenue = allTransactions
+            .filter(t => t.payment_method !== 'Makan Karyawan')
+            .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+        const totalLifetimeExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+        const currentFinalCapital = initialCapital + totalLifetimeRevenue - totalLifetimeExpenses;
+        
+        const totalMenuItemStockValue = allMenuItems.reduce((sum, item) => sum + (parseFloat(item.stock || 0) * parseFloat(item.price || 0)), 0);
+        const runningCapital = initialCapital + totalLifetimeRevenue + totalMenuItemStockValue + rawMaterialStockValue - totalLifetimeExpenses;
+
 
         setDashboardData({
             ownerBalance: ownerAccountData?.account?.balance || 0,
             lapakBalance: lapakAccountData?.account?.balance || 0,
-            monthlyRevenue: totalRevenue,
-            monthlyExpenses: totalExpenses,
-            monthlyNetProfit: netProfit,
+            monthlyRevenue: totalMonthlyRevenue,
+            monthlyExpenses: totalMonthlyExpenses,
+            monthlyNetProfit: monthlyNetProfit,
             rawMaterialStockValue: rawMaterialStockValue,
-            criticalItemsCount: criticalItemsCount
+            criticalItemsCount: criticalItemsCount,
+            currentFinalCapital: currentFinalCapital,
+            initialCapital: initialCapital,
+            runningCapital: runningCapital
         });
     };
 
@@ -103,6 +122,13 @@ const OwnerDashboard = ({ headerTitle }) => {
     }
 
     const ownerMetrics = [
+        {
+            title: 'Modal Awal',
+            value: formatCurrency(dashboardData.initialCapital),
+            icon: 'PiggyBank',
+            color: 'primary',
+            description: 'Jumlah modal awal yang disetor'
+        },
         {
             title: 'Saldo Owner',
             value: formatCurrency(dashboardData.ownerBalance),
@@ -137,6 +163,20 @@ const OwnerDashboard = ({ headerTitle }) => {
             icon: 'BarChart3',
             color: 'success',
             description: 'Pendapatan dikurangi pengeluaran bulan ini'
+        },
+        {
+            title: 'Modal Akhir Saat Ini',
+            value: formatCurrency(dashboardData.currentFinalCapital),
+            icon: 'TrendingUp',
+            color: 'success',
+            description: 'Modal awal + pendapatan - pengeluaran'
+        },
+        {
+            title: 'Modal Berjalan',
+            value: formatCurrency(dashboardData.runningCapital),
+            icon: 'Wallet',
+            color: 'info',
+            description: 'Modal awal + pendapatan + nilai stok + nilai stok mentah - pengeluaran'
         },
         {
             title: 'Nilai Stok Mentah',

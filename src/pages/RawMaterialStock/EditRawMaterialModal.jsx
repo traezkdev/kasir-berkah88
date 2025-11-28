@@ -112,26 +112,26 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">Edit Bahan Mentah: {material.name}</h2>
+      <div className="bg-card p-6 rounded-lg shadow-lg w-full max-w-md">
+        <h2 className="text-xl font-bold mb-4 text-foreground">Edit Bahan Mentah: {material.name}</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="name" className="block text-gray-700 text-sm font-bold mb-2">Nama Bahan</label>
+            <label htmlFor="name" className="block text-muted-foreground text-sm font-bold mb-2">Nama Bahan</label>
             <input
               type="text"
               id="name"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="appearance-none bg-input border-border rounded w-full py-2 px-3 text-foreground leading-tight focus:outline-none focus:ring-2 focus:ring-primary/50"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="currentStock" className="block text-gray-700 text-sm font-bold mb-2">Stok Saat Ini</label>
+            <label htmlFor="currentStock" className="block text-muted-foreground text-sm font-bold mb-2">Stok Saat Ini</label>
             <input
               type="number"
               id="currentStock"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="appearance-none bg-input border-border rounded w-full py-2 px-3 text-foreground leading-tight focus:outline-none focus:ring-2 focus:ring-primary/50"
               value={currentStock}
               onChange={(e) => setCurrentStock(e.target.value)}
               min="0"
@@ -139,33 +139,33 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="unit" className="block text-gray-700 text-sm font-bold mb-2">Satuan</label>
+            <label htmlFor="unit" className="block text-muted-foreground text-sm font-bold mb-2">Satuan</label>
             <input
               type="text"
               id="unit"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="appearance-none bg-input border-border rounded w-full py-2 px-3 text-foreground leading-tight focus:outline-none focus:ring-2 focus:ring-primary/50"
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
               required
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="customUnit" className="block text-gray-700 text-sm font-bold mb-2">Satuan (Untuk Tampilan, Contoh: potong, buah)</label>
+            <label htmlFor="customUnit" className="block text-muted-foreground text-sm font-bold mb-2">Satuan (Untuk Tampilan, Contoh: potong, buah)</label>
             <input
               type="text"
               id="customUnit"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="appearance-none bg-input border-border rounded w-full py-2 px-3 text-foreground leading-tight focus:outline-none focus:ring-2 focus:ring-primary/50"
               value={customUnit}
               onChange={(e) => setCustomUnit(e.target.value)}
               placeholder="Contoh: pcs, potong, buah"
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="stokMinimum" className="block text-gray-700 text-sm font-bold mb-2">Stok Minimum</label>
+            <label htmlFor="stokMinimum" className="block text-muted-foreground text-sm font-bold mb-2">Stok Minimum</label>
             <input
               type="number"
               id="stokMinimum"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="appearance-none bg-input border-border rounded w-full py-2 px-3 text-foreground leading-tight focus:outline-none focus:ring-2 focus:ring-primary/50"
               value={stokMinimum}
               onChange={(e) => setStokMinimum(e.target.value)}
               min="0"
@@ -173,11 +173,11 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="suggestionPurchaseQuantity" className="block text-gray-700 text-sm font-bold mb-2">Saran Kuantitas Pembelian</label>
+            <label htmlFor="suggestionPurchaseQuantity" className="block text-muted-foreground text-sm font-bold mb-2">Saran Kuantitas Pembelian</label>
             <input
               type="number"
               id="suggestionPurchaseQuantity"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="appearance-none bg-input border-border rounded w-full py-2 px-3 text-foreground leading-tight focus:outline-none focus:ring-2 focus:ring-primary/50"
               value={suggestionPurchaseQuantity}
               onChange={(e) => setSuggestionPurchaseQuantity(e.target.value)}
               min="0"
@@ -185,11 +185,11 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="pricePerItem" className="block text-gray-700 text-sm font-bold mb-2">Harga per Item</label>
+            <label htmlFor="pricePerItem" className="block text-muted-foreground text-sm font-bold mb-2">Harga per Item</label>
             <input
               type="number"
               id="pricePerItem"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="appearance-none bg-input border-border rounded w-full py-2 px-3 text-foreground leading-tight focus:outline-none focus:ring-2 focus:ring-primary/50"
               value={pricePerItem}
               onChange={(e) => setPricePerItem(e.target.value)}
               min="0"
@@ -198,11 +198,11 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="standardStockPerDay" className="block text-gray-700 text-sm font-bold mb-2">Stok Standar per Hari</label>
+            <label htmlFor="standardStockPerDay" className="block text-muted-foreground text-sm font-bold mb-2">Stok Standar per Hari</label>
             <input
               type="number"
               id="standardStockPerDay"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="appearance-none bg-input border-border rounded w-full py-2 px-3 text-foreground leading-tight focus:outline-none focus:ring-2 focus:ring-primary/50"
               value={standardStockPerDay}
               onChange={(e) => setStandardStockPerDay(e.target.value)}
               min="0"
@@ -214,14 +214,14 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
             <button
               type="button"
               onClick={onClose}
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded mr-2"
+              className="bg-muted hover:bg-muted-foreground text-muted-foreground font-bold py-2 px-4 rounded mr-2"
               disabled={loading}
             >
               Batal
             </button>
             <button
               type="submit"
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-2 px-4 rounded"
               disabled={loading}
             >
               {loading ? 'Memperbarui...' : 'Simpan Perubahan'}
