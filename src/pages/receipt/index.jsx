@@ -92,7 +92,7 @@ const ReceiptPage = () => {
 
   return (
     <>
-      <div className="bg-gray-100 dark:bg-gray-900 min-h-screen flex flex-col items-center justify-center p-4">
+      <div className="bg-background min-h-screen flex flex-col items-center justify-center p-4">
         <div id="receipt-container" className="relative bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col">
           <div ref={receiptRef} className="p-6 overflow-y-auto bg-white">
             <div className="text-center mb-6">
@@ -111,31 +111,24 @@ const ReceiptPage = () => {
             <div className="border-b border-dashed border-gray-400 mb-4"></div>
             <h3 className="font-semibold mb-2 text-gray-900">Detail Item:</h3>
             <div className="space-y-2">
-              {transaction.items.map((item) => {
-                // item.price is the discounted price per unit.
+              {transaction.items.map((item, index) => {
                 const discountedLinePrice = (Number(item.price) || 0) * (Number(item.quantity) || 0);
                 
-                // Calculate the original price for display purposes by reversing the discount.
-                const originalLinePrice = item.discount > 0 && (1 - Number(item.discount)) > 0
-                  ? discountedLinePrice / (1 - Number(item.discount))
-                  : discountedLinePrice;
-
                 return (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span className="text-gray-900">
-                      {item.name} <span className="text-gray-500">x{item.quantity}</span>
-                      {item.discount > 0 && (
-                        <span className="text-red-500 ml-2">({(item.discount * 100).toFixed(0)}% Diskon)</span>
-                      )}
-                    </span>
-                    <span className="text-gray-900">
-                      {item.discount > 0 && (
-                        <span className="line-through text-gray-500 mr-1">
-                          Rp {originalLinePrice.toLocaleString("id-ID")}
-                        </span>
-                      )}
-                      Rp {discountedLinePrice.toLocaleString("id-ID")}
-                    </span>
+                  <div key={index} className="text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-900">
+                        {item.name} <span className="text-gray-500">x{item.quantity}</span>
+                      </span>
+                      <span className="text-gray-900">
+                        Rp {discountedLinePrice.toLocaleString("id-ID")}
+                      </span>
+                    </div>
+                    {item.options && item.options.length > 0 && (
+                      <div className="pl-4 text-xs text-gray-500">
+                        {item.options.map(opt => `+ ${opt.name}`).join(', ')}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -187,7 +180,7 @@ const ReceiptPage = () => {
               <p>Terima kasih telah berbelanja!</p>
             </div>
           </div>
-          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-b-lg flex items-center justify-between print:hidden">
+          <div className="p-4 bg-muted/50 dark:bg-gray-900 rounded-b-lg flex items-center justify-between print:hidden">
             <Button variant="outline" onClick={() => navigate('/sales-transaction-processing')} className="flex items-center gap-2">
                 <ArrowLeft size={16} />
                 Kembali

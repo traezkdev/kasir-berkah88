@@ -76,21 +76,7 @@ const OrderSummary = ({
   }, []);
 
   const subtotal = cart.reduce((sum, cartItem) => {
-    const menuItem = menuItems.find(menu => menu.id === cartItem.id);
-    if (!menuItem) {
-      return sum; // Skip if menu item not found
-    }
-
-    const itemPrice = parseFloat(menuItem?.price || 0);
-    const itemQuantity = Number(cartItem?.quantity || 0);
-    const itemDiscount = parseFloat(menuItem?.discount || 0); // Get discount from menuItem
-
-    if (isNaN(itemPrice) || isNaN(itemQuantity) || isNaN(itemDiscount)) {
-        return sum; // Skip invalid items
-    }
-
-    const discountedPrice = itemPrice * (1 - itemDiscount);
-    return sum + (discountedPrice * itemQuantity);
+    return sum + (cartItem.finalPrice * cartItem.quantity);
   }, 0);
   const tax = subtotal * ppnRate;
   const calculatedTotal = subtotal + tax;
@@ -178,20 +164,27 @@ const OrderSummary = ({
       ) : (
         <div className="space-y-4">
           {cart.map(item => (
-            <div key={item.id} className="flex items-center justify-between">
+            <div key={item.cartItemId} className="flex items-start justify-between">
               <div>
                 <p className="font-semibold">{item.name}</p>
-                <p className="text-sm text-muted-foreground">Rp {item.price?.toLocaleString('id-ID')}</p>
+                {item.selectedOptions && item.selectedOptions.length > 0 && (
+                  <div className="text-xs text-muted-foreground pl-2">
+                    {item.selectedOptions.map(opt => (
+                      <p key={opt.id}>+ {opt.name}</p>
+                    ))}
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground">Rp {item.finalPrice?.toLocaleString('id-ID')}</p>
               </div>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
                   min="1"
                   value={item.quantity}
-                  onChange={(e) => onUpdateQuantity(item.id, parseInt(e.target.value, 10) || 0)}
+                  onChange={(e) => onUpdateQuantity(item.cartItemId, parseInt(e.target.value, 10) || 0)}
                   className="w-16 text-center border border-input rounded-md text-foreground bg-background"
                 />
-                <Button variant="ghost" size="icon" onClick={() => onRemoveFromCart(item.id)}>
+                <Button variant="ghost" size="icon" onClick={() => onRemoveFromCart(item.cartItemId)}>
                   <Icon name="Trash2" size={16} />
                 </Button>
               </div>

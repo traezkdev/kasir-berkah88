@@ -6,12 +6,16 @@ import { Plus, Minus, Star } from 'lucide-react';
 import Icon from '../../../components/AppIcon';
 
 const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl }) => {
-  const itemInCart = cart.find(cartItem => cartItem.id === item.id);
-  const quantityInCart = itemInCart ? itemInCart.quantity : 0;
-  const effectiveStock = item.stock - quantityInCart;
-
-  const isOutOfStock = item.stock === 0; // Base stock check for initial state
+  // Calculate the total quantity of this item across all its variations in the cart
+  const itemsInCart = cart.filter(cartItem => cartItem.id === item.id);
+  const quantityInCart = itemsInCart.reduce((sum, cartItem) => sum + cartItem.quantity, 0);
+  
   const canIncrement = item.stock > quantityInCart;
+  const isOutOfStock = item.stock === 0;
+
+  // For decrementing, we need to target a specific cart item.
+  // A reasonable default is to target the last variation of this item added to the cart.
+  const lastItemVariationInCart = itemsInCart.length > 0 ? itemsInCart[itemsInCart.length - 1] : null;
 
   return (
     <div className={cn(
@@ -47,7 +51,7 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl })
             <div className="flex items-center justify-center">
               <Button
                 variant="outline" size="icon" className="rounded-r-none h-9 w-9"
-                onClick={() => onDecrement(item)}
+                onClick={() => lastItemVariationInCart && onDecrement(lastItemVariationInCart.cartItemId)}
                 disabled={userRole === 'guest'}
               >
                 <Minus size={16} />
