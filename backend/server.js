@@ -483,62 +483,75 @@ app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'
         await connection.beginTransaction();
 
         let itemData;
-        let image_url = null;
+        let new_image_url = null;
 
+        // Handle multipart/form-data (with image) vs application/json (no image)
         if (req.file) {
             itemData = JSON.parse(req.body.data);
-            image_url = `/public/uploads/${req.file.filename}`;
+            new_image_url = `/public/uploads/${req.file.filename}`;
         } else {
             itemData = req.body;
         }
 
-        const { name, price, stock, category, hpp, discount, is_featured, options } = itemData;
+        // Dynamically build the update query
+        const updateFields = {};
+        const params = [];
 
-        // Fetch current item to get old image_url if a new one is uploaded
-        const [currentRows] = await connection.query('SELECT image_url FROM menu_items WHERE id = ?', [id]);
-        let old_image_url = null;
-        if (currentRows.length > 0) {
-            old_image_url = currentRows[0].image_url;
+        // List of allowed fields to update
+        const allowedFields = ['name', 'price', 'stock', 'category', 'hpp', 'discount', 'is_featured'];
+
+        allowedFields.forEach(field => {
+            if (itemData[field] !== undefined) {
+                // Special handling for boolean
+                if (field === 'is_featured') {
+                    updateFields[field] = itemData[field] ? 1 : 0;
+                } else {
+                    updateFields[field] = itemData[field];
+                }
+            }
+        });
+        
+        // Handle image update separately
+        if (new_image_url) {
+            const [currentRows] = await connection.query('SELECT image_url FROM menu_items WHERE id = ?', [id]);
+            if (currentRows.length > 0 && currentRows[0].image_url) {
+                const oldImagePath = path.join(__dirname, currentRows[0].image_url);
+                if (fs.existsSync(oldImagePath)) {
+                    fs.unlinkSync(oldImagePath);
+                }
+            }
+            updateFields.image_url = new_image_url;
         }
 
-        if (req.file && old_image_url) {
-            const oldImagePath = path.join(__dirname, old_image_url);
-            if (fs.existsSync(oldImagePath)) {
-                fs.unlinkSync(oldImagePath);
+        if (Object.keys(updateFields).length > 0) {
+            const setClauses = Object.keys(updateFields).map(key => `${key} = ?`).join(', ');
+            const queryParams = [...Object.values(updateFields), id];
+            const menuItemSql = `UPDATE menu_items SET ${setClauses} WHERE id = ?`;
+            
+            const [result] = await connection.query(menuItemSql, queryParams);
+            if (result.affectedRows === 0) {
+                await connection.rollback();
+                return res.status(404).json({ "error": "Menu item not found" });
             }
         }
-        
-        const final_is_featured = is_featured ? 1 : 0;
-        const final_image_url = image_url !== null ? image_url : old_image_url;
 
-        const menuItemSql = `UPDATE menu_items SET
-           name = ?, price = ?, stock = ?, category = ?, image_url = ?,
-           hpp = ?, discount = ?, is_featured = ?
-           WHERE id = ?`;
-        const menuItemParams = [name, price, stock, category, final_image_url, hpp, discount, final_is_featured, id];
-        const [result] = await connection.query(menuItemSql, menuItemParams);
-
-        if (result.affectedRows === 0) {
-            await connection.rollback();
-            return res.status(404).json({ "error": "Menu item not found" });
-        }
-
-        // Delete old options
-        await connection.query('DELETE FROM menu_item_options WHERE menu_item_id = ?', [id]);
-
-        // Add new options if they exist
-        if (options && Array.isArray(options) && options.length > 0) {
-            const optionSql = 'INSERT INTO menu_item_options (menu_item_id, name, price_adjustment) VALUES ?';
-            const optionValues = options.map(opt => [id, opt.name, opt.price_adjustment || 0]);
-            await connection.query(optionSql, [optionValues]);
+        // Handle options update (delete and re-insert)
+        if (itemData.options && Array.isArray(itemData.options)) {
+            // Delete old options
+            await connection.query('DELETE FROM menu_item_options WHERE menu_item_id = ?', [id]);
+            // Add new options if they exist
+            if (itemData.options.length > 0) {
+                const optionSql = 'INSERT INTO menu_item_options (menu_item_id, name, price_adjustment) VALUES ?';
+                const optionValues = itemData.options.map(opt => [id, opt.name, opt.price_adjustment || 0]);
+                await connection.query(optionSql, [optionValues]);
+            }
         }
 
         await connection.commit();
 
         res.json({
             "message": "success",
-            "data": { id, ...itemData, image_url: final_image_url },
-            "changes": result.affectedRows
+            "data": { id, ...itemData },
         });
     } catch (err) {
         if (connection) {
