@@ -41,7 +41,20 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl })
       </div>
       <div className="p-4 flex flex-col flex-grow">
         <h3 className="text-md font-semibold text-text-primary flex-grow min-h-[40px]">{item.name}</h3>
-        <p className="text-sm text-text-secondary">Rp {item.price?.toLocaleString('id-ID')}</p>
+        <div className="min-h-[36px]">
+          {item.discount > 0 ? (
+            <>
+              <p className="text-xs text-gray-500 line-through">
+                Rp {item.price?.toLocaleString('id-ID')}
+              </p>
+              <p className="text-sm font-semibold text-red-600">
+                Rp {(item.price * (1 - item.discount)).toLocaleString('id-ID')}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-text-secondary">Rp {item.price?.toLocaleString('id-ID')}</p>
+          )}
+        </div>
         <p className="text-xs text-text-secondary mt-1">Stok: {item.stock}</p>
         
         <div className="mt-4">

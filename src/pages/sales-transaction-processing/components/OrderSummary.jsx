@@ -78,28 +78,46 @@ const OrderSummary = ({
   const subtotal = cart.reduce((sum, cartItem) => {
     return sum + (cartItem.finalPrice * cartItem.quantity);
   }, 0);
-  const tax = subtotal * ppnRate;
-  const calculatedTotal = subtotal + tax;
+
+  // This effect calculates the manual discount when the total is overridden by the user
+  useEffect(() => {
+    // When cart changes, manual override is cancelled, which will trigger the 'else' block here
+    if (isTotalOverridden && customTotal !== null) {
+      // Reverse calculate the discount from the final total
+      // customTotal = (subtotal - manualDiscount) * (1 + ppnRate)
+      // => manualDiscount = subtotal - (customTotal / (1 + ppnRate))
+      const derivedDiscount = subtotal - (customTotal / (1 + ppnRate));
+      // Only set the discount if it's a positive value (a real discount)
+      // and if the value is different, to avoid infinite loops.
+      if (derivedDiscount > 0 && manualDiscount.toFixed(2) !== derivedDiscount.toFixed(2)) {
+         setManualDiscount(derivedDiscount);
+      } else if (derivedDiscount <= 0 && manualDiscount !== 0) {
+         setManualDiscount(0);
+      }
+    } else {
+       if (manualDiscount !== 0) {
+        // If there's no override, reset the discount from this source
+        setManualDiscount(0);
+       }
+    }
+  }, [isTotalOverridden, customTotal, subtotal, ppnRate, manualDiscount]);
+
+  // All calculations are now based on subtotal and the stateful manualDiscount
+  const subtotalAfterDiscount = subtotal - manualDiscount;
+  const tax = subtotalAfterDiscount > 0 ? subtotalAfterDiscount * ppnRate : 0;
+  const calculatedTotal = subtotalAfterDiscount + tax;
 
   useEffect(() => {
-    // Setiap kali item di keranjang berubah, override manual dibatalkan
+    // When the cart changes, cancel any manual total override
     setIsTotalOverridden(false);
   }, [cart]);
 
   useEffect(() => {
-    // Jika total tidak di-override secara manual, maka ikuti nilai kalkulasi.
+    // When not manually overridden, the displayed total should follow the calculation
     if (!isTotalOverridden) {
       setCustomTotal(calculatedTotal);
     }
   }, [calculatedTotal, isTotalOverridden]);
-
-  useEffect(() => {
-    if (isTotalOverridden && calculatedTotal > customTotal) {
-      setManualDiscount(calculatedTotal - customTotal);
-    } else {
-      setManualDiscount(0);
-    }
-  }, [isTotalOverridden, calculatedTotal, customTotal]);
 
   const paymentMethodOptions = [
     { value: 'Tunai', label: 'Tunai' },
@@ -337,7 +355,7 @@ const OrderSummary = ({
             <Button 
               onClick={() => onProcessPayment({ 
                 total: customTotal, 
-                ppn: ppnRate,
+                ppn: tax,
                 cashPaid: paymentMethod === 'Tunai' ? parseFloat(cashPaid) || 0 : 0,
                 change: paymentMethod === 'Tunai' ? change : 0,
                 manual_discount: manualDiscount,

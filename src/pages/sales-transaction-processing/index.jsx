@@ -80,7 +80,8 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       const existingItem = prevCart.find(cartItem => cartItem.cartItemId === cartItemId);
       
       const optionPriceAdjustment = selectedOptions.reduce((sum, opt) => sum + (opt.price_adjustment || 0), 0);
-      const finalPrice = parseFloat(item.price) + optionPriceAdjustment;
+      const priceAfterDiscount = item.discount > 0 ? parseFloat(item.price) * (1 - item.discount) : parseFloat(item.price);
+      const finalPrice = priceAfterDiscount + optionPriceAdjustment;
 
       if (existingItem) {
         // Increment quantity if item with same options exists
@@ -166,6 +167,8 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       name: item.name,
       quantity: item.quantity,
       price: item.finalPrice, // Use the final price per item
+      basePrice: item.basePrice, // Include basePrice for receipt display
+      discount: item.discount,   // Include discount for receipt display
       options: item.selectedOptions.map(opt => ({ name: opt.name, price_adjustment: opt.price_adjustment }))
     }));
     

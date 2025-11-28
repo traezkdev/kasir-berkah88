@@ -87,8 +87,21 @@ const ReceiptPage = () => {
 
   const ppnAmount = Number(transaction.ppn) || 0;
   const manualDiscountAmount = Number(transaction.manual_discount) || 0;
-  // Subtotal is derived by taking the final total, removing tax, and adding back the discount.
-  const subtotalAmount = Number(transaction.total) - ppnAmount + manualDiscountAmount;
+
+  // Calculate subtotal based on original prices (basePrice + options) for all items
+  const subtotalBeforeAllDiscounts = transaction.items.reduce((sum, item) => {
+    const originalBasePrice = Number(item.basePrice) || 0;
+    const optionAdjustment = item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0);
+    const pricePerUnitBeforeDiscount = originalBasePrice + optionAdjustment; // Price per unit before any discount
+    return sum + (pricePerUnitBeforeDiscount * (Number(item.quantity) || 0));
+  }, 0);
+
+  // Subtotal after item-level discounts, before manual discount and PPN
+  const subtotalAfterItemDiscounts = transaction.items.reduce((sum, item) => {
+    const pricePerUnitAfterDiscount = Number(item.price) || 0; // item.price is already finalPrice (after item discount & options)
+    return sum + (pricePerUnitAfterDiscount * (Number(item.quantity) || 0));
+  }, 0);
+
 
   return (
     <>
@@ -112,16 +125,32 @@ const ReceiptPage = () => {
             <h3 className="font-semibold mb-2 text-gray-900">Detail Item:</h3>
             <div className="space-y-2">
               {transaction.items.map((item, index) => {
-                const discountedLinePrice = (Number(item.price) || 0) * (Number(item.quantity) || 0);
-                
+                // item.price here is the final price per unit (after options and discount)
+                const pricePerUnitAfterDiscount = Number(item.price) || 0;
+                const lineTotalAfterDiscount = pricePerUnitAfterDiscount * (Number(item.quantity) || 0);
+            
+                // Calculate original price per unit including options but before discount
+                const originalBasePrice = Number(item.basePrice) || 0;
+                const optionAdjustment = item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0);
+                const originalPricePerUnitBeforeDiscount = originalBasePrice + optionAdjustment;
+                const lineTotalBeforeDiscount = originalPricePerUnitBeforeDiscount * (Number(item.quantity) || 0);
+
                 return (
                   <div key={index} className="text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-900">
                         {item.name} <span className="text-gray-500">x{item.quantity}</span>
                       </span>
-                      <span className="text-gray-900">
-                        Rp {discountedLinePrice.toLocaleString("id-ID")}
+                      {item.discount > 0 && (
+                        <span className="text-red-500 ml-2">({(item.discount * 100).toFixed(0)}% Diskon)</span>
+                      )}
+                      <span className="text-gray-900 flex items-baseline gap-2 justify-end">
+                        {item.discount > 0 && (
+                            <span className="line-through text-gray-500 text-xs">
+                                Rp {lineTotalBeforeDiscount.toLocaleString("id-ID")}
+                            </span>
+                        )}
+                        <span>Rp {lineTotalAfterDiscount.toLocaleString("id-ID")}</span>
                       </span>
                     </div>
                     {item.options && item.options.length > 0 && (
@@ -136,8 +165,14 @@ const ReceiptPage = () => {
             <div className="border-b border-dashed border-gray-400 my-4"></div>
             <div className="flex justify-between font-semibold text-sm mb-2">
               <span className="text-gray-900">Subtotal:</span>
-              <span className="text-gray-900">Rp {Number(subtotalAmount).toLocaleString("id-ID")}</span>
+              <span className="text-gray-900">Rp {Number(subtotalBeforeAllDiscounts).toLocaleString("id-ID")}</span>
             </div>
+            {subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts > 0 && (
+              <div className="flex justify-between font-semibold text-sm mb-2 text-red-500"> {/* Diskon biasanya merah */}
+                <span className="text-gray-900">Diskon Item:</span>
+                <span className="text-gray-900">- Rp {(subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts).toLocaleString("id-ID")}</span>
+              </div>
+            )}
             {ppnAmount > 0 && (
               <div className="flex justify-between font-semibold text-sm mb-2">
                 <span className="text-gray-900">PPN:</span>
@@ -146,13 +181,13 @@ const ReceiptPage = () => {
             )}
             {manualDiscountAmount > 0 && (
               <div className="flex justify-between font-semibold text-sm mb-2 text-red-500">
-                <span className="text-red-500">Diskon:</span>
+                <span className="text-red-500">Diskon Manual:</span> {/* Ubah menjadi Diskon Manual */}
                 <span className="text-red-500">- Rp {manualDiscountAmount.toLocaleString("id-ID")}</span>
               </div>
             )}
             <div className="flex justify-between font-semibold">
               <span className="text-lg text-gray-900">TOTAL:</span>
-              <span className="text-lg text-black">Rp {Number(transaction.total).toLocaleString("id-ID")}</span>
+              <span className="text-lg text-gray-900">Rp {Number(transaction.total).toLocaleString("id-ID")}</span>
             </div>
             <div className="border-b border-dashed border-gray-400 my-4"></div>
             
