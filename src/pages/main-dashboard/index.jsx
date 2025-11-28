@@ -239,7 +239,7 @@ const MainDashboard = ({ headerTitle }) => {
       const stockValue = totalMenuStockValue; // Only menu stock value
 
       if (!isNaN(initialCapital)) {
-          workingCapital = initialCapital + allTimeRevenue + totalMenuStockValue - allTimeExpenses;
+          workingCapital = initialCapital + allTimeRevenue + totalMenuStockValue + rawMaterialStockValue - allTimeExpenses;
       }
   
       // --- Monthly Metrics for Dashboard ---
@@ -445,7 +445,7 @@ const MainDashboard = ({ headerTitle }) => {
       value: formatCurrency(dashboardData.metrics.workingCapital),
       icon: 'Wallet',
       color: 'info',
-      description: 'Modal awal + pendapatan + nilai stok - pengeluaran'
+      description: 'Modal awal + pendapatan + nilai stok + nilai stok mentah - pengeluaran'
     },
     {
       title: 'Pendapatan',
