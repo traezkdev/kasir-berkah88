@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
-import DateRangePicker from '../../../components/ui/DateRangePicker'; // Akan dibuat
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 
 const BulkActions = ({ 
@@ -240,15 +239,10 @@ const BulkActions = ({
                   <span className="text-foreground">Per Tanggal</span>
                 </label>
                 {exportOption === 'byDate' && (
-                  <DateRangePicker
-                    selected={customDateRange.startDate}
-                    onSelect={(date) => setCustomDateRange({ startDate: date, endDate: date })}
-                    showTimeSelect={false}
-                    dateFormat="dd/MM/yyyy"
-                    placeholderText="Pilih Tanggal"
-                    selectsStart
-                    startDate={customDateRange.startDate}
-                    endDate={customDateRange.startDate}
+                  <Input
+                    type="date"
+                    value={customDateRange.startDate ? format(customDateRange.startDate, 'yyyy-MM-dd') : ''}
+                    onChange={(e) => setCustomDateRange({ startDate: e.target.value ? new Date(e.target.value) : null, endDate: e.target.value ? new Date(e.target.value) : null })}
                     className="mt-2 w-full"
                   />
                 )}
@@ -293,27 +287,16 @@ const BulkActions = ({
                 </label>
                 {exportOption === 'custom' && (
                   <div className="flex flex-col sm:flex-row gap-2 mt-2">
-                    <DateRangePicker
-                      selected={customDateRange.startDate}
-                      onChange={(date) => setCustomDateRange(prev => ({ ...prev, startDate: date }))}
-                      showTimeSelect={false}
-                      dateFormat="dd/MM/yyyy"
-                      placeholderText="Mulai Tanggal"
-                      selectsStart
-                      startDate={customDateRange.startDate}
-                      endDate={customDateRange.endDate}
+                    <Input
+                      type="date"
+                      value={customDateRange.startDate ? format(customDateRange.startDate, 'yyyy-MM-dd') : ''}
+                      onChange={(e) => setCustomDateRange(prev => ({ ...prev, startDate: e.target.value ? new Date(e.target.value) : null }))}
                       className="w-full"
                     />
-                    <DateRangePicker
-                      selected={customDateRange.endDate}
-                      onChange={(date) => setCustomDateRange(prev => ({ ...prev, endDate: date }))}
-                      showTimeSelect={false}
-                      dateFormat="dd/MM/yyyy"
-                      placeholderText="Sampai Tanggal"
-                      selectsEnd
-                      startDate={customDateRange.startDate}
-                      endDate={customDateRange.endDate}
-                      minDate={customDateRange.startDate}
+                    <Input
+                      type="date"
+                      value={customDateRange.endDate ? format(customDateRange.endDate, 'yyyy-MM-dd') : ''}
+                      onChange={(e) => setCustomDateRange(prev => ({ ...prev, endDate: e.target.value ? new Date(e.target.value) : null }))}
                       className="w-full"
                     />
                   </div>
