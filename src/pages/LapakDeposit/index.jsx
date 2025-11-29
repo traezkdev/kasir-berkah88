@@ -26,6 +26,8 @@ const LapakDeposit = ({ headerTitle }) => {
     const [transactionToEdit, setTransactionToEdit] = useState(null);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [transactionToDelete, setTransactionToDelete] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(20);
 
     const { showToast } = useToast(); // <--- Panggil useToast
 
@@ -236,34 +238,57 @@ const LapakDeposit = ({ headerTitle }) => {
                     <div className="bg-card p-4 rounded-md shadow">
                         <h2 className="text-xl font-semibold text-text-primary mb-4">Riwayat Transaksi Lapak</h2>
                         {lapakAccount?.transactions?.length > 0 ? (
-                            <ul className="divide-y divide-border">
-                                {lapakAccount.transactions.map((transaction) => (
-                                    <li key={transaction.id} className="py-3 flex justify-between items-center">
-                                        <div>
-                                            <p className="text-text-primary font-medium">
-                                                {transaction.type === 'deposit' ? 'Deposit masuk' : 'Pengeluaran'}
-                                            </p>
-                                            <p className="text-sm text-text-secondary">
-                                                {transaction.description || 'Tidak ada deskripsi'}
-                                            </p>
-                                            <p className="text-xs text-text-tertiary">
-                                                {new Date(transaction.created_at).toLocaleString()} oleh {transaction.created_by_username}
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center gap-2"> {/* Container for amount and buttons */}
-                                            <p className={`font-semibold ${transaction.type === 'deposit' ? 'text-success' : 'text-destructive'}`}>
-                                                {transaction.type === 'deposit' ? '+' : '-'} {formatCurrency(transaction.amount)}
-                                            </p>
-                                            <Button variant="ghost" size="icon" onClick={() => handleEditClick(transaction)}>
-                                                <Icon name="Edit" className="h-4 w-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(transaction)}>
-                                                <Icon name="Trash2" className="h-4 w-4 text-destructive" />
-                                            </Button>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
+                            <>
+                                <ul className="divide-y divide-border">
+                                    {lapakAccount.transactions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((transaction) => (
+                                        <li key={transaction.id} className="py-3 flex justify-between items-center">
+                                            <div>
+                                                <p className="text-text-primary font-medium">
+                                                    {transaction.type === 'deposit' ? 'Deposit masuk' : 'Pengeluaran'}
+                                                </p>
+                                                <p className="text-sm text-text-secondary">
+                                                    {transaction.description || 'Tidak ada deskripsi'}
+                                                </p>
+                                                <p className="text-xs text-text-tertiary">
+                                                    {new Date(transaction.created_at).toLocaleString()} oleh {transaction.created_by_username}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-2"> {/* Container for amount and buttons */}
+                                                <p className={`font-semibold ${transaction.type === 'deposit' ? 'text-success' : 'text-destructive'}`}>
+                                                    {transaction.type === 'deposit' ? '+' : '-'} {formatCurrency(transaction.amount)}
+                                                </p>
+                                                <Button variant="ghost" size="icon" onClick={() => handleEditClick(transaction)}>
+                                                    <Icon name="Edit" className="h-4 w-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(transaction)}>
+                                                    <Icon name="Trash2" className="h-4 w-4 text-destructive" />
+                                                </Button>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+
+                                {/* Pagination Controls */}
+                                <div className="flex justify-between items-center mt-4">
+                                    <Button
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        disabled={currentPage === 1}
+                                        variant="outline"
+                                    >
+                                        Sebelumnya
+                                    </Button>
+                                    <span className="text-text-secondary">
+                                        Halaman {currentPage} dari {Math.ceil(lapakAccount.transactions.length / itemsPerPage)}
+                                    </span>
+                                    <Button
+                                        onClick={() => setCurrentPage(prev => Math.min(Math.ceil(lapakAccount.transactions.length / itemsPerPage), prev + 1))}
+                                        disabled={currentPage === Math.ceil(lapakAccount.transactions.length / itemsPerPage)}
+                                        variant="outline"
+                                    >
+                                        Berikutnya
+                                    </Button>
+                                </div>
+                            </>
                         ) : (
                             <p className="text-text-secondary">Belum ada transaksi.</p>
                         )}
