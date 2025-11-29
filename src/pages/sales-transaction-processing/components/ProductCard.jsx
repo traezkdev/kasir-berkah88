@@ -5,7 +5,7 @@ import { cn } from '../../../utils/cn';
 import { Plus, Minus, Star } from 'lucide-react';
 import Icon from '../../../components/AppIcon';
 
-const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl }) => {
+const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl, ignoreStock }) => {
   // Calculate the total quantity of this item across all its variations in the cart
   const itemsInCart = cart.filter(cartItem => cartItem.id === item.id);
   const quantityInCart = itemsInCart.reduce((sum, cartItem) => sum + cartItem.quantity, 0);
@@ -19,8 +19,7 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl })
 
   return (
     <div className={cn(
-      "bg-card rounded-lg shadow-md overflow-hidden transform transition-transform duration-200",
-      isOutOfStock && quantityInCart === 0 ? "opacity-50 cursor-not-allowed" : "hover:scale-105"
+      "bg-card rounded-lg shadow-md overflow-hidden transform transition-transform duration-200 hover:scale-105" // Always allow hover/interaction
     )}>
       <div className="relative">
         <AppImage
@@ -58,9 +57,20 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl })
         <p className="text-xs text-text-secondary mt-1">Stok: {item.stock}</p>
         
         <div className="mt-4">
-          {isOutOfStock && quantityInCart === 0 ? (
-            <Button className="w-full" disabled>Stok Habis</Button>
-          ) : quantityInCart > 0 ? (
+          {isOutOfStock ? ( // If out of stock
+            ignoreStock ? ( // If ignoring stock
+              <Button 
+                size="sm" 
+                className="w-full" 
+                onClick={() => onIncrement(item)}
+                disabled={userRole === 'guest'} // Only disabled by role, not stock
+              >
+                Tambah
+              </Button>
+            ) : ( // Not ignoring stock
+              <Button className="w-full" disabled>Stok Habis</Button> // Show disabled "Stok Habis"
+            )
+          ) : quantityInCart > 0 ? ( // In stock, and already in cart
             <div className="flex items-center justify-center">
               <Button
                 variant="outline" size="icon" className="rounded-r-none h-9 w-9"
@@ -75,17 +85,17 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl })
               <Button
                 variant="outline" size="icon" className="rounded-l-none h-9 w-9"
                 onClick={() => onIncrement(item)}
-                disabled={!canIncrement || userRole === 'guest'}
+                disabled={!canIncrement || userRole === 'guest'} // Still respect stock limit if not ignoring
               >
                 <Plus size={16} />
               </Button>
             </div>
-          ) : (
+          ) : ( // In stock, not in cart yet
             <Button 
               size="sm" 
               className="w-full" 
               onClick={() => onIncrement(item)}
-              disabled={userRole === 'guest'}
+              disabled={userRole === 'guest'} // Stock is > 0, so only disabled by role
             >
               Tambah
             </Button>
