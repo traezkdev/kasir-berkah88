@@ -218,7 +218,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
 
         {/* --- Menu Options/Toppings --- */}
         <div className="md:col-span-2 pt-4">
-          <h3 className="text-lg font-medium text-foreground mb-2">Opsi / Topping Menu</h3>
+          <h3 className="text-sm font-medium text-foreground mb-2">Opsi / Topping Menu</h3>
           <div className="space-y-3">
             {formData.options.map((option, index) => (
               <div key={index} className="flex flex-wrap items-start gap-2 gap-y-2 p-2 border border-border rounded-md">

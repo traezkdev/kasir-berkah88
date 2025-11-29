@@ -551,6 +551,8 @@ const Settings = ({ headerTitle }) => {
               <SettingsCard icon="ToggleRight" title="Pendaftaran Pengguna" description="Izinkan atau blokir pengguna baru untuk mendaftar." onClick={() => setActiveModal('registration')} disabled={!isAdmin} />
               <SettingsCard icon="Share2" title="Tampilan Media Sosial" description="Atur judul, deskripsi, dan gambar untuk berbagi di media sosial." onClick={() => setActiveModal('socialShare')} disabled={!isAdmin} />
               <SettingsCard icon="Type" title="Judul Dasbor Kasir" description="Ubah judul yang ditampilkan di halaman dasbor kasir." onClick={() => setActiveModal('cashierDashboardTitle')} disabled={!isAdmin} />
+
+          <SettingsCard icon="ChartNoAxesColumnIncreasing" title="Laporan Transaksi Owner" description="Lihat laporan pendapatan dan pengeluaran bisnis owner." onClick={() => navigate('/admin-uang-bisnis')} />
               <SettingsCard
                 icon="Store"
                 title="Pengaturan Restoran"
@@ -564,6 +566,9 @@ const Settings = ({ headerTitle }) => {
               <SettingsCard icon="Wallet" title="Pengeluaran Lapak" description="Kelola uang masuk dan keluar untuk operasional lapak." onClick={() => navigate('/lapak-deposit')} disabled={!isAdmin && userRole !== 'user' && userRole !== 'kasir' && userRole !== 'owner'} />
               <SettingsCard icon="ClipboardCheck" title="Konfirmasi Pesanan" description="Akses halaman konfirmasi pesanan." onClick={() => navigate('/order-confirmation')} disabled={!isAdmin && userRole !== 'user' && userRole !== 'kasir'} />
               <SettingsCard icon="Package" title="Stok Bahan Baku" description="Kelola persediaan bahan baku produk Anda." onClick={() => navigate('/raw-material-stock')} disabled={!isAdmin} />
+
+
+
             </div>
           </div>
 
