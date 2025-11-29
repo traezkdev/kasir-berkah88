@@ -114,6 +114,13 @@ const Settings = () => {
     }
   }, []);
 
+  // Update document title when websiteTitle changes
+  useEffect(() => {
+    if (websiteTitle) {
+      document.title = websiteTitle;
+    }
+  }, [websiteTitle]);
+
   // --- Handlers ---
   const clearMessages = () => { setMessage(''); setError(''); };
   const handleModalClose = () => { setActiveModal(null); clearMessages(); setEditingEmployee(null); };
