@@ -8,6 +8,7 @@ import { FiPlus, FiMinus, FiTrash2, FiDollarSign, FiShoppingCart, FiXCircle, FiC
 import { toast } from 'react-hot-toast';
 import DarkModeToggle from '../../components/ui/DarkModeToggle';
 import ConfirmationModal from '../../components/ui/ConfirmationModal';
+import { Checkbox } from '../../components/ui/Checkbox';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -26,6 +27,7 @@ export default function CashierDashboard() {
   const [showMobileCart, setShowMobileCart] = useState(false); // State for mobile cart visibility
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [dashboardTitle, setDashboardTitle] = useState('Dasbor Kasir');
+  const [ignoreStock, setIgnoreStock] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem('token'); // Assuming token is stored in localStorage
@@ -130,7 +132,7 @@ export default function CashierDashboard() {
       }
 
       if (existingItem) {
-        if (existingItem.quantity + 1 > originalMenuItem.stock) {
+        if (!ignoreStock && existingItem.quantity + 1 > originalMenuItem.stock) {
           setTimeout(() => toast.error(`Stok ${item.name} tidak cukup! Tersedia: ${originalMenuItem.stock}`), 0);
           return prevCart;
         }
@@ -140,14 +142,14 @@ export default function CashierDashboard() {
             : cartItem
         );
       } else {
-        if (1 > originalMenuItem.stock) { // Check if adding 1 item exceeds original stock
+        if (!ignoreStock && 1 > originalMenuItem.stock) { // Check if adding 1 item exceeds original stock
           setTimeout(() => toast.error(`Stok ${item.name} tidak cukup! Tersedia: ${originalMenuItem.stock}`), 0);
           return prevCart;
         }
         return [...prevCart, { ...item, quantity: 1 }];
       }
     });
-  }, [setCart, menuItems]);
+  }, [setCart, menuItems, ignoreStock]);
 
   const updateCartQuantity = (itemId, newQuantity) => {
     setCart((prevCart) => {
@@ -160,7 +162,7 @@ export default function CashierDashboard() {
       if (newQuantity <= 0) {
         return prevCart.filter((item) => item.id !== itemId);
       } else {
-        if (newQuantity > originalMenuItem.stock) {
+        if (!ignoreStock && newQuantity > originalMenuItem.stock) {
           setTimeout(() => toast.error(`Stok ${itemToUpdate.name} tidak cukup! Tersedia: ${originalMenuItem.stock}`), 0);
           return prevCart;
         }
@@ -178,12 +180,22 @@ export default function CashierDashboard() {
     });
   };
 
+  const originalSubtotal = useMemo(() => {
+    return cart.reduce((sum, item) => {
+      return sum + item.price * item.quantity;
+    }, 0);
+  }, [cart]);
+
   const subtotal = useMemo(() => {
     return cart.reduce((sum, item) => {
       const discountedPrice = item.price * (1 - (item.discount || 0));
       return sum + discountedPrice * item.quantity;
     }, 0);
   }, [cart]);
+
+  const totalDiscountAmount = useMemo(() => {
+    return originalSubtotal - subtotal;
+  }, [originalSubtotal, subtotal]);
 
   const taxAmount = useMemo(() => {
     return subtotal * ppnRate;
@@ -254,7 +266,7 @@ export default function CashierDashboard() {
           cashPaid: paymentMethod === 'cash' ? cashPaid : totalAmount, // If not cash, assume full payment
           change: paymentMethod === 'cash' ? change : 0, // If not cash, change is 0
           paymentMethod: paymentMethod,
-          ignoreStock: false, // Assuming stock should be managed
+          ignoreStock: ignoreStock,
         }),
       });
 
@@ -324,20 +336,27 @@ export default function CashierDashboard() {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="mb-4"
           />
-          <div className="flex space-x-2 mb-4 overflow-x-auto pb-2">
-            <Button onClick={() => setFilterKategori('semua')} variant={filterKategori === 'semua' ? 'default' : 'outline'} className="flex-shrink-0">Semua</Button>
-            {kategoriOptions.map(kategori => (
-              <Button 
-                key={kategori} 
-                onClick={() => setFilterKategori(kategori)} 
-                variant={filterKategori === kategori ? 'default' : 'outline'}
-                className="flex-shrink-0 capitalize"
-              >
-                {kategori}
-              </Button>
-            ))}
-          </div>
-          {isLoading && <p>Memuat menu...</p>}
+                    <div className="flex space-x-2 mb-4 overflow-x-auto pb-2">
+                      <Button onClick={() => setFilterKategori('semua')} variant={filterKategori === 'semua' ? 'default' : 'outline'} className="flex-shrink-0">Semua</Button>
+                      {kategoriOptions.map(kategori => (
+                        <Button
+                          key={kategori}
+                          onClick={() => setFilterKategori(kategori)}
+                          variant={filterKategori === kategori ? 'default' : 'outline'}
+                          className="flex-shrink-0 capitalize"
+                        >
+                          {kategori}
+                        </Button>
+                      ))}
+                    </div>
+                    <div className="flex justify-end mb-4">
+                      <Checkbox
+                        id="ignore-stock"
+                        label="Abaikan Stok"
+                        checked={ignoreStock}
+                        onChange={(e) => setIgnoreStock(e.target.checked)}
+                      />
+                    </div>          {isLoading && <p>Memuat menu...</p>}
           {error && <p className="text-red-500">Error: {error}</p>}
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {filteredMenuItems.map((item) => {
@@ -348,11 +367,10 @@ export default function CashierDashboard() {
               return (
                 <div
                   key={item.id}
-                  className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 transition-shadow duration-200 relative 
-                    ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'} 
-                    ${isInCart ? 'border-2 border-green-500' : ''}`
-                  }
-                  onClick={() => currentAvailableStock > 0 && addToCart(item)}
+                                    className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 transition-shadow duration-200 relative
+                                      ${isOutOfStock && !ignoreStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'}
+                                      ${isInCart ? 'border-2 border-green-500' : ''}`
+                                    }                  onClick={() => (currentAvailableStock > 0 || ignoreStock) && addToCart(item)}
                 >
                   {isOutOfStock && (
                     <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">Stok Habis</div>
@@ -450,8 +468,14 @@ export default function CashierDashboard() {
           <div className="border-t dark:border-gray-700 pt-4 space-y-2">
             <div className="flex justify-between text-lg font-medium">
               <span>Subtotal:</span>
-              <span>Rp{subtotal.toLocaleString('id-ID')}</span>
+              <span>Rp{formatNumber(originalSubtotal)}</span>
             </div>
+            {totalDiscountAmount > 0 && (
+              <div className="flex justify-between text-lg font-medium text-red-500">
+                <span>Diskon Item:</span>
+                <span>- Rp{formatNumber(totalDiscountAmount)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-lg font-medium">
               <span>PPN ({ppnRate * 100}%):</span>
               <span>Rp{taxAmount.toLocaleString('id-ID')}</span>

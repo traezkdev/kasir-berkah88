@@ -37,7 +37,7 @@ import MainCriticalStockPage from './pages/MainCriticalStock';
 import AdminUangBisnis from './pages/AdminUangBisnis'; // Add this import
 
 // ProtectedRoute component
-const ProtectedRoute = ({ children, allowedRoles }) => {
+const ProtectedRoute = ({ children, allowedRoles, redirectPathForForbiddenRoles }) => {
   const token = localStorage.getItem('token');
   if (!token) {
     return <Navigate to="/login" replace />;
@@ -56,6 +56,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     }
 
     if (allowedRoles && !allowedRoles.includes(userRole)) {
+      if (redirectPathForForbiddenRoles) {
+        return <Navigate to={redirectPathForForbiddenRoles} replace />;
+      }
       return <Navigate to="*" replace />;
     }
   } catch (error) {
@@ -79,7 +82,7 @@ const AppRoutes = () => {
       {/* Admin Dashboard Routes */}
       <Route 
         element={
-          <ProtectedRoute allowedRoles={['admin', 'user']}>
+          <ProtectedRoute allowedRoles={['admin', 'user']} redirectPathForForbiddenRoles="/cashier-dashboard">
             <DynamicLayout />
           </ProtectedRoute>
         }

@@ -52,7 +52,7 @@ const SettingsCard = ({ icon, title, description, onClick, disabled = false }) =
 
 import { useTheme } from '../../contexts/ThemeContext';
 
-const Settings = ({ headerTitle }) => {
+const Settings = () => {
   const { theme, toggleTheme } = useTheme();
   // --- States ---
   const [websiteTitle, setWebsiteTitle] = useState('');
@@ -114,6 +114,13 @@ const Settings = ({ headerTitle }) => {
     }
   }, []);
 
+  // Update document title when websiteTitle changes
+  useEffect(() => {
+    if (websiteTitle) {
+      document.title = websiteTitle;
+    }
+  }, [websiteTitle]);
+
   // --- Handlers ---
   const clearMessages = () => { setMessage(''); setError(''); };
   const handleModalClose = () => { setActiveModal(null); clearMessages(); setEditingEmployee(null); };
@@ -149,7 +156,7 @@ const Settings = ({ headerTitle }) => {
       if (response.ok) {
         setWebsiteTitle(data.data.website_title || 'Kasir Berkah 88');
         setNewWebsiteTitle(data.data.website_title || 'Kasir Berkah 88');
-        setNewHeaderTitle(data.data.header_title || headerTitle || 'Kasir Berkah 88');
+        setNewHeaderTitle(data.data.header_title || 'Kasir Berkah 88');
         setRegistrationEnabled(data.data.registration_enabled === 'true');
         setWebDescription(data.data.web_description || '');
         setInitialCapital(data.data.initial_capital || '');
@@ -205,12 +212,12 @@ const Settings = ({ headerTitle }) => {
     setIsLoading(true);
 
     // Validation for title-related settings to prevent empty values
-    if (endpoint === '/api/settings/header-title' && (!body.title || body.title.trim() === '')) {
+    if (endpoint === '/api/settings/header_title' && (!body.value || body.value.trim() === '')) {
       setError('Judul header tidak boleh kosong');
       setIsLoading(false);
       return;
     }
-    if (endpoint === '/api/settings/title' && (!body.title || body.title.trim() === '')) {
+    if (endpoint === '/api/settings/website_title' && (!body.value || body.value.trim() === '')) {
       setError('Judul situs web tidak boleh kosong');
       setIsLoading(false);
       return;
@@ -529,7 +536,7 @@ const Settings = ({ headerTitle }) => {
 
   return (
     <div className="flex flex-col h-screen">
-      {theme === 'default' && <NavigationHeader title="Pengaturan" headerTitle={headerTitle} />}
+      {theme === 'default' && <NavigationHeader title="Pengaturan" headerTitle={newHeaderTitle} />}
       <main className={`flex-grow ${theme === 'default' ? 'pt-16' : ''}`}>
         <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-8 py-8" : ""}>
           <BreadcrumbNavigation paths={breadcrumbs} />
