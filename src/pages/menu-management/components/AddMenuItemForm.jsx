@@ -221,14 +221,14 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
           <h3 className="text-lg font-medium text-foreground mb-2">Opsi / Topping Menu</h3>
           <div className="space-y-3">
             {formData.options.map((option, index) => (
-              <div key={index} className="flex items-center gap-2 p-2 border border-border rounded-md">
+              <div key={index} className="flex flex-wrap items-start gap-2 gap-y-2 p-2 border border-border rounded-md">
                 <Input
                   type="text"
                   name="name"
                   placeholder="Nama Opsi (e.g., Dada, Paha)"
                   value={option.name}
                   onChange={(e) => handleOptionChange(index, e)}
-                  className="flex-grow"
+                  className="w-full sm:flex-1"
                 />
                 <Input
                   type="number"
@@ -236,9 +236,9 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
                   placeholder="Penyesuaian Harga (Rp)"
                   value={option.price_adjustment}
                   onChange={(e) => handleOptionChange(index, e)}
-                  className="w-48"
+                  className="w-full sm:flex-1"
                 />
-                <Button type="button" variant="destructive" size="sm" onClick={() => removeOption(index)}>
+                <Button type="button" variant="destructive" size="sm" onClick={() => removeOption(index)} className="w-full sm:w-auto">
                   Hapus
                 </Button>
               </div>
