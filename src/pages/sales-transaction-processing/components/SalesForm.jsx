@@ -72,13 +72,13 @@ const SalesForm = ({ menuItems, onIncrementItem, onDecrementItem, cart, userRole
                         ))}
                         {/* Checkbox for ignoring stock */}
                         <div className="flex items-center ml-auto">
-                          <Checkbox
-                            id="ignore-stock-sales-form"
-                            label="Abaikan Stok"
-                            checked={ignoreStock}
-                            onChange={(e) => setIgnoreStock(e.target.checked)}
-                          />
-                        </div>
+                                    <Checkbox
+                                      id="ignore-stock-sales-form"
+                                      label="Abaikan Stok"
+                                      checked={ignoreStock}
+                                      onChange={(e) => setIgnoreStock(e.target.checked)}
+                                      size="lg" // Add size="lg"
+                                    />                        </div>
                       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {sortedMenuItems.map(item => (
