@@ -180,12 +180,22 @@ export default function CashierDashboard() {
     });
   };
 
+  const originalSubtotal = useMemo(() => {
+    return cart.reduce((sum, item) => {
+      return sum + item.price * item.quantity;
+    }, 0);
+  }, [cart]);
+
   const subtotal = useMemo(() => {
     return cart.reduce((sum, item) => {
       const discountedPrice = item.price * (1 - (item.discount || 0));
       return sum + discountedPrice * item.quantity;
     }, 0);
   }, [cart]);
+
+  const totalDiscountAmount = useMemo(() => {
+    return originalSubtotal - subtotal;
+  }, [originalSubtotal, subtotal]);
 
   const taxAmount = useMemo(() => {
     return subtotal * ppnRate;
@@ -458,8 +468,14 @@ export default function CashierDashboard() {
           <div className="border-t dark:border-gray-700 pt-4 space-y-2">
             <div className="flex justify-between text-lg font-medium">
               <span>Subtotal:</span>
-              <span>Rp{subtotal.toLocaleString('id-ID')}</span>
+              <span>Rp{formatNumber(originalSubtotal)}</span>
             </div>
+            {totalDiscountAmount > 0 && (
+              <div className="flex justify-between text-lg font-medium text-red-500">
+                <span>Diskon Item:</span>
+                <span>- Rp{formatNumber(totalDiscountAmount)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-lg font-medium">
               <span>PPN ({ppnRate * 100}%):</span>
               <span>Rp{taxAmount.toLocaleString('id-ID')}</span>
