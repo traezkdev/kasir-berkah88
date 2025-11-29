@@ -130,14 +130,26 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
             <h3 className="font-semibold mb-2 text-gray-900">Detail Item:</h3>
             <div className="space-y-2">
               {transaction.items.map((item, index) => {
-                // item.price here is the final price per unit (after options and discount)
-                const pricePerUnitAfterDiscount = Number(item.price) || 0;
-                const lineTotalAfterDiscount = pricePerUnitAfterDiscount * (Number(item.quantity) || 0);
+                const pricePerUnit = Number(item.price) || 0;
+                const itemDiscount = Number(item.discount) || 0;
+                
+                let effectivePricePerUnit;
+                if (item.basePrice) { // From SalesTransactionProcessing, item.price is already the final price
+                    effectivePricePerUnit = pricePerUnit;
+                } else if (itemDiscount > 0) { // From CashierDashboard, item.price is base price, apply discount
+                    effectivePricePerUnit = pricePerUnit * (1 - itemDiscount);
+                } else { // No discount, item.price is the final price
+                    effectivePricePerUnit = pricePerUnit;
+                }
+
+                const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+                
+                const lineTotalAfterDiscount = (effectivePricePerUnit + optionAdjustment) * (Number(item.quantity) || 0);
             
                 // Calculate original price per unit including options but before discount
-                const originalBasePrice = Number(item.basePrice) || 0;
-                const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0) : 0;
-                const originalPricePerUnitBeforeDiscount = originalBasePrice + optionAdjustment;
+                const originalBasePrice = Number(item.basePrice || item.price) || 0;
+                const optionAdjustmentForOriginalPrice = Array.isArray(item.options) ? item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0) : 0;
+                const originalPricePerUnitBeforeDiscount = originalBasePrice + optionAdjustmentForOriginalPrice;
                 const lineTotalBeforeDiscount = originalPricePerUnitBeforeDiscount * (Number(item.quantity) || 0);
 
                 return (
