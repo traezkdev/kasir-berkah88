@@ -51,10 +51,10 @@ const Checkbox = React.forwardRef(({
                     )}
                 >
                     {checked && !indeterminate && (
-                        <Check className="h-3 w-3 text-current flex items-center justify-center" />
+                        <Check className={cn(sizeClasses?.[size], "text-current flex items-center justify-center")} />
                     )}
                     {indeterminate && (
-                        <Minus className="h-3 w-3 text-current flex items-center justify-center" />
+                        <Minus className={cn(sizeClasses?.[size], "text-current flex items-center justify-center")} />
                     )}
                 </label>
             </div>
@@ -64,7 +64,7 @@ const Checkbox = React.forwardRef(({
                         <label
                             htmlFor={checkboxId}
                             className={cn(
-                                "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer",
+                                "text-sm font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer",
                                 error ? "text-destructive" : "text-foreground"
                             )}
                         >

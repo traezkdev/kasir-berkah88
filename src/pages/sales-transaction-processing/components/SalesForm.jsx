@@ -1,15 +1,40 @@
 import React, { useState } from 'react';
 import Input from '../../../components/ui/Input';
 import ProductCard from './ProductCard';
+import Button from '../../../components/ui/Button'; // Add this import
+import { useEffect } from 'react'; // Add useEffect
+import authFetch from '../../../utils/authFetch';
+import { Checkbox } from '../../../components/ui/Checkbox'; // Add Checkbox import
 
 const SalesForm = ({ menuItems, onIncrementItem, onDecrementItem, cart, userRole, apiUrl }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [categories, setCategories] = useState([]); // State for categories
+  const [selectedCategory, setSelectedCategory] = useState('all'); // State for selected category
+  const [ignoreStock, setIgnoreStock] = useState(false); // State for ignore stock
 
-  const filteredMenuItems = menuItems.filter(item =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await authFetch(`${apiUrl}/api/categories`);
+        const data = await response.json();
+        if (response.ok) {
+          setCategories(data.data);
+        } else {
+          console.error("Failed to fetch categories:", data.error);
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    fetchCategories();
+  }, [apiUrl]);
+
+  const filteredAndCategorizedMenuItems = menuItems.filter(item =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    (selectedCategory === 'all' || item.category.toLowerCase() === selectedCategory)
   );
 
-  const sortedMenuItems = filteredMenuItems.sort((a, b) => {
+  const sortedMenuItems = filteredAndCategorizedMenuItems.sort((a, b) => {
     // Item unggulan (is_featured: true) muncul lebih dulu
     if (a.is_featured && !b.is_featured) return -1;
     if (!a.is_featured && b.is_featured) return 1;
@@ -26,6 +51,35 @@ const SalesForm = ({ menuItems, onIncrementItem, onDecrementItem, cart, userRole
         onChange={(e) => setSearchTerm(e.target.value)}
         className="w-full mb-6"
       />
+
+      <div className="flex flex-wrap gap-2 mb-6">
+        <Button
+          variant={selectedCategory === 'all' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setSelectedCategory('all')}
+        >
+          Semua
+        </Button>
+                        {categories.map(cat => (
+                          <Button
+                            key={cat.id}
+                            variant={selectedCategory === cat.name.toLowerCase() ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setSelectedCategory(cat.name.toLowerCase())}
+                          >
+                            {cat.name}
+                          </Button>
+                        ))}
+                        {/* Checkbox for ignoring stock */}
+                        <div className="flex items-center ml-auto">
+                                    <Checkbox
+                                      id="ignore-stock-sales-form"
+                                      label="Abaikan Stok"
+                                      checked={ignoreStock}
+                                      onChange={(e) => setIgnoreStock(e.target.checked)}
+                                      size="lg" // Add size="lg"
+                                    />                        </div>
+                      </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {sortedMenuItems.map(item => (
           <ProductCard 
@@ -36,6 +90,7 @@ const SalesForm = ({ menuItems, onIncrementItem, onDecrementItem, cart, userRole
             cart={cart} 
             userRole={userRole} 
             apiUrl={apiUrl} 
+            ignoreStock={ignoreStock} // Add this prop
           />
         ))}
       </div>

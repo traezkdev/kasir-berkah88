@@ -174,7 +174,7 @@ const OrderSummary = ({
   const disablePaymentButton = isLoading || !isCartValid();
 
   return (
-    <div className={`bg-card rounded-lg shadow-lg p-6 lg:sticky ${theme === 'admin' ? 'lg:top-0' : ''}`}>
+    <div className={`bg-card rounded-lg shadow-lg p-6 lg:sticky lg:top-16`}>
       <h2 className="text-xl font-bold text-foreground mb-4">Ringkasan Pesanan</h2>
       
       {cart.length === 0 ? (
@@ -184,14 +184,16 @@ const OrderSummary = ({
           {cart.map(item => (
             <div key={item.cartItemId} className="flex items-start justify-between">
               <div>
-                <p className="font-semibold">{item.name}</p>
-                {item.selectedOptions && item.selectedOptions.length > 0 && (
-                  <div className="text-xs text-muted-foreground pl-2">
-                    {item.selectedOptions.map(opt => (
-                      <p key={opt.id}>+ {opt.name}</p>
-                    ))}
-                  </div>
-                )}
+                <div className="flex items-baseline"> {/* Flex container for name and options */}
+                  <p className="font-semibold">{item.name}</p>
+                  {item.selectedOptions && item.selectedOptions.length > 0 && (
+                    <div className="text-xs text-muted-foreground ml-2"> {/* Added ml-2 for spacing */}
+                      {item.selectedOptions.map(opt => (
+                        <span key={opt.id}>+ {opt.name}</span> // Changed <p> to <span> to keep them inline
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <p className="text-sm text-muted-foreground">Rp {item.finalPrice?.toLocaleString('id-ID')}</p>
               </div>
               <div className="flex items-center gap-2">

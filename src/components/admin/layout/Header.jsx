@@ -65,14 +65,7 @@ const Header = ({ toggleSidebar }) => {
           <FaDesktop className="h-6 w-6 text-gray-600 dark:text-gray-300" />
         </button>
         
-        <Link to="/critical-stock" className="relative p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 mr-2">
-          <FaBell className="h-6 w-6 text-gray-600 dark:text-gray-300" />
-          {lowStockCount > 0 && (
-            <span className="absolute top-0 right-0 block h-4 w-4 transform -translate-y-1/2 translate-x-1/2 rounded-full bg-red-600 text-white text-xs flex items-center justify-center">
-              {lowStockCount}
-            </span>
-          )}
-        </Link>
+
 
         <Link to="/profile" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
           {user.avatar_url ? (

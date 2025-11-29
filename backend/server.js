@@ -1078,8 +1078,25 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
 // Get all transactions without pagination (for all-time metrics)
 app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'owner'), async (req, res, next) => {
     try {
+        const { startDate, endDate } = req.query; // Extract startDate and endDate
+
+        let whereClauses = [];
+        let queryParams = [];
+
+        if (startDate) {
+            whereClauses.push('t.timestamp >= ?');
+            queryParams.push(startDate);
+        }
+        if (endDate) {
+            // Adjust the end date to include the entire day
+            whereClauses.push('t.timestamp <= ?');
+            queryParams.push(`${endDate} 23:59:59`); // Assuming endDate is 'YYYY-MM-DD'
+        }
+
+        const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
         const sql = `
-            SELECT 
+            SELECT
                 t.id,
                 DATE_FORMAT(t.timestamp, '%Y-%m-%d %H:%i:%s+07:00') AS timestamp,
                 t.items,
@@ -1095,13 +1112,16 @@ app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admi
                 u.username AS cashier_name
             FROM transactions t
             LEFT JOIN users u ON t.user_id = u.id
+            ${whereSql}
             ORDER BY t.timestamp DESC
         `;
-        const [rows] = await db.query(sql);
-        
+        const [rows] = await db.query(sql, queryParams); // Pass queryParams here
+
         const transactions = rows.map(row => ({
             ...row,
             isEmployeeMeal: row.isEmployeeMeal === 1,
+            // Parse items JSON if needed (it's already parsed in the /api/transactions endpoint)
+            items: JSON.parse(row.items || '[]')
         }));
 
         res.json({
@@ -1109,7 +1129,8 @@ app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admi
             "data": transactions
         });
     } catch (err) {
-        res.status(500).json({ "error": err.message });
+        console.error("Error fetching all transactions:", err); // Add more specific error logging
+        res.status(500).json({ "error": err.message, "stack": err.stack });
     }
 });
 
