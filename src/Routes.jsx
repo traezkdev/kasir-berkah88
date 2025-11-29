@@ -34,6 +34,7 @@ import OwnerBusinessReports from './pages/owner-business-reports/index.jsx';
 import UangBisnis from './pages/uang-bisnis/index.jsx';
 import CriticalStockPage from './pages/CriticalStock';
 import MainCriticalStockPage from './pages/MainCriticalStock';
+import AdminUangBisnis from './pages/AdminUangBisnis'; // Add this import
 
 // ProtectedRoute component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -100,6 +101,7 @@ const AppRoutes = () => {
         <Route path="/raw-material-stock" element={<RawMaterialStockDashboard />} />
         <Route path="/raw-material-stock/history" element={<RawMaterialStockHistory />} />
         <Route path="/main-critical-stock" element={<MainCriticalStockPage />} />
+        <Route path="/admin-uang-bisnis" element={<AdminUangBisnis headerTitle="Uang Bisnis" />} /> {/* Add this route */}
       </Route>
 
       {/* Cashier Dashboard Routes */}
