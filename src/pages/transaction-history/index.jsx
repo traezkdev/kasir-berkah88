@@ -622,6 +622,88 @@ const TransactionHistory = ({ headerTitle }) => {
   }, [allTransactionsForChart]);
 
 
+  const transactionMetrics = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const getStartOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+    const getEndOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+
+    const todayStart = getStartOfDay(new Date()); // Get start of today in local time
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(todayStart.getDate() - 1); // Derives yesterday directly from todayStart
+
+    const getYesterdayRange = () => {
+      return { start: yesterdayStart, end: getEndOfDay(yesterdayStart) };
+    };
+
+    const getThisWeekRange = () => {
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday as per default getDay(). Adjust if week starts Monday
+      return { start: getStartOfDay(startOfWeek), end: getEndOfDay(new Date()) };
+    };
+
+    const getThisMonthRange = () => {
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      return { start: getStartOfDay(startOfMonth), end: getEndOfDay(new Date()) };
+    };
+
+    const calculateTransactionCountForPeriod = (transactions, startDate, endDate) => {
+      let count = 0;
+      transactions
+        .filter(t => {
+          const transactionDate = new Date(t.timestamp);
+          return transactionDate >= startDate && transactionDate <= endDate;
+        })
+        .forEach(() => {
+          count++;
+        });
+      return count;
+    };
+
+    const todayRange = { start: getStartOfDay(today), end: getEndOfDay(today) };
+    const yesterdayRange = getYesterdayRange();
+    const thisWeekRange = getThisWeekRange();
+    const thisMonthRange = getThisMonthRange();
+
+    const transactionsToday = calculateTransactionCountForPeriod(allTransactionsForChart, todayRange.start, todayRange.end);
+    const transactionsYesterday = calculateTransactionCountForPeriod(allTransactionsForChart, yesterdayRange.start, yesterdayRange.end);
+    const transactionsThisWeek = calculateTransactionCountForPeriod(allTransactionsForChart, thisWeekRange.start, thisWeekRange.end);
+    const transactionsThisMonth = calculateTransactionCountForPeriod(allTransactionsForChart, thisMonthRange.start, thisMonthRange.end);
+
+    return [
+      {
+        title: 'Transaksi Hari Ini',
+        value: transactionsToday,
+        icon: 'ReceiptText', // A new icon would be good, like for receipts
+        color: 'success',
+        description: 'Jumlah transaksi yang terjadi hari ini.'
+      },
+      {
+        title: 'Transaksi Kemarin',
+        value: transactionsYesterday,
+        icon: 'Receipt',
+        color: 'info',
+        description: 'Jumlah transaksi yang terjadi kemarin.'
+      },
+      {
+        title: 'Transaksi Minggu Ini',
+        value: transactionsThisWeek,
+        icon: 'CalendarDays',
+        color: 'primary',
+        description: 'Jumlah transaksi yang terjadi minggu ini.'
+      },
+      {
+        title: 'Transaksi Bulan Ini',
+        value: transactionsThisMonth,
+        icon: 'CalendarCheck',
+        color: 'accent',
+        description: 'Jumlah transaksi yang terjadi bulan ini.'
+      }
+    ];
+  }, [allTransactionsForChart]);
+
+
   return (
 
     <div className="min-h-screen">
@@ -669,6 +751,24 @@ const TransactionHistory = ({ headerTitle }) => {
             </div>
           </div>
           {/* End Revenue Metrics Section */}
+
+          {/* Transaction Metrics Section */}
+          <div className="mb-6">
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {transactionMetrics.map((metric, index) => (
+                <MetricsCard
+                  key={index}
+                  title={metric.title}
+                  value={metric.value}
+                  icon={metric.icon}
+                  color={metric.color}
+                  description={metric.description}
+                />
+              ))}
+            </div>
+          </div>
+          {/* End Transaction Metrics Section */}
 
             <TransactionFilters
 
