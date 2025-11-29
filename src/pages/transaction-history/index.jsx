@@ -337,16 +337,40 @@ const TransactionHistory = ({ headerTitle }) => {
     }
   };
 
-  const handleExportTransactions = async (format) => {
+  const handleExportTransactions = async (format, startDate, endDate) => { // Modified signature
     setIsExporting(true);
     
     try {
-      // Simulate export process
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const dataToExport = prepareTransactionDataForExport(currentItems);
+      // New: Fetch all transactions for the specified date range from the backend
+      const params = new URLSearchParams();
+      if (startDate) {
+          params.append('startDate', startDate);
+      }
+      if (endDate) {
+          params.append('endDate', endDate);
+      }
 
-      const totalRevenue = currentItems?.filter(t => !t?.isEmployeeMeal)?.reduce((sum, t) => sum + parseFloat(t?.total || 0), 0);
+      const url = `${apiUrl}/api/transactions/all?${params.toString()}`;
+      const response = await authFetch(url);
+      const data = await response.json();
+
+      let transactionsToExport = [];
+      if (data.message === 'success') {
+          transactionsToExport = data.data.map(t => ({
+              ...t,
+              timestamp: new Date(t.timestamp),
+              items: Array.isArray(t.items) ? t.items : JSON.parse(t.items || '[]')
+          }));
+      } else {
+          console.error('Failed to fetch all transactions for export:', data.error);
+          setIsExporting(false);
+          return; // Stop execution if data fetch fails
+      }
+
+      const dataToExport = prepareTransactionDataForExport(transactionsToExport); // Use fetched data
+
+      // Ensure totalRevenue is calculated from transactionsToExport
+      const totalRevenue = transactionsToExport?.filter(t => !t?.isEmployeeMeal)?.reduce((sum, t) => sum + parseFloat(t?.total || 0), 0);
 
       if (format === 'excel') {
         const ws_data = [
@@ -411,7 +435,7 @@ const TransactionHistory = ({ headerTitle }) => {
         ws['!cols'] = max_width.map(w => ({ wch: w + 2 })); // Add some padding
 
         // Add footer with total transactions
-        const totalTransactions = currentItems?.length;
+        const totalTransactions = transactionsToExport?.length; // Use transactionsToExport
 
         const footerRowIndex = ws_data.length;
         ws_data.push([]); // Empty row for spacing
@@ -488,7 +512,7 @@ const TransactionHistory = ({ headerTitle }) => {
         doc.save(`riwayat-transaksi-${new Date()?.toISOString()?.split('T')?.[0]}.pdf`);
       }
       
-      console.log(`Exported ${currentItems?.length} transactions as ${format}`);
+      console.log(`Exported ${transactionsToExport?.length} transactions as ${format}`); // Use transactionsToExport length
     } catch (error) {
 
       console.error('Export failed:', error);
