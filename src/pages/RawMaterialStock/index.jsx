@@ -233,7 +233,7 @@ const RawMaterialStockDashboard = () => {
 
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {/* Harga per Item */}
-                    {(Number(material.price_per_item) || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
+                    {(Number(material.price_per_item) || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {(Number(material.current_stock) + Number(material.menu_stock)) < Number(material.stok_minimum) && (
@@ -312,7 +312,7 @@ const RawMaterialStockDashboard = () => {
                               <div className="grid grid-cols-1 gap-2 text-sm text-text-secondary pb-2 mb-2 border-b border-border">
                                 <div> {/* Harga per Item */}
                                   <p className="font-medium">Harga per Item:</p>
-                                  <p>{(Number(material.price_per_item) || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}</p>
+                                  <p>{(Number(material.price_per_item) || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                                 </div>
                               </div>
                 <div className="flex justify-end space-x-2">
