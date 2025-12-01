@@ -8,7 +8,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
   const [stokMinimum, setStokMinimum] = useState('');
   const [pricePerItem, setPricePerItem] = useState('');
   const [standardStockPerDay, setStandardStockPerDay] = useState('');
-  const [suggestionPurchaseQuantity, setSuggestionPurchaseQuantity] = useState('');
+  const [purchaseBufferAmount, setPurchaseBufferAmount] = useState(''); // New state for purchase buffer
   const [currentStock, setCurrentStock] = useState('');
   const [menuStock, setMenuStock] = useState(''); // New state for menu_stock
   const [loading, setLoading] = useState(false);
@@ -42,15 +42,16 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
       } else {
         setStandardStockPerDay('');
       }
-      const suggestionVal = parseFloat(material.suggestion_purchase_quantity);
-      if (!isNaN(suggestionVal)) {
-        if (suggestionVal % 1 !== 0) {
-          setSuggestionPurchaseQuantity(suggestionVal);
+      
+      const purchaseBufferVal = parseFloat(material.purchase_buffer_amount); // Initialize purchaseBufferAmount
+      if (!isNaN(purchaseBufferVal)) {
+        if (purchaseBufferVal % 1 !== 0) {
+          setPurchaseBufferAmount(purchaseBufferVal);
         } else {
-          setSuggestionPurchaseQuantity(parseInt(suggestionVal, 10));
+          setPurchaseBufferAmount(parseInt(purchaseBufferVal, 10));
         }
       } else {
-        setSuggestionPurchaseQuantity('');
+        setPurchaseBufferAmount('');
       }
       
       const stockValue = parseFloat(material.current_stock);
@@ -85,8 +86,8 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
       setError("Nama dan satuan tidak boleh kosong.");
       return;
     }
-    if (parseFloat(stokMinimum) < 0) {
-      setError("Batas stok minimum tidak boleh negatif.");
+    if (parseFloat(stokMinimum) < 0 || parseFloat(purchaseBufferAmount) < 0) { // Add purchaseBufferAmount validation
+      setError("Nilai numerik tidak boleh negatif.");
       return;
     }
 
@@ -102,7 +103,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
         stok_minimum: parseFloat(stokMinimum) || 0,
         price_per_item: parseFloat(pricePerItem) || 0,
         standard_stock_per_day: parseFloat(standardStockPerDay) || 0,
-        suggestion_purchase_quantity: parseFloat(suggestionPurchaseQuantity) || 0,
+        purchase_buffer_amount: parseFloat(purchaseBufferAmount) || 0, // Include purchase_buffer_amount in the update
         current_stock: parseFloat(currentStock) || 0,
         menu_stock: parseFloat(menuStock) || 0, // Include menu_stock in the update
       }, {
@@ -198,13 +199,13 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="suggestionPurchaseQuantity" className="block text-muted-foreground text-sm font-bold mb-2">Saran Kuantitas Pembelian</label>
+            <label htmlFor="purchaseBufferAmount" className="block text-muted-foreground text-sm font-bold mb-2">Jumlah Buffer Pembelian</label>
             <input
               type="number"
-              id="suggestionPurchaseQuantity"
+              id="purchaseBufferAmount"
               className="appearance-none bg-input border-border rounded w-full py-2 px-3 text-foreground leading-tight focus:outline-none focus:ring-2 focus:ring-primary/50"
-              value={suggestionPurchaseQuantity}
-              onChange={(e) => setSuggestionPurchaseQuantity(e.target.value)}
+              value={purchaseBufferAmount}
+              onChange={(e) => setPurchaseBufferAmount(e.target.value)}
               min="0"
               required
             />

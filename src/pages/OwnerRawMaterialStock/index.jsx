@@ -11,12 +11,13 @@ import MetricsCard from '../main-dashboard/components/MetricsCard';
 import Icon from '../../components/AppIcon';
 
 const formatCurrency = (amount) => {
+  const safeAmount = isNaN(amount) || amount === null || amount === undefined ? 0 : amount;
   return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-  })?.format(amount);
+  })?.format(safeAmount);
 };
 
 const OwnerRawMaterialStockDashboard = () => {
@@ -32,6 +33,12 @@ const OwnerRawMaterialStockDashboard = () => {
   const [selectedMaterial, setSelectedMaterial] = useState(null);
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
+  // Helper function for safe number conversion
+  const toSafeNumber = (value) => {
+    const num = Number(value);
+    return isNaN(num) ? 0 : num;
+  };
 
   useEffect(() => {
     fetchRawMaterials();
@@ -97,9 +104,9 @@ const OwnerRawMaterialStockDashboard = () => {
     return <div className="p-4 md:p-6 text-center text-red-500">{error}</div>;
   }
 
-  const totalStockQuantity = rawMaterials.reduce((sum, material) => sum + parseInt(material.current_stock || 0), 0);
-  const totalStockValue = rawMaterials.reduce((sum, material) => sum + (parseInt(material.current_stock || 0) * parseFloat(material.price_per_item || 0)), 0);
-  const lowStockItemsCount = rawMaterials.filter(material => Number(material.current_stock) < Number(material.stok_minimum)).length;
+  const totalStockQuantity = rawMaterials.reduce((sum, material) => sum + toSafeNumber(material.current_stock), 0);
+  const totalStockValue = rawMaterials.reduce((sum, material) => sum + (toSafeNumber(material.current_stock) * toSafeNumber(material.price_per_item)), 0);
+  const lowStockItemsCount = rawMaterials.filter(material => toSafeNumber(material.current_stock) < toSafeNumber(material.stok_minimum)).length;
 
 
   return (
@@ -182,7 +189,7 @@ const OwnerRawMaterialStockDashboard = () => {
                     {material.name}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {parseInt(material.current_stock)}
+                    {toSafeNumber(material.current_stock)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer"
                       onClick={() => handleEditClick(material)}
@@ -190,16 +197,16 @@ const OwnerRawMaterialStockDashboard = () => {
                     {material.unit}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {parseInt(material.stok_minimum)}
+                    {toSafeNumber(material.stok_minimum)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {parseInt(material.suggestion_purchase_quantity)}
+                    {toSafeNumber(material.suggestion_purchase_quantity)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {parseFloat(material.price_per_item).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
+                    {toSafeNumber(material.price_per_item).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {parseInt(material.standard_stock_per_day)} {material.custom_unit}
+                    {toSafeNumber(material.standard_stock_per_day)} {material.custom_unit}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {Number(material.current_stock) < Number(material.stok_minimum) && (
@@ -255,21 +262,21 @@ const OwnerRawMaterialStockDashboard = () => {
                               <div className="grid grid-cols-2 gap-2 text-sm text-gray-700 pb-2 mb-2 border-b border-gray-200">
                                 <div>
                                   <p className="font-medium">Stok Saat Ini:</p>
-                                  <p onClick={() => handleEditClick(material)} className="cursor-pointer">{parseInt(material.current_stock)} {material.unit}</p>
+                                  <p onClick={() => handleEditClick(material)} className="cursor-pointer">{toSafeNumber(material.current_stock)} {material.unit}</p>
                                 </div>
                                 <div>
                                   <p className="font-medium">Stok Min:</p>
-                                  <p onClick={() => handleEditClick(material)} className="cursor-pointer">{parseInt(material.stok_minimum)} {material.unit}</p>
+                                  <p onClick={() => handleEditClick(material)} className="cursor-pointer">{toSafeNumber(material.stok_minimum)} {material.unit}</p>
                                 </div>
                               </div>
                               <div className="grid grid-cols-2 gap-2 text-sm text-gray-700 pb-2 mb-2 border-b border-gray-200">
                                 <div>
                                   <p className="font-medium">Saran Pembelian:</p>
-                                  <p>{parseInt(material.suggestion_purchase_quantity)} {material.unit}</p>
+                                  <p>{toSafeNumber(material.suggestion_purchase_quantity)} {material.unit}</p>
                                 </div>
                                 <div>
                                   <p className="font-medium">Harga per Item:</p>
-                                  <p>{parseFloat(material.price_per_item).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}</p>
+                                  <p>{toSafeNumber(material.price_per_item).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}</p>
                                 </div>
                               </div>
                 <div className="flex justify-end space-x-2">

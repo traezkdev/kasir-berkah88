@@ -83,9 +83,7 @@ const MainCriticalStockPage = () => {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Stok Menu
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Total Stok Efektif
-                    </th>
+
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Stok Minimum
                     </th>
@@ -110,9 +108,7 @@ const MainCriticalStockPage = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-destructive font-bold">
                         {parseInt(item.menu_stock)} {item.unit}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                        {parseInt(item.total_effective_stock)} {item.unit}
-                      </td>
+
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                         {parseInt(item.stok_minimum)} {item.unit}
                       </td>
@@ -143,8 +139,7 @@ const MainCriticalStockPage = () => {
                     <div className="font-medium text-muted-foreground">Stok Menu:</div>
                     <div className="text-destructive font-bold">{parseInt(item.menu_stock)} {item.unit}</div>
                     
-                    <div className="font-medium text-muted-foreground">Total Stok Efektif:</div>
-                    <div className="text-foreground">{parseInt(item.total_effective_stock)} {item.unit}</div>
+
                     
                     <div className="font-medium text-muted-foreground">Stok Minimum:</div>
                     <div className="text-foreground">{parseInt(item.stok_minimum)} {item.unit}</div>
