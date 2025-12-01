@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FaPlus, FaEdit, FaTrash, FaExclamationTriangle } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+
 import EditRawMaterialModal from '../RawMaterialStock/EditRawMaterialModal';
 import AddRawMaterialModal from '../RawMaterialStock/AddRawMaterialModal';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -9,6 +10,7 @@ import OwnerNavigationHeader from '../../components/ui/OwnerNavigationHeader';
 import useNotification from '../../hooks/useNotification';
 import MetricsCard from '../main-dashboard/components/MetricsCard';
 import Icon from '../../components/AppIcon';
+import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 
 const formatCurrency = (amount) => {
   const safeAmount = isNaN(amount) || amount === null || amount === undefined ? 0 : amount;
@@ -30,6 +32,7 @@ const OwnerRawMaterialStockDashboard = () => {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
   const [selectedMaterial, setSelectedMaterial] = useState(null);
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -71,9 +74,12 @@ const OwnerRawMaterialStockDashboard = () => {
     setIsAddModalOpen(true);
   };
 
+
+
   const handleCloseModals = () => {
     setIsEditModalOpen(false);
     setIsAddModalOpen(false);
+
     setSelectedMaterial(null);
     fetchRawMaterials();
   };
@@ -104,15 +110,17 @@ const OwnerRawMaterialStockDashboard = () => {
     return <div className="p-4 md:p-6 text-center text-red-500">{error}</div>;
   }
 
-  const totalStockQuantity = rawMaterials.reduce((sum, material) => sum + toSafeNumber(material.current_stock), 0);
-  const totalStockValue = rawMaterials.reduce((sum, material) => sum + (toSafeNumber(material.current_stock) * toSafeNumber(material.price_per_item)), 0);
-  const lowStockItemsCount = rawMaterials.filter(material => toSafeNumber(material.current_stock) < toSafeNumber(material.stok_minimum)).length;
+  const totalStockQuantity = rawMaterials.reduce((sum, material) => sum + toSafeNumber(material.current_stock) + toSafeNumber(material.menu_stock), 0);
+  const totalStockValue = rawMaterials.reduce((sum, material) => sum + ((toSafeNumber(material.current_stock) + toSafeNumber(material.menu_stock)) * toSafeNumber(material.price_per_item)), 0);
+  const lowStockItemsCount = rawMaterials.filter(material => (toSafeNumber(material.current_stock) + toSafeNumber(material.menu_stock)) < toSafeNumber(material.stok_minimum)).length;
 
 
   return (
     <>
       <OwnerNavigationHeader />
       <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 mt-16`}>
+        {/* Breadcrumb Navigation */}
+        <BreadcrumbNavigation paths={[{ name: 'Beranda Owner', path: '/owner-dashboard' }, { name: 'Stok Bahan Mentah Owner', path: '/owner-raw-material-stock' }]} className="mb-4" />
       <h1 className="text-2xl font-bold mb-4">Dashboard Stok Bahan Mentah Owner</h1>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -146,81 +154,93 @@ const OwnerRawMaterialStockDashboard = () => {
           >
             <FaPlus className="mr-2" /> Tambah Bahan Mentah Baru
           </button>
+          <button
+            onClick={() => navigate('/critical-stock')}
+            className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded flex items-center w-full sm:w-auto"
+          >
+            <FaExclamationTriangle className="mr-2" /> Lihat Stok Kritis
+          </button>
           
         </div>
 
-        <div className="overflow-x-auto bg-white rounded-lg shadow p-4 hidden sm:block">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="overflow-x-auto bg-card rounded-lg shadow p-4 hidden sm:block">
+          <table className="min-w-full divide-y divide-border">
+            <thead className="bg-muted">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Nama Bahan
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Stok Saat Ini
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Stok Mentah
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Stok Menu
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Total Stok
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Satuan
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Stok Min
                 </th>
-                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Saran Pembelian
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Harga per Item
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Stok Standar/Hari
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Status
                 </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Aksi
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-border">
               {rawMaterials.map((material) => (
                 <tr key={material.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-card-foreground">
                     {material.name}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {toSafeNumber(material.current_stock)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer"
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    {toSafeNumber(material.menu_stock)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-card-foreground font-bold">
+                    {toSafeNumber(material.current_stock) + toSafeNumber(material.menu_stock)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground cursor-pointer"
                       onClick={() => handleEditClick(material)}
                   >
                     {material.unit}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {toSafeNumber(material.stok_minimum)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {toSafeNumber(material.suggestion_purchase_quantity)}
+
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    {toSafeNumber(material.price_per_item).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {toSafeNumber(material.price_per_item).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {toSafeNumber(material.standard_stock_per_day)} {material.custom_unit}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {Number(material.current_stock) < Number(material.stok_minimum) && (
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 flex items-center">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-destructive/10 text-destructive flex items-center">
                         <FaExclamationTriangle className="mr-1" /> Stok Menipis!
                       </span>
                     )}
                     {Number(material.current_stock) >= Number(material.stok_minimum) && (
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-success/10 text-success">
                         Cukup
                       </span>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+
+
                     <button
                       onClick={() => handleEditClick(material)}
                       className="text-blue-600 hover:text-blue-900 mr-3"
@@ -243,53 +263,62 @@ const OwnerRawMaterialStockDashboard = () => {
         </div>
 
               <div className="block sm:hidden space-y-4 mt-4 pb-24">          {rawMaterials.map((material) => (
-            <div key={material.id} className="bg-white rounded-lg shadow p-4 border border-gray-200">
-              <div className="flex justify-between items-center pb-2 mb-2 border-b border-gray-200">
-                <p className="text-lg font-bold text-gray-900">{material.name}</p>
+            <div key={material.id} className="bg-card rounded-lg shadow p-4 border border-border">
+              <div className="flex justify-between items-center pb-2 mb-2 border-b border-border">
+                <p className="text-lg font-bold text-card-foreground">{material.name}</p>
                 <div className="flex-shrink-0">
                   {Number(material.current_stock) < Number(material.stok_minimum) && (
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-destructive/10 text-destructive">
                       Stok Menipis!
                     </span>
                   )}
                   {Number(material.current_stock) >= Number(material.stok_minimum) && (
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-success/10 text-success">
                         Cukup
                       </span>
                     )}
                   </div>
                 </div>
-                              <div className="grid grid-cols-2 gap-2 text-sm text-gray-700 pb-2 mb-2 border-b border-gray-200">
+                              <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground pb-2 mb-2 border-b border-border">
                                 <div>
-                                  <p className="font-medium">Stok Saat Ini:</p>
-                                  <p onClick={() => handleEditClick(material)} className="cursor-pointer">{toSafeNumber(material.current_stock)} {material.unit}</p>
+                                  <p className="font-medium">Stok Mentah:</p>
+                                  <p>{(Number(material.current_stock) || 0)} {material.unit}</p>
+                                </div>
+                                <div>
+                                  <p className="font-medium">Stok Menu:</p>
+                                  <p>{(Number(material.menu_stock) || 0)} {material.unit}</p>
+                                </div>
+                                <div>
+                                  <p className="font-medium">Total Stok:</p>
+                                  <p>{(Number(material.current_stock) || 0) + (Number(material.menu_stock) || 0)} {material.unit}</p>
                                 </div>
                                 <div>
                                   <p className="font-medium">Stok Min:</p>
-                                  <p onClick={() => handleEditClick(material)} className="cursor-pointer">{toSafeNumber(material.stok_minimum)} {material.unit}</p>
+                                  <p onClick={() => handleEditClick(material)} className="cursor-pointer">{(Number(material.stok_minimum) || 0)} {material.unit}</p>
                                 </div>
                               </div>
-                              <div className="grid grid-cols-2 gap-2 text-sm text-gray-700 pb-2 mb-2 border-b border-gray-200">
-                                <div>
-                                  <p className="font-medium">Saran Pembelian:</p>
-                                  <p>{toSafeNumber(material.suggestion_purchase_quantity)} {material.unit}</p>
-                                </div>
-                                <div>
+
+                              {/* Block 2: Harga per Item only */}
+                              <div className="grid grid-cols-1 gap-2 text-sm text-muted-foreground pb-2 mb-2 border-b border-border">
+                                <div> {/* Harga per Item */}
                                   <p className="font-medium">Harga per Item:</p>
-                                  <p>{toSafeNumber(material.price_per_item).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}</p>
+                                  <p>{(Number(material.price_per_item) || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                                 </div>
                               </div>
                 <div className="flex justify-end space-x-2">
+
+
+
                   <button
                     onClick={() => handleEditClick(material)}
-                    className="text-blue-600 hover:text-blue-900 p-2 rounded-full bg-blue-100"
+                    className="text-blue-600 hover:text-blue-900 p-2 rounded-full bg-primary/10"
                     title="Edit Bahan"
                   >
                     <FaEdit />
                   </button>
                   <button
                     onClick={() => handleDeleteClick(material.id)}
-                    className="text-red-600 hover:text-red-900 p-2 rounded-full bg-red-100"
+                    className="text-red-600 hover:text-red-900 p-2 rounded-full bg-destructive/10"
                     title="Hapus Bahan"
                   >
                     <FaTrash />
@@ -301,6 +330,8 @@ const OwnerRawMaterialStockDashboard = () => {
 
 
         {selectedMaterial && (
+          <>
+
             <EditRawMaterialModal
               isOpen={isEditModalOpen}
               onClose={handleCloseModals}
@@ -309,6 +340,7 @@ const OwnerRawMaterialStockDashboard = () => {
               showMessage={showMessage}
               showError={showError}
             />
+          </>
         )}
 
         <AddRawMaterialModal

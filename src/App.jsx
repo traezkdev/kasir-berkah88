@@ -52,10 +52,12 @@ function App() {
 
   return (
     <AppSettingsProvider>
-      <Toaster position="bottom-center" reverseOrder={false} />
-      <Routes />
-      {location.pathname !== '/cashier-dashboard' && <StickyThemeSwitcher />}
-      {theme === 'default' && location.pathname !== '/cashier-dashboard' && <StickyDarkModeToggle />}
+      <ThemeProvider> {/* Tambahkan ThemeProvider di sini */}
+        <Toaster position="bottom-center" reverseOrder={false} />
+        <Routes />
+        {location.pathname !== '/cashier-dashboard' && <StickyThemeSwitcher />}
+        {theme === 'default' && location.pathname !== '/cashier-dashboard' && <StickyDarkModeToggle />}
+      </ThemeProvider>
     </AppSettingsProvider>
   );
 }

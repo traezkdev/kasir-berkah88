@@ -45,7 +45,7 @@ const CriticalStockPage = () => {
         <main className="pb-20 lg:pb-8 pt-16">
           <div className="max-w-7xl mx-auto px-4 lg:px-6">
             <div className="mb-6 mt-4">
-              <BreadcrumbNavigation />
+              <BreadcrumbNavigation className="mb-4" />
               <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
                 Stok Kritis
               </h1>
@@ -56,7 +56,7 @@ const CriticalStockPage = () => {
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6">
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => navigate('/owner-dashboard')}
+                  onClick={() => navigate('/owner-raw-material-stock')}
                   className="bg-muted hover:bg-muted/80 text-muted-foreground font-bold py-2 px-4 rounded flex items-center w-full sm:w-auto"
                 >
                   <FaArrowLeft className="mr-2" /> Kembali
@@ -97,6 +97,9 @@ const CriticalStockPage = () => {
                           Stok Menu
                         </th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Total Stok
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Stok Minimum
                         </th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -119,6 +122,9 @@ const CriticalStockPage = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-destructive font-bold">
                             {parseInt(item.menu_stock)} {item.unit}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground font-bold">
+                            {parseInt(item.current_stock) + parseInt(item.menu_stock)} {item.unit}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                             {parseInt(item.stok_minimum)} {item.unit}
@@ -149,6 +155,9 @@ const CriticalStockPage = () => {
                         
                         <div className="font-medium text-muted-foreground">Stok Menu:</div>
                         <div className="text-destructive font-bold">{parseInt(item.menu_stock)} {item.unit}</div>
+                        
+                        <div className="font-medium text-muted-foreground">Total Stok:</div>
+                        <div className="text-foreground font-bold">{parseInt(item.current_stock) + parseInt(item.menu_stock)} {item.unit}</div>
                         
                         <div className="font-medium text-muted-foreground">Stok Minimum:</div>
                         <div className="text-foreground">{parseInt(item.stok_minimum)} {item.unit}</div>

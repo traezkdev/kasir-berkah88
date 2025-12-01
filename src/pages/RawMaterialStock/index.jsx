@@ -10,6 +10,7 @@ import { useTheme } from '../../contexts/ThemeContext'; // Import useTheme
 import NavigationHeader from '../../components/ui/NavigationHeader'; // Import NavigationHeader
 import useNotification from '../../hooks/useNotification'; // Import useNotification
 import MetricsCard from '../main-dashboard/components/MetricsCard'; // Import MetricsCard
+import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation'; // Import BreadcrumbNavigation
 import Icon from '../../components/AppIcon'; // Import Icon
 
 const formatCurrency = (amount) => {
@@ -126,7 +127,9 @@ const RawMaterialStockDashboard = () => {
         <NavigationHeader />
       )}
       <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 ${theme !== 'admin' ? 'mt-16' : ''}`}>
-      <h1 className="text-2xl font-bold mb-4">Dashboard Stok Bahan Mentah</h1>
+        {/* Breadcrumb Navigation */}
+        <BreadcrumbNavigation paths={[{ name: 'Beranda', path: '/main-dashboard' }, { name: 'Stok Bahan Mentah', path: '/raw-material-stock' }]} className="mb-4" />
+        <h1 className="text-2xl font-bold mb-4">Dashboard Stok Bahan Mentah</h1>
         
         {/* Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -184,6 +187,9 @@ const RawMaterialStockDashboard = () => {
                   Stok Menu
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Total Stok
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Satuan
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -213,6 +219,9 @@ const RawMaterialStockDashboard = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {(Number(material.menu_stock) || 0)}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-card-foreground font-bold">
+                    {(Number(material.current_stock) || 0) + (Number(material.menu_stock) || 0)}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground cursor-pointer"
                       onClick={() => handleEditClick(material)}
                   >
@@ -224,7 +233,7 @@ const RawMaterialStockDashboard = () => {
 
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {/* Harga per Item */}
-                    {(Number(material.price_per_item) || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
+                    {(Number(material.price_per_item) || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {(Number(material.current_stock) + Number(material.menu_stock)) < Number(material.stok_minimum) && (
@@ -290,6 +299,10 @@ const RawMaterialStockDashboard = () => {
                                   <p>{(Number(material.menu_stock) || 0)} {material.unit}</p>
                                 </div>
                                 <div>
+                                  <p className="font-medium">Total Stok:</p>
+                                  <p>{(Number(material.current_stock) || 0) + (Number(material.menu_stock) || 0)} {material.unit}</p>
+                                </div>
+                                <div>
                                   <p className="font-medium">Stok Min:</p>
                                   <p onClick={() => handleEditClick(material)} className="cursor-pointer">{(Number(material.stok_minimum) || 0)} {material.unit}</p>
                                 </div>
@@ -299,7 +312,7 @@ const RawMaterialStockDashboard = () => {
                               <div className="grid grid-cols-1 gap-2 text-sm text-text-secondary pb-2 mb-2 border-b border-border">
                                 <div> {/* Harga per Item */}
                                   <p className="font-medium">Harga per Item:</p>
-                                  <p>{(Number(material.price_per_item) || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}</p>
+                                  <p>{(Number(material.price_per_item) || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                                 </div>
                               </div>
                 <div className="flex justify-end space-x-2">
