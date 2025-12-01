@@ -36,6 +36,8 @@ import CriticalStockPage from './pages/CriticalStock';
 import MainCriticalStockPage from './pages/MainCriticalStock';
 import AdminUangBisnis from './pages/AdminUangBisnis'; // Add this import
 
+import TransactionTrash from './pages/TransactionTrash';
+
 // ProtectedRoute component
 const ProtectedRoute = ({ children, allowedRoles, redirectPathForForbiddenRoles }) => {
   const token = localStorage.getItem('token');
@@ -91,6 +93,7 @@ const AppRoutes = () => {
         <Route path="/menu-management" element={<MenuManagement />} />
         <Route path="/expense-tracking" element={<ExpenseTracking />} />
         <Route path="/transaction-history" element={<TransactionHistory />} />
+        <Route path="/transaction-trash" element={<TransactionTrash />} />
         <Route path="/business-reports" element={<BusinessReports />} />
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/settings" element={<Settings />} />

@@ -602,6 +602,34 @@ const setupDatabase = async () => {
       console.log('Added manual_discount column to transactions table.');
     }
 
+    // Check and add deleted_at column to transactions if it doesn't exist
+    const checkDeletedAtColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'deleted_at';
+    `;
+    const addDeletedAtColumn = `
+      ALTER TABLE transactions ADD COLUMN deleted_at DATETIME DEFAULT NULL;
+    `;
+    const [deletedAtRows] = await connection.query(checkDeletedAtColumn);
+    if (deletedAtRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addDeletedAtColumn);
+      console.log('Added deleted_at column to transactions table.');
+    }
+
+    // Check and add is_permanent_delete column to transactions if it doesn't exist
+    const checkIsPermanentDeleteColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'is_permanent_delete';
+    `;
+    const addIsPermanentDeleteColumn = `
+      ALTER TABLE transactions ADD COLUMN is_permanent_delete BOOLEAN DEFAULT FALSE;
+    `;
+    const [isPermanentDeleteRows] = await connection.query(checkIsPermanentDeleteColumn);
+    if (isPermanentDeleteRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addIsPermanentDeleteColumn);
+      console.log('Added is_permanent_delete column to transactions table.');
+    }
+
     // Check and add hpp column to menu_items if it doesn't exist
     const checkHppColumn = `
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
@@ -769,6 +797,20 @@ const setupDatabase = async () => {
     await addIndexIfNotExists(connection, 'orders', 'idx_created_at', 'created_at');
     console.log('Index optimization check complete.');
     // --- Akhir Optimasi Indeks ---
+
+    // --- Automatic Deletion of Old Trashed Transactions ---
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const deleteOldSql = `
+      DELETE FROM transactions 
+      WHERE deleted_at IS NOT NULL AND deleted_at < ?
+    `;
+    const [deleteResult] = await connection.query(deleteOldSql, [thirtyDaysAgo]);
+    if (deleteResult.affectedRows > 0) {
+      console.log(`Successfully deleted ${deleteResult.affectedRows} old trashed transactions.`);
+    }
+    // --- End Automatic Deletion ---
+
 
     connection.release();
 

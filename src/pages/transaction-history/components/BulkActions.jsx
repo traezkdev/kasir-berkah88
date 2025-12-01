@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
@@ -116,6 +117,19 @@ const BulkActions = ({
               </Button>
             ))}
           </div>
+
+          {userRole === 'admin' && (
+            <Link to="/transaction-trash">
+              <Button
+                variant="secondary"
+                size="sm"
+                iconName="Trash"
+                iconPosition="left"
+              >
+                Tong Sampah
+              </Button>
+            </Link>
+          )}
 
           {/* Clear All Button */}
           <Button
