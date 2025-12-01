@@ -1,152 +1,152 @@
 # Kasir Berkah 88
 
-A modern web-based Point of Sale (POS) and inventory management system built with React for the frontend and Node.js/Express.js for the backend. Designed to help small to medium businesses efficiently manage sales, inventory, raw materials, and staff with robust role-based access control.
+Sistem manajemen Point of Sale (POS) dan inventaris berbasis web modern yang dibangun dengan React untuk frontend dan Node.js/Express.js untuk backend. Dirancang untuk membantu bisnis kecil hingga menengah mengelola penjualan, inventaris, bahan baku, dan staf secara efisien dengan kontrol akses berbasis peran yang kuat.
 
-## 🚀 Features
+## 🚀 Fitur
 
-### Frontend & Core Technologies
--   **React 18** - Modern JavaScript library for building user interfaces.
--   **Vite** - Lightning-fast build tool and development server.
--   **Redux Toolkit** - State management with simplified Redux setup.
--   **TailwindCSS** - Utility-first CSS framework for rapid UI development and responsive design.
--   **React Router v6** - Declarative routing for React applications.
--   **Data Visualization** - Integrated D3.js and Recharts for powerful data visualization (where applicable).
--   **Form Management** - React Hook Form for efficient form handling.
--   **Animation** - Framer Motion for smooth UI animations (where applicable).
--   **Authentication (JWT)** - Secure user login and session management.
+### Frontend & Teknologi Inti
+-   **React 18** - Pustaka JavaScript modern untuk membangun antarmuka pengguna.
+-   **Vite** - Alat pembangunan dan server pengembangan yang sangat cepat.
+-   **Redux Toolkit** - Manajemen status dengan pengaturan Redux yang disederhanakan.
+-   **TailwindCSS** - Kerangka kerja CSS berbasis utilitas untuk pengembangan UI yang cepat dan desain responsif.
+-   **React Router v6** - Routing deklaratif untuk aplikasi React.
+-   **Visualisasi Data** - Integrasi D3.js dan Recharts untuk visualisasi data yang kuat (jika berlaku).
+-   **Form Management** - React Hook Form untuk penanganan formulir yang efisien.
+-   **Animation** - Framer Motion untuk animasi UI yang halus (jika berlaku).
+-   **Authentication (JWT)** - Secure user login dan session management.
 
-### Key Application Features
+### Fitur Aplikasi Utama
 
--   **Role-Based Access Control (RBAC):**
-    -   **Admin:** Full access to all features, settings, user management, and sensitive data operations.
-    -   **Owner:** Access to financial reports, raw material management, and dashboard insights.
-    -   **Kasir (Cashier):** Primarily for processing sales transactions.
-    -   **User:** Limited access, typically for basic operations.
-    -   **Guest:** Very limited view access.
--   **Main Dashboard (`/`):**
-    -   Overview of key business metrics (revenue, expenses, net profit, stock value).
-    -   Quick action buttons for common tasks (e.g., new transaction, manage menu).
-    -   **Read-only Data Synchronization Status:** Displays the last updated time for Menu Stock, Raw Materials Stock, and Lapak Funds.
--   **Menu Management:**
-    -   CRUD (Create, Read, Update, Delete) operations for menu items.
-    -   Manage item prices, stock levels, categories, HPP (Cost of Goods Sold), discounts, and featured status.
--   **Raw Material Stock Management (`/raw-material-stock`):**
-    -   Comprehensive CRUD operations for raw materials.
-    -   Track `current_stock` (stok fisik), `menu_stock` (stok bahan yang sudah diolah/siap jual), `stok_minimum`, `suggestion_purchase_quantity`, `price_per_item`, and `custom_unit`.
-    -   **Combined Stock Logic:** Critically determines stock status based on `(current_stock + menu_stock)`.
-    -   Features for recording stock-in and stock-out movements.
--   **Critical Stock View (`/main-critical-stock`):**
-    -   Dedicated page to list raw materials whose combined stock (`current_stock + menu_stock`) falls below the `stok_minimum`.
-    -   Detailed notifications indicating the deficit (e.g., "Stok menipis, kurang X dari standar").
-    -   Provides suggested purchase quantities for critical items.
--   **Transaction Management:**
-    -   Process new sales transactions efficiently.
-    -   View transaction history, including soft-deleted (trashed) transactions.
-    -   Support for manual discounts and employee meals.
--   **Expense Tracking:**
-    -   Record and manage business expenses by category.
-    -   View historical expenses.
--   **Account Management:**
-    -   Manage "Owner Deposit" and "Lapak Deposit" accounts for financial tracking.
-    -   Record deposits and expenses for each account.
--   **Settings (`/settings`):**
-    -   General application settings (website title, logo, description, registration).
-    -   User and Employee Management (Admin only).
-    -   Master password management for sensitive operations.
-    -   **Data Synchronization Modal:** A dedicated modal to manually trigger specific data synchronizations for Menu Stock, Raw Materials, and Lapak Funds, each updating its own timestamp.
+-   **Kontrol Akses Berbasis Peran (RBAC):**
+    -   **Admin:** Akses penuh ke semua fitur, pengaturan, manajemen pengguna, dan operasi data sensitif.
+    -   **Owner:** Akses ke laporan keuangan, bahan baku, dan wawasan dashboard.
+    -   **Kasir:** Terutama untuk memproses transaksi penjualan.
+    -   **User:** Akses terbatas, biasanya untuk operasi dasar.
+    -   **Guest:** Akses tampilan yang sangat terbatas.
+-   **Dashboard Utama (`/`):**
+    -   Gambaran umum metrik bisnis utama (pendapatan, pengeluaran, laba bersih, nilai stok).
+    -   Tombol tindakan cepat untuk tugas-tugas umum (misalnya, transaksi baru, kelola menu).
+    -   **Status Sinkronisasi Data Hanya Baca:** Menampilkan waktu terakhir diperbarui untuk Stok Menu, Stok Bahan Baku, dan Dana Lapak.
+-   **Manajemen Menu:**
+    -   Operasi CRUD (Buat, Baca, Perbarui, Hapus) untuk item menu.
+    -   Kelola harga item, tingkat stok, kategori, HPP (Harga Pokok Penjualan), diskon, dan status unggulan.
+-   **Manajemen Stok Bahan Baku (`/raw-material-stock`):**
+    -   Operasi CRUD yang komprehensif untuk bahan baku.
+    -   Lacak `current_stock` (stok fisik), `menu_stock` (stok bahan yang sudah diolah/siap jual), `stok_minimum`, `suggestion_purchase_quantity`, `price_per_item`, dan `custom_unit`.
+    -   **Logika Stok Gabungan:** Secara kritis menentukan status stok berdasarkan `(current_stock + menu_stock)`.
+    -   Fitur untuk mencatat pergerakan stok masuk dan keluar.
+-   **Tampilan Stok Kritis (`/main-critical-stock`):**
+    -   Halaman khusus untuk menampilkan bahan baku yang stok gabungannya (`current_stock + menu_stock`) berada di bawah `stok_minimum`.
+    -   Notifikasi terperinci yang menunjukkan defisit (misalnya, "Stok menipis, kurang X dari standar").
+    -   Menyediakan jumlah pembelian yang disarankan untuk item-item kritis.
+-   **Manajemen Transaksi:**
+    -   Memproses transaksi penjualan baru secara efisien.
+    -   Melihat riwayat transaksi, termasuk transaksi yang dihapus secara lunak (dibuang).
+    -   Dukungan untuk diskon manual dan makanan karyawan.
+-   **Pelacakan Pengeluaran:**
+    -   Mencatat dan mengelola pengeluaran bisnis berdasarkan kategori.
+    -   Melihat riwayat pengeluaran.
+-   **Manajemen Akun:**
+    -   Mengelola akun "Owner Deposit" dan "Lapak Deposit" untuk pelacakan keuangan.
+    -   Mencatat deposit dan pengeluaran untuk setiap akun.
+-   **Pengaturan (`/settings`):**
+    -   Pengaturan aplikasi umum (judul situs web, logo, deskripsi, pendaftaran).
+    -   Manajemen Pengguna dan Karyawan (khusus Admin).
+    -   Manajemen kata sandi master untuk operasi sensitif.
+    -   **Modal Sinkronisasi Data:** Modal khusus untuk secara manual memicu sinkronisasi data tertentu untuk Stok Menu, Bahan Baku, dan Dana Lapak, masing-masing memperbarui stempel waktunya sendiri.
 
 ### Backend (API)
--   **Node.js with Express.js** - Robust and scalable server-side framework.
--   **MySQL Database** - Relational database for storing all application data.
--   **`rawMaterialsDb.js`** - Centralized module for managing raw material database operations, ensuring data integrity and business logic.
--   **`database.js`** - Manages database connection and automatic schema migrations/updates on server startup.
--   **JWT for API Security** - Protects API endpoints with token-based authentication.
+-   **Node.js dengan Express.js** - Kerangka kerja sisi server yang kuat dan skalabel.
+-   **MySQL Database** - Basis data relasional untuk menyimpan semua data aplikasi.
+-   **`rawMaterialsDb.js`** - Modul terpusat untuk mengelola operasi basis data bahan baku, memastikan integritas data dan logika bisnis.
+-   **`database.js`** - Mengelola koneksi basis data dan migrasi/pembaruan skema otomatis saat server dimulai.
+-   **JWT untuk Keamanan API** - Melindungi endpoint API dengan autentikasi berbasis token.
 
-## 📋 Prerequisites
+## 📋 Prasyarat
 
--   Node.js (v14.x or higher)
--   npm or yarn
--   MySQL Server (local or remote access)
+-   Node.js (v14.x atau lebih tinggi)
+-   npm atau yarn
+-   MySQL Server (akses lokal atau jarak jauh)
 
-## 🛠️ Installation
+## 🛠️ Instalasi
 
-1.  **Clone the repository:**
+1.  **Kloning repositori:**
     ```bash
     git clone [repository-url]
     cd kasir-berkah88
     ```
 
-2.  **Backend Setup:**
+2.  **Pengaturan Backend:**
     ```bash
     cd backend
     npm install
-    # Create a .env file based on .env.example with your MySQL credentials and JWT_SECRET
-    # Example .env content:
+    # Buat file .env berdasarkan .env.example dengan kredensial MySQL dan JWT_SECRET Anda
+    # Contoh isi .env:
     # DB_HOST=localhost
     # DB_USER=root
-    # DB_PASSWORD=your_password
+    # DB_PASSWORD=kata_sandi_anda
     # DB_DATABASE=kasir_berkah88
-    # JWT_SECRET=supersecretjwtkey
-    # VITE_API_URL=http://localhost:4000 (or your deployed backend URL)
-    npm start # Or use `node server.js`
-    # The database tables will be automatically created/updated on first run.
+    # JWT_SECRET=kunci_rahasia_jwt_super
+    # VITE_API_URL=http://localhost:4000 (atau URL backend yang Anda deploy)
+    npm start # Atau gunakan `node server.js`
+    # Tabel database akan secara otomatis dibuat/diperbarui pada saat pertama dijalankan.
     ```
 
-3.  **Frontend Setup:**
+3.  **Pengaturan Frontend:**
     ```bash
-    cd .. # Go back to the root directory
+    cd .. # Kembali ke direktori root
     npm install
-    # Create a .env file based on .env.example with your backend API URL
-    # Example .env content:
+    # Buat file .env berdasarkan .env.example dengan URL API backend Anda
+    # Contoh isi .env:
     # VITE_API_URL=http://localhost:4000
     npm run dev
     ```
 
-4.  **Access the Application:**
-    Open your browser and navigate to `http://localhost:5173` (or the address provided by Vite).
+4.  **Akses Aplikasi:**
+    Buka browser Anda dan navigasikan ke `http://localhost:5173` (atau alamat yang disediakan oleh Vite).
 
-## 📁 Project Structure
+## 📁 Struktur Proyek
 
 ```
 kasir-berkah88/
-├── public/                 # Static assets for frontend
-├── src/                    # Frontend source code
-│   ├── components/         # Reusable UI components
-│   ├── pages/              # Page components (e.g., MainDashboard, RawMaterialStock)
-│   ├── styles/             # Global styles and Tailwind configuration
-│   ├── utils/              # Utility functions (authFetch.js, etc.)
-│   ├── App.jsx             # Main application component
-│   ├── Routes.jsx          # Application routes configuration
-│   └── index.jsx           # Application entry point
-├── backend/                # Backend source code
-│   ├── database.js         # MySQL connection and schema management
-│   ├── rawMaterialsDb.js   # Raw material specific database functions
-│   ├── server.js           # Main Express.js server and API routes
-│   └── .env                # Backend environment variables
-├── .env                    # Frontend environment variables
-├── index.html              # Frontend HTML template
-├── package.json            # Project dependencies and scripts (frontend)
-├── tailwind.config.js      # Tailwind CSS configuration
-└── vite.config.js          # Vite configuration
+├── public/                 # Aset statis untuk frontend
+├── src/                    # Kode sumber frontend
+│   ├── components/         # Komponen UI yang dapat digunakan kembali
+│   ├── pages/              # Komponen halaman (misalnya, MainDashboard, RawMaterialStock)
+│   ├── styles/             # Gaya global dan konfigurasi Tailwind
+│   ├── utils/              # Fungsi utilitas (authFetch.js, dll.)
+│   ├── App.jsx             # Komponen aplikasi utama
+│   ├── Routes.jsx          # Konfigurasi rute aplikasi
+│   └── index.jsx           # Titik masuk aplikasi
+├── backend/                # Kode sumber backend
+│   ├── database.js         # Koneksi dan manajemen skema MySQL
+│   ├── rawMaterialsDb.js   # Fungsi database khusus bahan baku
+│   ├── server.js           # Server Express.js utama dan rute API
+│   └── .env                # Variabel lingkungan backend
+├── .env                    # Variabel lingkungan frontend
+├── index.html              # Template HTML frontend
+├── package.json            # Dependensi dan skrip proyek (frontend)
+├── tailwind.config.js      # Konfigurasi Tailwind CSS
+└── vite.config.js          # Konfigurasi Vite
 ```
 
 ## 🎨 Styling
 
-This project uses Tailwind CSS for styling. The configuration includes:
--   Forms plugin for form styling.
--   Typography plugin for text styling.
--   Aspect ratio plugin for responsive elements.
--   Container queries for component-specific responsive design.
--   Fluid typography for responsive text.
--   Animation utilities.
+Proyek ini menggunakan Tailwind CSS untuk styling. Konfigurasi meliputi:
+-   Plugin Formulir untuk styling formulir.
+-   Plugin Tipografi untuk styling teks.
+-   Plugin Rasio Aspek untuk elemen responsif.
+-   Kueri Kontainer untuk desain responsif khusus komponen.
+-   Tipografi Cair untuk teks responsif.
+-   Utilitas animasi.
 
-The app is built with responsive design using Tailwind CSS breakpoints.
+Aplikasi ini dibangun dengan desain responsif menggunakan breakpoint Tailwind CSS.
 
 ## 📦 Deployment
 
-Build the frontend application for production:
+Bangun aplikasi frontend untuk produksi:
 
 ```bash
 npm run build
 ```
-Deploy the `dist` folder to your static hosting. The `backend` folder should be deployed separately to a Node.js server environment.
+Deploy folder `dist` ke hosting statis Anda. Folder `backend` harus di-deploy secara terpisah ke lingkungan server Node.js.
