@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FaPlus, FaEdit, FaTrash, FaExclamationTriangle } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+
 import EditRawMaterialModal from '../RawMaterialStock/EditRawMaterialModal';
 import AddRawMaterialModal from '../RawMaterialStock/AddRawMaterialModal';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -30,6 +31,7 @@ const OwnerRawMaterialStockDashboard = () => {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
   const [selectedMaterial, setSelectedMaterial] = useState(null);
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -71,9 +73,12 @@ const OwnerRawMaterialStockDashboard = () => {
     setIsAddModalOpen(true);
   };
 
+
+
   const handleCloseModals = () => {
     setIsEditModalOpen(false);
     setIsAddModalOpen(false);
+
     setSelectedMaterial(null);
     fetchRawMaterials();
   };
@@ -104,9 +109,9 @@ const OwnerRawMaterialStockDashboard = () => {
     return <div className="p-4 md:p-6 text-center text-red-500">{error}</div>;
   }
 
-  const totalStockQuantity = rawMaterials.reduce((sum, material) => sum + toSafeNumber(material.current_stock), 0);
-  const totalStockValue = rawMaterials.reduce((sum, material) => sum + (toSafeNumber(material.current_stock) * toSafeNumber(material.price_per_item)), 0);
-  const lowStockItemsCount = rawMaterials.filter(material => toSafeNumber(material.current_stock) < toSafeNumber(material.stok_minimum)).length;
+  const totalStockQuantity = rawMaterials.reduce((sum, material) => sum + toSafeNumber(material.current_stock) + toSafeNumber(material.menu_stock), 0);
+  const totalStockValue = rawMaterials.reduce((sum, material) => sum + ((toSafeNumber(material.current_stock) + toSafeNumber(material.menu_stock)) * toSafeNumber(material.price_per_item)), 0);
+  const lowStockItemsCount = rawMaterials.filter(material => (toSafeNumber(material.current_stock) + toSafeNumber(material.menu_stock)) < toSafeNumber(material.stok_minimum)).length;
 
 
   return (
@@ -160,20 +165,19 @@ const OwnerRawMaterialStockDashboard = () => {
                   Stok Saat Ini
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Stok Menu
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Satuan
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Stok Min
                 </th>
-                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Saran Pembelian
-                </th>
+
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Harga per Item
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Stok Standar/Hari
-                </th>
+
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
@@ -191,6 +195,9 @@ const OwnerRawMaterialStockDashboard = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {toSafeNumber(material.current_stock)}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {toSafeNumber(material.menu_stock)}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer"
                       onClick={() => handleEditClick(material)}
                   >
@@ -199,15 +206,11 @@ const OwnerRawMaterialStockDashboard = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {toSafeNumber(material.stok_minimum)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {toSafeNumber(material.suggestion_purchase_quantity)}
-                  </td>
+
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {toSafeNumber(material.price_per_item).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {toSafeNumber(material.standard_stock_per_day)} {material.custom_unit}
-                  </td>
+
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {Number(material.current_stock) < Number(material.stok_minimum) && (
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 flex items-center">
@@ -221,6 +224,8 @@ const OwnerRawMaterialStockDashboard = () => {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+
+
                     <button
                       onClick={() => handleEditClick(material)}
                       className="text-blue-600 hover:text-blue-900 mr-3"
@@ -259,37 +264,42 @@ const OwnerRawMaterialStockDashboard = () => {
                     )}
                   </div>
                 </div>
-                              <div className="grid grid-cols-2 gap-2 text-sm text-gray-700 pb-2 mb-2 border-b border-gray-200">
+                              <div className="grid grid-cols-2 gap-2 text-sm text-text-secondary pb-2 mb-2 border-b border-border">
                                 <div>
                                   <p className="font-medium">Stok Saat Ini:</p>
-                                  <p onClick={() => handleEditClick(material)} className="cursor-pointer">{toSafeNumber(material.current_stock)} {material.unit}</p>
+                                  <p>{(Number(material.current_stock) || 0)} {material.unit}</p>
+                                </div>
+                                <div>
+                                  <p className="font-medium">Stok Menu:</p>
+                                  <p>{(Number(material.menu_stock) || 0)} {material.unit}</p>
                                 </div>
                                 <div>
                                   <p className="font-medium">Stok Min:</p>
-                                  <p onClick={() => handleEditClick(material)} className="cursor-pointer">{toSafeNumber(material.stok_minimum)} {material.unit}</p>
+                                  <p onClick={() => handleEditClick(material)} className="cursor-pointer">{(Number(material.stok_minimum) || 0)} {material.unit}</p>
                                 </div>
                               </div>
-                              <div className="grid grid-cols-2 gap-2 text-sm text-gray-700 pb-2 mb-2 border-b border-gray-200">
-                                <div>
-                                  <p className="font-medium">Saran Pembelian:</p>
-                                  <p>{toSafeNumber(material.suggestion_purchase_quantity)} {material.unit}</p>
-                                </div>
-                                <div>
+
+                              {/* Block 2: Harga per Item only */}
+                              <div className="grid grid-cols-1 gap-2 text-sm text-text-secondary pb-2 mb-2 border-b border-border">
+                                <div> {/* Harga per Item */}
                                   <p className="font-medium">Harga per Item:</p>
-                                  <p>{toSafeNumber(material.price_per_item).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}</p>
+                                  <p>{(Number(material.price_per_item) || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}</p>
                                 </div>
                               </div>
                 <div className="flex justify-end space-x-2">
+
+
+
                   <button
                     onClick={() => handleEditClick(material)}
-                    className="text-blue-600 hover:text-blue-900 p-2 rounded-full bg-blue-100"
+                    className="text-blue-600 hover:text-blue-900 p-2 rounded-full bg-primary/10"
                     title="Edit Bahan"
                   >
                     <FaEdit />
                   </button>
                   <button
                     onClick={() => handleDeleteClick(material.id)}
-                    className="text-red-600 hover:text-red-900 p-2 rounded-full bg-red-100"
+                    className="text-red-600 hover:text-red-900 p-2 rounded-full bg-destructive/10"
                     title="Hapus Bahan"
                   >
                     <FaTrash />
@@ -301,6 +311,8 @@ const OwnerRawMaterialStockDashboard = () => {
 
 
         {selectedMaterial && (
+          <>
+
             <EditRawMaterialModal
               isOpen={isEditModalOpen}
               onClose={handleCloseModals}
@@ -309,6 +321,7 @@ const OwnerRawMaterialStockDashboard = () => {
               showMessage={showMessage}
               showError={showError}
             />
+          </>
         )}
 
         <AddRawMaterialModal

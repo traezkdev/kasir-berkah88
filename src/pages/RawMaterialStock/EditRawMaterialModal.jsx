@@ -7,7 +7,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
   const [customUnit, setCustomUnit] = useState('');
   const [stokMinimum, setStokMinimum] = useState('');
   const [pricePerItem, setPricePerItem] = useState('');
-  const [standardStockPerDay, setStandardStockPerDay] = useState('');
+
   const [purchaseBufferAmount, setPurchaseBufferAmount] = useState(''); // New state for purchase buffer
   const [currentStock, setCurrentStock] = useState('');
   const [menuStock, setMenuStock] = useState(''); // New state for menu_stock
@@ -32,16 +32,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
         setStokMinimum('');
       }
       setPricePerItem(material.price_per_item ?? '');
-      const standardStockVal = parseFloat(material.standard_stock_per_day);
-      if (!isNaN(standardStockVal)) {
-        if (standardStockVal % 1 !== 0) {
-          setStandardStockPerDay(standardStockVal);
-        } else {
-          setStandardStockPerDay(parseInt(standardStockVal, 10));
-        }
-      } else {
-        setStandardStockPerDay('');
-      }
+
       
       const purchaseBufferVal = parseFloat(material.purchase_buffer_amount); // Initialize purchaseBufferAmount
       if (!isNaN(purchaseBufferVal)) {
@@ -102,7 +93,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
         custom_unit: customUnit,
         stok_minimum: parseFloat(stokMinimum) || 0,
         price_per_item: parseFloat(pricePerItem) || 0,
-        standard_stock_per_day: parseFloat(standardStockPerDay) || 0,
+
         purchase_buffer_amount: parseFloat(purchaseBufferAmount) || 0, // Include purchase_buffer_amount in the update
         current_stock: parseFloat(currentStock) || 0,
         menu_stock: parseFloat(menuStock) || 0, // Include menu_stock in the update
@@ -223,18 +214,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
               required
             />
           </div>
-          <div className="mb-4">
-            <label htmlFor="standardStockPerDay" className="block text-muted-foreground text-sm font-bold mb-2">Stok Standar per Hari</label>
-            <input
-              type="number"
-              id="standardStockPerDay"
-              className="appearance-none bg-input border-border rounded w-full py-2 px-3 text-foreground leading-tight focus:outline-none focus:ring-2 focus:ring-primary/50"
-              value={standardStockPerDay}
-              onChange={(e) => setStandardStockPerDay(e.target.value)}
-              min="0"
-              required
-            />
-          </div>
+
           {error && <p className="text-red-500 text-xs italic mb-4">{error}</p>}
           <div className="flex justify-end">
             <button
