@@ -8,6 +8,7 @@ import ConfirmationModal from '../../components/ui/ConfirmationModal';
 import { useNavigate } from 'react-router-dom';
 import AppIcon from '../../components/AppIcon';
 import RestaurantSettingsModal from './components/RestaurantSettingsModal';
+import DataSyncModal from './DataSyncModal';
 
 import SocialShareSettings from './SocialShareSettings';
 import CategorySettings from './CategorySettings';
@@ -96,6 +97,7 @@ const Settings = () => {
   const navigate = useNavigate();
   const [isRestaurantSettingsModalOpen, setIsRestaurantSettingsModalOpen] = useState(false);
   const [restaurantSettings, setRestaurantSettings] = useState({ restaurant_name: 'Trz Kasir Apps', restaurant_slogan: 'Aplikasi kasir modern cepat dan keren' });
+  const [isDataSyncModalOpen, setIsDataSyncModalOpen] = useState(false);
 
   // --- Effects ---
   useEffect(() => {
@@ -502,31 +504,6 @@ const Settings = () => {
     }
   };
 
-  const handleMarkDataAsUpdated = async () => {
-    clearMessages();
-    setIsLoading(true);
-    try {
-        const response = await authFetch(`${apiUrl}/api/settings/data-updated-timestamp`, {
-            method: 'PUT',
-        });
-        const data = await response.json();
-        if (response.ok) {
-            setMessage(`Data ditandai sebagai diperbarui pada: ${new Date(data.timestamp).toLocaleString()}`);
-        } else {
-            setError(data.error || 'Gagal menandai data sebagai diperbarui');
-        }
-    } catch (err) {
-        setError('Kesalahan jaringan atau server tidak dapat dijangkau');
-    } finally {
-        setIsLoading(false);
-        setIsConfirmationModalOpen(false);
-    }
-  };
-
-  const openConfirmationModal = () => {
-    setIsConfirmationModalOpen(true);
-  };
-
   const confirmDeleteLogo = () => {
     setShowDeleteLogoConfirmation(true);
   };
@@ -587,7 +564,7 @@ const Settings = () => {
                 <SettingsCard icon="Contact" title="Manajemen Karyawan" description="Tambah, ubah, dan hapus data karyawan." onClick={() => setActiveModal('employeeManagement')} />
                 <SettingsCard icon="ShieldAlert" title="Kata Sandi Master" description="Ubah kata sandi master untuk tindakan sensitif." onClick={() => setActiveModal('masterPassword')} />
                 <SettingsCard icon="Trash2" title="Hapus Semua Data" description="Hapus semua transaksi, pengeluaran, dan reset stok." onClick={() => setActiveModal('clearAllData')} />
-                <SettingsCard icon="RefreshCw" title="Sinkronisasi Data" description="Tandai semua data (menu, harga) telah diperbarui." onClick={openConfirmationModal} />
+                <SettingsCard icon="RefreshCw" title="Sinkronisasi Data" description="Kelola pembaruan data menu, stok, dan kas." onClick={() => setIsDataSyncModalOpen(true)} />
               </div>
             </div>
           )}
@@ -597,6 +574,8 @@ const Settings = () => {
       </main>
 
       {/* --- ALL MODALS --- */}
+      <DataSyncModal isOpen={isDataSyncModalOpen} onClose={() => setIsDataSyncModalOpen(false)} />
+      
       <SettingsModal title="Ubah Judul Dasbor Kasir" isOpen={activeModal === 'cashierDashboardTitle'} onClose={handleModalClose}>
         <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/cashier_dashboard_title', { value: newCashierDashboardTitle }, 'Judul dasbor kasir berhasil diperbarui!')} className="space-y-4">
           <Input label="Judul Dasbor Kasir Baru" name="newCashierDashboardTitle" type="text" value={newCashierDashboardTitle} onChange={(e) => setNewCashierDashboardTitle(e.target.value)} required />
@@ -852,16 +831,6 @@ const Settings = () => {
         title="Konfirmasi Penghapusan Karyawan"
         message="Apakah Anda yakin ingin menghapus karyawan ini? Tindakan ini tidak dapat dibatalkan."
         confirmText="Ya, Hapus Karyawan"
-        cancelText="Batal"
-      />
-
-      <ConfirmationModal
-        isOpen={isConfirmationModalOpen}
-        onClose={() => setIsConfirmationModalOpen(false)}
-        onConfirm={handleMarkDataAsUpdated}
-        title="Konfirmasi Pembaruan Data"
-        message="Apakah Anda yakin ingin menandai semua data sebagai telah diperbarui? Tindakan ini akan mencatat waktu saat ini sebagai waktu pembaruan terakhir."
-        confirmText="Ya, Tandai Sudah Diperbarui"
         cancelText="Batal"
       />
 

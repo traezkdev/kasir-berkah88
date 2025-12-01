@@ -10,7 +10,6 @@ import RecentTransactionsList from './components/RecentTransactionsList';
 import BusinessSummaryCard from './components/BusinessSummaryCard';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
-import useNotification from '../../hooks/useNotification';
 // import DarkModeToggle from '../../components/ui/DarkModeToggle';
 import authFetch from '../../utils/authFetch'; // Add this import
 
@@ -22,7 +21,6 @@ const MainDashboard = ({ headerTitle }) => {
   const { theme } = useTheme();
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
-  const { message, error: notificationError, showMessage, showError } = useNotification();
 
       const fetchData = async (currentUserRole) => { // Add currentUserRole parameter
       const token = localStorage.getItem('token');
@@ -362,38 +360,6 @@ const MainDashboard = ({ headerTitle }) => {
         }
       });
     };
-    const createSyncHandler = (syncType, endpoint) => {
-      return async () => {
-        showMessage(`Memulai sinkronisasi ${syncType}...`);
-        try {
-          const timestampResponse = await authFetch(`${apiUrl}${endpoint}`, {
-            method: 'PUT',
-          });
-
-          if (!timestampResponse.ok) {
-            let errorMessage = `Gagal sinkronisasi ${syncType}.`;
-            try {
-              const errorData = await timestampResponse.json();
-              errorMessage = errorData.message || errorMessage;
-            } catch (e) { /* Ignore JSON parsing error */ }
-            throw new Error(errorMessage);
-          }
-
-          await fetchData(); // Refetch all data to get the new timestamp
-          showMessage(`Data ${syncType} berhasil disinkronkan!`);
-
-        } catch (err) {
-          console.error(`Error syncing ${syncType}:`, err);
-          showError(`Error: ${err.message || 'Gagal menyambung ke server.'}`);
-        }
-      };
-    };
-
-    const handleSyncMenuStock = createSyncHandler('stok menu', '/api/sync/timestamp/menu-stock');
-    const handleSyncRawMaterials = createSyncHandler('bahan baku', '/api/sync/timestamp/raw-materials');
-    const handleSyncLapakFunds = createSyncHandler('uang lapak', '/api/sync/timestamp/lapak-funds');
-
-      
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -640,85 +606,58 @@ const MainDashboard = ({ headerTitle }) => {
               </div>
             </div>
 
-            {/* Data Sync Section */}
+            {/* Data Sync Status Section */}
             <div className="mt-8">
               <h2 className="text-xl font-semibold text-text-primary mb-4">
-                Sinkronisasi Data
+                Status Sinkronisasi Data
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Sync Card: Menu Stock */}
-                <div className="bg-card border border-border rounded-lg p-4 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="p-2 bg-primary/10 rounded-md">
-                        <Icon name="BookUser" size={20} className="text-primary" />
-                      </div>
-                      <h3 className="font-semibold text-text-primary">Update Stok Menu</h3>
+                {/* Status Card: Menu Stock */}
+                <div className="bg-card border border-border rounded-lg p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-primary/10 rounded-md">
+                      <Icon name="BookUser" size={20} className="text-primary" />
                     </div>
-                    <p className="text-xs text-text-secondary">Sinkronisasi data harga dan jumlah stok menu.</p>
+                    <h3 className="font-semibold text-text-primary">Stok Menu</h3>
                   </div>
-                  <div className="mt-4">
-                    <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
-                    <p className="text-sm font-medium text-text-primary mb-3">
-                      {dashboardData.timestamps?.menuStock 
-                        ? new Date(dashboardData.timestamps.menuStock).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                        : 'Belum pernah'}
-                    </p>
-                    <Button onClick={handleSyncMenuStock} variant="outline" className="w-full">
-                      <Icon name="RefreshCw" size={14} className="mr-2" />
-                      Update Sekarang
-                    </Button>
-                  </div>
+                  <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
+                  <p className="text-sm font-medium text-text-primary">
+                    {dashboardData.timestamps?.menuStock 
+                      ? new Date(dashboardData.timestamps.menuStock).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                      : 'Belum pernah'}
+                  </p>
                 </div>
 
-                {/* Sync Card: Raw Materials */}
-                <div className="bg-card border border-border rounded-lg p-4 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="p-2 bg-success/10 rounded-md">
-                        <Icon name="Package" size={20} className="text-success" />
-                      </div>
-                      <h3 className="font-semibold text-text-primary">Update Bahan Baku</h3>
+                {/* Status Card: Raw Materials */}
+                <div className="bg-card border border-border rounded-lg p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-success/10 rounded-md">
+                      <Icon name="Package" size={20} className="text-success" />
                     </div>
-                    <p className="text-xs text-text-secondary">Sinkronisasi data stok bahan baku mentah.</p>
+                    <h3 className="font-semibold text-text-primary">Bahan Baku</h3>
                   </div>
-                  <div className="mt-4">
-                    <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
-                    <p className="text-sm font-medium text-text-primary mb-3">
-                      {dashboardData.timestamps?.rawMaterials
-                        ? new Date(dashboardData.timestamps.rawMaterials).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                        : 'Belum pernah'}
-                    </p>
-                    <Button onClick={handleSyncRawMaterials} variant="outline" className="w-full">
-                      <Icon name="RefreshCw" size={14} className="mr-2" />
-                      Update Sekarang
-                    </Button>
-                  </div>
+                   <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
+                  <p className="text-sm font-medium text-text-primary">
+                    {dashboardData.timestamps?.rawMaterials
+                      ? new Date(dashboardData.timestamps.rawMaterials).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                      : 'Belum pernah'}
+                  </p>
                 </div>
 
-                {/* Sync Card: Lapak Funds */}
-                <div className="bg-card border border-border rounded-lg p-4 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="p-2 bg-accent/10 rounded-md">
-                        <Icon name="Wallet" size={20} className="text-accent" />
-                      </div>
-                      <h3 className="font-semibold text-text-primary">Update Uang Lapak</h3>
+                {/* Status Card: Lapak Funds */}
+                <div className="bg-card border border-border rounded-lg p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-accent/10 rounded-md">
+                      <Icon name="Wallet" size={20} className="text-accent" />
                     </div>
-                    <p className="text-xs text-text-secondary">Sinkronisasi data saldo kas dan deposit lapak.</p>
+                    <h3 className="font-semibold text-text-primary">Uang Lapak</h3>
                   </div>
-                  <div className="mt-4">
-                    <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
-                    <p className="text-sm font-medium text-text-primary mb-3">
-                      {dashboardData.timestamps?.lapakFunds
-                        ? new Date(dashboardData.timestamps.lapakFunds).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                        : 'Belum pernah'}
-                    </p>
-                    <Button onClick={handleSyncLapakFunds} variant="outline" className="w-full">
-                      <Icon name="RefreshCw" size={14} className="mr-2" />
-                      Update Sekarang
-                    </Button>
-                  </div>
+                   <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
+                  <p className="text-sm font-medium text-text-primary">
+                    {dashboardData.timestamps?.lapakFunds
+                      ? new Date(dashboardData.timestamps.lapakFunds).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                      : 'Belum pernah'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -731,8 +670,6 @@ const MainDashboard = ({ headerTitle }) => {
         </main>
         
       </div>
-      {message && <div className="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{message}</div>}
-      {notificationError && <div className="fixed bottom-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{notificationError}</div>}
     </div>
   );
 };
