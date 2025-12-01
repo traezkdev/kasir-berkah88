@@ -10,6 +10,7 @@ import OwnerNavigationHeader from '../../components/ui/OwnerNavigationHeader';
 import useNotification from '../../hooks/useNotification';
 import MetricsCard from '../main-dashboard/components/MetricsCard';
 import Icon from '../../components/AppIcon';
+import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 
 const formatCurrency = (amount) => {
   const safeAmount = isNaN(amount) || amount === null || amount === undefined ? 0 : amount;
@@ -118,6 +119,8 @@ const OwnerRawMaterialStockDashboard = () => {
     <>
       <OwnerNavigationHeader />
       <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 mt-16`}>
+        {/* Breadcrumb Navigation */}
+        <BreadcrumbNavigation paths={[{ name: 'Beranda Owner', path: '/owner-dashboard' }, { name: 'Stok Bahan Mentah Owner', path: '/owner-raw-material-stock' }]} className="mb-4" />
       <h1 className="text-2xl font-bold mb-4">Dashboard Stok Bahan Mentah Owner</h1>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">

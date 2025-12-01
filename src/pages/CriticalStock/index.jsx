@@ -45,7 +45,7 @@ const CriticalStockPage = () => {
         <main className="pb-20 lg:pb-8 pt-16">
           <div className="max-w-7xl mx-auto px-4 lg:px-6">
             <div className="mb-6 mt-4">
-              <BreadcrumbNavigation />
+              <BreadcrumbNavigation className="mb-4" />
               <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
                 Stok Kritis
               </h1>
