@@ -700,17 +700,33 @@ app.get('/api/settings/logo', async (req, res) => {
     }
 });
 
-// Endpoint to mark data as updated
-app.put("/api/settings/data-updated-timestamp", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+// Helper function for timestamp updates to avoid repetition
+const updateTimestamp = async (key, res) => {
     try {
         const now = new Date();
         const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
-        await db.query(sql, ['data_last_updated', now.toISOString()]);
-        res.json({ message: "Data update timestamp recorded successfully", timestamp: now.toISOString() });
+        await db.query(sql, [key, now.toISOString()]);
+        res.json({ message: `Timestamp for ${key} recorded successfully`, timestamp: now.toISOString() });
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
     }
+};
+
+// Endpoint to mark menu stock data as updated
+app.put("/api/sync/timestamp/menu-stock", authenticateToken, authorizeRoles('admin', 'owner', 'user', 'kasir'), (req, res) => {
+    updateTimestamp('menu_stock_last_updated', res);
 });
+
+// Endpoint to mark raw materials data as updated
+app.put("/api/sync/timestamp/raw-materials", authenticateToken, authorizeRoles('admin', 'owner', 'user', 'kasir'), (req, res) => {
+    updateTimestamp('raw_materials_last_updated', res);
+});
+
+// Endpoint to mark lapak funds data as updated
+app.put("/api/sync/timestamp/lapak-funds", authenticateToken, authorizeRoles('admin', 'owner', 'user', 'kasir'), (req, res) => {
+    updateTimestamp('lapak_funds_last_updated', res);
+});
+
 
 // Get a specific setting by key
 app.get('/api/settings/:key', async (req, res) => {
@@ -2790,20 +2806,6 @@ app.delete("/api/admin/data/all", authenticateToken, authorizeRoles('admin'), as
         res.status(500).json({ error: err.message, stack: err.stack });
     } finally {
         connection.release();
-    }
-});
-
-
-
-// Endpoint to mark data as updated
-app.put("/api/settings/data-updated-timestamp", authenticateToken, authorizeRoles('admin'), async (req, res) => {
-    try {
-        const now = new Date();
-        const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
-        await db.query(sql, ['data_last_updated', now.toISOString()]);
-        res.json({ message: "Data update timestamp recorded successfully", timestamp: now.toISOString() });
-    } catch (err) {
-        res.status(500).json({ error: err.message, stack: err.stack });
     }
 });
 
