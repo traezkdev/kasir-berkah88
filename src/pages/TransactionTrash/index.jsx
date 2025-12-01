@@ -5,6 +5,8 @@ import TrashTable from './components/TrashTable';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import { useTheme } from '../../contexts/ThemeContext';
 import NavigationHeader from '../../components/ui/NavigationHeader';
+import Icon from '../../components/AppIcon';
+import Button from '../../components/ui/Button';
 
 
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -13,6 +15,9 @@ const TransactionTrash = ({ headerTitle }) => {
     const { theme } = useTheme();
   const [trashedTransactions, setTrashedTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showPermanentDeleteConfirm, setShowPermanentDeleteConfirm] = useState(false);
+  const [transactionToPermanentDeleteId, setTransactionToPermanentDeleteId] = useState(null);
+
 
   const fetchTrashedTransactions = async () => {
     setLoading(true);
@@ -51,21 +56,32 @@ const TransactionTrash = ({ headerTitle }) => {
     }
   };
 
-  const handlePermanentDelete = async (id) => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus transaksi ini secara permanen?')) {
-      try {
-        const response = await authFetch(`${apiUrl}/api/transactions/${id}/permanent`, {
-          method: 'DELETE',
-        });
-        const data = await response.json();
-        if (data.message === 'permanently deleted') {
-          fetchTrashedTransactions(); // Refresh the list
-        } else {
-          console.error('Failed to permanently delete transaction:', data.error);
-        }
-      } catch (error) {
-        console.error('Error permanently deleting transaction:', error);
+  const handleOpenPermanentDeleteConfirm = (id) => {
+    setTransactionToPermanentDeleteId(id);
+    setShowPermanentDeleteConfirm(true);
+  };
+
+  const handleClosePermanentDeleteConfirm = () => {
+    setTransactionToPermanentDeleteId(null);
+    setShowPermanentDeleteConfirm(false);
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!transactionToPermanentDeleteId) return;
+    
+    try {
+      const response = await authFetch(`${apiUrl}/api/transactions/${transactionToPermanentDeleteId}/permanent`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (data.message === 'permanently deleted') {
+        fetchTrashedTransactions(); // Refresh the list
+        handleClosePermanentDeleteConfirm();
+      } else {
+        console.error('Failed to permanently delete transaction:', data.error);
       }
+    } catch (error) {
+      console.error('Error permanently deleting transaction:', error);
     }
   };
   
@@ -95,11 +111,44 @@ const TransactionTrash = ({ headerTitle }) => {
                     <TrashTable
                         transactions={trashedTransactions}
                         onRestore={handleRestore}
-                        onPermanentDelete={handlePermanentDelete}
+                        onPermanentDelete={handleOpenPermanentDeleteConfirm}
                     />
                 )}
             </div>
         </main>
+        {showPermanentDeleteConfirm && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
+                <div className="bg-card rounded-lg p-6 max-w-sm w-full">
+                    <div className="flex items-center space-x-3 mb-4">
+                        <div className="p-2 bg-destructive/10 rounded-full">
+                            <Icon name="AlertTriangle" size={20} className="text-destructive" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-text-primary">
+                            Hapus Permanen
+                        </h3>
+                    </div>
+                    <p className="text-text-secondary mb-6">
+                        Apakah Anda yakin ingin menghapus transaksi #{transactionToPermanentDeleteId} secara permanen? Tindakan ini tidak dapat dibatalkan.
+                    </p>
+                    <div className="flex space-x-3">
+                        <Button
+                            variant="outline"
+                            onClick={handleClosePermanentDeleteConfirm}
+                            className="flex-1"
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handlePermanentDelete}
+                            className="flex-1"
+                        >
+                            Hapus Permanen
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        )}
     </div>
   );
 };
