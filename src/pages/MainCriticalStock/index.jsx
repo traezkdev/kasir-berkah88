@@ -3,6 +3,7 @@ import axios from 'axios';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import { FaSync, FaExclamationTriangle, FaArrowLeft } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation'; // Import BreadcrumbNavigation
 
 const MainCriticalStockPage = () => {
   const [lowStockItems, setLowStockItems] = useState([]);
@@ -39,6 +40,8 @@ const MainCriticalStockPage = () => {
     <>
       <NavigationHeader />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 mt-16">
+        {/* Breadcrumb Navigation */}
+        <BreadcrumbNavigation paths={[{ name: 'Beranda', path: '/main-dashboard' }, { name: 'Stok Kritis', path: '/main-critical-stock' }]} className="mb-4" />
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6">
           <h1 className="text-2xl font-bold mb-4 sm:mb-0">Daftar Pembelian Stok (Stok Kritis)</h1>
           <div className="flex items-center gap-2"> {/* New div for buttons */}

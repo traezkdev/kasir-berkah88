@@ -10,6 +10,7 @@ import { useTheme } from '../../contexts/ThemeContext'; // Import useTheme
 import NavigationHeader from '../../components/ui/NavigationHeader'; // Import NavigationHeader
 import useNotification from '../../hooks/useNotification'; // Import useNotification
 import MetricsCard from '../main-dashboard/components/MetricsCard'; // Import MetricsCard
+import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation'; // Import BreadcrumbNavigation
 import Icon from '../../components/AppIcon'; // Import Icon
 
 const formatCurrency = (amount) => {
@@ -126,7 +127,9 @@ const RawMaterialStockDashboard = () => {
         <NavigationHeader />
       )}
       <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 ${theme !== 'admin' ? 'mt-16' : ''}`}>
-      <h1 className="text-2xl font-bold mb-4">Dashboard Stok Bahan Mentah</h1>
+        {/* Breadcrumb Navigation */}
+        <BreadcrumbNavigation paths={[{ name: 'Beranda', path: '/main-dashboard' }, { name: 'Stok Bahan Mentah', path: '/raw-material-stock' }]} className="mb-4" />
+        <h1 className="text-2xl font-bold mb-4">Dashboard Stok Bahan Mentah</h1>
         
         {/* Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
