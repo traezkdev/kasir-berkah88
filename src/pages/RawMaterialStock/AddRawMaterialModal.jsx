@@ -8,7 +8,7 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
   const [pricePerItem, setPricePerItem] = useState('');
   const [standardStockPerDay, setStandardStockPerDay] = useState('');
   const [stokMinimum, setStokMinimum] = useState('');
-  const [suggestionPurchaseQuantity, setSuggestionPurchaseQuantity] = useState('');
+  const [purchaseBufferAmount, setPurchaseBufferAmount] = useState(''); // New state for purchase buffer
   const [menuStock, setMenuStock] = useState(''); // New state for menu_stock
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -23,7 +23,7 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
       setPricePerItem('');
       setStandardStockPerDay('');
       setStokMinimum('');
-      setSuggestionPurchaseQuantity('');
+      setPurchaseBufferAmount(''); // Initialize purchaseBufferAmount
       setMenuStock(''); // Initialize menuStock
       setError(null);
     }
@@ -35,7 +35,7 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
       setError("Nama dan satuan bahan mentah tidak boleh kosong.");
       return;
     }
-    if (parseFloat(pricePerItem) < 0 || parseFloat(standardStockPerDay) < 0 || parseFloat(stokMinimum) < 0 || parseFloat(suggestionPurchaseQuantity) < 0 || parseFloat(menuStock) < 0) { // Add menuStock validation
+    if (parseFloat(pricePerItem) < 0 || parseFloat(standardStockPerDay) < 0 || parseFloat(stokMinimum) < 0 || parseFloat(purchaseBufferAmount) < 0 || parseFloat(menuStock) < 0) { // Add purchaseBufferAmount validation
       setError("Nilai numerik tidak boleh negatif.");
       return;
     }
@@ -52,7 +52,7 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
         stok_minimum: parseFloat(stokMinimum) || 0,
         price_per_item: parseFloat(pricePerItem) || 0,
         standard_stock_per_day: parseFloat(standardStockPerDay) || 0,
-        suggestion_purchase_quantity: parseFloat(suggestionPurchaseQuantity) || 0,
+        purchase_buffer_amount: parseFloat(purchaseBufferAmount) || 0, // Include purchase_buffer_amount
         menu_stock: parseFloat(menuStock) || 0, // Include menu_stock in the creation
       }, {
         headers: {
@@ -159,13 +159,13 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="suggestionPurchaseQuantity" className="block text-gray-700 text-sm font-bold mb-2">Saran Kuantitas Pembelian (Opsional)</label>
+            <label htmlFor="purchaseBufferAmount" className="block text-gray-700 text-sm font-bold mb-2">Jumlah Buffer Pembelian (Opsional, Default 10)</label>
             <input
               type="number"
-              id="suggestionPurchaseQuantity"
+              id="purchaseBufferAmount"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={suggestionPurchaseQuantity}
-              onChange={(e) => setSuggestionPurchaseQuantity(e.target.value)}
+              value={purchaseBufferAmount}
+              onChange={(e) => setPurchaseBufferAmount(e.target.value)}
               min="0"
               step="0.01"
             />

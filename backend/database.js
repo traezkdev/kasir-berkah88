@@ -296,6 +296,36 @@ const setupDatabase = async () => {
       }
     }
     
+    // Ensure purchase_buffer_amount column in raw_materials table has correct definition
+    const pbColumnName = 'purchase_buffer_amount';
+    const pbTableName = 'raw_materials';
+    const pbExpectedType = 'DECIMAL(10,2)';
+    const pbExpectedDefault = '0.00'; // Changed default from 10.00 to 0.00
+
+    const [pbColumnInfo] = await connection.query(`
+      SELECT COLUMN_TYPE, COLUMN_DEFAULT
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?;
+    `, [pbTableName, pbColumnName]);
+
+    if (pbColumnInfo.length > 0) {
+      const { COLUMN_TYPE, COLUMN_DEFAULT } = pbColumnInfo[0];
+      // Normalize default for comparison (MySQL returns DEFAULT '0.00' as '0.00')
+      const normalizedDefault = COLUMN_DEFAULT !== null ? parseFloat(COLUMN_DEFAULT).toFixed(2) : null;
+
+      if (COLUMN_TYPE !== pbExpectedType || normalizedDefault !== pbExpectedDefault) {
+        console.log(`Modifying ${pbColumnName} column in ${pbTableName} table: Current type ${COLUMN_TYPE}, default ${COLUMN_DEFAULT}. Expected type ${pbExpectedType}, default ${pbExpectedDefault}.`);
+        await connection.query(`ALTER TABLE ${pbTableName} DROP COLUMN ${pbColumnName}`);
+        await connection.query(`ALTER TABLE ${pbTableName} ADD COLUMN ${pbColumnName} ${pbExpectedType} DEFAULT ${pbExpectedDefault}`);
+        console.log(`Re-added ${pbColumnName} column with correct definition.`);
+      } else {
+        console.log(`${pbColumnName} column in ${pbTableName} table is already correctly defined.`);
+      }
+    } else {
+      await connection.query(`ALTER TABLE ${pbTableName} ADD COLUMN ${pbColumnName} ${pbExpectedType} DEFAULT ${pbExpectedDefault}`);
+      console.log(`Added ${pbColumnName} column to ${pbTableName} table.`);
+    }
+
     // Check and add suggestion_purchase_quantity column to raw_materials if it doesn't exist
     const checkSuggestionPurchaseQuantityColumn = `
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS

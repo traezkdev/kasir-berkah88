@@ -114,7 +114,7 @@ const LapakDeposit = ({ headerTitle }) => {
                 const errData = await response.json();
                 throw new Error(errData.error || 'Gagal mencatat pengeluaran');
             }
-            alert('Pengeluaran berhasil dicatat!');
+            showToast('Pengeluaran berhasil dicatat!', 'success');
             setIsExpenseModalOpen(false);
             fetchLapakAccountData(); // Refresh data
         } catch (err) {
