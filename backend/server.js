@@ -1020,7 +1020,7 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
         const { startDate, endDate } = req.query;
         const offset = (page - 1) * limit;
 
-        let whereClauses = [];
+        let whereClauses = ['t.deleted_at IS NULL'];
         let queryParams = [];
 
         if (startDate) {
@@ -1033,7 +1033,7 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
             queryParams.push(`${endDate} 23:59:59`);
         }
 
-        const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+        const whereSql = `WHERE ${whereClauses.join(' AND ')}`;
 
         // Query to get total count of transactions
         const countSql = `SELECT COUNT(*) as totalItems FROM transactions t ${whereSql}`;
@@ -1080,7 +1080,7 @@ app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admi
     try {
         const { startDate, endDate } = req.query; // Extract startDate and endDate
 
-        let whereClauses = [];
+        let whereClauses = ['t.deleted_at IS NULL'];
         let queryParams = [];
 
         if (startDate) {
@@ -1093,7 +1093,7 @@ app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admi
             queryParams.push(`${endDate} 23:59:59`); // Assuming endDate is 'YYYY-MM-DD'
         }
 
-        const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+        const whereSql = `WHERE ${whereClauses.join(' AND ')}`;
 
         const sql = `
             SELECT
@@ -1134,10 +1134,30 @@ app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admi
     }
 });
 
+// Get trashed transactions
+app.get("/api/transactions/trash", authenticateToken, authorizeRoles('admin'), async (req, res, next) => {
+    try {
+        const sql = `
+            SELECT
+                t.*,
+                u.username AS cashier_name
+            FROM transactions t
+            LEFT JOIN users u ON t.user_id = u.id
+            WHERE t.deleted_at IS NOT NULL
+            ORDER BY t.deleted_at DESC
+        `;
+        const [rows] = await db.query(sql);
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+
 // Get a single transaction by id
 app.get("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir'), async (req, res, next) => {
     try {
-        const sql = "select * from transactions where id = ?";
+        const sql = "select * from transactions where id = ? AND deleted_at IS NULL";
         const params = [req.params.id];
         const [rows] = await db.query(sql, params);
         if (rows.length > 0) {
@@ -1283,7 +1303,7 @@ app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
            payment_method = COALESCE(?, payment_method),
            timestamp = COALESCE(?, timestamp),
            manual_discount = COALESCE(?, manual_discount) 
-           WHERE id = ?`;
+           WHERE id = ? AND deleted_at IS NULL`;
         const params = [total, ppn, isEmployeeMeal ? 1 : 0, payment_method, timestamp ? new Date(timestamp) : null, manual_discount, id];
         const [result] = await db.query(sql, params);
 
@@ -1297,22 +1317,50 @@ app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
     }
 });
 
-// Delete a transaction
+// Soft delete a transaction
 app.delete("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
     try {
-        const sql = 'DELETE FROM transactions WHERE id = ?';
-        const [result] = await db.query(sql, [req.params.id]);
+        const sql = 'UPDATE transactions SET deleted_at = ? WHERE id = ?';
+        const [result] = await db.query(sql, [new Date(), req.params.id]);
         res.json({ "message": "deleted", changes: result.affectedRows });
     } catch (err) {
         res.status(400).json({ "error": err.message });
     }
 });
 
-// Delete all transactions
+// Restore a soft-deleted transaction
+app.put("/api/transactions/:id/restore", authenticateToken, authorizeRoles('admin'), async (req, res, next) => {
+    try {
+        const sql = 'UPDATE transactions SET deleted_at = NULL WHERE id = ?';
+        const [result] = await db.query(sql, [req.params.id]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ "error": "Transaction not found in trash" });
+        }
+        res.json({ "message": "restored", changes: result.affectedRows });
+    } catch (err) {
+        res.status(400).json({ "error": err.message });
+    }
+});
+
+// Permanently delete a transaction
+app.delete("/api/transactions/:id/permanent", authenticateToken, authorizeRoles('admin'), async (req, res, next) => {
+    try {
+        const sql = 'DELETE FROM transactions WHERE id = ?';
+        const [result] = await db.query(sql, [req.params.id]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ "error": "Transaction not found" });
+        }
+        res.json({ "message": "permanently deleted", changes: result.affectedRows });
+    } catch (err) {
+        res.status(400).json({ "error": err.message });
+    }
+});
+
+// Soft delete all transactions
 app.delete("/api/transactions", authenticateToken, authorizeRoles('admin'), async (req, res, next) => {
     try {
-        const sql = 'DELETE FROM transactions';
-        const [result] = await db.query(sql);
+        const sql = 'UPDATE transactions SET deleted_at = ? WHERE deleted_at IS NULL';
+        const [result] = await db.query(sql, [new Date()]);
         res.json({ "message": "all deleted", changes: result.affectedRows });
     } catch (err) {
         res.status(400).json({ "error": err.message });

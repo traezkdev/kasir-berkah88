@@ -11,6 +11,9 @@ import Pagination from '../../components/ui/Pagination';
 import TransactionReceiptModal from './components/TransactionReceiptModal'; // Import the modal
 import EditTransactionModal from './components/EditTransactionModal'; // Import the new edit modal
 import TransactionChart from './components/TransactionChart'; // Import TransactionChart
+import Icon from '../../components/AppIcon'; // Import Icon for the delete confirmation modal
+import Button from '../../components/ui/Button'; // Import Button for the delete confirmation modal
+
 
 import MetricsCard from '../main-dashboard/components/MetricsCard'; // Import MetricsCard
 import authFetch from '../../utils/authFetch';
@@ -66,6 +69,10 @@ const TransactionHistory = ({ headerTitle }) => {
   const [allTransactionsForChart, setAllTransactionsForChart] = useState([]); // New state for chart data
 
   const navigate = useNavigate();
+
+    // State for delete confirmation modal
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [transactionToDeleteId, setTransactionToDeleteId] = useState(null);
 
   // Function to fetch all transactions for the chart based on date range and filter type
   const fetchAllTransactionsForChart = async () => {
@@ -286,29 +293,34 @@ const TransactionHistory = ({ headerTitle }) => {
   };
 
   const handleNextDayRange = () => {
-    setCurrentDailyDate(prevDate => {
-      const nextDate = new Date(prevDate);
-      nextDate.setDate(prevDate.getDate() + 7);
-      return nextDate;
-    });
+    // Removed currentDailyDate and its handlers
   };
 
   const handlePrevDayRange = () => {
-    setCurrentDailyDate(prevDate => {
-      const prevDateClone = new Date(prevDate);
-      prevDateClone.setDate(prevDate.getDate() - 7);
-      return prevDateClone;
-    });
+    // Removed currentDailyDate and its handlers
   };
 
-  const handleDeleteTransaction = async (transactionId) => {
+    const handleOpenDeleteConfirm = (transactionId) => {
+        setTransactionToDeleteId(transactionId);
+        setShowDeleteConfirm(true);
+    };
+
+    const handleCloseDeleteConfirm = () => {
+        setTransactionToDeleteId(null);
+        setShowDeleteConfirm(false);
+    };
+
+  const handleDeleteTransaction = async () => { // Modified to use transactionToDeleteId
+    if (!transactionToDeleteId) return;
+
     try {
-      const response = await authFetch(`${apiUrl}/api/transactions/${transactionId}`, {
+      const response = await authFetch(`${apiUrl}/api/transactions/${transactionToDeleteId}`, {
         method: 'DELETE',
       });
       const data = await response.json();
       if (data.message === 'deleted') {
         fetchPaginatedTransactions(currentPage); // Refetch current page
+        handleCloseDeleteConfirm(); // Close the modal
       } else {
         console.error('Failed to delete transaction:', data.error);
       }
@@ -827,6 +839,7 @@ const TransactionHistory = ({ headerTitle }) => {
 
               isMobile={isMobile}
               userRole={userRole}
+              onOpenDeleteConfirm={handleOpenDeleteConfirm} // Pass the new handler
 
             />
 
@@ -856,6 +869,41 @@ const TransactionHistory = ({ headerTitle }) => {
         onUpdateTransaction={handleUpdateTransaction}
       />
 
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
+            <div className="bg-card rounded-lg p-6 max-w-sm w-full">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-2 bg-destructive/10 rounded-full">
+                  <Icon name="AlertTriangle" size={20} className="text-destructive" />
+                </div>
+                <h3 className="text-lg font-semibold text-text-primary">
+                  Hapus Transaksi
+                </h3>
+              </div>
+              <p className="text-text-secondary mb-6">
+                Apakah Anda yakin ingin menghapus transaksi #{transactionToDeleteId}? 
+                Tindakan ini akan memindahkan transaksi ke tong sampah.
+              </p>
+              <div className="flex space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={handleCloseDeleteConfirm}
+                  className="flex-1"
+                >
+                  Batal
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteTransaction}
+                  className="flex-1"
+                >
+                  Hapus
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
     </div>
 
   );
@@ -865,4 +913,5 @@ const TransactionHistory = ({ headerTitle }) => {
 
 
 export default TransactionHistory;
+
 

@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const TransactionCard = ({ transaction, onDelete, onEdit, isMobile = false, userRole, onRowClick }) => {
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
+const TransactionCard = ({ transaction, onDelete, onEdit, isMobile = false, userRole, onRowClick, onOpenDeleteConfirm }) => {
   let paymentBadge = null;
   switch (transaction?.payment_method) {
     case 'Makan Karyawan':
@@ -53,11 +51,6 @@ const TransactionCard = ({ transaction, onDelete, onEdit, isMobile = false, user
       hour: '2-digit',
       minute: '2-digit'
     })?.format(new Date(date));
-  };
-
-  const handleDelete = () => {
-    onDelete(transaction?.id);
-    setShowDeleteConfirm(false);
   };
 
   const getTotalItems = () => {
@@ -111,47 +104,13 @@ const TransactionCard = ({ transaction, onDelete, onEdit, isMobile = false, user
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
+                onClick={(e) => { e.stopPropagation(); onOpenDeleteConfirm(transaction.id); }}
                 iconName="Trash2"
                 className="text-destructive hover:text-destructive"
               />
             </div>
           )}
         </div>
-        {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
-            <div className="bg-card rounded-lg p-6 max-w-sm w-full">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 bg-destructive/10 rounded-full">
-                  <Icon name="AlertTriangle" size={20} className="text-destructive" />
-                </div>
-                <h3 className="text-lg font-semibold text-text-primary">
-                  Hapus Transaksi
-                </h3>
-              </div>
-              <p className="text-text-secondary mb-6">
-                Apakah Anda yakin ingin menghapus transaksi #{transaction?.id}? 
-                Tindakan ini tidak dapat dibatalkan.
-              </p>
-              <div className="flex space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(false); }}
-                  className="flex-1"
-                >
-                  Batal
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={handleDelete}
-                  className="flex-1"
-                >
-                  Hapus
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
@@ -199,47 +158,13 @@ const TransactionCard = ({ transaction, onDelete, onEdit, isMobile = false, user
             <Button
               variant="ghost"
               size="sm"
-              onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
+              onClick={(e) => { e.stopPropagation(); onOpenDeleteConfirm(transaction.id); }}
               iconName="Trash2"
               className="text-destructive hover:text-destructive"
             />
           </div>
         )}
       </td>
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
-          <div className="bg-card rounded-lg p-6 max-w-sm w-full">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="p-2 bg-destructive/10 rounded-full">
-                <Icon name="AlertTriangle" size={20} className="text-destructive" />
-              </div>
-              <h3 className="text-lg font-semibold text-text-primary">
-                Hapus Transaksi
-              </h3>
-            </div>
-            <p className="text-text-secondary mb-6">
-              Apakah Anda yakin ingin menghapus transaksi #{transaction?.id}? 
-              Tindakan ini tidak dapat dibatalkan.
-            </p>
-            <div className="flex space-x-3">
-              <Button
-                variant="outline"
-                onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(false); }}
-                className="flex-1"
-              >
-                Batal
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDelete}
-                className="flex-1"
-              >
-                Hapus
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </tr>
   );
 };
