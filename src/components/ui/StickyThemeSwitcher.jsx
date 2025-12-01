@@ -40,10 +40,10 @@ const StickyThemeSwitcher = () => {
   // Hide the switcher if the current path is an owner-related path, if the theme is 'admin', or if the user is
   //      an owner
   if (ownerPaths.includes(location.pathname) || theme === 'admin' || userRole === 'owner') { // Changed theme !== 'default' to theme === 'admin'
-    console.log('StickyThemeSwitcher hidden. Conditions:');
-    if (ownerPaths.includes(location.pathname)) console.log('  - On owner-related path (current path:', location.pathname + ')');
-    if (theme === 'admin') console.log('  - Theme is admin (current theme:', theme + ')'); // Updated log
-    if (userRole === 'owner') console.log('  - User role is owner (current role:', userRole + ')');
+
+
+
+
     return null;
   } // MISSING CLOSING BRACE WAS HERE
 
