@@ -1,11 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
+const formatRupiah = (angka) => {
+  if (isNaN(angka) || angka === null || angka === undefined) return '';
+  const num = Number(angka);
+  if (isNaN(num)) return '';
+
+  return new Intl.NumberFormat('id-ID', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(num);
+};
+
+const parseRupiah = (rupiahString) => {
+  if (typeof rupiahString !== 'string') {
+    return Number(rupiahString) || 0;
+  }
+  // Remove all non-digit characters (including dots used as thousands separators)
+  const cleanedString = rupiahString.replace(/[^\d]/g, '');
+  return Number(cleanedString) || 0;
+};
+
 const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, showMessage, showError }) => {
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('');
   const [stokMinimum, setStokMinimum] = useState('');
-  const [pricePerItem, setPricePerItem] = useState('');
+  const [pricePerItem, setPricePerItem] = useState(''); // Stores numeric value
+  const [displayPricePerItem, setDisplayPricePerItem] = useState(''); // Stores formatted string for display
 
   const [purchaseBufferAmount, setPurchaseBufferAmount] = useState(''); // New state for purchase buffer
   const [currentStock, setCurrentStock] = useState('');
@@ -29,9 +50,13 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
       } else {
         setStokMinimum('');
       }
-      setPricePerItem(material.price_per_item ?? '');
-
       
+      // Initialize pricePerItem (numeric) and displayPricePerItem (formatted)
+      const matPricePerItem = material.price_per_item ?? '';
+      const numericMatPrice = Number(matPricePerItem); // Ensure it's a clean number
+      setPricePerItem(numericMatPrice);
+      setDisplayPricePerItem(formatRupiah(numericMatPrice)); // Format the clean number
+
       const purchaseBufferVal = parseFloat(material.purchase_buffer_amount); // Initialize purchaseBufferAmount
       if (!isNaN(purchaseBufferVal)) {
         if (purchaseBufferVal % 1 !== 0) {
@@ -69,13 +94,26 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
     }
   }, [isOpen, material]);
 
+  const handlePricePerItemChange = (e) => {
+    const rawValue = e.target.value;
+    const numericValue = parseRupiah(rawValue); // Get the pure number
+    setPricePerItem(numericValue); // Store the pure number
+    // For intermediate typing, we can just show the raw numbers
+    setDisplayPricePerItem(rawValue); // Temporarily display what user types
+  };
+
+  const handlePricePerItemBlur = () => {
+    // On blur, format the stored numeric value for display
+    setDisplayPricePerItem(formatRupiah(pricePerItem));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name || !unit) {
       setError("Nama dan satuan tidak boleh kosong.");
       return;
     }
-    if (parseFloat(stokMinimum) < 0 || parseFloat(purchaseBufferAmount) < 0) { // Add purchaseBufferAmount validation
+    if (parseFloat(stokMinimum) < 0 || parseFloat(purchaseBufferAmount) < 0 || pricePerItem < 0) { // Add pricePerItem validation
       setError("Nilai numerik tidak boleh negatif.");
       return;
     }
@@ -89,7 +127,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
         name,
         unit,
         stok_minimum: parseFloat(stokMinimum) || 0,
-        price_per_item: parseFloat(pricePerItem) || 0,
+        price_per_item: pricePerItem || 0, // Use the numeric pricePerItem
 
         purchase_buffer_amount: parseFloat(purchaseBufferAmount) || 0, // Include purchase_buffer_amount in the update
         current_stock: parseFloat(currentStock) || 0,
@@ -191,13 +229,12 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
           <div className="mb-4">
             <label htmlFor="pricePerItem" className="block text-muted-foreground text-sm font-bold mb-2">Harga per Item</label>
             <input
-              type="number"
+              type="text" // Changed to text
               id="pricePerItem"
               className="appearance-none bg-input border-border rounded w-full py-2 px-3 text-foreground leading-tight focus:outline-none focus:ring-2 focus:ring-primary/50"
-              value={pricePerItem}
-              onChange={(e) => setPricePerItem(e.target.value)}
-              min="0"
-              step="0.01"
+              value={displayPricePerItem} // Use display state
+              onChange={handlePricePerItemChange} // Use custom handler
+              onBlur={handlePricePerItemBlur} // Add onBlur for final formatting
               required
             />
           </div>
