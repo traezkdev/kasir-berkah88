@@ -168,6 +168,9 @@ const OwnerRawMaterialStockDashboard = () => {
                   Stok Menu
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Total Stok
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Satuan
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -197,6 +200,9 @@ const OwnerRawMaterialStockDashboard = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {toSafeNumber(material.menu_stock)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">
+                    {toSafeNumber(material.current_stock) + toSafeNumber(material.menu_stock)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer"
                       onClick={() => handleEditClick(material)}
@@ -272,6 +278,10 @@ const OwnerRawMaterialStockDashboard = () => {
                                 <div>
                                   <p className="font-medium">Stok Menu:</p>
                                   <p>{(Number(material.menu_stock) || 0)} {material.unit}</p>
+                                </div>
+                                <div>
+                                  <p className="font-medium">Total Stok:</p>
+                                  <p>{(Number(material.current_stock) || 0) + (Number(material.menu_stock) || 0)} {material.unit}</p>
                                 </div>
                                 <div>
                                   <p className="font-medium">Stok Min:</p>

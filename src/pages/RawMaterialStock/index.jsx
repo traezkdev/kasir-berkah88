@@ -187,6 +187,9 @@ const RawMaterialStockDashboard = () => {
                   Stok Menu
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Total Stok
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Satuan
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -215,6 +218,9 @@ const RawMaterialStockDashboard = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {(Number(material.menu_stock) || 0)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-card-foreground font-bold">
+                    {(Number(material.current_stock) || 0) + (Number(material.menu_stock) || 0)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground cursor-pointer"
                       onClick={() => handleEditClick(material)}
@@ -291,6 +297,10 @@ const RawMaterialStockDashboard = () => {
                                 <div>
                                   <p className="font-medium">Stok Menu:</p>
                                   <p>{(Number(material.menu_stock) || 0)} {material.unit}</p>
+                                </div>
+                                <div>
+                                  <p className="font-medium">Total Stok:</p>
+                                  <p>{(Number(material.current_stock) || 0) + (Number(material.menu_stock) || 0)} {material.unit}</p>
                                 </div>
                                 <div>
                                   <p className="font-medium">Stok Min:</p>
