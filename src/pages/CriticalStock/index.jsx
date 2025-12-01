@@ -97,6 +97,9 @@ const CriticalStockPage = () => {
                           Stok Menu
                         </th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Total Stok
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Stok Minimum
                         </th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -119,6 +122,9 @@ const CriticalStockPage = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-destructive font-bold">
                             {parseInt(item.menu_stock)} {item.unit}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground font-bold">
+                            {parseInt(item.current_stock) + parseInt(item.menu_stock)} {item.unit}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                             {parseInt(item.stok_minimum)} {item.unit}
@@ -149,6 +155,9 @@ const CriticalStockPage = () => {
                         
                         <div className="font-medium text-muted-foreground">Stok Menu:</div>
                         <div className="text-destructive font-bold">{parseInt(item.menu_stock)} {item.unit}</div>
+                        
+                        <div className="font-medium text-muted-foreground">Total Stok:</div>
+                        <div className="text-foreground font-bold">{parseInt(item.current_stock) + parseInt(item.menu_stock)} {item.unit}</div>
                         
                         <div className="font-medium text-muted-foreground">Stok Minimum:</div>
                         <div className="text-foreground">{parseInt(item.stok_minimum)} {item.unit}</div>
