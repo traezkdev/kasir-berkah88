@@ -196,9 +196,6 @@ const RawMaterialStockDashboard = () => {
                   Harga per Item
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Stok Standar/Hari
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Status
                 </th>
                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -232,10 +229,6 @@ const RawMaterialStockDashboard = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {/* Harga per Item */}
                     {parseFloat(material.price_per_item).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                    {/* Stok Standar/Hari */}
-                    {parseInt(material.standard_stock_per_day)} {material.custom_unit}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {(Number(material.current_stock) + Number(material.menu_stock)) < Number(material.stok_minimum) && (
@@ -313,10 +306,6 @@ const RawMaterialStockDashboard = () => {
                                 <div>
                                   <p className="font-medium">Harga per Item:</p>
                                   <p>{parseFloat(material.price_per_item).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}</p>
-                                </div>
-                                <div>
-                                  <p className="font-medium">Stok Standar/Hari:</p>
-                                  <p>{parseInt(material.standard_stock_per_day)} {material.custom_unit}</p>
                                 </div>
                               </div>
                 <div className="flex justify-end space-x-2">
