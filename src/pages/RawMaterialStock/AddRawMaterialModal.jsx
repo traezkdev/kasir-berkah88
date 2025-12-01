@@ -9,6 +9,7 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
   const [standardStockPerDay, setStandardStockPerDay] = useState('');
   const [stokMinimum, setStokMinimum] = useState('');
   const [suggestionPurchaseQuantity, setSuggestionPurchaseQuantity] = useState('');
+  const [menuStock, setMenuStock] = useState(''); // New state for menu_stock
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -23,6 +24,7 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
       setStandardStockPerDay('');
       setStokMinimum('');
       setSuggestionPurchaseQuantity('');
+      setMenuStock(''); // Initialize menuStock
       setError(null);
     }
   }, [isOpen]);
@@ -33,7 +35,7 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
       setError("Nama dan satuan bahan mentah tidak boleh kosong.");
       return;
     }
-    if (parseFloat(pricePerItem) < 0 || parseFloat(standardStockPerDay) < 0 || parseFloat(stokMinimum) < 0 || parseFloat(suggestionPurchaseQuantity) < 0) {
+    if (parseFloat(pricePerItem) < 0 || parseFloat(standardStockPerDay) < 0 || parseFloat(stokMinimum) < 0 || parseFloat(suggestionPurchaseQuantity) < 0 || parseFloat(menuStock) < 0) { // Add menuStock validation
       setError("Nilai numerik tidak boleh negatif.");
       return;
     }
@@ -51,6 +53,7 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
         price_per_item: parseFloat(pricePerItem) || 0,
         standard_stock_per_day: parseFloat(standardStockPerDay) || 0,
         suggestion_purchase_quantity: parseFloat(suggestionPurchaseQuantity) || 0,
+        menu_stock: parseFloat(menuStock) || 0, // Include menu_stock in the creation
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -105,6 +108,18 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
               value={customUnit}
               onChange={(e) => setCustomUnit(e.target.value)}
               placeholder="Contoh: pcs, potong, buah"
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="currentStock" className="block text-gray-700 text-sm font-bold mb-2">Stok Menu (Opsional, default 0)</label>
+            <input
+              type="number"
+              id="menuStock"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              value={menuStock}
+              onChange={(e) => setMenuStock(e.target.value)}
+              min="0"
+              step="0.01"
             />
           </div>
           <div className="mb-4">

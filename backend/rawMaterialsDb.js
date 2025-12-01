@@ -1,11 +1,11 @@
 const pool = require('./database'); // Menggunakan koneksi pool yang sudah ada
 
-const addRawMaterial = async (name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity) => {
+const addRawMaterial = async (name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, menu_stock = 0) => {
   const connection = await pool.getConnection();
   try {
     const [result] = await connection.query(
-      `INSERT INTO raw_materials (name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity]
+      `INSERT INTO raw_materials (name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, menu_stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, menu_stock]
     );
     return result;
   } finally {
@@ -17,7 +17,7 @@ const getRawMaterials = async () => {
   const connection = await pool.getConnection();
   try {
     const [rows] = await connection.query(`
-      SELECT id, name, unit, custom_unit, current_stock, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity
+      SELECT id, name, unit, custom_unit, current_stock, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, menu_stock
       FROM raw_materials
     `);
     return rows;
@@ -30,7 +30,7 @@ const getRawMaterialById = async (id) => {
   const connection = await pool.getConnection();
   try {
     const [rows] = await connection.query(
-      `SELECT id, name, unit, custom_unit, current_stock, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity FROM raw_materials WHERE id = ?`,
+      `SELECT id, name, unit, custom_unit, current_stock, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, menu_stock FROM raw_materials WHERE id = ?`,
       [id]
     );
     return rows[0]; // Mengembalikan satu objek bahan mentah
@@ -39,12 +39,12 @@ const getRawMaterialById = async (id) => {
   }
 };
 
-const updateRawMaterial = async (id, name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, current_stock) => {
+const updateRawMaterial = async (id, name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, current_stock, menu_stock) => {
   const connection = await pool.getConnection();
   try {
     const [result] = await connection.query(
-      `UPDATE raw_materials SET name = ?, unit = ?, custom_unit = ?, stok_minimum = ?, price_per_item = ?, standard_stock_per_day = ?, suggestion_purchase_quantity = ?, current_stock = ? WHERE id = ?`,
-      [name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, current_stock, id]
+      `UPDATE raw_materials SET name = ?, unit = ?, custom_unit = ?, stok_minimum = ?, price_per_item = ?, standard_stock_per_day = ?, suggestion_purchase_quantity = ?, current_stock = ?, menu_stock = ? WHERE id = ?`,
+      [name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, current_stock, menu_stock, id]
     );
     return result;
   } finally {
@@ -154,20 +154,23 @@ const getLowStockRawMaterials = async () => {
       SELECT 
         rm.id, 
         rm.name, 
-        rm.current_stock, 
+        rm.current_stock,
+        rm.menu_stock,
+        (rm.current_stock + rm.menu_stock) as total_effective_stock,
         rm.stok_minimum,
         rm.suggestion_purchase_quantity,
         rm.unit,
+        (rm.stok_minimum - (rm.current_stock + rm.menu_stock)) as deficit,
         (
           SELECT 
-            FLOOR(rm.current_stock / mr.quantity) 
+            FLOOR((rm.current_stock + rm.menu_stock) / mr.quantity) 
           FROM menu_recipes mr 
           WHERE mr.raw_material_id = rm.id 
           ORDER BY mr.quantity DESC 
           LIMIT 1
         ) as estimated_menu_portions
       FROM raw_materials rm
-      WHERE rm.current_stock <= rm.stok_minimum
+      WHERE (rm.current_stock + rm.menu_stock) < rm.stok_minimum
     `);
     return rows;
   } finally {
@@ -182,7 +185,7 @@ const getLowStockRawMaterialsCount = async () => {
     const [rows] = await connection.query(`
       SELECT COUNT(*) as low_stock_count
       FROM raw_materials
-      WHERE current_stock <= stok_minimum AND stok_minimum > 0
+      WHERE (current_stock + menu_stock) <= stok_minimum AND stok_minimum > 0
     `);
     return rows[0];
   } finally {

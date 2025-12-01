@@ -115,9 +115,9 @@ const RawMaterialStockDashboard = () => {
   }
 
   // Calculate metrics
-  const totalStockQuantity = rawMaterials.reduce((sum, material) => sum + parseInt(material.current_stock || 0), 0);
-  const totalStockValue = rawMaterials.reduce((sum, material) => sum + (parseInt(material.current_stock || 0) * parseFloat(material.price_per_item || 0)), 0);
-  const lowStockItemsCount = rawMaterials.filter(material => Number(material.current_stock) < Number(material.stok_minimum)).length;
+  const totalStockQuantity = rawMaterials.reduce((sum, material) => sum + parseInt(material.current_stock || 0) + parseInt(material.menu_stock || 0), 0);
+  const totalStockValue = rawMaterials.reduce((sum, material) => sum + ((parseInt(material.current_stock || 0) + parseInt(material.menu_stock || 0)) * parseFloat(material.price_per_item || 0)), 0);
+  const lowStockItemsCount = rawMaterials.filter(material => (Number(material.current_stock) + Number(material.menu_stock)) < Number(material.stok_minimum)).length;
 
 
   return (
@@ -181,6 +181,9 @@ const RawMaterialStockDashboard = () => {
                   Stok Saat Ini
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Stok Menu
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Satuan
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -212,6 +215,9 @@ const RawMaterialStockDashboard = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {parseInt(material.current_stock)}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    {parseInt(material.menu_stock)}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground cursor-pointer"
                       onClick={() => handleEditClick(material)}
                   >
@@ -232,12 +238,12 @@ const RawMaterialStockDashboard = () => {
                     {parseInt(material.standard_stock_per_day)} {material.custom_unit}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                    {Number(material.current_stock) < Number(material.stok_minimum) && (
+                    {(Number(material.current_stock) + Number(material.menu_stock)) < Number(material.stok_minimum) && (
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-destructive/10 text-destructive flex items-center">
                         <FaExclamationTriangle className="mr-1" /> Stok Menipis!
                       </span>
                     )}
-                    {Number(material.current_stock) >= Number(material.stok_minimum) && (
+                    {(Number(material.current_stock) + Number(material.menu_stock)) >= Number(material.stok_minimum) && (
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-success/10 text-success">
                         Cukup
                       </span>
@@ -273,12 +279,12 @@ const RawMaterialStockDashboard = () => {
               <div className="flex justify-between items-center pb-2 mb-2 border-b border-border">
                 <p className="text-lg font-bold text-card-foreground">{material.name}</p>
                 <div className="flex-shrink-0">
-                  {Number(material.current_stock) < Number(material.stok_minimum) && (
+                  {(Number(material.current_stock) + Number(material.menu_stock)) < Number(material.stok_minimum) && (
                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
                       Stok Menipis!
                     </span>
                   )}
-                  {Number(material.current_stock) >= Number(material.stok_minimum) && (
+                  {(Number(material.current_stock) + Number(material.menu_stock)) >= Number(material.stok_minimum) && (
                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                         Cukup
                       </span>
@@ -289,6 +295,10 @@ const RawMaterialStockDashboard = () => {
                                 <div>
                                   <p className="font-medium">Stok Saat Ini:</p>
                                   <p onClick={() => handleEditClick(material)} className="cursor-pointer">{parseInt(material.current_stock)} {material.unit}</p>
+                                </div>
+                                <div>
+                                  <p className="font-medium">Stok Menu:</p>
+                                  <p onClick={() => handleEditClick(material)} className="cursor-pointer">{parseInt(material.menu_stock)} {material.unit}</p>
                                 </div>
                                 <div>
                                   <p className="font-medium">Stok Min:</p>
