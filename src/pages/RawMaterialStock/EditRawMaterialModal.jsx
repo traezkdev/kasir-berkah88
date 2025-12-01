@@ -4,7 +4,6 @@ import axios from 'axios';
 const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, showMessage, showError }) => {
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('');
-  const [customUnit, setCustomUnit] = useState('');
   const [stokMinimum, setStokMinimum] = useState('');
   const [pricePerItem, setPricePerItem] = useState('');
 
@@ -20,7 +19,6 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
     if (isOpen && material) {
       setName(material.name || '');
       setUnit(material.unit || '');
-      setCustomUnit(material.custom_unit || 'pcs');
       const stokMinVal = parseFloat(material.stok_minimum);
       if (!isNaN(stokMinVal)) {
         if (stokMinVal % 1 !== 0) {
@@ -90,7 +88,6 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
       await axios.put(`${API_BASE_URL}/api/raw-materials/${material.id}`, {
         name,
         unit,
-        custom_unit: customUnit,
         stok_minimum: parseFloat(stokMinimum) || 0,
         price_per_item: parseFloat(pricePerItem) || 0,
 
@@ -166,17 +163,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
               required
             />
           </div>
-          <div className="mb-4">
-            <label htmlFor="customUnit" className="block text-muted-foreground text-sm font-bold mb-2">Satuan (Untuk Tampilan, Contoh: potong, buah)</label>
-            <input
-              type="text"
-              id="customUnit"
-              className="appearance-none bg-input border-border rounded w-full py-2 px-3 text-foreground leading-tight focus:outline-none focus:ring-2 focus:ring-primary/50"
-              value={customUnit}
-              onChange={(e) => setCustomUnit(e.target.value)}
-              placeholder="Contoh: pcs, potong, buah"
-            />
-          </div>
+
           <div className="mb-4">
             <label htmlFor="stokMinimum" className="block text-muted-foreground text-sm font-bold mb-2">Stok Minimum</label>
             <input
