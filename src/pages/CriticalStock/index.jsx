@@ -56,7 +56,7 @@ const CriticalStockPage = () => {
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6">
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => navigate('/owner-dashboard')}
+                  onClick={() => navigate('/owner-raw-material-stock')}
                   className="bg-muted hover:bg-muted/80 text-muted-foreground font-bold py-2 px-4 rounded flex items-center w-full sm:w-auto"
                 >
                   <FaArrowLeft className="mr-2" /> Kembali
