@@ -78,16 +78,22 @@ const MainCriticalStockPage = () => {
                       Nama Bahan
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Stok Tersisa
+                      Stok Saat Ini
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Stok Menu
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Total Stok Efektif
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Stok Minimum
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Estimasi Porsi
+                      Saran Pembelian
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Saran Pembelian
+                      Notifikasi
                     </th>
                   </tr>
                 </thead>
@@ -101,14 +107,20 @@ const MainCriticalStockPage = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-destructive font-bold">
                         {parseInt(item.current_stock)} {item.unit}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-destructive font-bold">
+                        {parseInt(item.menu_stock)} {item.unit}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                        {parseInt(item.total_effective_stock)} {item.unit}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                         {parseInt(item.stok_minimum)} {item.unit}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                        {item.estimated_menu_portions !== null ? `${parseInt(item.estimated_menu_portions)} porsi` : 'N/A'}
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-success font-bold">
                         {parseInt(item.suggestion_purchase_quantity)} {item.unit}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-destructive">
+                        {item.deficit > 0 ? `Stok menipis, kurang ${parseInt(item.deficit)} dari standar.` : ''}
                       </td>
                     </tr>
                   ))}
@@ -125,8 +137,14 @@ const MainCriticalStockPage = () => {
                     <h3 className="font-bold text-lg text-foreground">{item.name}</h3>
                   </div>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                    <div className="font-medium text-muted-foreground">Stok Tersisa:</div>
+                    <div className="font-medium text-muted-foreground">Stok Saat Ini:</div>
                     <div className="text-destructive font-bold">{parseInt(item.current_stock)} {item.unit}</div>
+                    
+                    <div className="font-medium text-muted-foreground">Stok Menu:</div>
+                    <div className="text-destructive font-bold">{parseInt(item.menu_stock)} {item.unit}</div>
+                    
+                    <div className="font-medium text-muted-foreground">Total Stok Efektif:</div>
+                    <div className="text-foreground">{parseInt(item.total_effective_stock)} {item.unit}</div>
                     
                     <div className="font-medium text-muted-foreground">Stok Minimum:</div>
                     <div className="text-foreground">{parseInt(item.stok_minimum)} {item.unit}</div>
@@ -137,6 +155,11 @@ const MainCriticalStockPage = () => {
                   <div className="mt-4 pt-3 border-t border-border">
                     <div className="font-medium text-muted-foreground text-sm">Saran Pembelian:</div>
                     <div className="text-success font-bold text-lg">{parseInt(item.suggestion_purchase_quantity)} {item.unit}</div>
+                    {item.deficit > 0 && (
+                      <div className="text-destructive text-sm mt-2">
+                        Notifikasi: Stok menipis, kurang {parseInt(item.deficit)} dari standar.
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

@@ -10,6 +10,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
   const [standardStockPerDay, setStandardStockPerDay] = useState('');
   const [suggestionPurchaseQuantity, setSuggestionPurchaseQuantity] = useState('');
   const [currentStock, setCurrentStock] = useState('');
+  const [menuStock, setMenuStock] = useState(''); // New state for menu_stock
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -63,6 +64,17 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
         setCurrentStock('');
       }
       
+      const menuStockValue = parseFloat(material.menu_stock); // Initialize menu_stock
+      if (!isNaN(menuStockValue)) {
+        if (menuStockValue % 1 !== 0) {
+          setMenuStock(menuStockValue);
+        } else {
+          setMenuStock(parseInt(menuStockValue, 10));
+        }
+      } else {
+        setMenuStock('');
+      }
+
       setError(null);
     }
   }, [isOpen, material]);
@@ -92,6 +104,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
         standard_stock_per_day: parseFloat(standardStockPerDay) || 0,
         suggestion_purchase_quantity: parseFloat(suggestionPurchaseQuantity) || 0,
         current_stock: parseFloat(currentStock) || 0,
+        menu_stock: parseFloat(menuStock) || 0, // Include menu_stock in the update
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -134,6 +147,18 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
               className="appearance-none bg-input border-border rounded w-full py-2 px-3 text-foreground leading-tight focus:outline-none focus:ring-2 focus:ring-primary/50"
               value={currentStock}
               onChange={(e) => setCurrentStock(e.target.value)}
+              min="0"
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="menuStock" className="block text-muted-foreground text-sm font-bold mb-2">Stok Menu</label>
+            <input
+              type="number"
+              id="menuStock"
+              className="appearance-none bg-input border-border rounded w-full py-2 px-3 text-foreground leading-tight focus:outline-none focus:ring-2 focus:ring-primary/50"
+              value={menuStock}
+              onChange={(e) => setMenuStock(e.target.value)}
               min="0"
               required
             />

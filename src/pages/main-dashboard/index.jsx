@@ -353,7 +353,11 @@ const MainDashboard = ({ headerTitle }) => {
           averageOrder: { value: formatCurrency(averageOrderToday), change: avgOrderChangeFormatted, trend: avgOrderTrend },
           lowStock: { value: lowStockItems.toString(), change: '', trend: 'down' }
         },
-        data_last_updated: settings?.data_last_updated
+        timestamps: {
+          menuStock: settings?.menu_stock_last_updated,
+          rawMaterials: settings?.raw_materials_last_updated,
+          lapakFunds: settings?.lapak_funds_last_updated
+        }
       });
     };
   const formatCurrency = (amount) => {
@@ -602,39 +606,59 @@ const MainDashboard = ({ headerTitle }) => {
               </div>
             </div>
 
-            {/* Status Banner */}
-            <div className={`mt-8 ${theme === 'default' ? 'bg-gradient-to-r from-primary/10 to-success/10' : 'bg-card'} rounded-lg p-4 border border-primary/20`}>
-              <div className="flex flex-col items-center text-center sm:flex-row sm:justify-between sm:text-left gap-y-2">
-                {/* Left Part: Icon and Text */}
-                <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3">
-                  <div className="p-2 bg-primary/20 rounded-md">
-                    <Icon name={dashboardData.data_last_updated ? "CheckCircle" : "AlertCircle"} size={20} className="text-primary" />
+            {/* Data Sync Status Section */}
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold text-text-primary mb-4">
+                Status Sinkronisasi Data
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Status Card: Menu Stock */}
+                <div className="bg-card border border-border rounded-lg p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-primary/10 rounded-md">
+                      <Icon name="BookUser" size={20} className="text-primary" />
+                    </div>
+                    <h3 className="font-semibold text-text-primary">Stok Menu</h3>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-text-primary">
-                      {dashboardData.data_last_updated ? "Data Menu Telah Sinkron" : "Sinkronisasi Data Tertunda"}
-                    </h3>
-                    <p className="text-sm text-text-secondary">
-                      {dashboardData.data_last_updated ? "Semua data (menu, harga, dll) telah sesuai dengan data fisik terbaru." : "Admin belum melakukan sinkronisasi data terbaru."}
-                    </p>
-                  </div>
+                  <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
+                  <p className="text-sm font-medium text-text-primary">
+                    {dashboardData.timestamps?.menuStock 
+                      ? new Date(dashboardData.timestamps.menuStock).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                      : 'Belum pernah'}
+                  </p>
                 </div>
 
-                {/* Right Part: Timestamp */}
-                {dashboardData.data_last_updated && (
-                  <div className="w-full sm:w-auto text-center sm:text-right">
-                    <p className="text-xs text-text-secondary">Terakhir diperbarui</p>
-                    <p className="text-sm font-medium text-text-primary">
-                      {new Date(dashboardData.data_last_updated).toLocaleString('id-ID', {
-                        day: '2-digit',
-                        month: 'long',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </p>
+                {/* Status Card: Raw Materials */}
+                <div className="bg-card border border-border rounded-lg p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-success/10 rounded-md">
+                      <Icon name="Package" size={20} className="text-success" />
+                    </div>
+                    <h3 className="font-semibold text-text-primary">Bahan Baku</h3>
                   </div>
-                )}
+                   <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
+                  <p className="text-sm font-medium text-text-primary">
+                    {dashboardData.timestamps?.rawMaterials
+                      ? new Date(dashboardData.timestamps.rawMaterials).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                      : 'Belum pernah'}
+                  </p>
+                </div>
+
+                {/* Status Card: Lapak Funds */}
+                <div className="bg-card border border-border rounded-lg p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-accent/10 rounded-md">
+                      <Icon name="Wallet" size={20} className="text-accent" />
+                    </div>
+                    <h3 className="font-semibold text-text-primary">Uang Lapak</h3>
+                  </div>
+                   <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
+                  <p className="text-sm font-medium text-text-primary">
+                    {dashboardData.timestamps?.lapakFunds
+                      ? new Date(dashboardData.timestamps.lapakFunds).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                      : 'Belum pernah'}
+                  </p>
+                </div>
               </div>
             </div>
 
