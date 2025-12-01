@@ -163,77 +163,77 @@ const OwnerRawMaterialStockDashboard = () => {
           
         </div>
 
-        <div className="overflow-x-auto bg-white rounded-lg shadow p-4 hidden sm:block">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="overflow-x-auto bg-card rounded-lg shadow p-4 hidden sm:block">
+          <table className="min-w-full divide-y divide-border">
+            <thead className="bg-muted">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Nama Bahan
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Stok Mentah
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Stok Menu
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Total Stok
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Satuan
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Stok Min
                 </th>
 
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Harga per Item
                 </th>
 
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Status
                 </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Aksi
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-border">
               {rawMaterials.map((material) => (
                 <tr key={material.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-card-foreground">
                     {material.name}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {toSafeNumber(material.current_stock)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {toSafeNumber(material.menu_stock)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-card-foreground font-bold">
                     {toSafeNumber(material.current_stock) + toSafeNumber(material.menu_stock)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer"
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground cursor-pointer"
                       onClick={() => handleEditClick(material)}
                   >
                     {material.unit}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {toSafeNumber(material.stok_minimum)}
                   </td>
 
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {toSafeNumber(material.price_per_item).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                   </td>
 
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {Number(material.current_stock) < Number(material.stok_minimum) && (
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 flex items-center">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-destructive/10 text-destructive flex items-center">
                         <FaExclamationTriangle className="mr-1" /> Stok Menipis!
                       </span>
                     )}
                     {Number(material.current_stock) >= Number(material.stok_minimum) && (
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-success/10 text-success">
                         Cukup
                       </span>
                     )}
@@ -263,23 +263,23 @@ const OwnerRawMaterialStockDashboard = () => {
         </div>
 
               <div className="block sm:hidden space-y-4 mt-4 pb-24">          {rawMaterials.map((material) => (
-            <div key={material.id} className="bg-white rounded-lg shadow p-4 border border-gray-200">
-              <div className="flex justify-between items-center pb-2 mb-2 border-b border-gray-200">
-                <p className="text-lg font-bold text-gray-900">{material.name}</p>
+            <div key={material.id} className="bg-card rounded-lg shadow p-4 border border-border">
+              <div className="flex justify-between items-center pb-2 mb-2 border-b border-border">
+                <p className="text-lg font-bold text-card-foreground">{material.name}</p>
                 <div className="flex-shrink-0">
                   {Number(material.current_stock) < Number(material.stok_minimum) && (
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-destructive/10 text-destructive">
                       Stok Menipis!
                     </span>
                   )}
                   {Number(material.current_stock) >= Number(material.stok_minimum) && (
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-success/10 text-success">
                         Cukup
                       </span>
                     )}
                   </div>
                 </div>
-                              <div className="grid grid-cols-2 gap-2 text-sm text-text-secondary pb-2 mb-2 border-b border-border">
+                              <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground pb-2 mb-2 border-b border-border">
                                 <div>
                                   <p className="font-medium">Stok Mentah:</p>
                                   <p>{(Number(material.current_stock) || 0)} {material.unit}</p>
@@ -299,7 +299,7 @@ const OwnerRawMaterialStockDashboard = () => {
                               </div>
 
                               {/* Block 2: Harga per Item only */}
-                              <div className="grid grid-cols-1 gap-2 text-sm text-text-secondary pb-2 mb-2 border-b border-border">
+                              <div className="grid grid-cols-1 gap-2 text-sm text-muted-foreground pb-2 mb-2 border-b border-border">
                                 <div> {/* Harga per Item */}
                                   <p className="font-medium">Harga per Item:</p>
                                   <p>{(Number(material.price_per_item) || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
