@@ -282,6 +282,14 @@ const RawMaterialStockDashboard = () => {
                 </div>
                               <div className="grid grid-cols-2 gap-2 text-sm text-text-secondary pb-2 mb-2 border-b border-border">
                                 <div>
+                                  <p className="font-medium">Stok Saat Ini:</p>
+                                  <p>{(Number(material.current_stock) || 0)} {material.unit}</p>
+                                </div>
+                                <div>
+                                  <p className="font-medium">Stok Menu:</p>
+                                  <p>{(Number(material.menu_stock) || 0)} {material.unit}</p>
+                                </div>
+                                <div>
                                   <p className="font-medium">Stok Min:</p>
                                   <p onClick={() => handleEditClick(material)} className="cursor-pointer">{(Number(material.stok_minimum) || 0)} {material.unit}</p>
                                 </div>
