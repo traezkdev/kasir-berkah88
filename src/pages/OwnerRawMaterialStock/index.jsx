@@ -162,7 +162,7 @@ const OwnerRawMaterialStockDashboard = () => {
                   Nama Bahan
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Stok Saat Ini
+                  Stok Mentah
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Stok Menu
@@ -272,7 +272,7 @@ const OwnerRawMaterialStockDashboard = () => {
                 </div>
                               <div className="grid grid-cols-2 gap-2 text-sm text-text-secondary pb-2 mb-2 border-b border-border">
                                 <div>
-                                  <p className="font-medium">Stok Saat Ini:</p>
+                                  <p className="font-medium">Stok Mentah:</p>
                                   <p>{(Number(material.current_stock) || 0)} {material.unit}</p>
                                 </div>
                                 <div>
