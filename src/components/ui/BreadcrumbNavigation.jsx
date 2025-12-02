@@ -22,7 +22,6 @@ const BreadcrumbNavigation = ({ customPath = null, className = "" }) => {
     '/owner-raw-material-stock/history': 'Riwayat Stok Bahan Baku Owner',
     '/owner/business-reports': 'Laporan Bisnis', // Explicitly define for owner
     '/admin-uang-bisnis': 'Riwayat Transaksi Owner',
-    '/owner-raw-material-stock': 'Stok Bahan Baku',
     '/raw-material-stock': 'Stok Bahan Baku',
   };
 
@@ -66,7 +65,13 @@ const BreadcrumbNavigation = ({ customPath = null, className = "" }) => {
           return; // Skip this segment
       }
       
-      let segmentLabel = routeLabels?.[currentPath];
+      let segmentLabel;
+      if (currentPath === '/owner-raw-material-stock') {
+          segmentLabel = userRole === 'owner' ? 'Stok Bahan Baku Owner' : 'Stok Bahan Baku';
+      } else {
+          segmentLabel = routeLabels?.[currentPath];
+      }
+
       if (!segmentLabel && currentPath.startsWith('/owner/')) {
           segmentLabel = segment?.replace(/-/g, ' ')?.split(' ')?.map(word => word?.charAt(0)?.toUpperCase() + word?.slice(1))?.join(' ');
       }
