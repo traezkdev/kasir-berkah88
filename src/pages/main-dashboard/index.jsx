@@ -613,14 +613,14 @@ const MainDashboard = ({ headerTitle }) => {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Status Card: Menu Stock */}
-                <div className="bg-card border border-border rounded-lg p-4">
-                  <div className="flex items-center gap-3 mb-2">
+                <div className="bg-card border border-border rounded-lg p-4 text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
                     <div className="p-2 bg-primary/10 rounded-md">
                       <Icon name="BookUser" size={20} className="text-primary" />
                     </div>
                     <h3 className="font-semibold text-text-primary">Stok Menu</h3>
                   </div>
-                  <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
+                   <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
                   <p className="text-sm font-medium text-text-primary">
                     {dashboardData.timestamps?.menuStock 
                       ? new Date(dashboardData.timestamps.menuStock).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -629,8 +629,8 @@ const MainDashboard = ({ headerTitle }) => {
                 </div>
 
                 {/* Status Card: Raw Materials */}
-                <div className="bg-card border border-border rounded-lg p-4">
-                  <div className="flex items-center gap-3 mb-2">
+                <div className="bg-card border border-border rounded-lg p-4 text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
                     <div className="p-2 bg-success/10 rounded-md">
                       <Icon name="Package" size={20} className="text-success" />
                     </div>
@@ -645,8 +645,8 @@ const MainDashboard = ({ headerTitle }) => {
                 </div>
 
                 {/* Status Card: Lapak Funds */}
-                <div className="bg-card border border-border rounded-lg p-4">
-                  <div className="flex items-center gap-3 mb-2">
+                <div className="bg-card border border-border rounded-lg p-4 text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
                     <div className="p-2 bg-accent/10 rounded-md">
                       <Icon name="Wallet" size={20} className="text-accent" />
                     </div>
