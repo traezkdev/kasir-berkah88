@@ -1327,7 +1327,7 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
 });
 
 // Update a transaction
-app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
+app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res, next) => {
     try {
         const { total, ppn, isEmployeeMeal, payment_method, timestamp, manual_discount } = req.body;
         const { id } = req.params;
@@ -1354,7 +1354,7 @@ app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
 });
 
 // Soft delete a transaction
-app.delete("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
+app.delete("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res, next) => {
     try {
         const sql = 'UPDATE transactions SET deleted_at = ? WHERE id = ?';
         const [result] = await db.query(sql, [new Date(), req.params.id]);

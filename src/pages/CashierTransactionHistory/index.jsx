@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import { FiArrowLeft } from 'react-icons/fi';
 import DarkModeToggle from '../../components/ui/DarkModeToggle';
 import { jwtDecode } from 'jwt-decode';
+import Icon from '../../components/AppIcon'; // Import Icon for the delete confirmation modal
+import Button from '../../components/ui/Button'; // Import Button for the delete confirmation modal
 
 
 import TransactionFilters from '../transaction-history/components/TransactionFilters';
@@ -51,6 +53,9 @@ const CashierTransactionHistory = ({ headerTitle }) => {
   const [chartFilterType, setChartFilterType] = useState('daily'); // New state for chart filter
   const [currentDailyDate, setCurrentDailyDate] = useState(new Date()); // State for current date in daily view
 
+    // State for delete confirmation modal
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [transactionToDeleteId, setTransactionToDeleteId] = useState(null);
 
   const navigate = useNavigate(); // Initialize useNavigate
 
@@ -76,6 +81,7 @@ const CashierTransactionHistory = ({ headerTitle }) => {
   };
 
   const handleEditTransaction = (transaction) => {
+    console.log("Transaction to edit:", transaction); // Debug log
     setTransactionToEdit(transaction);
     setIsEditModalOpen(true);
   };
@@ -85,14 +91,14 @@ const CashierTransactionHistory = ({ headerTitle }) => {
     setTransactionToEdit(null);
   };
 
-  const handleUpdateTransaction = async (updatedTransaction) => {
+  const handleUpdateTransaction = async (id, updatedData) => { // Corrected parameters
     try {
-      const response = await authFetch(`${apiUrl}/api/transactions/${updatedTransaction.id}`, {
+      const response = await authFetch(`${apiUrl}/api/transactions/${id}`, { // Use the correct id
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updatedTransaction),
+        body: JSON.stringify(updatedData), // Use the correct updatedData
       });
       const data = await response.json();
       if (data.message === 'success') {
@@ -272,14 +278,27 @@ const CashierTransactionHistory = ({ headerTitle }) => {
     });
   };
 
-  const handleDeleteTransaction = async (transactionId) => {
+    const handleOpenDeleteConfirm = (transactionId) => {
+        setTransactionToDeleteId(transactionId);
+        setShowDeleteConfirm(true);
+    };
+
+    const handleCloseDeleteConfirm = () => {
+        setTransactionToDeleteId(null);
+        setShowDeleteConfirm(false);
+    };
+
+  const handleDeleteTransaction = async () => { // Modified to use transactionToDeleteId
+    if (!transactionToDeleteId) return;
+
     try {
-      const response = await authFetch(`${apiUrl}/api/transactions/${transactionId}`, {
+      const response = await authFetch(`${apiUrl}/api/transactions/${transactionToDeleteId}`, {
         method: 'DELETE',
       });
       const data = await response.json();
       if (data.message === 'deleted') {
-        setTransactions(prev => prev.filter(t => t.id !== transactionId));
+        fetchTransactions(); // Refetch all transactions after delete
+        handleCloseDeleteConfirm(); // Close the modal
       } else {
         console.error('Failed to delete transaction:', data.error);
       }
@@ -530,18 +549,63 @@ const CashierTransactionHistory = ({ headerTitle }) => {
 
 
 
-            <TransactionTable
+                        <TransactionTable
 
-              transactions={currentItems}
 
-              onEditTransaction={handleEditTransaction}
-              
-              onRowClick={handleTransactionClick}
 
-              isMobile={isMobile}
-              userRole={userRole}
 
-            />
+
+
+
+                          transactions={currentItems}
+
+
+
+
+
+
+
+                          onEditTransaction={handleEditTransaction}
+
+
+
+
+
+
+
+                          onRowClick={handleTransactionClick}
+
+
+
+
+
+
+
+                          isMobile={isMobile}
+
+
+
+
+
+
+
+                          userRole={userRole}
+
+
+
+
+
+
+
+                          onOpenDeleteConfirm={handleOpenDeleteConfirm} // Pass the new handler
+
+
+
+
+
+
+
+                        />
 
             <Pagination
               itemsPerPage={itemsPerPage}
@@ -567,9 +631,44 @@ const CashierTransactionHistory = ({ headerTitle }) => {
         isOpen={isEditModalOpen}
         onClose={handleCloseEditModal}
         transaction={transactionToEdit}
-        onSave={handleUpdateTransaction}
+        onUpdateTransaction={handleUpdateTransaction}
       />
 
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
+            <div className="bg-card rounded-lg p-6 max-w-sm w-full">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-2 bg-destructive/10 rounded-full">
+                  <Icon name="AlertTriangle" size={20} className="text-destructive" />
+                </div>
+                <h3 className="text-lg font-semibold text-text-primary">
+                  Hapus Transaksi
+                </h3>
+              </div>
+              <p className="text-text-secondary mb-6">
+                Apakah Anda yakin ingin menghapus transaksi #{transactionToDeleteId}? 
+                Tindakan ini akan memindahkan transaksi ke tong sampah.
+              </p>
+              <div className="flex space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={handleCloseDeleteConfirm}
+                  className="flex-1"
+                >
+                  Batal
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteTransaction}
+                  className="flex-1"
+                >
+                  Hapus
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
     </div>
 
   );
