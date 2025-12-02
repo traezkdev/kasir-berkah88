@@ -9,8 +9,18 @@ import { toast } from 'react-hot-toast';
 import DarkModeToggle from '../../components/ui/DarkModeToggle';
 import ConfirmationModal from '../../components/ui/ConfirmationModal';
 import { Checkbox } from '../../components/ui/Checkbox';
+import OptionSelectionModal from './components/OptionSelectionModal'; // Import the new modal
 
 const apiUrl = import.meta.env.VITE_API_URL;
+
+// Helper function to create a unique ID for a cart item based on its options
+const getCartItemId = (item, options) => {
+  if (!options || options.length === 0) {
+    return item.id;
+  }
+  const optionIds = options.map(o => o.id).sort().join('-');
+  return `${item.id}-${optionIds}`;
+};
 
 export default function CashierDashboard() {
   const navigate = useNavigate();
@@ -28,6 +38,9 @@ export default function CashierDashboard() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [dashboardTitle, setDashboardTitle] = useState('Dasbor Kasir');
   const [ignoreStock, setIgnoreStock] = useState(false);
+  // State for the options modal
+  const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
+  const [selectedItemForOptions, setSelectedItemForOptions] = useState(null);
 
   const handleLogout = () => {
     localStorage.removeItem('token'); // Assuming token is stored in localStorage
@@ -121,9 +134,10 @@ export default function CashierDashboard() {
       });
   }, [menuItems, searchTerm, filterKategori]);
 
-  const addToCart = useCallback((item) => {
-    setCart((prevCart) => {
-      const existingItem = prevCart.find((cartItem) => cartItem.id === item.id);
+  const addItemToCart = useCallback((item, selectedOptions = []) => {
+    setCart(prevCart => {
+      const cartItemId = getCartItemId(item, selectedOptions);
+      const existingItem = prevCart.find(cartItem => cartItem.cartItemId === cartItemId);
       const originalMenuItem = menuItems.find(menuItem => menuItem.id === item.id);
 
       if (!originalMenuItem) {
@@ -131,36 +145,57 @@ export default function CashierDashboard() {
         return prevCart;
       }
 
+      const optionPriceAdjustment = selectedOptions.reduce((sum, opt) => sum + (opt.price_adjustment || 0), 0);
+      // Assuming item.price is the base price and discount needs to be applied first
+                  const priceBeforeDiscount = parseFloat(originalMenuItem.price) + optionPriceAdjustment;
+                  const finalPrice = originalMenuItem.discount > 0 ? priceBeforeDiscount * (1 - originalMenuItem.discount) : priceBeforeDiscount;
       if (existingItem) {
         if (!ignoreStock && existingItem.quantity + 1 > originalMenuItem.stock) {
-          setTimeout(() => toast.error(`Stok ${item.name} tidak cukup! Tersedia: ${originalMenuItem.stock}`), 0);
+          setTimeout(() => toast.error(`Stok ${originalMenuItem.name} tidak cukup! Tersedia: ${originalMenuItem.stock}`), 0);
           return prevCart;
         }
-        return prevCart.map((cartItem) =>
-          cartItem.id === item.id
+        return prevCart.map(cartItem =>
+          cartItem.cartItemId === cartItemId
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
         );
       } else {
-        if (!ignoreStock && 1 > originalMenuItem.stock) { // Check if adding 1 item exceeds original stock
-          setTimeout(() => toast.error(`Stok ${item.name} tidak cukup! Tersedia: ${originalMenuItem.stock}`), 0);
+        if (!ignoreStock && 1 > originalMenuItem.stock) {
+          setTimeout(() => toast.error(`Stok ${originalMenuItem.name} tidak cukup! Tersedia: ${originalMenuItem.stock}`), 0);
           return prevCart;
         }
-        return [...prevCart, { ...item, quantity: 1 }];
+        const newCartItem = {
+          ...originalMenuItem, // Use originalMenuItem to ensure all properties like discount are present
+          cartItemId, // Unique ID for this specific item configuration
+          quantity: 1,
+          selectedOptions,
+          basePrice: parseFloat(originalMenuItem.price),
+          finalPrice, // Store final price after options and discount
+        };
+        return [...prevCart, newCartItem];
       }
     });
-  }, [setCart, menuItems, ignoreStock]);
+  }, [setCart, menuItems, ignoreStock]); // Added menuItems to dependencies
 
-  const updateCartQuantity = (itemId, newQuantity) => {
+  const handleItemClick = useCallback((item) => {
+    if (item.options && item.options.length > 0) {
+      setSelectedItemForOptions(item);
+      setIsOptionsModalOpen(true);
+    } else {
+      addItemToCart(item, []);
+    }
+  }, [addItemToCart, setSelectedItemForOptions, setIsOptionsModalOpen]); // Added setSelectedItemForOptions, setIsOptionsModalOpen to dependencies
+
+  const updateCartQuantity = (cartItemId, newQuantity) => {
     setCart((prevCart) => {
-      const itemToUpdate = prevCart.find((item) => item.id === itemId);
+      const itemToUpdate = prevCart.find((item) => item.cartItemId === cartItemId);
       if (!itemToUpdate) return prevCart;
 
-      const originalMenuItem = menuItems.find(menuItem => menuItem.id === itemId);
+      const originalMenuItem = menuItems.find(menuItem => menuItem.id === itemToUpdate.id);
       if (!originalMenuItem) return prevCart; // Should not happen
 
       if (newQuantity <= 0) {
-        return prevCart.filter((item) => item.id !== itemId);
+        return prevCart.filter((item) => item.cartItemId !== cartItemId);
       } else {
         if (!ignoreStock && newQuantity > originalMenuItem.stock) {
           setTimeout(() => toast.error(`Stok ${itemToUpdate.name} tidak cukup! Tersedia: ${originalMenuItem.stock}`), 0);
@@ -168,28 +203,32 @@ export default function CashierDashboard() {
         }
 
         return prevCart.map((item) =>
-          item.id === itemId ? { ...item, quantity: newQuantity } : item
+          item.cartItemId === cartItemId ? { ...item, quantity: newQuantity } : item
         );
       }
     });
   };
 
-  const removeFromCart = (itemId) => {
+  const removeFromCart = (cartItemId) => {
     setCart((prevCart) => {
-      return prevCart.filter((item) => item.id !== itemId);
+      return prevCart.filter((item) => item.cartItemId !== cartItemId);
     });
   };
 
   const originalSubtotal = useMemo(() => {
     return cart.reduce((sum, item) => {
-      return sum + item.price * item.quantity;
+      let priceWithToppings = parseFloat(item.basePrice);
+      if (item.selectedOptions && item.selectedOptions.length > 0) {
+        priceWithToppings += item.selectedOptions.reduce((sum, opt) => sum + (opt.price_adjustment || 0), 0);
+      }
+      return sum + priceWithToppings * item.quantity;
     }, 0);
   }, [cart]);
 
   const subtotal = useMemo(() => {
     return cart.reduce((sum, item) => {
-      const discountedPrice = item.price * (1 - (item.discount || 0));
-      return sum + discountedPrice * item.quantity;
+      // Use item.finalPrice which already includes options and discount
+      return sum + item.finalPrice * item.quantity;
     }, 0);
   }, [cart]);
 
@@ -249,9 +288,11 @@ export default function CashierDashboard() {
       const transactionItems = cart.map(item => ({
         id: item.id,
         name: item.name,
-        price: item.price,
+        basePrice: item.basePrice, // Original base price
+        price: item.finalPrice, // Store final price per item (after discount and options)
         quantity: item.quantity,
         discount: item.discount || 0, // Include discount, default to 0 if not present
+        options: item.selectedOptions ? item.selectedOptions.map(opt => ({ name: opt.name, price_adjustment: opt.price_adjustment })) : [] // Include selected options
       }));
 
       const response = await authFetch(`${apiUrl}/api/transactions/`, {
@@ -370,7 +411,7 @@ export default function CashierDashboard() {
                                     className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 transition-shadow duration-200 relative
                                       ${isOutOfStock && !ignoreStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'}
                                       ${isInCart ? 'border-2 border-green-500' : ''}`
-                                    }                  onClick={() => (currentAvailableStock > 0 || ignoreStock) && addToCart(item)}
+                                    }                  onClick={() => (currentAvailableStock > 0 || ignoreStock) && handleItemClick(item)}
                 >
                   {isOutOfStock && (
                     <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">Stok Habis</div>
@@ -428,10 +469,15 @@ export default function CashierDashboard() {
               <p className="text-gray-500">Keranjang kosong.</p>
             ) : (
               cart.map((item) => (
-                <div key={item.id} className="flex items-center justify-between bg-white dark:bg-gray-700 p-3 rounded-lg shadow-sm mb-2">
+                <div key={item.cartItemId} className="flex items-center justify-between bg-white dark:bg-gray-700 p-3 rounded-lg shadow-sm mb-2">
                   <div>
                     <p className="font-semibold">{item.name}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Rp{item.price.toLocaleString('id-ID')}</p>
+                    {item.selectedOptions && item.selectedOptions.length > 0 && (
+                        <p className="text-xs text-gray-500">
+                            Opsi: {item.selectedOptions.map(opt => opt.name).join(', ')}
+                        </p>
+                    )}
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Rp{item.finalPrice.toLocaleString('id-ID')}</p>
                   </div>
                   <div className="flex items-center">
                     <Button
@@ -454,7 +500,7 @@ export default function CashierDashboard() {
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => removeFromCart(item.id)}
+                      onClick={() => removeFromCart(item.cartItemId)}
                       className="ml-2 p-1"
                     >
                       <FiTrash2 />
@@ -574,6 +620,12 @@ export default function CashierDashboard() {
                               </Button>          </div>
         </div>
       )}
+      <OptionSelectionModal
+        isOpen={isOptionsModalOpen}
+        onClose={() => setIsOptionsModalOpen(false)}
+        item={selectedItemForOptions}
+        onAddToCartWithOptions={addItemToCart}
+      />
     </div>
   );
 };
