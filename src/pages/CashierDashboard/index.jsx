@@ -72,7 +72,7 @@ export default function CashierDashboard() {
     setError('');
     try {
       // Fetch Menu Items
-      const menuResponse = await authFetch(`${apiUrl}/api/menu-items`);
+      const menuResponse = await authFetch(`${apiUrl}/api/menu-items/all`); // Changed to /all endpoint
       const menuData = await menuResponse.json();
       if (menuResponse.ok) {
         setMenuItems(menuData.data);
