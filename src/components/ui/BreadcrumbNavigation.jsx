@@ -21,6 +21,7 @@ const BreadcrumbNavigation = ({ customPath = null, className = "" }) => {
     '/owner-raw-material-stock': 'Stok Bahan Baku Owner',
     '/owner-raw-material-stock/history': 'Riwayat Stok Bahan Baku Owner',
     '/owner/business-reports': 'Laporan Bisnis', // Explicitly define for owner
+    '/admin-uang-bisnis': 'Riwayat Transaksi Owner',
   };
 
   const generateBreadcrumbs = () => {
