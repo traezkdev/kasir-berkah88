@@ -128,7 +128,7 @@ const RawMaterialStockDashboard = () => {
       )}
       <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 ${theme !== 'admin' ? 'mt-16' : ''}`}>
         {/* Breadcrumb Navigation */}
-        <BreadcrumbNavigation paths={[{ name: 'Beranda', path: '/main-dashboard' }, { name: 'Stok Bahan Mentah', path: '/raw-material-stock' }]} className="mb-4" />
+        <BreadcrumbNavigation className="mb-4" />
         <h1 className="text-2xl font-bold mb-4">Dashboard Stok Bahan Mentah</h1>
         
         {/* Metrics Cards */}

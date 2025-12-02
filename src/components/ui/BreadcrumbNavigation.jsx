@@ -23,6 +23,7 @@ const BreadcrumbNavigation = ({ customPath = null, className = "" }) => {
     '/owner/business-reports': 'Laporan Bisnis', // Explicitly define for owner
     '/admin-uang-bisnis': 'Riwayat Transaksi Owner',
     '/owner-raw-material-stock': 'Stok Bahan Baku',
+    '/raw-material-stock': 'Stok Bahan Baku',
   };
 
   const generateBreadcrumbs = () => {
