@@ -254,37 +254,87 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
           body * {
             visibility: hidden;
           }
-          #receipt-container, #receipt-container * {
-            visibility: visible;
-          }
           #receipt-container {
+            visibility: visible;
             position: absolute;
             left: 0;
             top: 0;
-            width: 58mm; /* Fixed width for thermal printer */
-            height: auto; /* Allow height to adjust */
+            width: 58mm; /* Common thermal printer width */
+            max-width: 58mm;
+            box-sizing: border-box; /* Include padding/border in width */
             margin: 0;
-            padding: 0;
+            padding: 5mm; /* Small padding from edges */
             border: none;
             box-shadow: none;
-            border-radius: 0;
-            /* Adjust font sizes for thermal printer */
-            font-size: 8pt; /* Base font size */
+            background-color: white;
+            color: black;
+            font-family: 'monospace', monospace; /* Ensure monospace font for thermal printer look */
+            font-size: 9pt; /* Slightly larger base font */
             line-height: 1.2;
           }
-          #receipt-container h2 { /* Berkah 88 */
-            font-size: 12pt !important;
+          #receipt-container h2, #receipt-container p, #receipt-container span, #receipt-container div, #receipt-container h3 {
+            visibility: visible;
+            color: black !important;
+            background-color: white !important;
+            box-shadow: none !important;
+            text-shadow: none !important;
+            font-family: 'monospace', monospace;
+            page-break-inside: avoid; /* Prevent breaking inside elements */
           }
-          #receipt-container p,
+          #receipt-container h2 { /* Restaurant Name */
+            font-size: 12pt !important;
+            font-weight: bold !important;
+            margin-bottom: 2mm;
+          }
+          #receipt-container p { /* Slogan */
+            font-size: 8pt !important;
+            margin-bottom: 3mm;
+          }
+          #receipt-container .text-sm,
           #receipt-container span,
           #receipt-container div {
-            font-size: 8pt !important;
+            font-size: 9pt !important; /* General text */
+          }
+          #receipt-container h3 { /* Detail Item */
+            font-size: 10pt !important;
+            font-weight: bold !important;
+            margin-bottom: 2mm;
           }
           #receipt-container .text-lg { /* TOTAL */
-            font-size: 10pt !important;
+            font-size: 11pt !important;
+            font-weight: bold !important;
+          }
+          #receipt-container .border-b {
+            border-bottom: 1px dashed black !important; /* Ensure dashed border is visible */
+            margin-top: 3mm;
+            margin-bottom: 3mm;
+          }
+          #receipt-container .space-y-2 > div {
+            margin-bottom: 2mm !important; /* Spacing between items */
+          }
+          #receipt-container .text-center {
+            text-align: center;
+          }
+          #receipt-container .flex {
+            display: flex;
+          }
+          #receipt-container .justify-between {
+            justify-content: space-between;
+          }
+          #receipt-container .items-baseline {
+            align-items: baseline;
+          }
+          #receipt-container .gap-2 {
+            gap: 0.5rem;
+          }
+          #receipt-container .line-through {
+            text-decoration: line-through;
+          }
+          #receipt-container .text-red-500 {
+            color: black !important; /* Ensure red text is black for thermal print */
           }
           .print\\:hidden {
-            display: none;
+            display: none !important;
           }
         }
       `}</style>
