@@ -174,6 +174,14 @@ const setupDatabase = async () => {
     `;
     await connection.query(insertDefaultSettings);
 
+    // Ensure simple_transaction_title is always 'Transaksi'
+    const ensureSimpleTransactionTitle = `
+      INSERT INTO settings (\`key\`, \`value\`) VALUES
+      ('simple_transaction_title', 'Transaksi')
+      ON DUPLICATE KEY UPDATE \`value\` = 'Transaksi';
+    `;
+    await connection.query(ensureSimpleTransactionTitle);
+
     await connection.query(createTransactionsTable);
 
     await connection.query(createExpensesTable);
