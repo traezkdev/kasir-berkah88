@@ -579,6 +579,14 @@ export default function SimpleTransaction() { // Renamed component
                       Rp{amount.toLocaleString('id-ID')}
                     </Button>
                   ))}
+                  <Button
+                    variant="default" // Highlight this button
+                    onClick={() => setCashPaid(totalAmount)}
+                    className="py-3 text-md w-full col-span-2" // Added col-span-2
+                    disabled={totalAmount === 0}
+                  >
+                    Uang Pass (Rp{formatNumber(totalAmount)})
+                  </Button>
                 </div>
                 <Input
                   label="Uang Dibayar"
