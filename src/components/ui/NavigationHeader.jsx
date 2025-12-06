@@ -8,7 +8,7 @@ import DarkModeToggle from './DarkModeToggle';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = "Kasir Berkah 88" }) => {
+const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = "Kasir Berkah 88", rightContent }) => {
   const { setTheme } = useTheme();
   const isNativePlatform = Capacitor.isNativePlatform();
   const navigate = useNavigate(); // Declare navigate here
@@ -141,6 +141,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
 
             {/* DarkModeToggle and Mobile Menu Button */}
             <div className="flex items-center md:space-x-2">
+              {rightContent} {/* Render additional right-aligned content here */}
               <div className="lg:hidden">
                 <DarkModeToggle />
               </div>

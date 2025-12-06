@@ -35,6 +35,7 @@ import UangBisnis from './pages/uang-bisnis/index.jsx';
 import CriticalStockPage from './pages/CriticalStock';
 import MainCriticalStockPage from './pages/MainCriticalStock';
 import AdminUangBisnis from './pages/AdminUangBisnis'; // Add this import
+import SimpleTransactionPage from './pages/SimpleTransaction';
 
 import TransactionTrash from './pages/TransactionTrash';
 
@@ -104,6 +105,7 @@ const AppRoutes = () => {
         <Route path="/hpp" element={<Hpp />} />
         <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
         <Route path="/sales-transaction-processing" element={<SalesTransactionProcessing />} />
+        <Route path="/transaksi-sederhana" element={<SimpleTransactionPage />} />
         <Route path="/raw-material-stock" element={<RawMaterialStockDashboard />} />
         <Route path="/raw-material-stock/history" element={<RawMaterialStockHistory />} />
         <Route path="/main-critical-stock" element={<MainCriticalStockPage />} />
