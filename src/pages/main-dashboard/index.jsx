@@ -265,7 +265,8 @@ const MainDashboard = ({ headerTitle }) => {
   
       const totalExpenses = monthlyExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
 
-      const netProfit = totalRevenue - totalExpenses + totalMenuStockValue + rawMaterialStockValue;
+      // Corrected "Keuntungan Kotor" calculation to use all-time figures for consistency
+      const netProfit = allTimeRevenue - allTimeExpenses + totalMenuStockValue + rawMaterialStockValue;
   
       // --- Daily Stats Calculation ---
       // Use allTransactions for today's stats to ensure complete data for the day.
@@ -453,10 +454,10 @@ const MainDashboard = ({ headerTitle }) => {
     },
     {
       title: 'Pendapatan',
-      value: formatCurrency(dashboardData.metrics.allTimeRevenue), // Assuming this refers to total revenue
+      value: formatCurrency(dashboardData.metrics.totalRevenue), // Monthly revenue
       icon: 'BarChart',
       color: 'success',
-      description: 'Total pendapatan dari semua transaksi'
+      description: 'Total pendapatan bulan ini'
     },
     {
       title: 'Modal Akhir Saat Ini',
@@ -498,7 +499,7 @@ const MainDashboard = ({ headerTitle }) => {
       value: formatCurrency(dashboardData.metrics.netProfit),
       icon: 'DollarSign',
       color: 'accent',
-      description: 'Pendapatan - pengeluaran + nilai stok menu + nilai stok mentah'
+      description: 'Total pendapatan (semua waktu) - total pengeluaran (semua waktu) + nilai stok menu + nilai stok mentah'
     },
     {
       title: 'Total Pendapatan (Semua Waktu)',
