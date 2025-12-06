@@ -45,7 +45,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
     }
 
     try {
-      const dataUrl = await htmlToImage.toPng(receiptRef.current, { pixelRatio: 2 });
+      const dataUrl = await htmlToImage.toPng(receiptRef.current, { pixelRatio: 4 }); // Increased pixelRatio for higher resolution and better clarity
       
       // Convert data URL to blob
       const res = await fetch(dataUrl);
@@ -263,13 +263,13 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
             max-width: 58mm;
             box-sizing: border-box; /* Include padding/border in width */
             margin: 0;
-            padding: 5mm; /* Small padding from edges */
+            padding: 2mm; /* Reduced padding from edges */
             border: none;
             box-shadow: none;
             background-color: white;
             color: black;
             font-family: 'monospace', monospace; /* Ensure monospace font for thermal printer look */
-            font-size: 9pt; /* Slightly larger base font */
+            font-size: 7pt; /* Smaller base font */
             line-height: 1.2;
           }
           #receipt-container h2, #receipt-container p, #receipt-container span, #receipt-container div, #receipt-container h3 {
@@ -282,35 +282,35 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
             page-break-inside: avoid; /* Prevent breaking inside elements */
           }
           #receipt-container h2 { /* Restaurant Name */
-            font-size: 12pt !important;
+            font-size: 10pt !important; /* Reduced from 12pt */
             font-weight: bold !important;
-            margin-bottom: 2mm;
+            margin-bottom: 1mm; /* Reduced from 2mm */
           }
           #receipt-container p { /* Slogan */
-            font-size: 8pt !important;
-            margin-bottom: 3mm;
+            font-size: 7pt !important; /* Reduced from 8pt */
+            margin-bottom: 2mm; /* Reduced from 3mm */
           }
           #receipt-container .text-sm,
           #receipt-container span,
           #receipt-container div {
-            font-size: 9pt !important; /* General text */
+            font-size: 7pt !important; /* General text, reduced from 9pt */
           }
           #receipt-container h3 { /* Detail Item */
-            font-size: 10pt !important;
+            font-size: 8pt !important; /* Reduced from 10pt */
             font-weight: bold !important;
-            margin-bottom: 2mm;
+            margin-bottom: 1mm; /* Reduced from 2mm */
           }
           #receipt-container .text-lg { /* TOTAL */
-            font-size: 11pt !important;
+            font-size: 9pt !important; /* Reduced from 11pt */
             font-weight: bold !important;
           }
           #receipt-container .border-b {
             border-bottom: 1px dashed black !important; /* Ensure dashed border is visible */
-            margin-top: 3mm;
-            margin-bottom: 3mm;
+            margin-top: 2mm; /* Reduced from 3mm */
+            margin-bottom: 2mm; /* Reduced from 3mm */
           }
           #receipt-container .space-y-2 > div {
-            margin-bottom: 2mm !important; /* Spacing between items */
+            margin-bottom: 1mm !important; /* Spacing between items, reduced from 2mm */
           }
           #receipt-container .text-center {
             text-align: center;
@@ -325,7 +325,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
             align-items: baseline;
           }
           #receipt-container .gap-2 {
-            gap: 0.5rem;
+            gap: 0.5mm; /* Reduced gap */
           }
           #receipt-container .line-through {
             text-decoration: line-through;
@@ -333,6 +333,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
           #receipt-container .text-red-500 {
             color: black !important; /* Ensure red text is black for thermal print */
           }
+          /* Ensure no buttons or interactive elements appear on print */
           .print\\:hidden {
             display: none !important;
           }
