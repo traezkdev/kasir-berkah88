@@ -267,19 +267,12 @@ const MainDashboard = ({ headerTitle }) => {
       const allTimeNetProfit = allTimeRevenue - allTimeExpenses;
           const totalMenuStockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
       
-          console.log('--- Raw Materials Data for Stock Value Calculation ---');
-          console.log('Raw Materials Data Fetched:', rawMaterialsData);
-          let debugRawMaterialStockValue = 0;
           const rawMaterialStockValue = rawMaterialsData.reduce((sum, m) => {
               const currentStock = parseInt(m.current_stock || 0);
               const pricePerItem = parseFloat(m.price_per_item || 0);
               const itemValue = currentStock * pricePerItem;
-              console.log(`- Item: ${m.name}, Stock: ${currentStock}, Price: ${pricePerItem}, Value: ${itemValue}`);
-              debugRawMaterialStockValue += itemValue;
               return sum + itemValue;
           }, 0);
-          console.log('Calculated rawMaterialStockValue from logs:', debugRawMaterialStockValue);
-          console.log('----------------------------------------------------');
       
           const stockValue = totalMenuStockValue + rawMaterialStockValue;      let workingCapital = 0;
       if (!isNaN(initialCapital)) {
