@@ -10,6 +10,7 @@ import BulkActions from './components/BulkActions';
 import Pagination from '../../components/ui/Pagination';
 import TransactionReceiptModal from './components/TransactionReceiptModal'; // Import the modal
 import EditTransactionModal from './components/EditTransactionModal'; // Import the new edit modal
+import DailyRecapPopup from './components/DailyRecapPopup'; // Import the daily recap popup
 import TransactionChart from './components/TransactionChart'; // Import TransactionChart
 import Icon from '../../components/AppIcon'; // Import Icon for the delete confirmation modal
 import Button from '../../components/ui/Button'; // Import Button for the delete confirmation modal
@@ -63,6 +64,7 @@ const TransactionHistory = ({ headerTitle }) => {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState(null);
+  const [isRecapPopupOpen, setIsRecapPopupOpen] = useState(false);
   const [chartFilterType, setChartFilterType] = useState('daily');
   // Removed currentDailyDate and its handlers as chart will now display all data for the selected period
 
@@ -199,6 +201,9 @@ const TransactionHistory = ({ headerTitle }) => {
     setIsEditModalOpen(false);
     setTransactionToEdit(null);
   };
+
+  const handleOpenRecapPopup = () => setIsRecapPopupOpen(true);
+  const handleCloseRecapPopup = () => setIsRecapPopupOpen(false);
 
   const handleUpdateTransaction = async (id, updatedData) => {
     try {
@@ -801,29 +806,12 @@ const TransactionHistory = ({ headerTitle }) => {
 
 
                         <BulkActions
-
-
-
                           onClearAllTransactions={handleClearAllTransactions}
-
-
-
                           onExportTransactions={handleExportTransactions}
-
-
-
+                          onOpenRecapPopup={handleOpenRecapPopup}
                           transactionCount={currentItems.length}
-
-
-
                           isExporting={isExporting}
-
-
-
                           userRole={userRole}
-
-
-
                         />
 
 
@@ -867,6 +855,11 @@ const TransactionHistory = ({ headerTitle }) => {
         onClose={handleCloseEditModal}
         transaction={transactionToEdit}
         onUpdateTransaction={handleUpdateTransaction}
+      />
+
+      <DailyRecapPopup
+        isOpen={isRecapPopupOpen}
+        onClose={handleCloseRecapPopup}
       />
 
         {/* Delete Confirmation Modal */}
