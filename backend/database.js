@@ -190,6 +190,14 @@ const setupDatabase = async () => {
     `;
     await connection.query(ensureIgnoreStockSimpleTransactionSetting);
 
+    // Ensure ignore_stock_sales_form setting exists and defaults to '0' (false)
+    const ensureIgnoreStockSalesFormSetting = `
+      INSERT INTO settings (\`key\`, \`value\`) VALUES
+      ('ignore_stock_sales_form', '0')
+      ON DUPLICATE KEY UPDATE \`value\` = \`value\`;
+    `;
+    await connection.query(ensureIgnoreStockSalesFormSetting);
+
     await connection.query(createTransactionsTable);
 
     await connection.query(createExpensesTable);

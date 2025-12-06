@@ -12,21 +12,55 @@ const SalesForm = ({ menuItems, onIncrementItem, onDecrementItem, cart, userRole
   const [selectedCategory, setSelectedCategory] = useState('all'); // State for selected category
   const [ignoreStock, setIgnoreStock] = useState(false); // State for ignore stock
 
+  const handleToggleIgnoreStock = async () => {
+    const newValue = !ignoreStock;
+    setIgnoreStock(newValue); // Optimistically update local state
+
+    try {
+      const response = await authFetch(`${apiUrl}/api/settings/ignore_stock_sales_form`, {
+        method: 'PUT', // Use PUT to update an existing setting
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ value: newValue ? '1' : '0' }), // Send '1' or '0'
+      });
+
+      if (!response.ok) {
+        // If API update fails, revert local state and show error
+        setIgnoreStock(!newValue);
+        const errorData = await response.json();
+        console.error(errorData.error || 'Gagal memperbarui pengaturan Abaikan Stok.');
+      }
+    } catch (err) {
+      // If API call fails, revert local state and show error
+      setIgnoreStock(!newValue);
+      console.error('Terjadi kesalahan saat memperbarui pengaturan Abaikan Stok: ' + err.message);
+    }
+  };
+
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchInitialData = async () => {
       try {
-        const response = await authFetch(`${apiUrl}/api/categories`);
-        const data = await response.json();
-        if (response.ok) {
-          setCategories(data.data);
+        // Fetch Categories
+        const categoriesResponse = await authFetch(`${apiUrl}/api/categories`);
+        const categoriesData = await categoriesResponse.json();
+        if (categoriesResponse.ok) {
+          setCategories(categoriesData.data);
         } else {
-          console.error("Failed to fetch categories:", data.error);
+          console.error("Failed to fetch categories:", categoriesData.error);
+        }
+
+        // Fetch Ignore Stock setting for SalesForm
+        const ignoreStockResponse = await authFetch(`${apiUrl}/api/settings/ignore_stock_sales_form`);
+        const ignoreStockData = await ignoreStockResponse.json();
+        if (ignoreStockResponse.ok) {
+          setIgnoreStock(ignoreStockData.data.value === '1'); // Convert '0'/'1' to boolean
         }
       } catch (error) {
-        console.error("Error fetching categories:", error);
+        console.error("Error fetching initial data:", error);
       }
     };
-    fetchCategories();
+    fetchInitialData();
   }, [apiUrl]);
 
   const filteredAndCategorizedMenuItems = menuItems.filter(item =>
@@ -73,7 +107,7 @@ const SalesForm = ({ menuItems, onIncrementItem, onDecrementItem, cart, userRole
                         {/* Button for ignoring stock */}
                         <div className="flex items-center ml-auto w-full sm:w-auto">
                           <Button
-                            onClick={() => setIgnoreStock(!ignoreStock)}
+                            onClick={handleToggleIgnoreStock}
                             variant={ignoreStock ? "destructive" : "outline"}
                             className="w-full" // Make button full width
                           >
