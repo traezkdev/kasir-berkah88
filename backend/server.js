@@ -1182,6 +1182,8 @@ app.get("/api/transactions/daily-recap", authenticateToken, authorizeRoles('user
             SELECT
                 COALESCE(SUM(CASE WHEN payment_method = 'Tunai' THEN total ELSE 0 END), 0) as total_tunai,
                 COALESCE(SUM(CASE WHEN payment_method = 'Transfer' THEN total ELSE 0 END), 0) as total_transfer,
+                COALESCE(SUM(CASE WHEN payment_method = 'Gojek' THEN total ELSE 0 END), 0) as total_gojek,
+                COALESCE(SUM(CASE WHEN payment_method = 'Makan Karyawan' THEN total ELSE 0 END), 0) as total_makan_karyawan,
                 COALESCE(SUM(total), 0) as grand_total
             FROM transactions
             WHERE DATE(timestamp) = ? AND deleted_at IS NULL

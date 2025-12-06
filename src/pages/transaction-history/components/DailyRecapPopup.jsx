@@ -54,6 +54,8 @@ const DailyRecapPopup = ({ isOpen, onClose }) => {
     const data = [
       ["Total Tunai", formatCurrency(recapData.total_tunai)],
       ["Total Transfer", formatCurrency(recapData.total_transfer)],
+      ["Total Gojek", formatCurrency(recapData.total_gojek)],
+      ["Total Makan Karyawan", formatCurrency(recapData.total_makan_karyawan)],
       ["Total Keseluruhan", formatCurrency(recapData.grand_total)],
     ];
 
@@ -121,6 +123,14 @@ const DailyRecapPopup = ({ isOpen, onClose }) => {
                 <tr className="border-b border-border">
                   <td className="py-2 font-medium text-text-primary">Total Pemasukan Transfer</td>
                   <td className="py-2 text-right">{formatCurrency(recapData.total_transfer)}</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="py-2 font-medium text-text-primary">Total Pemasukan Gojek</td>
+                  <td className="py-2 text-right">{formatCurrency(recapData.total_gojek)}</td>
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="py-2 font-medium text-text-primary">Total Makan Karyawan</td>
+                  <td className="py-2 text-right">{formatCurrency(recapData.total_makan_karyawan)}</td>
                 </tr>
                 <tr className="bg-gray-50 dark:bg-gray-800/50">
                   <td className="py-2 font-bold text-text-primary">Total Keseluruhan</td>
