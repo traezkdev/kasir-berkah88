@@ -382,6 +382,7 @@ export default function SimpleTransaction() { // Renamed component
                       <Button
                         onClick={() => setIgnoreStock(!ignoreStock)}
                         variant={ignoreStock ? "destructive" : "outline"}
+                        className="w-full md:w-auto"
                       >
                         Abaikan Stok: {ignoreStock ? "Ya" : "Tidak"}
                       </Button>
