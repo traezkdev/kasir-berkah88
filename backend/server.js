@@ -1435,6 +1435,64 @@ app.delete("/api/transactions", authenticateToken, authorizeRoles('admin'), asyn
     }
 });
 
+// Create a new simplified transaction (V2)
+app.post("/api/v2/transactions", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'owner'), async (req, res) => {
+    let connection;
+    try {
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        const { items, total_amount, payment_method, cash_paid, change_given } = req.body;
+        const user_id = req.user.userId;
+
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ error: "Transaction must include at least one item." });
+        }
+        if (!total_amount || !payment_method) {
+            return res.status(400).json({ error: "Total amount and payment method are required." });
+        }
+
+        // 1. Insert into simple_transactions table
+        const transactionSql = 'INSERT INTO simple_transactions (user_id, total_amount, payment_method, cash_paid, change_given) VALUES (?, ?, ?, ?, ?)';
+        const transactionParams = [user_id, total_amount, payment_method, cash_paid, change_given];
+        const [transactionResult] = await connection.query(transactionSql, transactionParams);
+        const simple_transaction_id = transactionResult.insertId;
+
+        // 2. Insert into simple_transaction_items table
+        const itemsSql = 'INSERT INTO simple_transaction_items (simple_transaction_id, menu_item_id, item_name, quantity, price_per_item, total_price) VALUES ?';
+        const itemValues = items.map(item => [
+            simple_transaction_id,
+            item.id,
+            item.name,
+            item.quantity,
+            item.price,
+            item.quantity * item.price
+        ]);
+        await connection.query(itemsSql, [itemValues]);
+
+        await connection.commit();
+        
+        res.status(201).json({
+            message: "Simple transaction created successfully",
+            data: {
+                id: simple_transaction_id,
+                ...req.body
+            }
+        });
+
+    } catch (err) {
+        if (connection) {
+            await connection.rollback();
+        }
+        console.error("Error creating simple transaction:", err);
+        res.status(500).json({ error: "Failed to create simple transaction.", details: err.message });
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
+});
+
 
 // --- Expense Endpoints ---
 

@@ -180,6 +180,39 @@ const setupDatabase = async () => {
 
     await connection.query(createUsersTable);
     console.log('users table is ready.');
+
+    const createSimpleTransactionsTable = `
+      CREATE TABLE IF NOT EXISTS simple_transactions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        total_amount DECIMAL(10, 2) NOT NULL,
+        payment_method VARCHAR(50) NOT NULL,
+        cash_paid DECIMAL(10, 2),
+        change_given DECIMAL(10, 2),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+      );
+    `;
+
+    const createSimpleTransactionItemsTable = `
+      CREATE TABLE IF NOT EXISTS simple_transaction_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        simple_transaction_id INT NOT NULL,
+        menu_item_id VARCHAR(255) NOT NULL,
+        item_name VARCHAR(255) NOT NULL,
+        quantity INT NOT NULL,
+        price_per_item DECIMAL(10, 2) NOT NULL,
+        total_price DECIMAL(10, 2) NOT NULL,
+        FOREIGN KEY (simple_transaction_id) REFERENCES simple_transactions(id) ON DELETE CASCADE,
+        FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE
+      );
+    `;
+
+    await connection.query(createSimpleTransactionsTable);
+    console.log('simple_transactions table is ready.');
+    await connection.query(createSimpleTransactionItemsTable);
+    console.log('simple_transaction_items table is ready.');
+
     await connection.query(createNotesTable);
     console.log('notes table is ready.');
     await connection.query(createEmployeesTable);
