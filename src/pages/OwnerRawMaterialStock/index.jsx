@@ -113,6 +113,7 @@ const OwnerRawMaterialStockDashboard = () => {
   const totalStockQuantity = rawMaterials.reduce((sum, material) => sum + toSafeNumber(material.current_stock) + toSafeNumber(material.menu_stock), 0);
   const totalStockValue = rawMaterials.reduce((sum, material) => sum + ((toSafeNumber(material.current_stock) + toSafeNumber(material.menu_stock)) * toSafeNumber(material.price_per_item)), 0);
   const lowStockItemsCount = rawMaterials.filter(material => (toSafeNumber(material.current_stock) + toSafeNumber(material.menu_stock)) < toSafeNumber(material.stok_minimum)).length;
+  const currentRawMaterialStockValue = rawMaterials.reduce((sum, material) => sum + (toSafeNumber(material.current_stock) * toSafeNumber(material.price_per_item)), 0);
 
 
   return (
@@ -123,7 +124,7 @@ const OwnerRawMaterialStockDashboard = () => {
         <BreadcrumbNavigation paths={[{ name: 'Beranda Owner', path: '/owner-dashboard' }, { name: 'Stok Bahan Mentah Owner', path: '/owner-raw-material-stock' }]} className="mb-4" />
       <h1 className="text-2xl font-bold mb-4">Dashboard Stok Bahan Mentah Owner</h1>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <MetricsCard
             title="Total Kuantitas Stok"
             value={`${totalStockQuantity} Item`}
@@ -144,6 +145,13 @@ const OwnerRawMaterialStockDashboard = () => {
             icon="AlertCircle"
             color="destructive"
             description="Jumlah jenis bahan di bawah stok minimum"
+          />
+          <MetricsCard
+            title="Nilai Stok Bahan Mentah Saat Ini"
+            value={formatCurrency(currentRawMaterialStockValue)}
+            icon="Archive"
+            color="info"
+            description="Estimasi nilai stok bahan mentah yang belum diolah/digunakan"
           />
         </div>
 
