@@ -7,6 +7,7 @@ import OptionSelectionModal from './components/OptionSelectionModal'; // Import 
 import authFetch from '../../utils/authFetch';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
+import Button from '../../components/ui/Button'; // Added import for Button
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -213,11 +214,20 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       <div className={`${theme === 'default' ? 'pt-16' : ''}`}>
         <div className={`max-w-7xl mx-auto ${theme === 'default' ? 'px-4' : ''} lg:px-6 space-y-6 py-4 pb-20`}>
           <BreadcrumbNavigation />
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">Transaksi Penjualan</h1>
-            <p className="text-text-secondary mt-1">
-              Proses transaksi penjualan dengan cepat dan efisien.
-            </p>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">Transaksi Penjualan</h1>
+              <p className="text-text-secondary mt-1">
+                Proses transaksi penjualan dengan cepat dan efisien.
+              </p>
+            </div>
+            <Button
+              onClick={() => navigate('/transaksi-sederhana')}
+              variant="outline"
+              className="w-full md:w-auto" // Make button full width on mobile, auto on desktop
+            >
+              Mode Transaksi Sederhana
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
