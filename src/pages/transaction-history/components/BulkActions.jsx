@@ -8,6 +8,7 @@ import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } fro
 const BulkActions = ({ 
   onClearAllTransactions, 
   onExportTransactions, 
+  onOpenRecapPopup,
   transactionCount,
   isExporting = false,
   userRole 
@@ -100,6 +101,17 @@ const BulkActions = ({
         </div>
 
         <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3">
+          
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onOpenRecapPopup}
+            iconName="BookCopy"
+            iconPosition="left"
+          >
+            Rekap Harian
+          </Button>
+
           {/* Export Actions */}
           <div className="flex items-center space-x-2">
             {exportOptionsButtons?.map((option, index) => (

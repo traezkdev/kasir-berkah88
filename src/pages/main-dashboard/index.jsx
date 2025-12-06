@@ -21,6 +21,11 @@ const MainDashboard = ({ headerTitle }) => {
   const { theme } = useTheme();
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
+  const [filterType, setFilterType] = useState('monthly'); // Options: 'this_week', 'monthly', 'yearly', 'all_time', 'custom'
+  const [customDateRange, setCustomDateRange] = useState({
+    start: new Date().toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0],
+  });
 
       const fetchData = async (currentUserRole) => { // Add currentUserRole parameter
       const token = localStorage.getItem('token');
@@ -189,26 +194,63 @@ const MainDashboard = ({ headerTitle }) => {
       // No token, redirect to login
       navigate('/login');
     }
-  }, []); // Empty dependency array to run once on mount
-
-  // Get user role from token and then fetch data
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const decodedToken = JSON.parse(atob(token.split('.')[1]));
-        const role = decodedToken.role;
-        // Pass the role to fetchData
-        fetchData(role);
-      } catch (e) {
-        console.error("Error decoding token in MainDashboard:", e);
-        // If token is invalid, maybe redirect to login or handle as unauthenticated
-        navigate('/login');
-      }
-    }
-  }, []); // Empty dependency array to run once on mount
+  }, [filterType, customDateRange]); // Re-fetch and process data when filter changes
 
     const processDashboardData = (paginatedTransactions, allTransactions, menuItems, expenses, settings, ownerAccountData, lapakAccountData, rawMaterialsData) => {
+      // --- Date and Filter Logic ---
+      const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+      let startDate, endDate;
+
+      switch (filterType) {
+        case 'this_week':
+          startDate = new Date(now);
+          const firstDayOfWeek = now.getDate() - now.getDay(); // Sunday
+          startDate.setDate(firstDayOfWeek);
+          endDate = new Date(startDate);
+          endDate.setDate(startDate.getDate() + 6); // Saturday
+          break;
+        case 'yearly':
+          startDate = new Date(now.getFullYear(), 0, 1); // Start of year
+          endDate = new Date(now.getFullYear(), 11, 31); // End of year
+          break;
+        case 'custom':
+          // The date from input is 'YYYY-MM-DD'. new Date() will treat it as UTC midnight.
+          // To avoid timezone issues, we construct the date carefully.
+          const startParts = customDateRange.start.split('-').map(Number);
+          const endParts = customDateRange.end.split('-').map(Number);
+          startDate = new Date(startParts[0], startParts[1] - 1, startParts[2]);
+          endDate = new Date(endParts[0], endParts[1] - 1, endParts[2]);
+          break;
+        case 'all_time':
+          // No date filtering needed, handled below
+          break;
+        case 'monthly':
+        default:
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1); // Start of month
+          endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0); // End of month
+          break;
+      }
+
+      // Set time to beginning and end of day for accurate filtering on all types except all_time
+      if (filterType !== 'all_time') {
+          if (startDate) startDate.setHours(0, 0, 0, 0);
+          if (endDate) endDate.setHours(23, 59, 59, 999);
+      }
+      
+      const filteredTransactions = filterType === 'all_time'
+        ? allTransactions
+        : allTransactions.filter(t => {
+            const transactionDate = new Date(t.timestamp);
+            return transactionDate >= startDate && transactionDate <= endDate;
+          });
+          
+      const filteredExpenses = filterType === 'all_time'
+        ? expenses
+        : expenses.filter(e => {
+            const expenseDate = new Date(e.date);
+            return expenseDate >= startDate && expenseDate <= endDate;
+          });
+      
       const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
@@ -216,64 +258,42 @@ const MainDashboard = ({ headerTitle }) => {
       const todayString = today.toDateString();
       const yesterdayString = yesterday.toDateString();
   
-      const currentMonth = today.getMonth();
-      const currentYear = today.getFullYear();
-  
-      // --- All-Time & Working Capital Metrics ---
+      // --- All-Time & Working Capital Metrics (Unaffected by filter) ---
       const initialCapital = parseFloat(settings?.initial_capital || 0);
-      const initialCapitalDate = settings?.initial_capital_date ? new Date(settings.initial_capital_date) : null;
-      let workingCapital = 0;
-  
-      // For "All Time" metrics, consider all transactions and expenses regardless of initial_capital_date
-      const allTimeTransactions = allTransactions; 
-      const allTimeRelevantExpenses = expenses;
-  
-      const allTimeRevenue = allTimeTransactions
+      const allTimeRevenue = allTransactions
         .filter(t => t.payment_method !== 'Makan Karyawan')
         .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
-      const allTimeExpenses = allTimeRelevantExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+      const allTimeExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
       const allTimeNetProfit = allTimeRevenue - allTimeExpenses;
-
-      const totalMenuStockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
-      const rawMaterialStockValue = rawMaterialsData.reduce((sum, m) => sum + (parseInt(m.current_stock || 0) * parseFloat(m.price_per_item || 0)), 0);
-      const stockValue = totalMenuStockValue; // Only menu stock value
-
+          const totalMenuStockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
+      
+          const rawMaterialStockValue = rawMaterialsData.reduce((sum, m) => {
+              const currentStock = parseInt(m.current_stock || 0);
+              const pricePerItem = parseFloat(m.price_per_item || 0);
+              const itemValue = currentStock * pricePerItem;
+              return sum + itemValue;
+          }, 0);
+      
+          const stockValue = totalMenuStockValue + rawMaterialStockValue;      let workingCapital = 0;
       if (!isNaN(initialCapital)) {
           workingCapital = initialCapital + allTimeRevenue + totalMenuStockValue + rawMaterialStockValue - allTimeExpenses;
       }
   
-      // --- Monthly Metrics for Dashboard ---
-      // Use allTransactions for monthly metrics to ensure complete data
-      const monthlyTransactions = allTransactions.filter(t => {
-        const transactionDate = new Date(t.timestamp);
-        return (
-          transactionDate.getMonth() === currentMonth &&
-          transactionDate.getFullYear() === currentYear
-        );
-      });
-  
-      const totalRevenue = monthlyTransactions
+      // --- Metrics for Filtered Period ---
+      const totalRevenue = filteredTransactions
         .filter(t => t.payment_method !== 'Makan Karyawan')
         .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
-      const monthlyExpenses = expenses.filter(e => {
-        const expenseDate = new Date(e.date);
-        return (
-          expenseDate.getMonth() === currentMonth &&
-          expenseDate.getFullYear() === currentYear
-        );
-      });
-  
-      const totalExpenses = monthlyExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+      
+      const totalExpenses = filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
 
-      const netProfit = totalRevenue - totalExpenses + totalMenuStockValue + rawMaterialStockValue;
+      // Corrected "Keuntungan Kotor" calculation to use all-time figures for consistency
+      const netProfit = allTimeRevenue - allTimeExpenses + totalMenuStockValue + rawMaterialStockValue;
   
-      // --- Daily Stats Calculation ---
-      // Use allTransactions for today's stats to ensure complete data for the day.
+      // --- Daily Stats Calculation (Unaffected by filter) ---
       const todayTransactions = allTransactions.filter(t => new Date(t.timestamp).toDateString() === todayString && t.payment_method !== 'Makan Karyawan');
       const todaySales = todayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
       const averageOrderToday = todayTransactions.length > 0 ? todaySales / todayTransactions.length : 0;
   
-      // Yesterday's Data
       const yesterdayTransactions = allTransactions.filter(t => new Date(t.timestamp).toDateString() === yesterdayString && t.payment_method !== 'Makan Karyawan');
       const yesterdaySales = yesterdayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
       const averageOrderYesterday = yesterdayTransactions.length > 0 ? yesterdaySales / yesterdayTransactions.length : 0;
@@ -313,21 +333,24 @@ const MainDashboard = ({ headerTitle }) => {
       }).reduce((sum, i) => sum + (i.quantity || 0), 0);
       const lowStockItems = menuItems.filter(item => item.stock <= 5 && item.stock > 0).length;
       const recentTransactions = paginatedTransactions.slice(0, 6); // Use paginated for recent list
+
+
   
       setDashboardData({
         metrics: {
-          // Monthly
+          // Filtered Metrics
           totalRevenue,
           totalExpenses,
-          netProfit,
-          // All-Time
+          // All-Time / Unfiltered Metrics
+          netProfit, // This is the "Keuntungan Kotor" metric
           workingCapital,
           allTimeRevenue,
           allTimeExpenses,
           allTimeNetProfit,
-          initialCapital, // Add initialCapital here
+          initialCapital,
           // Other
           stockValue, // Now only totalMenuStockValue
+          rawMaterialStockValue, // Add raw material stock value
           ownerBalance: ownerAccountData?.account?.balance || 0,
           lapakBalance: lapakAccountData?.account?.balance || 0,
         },
@@ -453,10 +476,10 @@ const MainDashboard = ({ headerTitle }) => {
     },
     {
       title: 'Pendapatan',
-      value: formatCurrency(dashboardData.metrics.allTimeRevenue), // Assuming this refers to total revenue
+      value: formatCurrency(dashboardData.metrics.totalRevenue), // Monthly revenue
       icon: 'BarChart',
       color: 'success',
-      description: 'Total pendapatan dari semua transaksi'
+      description: 'Total pendapatan bulan ini'
     },
     {
       title: 'Modal Akhir Saat Ini',
@@ -479,7 +502,7 @@ const MainDashboard = ({ headerTitle }) => {
       color: 'primary',
       description: 'Berdasarkan harga jual'
     },
-    {
+        {
       title: 'Saldo Owner',
       value: formatCurrency(dashboardData.metrics.ownerBalance),
       icon: 'Wallet', 
@@ -498,7 +521,7 @@ const MainDashboard = ({ headerTitle }) => {
       value: formatCurrency(dashboardData.metrics.netProfit),
       icon: 'DollarSign',
       color: 'accent',
-      description: 'Pendapatan - pengeluaran + nilai stok menu + nilai stok mentah'
+      description: 'Total pendapatan (semua waktu) - total pengeluaran (semua waktu) + nilai stok menu + nilai stok mentah'
     },
     {
       title: 'Total Pendapatan (Semua Waktu)',
@@ -533,7 +556,7 @@ const MainDashboard = ({ headerTitle }) => {
             {/* Header Section */}
             <div className="mb-6">
               <BreadcrumbNavigation />
-              <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center justify-between mt-4 flex-wrap gap-y-4">
                 <div>
                   <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
                     Dashboard
@@ -542,15 +565,49 @@ const MainDashboard = ({ headerTitle }) => {
                     Selamat datang! Kelola warung Anda dengan mudah
                   </p> */}
                 </div>
-                <div className="hidden lg:block">
-                  <Button
-                    variant="primary"
-                    iconName="Plus"
-                    iconPosition="left"
-                    onClick={() => navigate('/sales-transaction-processing')}
-                  >
-                    Transaksi Baru
-                  </Button>
+                <div className="flex items-center gap-4 flex-wrap">
+                  {/* New Filter Section */}
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={filterType}
+                      onChange={(e) => setFilterType(e.target.value)}
+                      className="bg-card border-border text-text-primary text-sm rounded-md focus:ring-primary focus:border-primary p-2"
+                    >
+                      <option value="this_week">Minggu Ini</option>
+                      <option value="monthly">Bulan Ini</option>
+                      <option value="yearly">Tahun Ini</option>
+                      <option value="all_time">Semua Waktu</option>
+                      <option value="custom">Kustom</option>
+                    </select>
+                    {filterType === 'custom' && (
+                      <>
+                        <input
+                          type="date"
+                          value={customDateRange.start}
+                          onChange={(e) => setCustomDateRange({ ...customDateRange, start: e.target.value })}
+                          className="bg-card border-border text-text-primary text-sm rounded-md focus:ring-primary focus:border-primary p-2"
+                        />
+                        <span className="text-text-secondary">to</span>
+                        <input
+                          type="date"
+                          value={customDateRange.end}
+                          onChange={(e) => setCustomDateRange({ ...customDateRange, end: e.target.value })}
+                          className="bg-card border-border text-text-primary text-sm rounded-md focus:ring-primary focus:border-primary p-2"
+                        />
+                      </>
+                    )}
+                  </div>
+                  {/* End New Filter Section */}
+                  <div className="hidden lg:block">
+                    <Button
+                      variant="primary"
+                      iconName="Plus"
+                      iconPosition="left"
+                      onClick={() => navigate('/sales-transaction-processing')}
+                    >
+                      Transaksi Baru
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -670,8 +727,6 @@ const MainDashboard = ({ headerTitle }) => {
         </main>
         
       </div>
-    </div>
-  );
-};
-
-export default MainDashboard;
+              </div>
+            );
+          };export default MainDashboard;

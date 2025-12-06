@@ -1170,6 +1170,38 @@ app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admi
     }
 });
 
+// Get daily transaction recap
+app.get("/api/transactions/daily-recap", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'owner'), async (req, res) => {
+    try {
+        const { date } = req.query;
+        if (!date) {
+            return res.status(400).json({ "error": "Date parameter is required" });
+        }
+
+        const sql = `
+            SELECT
+                COALESCE(SUM(CASE WHEN payment_method = 'Tunai' THEN total ELSE 0 END), 0) as total_tunai,
+                COALESCE(SUM(CASE WHEN payment_method = 'Transfer' THEN total ELSE 0 END), 0) as total_transfer,
+                COALESCE(SUM(CASE WHEN payment_method = 'Gojek' THEN total ELSE 0 END), 0) as total_gojek,
+                COALESCE(SUM(CASE WHEN payment_method = 'Makan Karyawan' THEN total ELSE 0 END), 0) as total_makan_karyawan,
+                COALESCE(SUM(total), 0) as grand_total
+            FROM transactions
+            WHERE DATE(timestamp) = ? AND deleted_at IS NULL
+        `;
+        
+        const [rows] = await db.query(sql, [date]);
+        
+        res.json({
+            "message": "success",
+            "data": rows[0] // The query returns a single row with the totals
+        });
+
+    } catch (err) {
+        console.error("Error fetching daily transaction recap:", err);
+        res.status(500).json({ "error": err.message, "stack": err.stack });
+    }
+});
+
 // Get trashed transactions
 app.get("/api/transactions/trash", authenticateToken, authorizeRoles('admin'), async (req, res, next) => {
     try {
@@ -2563,7 +2595,7 @@ app.post("/api/login", async (req, res) => {
             return res.status(401).json({ error: "Invalid credentials" });
         }
 
-        const token = jwt.sign({ userId: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ userId: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
         res.json({ message: "Login successful", token });
     } catch (err) {
