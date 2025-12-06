@@ -45,6 +45,32 @@ export default function SimpleTransaction() { // Renamed component
   const [selectedItemForOptions, setSelectedItemForOptions] = useState(null);
   const { theme } = useTheme(); // Added theme hook
 
+  const handleToggleIgnoreStock = async () => {
+    const newValue = !ignoreStock;
+    setIgnoreStock(newValue); // Optimistically update local state
+
+    try {
+      const response = await authFetch(`${apiUrl}/api/settings/ignore_stock_simple_transaction`, {
+        method: 'PUT', // Use PUT to update an existing setting
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ value: newValue ? '1' : '0' }), // Send '1' or '0'
+      });
+
+      if (!response.ok) {
+        // If API update fails, revert local state and show error
+        setIgnoreStock(!newValue);
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Gagal memperbarui pengaturan Abaikan Stok.');
+      }
+    } catch (err) {
+      // If API call fails, revert local state and show error
+      setIgnoreStock(!newValue);
+      toast.error('Terjadi kesalahan saat memperbarui pengaturan Abaikan Stok: ' + err.message);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token'); // Assuming token is stored in localStorage
     navigate('/login');
@@ -103,6 +129,17 @@ export default function SimpleTransaction() { // Renamed component
       } catch (titleErr) {
         // If fetching title fails, just log it and use the default title.
         console.error('Failed to fetch simple transaction title:', titleErr);
+      }
+
+      // Fetch Ignore Stock setting for Simple Transaction
+      try {
+        const ignoreStockResponse = await authFetch(`${apiUrl}/api/settings/ignore_stock_simple_transaction`);
+        const ignoreStockData = await ignoreStockResponse.json();
+        if (ignoreStockResponse.ok) {
+          setIgnoreStock(ignoreStockData.data.value === '1'); // Convert '0'/'1' to boolean
+        }
+      } catch (err) {
+        console.error('Failed to fetch ignore_stock_simple_transaction setting:', err);
       }
 
     } catch (err) {
@@ -380,7 +417,7 @@ export default function SimpleTransaction() { // Renamed component
                     </div>
                     <div className="flex justify-end mb-4">
                       <Button
-                        onClick={() => setIgnoreStock(!ignoreStock)}
+                        onClick={handleToggleIgnoreStock}
                         variant={ignoreStock ? "destructive" : "outline"}
                         className="w-full md:w-auto"
                       >
@@ -542,6 +579,14 @@ export default function SimpleTransaction() { // Renamed component
                       Rp{amount.toLocaleString('id-ID')}
                     </Button>
                   ))}
+                  <Button
+                    variant="default" // Highlight this button
+                    onClick={() => setCashPaid(totalAmount)}
+                    className="py-3 text-md w-full col-span-2" // Added col-span-2
+                    disabled={totalAmount === 0}
+                  >
+                    Uang Pass (Rp{formatNumber(totalAmount)})
+                  </Button>
                 </div>
                 <Input
                   label="Uang Dibayar"
