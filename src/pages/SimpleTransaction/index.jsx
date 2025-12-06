@@ -38,7 +38,7 @@ export default function SimpleTransaction() { // Renamed component
   const [paymentMethod, setPaymentMethod] = useState('cash'); // Default to 'cash'
   const [showMobileCart, setShowMobileCart] = useState(false); // State for mobile cart visibility
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [dashboardTitle, setDashboardTitle] = useState('Dasbor Transaksi Sederhana'); // Changed default title
+  const [dashboardTitle, setDashboardTitle] = useState('Transaksi'); // Changed default title
   const [ignoreStock, setIgnoreStock] = useState(false);
   // State for the options modal
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
@@ -350,15 +350,7 @@ export default function SimpleTransaction() { // Renamed component
                   </span>
                 )}
               </button>
-              <button
-                className="p-2 md:px-4 md:py-2 rounded-full md:rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center"
-                onClick={() => navigate('/transaction-history')}
-                title="Riwayat Transaksi"
-              >
-                <FiList className="h-6 w-6 md:hidden" />
-                <span className="hidden md:block">Riwayat Transaksi</span>
-              </button>
-            </>
+                          {/* Riwayat Transaksi button removed */}            </>
           }
         />
       )}
