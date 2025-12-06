@@ -118,6 +118,7 @@ const RawMaterialStockDashboard = () => {
   // Calculate metrics
   const totalStockQuantity = rawMaterials.reduce((sum, material) => sum + parseInt(material.current_stock || 0) + parseInt(material.menu_stock || 0), 0);
   const totalStockValue = rawMaterials.reduce((sum, material) => sum + ((parseInt(material.current_stock || 0) + parseInt(material.menu_stock || 0)) * parseFloat(material.price_per_item || 0)), 0);
+  const currentRawMaterialStockValue = rawMaterials.reduce((sum, material) => sum + (parseInt(material.current_stock || 0) * parseFloat(material.price_per_item || 0)), 0); // New calculation
   const lowStockItemsCount = rawMaterials.filter(material => (Number(material.current_stock) + Number(material.menu_stock)) < Number(material.stok_minimum)).length;
 
 
@@ -132,7 +133,7 @@ const RawMaterialStockDashboard = () => {
         <h1 className="text-2xl font-bold mb-4">Dashboard Stok Bahan Mentah</h1>
         
         {/* Metrics Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <MetricsCard
             title="Total Kuantitas Stok"
             value={`${totalStockQuantity} Item`}
@@ -153,6 +154,13 @@ const RawMaterialStockDashboard = () => {
             icon="AlertCircle"
             color="destructive"
             description="Jumlah jenis bahan di bawah stok minimum"
+          />
+          <MetricsCard
+            title="Nilai Stok Bahan Mentah Saat Ini"
+            value={formatCurrency(currentRawMaterialStockValue)}
+            icon="Archive"
+            color="info"
+            description="Estimasi nilai stok bahan mentah yang belum diolah/digunakan"
           />
         </div>
 

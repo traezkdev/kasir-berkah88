@@ -265,10 +265,23 @@ const MainDashboard = ({ headerTitle }) => {
         .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
       const allTimeExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
       const allTimeNetProfit = allTimeRevenue - allTimeExpenses;
-      const totalMenuStockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
-      const rawMaterialStockValue = rawMaterialsData.reduce((sum, m) => sum + (parseInt(m.current_stock || 0) * parseFloat(m.price_per_item || 0)), 0);
-      const stockValue = totalMenuStockValue;
-      let workingCapital = 0;
+          const totalMenuStockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
+      
+          console.log('--- Raw Materials Data for Stock Value Calculation ---');
+          console.log('Raw Materials Data Fetched:', rawMaterialsData);
+          let debugRawMaterialStockValue = 0;
+          const rawMaterialStockValue = rawMaterialsData.reduce((sum, m) => {
+              const currentStock = parseInt(m.current_stock || 0);
+              const pricePerItem = parseFloat(m.price_per_item || 0);
+              const itemValue = currentStock * pricePerItem;
+              console.log(`- Item: ${m.name}, Stock: ${currentStock}, Price: ${pricePerItem}, Value: ${itemValue}`);
+              debugRawMaterialStockValue += itemValue;
+              return sum + itemValue;
+          }, 0);
+          console.log('Calculated rawMaterialStockValue from logs:', debugRawMaterialStockValue);
+          console.log('----------------------------------------------------');
+      
+          const stockValue = totalMenuStockValue + rawMaterialStockValue;      let workingCapital = 0;
       if (!isNaN(initialCapital)) {
           workingCapital = initialCapital + allTimeRevenue + totalMenuStockValue + rawMaterialStockValue - allTimeExpenses;
       }
@@ -327,6 +340,8 @@ const MainDashboard = ({ headerTitle }) => {
       }).reduce((sum, i) => sum + (i.quantity || 0), 0);
       const lowStockItems = menuItems.filter(item => item.stock <= 5 && item.stock > 0).length;
       const recentTransactions = paginatedTransactions.slice(0, 6); // Use paginated for recent list
+
+
   
       setDashboardData({
         metrics: {
@@ -340,7 +355,9 @@ const MainDashboard = ({ headerTitle }) => {
           allTimeExpenses,
           allTimeNetProfit,
           initialCapital,
-          stockValue,
+          // Other
+          stockValue, // Now only totalMenuStockValue
+          rawMaterialStockValue, // Add raw material stock value
           ownerBalance: ownerAccountData?.account?.balance || 0,
           lapakBalance: lapakAccountData?.account?.balance || 0,
         },
@@ -492,7 +509,7 @@ const MainDashboard = ({ headerTitle }) => {
       color: 'primary',
       description: 'Berdasarkan harga jual'
     },
-    {
+        {
       title: 'Saldo Owner',
       value: formatCurrency(dashboardData.metrics.ownerBalance),
       icon: 'Wallet', 
@@ -717,8 +734,6 @@ const MainDashboard = ({ headerTitle }) => {
         </main>
         
       </div>
-    </div>
-  );
-};
-
-export default MainDashboard;
+              </div>
+            );
+          };export default MainDashboard;
