@@ -379,12 +379,12 @@ export default function SimpleTransaction() { // Renamed component
                       ))}
                     </div>
                     <div className="flex justify-end mb-4">
-                      <Checkbox
-                        id="ignore-stock"
-                        label="Abaikan Stok"
-                        checked={ignoreStock}
-                        onChange={(e) => setIgnoreStock(e.target.checked)}
-                      />
+                      <Button
+                        onClick={() => setIgnoreStock(!ignoreStock)}
+                        variant={ignoreStock ? "destructive" : "outline"}
+                      >
+                        Abaikan Stok: {ignoreStock ? "Ya" : "Tidak"}
+                      </Button>
                     </div>          {isLoading && <p>Memuat menu...</p>}
           {error && <p className="text-red-500">Error: {error}</p>}
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
