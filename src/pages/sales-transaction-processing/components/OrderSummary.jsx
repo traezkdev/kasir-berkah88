@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
-import { Checkbox } from '../../../components/ui/Checkbox';
+
 import Select from '../../../components/ui/Select'; // Import Select
 import authFetch from '../../../utils/authFetch';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -23,6 +23,7 @@ const OrderSummary = ({
   userRole,
   ignoreStock,
   setIgnoreStock
+
 }) => {
   const { theme } = useTheme();
   const [ppnRate, setPpnRate] = useState(0.11); // Default PPN rate
@@ -162,6 +163,8 @@ const OrderSummary = ({
 
     if (ignoreStock) return true; // If ignoring stock, cart is always valid if not empty
 
+
+
     for (const cartItem of cart) {
       const correspondingMenuItem = menuItems.find(item => item.id === cartItem.id);
       if (!correspondingMenuItem || cartItem.quantity > correspondingMenuItem.stock) {
@@ -280,15 +283,9 @@ const OrderSummary = ({
           </div>
           <div className="border-t my-4"></div>
           
-          <div className="space-y-4">
-            <Checkbox
-              id="ignore-stock"
-              label="Abaikan Stok"
-              checked={ignoreStock}
-              onChange={(e) => setIgnoreStock(e.target.checked)}
-              className="mb-4"
-            />
-            <div className="space-y-2">
+                              <div className="space-y-4">
+          
+                                <div className="space-y-2">
               <label htmlFor="payment-method" className="text-sm font-medium text-muted-foreground">Metode Pembayaran</label>
               <Select
                 id="payment-method"
