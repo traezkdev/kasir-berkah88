@@ -71,7 +71,7 @@ const OwnerDashboard = ({ headerTitle }) => {
         });
 
         const totalMonthlyRevenue = monthlyTransactions
-            .filter(t => t.payment_method !== 'Makan Karyawan')
+            .filter(t => t.payment_method !== 'employee_meal')
             .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
 
         const monthlyExpenses = expenses.filter(e => {
@@ -88,7 +88,7 @@ const OwnerDashboard = ({ headerTitle }) => {
         // Lifetime calculations
         const initialCapital = parseFloat(allSettings.initial_capital || 0);
         const totalLifetimeRevenue = allTransactions
-            .filter(t => t.payment_method !== 'Makan Karyawan')
+            .filter(t => t.payment_method !== 'employee_meal')
             .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
         const totalLifetimeExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
         const currentFinalCapital = initialCapital + totalLifetimeRevenue - totalLifetimeExpenses;
@@ -338,4 +338,5 @@ const OwnerDashboard = ({ headerTitle }) => {
 };
 
 export default OwnerDashboard;
+
 

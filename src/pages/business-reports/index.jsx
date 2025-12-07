@@ -95,7 +95,7 @@ const BusinessReports = ({ headerTitle }) => {
       const filteredExpenses = expenses.filter(filterByDate);
 
       // Sales Report Data
-      const totalRevenue = filteredTransactions.filter(t => t.payment_method !== 'Makan Karyawan').reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+      const totalRevenue = filteredTransactions.filter(t => t.payment_method !== 'employee_meal').reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
       const totalTransactions = filteredTransactions.length;
       const averageOrder = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
 
@@ -164,7 +164,7 @@ const BusinessReports = ({ headerTitle }) => {
       const expenseCategories = [...new Set(filteredExpenses.map(e => e.category))].length;
 
       // Employee Meals Data
-      const employeeMealsTransactions = transactions.filter(t => t.payment_method === 'Makan Karyawan' && filterByDate(t));
+      const employeeMealsTransactions = transactions.filter(t => t.payment_method === 'employee_meal' && filterByDate(t));
       
       let totalItemsServedInEmployeeMeals = 0;
       let estimatedValueEmployeeMeals = 0;
@@ -220,7 +220,7 @@ const BusinessReports = ({ headerTitle }) => {
           : expenses;
 
         const revenueSinceDate = relevantTransactions
-          .filter(t => t.payment_method !== 'Makan Karyawan')
+          .filter(t => t.payment_method !== 'employee_meal')
           .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
 
         const expensesSinceDate = relevantExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
@@ -410,3 +410,4 @@ const BusinessReports = ({ headerTitle }) => {
 };
 
 export default BusinessReports;
+

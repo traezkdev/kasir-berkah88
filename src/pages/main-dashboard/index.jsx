@@ -261,7 +261,7 @@ const MainDashboard = ({ headerTitle }) => {
       // --- All-Time & Working Capital Metrics (Unaffected by filter) ---
       const initialCapital = parseFloat(settings?.initial_capital || 0);
       const allTimeRevenue = allTransactions
-        .filter(t => t.payment_method !== 'Makan Karyawan')
+        .filter(t => t.payment_method !== 'employee_meal')
         .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
       const allTimeExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
       const allTimeNetProfit = allTimeRevenue - allTimeExpenses;
@@ -281,7 +281,7 @@ const MainDashboard = ({ headerTitle }) => {
   
       // --- Metrics for Filtered Period ---
       const totalRevenue = filteredTransactions
-        .filter(t => t.payment_method !== 'Makan Karyawan')
+        .filter(t => t.payment_method !== 'employee_meal')
         .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
       
       const totalExpenses = filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
@@ -290,11 +290,11 @@ const MainDashboard = ({ headerTitle }) => {
       const netProfit = allTimeRevenue - allTimeExpenses + totalMenuStockValue + rawMaterialStockValue;
   
       // --- Daily Stats Calculation (Unaffected by filter) ---
-      const todayTransactions = allTransactions.filter(t => new Date(t.timestamp).toDateString() === todayString && t.payment_method !== 'Makan Karyawan');
+      const todayTransactions = allTransactions.filter(t => new Date(t.timestamp).toDateString() === todayString && t.payment_method !== 'employee_meal');
       const todaySales = todayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
       const averageOrderToday = todayTransactions.length > 0 ? todaySales / todayTransactions.length : 0;
   
-      const yesterdayTransactions = allTransactions.filter(t => new Date(t.timestamp).toDateString() === yesterdayString && t.payment_method !== 'Makan Karyawan');
+      const yesterdayTransactions = allTransactions.filter(t => new Date(t.timestamp).toDateString() === yesterdayString && t.payment_method !== 'employee_meal');
       const yesterdaySales = yesterdayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
       const averageOrderYesterday = yesterdayTransactions.length > 0 ? yesterdaySales / yesterdayTransactions.length : 0;
   
