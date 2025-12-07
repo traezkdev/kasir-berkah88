@@ -232,8 +232,8 @@ const CashierTransactionHistory = ({ headerTitle }) => {
   // Calculate summary statistics
   const summaryStats = useMemo(() => {
     const totalTransactions = filteredTransactions?.length;
-    const totalRevenue = filteredTransactions?.filter(t => t.payment_method !== 'Makan Karyawan')?.reduce((sum, t) => sum + parseFloat(t?.total || 0), 0);
-    const employeeMealCount = filteredTransactions?.filter(t => t.payment_method === 'Makan Karyawan')?.length;
+    const totalRevenue = filteredTransactions?.filter(t => t.payment_method !== 'employee_meal')?.reduce((sum, t) => sum + parseFloat(t?.total || 0), 0);
+    const employeeMealCount = filteredTransactions?.filter(t => t.payment_method === 'employee_meal')?.length;
 
     return {
       totalTransactions,
@@ -679,3 +679,4 @@ const CashierTransactionHistory = ({ headerTitle }) => {
 
 // Force re-processing by build system
 export default CashierTransactionHistory;
+

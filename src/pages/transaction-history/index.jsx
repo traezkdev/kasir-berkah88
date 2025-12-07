@@ -69,6 +69,31 @@ const TransactionHistory = ({ headerTitle }) => {
   // Removed currentDailyDate and its handlers as chart will now display all data for the selected period
 
   const [allTransactionsForChart, setAllTransactionsForChart] = useState([]); // New state for chart data
+  const [allTransactionsData, setAllTransactionsData] = useState([]); // For the static metric cards
+
+  useEffect(() => {
+    const fetchAllDataForMetrics = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      try {
+        const response = await authFetch(`${apiUrl}/api/transactions/all`);
+        const data = await response.json();
+        if (data.message === 'success') {
+          const parsedTransactions = data.data.map(t => ({
+            ...t,
+            timestamp: new Date(t.timestamp),
+            items: Array.isArray(t.items) ? t.items : JSON.parse(t.items || '[]')
+          }));
+          setAllTransactionsData(parsedTransactions);
+        } else {
+          console.error('Failed to fetch all transactions for metrics:', data.error);
+        }
+      } catch (error) {
+        console.error('Error fetching all transactions for metrics:', error);
+      }
+    };
+    fetchAllDataForMetrics();
+  }, []); // Empty dependency array ensures this runs only once
 
   const navigate = useNavigate();
 
@@ -273,8 +298,8 @@ const TransactionHistory = ({ headerTitle }) => {
     const totalTransactions = pagination?.totalItems || 0;
     // Note: The stats below are calculated on the full dataset and would require a separate, unfiltered API call for full accuracy.
     // For this implementation, we will show the total count from pagination, but revenue/meal count will be for the current page only.
-    const totalRevenueOnPage = transactions.filter(t => t.payment_method !== 'Makan Karyawan').reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
-    const employeeMealCountOnPage = transactions.filter(t => t.payment_method === 'Makan Karyawan').length;
+    const totalRevenueOnPage = transactions.filter(t => t.payment_method !== 'employee_meal').reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+    const employeeMealCountOnPage = transactions.filter(t => t.payment_method === 'employee_meal').length;
 
     return {
       totalTransactions,
@@ -556,55 +581,55 @@ const TransactionHistory = ({ headerTitle }) => {
 
 
   const revenueMetrics = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    
+    // Use reliable .toDateString() for daily metrics
+    const todayDateString = now.toDateString();
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const yesterdayDateString = yesterday.toDateString();
 
-    const getStartOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
-    const getEndOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-
-    const todayStart = getStartOfDay(new Date()); // Get start of today in local time
-    const yesterdayStart = new Date(todayStart);
-    yesterdayStart.setDate(todayStart.getDate() - 1); // Derives yesterday directly from todayStart
-
-    const getYesterdayRange = () => {
-      return { start: yesterdayStart, end: getEndOfDay(yesterdayStart) };
+    const calculateDailyRevenue = (transactions, targetDateString) => {
+      if (!transactions || transactions.length === 0) return 0;
+      return transactions
+        .filter(t => new Date(t.timestamp).toDateString() === targetDateString)
+        .filter(t => t.payment_method !== 'employee_meal') // Use correct exclusion filter
+        .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
     };
 
+    const revenueToday = calculateDailyRevenue(allTransactionsData, todayDateString);
+    const revenueYesterday = calculateDailyRevenue(allTransactionsData, yesterdayDateString);
+
+    // Use range-based calculation for week and month
+    const getStartOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+    const getEndOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+    
     const getThisWeekRange = () => {
-      const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
-      return { start: getStartOfDay(startOfWeek), end: getEndOfDay(new Date()) };
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+      return { start: getStartOfDay(startOfWeek), end: getEndOfDay(now) };
     };
 
     const getThisMonthRange = () => {
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      return { start: getStartOfDay(startOfMonth), end: getEndOfDay(new Date()) };
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      return { start: getStartOfDay(startOfMonth), end: getEndOfDay(now) };
     };
-
-    const calculateRevenueForPeriod = (transactions, startDate, endDate, debugLabel = '') => {
-      let sum = 0;
-      transactions
-        .filter(t => t.payment_method !== 'Makan Karyawan')
+    
+    const calculateRangeRevenue = (transactions, startDate, endDate) => {
+      if (!transactions || transactions.length === 0) return 0;
+      return transactions
+        .filter(t => t.payment_method !== 'employee_meal') // Use correct exclusion filter
         .filter(t => {
           const transactionDate = new Date(t.timestamp);
-          const isIncluded = transactionDate >= startDate && transactionDate <= endDate;
-          return isIncluded;
+          return transactionDate >= startDate && transactionDate <= endDate;
         })
-        .forEach(t => {
-          sum += parseFloat(t.total || 0);
-        });
-        return sum;
+        .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
     };
 
-    const todayRange = { start: getStartOfDay(today), end: getEndOfDay(today) };
-    const yesterdayRange = getYesterdayRange();
     const thisWeekRange = getThisWeekRange();
     const thisMonthRange = getThisMonthRange();
-
-    const revenueToday = calculateRevenueForPeriod(allTransactionsForChart, todayRange.start, todayRange.end);
-    const revenueYesterday = calculateRevenueForPeriod(allTransactionsForChart, yesterdayRange.start, yesterdayRange.end);
-    const revenueThisWeek = calculateRevenueForPeriod(allTransactionsForChart, thisWeekRange.start, thisWeekRange.end);
-    const revenueThisMonth = calculateRevenueForPeriod(allTransactionsForChart, thisMonthRange.start, thisMonthRange.end);
+    const revenueThisWeek = calculateRangeRevenue(allTransactionsData, thisWeekRange.start, thisWeekRange.end);
+    const revenueThisMonth = calculateRangeRevenue(allTransactionsData, thisMonthRange.start, thisMonthRange.end);
 
     return [
       {
@@ -636,8 +661,7 @@ const TransactionHistory = ({ headerTitle }) => {
         description: 'Total pendapatan dari transaksi bulan ini.'
       }
     ];
-  }, [allTransactionsForChart]);
-
+  }, [allTransactionsData]);
 
   const transactionMetrics = useMemo(() => {
     const today = new Date();
@@ -683,10 +707,10 @@ const TransactionHistory = ({ headerTitle }) => {
     const thisWeekRange = getThisWeekRange();
     const thisMonthRange = getThisMonthRange();
 
-    const transactionsToday = calculateTransactionCountForPeriod(allTransactionsForChart, todayRange.start, todayRange.end);
-    const transactionsYesterday = calculateTransactionCountForPeriod(allTransactionsForChart, yesterdayRange.start, yesterdayRange.end);
-    const transactionsThisWeek = calculateTransactionCountForPeriod(allTransactionsForChart, thisWeekRange.start, thisWeekRange.end);
-    const transactionsThisMonth = calculateTransactionCountForPeriod(allTransactionsForChart, thisMonthRange.start, thisMonthRange.end);
+    const transactionsToday = calculateTransactionCountForPeriod(allTransactionsData, todayRange.start, todayRange.end);
+    const transactionsYesterday = calculateTransactionCountForPeriod(allTransactionsData, yesterdayRange.start, yesterdayRange.end);
+    const transactionsThisWeek = calculateTransactionCountForPeriod(allTransactionsData, thisWeekRange.start, thisWeekRange.end);
+    const transactionsThisMonth = calculateTransactionCountForPeriod(allTransactionsData, thisMonthRange.start, thisMonthRange.end);
 
     return [
       {
@@ -718,7 +742,7 @@ const TransactionHistory = ({ headerTitle }) => {
         description: 'Jumlah transaksi yang terjadi bulan ini.'
       }
     ];
-  }, [allTransactionsForChart]);
+  }, [allTransactionsData]);
 
 
   return (
@@ -906,5 +930,6 @@ const TransactionHistory = ({ headerTitle }) => {
 
 
 export default TransactionHistory;
+
 
 
