@@ -19,6 +19,20 @@ function App() {
   const showFloatingButton = !['/login', '/register'].includes(location.pathname);
 
   useEffect(() => {
+    const handleContextMenu = (event) => {
+      event.preventDefault();
+    };
+
+    const handleKeyDown = (event) => {
+      // Prevent Ctrl+C or Cmd+C
+      if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
+        event.preventDefault();
+      }
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('keydown', handleKeyDown);
+
     const fetchOgSettings = async () => {
       try {
         const response = await fetch(`${apiUrl}/api/app-settings`);
@@ -48,6 +62,11 @@ function App() {
     };
 
     fetchOgSettings();
+
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   return (
