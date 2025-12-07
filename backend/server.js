@@ -1183,7 +1183,7 @@ app.get("/api/transactions/daily-recap", authenticateToken, authorizeRoles('user
                 COALESCE(SUM(CASE WHEN payment_method = 'Tunai' THEN total ELSE 0 END), 0) as total_tunai,
                 COALESCE(SUM(CASE WHEN payment_method = 'Transfer' THEN total ELSE 0 END), 0) as total_transfer,
                 COALESCE(SUM(CASE WHEN payment_method = 'Gojek' THEN total ELSE 0 END), 0) as total_gojek,
-                COALESCE(SUM(CASE WHEN payment_method = 'Makan Karyawan' THEN total ELSE 0 END), 0) as total_makan_karyawan,
+                COALESCE(SUM(CASE WHEN payment_method = 'employee_meal' THEN total ELSE 0 END), 0) as total_makan_karyawan,
                 COALESCE(SUM(total), 0) as grand_total
             FROM transactions
             WHERE DATE(timestamp) = ? AND deleted_at IS NULL
@@ -1318,7 +1318,7 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
             total: finalTotal,
             ppn: finalPpnAmount,
             isEmployeeMeal: isEmployeeMeal ? 1 : 0,
-            payment_method: payment_method || 'Tunai',
+            payment_method: payment_method || 'Tunai', // Reintroduce fallback
             ignore_stock: ignoreStock ? 1 : 0,
             cash_paid: cashPaid || 0,
             change: change || 0,

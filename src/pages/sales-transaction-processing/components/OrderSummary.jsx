@@ -45,7 +45,7 @@ const OrderSummary = ({
     }
     setCashPaid(currentCashPaid); // Update cashPaid state
 
-    if (paymentMethod === 'Tunai' && currentCashPaid && customTotal) {
+    if (paymentMethod === 'cash' && currentCashPaid && customTotal) {
       const calculatedDifference = currentCashPaid - customTotal;
       if (calculatedDifference >= 0) {
         setChange(calculatedDifference);
@@ -120,15 +120,15 @@ const OrderSummary = ({
   }, [calculatedTotal, isTotalOverridden]);
 
   const paymentMethodOptions = [
-    { value: 'Tunai', label: 'Tunai' },
-    { value: 'Gojek', label: 'Gojek' },
-    { value: 'Transfer', label: 'Transfer' },
-    { value: 'Makan Karyawan', label: 'Makan Karyawan' },
+    { value: 'cash', label: 'Tunai' },
+    { value: 'gojek', label: 'Gojek' },
+    { value: 'transfer', label: 'Transfer' },
+    { value: 'employee_meal', label: 'Makan Karyawan' },
   ];
 
   const handlePaymentMethodChange = (selectedValue) => {
     setPaymentMethod(selectedValue);
-    setIsEmployeeMeal(selectedValue === 'Makan Karyawan');
+    setIsEmployeeMeal(selectedValue === 'employee_meal');
   };
 
   const handlePpnChange = (e) => {
@@ -298,7 +298,7 @@ const OrderSummary = ({
               />
             </div>
 
-            {paymentMethod === 'Tunai' && (
+            {paymentMethod === 'cash' && (
               <div className="space-y-3 border-t pt-4 mt-4">
 
                 <div className="space-y-2">
@@ -358,8 +358,8 @@ const OrderSummary = ({
               onClick={() => onProcessPayment({ 
                 total: customTotal, 
                 ppn: tax,
-                cashPaid: paymentMethod === 'Tunai' ? parseFloat(cashPaid) || 0 : 0,
-                change: paymentMethod === 'Tunai' ? change : 0,
+                cashPaid: paymentMethod === 'cash' ? parseFloat(cashPaid) || 0 : 0,
+                change: paymentMethod === 'cash' ? change : 0,
                 manual_discount: manualDiscount,
               })} 
               className="w-full"

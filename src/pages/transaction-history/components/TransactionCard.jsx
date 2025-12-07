@@ -5,28 +5,28 @@ import Button from '../../../components/ui/Button';
 const TransactionCard = ({ transaction, onDelete, onEdit, isMobile = false, userRole, onRowClick, onOpenDeleteConfirm }) => {
   let paymentBadge = null;
   switch (transaction?.payment_method) {
-    case 'Makan Karyawan':
+    case 'employee_meal':
       paymentBadge = (
         <span className="px-2 py-1 bg-accent/10 text-accent text-xs font-medium rounded-full">
           Makan Karyawan
         </span>
       );
       break;
-    case 'Gojek':
+    case 'gojek':
       paymentBadge = (
         <span className="px-2 py-1 bg-success/10 text-success text-xs font-medium rounded-full">
           Gojek
         </span>
       );
       break;
-    case 'Transfer':
+    case 'transfer':
       paymentBadge = (
         <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
           Transfer
         </span>
       );
       break;
-    default:
+    default: // Default is 'Tunai' for 'cash' or any unhandled
       paymentBadge = (
         <span className="px-2 py-1 bg-muted text-muted-foreground text-xs font-medium rounded-full">
           Tunai

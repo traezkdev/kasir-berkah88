@@ -89,9 +89,9 @@ export default function SimpleTransaction() { // Renamed component
 
   const paymentOptions = [
     { label: 'Tunai', value: 'cash' },
-    { label: 'Kartu Debit/Kredit', value: 'card' },
-    { label: 'Transfer Bank', value: 'transfer' },
-    // Add more payment methods as needed
+    { label: 'Gojek', value: 'gojek' },
+    { label: 'Transfer', value: 'transfer' },
+    { label: 'Makan Karyawan', value: 'employee_meal' },
   ];
 
   const quickCashAmounts = [10000, 20000, 50000, 100000, 150000, 200000];
@@ -321,6 +321,20 @@ export default function SimpleTransaction() { // Renamed component
       return;
     }
 
+    let finalCashPaid = 0;
+    let finalChange = 0;
+
+    if (paymentMethod === 'cash') {
+      finalCashPaid = cashPaid;
+      finalChange = change;
+    } else if (paymentMethod === 'gojek' || paymentMethod === 'transfer') {
+      finalCashPaid = totalAmount; // For digital payments, assume full amount paid
+      finalChange = 0;
+    } else if (paymentMethod === 'employee_meal') {
+      finalCashPaid = 0; // Employee meal is not a monetary transaction
+      finalChange = 0;
+    }
+
     setIsLoading(true);
     setError('');
 
@@ -344,9 +358,9 @@ export default function SimpleTransaction() { // Renamed component
           items: transactionItems,
           total: totalAmount,
           ppn: taxAmount,
-          cashPaid: paymentMethod === 'cash' ? cashPaid : totalAmount, // If not cash, assume full payment
-          change: paymentMethod === 'cash' ? change : 0, // If not cash, change is 0
-          paymentMethod: paymentMethod,
+          cashPaid: finalCashPaid,
+          change: finalChange,
+          payment_method: paymentMethod,
           ignoreStock: ignoreStock,
         }),
       });

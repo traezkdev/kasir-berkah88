@@ -209,7 +209,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
             <div className="border-b border-dashed border-gray-400 my-4"></div>
             <div className="flex justify-between text-sm">
               <span className="text-black">Metode Pembayaran:</span>
-              <span className="text-black">{transaction.payment_method}</span>
+              <span className="text-black">{transaction.payment_method === 'employee_meal' ? 'Makan Karyawan' : transaction.payment_method}</span>
             </div>
             {transaction.payment_method === 'Tunai' && transaction.cash_paid > 0 && (
               <>
