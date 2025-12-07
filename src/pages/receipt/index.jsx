@@ -193,9 +193,9 @@ const ReceiptPage = () => {
             
             <div className="flex justify-between text-sm">
               <span className="text-black">Metode Pembayaran:</span>
-              <span className="text-black">{transaction.payment_method}</span>
+              <span className="text-black">{transaction.payment_method === 'employee_meal' ? 'Makan Karyawan' : (transaction.payment_method === 'cash' ? 'Tunai' : transaction.payment_method)}</span>
             </div>
-            {transaction.payment_method === 'Tunai' && transaction.cash_paid > 0 && (
+            {(transaction.payment_method === 'Tunai' || transaction.payment_method === 'cash') && transaction.cash_paid > 0 && (
               <>
                 <div className="flex justify-between text-sm mt-2">
                   <span className="text-black">Tunai:</span>
