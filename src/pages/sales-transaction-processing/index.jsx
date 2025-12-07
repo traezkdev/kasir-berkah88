@@ -30,6 +30,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [userRole, setUserRole] = useState(null);
   const [ignoreStock, setIgnoreStock] = useState(false);
+
   
   // State for the options modal
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
@@ -68,7 +69,38 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
     } else {
       setUserRole(null);
     }
+
+    const fetchIgnoreStockSetting = async () => {
+      try {
+        const ignoreStockResponse = await authFetch(`${apiUrl}/api/settings/ignore_stock_sales_form`);
+        const ignoreStockData = await ignoreStockResponse.json();
+        if (ignoreStockResponse.ok) {
+          setIgnoreStock(ignoreStockData.data.value === '1');
+        }
+      } catch (error) {
+        console.error("Error fetching initial ignore stock setting:", error);
+      }
+    };
+    fetchIgnoreStockSetting();
   }, []);
+
+  const handleToggleIgnoreStock = async () => {
+    const newValue = !ignoreStock;
+    setIgnoreStock(newValue);
+
+    try {
+      await authFetch(`${apiUrl}/api/settings/ignore_stock_sales_form`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ value: newValue ? '1' : '0' }),
+      });
+    } catch (err) {
+      setIgnoreStock(!newValue);
+      console.error('Terjadi kesalahan saat memperbarui pengaturan Abaikan Stok: ' + err.message);
+    }
+  };
 
   // Simplified useEffect for metrics, as it's not the focus
   useEffect(() => {
@@ -180,6 +212,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       isEmployeeMeal,
       payment_method: paymentMethod,
       ignoreStock,
+
       cashPaid: paymentData.cashPaid,
       change: paymentData.change,
       manual_discount: paymentData.manual_discount,
@@ -239,6 +272,8 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
                 cart={cart} 
                 userRole={userRole} 
                 apiUrl={apiUrl} 
+                ignoreStock={ignoreStock}
+                handleToggleIgnoreStock={handleToggleIgnoreStock}
               />
             </div>
             <div className="lg:col-span-1">
@@ -256,7 +291,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
                 setPaymentMethod={setPaymentMethod}
                 userRole={userRole}
                 ignoreStock={ignoreStock}
-                setIgnoreStock={setIgnoreStock}
+
               />
             </div>
           </div>
