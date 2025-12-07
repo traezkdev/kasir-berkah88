@@ -19,6 +19,7 @@ const OrderSummary = ({
   isEmployeeMeal, 
   setIsEmployeeMeal,
   paymentMethod,
+  setPaymentMethod,
   userRole,
   ignoreStock,
   setIgnoreStock
