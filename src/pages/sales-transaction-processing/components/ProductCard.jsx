@@ -85,7 +85,7 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl, i
               <Button
                 variant="outline" size="icon" className="rounded-l-none h-9 w-9"
                 onClick={() => onIncrement(item)}
-                disabled={!canIncrement || userRole === 'guest'} // Still respect stock limit if not ignoring
+                disabled={(!canIncrement && !ignoreStock) || userRole === 'guest'} // Still respect stock limit if not ignoring
               >
                 <Plus size={16} />
               </Button>
