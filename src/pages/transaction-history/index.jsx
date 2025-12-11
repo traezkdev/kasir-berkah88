@@ -69,37 +69,17 @@ const TransactionHistory = ({ headerTitle }) => {
   // Removed currentDailyDate and its handlers as chart will now display all data for the selected period
 
   const [allTransactionsForChart, setAllTransactionsForChart] = useState([]); // New state for chart data
-  const [allTransactionsData, setAllTransactionsData] = useState([]); // For the static metric cards
+  // allTransactionsData state removed
 
-  useEffect(() => {
-    const fetchAllDataForMetrics = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-      try {
-        const response = await authFetch(`${apiUrl}/api/transactions/all`);
-        const data = await response.json();
-        if (data.message === 'success') {
-          const parsedTransactions = data.data.map(t => ({
-            ...t,
-            timestamp: new Date(t.timestamp),
-            items: Array.isArray(t.items) ? t.items : JSON.parse(t.items || '[]')
-          }));
-          setAllTransactionsData(parsedTransactions);
-        } else {
-          console.error('Failed to fetch all transactions for metrics:', data.error);
-        }
-      } catch (error) {
-        console.error('Error fetching all transactions for metrics:', error);
-      }
-    };
-    fetchAllDataForMetrics();
-  }, []); // Empty dependency array ensures this runs only once
+
+  // Removed fetchAllDataForMetrics as we now use fetchAllTransactionsForChart for everything
+
 
   const navigate = useNavigate();
 
-    // State for delete confirmation modal
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-    const [transactionToDeleteId, setTransactionToDeleteId] = useState(null);
+  // State for delete confirmation modal
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [transactionToDeleteId, setTransactionToDeleteId] = useState(null);
 
   // Function to fetch all transactions for the chart based on date range and filter type
   const fetchAllTransactionsForChart = async () => {
@@ -110,10 +90,14 @@ const TransactionHistory = ({ headerTitle }) => {
 
     // The filter type (daily, weekly, monthly) will be handled client-side in TransactionChart
     if (dateRange.startDate) {
-        params.append('startDate', dateRange.startDate);
+      params.append('startDate', dateRange.startDate);
     }
     if (dateRange.endDate) {
-        params.append('endDate', dateRange.endDate);
+      params.append('endDate', dateRange.endDate);
+    }
+    // Add paymentMethod to query params
+    if (filters.paymentMethod && filters.paymentMethod !== 'all') {
+      params.append('paymentMethod', filters.paymentMethod);
     }
 
     try {
@@ -148,10 +132,14 @@ const TransactionHistory = ({ headerTitle }) => {
       limit: itemsPerPage,
     });
     if (dateRange.startDate) {
-        params.append('startDate', dateRange.startDate);
+      params.append('startDate', dateRange.startDate);
     }
     if (dateRange.endDate) {
-        params.append('endDate', dateRange.endDate);
+      params.append('endDate', dateRange.endDate);
+    }
+    // Add paymentMethod to query params
+    if (filters.paymentMethod && filters.paymentMethod !== 'all') {
+      params.append('paymentMethod', filters.paymentMethod);
     }
 
     try {
@@ -185,12 +173,12 @@ const TransactionHistory = ({ headerTitle }) => {
 
   useEffect(() => {
     fetchPaginatedTransactions(currentPage);
-  }, [currentPage, dateRange]);
+  }, [currentPage, dateRange, filters.paymentMethod]); // Add filters.paymentMethod dependency
 
   // Fetch all transactions for the chart whenever dateRange changes
   useEffect(() => {
     fetchAllTransactionsForChart();
-  }, [dateRange]);
+  }, [dateRange, filters.paymentMethod]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -257,19 +245,19 @@ const TransactionHistory = ({ headerTitle }) => {
 
     // Search filter
     if (searchTerm) {
-      filtered = filtered.filter(transaction => 
-        transaction.items.some(item => 
+      filtered = filtered.filter(transaction =>
+        transaction.items.some(item =>
           item.name.toLowerCase().includes(searchTerm.toLowerCase())
-        ) || 
+        ) ||
         transaction.total.toString().includes(searchTerm) ||
         transaction.id.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    // Payment method filter
-    if (filters.paymentMethod !== 'all') {
-      filtered = filtered.filter(transaction => transaction.payment_method === filters.paymentMethod);
-    }
+    // Payment method filter is now handled by backend
+    // if (filters.paymentMethod !== 'all') {
+    //   filtered = filtered.filter(transaction => transaction.payment_method === filters.paymentMethod);
+    // }
 
     // Amount range filter
     if (filters.amountRange !== 'all') {
@@ -330,15 +318,15 @@ const TransactionHistory = ({ headerTitle }) => {
     // Removed currentDailyDate and its handlers
   };
 
-    const handleOpenDeleteConfirm = (transactionId) => {
-        setTransactionToDeleteId(transactionId);
-        setShowDeleteConfirm(true);
-    };
+  const handleOpenDeleteConfirm = (transactionId) => {
+    setTransactionToDeleteId(transactionId);
+    setShowDeleteConfirm(true);
+  };
 
-    const handleCloseDeleteConfirm = () => {
-        setTransactionToDeleteId(null);
-        setShowDeleteConfirm(false);
-    };
+  const handleCloseDeleteConfirm = () => {
+    setTransactionToDeleteId(null);
+    setShowDeleteConfirm(false);
+  };
 
   const handleDeleteTransaction = async () => { // Modified to use transactionToDeleteId
     if (!transactionToDeleteId) return;
@@ -381,15 +369,15 @@ const TransactionHistory = ({ headerTitle }) => {
 
   const handleExportTransactions = async (format, startDate, endDate) => { // Modified signature
     setIsExporting(true);
-    
+
     try {
       // New: Fetch all transactions for the specified date range from the backend
       const params = new URLSearchParams();
       if (startDate) {
-          params.append('startDate', startDate);
+        params.append('startDate', startDate);
       }
       if (endDate) {
-          params.append('endDate', endDate);
+        params.append('endDate', endDate);
       }
 
       const url = `${apiUrl}/api/transactions/all?${params.toString()}`;
@@ -398,15 +386,15 @@ const TransactionHistory = ({ headerTitle }) => {
 
       let transactionsToExport = [];
       if (data.message === 'success') {
-          transactionsToExport = data.data.map(t => ({
-              ...t,
-              timestamp: new Date(t.timestamp),
-              items: Array.isArray(t.items) ? t.items : JSON.parse(t.items || '[]')
-          }));
+        transactionsToExport = data.data.map(t => ({
+          ...t,
+          timestamp: new Date(t.timestamp),
+          items: Array.isArray(t.items) ? t.items : JSON.parse(t.items || '[]')
+        }));
       } else {
-          console.error('Failed to fetch all transactions for export:', data.error);
-          setIsExporting(false);
-          return; // Stop execution if data fetch fails
+        console.error('Failed to fetch all transactions for export:', data.error);
+        setIsExporting(false);
+        return; // Stop execution if data fetch fails
       }
 
       const dataToExport = prepareTransactionDataForExport(transactionsToExport); // Use fetched data
@@ -553,7 +541,7 @@ const TransactionHistory = ({ headerTitle }) => {
 
         doc.save(`riwayat-transaksi-${new Date()?.toISOString()?.split('T')?.[0]}.pdf`);
       }
-      
+
       console.log(`Exported ${transactionsToExport?.length} transactions as ${format}`); // Use transactionsToExport length
     } catch (error) {
 
@@ -581,8 +569,34 @@ const TransactionHistory = ({ headerTitle }) => {
 
 
   const revenueMetrics = useMemo(() => {
+    const calculateRevenue = (transactions) => {
+      if (!transactions || transactions.length === 0) return 0;
+
+      // Filter out employee meals for revenue
+      const validTransactions = transactions.filter(t => t.payment_method !== 'employee_meal');
+      return validTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+    };
+
+    if (dateRange.startDate && dateRange.endDate) {
+      // Summary Mode for Selected Range
+      const totalRevenue = calculateRevenue(allTransactionsForChart);
+
+      return [
+        {
+          title: 'Pendapatan (Periode Ini)',
+          value: formatCurrency(totalRevenue),
+          icon: 'TrendingUp',
+          color: 'success',
+          description: `Total pendapatan dari ${new Date(dateRange.startDate).toLocaleDateString('id-ID')} - ${new Date(dateRange.endDate).toLocaleDateString('id-ID')}`
+        }
+      ];
+    }
+
+    // Default Mode (Today, Yesterday, Week, Month)
+    // Note: allTransactionsForChart here contains ALL transactions (filtered by payment method if applied)
+    // We need to filter by date ranges locally.
+
     const now = new Date();
-    
     // Use reliable .toDateString() for daily metrics
     const todayDateString = now.toDateString();
     const yesterday = new Date(now);
@@ -591,19 +605,16 @@ const TransactionHistory = ({ headerTitle }) => {
 
     const calculateDailyRevenue = (transactions, targetDateString) => {
       if (!transactions || transactions.length === 0) return 0;
-      return transactions
-        .filter(t => new Date(t.timestamp).toDateString() === targetDateString)
-        .filter(t => t.payment_method !== 'employee_meal') // Use correct exclusion filter
-        .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+      let filtered = transactions.filter(t => new Date(t.timestamp).toDateString() === targetDateString);
+      return calculateRevenue(filtered);
     };
 
-    const revenueToday = calculateDailyRevenue(allTransactionsData, todayDateString);
-    const revenueYesterday = calculateDailyRevenue(allTransactionsData, yesterdayDateString);
+    const revenueToday = calculateDailyRevenue(allTransactionsForChart, todayDateString);
+    const revenueYesterday = calculateDailyRevenue(allTransactionsForChart, yesterdayDateString);
 
-    // Use range-based calculation for week and month
     const getStartOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
     const getEndOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-    
+
     const getThisWeekRange = () => {
       const startOfWeek = new Date(now);
       startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
@@ -614,22 +625,20 @@ const TransactionHistory = ({ headerTitle }) => {
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       return { start: getStartOfDay(startOfMonth), end: getEndOfDay(now) };
     };
-    
+
     const calculateRangeRevenue = (transactions, startDate, endDate) => {
       if (!transactions || transactions.length === 0) return 0;
-      return transactions
-        .filter(t => t.payment_method !== 'employee_meal') // Use correct exclusion filter
-        .filter(t => {
-          const transactionDate = new Date(t.timestamp);
-          return transactionDate >= startDate && transactionDate <= endDate;
-        })
-        .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+      let filtered = transactions.filter(t => {
+        const transactionDate = new Date(t.timestamp);
+        return transactionDate >= startDate && transactionDate <= endDate;
+      });
+      return calculateRevenue(filtered);
     };
 
     const thisWeekRange = getThisWeekRange();
     const thisMonthRange = getThisMonthRange();
-    const revenueThisWeek = calculateRangeRevenue(allTransactionsData, thisWeekRange.start, thisWeekRange.end);
-    const revenueThisMonth = calculateRangeRevenue(allTransactionsData, thisMonthRange.start, thisMonthRange.end);
+    const revenueThisWeek = calculateRangeRevenue(allTransactionsForChart, thisWeekRange.start, thisWeekRange.end);
+    const revenueThisMonth = calculateRangeRevenue(allTransactionsForChart, thisMonthRange.start, thisMonthRange.end);
 
     return [
       {
@@ -661,18 +670,41 @@ const TransactionHistory = ({ headerTitle }) => {
         description: 'Total pendapatan dari transaksi bulan ini.'
       }
     ];
-  }, [allTransactionsData]);
+  }, [allTransactionsForChart, dateRange]);
 
   const transactionMetrics = useMemo(() => {
+
+    // Helper to calculate counts
+    const calculateCount = (transactions) => {
+      if (!transactions) return 0;
+      return transactions.length;
+    };
+
+    if (dateRange.startDate && dateRange.endDate) {
+      // Summary Mode for Selected Range
+      const totalCount = calculateCount(allTransactionsForChart);
+
+      return [
+        {
+          title: 'Total Transaksi (Periode Ini)',
+          value: totalCount,
+          icon: 'ReceiptText',
+          color: 'success',
+          description: `Total transaksi dari ${new Date(dateRange.startDate).toLocaleDateString('id-ID')} - ${new Date(dateRange.endDate).toLocaleDateString('id-ID')}`
+        }
+      ];
+    }
+
+    // Default Mode
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const getStartOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
     const getEndOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 
-    const todayStart = getStartOfDay(new Date()); // Get start of today in local time
+    const todayStart = getStartOfDay(new Date());
     const yesterdayStart = new Date(todayStart);
-    yesterdayStart.setDate(todayStart.getDate() - 1); // Derives yesterday directly from todayStart
+    yesterdayStart.setDate(todayStart.getDate() - 1);
 
     const getYesterdayRange = () => {
       return { start: yesterdayStart, end: getEndOfDay(yesterdayStart) };
@@ -680,7 +712,7 @@ const TransactionHistory = ({ headerTitle }) => {
 
     const getThisWeekRange = () => {
       const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday as per default getDay(). Adjust if week starts Monday
+      startOfWeek.setDate(today.getDate() - today.getDay());
       return { start: getStartOfDay(startOfWeek), end: getEndOfDay(new Date()) };
     };
 
@@ -690,16 +722,11 @@ const TransactionHistory = ({ headerTitle }) => {
     };
 
     const calculateTransactionCountForPeriod = (transactions, startDate, endDate) => {
-      let count = 0;
-      transactions
-        .filter(t => {
-          const transactionDate = new Date(t.timestamp);
-          return transactionDate >= startDate && transactionDate <= endDate;
-        })
-        .forEach(() => {
-          count++;
-        });
-      return count;
+      let filtered = transactions.filter(t => {
+        const transactionDate = new Date(t.timestamp);
+        return transactionDate >= startDate && transactionDate <= endDate;
+      });
+      return filtered.length;
     };
 
     const todayRange = { start: getStartOfDay(today), end: getEndOfDay(today) };
@@ -707,16 +734,16 @@ const TransactionHistory = ({ headerTitle }) => {
     const thisWeekRange = getThisWeekRange();
     const thisMonthRange = getThisMonthRange();
 
-    const transactionsToday = calculateTransactionCountForPeriod(allTransactionsData, todayRange.start, todayRange.end);
-    const transactionsYesterday = calculateTransactionCountForPeriod(allTransactionsData, yesterdayRange.start, yesterdayRange.end);
-    const transactionsThisWeek = calculateTransactionCountForPeriod(allTransactionsData, thisWeekRange.start, thisWeekRange.end);
-    const transactionsThisMonth = calculateTransactionCountForPeriod(allTransactionsData, thisMonthRange.start, thisMonthRange.end);
+    const transactionsToday = calculateTransactionCountForPeriod(allTransactionsForChart, todayRange.start, todayRange.end);
+    const transactionsYesterday = calculateTransactionCountForPeriod(allTransactionsForChart, yesterdayRange.start, yesterdayRange.end);
+    const transactionsThisWeek = calculateTransactionCountForPeriod(allTransactionsForChart, thisWeekRange.start, thisWeekRange.end);
+    const transactionsThisMonth = calculateTransactionCountForPeriod(allTransactionsForChart, thisMonthRange.start, thisMonthRange.end);
 
     return [
       {
         title: 'Transaksi Hari Ini',
         value: transactionsToday,
-        icon: 'ReceiptText', // A new icon would be good, like for receipts
+        icon: 'ReceiptText',
         color: 'success',
         description: 'Jumlah transaksi yang terjadi hari ini.'
       },
@@ -742,14 +769,14 @@ const TransactionHistory = ({ headerTitle }) => {
         description: 'Jumlah transaksi yang terjadi bulan ini.'
       }
     ];
-  }, [allTransactionsData]);
+  }, [allTransactionsForChart, dateRange]);
 
 
   return (
 
     <div className="min-h-screen">
 
-      {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
+      {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} />}
 
       <main className={`${theme === 'default' ? 'pt-16' : ''} pb-20 lg:pb-8`}>
 
@@ -811,63 +838,63 @@ const TransactionHistory = ({ headerTitle }) => {
           </div>
           {/* End Transaction Metrics Section */}
 
-            <TransactionFilters
+          <TransactionFilters
 
-              onFilterChange={handleFilterChange}
+            onFilterChange={handleFilterChange}
 
-              onSearch={handleSearch}
+            onSearch={handleSearch}
 
-              onDateRangeChange={handleDateRangeChange}
+            onDateRangeChange={handleDateRangeChange}
 
-              totalTransactions={summaryStats?.totalTransactions}
+            totalTransactions={summaryStats?.totalTransactions}
 
-              totalRevenue={summaryStats?.totalRevenue}
+            totalRevenue={summaryStats?.totalRevenue}
 
-              employeeMealCount={summaryStats?.employeeMealCount}
+            employeeMealCount={summaryStats?.employeeMealCount}
 
-            />
-
-
-
-                        <BulkActions
-                          onClearAllTransactions={handleClearAllTransactions}
-                          onExportTransactions={handleExportTransactions}
-                          onOpenRecapPopup={handleOpenRecapPopup}
-                          transactionCount={currentItems.length}
-                          isExporting={isExporting}
-                          userRole={userRole}
-                        />
+          />
 
 
 
-            <TransactionTable
+          <BulkActions
+            onClearAllTransactions={handleClearAllTransactions}
+            onExportTransactions={handleExportTransactions}
+            onOpenRecapPopup={handleOpenRecapPopup}
+            transactionCount={currentItems.length}
+            isExporting={isExporting}
+            userRole={userRole}
+          />
 
-              transactions={currentItems}
 
-              onDeleteTransaction={handleDeleteTransaction}
-              onEditTransaction={handleEditTransaction}
-              
-              onRowClick={handleTransactionClick}
 
-              isMobile={isMobile}
-              userRole={userRole}
-              onOpenDeleteConfirm={handleOpenDeleteConfirm} // Pass the new handler
+          <TransactionTable
 
-            />
+            transactions={currentItems}
 
-            <Pagination
-              itemsPerPage={itemsPerPage}
-              totalItems={pagination?.totalItems || 0}
-              paginate={paginate}
-              currentPage={currentPage}
-            />
+            onDeleteTransaction={handleDeleteTransaction}
+            onEditTransaction={handleEditTransaction}
+
+            onRowClick={handleTransactionClick}
+
+            isMobile={isMobile}
+            userRole={userRole}
+            onOpenDeleteConfirm={handleOpenDeleteConfirm} // Pass the new handler
+
+          />
+
+          <Pagination
+            itemsPerPage={itemsPerPage}
+            totalItems={pagination?.totalItems || 0}
+            paginate={paginate}
+            currentPage={currentPage}
+          />
 
 
 
         </div>
       </main>
 
-      
+
       <TransactionReceiptModal
         isOpen={isReceiptModalOpen}
         onClose={handleCloseReceiptModal}
@@ -886,41 +913,41 @@ const TransactionHistory = ({ headerTitle }) => {
         onClose={handleCloseRecapPopup}
       />
 
-        {/* Delete Confirmation Modal */}
-        {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
-            <div className="bg-card rounded-lg p-6 max-w-sm w-full">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 bg-destructive/10 rounded-full">
-                  <Icon name="AlertTriangle" size={20} className="text-destructive" />
-                </div>
-                <h3 className="text-lg font-semibold text-text-primary">
-                  Hapus Transaksi
-                </h3>
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
+          <div className="bg-card rounded-lg p-6 max-w-sm w-full">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="p-2 bg-destructive/10 rounded-full">
+                <Icon name="AlertTriangle" size={20} className="text-destructive" />
               </div>
-              <p className="text-text-secondary mb-6">
-                Apakah Anda yakin ingin menghapus transaksi #{transactionToDeleteId}? 
-                Tindakan ini akan memindahkan transaksi ke tong sampah.
-              </p>
-              <div className="flex space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={handleCloseDeleteConfirm}
-                  className="flex-1"
-                >
-                  Batal
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={handleDeleteTransaction}
-                  className="flex-1"
-                >
-                  Hapus
-                </Button>
-              </div>
+              <h3 className="text-lg font-semibold text-text-primary">
+                Hapus Transaksi
+              </h3>
+            </div>
+            <p className="text-text-secondary mb-6">
+              Apakah Anda yakin ingin menghapus transaksi #{transactionToDeleteId}?
+              Tindakan ini akan memindahkan transaksi ke tong sampah.
+            </p>
+            <div className="flex space-x-3">
+              <Button
+                variant="outline"
+                onClick={handleCloseDeleteConfirm}
+                className="flex-1"
+              >
+                Batal
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteTransaction}
+                className="flex-1"
+              >
+                Hapus
+              </Button>
             </div>
           </div>
-        )}
+        </div>
+      )}
     </div>
 
   );
