@@ -7,27 +7,27 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const {
-  addRawMaterial,
-  getRawMaterials,
-  getRawMaterialById,
-  updateRawMaterial,
-  deleteRawMaterial,
-  getStockHistory,
-  deleteStockHistoryEntry,
-  getLowStockRawMaterials,
-  getLowStockRawMaterialsCount,
-  addMenuRecipe,
-  getMenuRecipes,
-  deleteMenuRecipe,
+    addRawMaterial,
+    getRawMaterials,
+    getRawMaterialById,
+    updateRawMaterial,
+    deleteRawMaterial,
+    getStockHistory,
+    deleteStockHistoryEntry,
+    getLowStockRawMaterials,
+    getLowStockRawMaterialsCount,
+    addMenuRecipe,
+    getMenuRecipes,
+    deleteMenuRecipe,
 } = require('./rawMaterialsDb');
 
 const app = express();
 app.use(cors({
-  origin: '*', // Allow all origins
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  allowedHeaders: 'Content-Type,Authorization',
-  preflightContinue: false,
-  optionsSuccessStatus: 204
+    origin: '*', // Allow all origins
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    allowedHeaders: 'Content-Type,Authorization',
+    preflightContinue: false,
+    optionsSuccessStatus: 204
 }));
 app.use(express.json());
 // Error handling for JSON parsing
@@ -43,12 +43,12 @@ app.use('/public/uploads', express.static(path.join(__dirname, 'public/uploads')
 
 // Multer storage configuration
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'public/uploads/'); // Files will be stored in public/uploads/
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
-  }
+    destination: (req, file, cb) => {
+        cb(null, 'public/uploads/'); // Files will be stored in public/uploads/
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
 });
 const upload = multer({ storage: storage });
 
@@ -100,7 +100,7 @@ const authorizeRoles = (...roles) => {
 const authorizeAccountAccess = (accountType) => {
     return (req, res, next) => {
         const userRole = req.user.role;
-        
+
         if (accountType === 'lapak' && (userRole === 'admin' || userRole === 'user' || userRole === 'kasir')) {
             next();
         } else if (accountType === 'owner' && (userRole === 'admin' || userRole === 'owner')) {
@@ -136,16 +136,16 @@ app.post("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner
 
         // Gunakan fungsi addRawMaterial dari rawMaterialsDb
         const result = await addRawMaterial(
-          name,
-          unit,
-          custom_unit || 'pcs',
-          parseFloat(stok_minimum) || 0,
-          parseFloat(price_per_item) || 0,
-          parseFloat(standard_stock_per_day) || 0,
-          parseFloat(purchase_buffer_amount) || 0, // Correct position for purchase_buffer_amount
-          parseFloat(menu_stock) || 0
+            name,
+            unit,
+            custom_unit || 'pcs',
+            parseFloat(stok_minimum) || 0,
+            parseFloat(price_per_item) || 0,
+            parseFloat(standard_stock_per_day) || 0,
+            parseFloat(purchase_buffer_amount) || 0, // Correct position for purchase_buffer_amount
+            parseFloat(menu_stock) || 0
         );
-        
+
         // Asumsi result mengandung insertId jika berhasil
         res.status(201).json({
             message: "Raw material added successfully",
@@ -347,9 +347,9 @@ app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'g
             ORDER BY mi.order_index ASC 
             LIMIT ? OFFSET ?;
         `;
-        
+
         const [rows] = await db.query(dataSql, [...queryParams, limit, offset]);
-        
+
         // Parse the options string for each item
         const data = rows.map(row => ({
             ...row,
@@ -441,7 +441,7 @@ app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin'), 
         }
 
         await connection.commit();
-        
+
         res.status(201).json({
             "message": "success",
             "data": { ...itemData, image_url },
@@ -462,36 +462,36 @@ app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin'), 
 
 // Endpoint untuk memperbarui urutan item menu
 app.put('/api/menu-items/reorder', authenticateToken, authorizeRoles('admin'), async (req, res) => {
-  const { itemIds } = req.body; // itemIds adalah array ID dalam urutan baru
+    const { itemIds } = req.body; // itemIds adalah array ID dalam urutan baru
 
-  if (!Array.isArray(itemIds)) {
-    return res.status(400).json({ message: 'error', error: 'itemIds must be an array' });
-  }
-
-  let connection;
-  try {
-    connection = await db.getConnection();
-    await connection.beginTransaction();
-
-    for (let i = 0; i < itemIds.length; i++) {
-      const id = itemIds[i];
-      const order_index = i;
-      await connection.query('UPDATE menu_items SET order_index = ? WHERE id = ?', [order_index, id]);
+    if (!Array.isArray(itemIds)) {
+        return res.status(400).json({ message: 'error', error: 'itemIds must be an array' });
     }
 
-    await connection.commit();
-    res.json({ message: 'success', data: { message: 'Menu items reordered successfully' } });
-  } catch (error) {
-    if (connection) {
-      await connection.rollback();
+    let connection;
+    try {
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        for (let i = 0; i < itemIds.length; i++) {
+            const id = itemIds[i];
+            const order_index = i;
+            await connection.query('UPDATE menu_items SET order_index = ? WHERE id = ?', [order_index, id]);
+        }
+
+        await connection.commit();
+        res.json({ message: 'success', data: { message: 'Menu items reordered successfully' } });
+    } catch (error) {
+        if (connection) {
+            await connection.rollback();
+        }
+        console.error('Error reordering items:', error);
+        res.status(500).json({ message: 'error', error: error.message });
+    } finally {
+        if (connection) {
+            connection.release();
+        }
     }
-    console.error('Error reordering items:', error);
-    res.status(500).json({ message: 'error', error: error.message });
-  } finally {
-    if (connection) {
-      connection.release();
-    }
-  }
 });
 
 // Update a menu item
@@ -530,7 +530,7 @@ app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'
                 }
             }
         });
-        
+
         // Handle image update separately
         if (new_image_url) {
             const [currentRows] = await connection.query('SELECT image_url FROM menu_items WHERE id = ?', [id]);
@@ -547,7 +547,7 @@ app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'
             const setClauses = Object.keys(updateFields).map(key => `${key} = ?`).join(', ');
             const queryParams = [...Object.values(updateFields), id];
             const menuItemSql = `UPDATE menu_items SET ${setClauses} WHERE id = ?`;
-            
+
             const [result] = await connection.query(menuItemSql, queryParams);
             if (result.affectedRows === 0) {
                 await connection.rollback();
@@ -881,13 +881,13 @@ app.post('/api/settings/logo', authenticateToken, authorizeRoles('admin'), uploa
             return res.status(400).json({ "error": "No logo file uploaded." });
         }
         const logoUrl = `/public/uploads/${req.file.filename}`;
-        
+
         const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
         await db.query(sql, ['logo_url', logoUrl]);
 
-        res.json({ 
-            message: 'Logo updated successfully!', 
-            data: { logo_url: logoUrl } 
+        res.json({
+            message: 'Logo updated successfully!',
+            data: { logo_url: logoUrl }
         });
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
@@ -939,7 +939,7 @@ app.put('/api/settings/ppn', authenticateToken, authorizeRoles('admin'), async (
             const insertSql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?)';
             await db.query(insertSql, ['ppn', value.toString()]);
         }
-        
+
         res.json({ message: "success", data: { key: 'ppn', value } });
 
     } catch (err) {
@@ -1089,8 +1089,8 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
             LIMIT ?
             OFFSET ?
         `;
-        const [rows] = await db.query(dataSql, [...queryParams, limit, offset]); 
-        
+        const [rows] = await db.query(dataSql, [...queryParams, limit, offset]);
+
         const transactions = rows.map(row => ({
             ...row,
             isEmployeeMeal: row.isEmployeeMeal === 1,
@@ -1183,14 +1183,14 @@ app.get("/api/transactions/daily-recap", authenticateToken, authorizeRoles('user
                 COALESCE(SUM(CASE WHEN LOWER(payment_method) = 'cash' OR payment_method IS NULL THEN total ELSE 0 END), 0) as total_tunai,
                 COALESCE(SUM(CASE WHEN LOWER(payment_method) = 'transfer' THEN total ELSE 0 END), 0) as total_transfer,
                 COALESCE(SUM(CASE WHEN LOWER(payment_method) = 'gojek' THEN total ELSE 0 END), 0) as total_gojek,
-                COALESCE(SUM(CASE WHEN isEmployeeMeal = 1 THEN total ELSE 0 END), 0) as total_makan_karyawan,
+                COALESCE(SUM(CASE WHEN isEmployeeMeal = 1 OR LOWER(payment_method) = 'employee_meal' THEN total ELSE 0 END), 0) as total_makan_karyawan,
                 COALESCE(SUM(total), 0) as grand_total
             FROM transactions
             WHERE DATE(timestamp) = ? AND deleted_at IS NULL
         `;
-        
+
         const [rows] = await db.query(sql, [date]);
-        
+
         res.json({
             "message": "success",
             "data": rows[0] // The query returns a single row with the totals
@@ -1258,7 +1258,7 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
             res.status(400).json({ "error": errors.join(",") });
             return;
         }
-        
+
         if (!ignoreStock) {
             // --- STOCK VALIDATION BEFORE TRANSACTION ---
             for (const cartItem of items) {
@@ -1332,7 +1332,7 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
 
         if (!ignoreStock) {
             // --- STOCK REDUCTION LOGIC --- 
-            for (const item of req.body.items) { 
+            for (const item of req.body.items) {
                 const updateStockSql = 'UPDATE menu_items SET stock = stock - ? WHERE id = ?';
                 await db.query(updateStockSql, [item.quantity, item.id]);
             }
@@ -1471,7 +1471,7 @@ app.post("/api/v2/transactions", authenticateToken, authorizeRoles('user', 'admi
         await connection.query(itemsSql, [itemValues]);
 
         await connection.commit();
-        
+
         res.status(201).json({
             message: "Simple transaction created successfully",
             data: {
@@ -1514,7 +1514,7 @@ app.get("/api/expenses/all", authenticateToken, authorizeRoles('user', 'admin', 
             ORDER BY e.date DESC
         `;
         const [rows] = await db.query(dataSql);
-        
+
         res.json({
             "message": "success",
             "data": rows,
@@ -1565,7 +1565,7 @@ app.get("/api/expenses", authenticateToken, authorizeRoles('user', 'admin', 'gue
             OFFSET ?
         `;
         const [rows] = await db.query(dataSql, [...queryParams, limit, offset]);
-        
+
         res.json({
             "message": "success",
             "data": rows,
@@ -1613,11 +1613,11 @@ app.put("/api/expenses/:id", authenticateToken, authorizeRoles('user', 'admin'),
            WHERE id = ?`;
         const params = [name, amount, category, date ? new Date(date) : null, notes, req.params.id];
         const [result] = await db.query(sql, params);
-        
+
         if (result.affectedRows === 0) {
             return res.status(404).json({ "error": "Expense not found" });
         }
-        
+
         res.json({
             "message": "success",
             "data": req.body,
@@ -2002,8 +2002,8 @@ app.post("/api/notes", authenticateToken, async (req, res) => {
         }
         const sql = 'INSERT INTO notes (user_id, title, content) VALUES (?, ?, ?)';
         const [result] = await db.query(sql, [req.user.userId, title, content]);
-        res.status(201).json({ 
-            message: "Note created successfully", 
+        res.status(201).json({
+            message: "Note created successfully",
             data: { id: result.insertId, title, content, user_id: req.user.userId }
         });
     } catch (err) {
@@ -2155,7 +2155,7 @@ app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user'), async
         // Query to get paginated data
         const dataSql = `SELECT * FROM orders ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
         const [rows] = await db.query(dataSql, [...queryParams, limit, offset]);
-        
+
         res.json({
             "message": "success",
             "data": rows,
@@ -2238,107 +2238,107 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
 
 
 
-                        // 2. Stock Validation
+            // 2. Stock Validation
 
 
 
-                        const missingItemIds = [];
+            const missingItemIds = [];
 
 
 
-                        const insufficientStockItems = [];
+            const insufficientStockItems = [];
 
 
 
-            
 
 
 
-                        for (const item of items) {
 
+            for (const item of items) {
 
 
-                            const [menuItemRows] = await connection.query('SELECT name, stock FROM menu_items WHERE id = ?', [item.id]);
 
+                const [menuItemRows] = await connection.query('SELECT name, stock FROM menu_items WHERE id = ?', [item.id]);
 
 
-                            if (menuItemRows.length === 0) {
 
+                if (menuItemRows.length === 0) {
 
 
-                                missingItemIds.push(item.id);
 
+                    missingItemIds.push(item.id);
 
 
-                            } else if (menuItemRows[0].stock < item.quantity) {
 
+                } else if (menuItemRows[0].stock < item.quantity) {
 
 
-                                insufficientStockItems.push(`${menuItemRows[0].name} (Tersedia: ${menuItemRows[0].stock}, Diminta: ${item.quantity})`);
 
+                    insufficientStockItems.push(`${menuItemRows[0].name} (Tersedia: ${menuItemRows[0].stock}, Diminta: ${item.quantity})`);
 
 
-                            }
 
+                }
 
 
-                        }
 
+            }
 
 
-            
 
 
 
-                        if (missingItemIds.length > 0 || insufficientStockItems.length > 0) {
 
 
+            if (missingItemIds.length > 0 || insufficientStockItems.length > 0) {
 
-                            await connection.rollback();
 
 
+                await connection.rollback();
 
-                            let errorMessage = "Pesanan tidak dapat diterima karena masalah stok:\n";
 
 
+                let errorMessage = "Pesanan tidak dapat diterima karena masalah stok:\n";
 
-                            if (missingItemIds.length > 0) {
 
 
+                if (missingItemIds.length > 0) {
 
-                                errorMessage += `- Item menu tidak ditemukan: ${missingItemIds.join(', ')}.\n`;
 
 
+                    errorMessage += `- Item menu tidak ditemukan: ${missingItemIds.join(', ')}.\n`;
 
-                            }
 
 
+                }
 
-                            if (insufficientStockItems.length > 0) {
 
 
+                if (insufficientStockItems.length > 0) {
 
-                                errorMessage += `- Stok tidak mencukupi untuk: ${insufficientStockItems.join('; ')}.\n`;
 
 
+                    errorMessage += `- Stok tidak mencukupi untuk: ${insufficientStockItems.join('; ')}.\n`;
 
-                            }
 
 
+                }
 
-                            return res.status(400).json({ error: errorMessage.trim() });
 
 
+                return res.status(400).json({ error: errorMessage.trim() });
 
-                        }
 
 
+            }
 
-            
 
 
 
-                        // 3. Stock Reduction
+
+
+
+            // 3. Stock Reduction
 
             for (const item of items) {
 
@@ -2727,7 +2727,7 @@ app.put('/api/settings/last_monthly_reset_date', authenticateToken, authorizeRol
 
         const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
         await db.query(sql, ['last_monthly_reset_date', value]);
-        
+
         res.json({ message: "Last monthly reset date updated successfully", data: { last_monthly_reset_date: value } });
 
     } catch (err) {
@@ -3068,6 +3068,6 @@ app.get("/api/guest/menu-items", async (req, res) => {
 });
 
 // Default response for any other request
-app.use(function(req, res) {
+app.use(function (req, res) {
     res.status(404).send();
 });
