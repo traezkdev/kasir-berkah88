@@ -1053,7 +1053,7 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
     try {
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 20;
-        const { startDate, endDate } = req.query;
+        const { startDate, endDate, paymentMethod } = req.query; // Extract paymentMethod
         const offset = (page - 1) * limit;
 
         let whereClauses = ['t.deleted_at IS NULL'];
@@ -1067,6 +1067,16 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
             // Adjust the end date to include the entire day
             whereClauses.push('t.timestamp <= ?');
             queryParams.push(`${endDate} 23:59:59`);
+        }
+
+        if (paymentMethod && paymentMethod !== 'all') {
+            if (paymentMethod === 'Makan Karyawan') {
+                // Handle Employee Meal special case
+                whereClauses.push('(t.isEmployeeMeal = 1 OR t.payment_method = "employee_meal")');
+            } else {
+                whereClauses.push('t.payment_method = ?');
+                queryParams.push(paymentMethod);
+            }
         }
 
         const whereSql = `WHERE ${whereClauses.join(' AND ')}`;
