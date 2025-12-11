@@ -5,7 +5,7 @@ import { jwtDecode } from 'jwt-decode'; // Add this import
 
 const BreadcrumbNavigation = ({ customPath = null, className = "" }) => {
   const location = useLocation();
-  
+
   const routeLabels = {
     '/': 'Dashboard',
     '/main-dashboard': 'Dashboard',
@@ -45,7 +45,7 @@ const BreadcrumbNavigation = ({ customPath = null, className = "" }) => {
     const dashboardLabel = userRole === 'owner' ? 'Dashboard Owner' : 'Dashboard';
 
     const pathSegments = location?.pathname?.split('/')?.filter(segment => segment);
-    
+
     // Check if it's the root or specific dashboard paths
     if (pathSegments?.length === 0 || location?.pathname === '/main-dashboard' || location?.pathname === '/owner-dashboard') {
       return [{ label: dashboardLabel, path: dashboardPath, isActive: true }];
@@ -62,21 +62,21 @@ const BreadcrumbNavigation = ({ customPath = null, className = "" }) => {
 
       // Skip adding '/owner' as a separate breadcrumb if it's just a prefix for other owner routes
       if (currentPath === '/owner' && !isLast) {
-          return; // Skip this segment
+        return; // Skip this segment
       }
-      
+
       let segmentLabel;
       if (currentPath === '/owner-raw-material-stock') {
-          segmentLabel = userRole === 'owner' ? 'Stok Bahan Baku Owner' : 'Stok Bahan Baku';
+        segmentLabel = userRole === 'owner' ? 'Stok Bahan Baku Owner' : 'Stok Bahan Baku';
       } else {
-          segmentLabel = routeLabels?.[currentPath];
+        segmentLabel = routeLabels?.[currentPath];
       }
 
       if (!segmentLabel && currentPath.startsWith('/owner/')) {
-          segmentLabel = segment?.replace(/-/g, ' ')?.split(' ')?.map(word => word?.charAt(0)?.toUpperCase() + word?.slice(1))?.join(' ');
+        segmentLabel = segment?.replace(/-/g, ' ')?.split(' ')?.map(word => word?.charAt(0)?.toUpperCase() + word?.slice(1))?.join(' ');
       }
       if (!segmentLabel) {
-          segmentLabel = segment?.charAt(0)?.toUpperCase() + segment?.slice(1);
+        segmentLabel = segment?.charAt(0)?.toUpperCase() + segment?.slice(1);
       }
 
       breadcrumbs?.push({
@@ -96,7 +96,7 @@ const BreadcrumbNavigation = ({ customPath = null, className = "" }) => {
   }
 
   return (
-    <nav className={`flex items-center space-x-2 text-sm ${className}`} aria-label="Breadcrumb">
+    <nav className={`flex items-center space-x-2 text-xs md:text-sm ${className}`} aria-label="Breadcrumb">
       {breadcrumbs?.map((crumb, index) => (
         <React.Fragment key={crumb?.path}>
           {index > 0 && (

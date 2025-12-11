@@ -7,16 +7,26 @@ import { useTheme } from '../../contexts/ThemeContext';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
+import TransactionReceiptModal from '../transaction-history/components/TransactionReceiptModal';
 
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const TransactionTrash = ({ headerTitle }) => {
-    const { theme } = useTheme();
+  const { theme } = useTheme();
   const [trashedTransactions, setTrashedTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showPermanentDeleteConfirm, setShowPermanentDeleteConfirm] = useState(false);
   const [transactionToPermanentDeleteId, setTransactionToPermanentDeleteId] = useState(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
 
   const fetchTrashedTransactions = async () => {
@@ -25,7 +35,11 @@ const TransactionTrash = ({ headerTitle }) => {
       const response = await authFetch(`${apiUrl}/api/transactions/trash`);
       const data = await response.json();
       if (data.message === 'success') {
-        setTrashedTransactions(data.data);
+        const parsedTransactions = data.data.map(t => ({
+          ...t,
+          items: typeof t.items === 'string' ? JSON.parse(t.items || '[]') : t.items
+        }));
+        setTrashedTransactions(parsedTransactions);
       } else {
         console.error('Failed to fetch trashed transactions:', data.error);
       }
@@ -68,7 +82,7 @@ const TransactionTrash = ({ headerTitle }) => {
 
   const handlePermanentDelete = async () => {
     if (!transactionToPermanentDeleteId) return;
-    
+
     try {
       const response = await authFetch(`${apiUrl}/api/transactions/${transactionToPermanentDeleteId}/permanent`, {
         method: 'DELETE',
@@ -84,8 +98,18 @@ const TransactionTrash = ({ headerTitle }) => {
       console.error('Error permanently deleting transaction:', error);
     }
   };
-  
-    const breadcrumbPath = [
+
+  const handleTransactionClick = (transaction) => {
+    setSelectedTransaction(transaction);
+    setIsReceiptModalOpen(true);
+  };
+
+  const handleCloseReceiptModal = () => {
+    setIsReceiptModalOpen(false);
+    setSelectedTransaction(null);
+  };
+
+  const breadcrumbPath = [
     { label: 'Dashboard', path: '/main-dashboard', isActive: false },
     { label: 'Riwayat Transaksi', path: '/transaction-history', isActive: false },
     { label: 'Sampah Transaksi', path: '/transaction-trash', isActive: true }
@@ -93,62 +117,70 @@ const TransactionTrash = ({ headerTitle }) => {
 
   return (
     <div className="min-h-screen">
-        {theme === 'default' && <NavigationHeader headerTitle={headerTitle} />}
-        <main className={`${theme === 'default' ? 'pt-16' : ''} pb-20 lg:pb-8`}>
-            <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" : ""}>
-                <div className="mb-6">
-                    <BreadcrumbNavigation customPath={breadcrumbPath} />
-                    <h1 className="text-2xl lg:text-3xl font-semibold text-text-primary mt-2">
-                        Sampah Transaksi
-                    </h1>
-                    <p className="text-text-secondary mt-1">
-                        Transaksi yang dihapus akan berada di sini selama 30 hari sebelum dihapus permanen.
-                    </p>
-                </div>
-                {loading ? (
-                    <p>Loading...</p>
-                ) : (
-                    <TrashTable
-                        transactions={trashedTransactions}
-                        onRestore={handleRestore}
-                        onPermanentDelete={handleOpenPermanentDeleteConfirm}
-                    />
-                )}
+      {theme === 'default' && <NavigationHeader headerTitle={headerTitle} />}
+      <main className={`${theme === 'default' ? 'pt-16' : ''} pb-20 lg:pb-8`}>
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" : ""}>
+          <div className="mb-6">
+            <BreadcrumbNavigation customPath={breadcrumbPath} />
+            <h1 className="text-2xl lg:text-3xl font-semibold text-text-primary mt-2">
+              Sampah Transaksi
+            </h1>
+            <p className="text-text-secondary mt-1">
+              Transaksi yang dihapus akan berada di sini selama 30 hari sebelum dihapus permanen.
+            </p>
+          </div>
+          {loading ? (
+            <p>Loading...</p>
+          ) : (
+            <TrashTable
+              transactions={trashedTransactions}
+              onRestore={handleRestore}
+              onPermanentDelete={handleOpenPermanentDeleteConfirm}
+              isMobile={isMobile}
+              onViewDetails={handleTransactionClick}
+            />
+          )}
+        </div>
+      </main>
+      {showPermanentDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
+          <div className="bg-card rounded-lg p-6 max-w-sm w-full">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="p-2 bg-destructive/10 rounded-full">
+                <Icon name="AlertTriangle" size={20} className="text-destructive" />
+              </div>
+              <h3 className="text-lg font-semibold text-text-primary">
+                Hapus Permanen
+              </h3>
             </div>
-        </main>
-        {showPermanentDeleteConfirm && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
-                <div className="bg-card rounded-lg p-6 max-w-sm w-full">
-                    <div className="flex items-center space-x-3 mb-4">
-                        <div className="p-2 bg-destructive/10 rounded-full">
-                            <Icon name="AlertTriangle" size={20} className="text-destructive" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-text-primary">
-                            Hapus Permanen
-                        </h3>
-                    </div>
-                    <p className="text-text-secondary mb-6">
-                        Apakah Anda yakin ingin menghapus transaksi #{transactionToPermanentDeleteId} secara permanen? Tindakan ini tidak dapat dibatalkan.
-                    </p>
-                    <div className="flex space-x-3">
-                        <Button
-                            variant="outline"
-                            onClick={handleClosePermanentDeleteConfirm}
-                            className="flex-1"
-                        >
-                            Batal
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            onClick={handlePermanentDelete}
-                            className="flex-1"
-                        >
-                            Hapus Permanen
-                        </Button>
-                    </div>
-                </div>
+            <p className="text-text-secondary mb-6">
+              Apakah Anda yakin ingin menghapus transaksi #{transactionToPermanentDeleteId} secara permanen? Tindakan ini tidak dapat dibatalkan.
+            </p>
+            <div className="flex space-x-3">
+              <Button
+                variant="outline"
+                onClick={handleClosePermanentDeleteConfirm}
+                className="flex-1"
+              >
+                Batal
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handlePermanentDelete}
+                className="flex-1"
+              >
+                Hapus Permanen
+              </Button>
             </div>
-        )}
+          </div>
+        </div>
+      )}
+
+      <TransactionReceiptModal
+        isOpen={isReceiptModalOpen}
+        onClose={handleCloseReceiptModal}
+        transaction={selectedTransaction}
+      />
     </div>
   );
 };

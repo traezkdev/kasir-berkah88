@@ -12,7 +12,65 @@ const formatCurrency = (amount) => {
   }).format(amount);
 };
 
-const TrashTable = ({ transactions, onRestore, onPermanentDelete }) => {
+const TrashTable = ({ transactions, onRestore, onPermanentDelete, isMobile, onViewDetails }) => {
+  if (isMobile) {
+    return (
+      <div className="space-y-4">
+        {transactions.length > 0 ? (
+          transactions.map((transaction) => (
+            <div
+              key={transaction.id}
+              className="bg-background-card p-4 rounded-lg shadow border border-border-default cursor-pointer hover:bg-background-hover transition-colors"
+              onClick={() => onViewDetails(transaction)}
+            >
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <h3 className="text-sm font-semibold text-text-primary">{transaction.id}</h3>
+                  <p className="text-xs text-text-secondary">
+                    {format(new Date(transaction.deleted_at), 'd MMMM yyyy, HH:mm', { locale: id })}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="block text-sm font-bold text-text-primary">
+                    {formatCurrency(transaction.total)}
+                  </span>
+                  <span className="text-xs text-text-secondary">
+                    Kasir: {transaction.cashier_name || 'N/A'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 flex gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRestore(transaction.id);
+                  }}
+                  className="flex-1 px-3 py-2 bg-indigo-50 text-indigo-700 text-sm font-medium rounded-md hover:bg-indigo-100 transition-colors"
+                >
+                  Pulihkan
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPermanentDelete(transaction.id);
+                  }}
+                  className="flex-1 px-3 py-2 bg-red-50 text-red-700 text-sm font-medium rounded-md hover:bg-red-100 transition-colors"
+                >
+                  Hapus Permanen
+                </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-8 text-text-secondary bg-background-card rounded-lg border border-border-default">
+            <p>Tidak ada transaksi di tong sampah.</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-x-auto bg-background-card border-border-default rounded-lg shadow">
       <table className="min-w-full divide-y divide-border-default">
