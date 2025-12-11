@@ -46,7 +46,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
 
     try {
       const dataUrl = await htmlToImage.toPng(receiptRef.current, { pixelRatio: 4 }); // Increased pixelRatio for higher resolution and better clarity
-      
+
       // Convert data URL to blob
       const res = await fetch(dataUrl);
       const blob = await res.blob();
@@ -132,20 +132,20 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
               {transaction.items.map((item, index) => {
                 const pricePerUnit = Number(item.price) || 0;
                 const itemDiscount = Number(item.discount) || 0;
-                
+
                 let effectivePricePerUnit;
                 if (item.basePrice) { // From SalesTransactionProcessing, item.price is already the final price
-                    effectivePricePerUnit = pricePerUnit;
+                  effectivePricePerUnit = pricePerUnit;
                 } else if (itemDiscount > 0) { // From CashierDashboard, item.price is base price, apply discount
-                    effectivePricePerUnit = pricePerUnit * (1 - itemDiscount);
+                  effectivePricePerUnit = pricePerUnit * (1 - itemDiscount);
                 } else { // No discount, item.price is the final price
-                    effectivePricePerUnit = pricePerUnit;
+                  effectivePricePerUnit = pricePerUnit;
                 }
 
                 const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
-                
+
                 const lineTotalAfterDiscount = (effectivePricePerUnit + optionAdjustment) * (Number(item.quantity) || 0);
-            
+
                 // Calculate original price per unit including options but before discount
                 const originalBasePrice = Number(item.basePrice || item.price) || 0;
                 const optionAdjustmentForOriginalPrice = Array.isArray(item.options) ? item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0) : 0;
@@ -158,14 +158,14 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
                       <span className="text-gray-900">
                         {item.name} <span className="text-gray-500">x{item.quantity}</span>
                         {item.discount > 0 && (
-                            <span className="text-red-500 ml-2">({(item.discount * 100).toFixed(0)}% Diskon)</span>
+                          <span className="text-red-500 ml-2">({(item.discount * 100).toFixed(0)}% Diskon)</span>
                         )}
                       </span>
                       <span className="text-gray-900 flex items-baseline gap-2 justify-end">
                         {item.discount > 0 && (
-                            <span className="line-through text-gray-500 text-xs">
-                                Rp {lineTotalBeforeDiscount.toLocaleString("id-ID")}
-                            </span>
+                          <span className="line-through text-gray-500 text-xs">
+                            Rp {lineTotalBeforeDiscount.toLocaleString("id-ID")}
+                          </span>
                         )}
                         <span>Rp {lineTotalAfterDiscount.toLocaleString("id-ID")}</span>
                       </span>
@@ -251,6 +251,14 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
       </div>
       <style>{`
         @media print {
+          @page {
+            margin: 0;
+            size: auto;
+          }
+          body {
+            margin: 0;
+            padding: 0;
+          }
           body * {
             visibility: hidden;
           }
@@ -259,83 +267,49 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
             position: absolute;
             left: 0;
             top: 0;
-            width: 58mm; /* Common thermal printer width */
-            max-width: 58mm;
-            box-sizing: border-box; /* Include padding/border in width */
+            width: 100%; /* Adapts to printer paper width (58mm or 80mm) */
+            max-width: none;
+            box-sizing: border-box;
             margin: 0;
-            padding: 2mm; /* Reduced padding from edges */
+            padding: 4px; /* Minimal padding */
             border: none;
             box-shadow: none;
             background-color: white;
             color: black;
-            font-family: 'monospace', monospace; /* Ensure monospace font for thermal printer look */
-            font-size: 7pt; /* Smaller base font */
-            line-height: 1.2;
+            font-family: 'Courier New', Courier, monospace; /* Classic receipt font */
           }
-          #receipt-container h2, #receipt-container p, #receipt-container span, #receipt-container div, #receipt-container h3 {
+          #receipt-container h2, 
+          #receipt-container p, 
+          #receipt-container span, 
+          #receipt-container div, 
+          #receipt-container h3 {
             visibility: visible;
             color: black !important;
-            background-color: white !important;
-            box-shadow: none !important;
-            text-shadow: none !important;
-            font-family: 'monospace', monospace;
-            page-break-inside: avoid; /* Prevent breaking inside elements */
+            font-family: 'Courier New', Courier, monospace;
           }
-          #receipt-container h2 { /* Restaurant Name */
-            font-size: 10pt !important; /* Reduced from 12pt */
+          #receipt-container h2 {
+            font-size: 14px !important;
             font-weight: bold !important;
-            margin-bottom: 1mm; /* Reduced from 2mm */
+            margin-bottom: 2px;
           }
-          #receipt-container p { /* Slogan */
-            font-size: 7pt !important; /* Reduced from 8pt */
-            margin-bottom: 2mm; /* Reduced from 3mm */
+          #receipt-container p {
+            font-size: 10px !important;
+            margin-bottom: 4px;
           }
           #receipt-container .text-sm,
           #receipt-container span,
-          #receipt-container div {
-            font-size: 7pt !important; /* General text, reduced from 9pt */
+          #receipt-container div,
+          #receipt-container h3,
+          #receipt-container .text-lg {
+            font-size: 11px !important;
           }
-          #receipt-container h3 { /* Detail Item */
-            font-size: 8pt !important; /* Reduced from 10pt */
-            font-weight: bold !important;
-            margin-bottom: 1mm; /* Reduced from 2mm */
-          }
-          #receipt-container .text-lg { /* TOTAL */
-            font-size: 9pt !important; /* Reduced from 11pt */
-            font-weight: bold !important;
-          }
-          #receipt-container .border-b {
-            border-bottom: 1px dashed black !important; /* Ensure dashed border is visible */
-            margin-top: 2mm; /* Reduced from 3mm */
-            margin-bottom: 2mm; /* Reduced from 3mm */
-          }
-          #receipt-container .space-y-2 > div {
-            margin-bottom: 1mm !important; /* Spacing between items, reduced from 2mm */
-          }
-          #receipt-container .text-center {
-            text-align: center;
-          }
-          #receipt-container .flex {
-            display: flex;
-          }
-          #receipt-container .justify-between {
-            justify-content: space-between;
-          }
-          #receipt-container .items-baseline {
-            align-items: baseline;
-          }
-          #receipt-container .gap-2 {
-            gap: 0.5mm; /* Reduced gap */
-          }
-          #receipt-container .line-through {
-            text-decoration: line-through;
-          }
-          #receipt-container .text-red-500 {
-            color: black !important; /* Ensure red text is black for thermal print */
-          }
-          /* Ensure no buttons or interactive elements appear on print */
+          /* Hide non-printable elements explicitly */
           .print\\:hidden {
             display: none !important;
+          }
+          /* Ensure good spacing for lists */
+          #receipt-container .space-y-2 > div {
+            margin-bottom: 2px !important;
           }
         }
       `}</style>

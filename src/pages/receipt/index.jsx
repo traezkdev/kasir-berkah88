@@ -76,7 +76,7 @@ const ReceiptPage = () => {
       alert('Gagal membagikan struk. Silakan coba lagi.');
     }
   };
-  
+
   const transactionDate = new Date(transaction.timestamp).toLocaleString("id-ID", {
     day: "2-digit",
     month: "2-digit",
@@ -128,7 +128,7 @@ const ReceiptPage = () => {
                 // item.price here is the final price per unit (after options and discount)
                 const pricePerUnitAfterDiscount = Number(item.price) || 0;
                 const lineTotalAfterDiscount = pricePerUnitAfterDiscount * (Number(item.quantity) || 0);
-            
+
                 // Calculate original price per unit including options but before discount
                 const originalBasePrice = Number(item.basePrice) || 0;
                 const optionAdjustment = item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0);
@@ -146,9 +146,9 @@ const ReceiptPage = () => {
                       )}
                       <span className="text-gray-900 flex items-baseline gap-2 justify-end">
                         {item.discount > 0 && (
-                            <span className="line-through text-gray-500 text-xs">
-                                Rp {lineTotalBeforeDiscount.toLocaleString("id-ID")}
-                            </span>
+                          <span className="line-through text-gray-500 text-xs">
+                            Rp {lineTotalBeforeDiscount.toLocaleString("id-ID")}
+                          </span>
                         )}
                         <span>Rp {lineTotalAfterDiscount.toLocaleString("id-ID")}</span>
                       </span>
@@ -190,7 +190,7 @@ const ReceiptPage = () => {
               <span className="text-lg text-gray-900">Rp {Number(transaction.total).toLocaleString("id-ID")}</span>
             </div>
             <div className="border-b border-dashed border-gray-400 my-4"></div>
-            
+
             <div className="flex justify-between text-sm">
               <span className="text-black">Metode Pembayaran:</span>
               <span className="text-black">{transaction.payment_method === 'employee_meal' ? 'Makan Karyawan' : (transaction.payment_method === 'cash' ? 'Tunai' : transaction.payment_method)}</span>
@@ -217,41 +217,77 @@ const ReceiptPage = () => {
           </div>
           <div className="p-4 bg-muted/50 dark:bg-gray-900 rounded-b-lg flex items-center justify-between print:hidden">
             <Button variant="outline" onClick={() => navigate('/sales-transaction-processing')} className="flex items-center gap-2">
-                <ArrowLeft size={16} />
-                Kembali
+              <ArrowLeft size={16} />
+              Kembali
             </Button>
             <div className="flex items-center space-x-3">
-                <Button variant="outline" onClick={handleShare} className="flex items-center gap-2">
-                    <Share2 size={16} />
-                    Bagikan
-                </Button>
-                <Button onClick={handlePrint}>Cetak</Button>
+              <Button variant="outline" onClick={handleShare} className="flex items-center gap-2">
+                <Share2 size={16} />
+                Bagikan
+              </Button>
+              <Button onClick={handlePrint}>Cetak</Button>
             </div>
           </div>
         </div>
       </div>
       <style>{`
         @media print {
+          @page {
+            margin: 0;
+            size: auto;
+          }
+          body {
+            margin: 0;
+            padding: 0;
+          }
           body * {
             visibility: hidden;
           }
-          #receipt-container, #receipt-container * {
-            visibility: visible;
-          }
           #receipt-container {
+            visibility: visible;
             position: absolute;
             left: 0;
             top: 0;
-            width: 100%;
-            height: 100%;
+            width: 100%; /* Flexible width for thermal printers */
+            max-width: none;
+            box-sizing: border-box;
             margin: 0;
-            padding: 0;
+            padding: 4px;
             border: none;
             box-shadow: none;
-            border-radius: 0;
+            background-color: white;
+            color: black;
+            font-family: 'Courier New', Courier, monospace;
           }
+          #receipt-container * {
+            visibility: visible;
+            font-family: 'Courier New', Courier, monospace;
+            color: black !important;
+          }
+          #receipt-container h2 {
+            font-size: 14px !important;
+            font-weight: bold !important;
+            margin-bottom: 2px;
+          }
+          #receipt-container p,
+          #receipt-container .text-sm,
+          #receipt-container span,
+          #receipt-container div,
+          #receipt-container .text-lg {
+            font-size: 11px !important;
+          }
+           #receipt-container .text-lg {
+             font-weight: bold !important;
+           }
           .print\:hidden {
-            display: none;
+            display: none !important;
+          }
+          /* Adjust spacing for print */
+          #receipt-container .mb-4 {
+            margin-bottom: 8px !important;
+          }
+          #receipt-container .mb-2 {
+            margin-bottom: 4px !important;
           }
         }
       `}</style>
