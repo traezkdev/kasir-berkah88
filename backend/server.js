@@ -1124,7 +1124,7 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
 // Get all transactions without pagination (for all-time metrics)
 app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'owner'), async (req, res, next) => {
     try {
-        const { startDate, endDate } = req.query; // Extract startDate and endDate
+        const { startDate, endDate, paymentMethod } = req.query; // Extract startDate and endDate and paymentMethod
 
         let whereClauses = ['t.deleted_at IS NULL'];
         let queryParams = [];
@@ -1137,6 +1137,16 @@ app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admi
             // Adjust the end date to include the entire day
             whereClauses.push('t.timestamp <= ?');
             queryParams.push(`${endDate} 23:59:59`); // Assuming endDate is 'YYYY-MM-DD'
+        }
+
+        if (paymentMethod && paymentMethod !== 'all') {
+            if (paymentMethod === 'Makan Karyawan') {
+                // Handle Employee Meal special case
+                whereClauses.push('(t.isEmployeeMeal = 1 OR t.payment_method = "employee_meal")');
+            } else {
+                whereClauses.push('t.payment_method = ?');
+                queryParams.push(paymentMethod);
+            }
         }
 
         const whereSql = `WHERE ${whereClauses.join(' AND ')}`;

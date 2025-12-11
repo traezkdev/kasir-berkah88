@@ -69,31 +69,11 @@ const TransactionHistory = ({ headerTitle }) => {
   // Removed currentDailyDate and its handlers as chart will now display all data for the selected period
 
   const [allTransactionsForChart, setAllTransactionsForChart] = useState([]); // New state for chart data
-  const [allTransactionsData, setAllTransactionsData] = useState([]); // For the static metric cards
+  // allTransactionsData state removed
 
-  useEffect(() => {
-    const fetchAllDataForMetrics = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-      try {
-        const response = await authFetch(`${apiUrl}/api/transactions/all`);
-        const data = await response.json();
-        if (data.message === 'success') {
-          const parsedTransactions = data.data.map(t => ({
-            ...t,
-            timestamp: new Date(t.timestamp),
-            items: Array.isArray(t.items) ? t.items : JSON.parse(t.items || '[]')
-          }));
-          setAllTransactionsData(parsedTransactions);
-        } else {
-          console.error('Failed to fetch all transactions for metrics:', data.error);
-        }
-      } catch (error) {
-        console.error('Error fetching all transactions for metrics:', error);
-      }
-    };
-    fetchAllDataForMetrics();
-  }, []); // Empty dependency array ensures this runs only once
+
+  // Removed fetchAllDataForMetrics as we now use fetchAllTransactionsForChart for everything
+
 
   const navigate = useNavigate();
 
@@ -114,6 +94,10 @@ const TransactionHistory = ({ headerTitle }) => {
     }
     if (dateRange.endDate) {
       params.append('endDate', dateRange.endDate);
+    }
+    // Add paymentMethod to query params
+    if (filters.paymentMethod && filters.paymentMethod !== 'all') {
+      params.append('paymentMethod', filters.paymentMethod);
     }
 
     try {
@@ -194,7 +178,7 @@ const TransactionHistory = ({ headerTitle }) => {
   // Fetch all transactions for the chart whenever dateRange changes
   useEffect(() => {
     fetchAllTransactionsForChart();
-  }, [dateRange]);
+  }, [dateRange, filters.paymentMethod]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -585,8 +569,34 @@ const TransactionHistory = ({ headerTitle }) => {
 
 
   const revenueMetrics = useMemo(() => {
-    const now = new Date();
+    const calculateRevenue = (transactions) => {
+      if (!transactions || transactions.length === 0) return 0;
 
+      // Filter out employee meals for revenue
+      const validTransactions = transactions.filter(t => t.payment_method !== 'employee_meal');
+      return validTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+    };
+
+    if (dateRange.startDate && dateRange.endDate) {
+      // Summary Mode for Selected Range
+      const totalRevenue = calculateRevenue(allTransactionsForChart);
+
+      return [
+        {
+          title: 'Pendapatan (Periode Ini)',
+          value: formatCurrency(totalRevenue),
+          icon: 'TrendingUp',
+          color: 'success',
+          description: `Total pendapatan dari ${new Date(dateRange.startDate).toLocaleDateString('id-ID')} - ${new Date(dateRange.endDate).toLocaleDateString('id-ID')}`
+        }
+      ];
+    }
+
+    // Default Mode (Today, Yesterday, Week, Month)
+    // Note: allTransactionsForChart here contains ALL transactions (filtered by payment method if applied)
+    // We need to filter by date ranges locally.
+
+    const now = new Date();
     // Use reliable .toDateString() for daily metrics
     const todayDateString = now.toDateString();
     const yesterday = new Date(now);
@@ -595,16 +605,13 @@ const TransactionHistory = ({ headerTitle }) => {
 
     const calculateDailyRevenue = (transactions, targetDateString) => {
       if (!transactions || transactions.length === 0) return 0;
-      return transactions
-        .filter(t => new Date(t.timestamp).toDateString() === targetDateString)
-        .filter(t => t.payment_method !== 'employee_meal') // Use correct exclusion filter
-        .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+      let filtered = transactions.filter(t => new Date(t.timestamp).toDateString() === targetDateString);
+      return calculateRevenue(filtered);
     };
 
-    const revenueToday = calculateDailyRevenue(allTransactionsData, todayDateString);
-    const revenueYesterday = calculateDailyRevenue(allTransactionsData, yesterdayDateString);
+    const revenueToday = calculateDailyRevenue(allTransactionsForChart, todayDateString);
+    const revenueYesterday = calculateDailyRevenue(allTransactionsForChart, yesterdayDateString);
 
-    // Use range-based calculation for week and month
     const getStartOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
     const getEndOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 
@@ -621,19 +628,17 @@ const TransactionHistory = ({ headerTitle }) => {
 
     const calculateRangeRevenue = (transactions, startDate, endDate) => {
       if (!transactions || transactions.length === 0) return 0;
-      return transactions
-        .filter(t => t.payment_method !== 'employee_meal') // Use correct exclusion filter
-        .filter(t => {
-          const transactionDate = new Date(t.timestamp);
-          return transactionDate >= startDate && transactionDate <= endDate;
-        })
-        .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+      let filtered = transactions.filter(t => {
+        const transactionDate = new Date(t.timestamp);
+        return transactionDate >= startDate && transactionDate <= endDate;
+      });
+      return calculateRevenue(filtered);
     };
 
     const thisWeekRange = getThisWeekRange();
     const thisMonthRange = getThisMonthRange();
-    const revenueThisWeek = calculateRangeRevenue(allTransactionsData, thisWeekRange.start, thisWeekRange.end);
-    const revenueThisMonth = calculateRangeRevenue(allTransactionsData, thisMonthRange.start, thisMonthRange.end);
+    const revenueThisWeek = calculateRangeRevenue(allTransactionsForChart, thisWeekRange.start, thisWeekRange.end);
+    const revenueThisMonth = calculateRangeRevenue(allTransactionsForChart, thisMonthRange.start, thisMonthRange.end);
 
     return [
       {
@@ -665,18 +670,41 @@ const TransactionHistory = ({ headerTitle }) => {
         description: 'Total pendapatan dari transaksi bulan ini.'
       }
     ];
-  }, [allTransactionsData]);
+  }, [allTransactionsForChart, dateRange]);
 
   const transactionMetrics = useMemo(() => {
+
+    // Helper to calculate counts
+    const calculateCount = (transactions) => {
+      if (!transactions) return 0;
+      return transactions.length;
+    };
+
+    if (dateRange.startDate && dateRange.endDate) {
+      // Summary Mode for Selected Range
+      const totalCount = calculateCount(allTransactionsForChart);
+
+      return [
+        {
+          title: 'Total Transaksi (Periode Ini)',
+          value: totalCount,
+          icon: 'ReceiptText',
+          color: 'success',
+          description: `Total transaksi dari ${new Date(dateRange.startDate).toLocaleDateString('id-ID')} - ${new Date(dateRange.endDate).toLocaleDateString('id-ID')}`
+        }
+      ];
+    }
+
+    // Default Mode
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const getStartOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
     const getEndOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 
-    const todayStart = getStartOfDay(new Date()); // Get start of today in local time
+    const todayStart = getStartOfDay(new Date());
     const yesterdayStart = new Date(todayStart);
-    yesterdayStart.setDate(todayStart.getDate() - 1); // Derives yesterday directly from todayStart
+    yesterdayStart.setDate(todayStart.getDate() - 1);
 
     const getYesterdayRange = () => {
       return { start: yesterdayStart, end: getEndOfDay(yesterdayStart) };
@@ -684,7 +712,7 @@ const TransactionHistory = ({ headerTitle }) => {
 
     const getThisWeekRange = () => {
       const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday as per default getDay(). Adjust if week starts Monday
+      startOfWeek.setDate(today.getDate() - today.getDay());
       return { start: getStartOfDay(startOfWeek), end: getEndOfDay(new Date()) };
     };
 
@@ -694,16 +722,11 @@ const TransactionHistory = ({ headerTitle }) => {
     };
 
     const calculateTransactionCountForPeriod = (transactions, startDate, endDate) => {
-      let count = 0;
-      transactions
-        .filter(t => {
-          const transactionDate = new Date(t.timestamp);
-          return transactionDate >= startDate && transactionDate <= endDate;
-        })
-        .forEach(() => {
-          count++;
-        });
-      return count;
+      let filtered = transactions.filter(t => {
+        const transactionDate = new Date(t.timestamp);
+        return transactionDate >= startDate && transactionDate <= endDate;
+      });
+      return filtered.length;
     };
 
     const todayRange = { start: getStartOfDay(today), end: getEndOfDay(today) };
@@ -711,16 +734,16 @@ const TransactionHistory = ({ headerTitle }) => {
     const thisWeekRange = getThisWeekRange();
     const thisMonthRange = getThisMonthRange();
 
-    const transactionsToday = calculateTransactionCountForPeriod(allTransactionsData, todayRange.start, todayRange.end);
-    const transactionsYesterday = calculateTransactionCountForPeriod(allTransactionsData, yesterdayRange.start, yesterdayRange.end);
-    const transactionsThisWeek = calculateTransactionCountForPeriod(allTransactionsData, thisWeekRange.start, thisWeekRange.end);
-    const transactionsThisMonth = calculateTransactionCountForPeriod(allTransactionsData, thisMonthRange.start, thisMonthRange.end);
+    const transactionsToday = calculateTransactionCountForPeriod(allTransactionsForChart, todayRange.start, todayRange.end);
+    const transactionsYesterday = calculateTransactionCountForPeriod(allTransactionsForChart, yesterdayRange.start, yesterdayRange.end);
+    const transactionsThisWeek = calculateTransactionCountForPeriod(allTransactionsForChart, thisWeekRange.start, thisWeekRange.end);
+    const transactionsThisMonth = calculateTransactionCountForPeriod(allTransactionsForChart, thisMonthRange.start, thisMonthRange.end);
 
     return [
       {
         title: 'Transaksi Hari Ini',
         value: transactionsToday,
-        icon: 'ReceiptText', // A new icon would be good, like for receipts
+        icon: 'ReceiptText',
         color: 'success',
         description: 'Jumlah transaksi yang terjadi hari ini.'
       },
@@ -746,7 +769,7 @@ const TransactionHistory = ({ headerTitle }) => {
         description: 'Jumlah transaksi yang terjadi bulan ini.'
       }
     ];
-  }, [allTransactionsData]);
+  }, [allTransactionsForChart, dateRange]);
 
 
   return (
