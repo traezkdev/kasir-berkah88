@@ -45,7 +45,7 @@ const setupDatabase = async () => {
       );
     `;
 
-    const createSettingsTable = 
+    const createSettingsTable =
       'CREATE TABLE IF NOT EXISTS settings (' +
       '`key` VARCHAR(255) PRIMARY KEY,' +
       '`value` VARCHAR(255)' +
@@ -352,7 +352,7 @@ const setupDatabase = async () => {
         console.log('Added stok_minimum column to raw_materials table.');
       }
     }
-    
+
     // Ensure purchase_buffer_amount column in raw_materials table has correct definition
     const pbColumnName = 'purchase_buffer_amount';
     const pbTableName = 'raw_materials';
@@ -729,6 +729,20 @@ const setupDatabase = async () => {
     if (isPermanentDeleteRows[0]['COUNT(*)'] === 0) {
       await connection.query(addIsPermanentDeleteColumn);
       console.log('Added is_permanent_delete column to transactions table.');
+    }
+
+    // Check and add catatan column to transactions if it doesn't exist
+    const checkCatatanColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'catatan';
+    `;
+    const addCatatanColumn = `
+      ALTER TABLE transactions ADD COLUMN catatan TEXT DEFAULT NULL;
+    `;
+    const [catatanRows] = await connection.query(checkCatatanColumn);
+    if (catatanRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addCatatanColumn);
+      console.log('Added catatan column to transactions table.');
     }
 
     // Check and add hpp column to menu_items if it doesn't exist

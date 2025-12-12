@@ -211,6 +211,15 @@ const ReceiptPage = () => {
                 </div>
               </>
             )}
+            {transaction.catatan && (
+              <div className="border-b border-dashed border-gray-400 my-4"></div>
+            )}
+            {transaction.catatan && (
+              <div className="text-left text-sm mb-2">
+                <span className="text-black font-semibold block">Catatan:</span>
+                <p className="text-black whitespace-pre-wrap">{transaction.catatan}</p>
+              </div>
+            )}
             <div className="text-center mt-8 text-sm text-gray-500">
               <p>Terima kasih telah berbelanja!</p>
             </div>
