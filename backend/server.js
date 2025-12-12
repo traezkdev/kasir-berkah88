@@ -1382,6 +1382,7 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
 app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res, next) => {
     try {
         const { total, ppn, isEmployeeMeal, payment_method, timestamp, manual_discount } = req.body;
+        console.log(`[UPDATE TRANSACTION] ID: ${req.params.id}`, req.body); // Debug log
         const { id } = req.params;
 
         const sql = `UPDATE transactions SET 
@@ -3070,6 +3071,67 @@ app.post("/api/logout", authenticateToken, (req, res) => {
     // The client simply discards the token.
     // This endpoint can be used for logging purposes or if a blacklist mechanism is implemented.
     res.json({ message: "Logged out successfully" });
+});
+
+
+
+// --- Comprehensive Report Endpoint ---
+app.get("/api/laporan-lengkap", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        const hasDateFilter = startDate && endDate;
+
+        // Base queries
+        let transactionsQuery = `SELECT * FROM transactions ORDER BY timestamp DESC`;
+        let expensesQuery = `SELECT * FROM expenses ORDER BY date DESC`;
+        let lapakAccountQuery = `SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'lapak_deposit' ORDER BY at.created_at DESC`;
+        let ownerAccountQuery = `SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'owner_deposit' ORDER BY at.created_at DESC`;
+        const menuStockQuery = `SELECT id, name, stock, category, price, hpp FROM menu_items ORDER BY name ASC`;
+        const rawMaterialStockQuery = `SELECT id, name, current_stock, unit, price_per_item FROM raw_materials ORDER BY name ASC`;
+
+        const queryParams = hasDateFilter ? [startDate, `${endDate} 23:59:59`] : [];
+
+        if (hasDateFilter) {
+            transactionsQuery = `SELECT * FROM transactions WHERE timestamp BETWEEN ? AND ? ORDER BY timestamp DESC`;
+            expensesQuery = `SELECT * FROM expenses WHERE date BETWEEN ? AND ? ORDER BY date DESC`;
+            lapakAccountQuery = `SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'lapak_deposit' AND at.created_at BETWEEN ? AND ? ORDER BY at.created_at DESC`;
+            ownerAccountQuery = `SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'owner_deposit' AND at.created_at BETWEEN ? AND ? ORDER BY at.created_at DESC`;
+        }
+
+        const queries = [
+            db.query(transactionsQuery, hasDateFilter ? queryParams : []),
+            db.query(expensesQuery, hasDateFilter ? queryParams : []),
+            db.query(lapakAccountQuery, hasDateFilter ? queryParams : []),
+            db.query(ownerAccountQuery, hasDateFilter ? queryParams : []),
+            db.query(menuStockQuery), // No params
+            db.query(rawMaterialStockQuery) // No params
+        ];
+
+        const [
+            [transactions],
+            [expenses],
+            [lapakAccountTransactions],
+            [ownerAccountTransactions],
+            [menuStock],
+            [rawMaterialStock]
+        ] = await Promise.all(queries);
+
+        res.json({
+            message: "success",
+            data: {
+                transactions,
+                expenses,
+                lapakAccountTransactions,
+                ownerAccountTransactions,
+                menuStock,
+                rawMaterialStock
+            }
+        });
+
+    } catch (err) {
+        console.error("Error fetching comprehensive report:", err);
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
 });
 
 

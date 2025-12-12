@@ -45,7 +45,7 @@ const EditTransactionModal = ({
     // Only run if the modal is open and we have an original total
     if (isOpen && originalTotal > 0) {
       const discount = parseFloat(formData.manual_discount || 0);
-      
+
       // Ensure discount is not greater than the original total
       if (discount > originalTotal) {
         // Optionally, you can reset the discount or show an error
@@ -76,6 +76,7 @@ const EditTransactionModal = ({
   };
 
   const handleSelectChange = (name, value) => {
+    console.log('handleSelectChange called:', name, value);
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -84,6 +85,7 @@ const EditTransactionModal = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('Submitting transaction update with data:', formData);
     if (!formData.timestamp || !formData.total) {
       alert('Tanggal, waktu, dan total transaksi wajib diisi.');
       return;

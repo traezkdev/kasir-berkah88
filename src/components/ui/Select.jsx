@@ -23,7 +23,9 @@ const SelectComponent = React.forwardRef(({
     id,
     name,
     onChange,
+
     onOpenChange,
+    position = "bottom",
     ...props
 }, ref) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -173,7 +175,10 @@ const SelectComponent = React.forwardRef(({
 
                 {/* Dropdown */}
                 {isOpen && (
-                    <div className="absolute z-[9999] w-full bottom-full mb-1 bg-card text-text-primary border border-border rounded-md shadow-md">
+                    <div className={cn(
+                        "absolute z-[9999] w-full bg-card text-text-primary border border-border rounded-md shadow-md",
+                        position === 'top' ? "bottom-full mb-1" : "top-full mt-1"
+                    )}>
                         {searchable && (
                             <div className="p-2 border-b">
                                 <div className="relative">

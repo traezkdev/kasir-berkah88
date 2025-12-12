@@ -4,8 +4,12 @@ import Button from '../../../components/ui/Button';
 
 const TransactionCard = ({ transaction, onDelete, onEdit, isMobile = false, userRole, onRowClick, onOpenDeleteConfirm }) => {
   let paymentBadge = null;
-  switch (transaction?.payment_method) {
+  // Normalize payment method for comparison
+  const normalizedPaymentMethod = transaction?.payment_method?.toLowerCase() || 'tunai';
+
+  switch (normalizedPaymentMethod) {
     case 'employee_meal':
+    case 'makan karyawan': // Handle both cases
       paymentBadge = (
         <span className="px-2 py-1 bg-accent/10 text-accent text-xs font-medium rounded-full">
           Makan Karyawan
@@ -116,7 +120,7 @@ const TransactionCard = ({ transaction, onDelete, onEdit, isMobile = false, user
   }
 
   return (
-    <tr 
+    <tr
       onClick={() => onRowClick(transaction)}
       className="hover:bg-muted/50 transition-colors duration-200 cursor-pointer"
     >
