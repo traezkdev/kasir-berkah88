@@ -18,6 +18,7 @@ const EditTransactionModal = ({
     isEmployeeMeal: false,
     payment_method: 'Tunai',
     manual_discount: '',
+    catatan: '',
   });
   const [originalTotal, setOriginalTotal] = useState(0);
 
@@ -36,6 +37,7 @@ const EditTransactionModal = ({
         ppn: transaction.ppn.toString(),
         payment_method: transaction.payment_method || 'Tunai',
         manual_discount: transaction.manual_discount ? transaction.manual_discount.toString() : '0',
+        catatan: transaction.catatan || '',
       });
     }
   }, [transaction]);
@@ -46,6 +48,7 @@ const EditTransactionModal = ({
     if (isOpen && originalTotal > 0) {
       const discount = parseFloat(formData.manual_discount || 0);
 
+      // Ensure discount is not greater than the original total
       // Ensure discount is not greater than the original total
       if (discount > originalTotal) {
         // Optionally, you can reset the discount or show an error
@@ -101,6 +104,7 @@ const EditTransactionModal = ({
       isEmployeeMeal: isEmployeeMealValue, // Derived from payment_method
       payment_method: formData.payment_method,
       manual_discount: parseFloat(formData.manual_discount),
+      catatan: formData.catatan
     };
 
     await onUpdateTransaction(transaction.id, dataToUpdate);
@@ -164,6 +168,16 @@ const EditTransactionModal = ({
               value={formData.manual_discount}
               onChange={handleChange}
               step="0.01"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1 text-foreground">Catatan</label>
+            <textarea
+              name="catatan"
+              value={formData.catatan}
+              onChange={handleChange}
+              className="w-full border border-border rounded-md px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm h-20 resize-none"
+              placeholder="Tambahkan catatan..."
             />
           </div>
           <div>

@@ -1269,7 +1269,7 @@ app.get("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
 // Create a new transaction
 app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res, next) => {
     try {
-        const { items, total: frontendTotal, ppn: frontendPpn, ignoreStock, cashPaid, change, isEmployeeMeal, payment_method, manual_discount } = req.body;
+        const { items, total: frontendTotal, ppn: frontendPpn, ignoreStock, cashPaid, change, isEmployeeMeal, payment_method, manual_discount, catatan } = req.body;
         const errors = [];
         if (!items) {
             errors.push("No items specified");
@@ -1343,11 +1343,12 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
             cash_paid: cashPaid || 0,
             change: change || 0,
             user_id: req.user.userId,
-            manual_discount: manual_discount || 0
+            manual_discount: manual_discount || 0,
+            catatan: catatan || null
         };
-        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock, cash_paid, `change`, user_id, manual_discount) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)';
+        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock, cash_paid, `change`, user_id, manual_discount, catatan) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)';
 
-        const params = [data.id, data.timestamp, data.items, data.total, data.ppn, data.isEmployeeMeal, data.payment_method, data.ignore_stock, data.cash_paid, data.change, data.user_id, data.manual_discount];
+        const params = [data.id, data.timestamp, data.items, data.total, data.ppn, data.isEmployeeMeal, data.payment_method, data.ignore_stock, data.cash_paid, data.change, data.user_id, data.manual_discount, data.catatan];
         const [result] = await db.query(sql, params);
 
         if (!ignoreStock) {
@@ -1381,7 +1382,7 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
 // Update a transaction
 app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res, next) => {
     try {
-        const { total, ppn, isEmployeeMeal, payment_method, timestamp, manual_discount } = req.body;
+        const { total, ppn, isEmployeeMeal, payment_method, timestamp, manual_discount, catatan } = req.body;
         console.log(`[UPDATE TRANSACTION] ID: ${req.params.id}`, req.body); // Debug log
         const { id } = req.params;
 
@@ -1391,9 +1392,10 @@ app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
            isEmployeeMeal = COALESCE(?, isEmployeeMeal), 
            payment_method = COALESCE(?, payment_method),
            timestamp = COALESCE(?, timestamp),
-           manual_discount = COALESCE(?, manual_discount) 
+           manual_discount = COALESCE(?, manual_discount),
+           catatan = COALESCE(?, catatan)
            WHERE id = ? AND deleted_at IS NULL`;
-        const params = [total, ppn, isEmployeeMeal ? 1 : 0, payment_method, timestamp ? new Date(timestamp) : null, manual_discount, id];
+        const params = [total, ppn, isEmployeeMeal ? 1 : 0, payment_method, timestamp ? new Date(timestamp) : null, manual_discount, catatan, id];
         const [result] = await db.query(sql, params);
 
         if (result.affectedRows === 0) {

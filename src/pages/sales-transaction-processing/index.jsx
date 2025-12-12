@@ -31,7 +31,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
   const [userRole, setUserRole] = useState(null);
   const [ignoreStock, setIgnoreStock] = useState(false);
 
-  
+
   // State for the options modal
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
   const [selectedItemForOptions, setSelectedItemForOptions] = useState(null);
@@ -111,7 +111,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
     setCart(prevCart => {
       const cartItemId = getCartItemId(item, selectedOptions);
       const existingItem = prevCart.find(cartItem => cartItem.cartItemId === cartItemId);
-      
+
       const optionPriceAdjustment = selectedOptions.reduce((sum, opt) => sum + (opt.price_adjustment || 0), 0);
       const priceAfterDiscount = item.discount > 0 ? parseFloat(item.price) * (1 - item.discount) : parseFloat(item.price);
       const finalPrice = priceAfterDiscount + optionPriceAdjustment;
@@ -141,7 +141,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       }
     });
   };
-  
+
   const handleItemClick = (item) => {
     // If item has options, open the modal
     if (item.options && item.options.length > 0) {
@@ -189,7 +189,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       }
     });
   };
-  
+
   const handleClearCart = () => setCart([]);
 
   const handleProcessPayment = async (paymentData) => {
@@ -204,7 +204,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       discount: item.discount,   // Include discount for receipt display
       options: item.selectedOptions.map(opt => ({ name: opt.name, price_adjustment: opt.price_adjustment }))
     }));
-    
+
     const transaction = {
       items: transactionItems,
       total: paymentData.total,
@@ -216,6 +216,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       cashPaid: paymentData.cashPaid,
       change: paymentData.change,
       manual_discount: paymentData.manual_discount,
+      catatan: paymentData.catatan,
     };
 
     try {
@@ -243,7 +244,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
 
   return (
     <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
-      {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
+      {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} />}
       <div className={`${theme === 'default' ? 'pt-16' : ''}`}>
         <div className={`max-w-7xl mx-auto ${theme === 'default' ? 'px-4' : ''} lg:px-6 space-y-6 py-4 pb-20`}>
           <BreadcrumbNavigation />
@@ -265,13 +266,13 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <SalesForm 
-                menuItems={menuItems} 
+              <SalesForm
+                menuItems={menuItems}
                 onIncrementItem={handleItemClick} // Use the new handler
-                onDecrementItem={handleDecrementItem} 
-                cart={cart} 
-                userRole={userRole} 
-                apiUrl={apiUrl} 
+                onDecrementItem={handleDecrementItem}
+                cart={cart}
+                userRole={userRole}
+                apiUrl={apiUrl}
                 ignoreStock={ignoreStock}
                 handleToggleIgnoreStock={handleToggleIgnoreStock}
               />

@@ -8,15 +8,15 @@ import { useTheme } from '../../../contexts/ThemeContext';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-const OrderSummary = ({ 
-  cart, 
-  menuItems, 
-  onUpdateQuantity, 
-  onRemoveFromCart, 
-  onClearCart, 
-  onProcessPayment, 
-  isLoading, 
-  isEmployeeMeal, 
+const OrderSummary = ({
+  cart,
+  menuItems,
+  onUpdateQuantity,
+  onRemoveFromCart,
+  onClearCart,
+  onProcessPayment,
+  isLoading,
+  isEmployeeMeal,
   setIsEmployeeMeal,
   paymentMethod,
   setPaymentMethod,
@@ -91,15 +91,15 @@ const OrderSummary = ({
       // Only set the discount if it's a positive value (a real discount)
       // and if the value is different, to avoid infinite loops.
       if (derivedDiscount > 0 && manualDiscount.toFixed(2) !== derivedDiscount.toFixed(2)) {
-         setManualDiscount(derivedDiscount);
+        setManualDiscount(derivedDiscount);
       } else if (derivedDiscount <= 0 && manualDiscount !== 0) {
-         setManualDiscount(0);
+        setManualDiscount(0);
       }
     } else {
-       if (manualDiscount !== 0) {
+      if (manualDiscount !== 0) {
         // If there's no override, reset the discount from this source
         setManualDiscount(0);
-       }
+      }
     }
   }, [isTotalOverridden, customTotal, subtotal, ppnRate, manualDiscount]);
 
@@ -174,12 +174,14 @@ const OrderSummary = ({
     return true;
   };
 
+  const [catatan, setCatatan] = useState('');
+
   const disablePaymentButton = isLoading || !isCartValid();
 
   return (
     <div className={`bg-card rounded-lg shadow-lg p-6 lg:sticky lg:top-16`}>
       <h2 className="text-xl font-bold text-foreground mb-4">Ringkasan Pesanan</h2>
-      
+
       {cart.length === 0 ? (
         <p className="text-muted-foreground text-center py-8">Keranjang belanja kosong</p>
       ) : (
@@ -282,10 +284,10 @@ const OrderSummary = ({
             </div>
           </div>
           <div className="border-t my-4"></div>
-          
-                              <div className="space-y-4">
-          
-                                <div className="space-y-2">
+
+          <div className="space-y-4">
+
+            <div className="space-y-2">
               <label htmlFor="payment-method" className="text-sm font-medium text-muted-foreground">Metode Pembayaran</label>
               <Select
                 id="payment-method"
@@ -347,18 +349,30 @@ const OrderSummary = ({
                 )}
               </div>
             )}
+
+            <div className="space-y-2 pt-2">
+              <label htmlFor="catatan" className="text-sm font-medium text-muted-foreground">Catatan (Opsional)</label>
+              <textarea
+                id="catatan"
+                value={catatan}
+                onChange={(e) => setCatatan(e.target.value)}
+                className="w-full border border-input rounded-md px-3 py-2 text-foreground bg-background text-sm h-20 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                placeholder="Tambahkan catatan untuk transaksi ini..."
+              />
+            </div>
           </div>
 
           <div className="flex gap-2 mt-4">
             <Button variant="outline" onClick={onClearCart} className="w-full">Kosongkan</Button>
-            <Button 
-              onClick={() => onProcessPayment({ 
-                total: customTotal, 
+            <Button
+              onClick={() => onProcessPayment({
+                total: customTotal,
                 ppn: tax,
                 cashPaid: paymentMethod === 'cash' ? parseFloat(cashPaid) || 0 : 0,
                 change: paymentMethod === 'cash' ? change : 0,
                 manual_discount: manualDiscount,
-              })} 
+                catatan: catatan
+              })}
               className="w-full"
               loading={isLoading}
               disabled={disablePaymentButton || userRole === 'guest'}
