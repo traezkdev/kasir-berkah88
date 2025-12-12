@@ -3078,38 +3078,34 @@ app.post("/api/logout", authenticateToken, (req, res) => {
 app.get("/api/laporan-lengkap", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
+        const hasDateFilter = startDate && endDate;
 
-        // --- SQL Queries ---
-        const whereDateClause = 'WHERE DATE(timestamp) BETWEEN ? AND ?';
-        const whereDateClauseExpenses = 'WHERE DATE(date) BETWEEN ? AND ?';
-        const whereDateClauseAccounts = 'WHERE DATE(created_at) BETWEEN ? AND ?';
-
-        const transactionsQuery = `SELECT * FROM transactions ${startDate && endDate ? whereDateClause : ''} ORDER BY timestamp DESC`;
-        const expensesQuery = `SELECT * FROM expenses ${startDate && endDate ? whereDateClauseExpenses : ''} ORDER BY date DESC`;
-        
-        const lapakAccountQuery = `
-            SELECT at.*, u.username as created_by_username 
-            FROM account_transactions at 
-            JOIN users u ON at.created_by_user_id = u.id
-            JOIN accounts a ON at.account_id = a.id
-            WHERE a.name = 'lapak_deposit' ${startDate && endDate ? `AND ${whereDateClauseAccounts.replace('WHERE ', '')}` : ''}
-            ORDER BY at.created_at DESC`;
-
-        const ownerAccountQuery = `
-            SELECT at.*, u.username as created_by_username 
-            FROM account_transactions at 
-            JOIN users u ON at.created_by_user_id = u.id
-            JOIN accounts a ON at.account_id = a.id
-            WHERE a.name = 'owner_deposit' ${startDate && endDate ? `AND ${whereDateClauseAccounts.replace('WHERE ', '')}` : ''}
-            ORDER BY at.created_at DESC`;
-
+        // Base queries
+        let transactionsQuery = `SELECT * FROM transactions ORDER BY timestamp DESC`;
+        let expensesQuery = `SELECT * FROM expenses ORDER BY date DESC`;
+        let lapakAccountQuery = `SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'lapak_deposit' ORDER BY at.created_at DESC`;
+        let ownerAccountQuery = `SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'owner_deposit' ORDER BY at.created_at DESC`;
         const menuStockQuery = `SELECT id, name, stock, category, price, hpp FROM menu_items ORDER BY name ASC`;
         const rawMaterialStockQuery = `SELECT id, name, current_stock, unit, price_per_item FROM raw_materials ORDER BY name ASC`;
 
-        // --- Query Parameters ---
-        const queryParams = startDate && endDate ? [startDate, endDate] : [];
+        const queryParams = hasDateFilter ? [startDate, `${endDate} 23:59:59`] : [];
 
-        // --- Execute Queries in Parallel ---
+        if (hasDateFilter) {
+            transactionsQuery = `SELECT * FROM transactions WHERE timestamp BETWEEN ? AND ? ORDER BY timestamp DESC`;
+            expensesQuery = `SELECT * FROM expenses WHERE date BETWEEN ? AND ? ORDER BY date DESC`;
+            lapakAccountQuery = `SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'lapak_deposit' AND at.created_at BETWEEN ? AND ? ORDER BY at.created_at DESC`;
+            ownerAccountQuery = `SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'owner_deposit' AND at.created_at BETWEEN ? AND ? ORDER BY at.created_at DESC`;
+        }
+
+        const queries = [
+            db.query(transactionsQuery, hasDateFilter ? queryParams : []),
+            db.query(expensesQuery, hasDateFilter ? queryParams : []),
+            db.query(lapakAccountQuery, hasDateFilter ? queryParams : []),
+            db.query(ownerAccountQuery, hasDateFilter ? queryParams : []),
+            db.query(menuStockQuery), // No params
+            db.query(rawMaterialStockQuery) // No params
+        ];
+
         const [
             [transactions],
             [expenses],
@@ -3117,14 +3113,7 @@ app.get("/api/laporan-lengkap", authenticateToken, authorizeRoles('admin', 'owne
             [ownerAccountTransactions],
             [menuStock],
             [rawMaterialStock]
-        ] = await Promise.all([
-            db.query(transactionsQuery, queryParams),
-            db.query(expensesQuery, queryParams),
-            db.query(lapakAccountQuery, queryParams),
-            db.query(ownerAccountQuery, queryParams),
-            db.query(menuStockQuery),
-            db.query(rawMaterialStockQuery)
-        ]);
+        ] = await Promise.all(queries);
 
         res.json({
             message: "success",
