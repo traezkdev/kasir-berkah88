@@ -1382,6 +1382,7 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
 app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res, next) => {
     try {
         const { total, ppn, isEmployeeMeal, payment_method, timestamp, manual_discount } = req.body;
+        console.log(`[UPDATE TRANSACTION] ID: ${req.params.id}`, req.body); // Debug log
         const { id } = req.params;
 
         const sql = `UPDATE transactions SET 
