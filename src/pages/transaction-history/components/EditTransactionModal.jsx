@@ -25,7 +25,10 @@ const EditTransactionModal = ({
   useEffect(() => {
     if (transaction) {
       const date = new Date(transaction.timestamp);
-      const formattedDate = date.toISOString().slice(0, 16);
+      // Adjust for local timezone to ensure input displays correct local time
+      const offset = date.getTimezoneOffset() * 60000;
+      const localDate = new Date(date.getTime() - offset);
+      const formattedDate = localDate.toISOString().slice(0, 16);
 
       // Calculate the original total before any manual discount was applied
       const initialTotal = parseFloat(transaction.total) + parseFloat(transaction.manual_discount || 0);
