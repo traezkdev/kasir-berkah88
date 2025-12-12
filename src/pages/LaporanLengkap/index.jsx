@@ -2,8 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import authFetch from '../../utils/authFetch';
 import { RingLoader } from 'react-spinners';
 import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable'; // Correctly imports and applies the autoTable plugin
+import { exportToPdf } from '../../utils/exportUtils'; // Correctly import the utility
 
 const LaporanLengkap = () => {
   const [laporanData, setLaporanData] = useState(null);
@@ -115,81 +114,63 @@ const LaporanLengkap = () => {
   };
 
   const handleExportPDF = () => {
-    const doc = new jsPDF();
-    const tableStyles = {
-        styles: { fontSize: 8 },
-        headerStyles: { fillColor: [22, 160, 133] },
-    };
+    if (!laporanData) return;
 
-    doc.setFontSize(18);
-    doc.text("Laporan Lengkap", 14, 22);
+    const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
 
-    // --- Transactions ---
-    doc.setFontSize(14);
-    doc.text("Laporan Transaksi", 14, 32);
-    doc.autoTable({
-        startY: 36,
-        ...tableStyles,
-        head: [['ID', 'Tanggal', 'Total', 'Metode Pembayaran']],
-        body: laporanData.transactions.map(t => [t.id, new Date(t.timestamp).toLocaleString(), `Rp ${t.total.toLocaleString()}`, t.payment_method]),
-    });
-    
-    // --- Expenses ---
-    doc.addPage();
-    doc.setFontSize(14);
-    doc.text("Laporan Pengeluaran", 14, 22);
-    doc.autoTable({
-        startY: 26,
-        ...tableStyles,
-        head: [['Nama', 'Jumlah', 'Tanggal']],
-        body: laporanData.expenses.map(e => [e.name, `Rp ${e.amount.toLocaleString()}`, new Date(e.date).toLocaleDateString()]),
-    });
+    const sections = [
+        {
+            title: "Laporan Transaksi",
+            headers: ['ID', 'Tanggal', 'Total', 'Metode Pembayaran'],
+            rows: laporanData.transactions.map(t => [
+                t.id, 
+                new Date(t.timestamp).toLocaleString(), 
+                formatCurrency(t.total), 
+                t.payment_method
+            ]),
+        },
+        {
+            title: "Laporan Pengeluaran",
+            headers: ['Nama', 'Jumlah', 'Tanggal'],
+            rows: laporanData.expenses.map(e => [
+                e.name, 
+                formatCurrency(e.amount), 
+                new Date(e.date).toLocaleDateString()
+            ]),
+        },
+        {
+            title: "Laporan Uang Lapak",
+            headers: ['Tipe', 'Jumlah', 'Deskripsi', 'Tanggal'],
+            rows: laporanData.lapakAccountTransactions.map(t => [
+                t.type, 
+                formatCurrency(t.amount), 
+                t.description,
+                new Date(t.created_at).toLocaleString()
+            ]),
+        },
+        {
+            title: "Laporan Uang Owner",
+            headers: ['Tipe', 'Jumlah', 'Deskripsi', 'Tanggal'],
+            rows: laporanData.ownerAccountTransactions.map(t => [
+                t.type, 
+                formatCurrency(t.amount), 
+                t.description,
+                new Date(t.created_at).toLocaleString()
+            ]),
+        },
+        {
+            title: "Laporan Stok Menu",
+            headers: ['Nama Menu', 'Stok Tersisa'],
+            rows: laporanData.menuStock.map(item => [item.name, item.stock]),
+        },
+        {
+            title: "Laporan Stok Bahan Mentah",
+            headers: ['Nama Bahan', 'Stok Tersisa'],
+            rows: laporanData.rawMaterialStock.map(item => [item.name, `${item.current_stock} ${item.unit}`]),
+        },
+    ];
 
-    // --- Uang Lapak ---
-    doc.addPage();
-    doc.setFontSize(14);
-    doc.text("Laporan Uang Lapak", 14, 22);
-    doc.autoTable({
-        startY: 26,
-        ...tableStyles,
-        head: [['Tipe', 'Jumlah', 'Deskripsi']],
-        body: laporanData.lapakAccountTransactions.map(t => [t.type, `Rp ${t.amount.toLocaleString()}`, t.description]),
-    });
-
-    // --- Uang Owner ---
-    doc.addPage();
-    doc.setFontSize(14);
-    doc.text("Laporan Uang Owner", 14, 22);
-    doc.autoTable({
-        startY: 26,
-        ...tableStyles,
-        head: [['Tipe', 'Jumlah', 'Deskripsi']],
-        body: laporanData.ownerAccountTransactions.map(t => [t.type, `Rp ${t.amount.toLocaleString()}`, t.description]),
-    });
-    
-    // --- Stok Menu ---
-    doc.addPage();
-    doc.setFontSize(14);
-    doc.text("Laporan Stok Menu", 14, 22);
-    doc.autoTable({
-        startY: 26,
-        ...tableStyles,
-        head: [['Nama Menu', 'Stok Tersisa']],
-        body: laporanData.menuStock.map(item => [item.name, item.stock]),
-    });
-    
-    // --- Stok Bahan Mentah ---
-    doc.addPage();
-    doc.setFontSize(14);
-    doc.text("Laporan Stok Bahan Mentah", 14, 22);
-    doc.autoTable({
-        startY: 26,
-        ...tableStyles,
-        head: [['Nama Bahan', 'Stok Tersisa']],
-        body: laporanData.rawMaterialStock.map(item => [item.name, `${item.current_stock} ${item.unit}`]),
-    });
-
-    doc.save("Laporan_Lengkap.pdf");
+    exportToPdf(sections, 'Laporan_Lengkap');
   };
   
   // Generic pagination logic
