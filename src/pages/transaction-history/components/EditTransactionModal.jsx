@@ -34,11 +34,21 @@ const EditTransactionModal = ({
       const initialTotal = parseFloat(transaction.total) + parseFloat(transaction.manual_discount || 0);
       setOriginalTotal(initialTotal);
 
+      const normalizePaymentMethod = (method) => {
+        if (!method) return 'Tunai';
+        const lower = method.toLowerCase();
+        if (lower === 'cash' || lower === 'tunai') return 'Tunai';
+        if (lower === 'gojek') return 'Gojek';
+        if (lower === 'transfer') return 'Transfer';
+        if (lower === 'makan karyawan' || lower === 'employee_meal') return 'Makan Karyawan';
+        return method; // Fallback
+      };
+
       setFormData({
         timestamp: formattedDate,
         total: transaction.total.toString(),
         ppn: transaction.ppn.toString(),
-        payment_method: transaction.payment_method || 'Tunai',
+        payment_method: normalizePaymentMethod(transaction.payment_method),
         manual_discount: transaction.manual_discount ? transaction.manual_discount.toString() : '0',
         catatan: transaction.catatan || '',
       });
