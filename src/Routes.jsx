@@ -35,6 +35,7 @@ import UangBisnis from './pages/uang-bisnis/index.jsx';
 import CriticalStockPage from './pages/CriticalStock';
 import MainCriticalStockPage from './pages/MainCriticalStock';
 import AdminUangBisnis from './pages/AdminUangBisnis'; // Add this import
+import LaporanLengkap from './pages/LaporanLengkap';
 import SimpleTransactionPage from './pages/SimpleTransaction';
 
 import TransactionTrash from './pages/TransactionTrash';
@@ -110,6 +111,7 @@ const AppRoutes = () => {
         <Route path="/raw-material-stock/history" element={<RawMaterialStockHistory />} />
         <Route path="/main-critical-stock" element={<MainCriticalStockPage />} />
         <Route path="/admin-uang-bisnis" element={<AdminUangBisnis headerTitle="Uang Bisnis" />} /> {/* Add this route */}
+        <Route path="/laporan-lengkap" element={<LaporanLengkap headerTitle="Laporan Lengkap" />} />
       </Route>
 
       {/* Cashier Dashboard Routes */}
@@ -150,6 +152,7 @@ const AppRoutes = () => {
         <Route path="/owner-raw-material-stock" element={<OwnerRawMaterialStockDashboard />} />
         <Route path="/owner-raw-material-stock/history" element={<OwnerRawMaterialStockHistory />} />
         <Route path="/critical-stock" element={<CriticalStockPage />} />
+        <Route path="/laporan-lengkap" element={<LaporanLengkap headerTitle="Laporan Lengkap" />} />
       </Route>
 
       {/* Catch all other routes */}

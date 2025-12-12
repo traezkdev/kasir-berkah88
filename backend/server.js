@@ -3073,6 +3073,78 @@ app.post("/api/logout", authenticateToken, (req, res) => {
 });
 
 
+
+// --- Comprehensive Report Endpoint ---
+app.get("/api/laporan-lengkap", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+
+        // --- SQL Queries ---
+        const whereDateClause = 'WHERE DATE(timestamp) BETWEEN ? AND ?';
+        const whereDateClauseExpenses = 'WHERE DATE(date) BETWEEN ? AND ?';
+        const whereDateClauseAccounts = 'WHERE DATE(created_at) BETWEEN ? AND ?';
+
+        const transactionsQuery = `SELECT * FROM transactions ${startDate && endDate ? whereDateClause : ''} ORDER BY timestamp DESC`;
+        const expensesQuery = `SELECT * FROM expenses ${startDate && endDate ? whereDateClauseExpenses : ''} ORDER BY date DESC`;
+        
+        const lapakAccountQuery = `
+            SELECT at.*, u.username as created_by_username 
+            FROM account_transactions at 
+            JOIN users u ON at.created_by_user_id = u.id
+            JOIN accounts a ON at.account_id = a.id
+            WHERE a.name = 'lapak_deposit' ${startDate && endDate ? `AND ${whereDateClauseAccounts.replace('WHERE ', '')}` : ''}
+            ORDER BY at.created_at DESC`;
+
+        const ownerAccountQuery = `
+            SELECT at.*, u.username as created_by_username 
+            FROM account_transactions at 
+            JOIN users u ON at.created_by_user_id = u.id
+            JOIN accounts a ON at.account_id = a.id
+            WHERE a.name = 'owner_deposit' ${startDate && endDate ? `AND ${whereDateClauseAccounts.replace('WHERE ', '')}` : ''}
+            ORDER BY at.created_at DESC`;
+
+        const menuStockQuery = `SELECT id, name, stock, category, price, hpp FROM menu_items ORDER BY name ASC`;
+        const rawMaterialStockQuery = `SELECT id, name, current_stock, unit, price_per_item FROM raw_materials ORDER BY name ASC`;
+
+        // --- Query Parameters ---
+        const queryParams = startDate && endDate ? [startDate, endDate] : [];
+
+        // --- Execute Queries in Parallel ---
+        const [
+            [transactions],
+            [expenses],
+            [lapakAccountTransactions],
+            [ownerAccountTransactions],
+            [menuStock],
+            [rawMaterialStock]
+        ] = await Promise.all([
+            db.query(transactionsQuery, queryParams),
+            db.query(expensesQuery, queryParams),
+            db.query(lapakAccountQuery, queryParams),
+            db.query(ownerAccountQuery, queryParams),
+            db.query(menuStockQuery),
+            db.query(rawMaterialStockQuery)
+        ]);
+
+        res.json({
+            message: "success",
+            data: {
+                transactions,
+                expenses,
+                lapakAccountTransactions,
+                ownerAccountTransactions,
+                menuStock,
+                rawMaterialStock
+            }
+        });
+
+    } catch (err) {
+        console.error("Error fetching comprehensive report:", err);
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+
 // Public API to get all menu items for guest users (no authentication required)
 app.get("/api/guest/menu-items", async (req, res) => {
     try {
