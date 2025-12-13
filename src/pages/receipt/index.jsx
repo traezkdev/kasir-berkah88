@@ -243,11 +243,12 @@ const ReceiptPage = () => {
         @media print {
           @page {
             margin: 0;
-            size: auto;
+            size: 58mm auto; /* Explicitly set paper size for thermal printers */
           }
           body {
             margin: 0;
             padding: 0;
+            width: 58mm; /* Constrain body width */
           }
           body * {
             visibility: hidden;
@@ -257,46 +258,58 @@ const ReceiptPage = () => {
             position: absolute;
             left: 0;
             top: 0;
-            width: 100%; /* Flexible width for thermal printers */
-            max-width: none;
+            width: 100%;
+            max-width: 58mm; /* Ensure it doesn't overflow */
             box-sizing: border-box;
             margin: 0;
-            padding: 4px;
+            padding: 2px 4px; /* Minimal padding */
             border: none;
             box-shadow: none;
             background-color: white;
             color: black;
-            font-family: 'Courier New', Courier, monospace;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; /* Modern Sans-serif */
+            line-height: 1.2; /* Compact line height */
           }
           #receipt-container * {
             visibility: visible;
-            font-family: 'Courier New', Courier, monospace;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             color: black !important;
           }
           #receipt-container h2 {
-            font-size: 14px !important;
+            font-size: 14px !important; /* Slightly larger for title */
             font-weight: bold !important;
             margin-bottom: 2px;
+            text-align: center;
           }
-          #receipt-container p,
+          #receipt-container p {
+            font-size: 11px !important;
+            margin-bottom: 2px;
+            text-align: center;
+          }
           #receipt-container .text-sm,
           #receipt-container span,
           #receipt-container div,
-          #receipt-container .text-lg {
-            font-size: 11px !important;
+          #receipt-container h3 {
+            font-size: 11px !important; /* Standardize specific text size */
           }
            #receipt-container .text-lg {
+             font-size: 13px !important; /* Total price slightly larger */
              font-weight: bold !important;
            }
+          /* Hide non-printable elements explicitly */
           .print\:hidden {
             display: none !important;
           }
           /* Adjust spacing for print */
           #receipt-container .mb-4 {
-            margin-bottom: 8px !important;
+            margin-bottom: 6px !important;
           }
           #receipt-container .mb-2 {
-            margin-bottom: 4px !important;
+            margin-bottom: 2px !important;
+          }
+          /* Compact spacing for lists */
+          #receipt-container .space-y-2 > div {
+            margin-bottom: 1px !important;
           }
         }
       `}</style>
