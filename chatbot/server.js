@@ -94,7 +94,7 @@ app.post('/chat', async (req, res) => {
 
         console.log(`[DEBUG] Menerima pesan: "${message}"`);
 
-        // Trigger keywords - Added modal/saldo/owner/kas
+        // Trigger keywords
         if (lowerMessage.includes('jual') || lowerMessage.includes('sales') || lowerMessage.includes('laporan') || lowerMessage.includes('pendapatan') || lowerMessage.includes('uang') || lowerMessage.includes('transaksi') || lowerMessage.includes('revenue') || lowerMessage.includes('income') || lowerMessage.includes('modal') || lowerMessage.includes('saldo') || lowerMessage.includes('owner') || lowerMessage.includes('kas')) {
             console.log("[DEBUG] Keyword keuangan terdeteksi. Mencoba akses database...");
             try {
@@ -103,30 +103,56 @@ app.post('/chat', async (req, res) => {
                 const fs = require('fs');
                 const mysql = require('mysql2/promise');
 
-                // Load backend env
-                const backendEnvPath = path.join(__dirname, '..', 'backend', '.env');
-                console.log(`[DEBUG] Path .env backend: ${backendEnvPath}`);
+                // --- DB CONFIGURATION STRATEGY ---
+                // 1. Try to read credentials from Standard Environment Variables (Process.env)
+                // 2. Fallback to reading ../backend/.env file (Local Dev)
 
-                let dbConfig = {};
-                if (fs.existsSync(backendEnvPath)) {
-                    const envFile = fs.readFileSync(backendEnvPath, 'utf8');
-                    const envConfig = {};
-                    envFile.split('\n').forEach(line => {
-                        const [key, val] = line.split('=');
-                        if (key && val) envConfig[key.trim()] = val.trim();
-                    });
+                let dbConfig = {
+                    host: process.env.DB_HOST,
+                    user: process.env.DB_USER,
+                    password: process.env.DB_PASSWORD,
+                    database: process.env.DB_DATABASE,
+                    port: process.env.DB_PORT
+                };
 
-                    dbConfig = {
-                        host: envConfig.DB_HOST || 'localhost',
-                        user: envConfig.DB_USER || 'root',
-                        password: envConfig.DB_PASSWORD || '',
-                        database: envConfig.DB_DATABASE || 'kasir_berkah88',
-                        port: envConfig.DB_PORT || 3306
-                    };
-                    console.log("[DEBUG] Konfigurasi DB dimuat:", { ...dbConfig, password: '***' });
-                } else {
-                    console.error("[DEBUG] File .env backend TIDAK DITEMUKAN!");
+                // If any Env var is missing, try to load from backend .env
+                if (!dbConfig.host || !dbConfig.user || !dbConfig.database) {
+                    const backendEnvPath = path.join(__dirname, '..', 'backend', '.env');
+                    console.log(`[DEBUG] Process Env belum lengkap. Mencoba fallback ke file: ${backendEnvPath}`);
+
+                    if (fs.existsSync(backendEnvPath)) {
+                        try {
+                            const envFile = fs.readFileSync(backendEnvPath, 'utf8');
+                            const envConfig = {};
+                            envFile.split('\n').forEach(line => {
+                                const [key, val] = line.split('=');
+                                if (key && val) envConfig[key.trim()] = val.trim();
+                            });
+
+                            // Merge File Config with existing config (Process Env wins if present)
+                            dbConfig.host = dbConfig.host || envConfig.DB_HOST || 'localhost';
+                            dbConfig.user = dbConfig.user || envConfig.DB_USER || 'root';
+                            dbConfig.password = dbConfig.password || envConfig.DB_PASSWORD || '';
+                            dbConfig.database = dbConfig.database || envConfig.DB_DATABASE || 'kasir_berkah88';
+                            dbConfig.port = dbConfig.port || envConfig.DB_PORT || 3306;
+
+                            console.log("[DEBUG] Berhasil memuat credential dari file .env backend.");
+                        } catch (e) {
+                            console.warn("[DEBUG] Gagal membaca ../backend/.env", e.message);
+                        }
+                    } else {
+                        console.warn("[DEBUG] File .env backend TIDAK DITEMUKAN dan Env Vars tidak lengkap.");
+                    }
                 }
+
+                // Final check before connection
+                dbConfig.host = dbConfig.host || 'localhost';
+                dbConfig.user = dbConfig.user || 'root';
+                dbConfig.password = dbConfig.password || '';
+                dbConfig.database = dbConfig.database || 'kasir_berkah88';
+                dbConfig.port = dbConfig.port || 3306;
+
+                console.log("[DEBUG] Konfigurasi DB Final:", { ...dbConfig, password: '***' });
 
                 if (dbConfig.database) {
                     const connection = await mysql.createConnection(dbConfig);
