@@ -1198,18 +1198,21 @@ app.get("/api/transactions/daily-recap", authenticateToken, authorizeRoles('user
             return res.status(400).json({ "error": "Date parameter is required" });
         }
 
+        const startDate = `${date} 00:00:00`;
+        const endDate = `${date} 23:59:59`;
+
         const sql = `
             SELECT
-                COALESCE(SUM(CASE WHEN LOWER(payment_method) = 'cash' OR payment_method IS NULL THEN total ELSE 0 END), 0) as total_tunai,
+                COALESCE(SUM(CASE WHEN LOWER(payment_method) IN ('cash', 'tunai') OR payment_method IS NULL THEN total ELSE 0 END), 0) as total_tunai,
                 COALESCE(SUM(CASE WHEN LOWER(payment_method) = 'transfer' THEN total ELSE 0 END), 0) as total_transfer,
                 COALESCE(SUM(CASE WHEN LOWER(payment_method) = 'gojek' THEN total ELSE 0 END), 0) as total_gojek,
-                COALESCE(SUM(CASE WHEN isEmployeeMeal = 1 OR LOWER(payment_method) = 'employee_meal' THEN total ELSE 0 END), 0) as total_makan_karyawan,
+                COALESCE(SUM(CASE WHEN isEmployeeMeal = 1 OR LOWER(payment_method) IN ('employee_meal', 'makan karyawan') THEN total ELSE 0 END), 0) as total_makan_karyawan,
                 COALESCE(SUM(total), 0) as grand_total
             FROM transactions
-            WHERE DATE(timestamp) = ? AND deleted_at IS NULL
+            WHERE timestamp >= ? AND timestamp <= ? AND deleted_at IS NULL
         `;
 
-        const [rows] = await db.query(sql, [date]);
+        const [rows] = await db.query(sql, [startDate, endDate]);
 
         res.json({
             "message": "success",
