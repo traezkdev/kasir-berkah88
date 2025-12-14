@@ -121,7 +121,7 @@ const OrderSummary = ({
   }, [calculatedTotal, isTotalOverridden]);
 
   const paymentMethodOptions = [
-    { value: 'cash', label: 'Tunai' },
+    { value: 'tunai', label: 'Tunai' },
     { value: 'gojek', label: 'Gojek' },
     { value: 'transfer', label: 'Transfer' },
     { value: 'employee_meal', label: 'Makan Karyawan' },
@@ -297,7 +297,7 @@ const OrderSummary = ({
               />
             </div>
 
-            {paymentMethod === 'cash' && (
+            {paymentMethod === 'tunai' && (
               <div className="space-y-3 border-t pt-4 mt-4">
 
                 <div className="space-y-2">
@@ -368,8 +368,8 @@ const OrderSummary = ({
               onClick={() => onProcessPayment({
                 total: customTotal,
                 ppn: tax,
-                cashPaid: paymentMethod === 'cash' ? parseFloat(cashPaid) || 0 : 0,
-                change: paymentMethod === 'cash' ? change : 0,
+                cashPaid: paymentMethod === 'tunai' ? parseFloat(cashPaid) || 0 : 0,
+                change: paymentMethod === 'tunai' ? change : 0,
                 manual_discount: manualDiscount,
                 catatan: catatan
               })}

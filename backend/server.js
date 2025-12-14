@@ -1073,6 +1073,9 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
             if (paymentMethod === 'Makan Karyawan') {
                 // Handle Employee Meal special case
                 whereClauses.push('(t.isEmployeeMeal = 1 OR t.payment_method = "employee_meal")');
+            } else if (paymentMethod.toLowerCase() === 'tunai' || paymentMethod.toLowerCase() === 'cash') {
+                // Handle Tunai/Cash unification
+                whereClauses.push('LOWER(t.payment_method) IN ("cash", "tunai")');
             } else {
                 whereClauses.push('t.payment_method = ?');
                 queryParams.push(paymentMethod);
@@ -1143,6 +1146,9 @@ app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admi
             if (paymentMethod === 'Makan Karyawan') {
                 // Handle Employee Meal special case
                 whereClauses.push('(t.isEmployeeMeal = 1 OR t.payment_method = "employee_meal")');
+            } else if (paymentMethod.toLowerCase() === 'tunai' || paymentMethod.toLowerCase() === 'cash') {
+                // Handle Tunai/Cash unification
+                whereClauses.push('LOWER(t.payment_method) IN ("cash", "tunai")');
             } else {
                 whereClauses.push('t.payment_method = ?');
                 queryParams.push(paymentMethod);
@@ -1341,7 +1347,7 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
             total: finalTotal,
             ppn: finalPpnAmount,
             isEmployeeMeal: isEmployeeMeal ? 1 : 0,
-            payment_method: payment_method || 'Tunai', // Reintroduce fallback
+            payment_method: payment_method || 'tunai', // Reintroduce fallback
             ignore_stock: ignoreStock ? 1 : 0,
             cash_paid: cashPaid || 0,
             change: change || 0,
