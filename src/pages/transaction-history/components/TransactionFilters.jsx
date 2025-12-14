@@ -3,13 +3,13 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 
-const TransactionFilters = ({ 
-  onFilterChange, 
-  onSearch, 
+const TransactionFilters = ({
+  onFilterChange,
+  onSearch,
   onDateRangeChange,
   totalTransactions,
   totalRevenue,
-  employeeMealCount 
+  employeeMealCount
 }) => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -76,10 +76,10 @@ const TransactionFilters = ({
           {/* Search Input */}
           <div className="flex-1">
             <div className="relative">
-              <Icon 
-                name="Search" 
-                size={20} 
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-secondary" 
+              <Icon
+                name="Search"
+                size={20}
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-secondary"
               />
               <Input
                 type="text"
@@ -108,7 +108,7 @@ const TransactionFilters = ({
                 </span>
               )}
             </Button>
-            
+
             {getActiveFilterCount() > 0 && (
               <Button
                 variant="ghost"
@@ -136,7 +136,7 @@ const TransactionFilters = ({
                   onChange={(e) => handleDateRangeChange('startDate', e?.target?.value)}
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-2">
                   Tanggal Akhir
@@ -159,7 +159,7 @@ const TransactionFilters = ({
                   className="w-full px-3 py-2 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
                 >
                   <option value="all">Semua</option>
-                  <option value="Tunai">Tunai</option>
+                  <option value="tunai">Tunai</option>
                   <option value="Gojek">Gojek</option>
                   <option value="Transfer">Transfer</option>
                   <option value="Makan Karyawan">Makan Karyawan</option>

@@ -27,7 +27,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
   const [menuItems, setMenuItems] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isEmployeeMeal, setIsEmployeeMeal] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [paymentMethod, setPaymentMethod] = useState('tunai');
   const [userRole, setUserRole] = useState(null);
   const [ignoreStock, setIgnoreStock] = useState(false);
 

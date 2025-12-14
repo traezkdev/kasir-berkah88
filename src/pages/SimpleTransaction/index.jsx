@@ -35,7 +35,7 @@ export default function SimpleTransaction() { // Renamed component
   const [searchTerm, setSearchTerm] = useState('');
   const [filterKategori, setFilterKategori] = useState('semua');
   const [kategoriOptions, setKategoriOptions] = useState([]);
-  const [paymentMethod, setPaymentMethod] = useState('cash'); // Default to 'cash'
+  const [paymentMethod, setPaymentMethod] = useState('tunai'); // Default to 'tunai'
   const [showMobileCart, setShowMobileCart] = useState(false); // State for mobile cart visibility
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [dashboardTitle, setDashboardTitle] = useState('Transaksi'); // Changed default title
@@ -88,7 +88,7 @@ export default function SimpleTransaction() { // Renamed component
   };
 
   const paymentOptions = [
-    { label: 'Tunai', value: 'cash' },
+    { label: 'Tunai', value: 'tunai' },
     { label: 'Gojek', value: 'gojek' },
     { label: 'Transfer', value: 'transfer' },
     { label: 'Makan Karyawan', value: 'employee_meal' },
@@ -187,8 +187,8 @@ export default function SimpleTransaction() { // Renamed component
 
       const optionPriceAdjustment = selectedOptions.reduce((sum, opt) => sum + (opt.price_adjustment || 0), 0);
       // Assuming item.price is the base price and discount needs to be applied first
-                  const priceBeforeDiscount = parseFloat(originalMenuItem.price) + optionPriceAdjustment;
-                  const finalPrice = originalMenuItem.discount > 0 ? priceBeforeDiscount * (1 - originalMenuItem.discount) : priceBeforeDiscount;
+      const priceBeforeDiscount = parseFloat(originalMenuItem.price) + optionPriceAdjustment;
+      const finalPrice = originalMenuItem.discount > 0 ? priceBeforeDiscount * (1 - originalMenuItem.discount) : priceBeforeDiscount;
       if (existingItem) {
         if (!ignoreStock && existingItem.quantity + 1 > originalMenuItem.stock) {
           setTimeout(() => toast.error(`Stok ${originalMenuItem.name} tidak cukup! Tersedia: ${originalMenuItem.stock}`), 0);
@@ -316,7 +316,7 @@ export default function SimpleTransaction() { // Renamed component
       return;
     }
 
-    if (paymentMethod === 'cash' && cashPaid < totalAmount) {
+    if (paymentMethod === 'tunai' && cashPaid < totalAmount) {
       toast.error('Jumlah pembayaran tunai kurang dari total!');
       return;
     }
@@ -324,7 +324,7 @@ export default function SimpleTransaction() { // Renamed component
     let finalCashPaid = 0;
     let finalChange = 0;
 
-    if (paymentMethod === 'cash') {
+    if (paymentMethod === 'tunai') {
       finalCashPaid = cashPaid;
       finalChange = change;
     } else if (paymentMethod === 'gojek' || paymentMethod === 'transfer') {
@@ -401,7 +401,7 @@ export default function SimpleTransaction() { // Renamed component
                   </span>
                 )}
               </button>
-                          {/* Riwayat Transaksi button removed */}            </>
+              {/* Riwayat Transaksi button removed */}            </>
           }
         />
       )}
@@ -416,28 +416,28 @@ export default function SimpleTransaction() { // Renamed component
             onChange={(e) => setSearchTerm(e.target.value)}
             className="mb-4"
           />
-                    <div className="flex space-x-2 mb-4 overflow-x-auto pb-2">
-                      <Button onClick={() => setFilterKategori('semua')} variant={filterKategori === 'semua' ? 'default' : 'outline'} className="flex-shrink-0">Semua</Button>
-                      {kategoriOptions.map(kategori => (
-                        <Button
-                          key={kategori}
-                          onClick={() => setFilterKategori(kategori)}
-                          variant={filterKategori === kategori ? 'default' : 'outline'}
-                          className="flex-shrink-0 capitalize"
-                        >
-                          {kategori}
-                        </Button>
-                      ))}
-                    </div>
-                    <div className="flex justify-end mb-4">
-                      <Button
-                        onClick={handleToggleIgnoreStock}
-                        variant={ignoreStock ? "destructive" : "outline"}
-                        className="w-full md:w-auto"
-                      >
-                        Abaikan Stok: {ignoreStock ? "Ya" : "Tidak"}
-                      </Button>
-                    </div>          {isLoading && <p>Memuat menu...</p>}
+          <div className="flex space-x-2 mb-4 overflow-x-auto pb-2">
+            <Button onClick={() => setFilterKategori('semua')} variant={filterKategori === 'semua' ? 'default' : 'outline'} className="flex-shrink-0">Semua</Button>
+            {kategoriOptions.map(kategori => (
+              <Button
+                key={kategori}
+                onClick={() => setFilterKategori(kategori)}
+                variant={filterKategori === kategori ? 'default' : 'outline'}
+                className="flex-shrink-0 capitalize"
+              >
+                {kategori}
+              </Button>
+            ))}
+          </div>
+          <div className="flex justify-end mb-4">
+            <Button
+              onClick={handleToggleIgnoreStock}
+              variant={ignoreStock ? "destructive" : "outline"}
+              className="w-full md:w-auto"
+            >
+              Abaikan Stok: {ignoreStock ? "Ya" : "Tidak"}
+            </Button>
+          </div>          {isLoading && <p>Memuat menu...</p>}
           {error && <p className="text-red-500">Error: {error}</p>}
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {filteredMenuItems.map((item) => {
@@ -448,10 +448,10 @@ export default function SimpleTransaction() { // Renamed component
               return (
                 <div
                   key={item.id}
-                                    className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 transition-shadow duration-200 relative
+                  className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 transition-shadow duration-200 relative
                                       ${isOutOfStock && !ignoreStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'}
                                       ${isInCart ? 'border-2 border-green-500' : ''}`
-                                    }                  onClick={() => (currentAvailableStock > 0 || ignoreStock) && handleItemClick(item)}
+                  } onClick={() => (currentAvailableStock > 0 || ignoreStock) && handleItemClick(item)}
                 >
                   {isOutOfStock && (
                     <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">Stok Habis</div>
@@ -513,9 +513,9 @@ export default function SimpleTransaction() { // Renamed component
                   <div>
                     <p className="font-semibold">{item.name}</p>
                     {item.selectedOptions && item.selectedOptions.length > 0 && (
-                        <p className="text-xs text-gray-500">
-                            Opsi: {item.selectedOptions.map(opt => opt.name).join(', ')}
-                        </p>
+                      <p className="text-xs text-gray-500">
+                        Opsi: {item.selectedOptions.map(opt => opt.name).join(', ')}
+                      </p>
                     )}
                     <p className="text-sm text-gray-600 dark:text-gray-400">Rp{item.finalPrice.toLocaleString('id-ID')}</p>
                   </div>
@@ -579,7 +579,7 @@ export default function SimpleTransaction() { // Renamed component
               className="mt-4 mb-2"
             />
 
-            {paymentMethod === 'cash' && (
+            {paymentMethod === 'tunai' && (
               <div className="mt-4">
                 <div className="grid grid-cols-2 md:grid-cols-2 gap-2 mb-4">
                   {quickCashAmounts.map((amount) => (
@@ -662,10 +662,10 @@ export default function SimpleTransaction() { // Renamed component
                 </p>
               </div>
             </div>
-                              <Button onClick={() => setShowMobileCart(true)} className="bg-success text-success-foreground hover:bg-success/90">
-                                <FiShoppingCart className="mr-2 text-white" />
-                                Proses Transaksi
-                              </Button>          </div>
+            <Button onClick={() => setShowMobileCart(true)} className="bg-success text-success-foreground hover:bg-success/90">
+              <FiShoppingCart className="mr-2 text-white" />
+              Proses Transaksi
+            </Button>          </div>
         </div>
       )}
       <OptionSelectionModal
