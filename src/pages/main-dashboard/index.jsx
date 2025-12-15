@@ -26,6 +26,7 @@ const MainDashboard = ({ headerTitle }) => {
     start: new Date().toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0],
   });
+  const [showDetails, setShowDetails] = useState(false);
 
   const fetchData = async (currentUserRole) => { // Add currentUserRole parameter
     const token = localStorage.getItem('token');
@@ -513,11 +514,47 @@ const MainDashboard = ({ headerTitle }) => {
     }
   ];
 
-  const metricsData = [
+  // --- Main Metrics (Always Visible) ---
+  const monthlyProfit = dashboardData.metrics.totalRevenue - dashboardData.metrics.totalExpenses;
+
+  const mainMetrics = [
+    {
+      title: 'Saldo Lapak',
+      value: formatCurrency(dashboardData.metrics.lapakBalance),
+      icon: 'Wallet',
+      color: 'info',
+      description: 'Total dana tersedia untuk operasional lapak'
+    },
+    {
+      title: 'Pendapatan Bulan Ini',
+      value: formatCurrency(dashboardData.metrics.totalRevenue),
+      icon: 'BarChart',
+      color: 'success',
+      description: 'Total pendapatan periode ini'
+    },
+    {
+      title: 'Pengeluaran Bulan Ini',
+      value: formatCurrency(dashboardData.metrics.totalExpenses),
+      icon: 'Receipt',
+      color: 'warning',
+      description: 'Operasional & pembelian periode ini'
+    },
+    {
+      title: 'Laba Bersih Bulan Ini',
+      value: formatCurrency(monthlyProfit),
+      icon: 'TrendingUp', // Use TrendingUp for profit
+      color: 'accent', // Distinct color
+      description: 'Pendapatan - Pengeluaran periode ini'
+    }
+  ];
+
+  // --- Detailed Metrics (Hidden by default) ---
+
+  const detailedMetrics = [
     {
       title: 'Modal Awal',
       value: formatCurrency(dashboardData.metrics.initialCapital),
-      icon: 'PiggyBank', // Changed to PiggyBank for initial capital
+      icon: 'PiggyBank',
       color: 'primary',
       description: 'Jumlah modal awal yang disetor'
     },
@@ -529,25 +566,11 @@ const MainDashboard = ({ headerTitle }) => {
       description: 'Modal awal + pendapatan + stok mentah + stok menu - pengeluaran'
     },
     {
-      title: 'Pendapatan',
-      value: formatCurrency(dashboardData.metrics.totalRevenue), // Monthly revenue
-      icon: 'BarChart',
-      color: 'success',
-      description: 'Total pendapatan bulan ini'
-    },
-    {
       title: 'Modal Akhir Saat Ini',
       value: formatCurrency(dashboardData.metrics.initialCapital + dashboardData.metrics.allTimeRevenue - dashboardData.metrics.allTimeExpenses),
       icon: 'TrendingUp',
       color: 'success',
       description: 'Modal awal + pendapatan - pengeluaran'
-    }, // Add comma here
-    {
-      title: 'Pengeluaran Bulan Ini',
-      value: formatCurrency(dashboardData.metrics.totalExpenses),
-      icon: 'Receipt',
-      color: 'warning',
-      description: 'Operasional & pembelian'
     },
     {
       title: 'Total Nilai Stok (Mentah + Menu)',
@@ -563,19 +586,13 @@ const MainDashboard = ({ headerTitle }) => {
       color: 'success',
       description: 'Dana lapak Di Owner'
     },
+    // "Keuntungan Kotor" (Equity) - kept as secondary
     {
-      title: 'Saldo Lapak',
-      value: formatCurrency(dashboardData.metrics.lapakBalance),
-      icon: 'Wallet',
-      color: 'info',
-      description: 'Total dana tersedia untuk operasional lapak'
-    },
-    {
-      title: 'Keuntungan Kotor',
+      title: 'Keuntungan Kotor (Equity)',
       value: formatCurrency(dashboardData.metrics.netProfit),
       icon: 'DollarSign',
       color: 'accent',
-      description: 'Total pendapatan (semua waktu) - total pengeluaran (semua waktu) + nilai stok menu + nilai stok mentah'
+      description: 'Pendapatan (all) - Pengeluaran (all) + Stok'
     },
     {
       title: 'Total Pendapatan (Semua Waktu)',
@@ -667,8 +684,8 @@ const MainDashboard = ({ headerTitle }) => {
             </div>
 
             {/* Metrics Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              {metricsData.map((metric, index) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              {mainMetrics.map((metric, index) => (
                 <MetricsCard
                   key={index}
                   title={metric.title}
@@ -679,6 +696,34 @@ const MainDashboard = ({ headerTitle }) => {
                 />
               ))}
             </div>
+
+            {/* Toggle Details Button */}
+            <div className="flex justify-center mb-6">
+              <Button
+                variant="ghost"
+                onClick={() => setShowDetails(!showDetails)}
+                className="flex items-center gap-2 text-text-secondary hover:text-primary transition-colors"
+              >
+                <span>{showDetails ? 'Sembunyikan Detail Lengkap' : 'Tampilkan Data Detail Lengkap'}</span>
+                <Icon name={showDetails ? 'ChevronUp' : 'ChevronDown'} size={16} />
+              </Button>
+            </div>
+
+            {/* Detailed Metrics (Collapsible) */}
+            {showDetails && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 animate-in fade-in slide-in-from-top-4 duration-300">
+                {detailedMetrics.map((metric, index) => (
+                  <MetricsCard
+                    key={index}
+                    title={metric.title}
+                    value={metric.value}
+                    icon={metric.icon}
+                    color={metric.color}
+                    description={metric.description}
+                  />
+                ))}
+              </div>
+            )}
 
             {/* Quick Actions */}
             <div className="mb-8">
