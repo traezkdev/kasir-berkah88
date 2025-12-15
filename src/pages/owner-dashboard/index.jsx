@@ -78,11 +78,11 @@ const OwnerDashboard = ({ headerTitle }) => {
             const expenseDate = new Date(e.date);
             return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
         });
-        
+
         const totalMonthlyExpenses = monthlyExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
 
         const rawMaterialStockValue = rawMaterials.reduce((sum, m) => sum + (parseInt(m.current_stock || 0) * parseFloat(m.price_per_item || 0)), 0);
-        
+
         const monthlyNetProfit = totalMonthlyRevenue - totalMonthlyExpenses;
 
         // Lifetime calculations
@@ -92,7 +92,7 @@ const OwnerDashboard = ({ headerTitle }) => {
             .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
         const totalLifetimeExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
         const currentFinalCapital = initialCapital + totalLifetimeRevenue - totalLifetimeExpenses;
-        
+
         const totalMenuItemStockValue = allMenuItems.reduce((sum, item) => sum + (parseFloat(item.stock || 0) * parseFloat(item.price || 0)), 0);
         const runningCapital = initialCapital + totalLifetimeRevenue + totalMenuItemStockValue + rawMaterialStockValue - totalLifetimeExpenses;
 
@@ -118,12 +118,12 @@ const OwnerDashboard = ({ headerTitle }) => {
 
     if (!dashboardData) {
         return (
-          <div className="min-h-screen bg-background flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-text-secondary">Memuat data dashboard owner...</p>
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="text-center">
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-text-secondary">Memuat data dashboard owner...</p>
+                </div>
             </div>
-          </div>
         );
     }
 
@@ -182,7 +182,7 @@ const OwnerDashboard = ({ headerTitle }) => {
             value: formatCurrency(dashboardData.runningCapital),
             icon: 'Wallet',
             color: 'info',
-            description: 'Modal awal + pendapatan + nilai stok + nilai stok mentah - pengeluaran'
+            description: 'Modal awal + pendapatan + stok mentah + stok menu - pengeluaran'
         },
         {
             title: 'Nilai Stok Mentah',
@@ -240,7 +240,7 @@ const OwnerDashboard = ({ headerTitle }) => {
 
     return (
         <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
-            <OwnerNavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle || 'Dashboard Owner'} />
+            <OwnerNavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || 'Dashboard Owner'} />
             <main className={`pb-20 lg:pb-8 pt-16`}>
                 <div className="max-w-7xl mx-auto px-4 lg:px-6">
                     <div className="mb-6 mt-4">
@@ -288,47 +288,47 @@ const OwnerDashboard = ({ headerTitle }) => {
                             Status Sinkronisasi Data
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                                                                                                            <div className="bg-card border border-border rounded-lg p-4 text-center">
-                                                                                                                                                                                <div className="flex items-center justify-center gap-2 mb-2">
-                                                                                                                                                                                    <div className="p-2 bg-primary/10 rounded-md">
-                                                                                                                                                                                        <Icon name="BookUser" size={20} className="text-primary" />
-                                                                                                                                                                                    </div>
-                                                                                                                                                                                    <h3 className="font-semibold text-text-primary">Stok Menu</h3>
-                                                                                                                                                                                </div>                                                                                                                                                <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
-                                                                                                                                                <p className="text-sm font-medium text-text-primary">
-                                                                                                                                                    {dashboardData.timestamps?.menuStock 
-                                                                                                                                                        ? new Date(dashboardData.timestamps.menuStock).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                                                                                                                                                        : 'Belum pernah'}
-                                                                                                                                                </p>
-                                                                                                                                            </div>                                                        <div className="bg-card border border-border rounded-lg p-4 text-center">
-                                                            <div className="flex items-center justify-center gap-2 mb-2">
-                                                                <div className="p-2 bg-success/10 rounded-md">
-                                                                    <Icon name="Package" size={20} className="text-success" />
-                                                                </div>
-                                                                <h3 className="font-semibold text-text-primary">Bahan Baku</h3>
-                                                            </div>
-                                                            <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
-                                                            <p className="text-sm font-medium text-text-primary">
-                                                                {dashboardData.timestamps?.rawMaterials
-                                                                    ? new Date(dashboardData.timestamps.rawMaterials).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                                                                    : 'Belum pernah'}
-                                                            </p>
-                                                        </div>
-                            
-                                                        <div className="bg-card border border-border rounded-lg p-4 text-center">
-                                                            <div className="flex items-center justify-center gap-2 mb-2">
-                                                                <div className="p-2 bg-accent/10 rounded-md">
-                                                                    <Icon name="Wallet" size={20} className="text-accent" />
-                                                                </div>
-                                                                <h3 className="font-semibold text-text-primary">Uang Lapak</h3>
-                                                            </div>
-                                                            <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
-                                                            <p className="text-sm font-medium text-text-primary">
-                                                                {dashboardData.timestamps?.lapakFunds
-                                                                    ? new Date(dashboardData.timestamps.lapakFunds).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                                                                    : 'Belum pernah'}
-                                                            </p>
-                                                        </div>
+                            <div className="bg-card border border-border rounded-lg p-4 text-center">
+                                <div className="flex items-center justify-center gap-2 mb-2">
+                                    <div className="p-2 bg-primary/10 rounded-md">
+                                        <Icon name="BookUser" size={20} className="text-primary" />
+                                    </div>
+                                    <h3 className="font-semibold text-text-primary">Stok Menu</h3>
+                                </div>                                                                                                                                                <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
+                                <p className="text-sm font-medium text-text-primary">
+                                    {dashboardData.timestamps?.menuStock
+                                        ? new Date(dashboardData.timestamps.menuStock).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                                        : 'Belum pernah'}
+                                </p>
+                            </div>                                                        <div className="bg-card border border-border rounded-lg p-4 text-center">
+                                <div className="flex items-center justify-center gap-2 mb-2">
+                                    <div className="p-2 bg-success/10 rounded-md">
+                                        <Icon name="Package" size={20} className="text-success" />
+                                    </div>
+                                    <h3 className="font-semibold text-text-primary">Bahan Baku</h3>
+                                </div>
+                                <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
+                                <p className="text-sm font-medium text-text-primary">
+                                    {dashboardData.timestamps?.rawMaterials
+                                        ? new Date(dashboardData.timestamps.rawMaterials).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                                        : 'Belum pernah'}
+                                </p>
+                            </div>
+
+                            <div className="bg-card border border-border rounded-lg p-4 text-center">
+                                <div className="flex items-center justify-center gap-2 mb-2">
+                                    <div className="p-2 bg-accent/10 rounded-md">
+                                        <Icon name="Wallet" size={20} className="text-accent" />
+                                    </div>
+                                    <h3 className="font-semibold text-text-primary">Uang Lapak</h3>
+                                </div>
+                                <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
+                                <p className="text-sm font-medium text-text-primary">
+                                    {dashboardData.timestamps?.lapakFunds
+                                        ? new Date(dashboardData.timestamps.lapakFunds).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                                        : 'Belum pernah'}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
