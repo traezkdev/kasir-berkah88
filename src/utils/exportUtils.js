@@ -539,7 +539,7 @@ export const prepareRawMaterialStockDataForExport = (materials, units = []) => {
 
     return {
       'Nama Bahan': material.name,
-      'Stok Saat Ini': currentStock,
+      'Stok Mentah': currentStock,
       'Stok Menu': menuStock,
       'Total Stok': totalStock,
       'Satuan': material.unit,

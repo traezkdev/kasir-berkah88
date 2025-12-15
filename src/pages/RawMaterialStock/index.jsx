@@ -43,6 +43,9 @@ const RawMaterialStockDashboard = () => {
   const [isUnitSettingsOpen, setIsUnitSettingsOpen] = useState(false);
   const [units, setUnits] = useState([]); // Store units for calculation logic
 
+  // State for search
+  const [searchQuery, setSearchQuery] = useState('');
+
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
   useEffect(() => {
@@ -196,6 +199,11 @@ const RawMaterialStockDashboard = () => {
 
   const lowStockItemsCount = rawMaterials.filter(material => (Number(material.current_stock) + Number(material.menu_stock)) < Number(material.stok_minimum)).length;
 
+  // Filter materials based on search query
+  const filteredRawMaterials = rawMaterials.filter(material =>
+    material.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
 
   return (
     <>
@@ -237,6 +245,20 @@ const RawMaterialStockDashboard = () => {
             color="info"
             description="Estimasi nilai stok bahan mentah yang belum diolah/digunakan"
           />
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-4">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Cari bahan mentah..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-2 pl-10 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-card text-foreground"
+            />
+            <Icon name="Search" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row sm:justify-between items-center mb-4 gap-2">
@@ -316,7 +338,7 @@ const RawMaterialStockDashboard = () => {
               </tr>
             </thead>
             <tbody className="bg-card divide-y divide-gray-200">
-              {rawMaterials.map((material) => (
+              {filteredRawMaterials.map((material) => (
                 <tr key={material.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-card-foreground">
                     {material.name}
@@ -386,7 +408,7 @@ const RawMaterialStockDashboard = () => {
         </div>
 
         {/* Card View for Mobile */}
-        <div className="block sm:hidden space-y-4 mt-4 pb-24">          {rawMaterials.map((material) => (
+        <div className="block sm:hidden space-y-4 mt-4 pb-24">          {filteredRawMaterials.map((material) => (
           <div key={material.id} className="bg-card rounded-lg shadow p-4 border border-border">
             <div className="flex justify-between items-center pb-2 mb-2 border-b border-border">
               <p className="text-lg font-bold text-card-foreground">{material.name}</p>
