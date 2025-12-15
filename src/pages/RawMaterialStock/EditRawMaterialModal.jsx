@@ -33,6 +33,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
   const [menuStock, setMenuStock] = useState(''); // New state for menu_stock
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [units, setUnits] = useState([]); // State for units
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
@@ -50,7 +51,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
       } else {
         setStokMinimum('');
       }
-      
+
       // Initialize pricePerItem (numeric) and displayPricePerItem (formatted)
       const matPricePerItem = material.price_per_item ?? '';
       const numericMatPrice = Number(matPricePerItem); // Ensure it's a clean number
@@ -67,7 +68,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
       } else {
         setPurchaseBufferAmount('');
       }
-      
+
       const stockValue = parseFloat(material.current_stock);
       if (!isNaN(stockValue)) {
         if (stockValue % 1 !== 0) {
@@ -78,7 +79,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
       } else {
         setCurrentStock('');
       }
-      
+
       const menuStockValue = parseFloat(material.menu_stock); // Initialize menu_stock
       if (!isNaN(menuStockValue)) {
         if (menuStockValue % 1 !== 0) {
@@ -91,8 +92,21 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
       }
 
       setError(null);
+      fetchUnits();
     }
   }, [isOpen, material]);
+
+  const fetchUnits = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_BASE_URL}/api/units`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUnits(response.data.data);
+    } catch (err) {
+      console.error("Error fetching units:", err);
+    }
+  };
 
   const handlePricePerItemChange = (e) => {
     const rawValue = e.target.value;
@@ -192,14 +206,18 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
           </div>
           <div className="mb-4">
             <label htmlFor="unit" className="block text-muted-foreground text-sm font-bold mb-2">Satuan</label>
-            <input
-              type="text"
+            <select
               id="unit"
               className="appearance-none bg-input border-border rounded w-full py-2 px-3 text-foreground leading-tight focus:outline-none focus:ring-2 focus:ring-primary/50"
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
               required
-            />
+            >
+              <option value="">Pilih Satuan</option>
+              {units.map((u) => (
+                <option key={u.id} value={u.name}>{u.name}</option>
+              ))}
+            </select>
           </div>
 
           <div className="mb-4">
