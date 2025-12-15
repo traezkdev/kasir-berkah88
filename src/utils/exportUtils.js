@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -193,6 +193,7 @@ export const exportToExcel = (data, filename = 'data') => {
     ];
   }
 
+
   // Prepare data for Excel
   const ws_data = [
     [title],
@@ -207,12 +208,69 @@ export const exportToExcel = (data, filename = 'data') => {
   // Merge title cells
   ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: Object.keys(data[0] || {}).length - 1 } }];
 
-  // Basic styling for title (bold, center)
-  if (ws['A1']) {
-    ws['A1'].s = {
-      font: { bold: true, sz: 16 },
-      alignment: { horizontal: "center", vertical: "center" }
-    };
+  // Define border style
+  const borderStyle = {
+    top: { style: 'thin', color: { rgb: '000000' } },
+    bottom: { style: 'thin', color: { rgb: '000000' } },
+    left: { style: 'thin', color: { rgb: '000000' } },
+    right: { style: 'thin', color: { rgb: '000000' } }
+  };
+
+  // Get range of worksheet
+  const range = XLSX.utils.decode_range(ws['!ref']);
+
+  // Apply styling to all cells
+  for (let R = range.s.r; R <= range.e.r; ++R) {
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+      if (!ws[cellAddress]) continue;
+
+      // Initialize cell style if not exists
+      if (!ws[cellAddress].s) ws[cellAddress].s = {};
+
+      // Add borders to all cells
+      ws[cellAddress].s.border = borderStyle;
+
+      // Title row (row 0)
+      if (R === 0) {
+        ws[cellAddress].s = {
+          font: { bold: true, sz: 16, color: { rgb: 'FFFFFF' } },
+          alignment: { horizontal: 'center', vertical: 'center' },
+          fill: { fgColor: { rgb: '4472C4' } },
+          border: borderStyle
+        };
+      }
+
+      // Header row (row 2)
+      if (R === 2) {
+        ws[cellAddress].s = {
+          font: { bold: true, sz: 12, color: { rgb: 'FFFFFF' } },
+          alignment: { horizontal: 'center', vertical: 'center' },
+          fill: { fgColor: { rgb: '5B9BD5' } },
+          border: borderStyle
+        };
+      }
+
+      // Data rows - add alternating row colors
+      if (R > 2 && R < range.e.r - summaryRows.length + 1) {
+        const isEvenRow = (R - 3) % 2 === 0;
+        ws[cellAddress].s = {
+          alignment: { horizontal: 'left', vertical: 'center' },
+          fill: { fgColor: { rgb: isEvenRow ? 'FFFFFF' : 'F2F2F2' } },
+          border: borderStyle
+        };
+      }
+
+      // Summary rows
+      if (summaryRows.length > 0 && R >= range.e.r - summaryRows.length + 1) {
+        ws[cellAddress].s = {
+          font: { bold: true, sz: 11 },
+          alignment: { horizontal: 'left', vertical: 'center' },
+          fill: { fgColor: { rgb: 'E7E6E6' } },
+          border: borderStyle
+        };
+      }
+    }
   }
 
   // Auto-width columns
