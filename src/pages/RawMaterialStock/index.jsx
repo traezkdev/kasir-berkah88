@@ -43,6 +43,9 @@ const RawMaterialStockDashboard = () => {
   const [isUnitSettingsOpen, setIsUnitSettingsOpen] = useState(false);
   const [units, setUnits] = useState([]); // Store units for calculation logic
 
+  // State for search
+  const [searchQuery, setSearchQuery] = useState('');
+
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
   useEffect(() => {
@@ -159,20 +162,47 @@ const RawMaterialStockDashboard = () => {
   };
 
   // Calculate metrics
-  const totalStockQuantity = rawMaterials.reduce((sum, material) => sum + parseInt(material.current_stock || 0) + parseInt(material.menu_stock || 0), 0);
+  const totalMenuStockValue = rawMaterials.reduce((sum, material) => {
+    const isCalculable = isUnitCalculable(material.unit);
+    if (isCalculable) {
+      return sum + (parseInt(material.menu_stock || 0) * parseFloat(material.price_per_item || 0));
+    } else {
+      // For non-calculable units, use price directly
+      return sum + parseFloat(material.price_per_item || 0);
+    }
+  }, 0);
 
   // Revised calculations based on unit calculability
   const totalStockValue = rawMaterials.reduce((sum, material) => {
-    if (!isUnitCalculable(material.unit)) return sum;
-    return sum + ((parseInt(material.current_stock || 0) + parseInt(material.menu_stock || 0)) * parseFloat(material.price_per_item || 0));
+    const isCalculable = isUnitCalculable(material.unit);
+    if (isCalculable) {
+      const menuValue = (parseInt(material.menu_stock || 0) * parseFloat(material.price_per_item || 0));
+      const rawValue = (parseInt(material.current_stock || 0) * parseFloat(material.raw_stock_price || 0));
+      return sum + menuValue + rawValue;
+    } else {
+      // For non-calculable units, use prices directly
+      const menuValue = parseFloat(material.price_per_item || 0);
+      const rawValue = parseFloat(material.raw_stock_price || 0);
+      return sum + menuValue + rawValue;
+    }
   }, 0);
 
   const currentRawMaterialStockValue = rawMaterials.reduce((sum, material) => {
-    if (!isUnitCalculable(material.unit)) return sum;
-    return sum + (parseInt(material.current_stock || 0) * parseFloat(material.price_per_item || 0));
+    const isCalculable = isUnitCalculable(material.unit);
+    if (isCalculable) {
+      return sum + (parseInt(material.current_stock || 0) * parseFloat(material.raw_stock_price || 0));
+    } else {
+      // For non-calculable units, use raw_stock_price directly
+      return sum + parseFloat(material.raw_stock_price || 0);
+    }
   }, 0);
 
   const lowStockItemsCount = rawMaterials.filter(material => (Number(material.current_stock) + Number(material.menu_stock)) < Number(material.stok_minimum)).length;
+
+  // Filter materials based on search query
+  const filteredRawMaterials = rawMaterials.filter(material =>
+    material.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
 
   return (
@@ -188,11 +218,11 @@ const RawMaterialStockDashboard = () => {
         {/* Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <MetricsCard
-            title="Total Kuantitas Stok"
-            value={`${totalStockQuantity} Item`}
-            icon="Package"
+            title="Total Nilai Stok Menu"
+            value={formatCurrency(totalMenuStockValue)}
+            icon="DollarSign"
             color="primary"
-            description="Jumlah total semua bahan mentah"
+            description="Total nilai rupiah stok menu"
           />
           <MetricsCard
             title="Total Nilai Stok"
@@ -215,6 +245,20 @@ const RawMaterialStockDashboard = () => {
             color="info"
             description="Estimasi nilai stok bahan mentah yang belum diolah/digunakan"
           />
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-4">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Cari bahan mentah..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-2 pl-10 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-card text-foreground"
+            />
+            <Icon name="Search" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row sm:justify-between items-center mb-4 gap-2">
@@ -264,7 +308,7 @@ const RawMaterialStockDashboard = () => {
                   Nama Bahan
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Stok Saat Ini
+                  Stok Mentah
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Stok Menu
@@ -280,7 +324,10 @@ const RawMaterialStockDashboard = () => {
                 </th>
 
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Harga per Item
+                  Harga Stok Menu
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Harga Stok Mentah
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Status
@@ -291,7 +338,7 @@ const RawMaterialStockDashboard = () => {
               </tr>
             </thead>
             <tbody className="bg-card divide-y divide-gray-200">
-              {rawMaterials.map((material) => (
+              {filteredRawMaterials.map((material) => (
                 <tr key={material.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-card-foreground">
                     {material.name}
@@ -315,8 +362,13 @@ const RawMaterialStockDashboard = () => {
                   </td>
 
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                    {/* Harga per Item */}
+                    {/* Harga Stok Menu */}
                     {(Number(material.price_per_item) || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    {!isUnitCalculable(material.unit) && <span className="text-xs text-red-500 block">(Nilai 0)</span>}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    {/* Harga Stok Mentah */}
+                    {(Number(material.raw_stock_price) || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     {!isUnitCalculable(material.unit) && <span className="text-xs text-red-500 block">(Nilai 0)</span>}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
@@ -356,7 +408,7 @@ const RawMaterialStockDashboard = () => {
         </div>
 
         {/* Card View for Mobile */}
-        <div className="block sm:hidden space-y-4 mt-4 pb-24">          {rawMaterials.map((material) => (
+        <div className="block sm:hidden space-y-4 mt-4 pb-24">          {filteredRawMaterials.map((material) => (
           <div key={material.id} className="bg-card rounded-lg shadow p-4 border border-border">
             <div className="flex justify-between items-center pb-2 mb-2 border-b border-border">
               <p className="text-lg font-bold text-card-foreground">{material.name}</p>
@@ -392,11 +444,15 @@ const RawMaterialStockDashboard = () => {
               </div>
             </div>
 
-            {/* Block 2: Harga per Item only */}
-            <div className="grid grid-cols-1 gap-2 text-sm text-text-secondary pb-2 mb-2 border-b border-border">
-              <div> {/* Harga per Item */}
-                <p className="font-medium">Harga per Item:</p>
+            {/* Block 2: Harga Prices */}
+            <div className="grid grid-cols-2 gap-2 text-sm text-text-secondary pb-2 mb-2 border-b border-border">
+              <div>
+                <p className="font-medium">Harga Stok Menu:</p>
                 <p>{(Number(material.price_per_item) || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+              </div>
+              <div>
+                <p className="font-medium">Harga Stok Mentah:</p>
+                <p>{(Number(material.raw_stock_price) || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
               </div>
             </div>
             <div className="flex justify-end space-x-2">

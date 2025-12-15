@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -66,40 +66,98 @@ export const exportToExcel = (data, filename = 'data') => {
     // Ensure a minimum of 2 columns for summary sections if no headers are found or are too small
     if (maxCols < 2) maxCols = 2;
 
+    // Define border style
+    const borderStyle = {
+      top: { style: 'thin', color: { rgb: '000000' } },
+      bottom: { style: 'thin', color: { rgb: '000000' } },
+      left: { style: 'thin', color: { rgb: '000000' } },
+      right: { style: 'thin', color: { rgb: '000000' } }
+    };
+
     // Main Report Title
     XLSX.utils.sheet_add_aoa(ws, [["Laporan Bisnis Gabungan"]], { origin: `A${rowIdx}` });
     if (ws[`A${rowIdx}`]) {
-      ws[`A${rowIdx}`].s = { font: { bold: true, sz: 18 }, alignment: { horizontal: "center" } };
+      ws[`A${rowIdx}`].s = {
+        font: { bold: true, sz: 18, color: { rgb: 'FFFFFF' } },
+        alignment: { horizontal: "center", vertical: "center" },
+        fill: { fgColor: { rgb: '4472C4' } },
+        border: borderStyle
+      };
     }
     // Merge main title
     if (maxCols > 1) {
       if (!ws['!merges']) ws['!merges'] = [];
       ws['!merges'].push({ s: { r: rowIdx - 1, c: 0 }, e: { r: rowIdx - 1, c: maxCols - 1 } });
+      // Apply border to all merged cells in title
+      for (let c = 0; c < maxCols; c++) {
+        const cellRef = XLSX.utils.encode_cell({ r: rowIdx - 1, c });
+        if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' };
+        ws[cellRef].s = {
+          font: { bold: true, sz: 18, color: { rgb: 'FFFFFF' } },
+          alignment: { horizontal: "center", vertical: "center" },
+          fill: { fgColor: { rgb: '4472C4' } },
+          border: borderStyle
+        };
+      }
     }
     rowIdx++;
 
     // Export Date
     XLSX.utils.sheet_add_aoa(ws, [[`Tanggal Export: ${new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}`]], { origin: `A${rowIdx}` });
     if (ws[`A${rowIdx}`]) {
-      ws[`A${rowIdx}`].s = { font: { sz: 11 }, alignment: { horizontal: "center" } };
+      ws[`A${rowIdx}`].s = {
+        font: { sz: 11 },
+        alignment: { horizontal: "center", vertical: "center" },
+        fill: { fgColor: { rgb: 'E7E6E6' } },
+        border: borderStyle
+      };
     }
     // Merge date
     if (maxCols > 1) {
       if (!ws['!merges']) ws['!merges'] = [];
       ws['!merges'].push({ s: { r: rowIdx - 1, c: 0 }, e: { r: rowIdx - 1, c: maxCols - 1 } });
+      // Apply border to all merged cells in date
+      for (let c = 0; c < maxCols; c++) {
+        const cellRef = XLSX.utils.encode_cell({ r: rowIdx - 1, c });
+        if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' };
+        ws[cellRef].s = {
+          font: { sz: 11 },
+          alignment: { horizontal: "center", vertical: "center" },
+          fill: { fgColor: { rgb: 'E7E6E6' } },
+          border: borderStyle
+        };
+      }
     }
     rowIdx += 2; // Add spacing after main title and date
 
     data.forEach(section => {
+      const sectionStartRow = rowIdx;
+
       // Section Title
       XLSX.utils.sheet_add_aoa(ws, [[section.title]], { origin: `A${rowIdx}` });
       if (ws[`A${rowIdx}`]) {
-        ws[`A${rowIdx}`].s = { font: { bold: true, sz: 14 } };
+        ws[`A${rowIdx}`].s = {
+          font: { bold: true, sz: 14, color: { rgb: 'FFFFFF' } },
+          alignment: { horizontal: "left", vertical: "center" },
+          fill: { fgColor: { rgb: '70AD47' } },
+          border: borderStyle
+        };
       }
       // Merge section title
       if (maxCols > 1) {
         if (!ws['!merges']) ws['!merges'] = [];
         ws['!merges'].push({ s: { r: rowIdx - 1, c: 0 }, e: { r: rowIdx - 1, c: maxCols - 1 } });
+        // Apply border to all merged cells in section title
+        for (let c = 0; c < maxCols; c++) {
+          const cellRef = XLSX.utils.encode_cell({ r: rowIdx - 1, c });
+          if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' };
+          ws[cellRef].s = {
+            font: { bold: true, sz: 14, color: { rgb: 'FFFFFF' } },
+            alignment: { horizontal: "left", vertical: "center" },
+            fill: { fgColor: { rgb: '70AD47' } },
+            border: borderStyle
+          };
+        }
       }
       rowIdx++;
 
@@ -108,13 +166,32 @@ export const exportToExcel = (data, filename = 'data') => {
       section.headers.forEach((_, colIdx) => {
         const cellRef = XLSX.utils.encode_cell({ r: rowIdx - 1, c: colIdx });
         if (ws[cellRef]) {
-          ws[cellRef].s = { font: { bold: true } };
+          ws[cellRef].s = {
+            font: { bold: true, sz: 11, color: { rgb: 'FFFFFF' } },
+            alignment: { horizontal: "center", vertical: "center" },
+            fill: { fgColor: { rgb: '5B9BD5' } },
+            border: borderStyle
+          };
         }
       });
       rowIdx++;
 
       // Section Rows
       XLSX.utils.sheet_add_aoa(ws, section.rows, { origin: `A${rowIdx}` });
+      // Apply styling to data rows
+      section.rows.forEach((row, rowOffset) => {
+        const isEvenRow = rowOffset % 2 === 0;
+        row.forEach((_, colIdx) => {
+          const cellRef = XLSX.utils.encode_cell({ r: rowIdx - 1 + rowOffset, c: colIdx });
+          if (ws[cellRef]) {
+            ws[cellRef].s = {
+              alignment: { horizontal: "left", vertical: "center" },
+              fill: { fgColor: { rgb: isEvenRow ? 'FFFFFF' : 'F2F2F2' } },
+              border: borderStyle
+            };
+          }
+        });
+      });
       rowIdx += section.rows.length;
       rowIdx++; // Add spacing between sections
     });
@@ -193,6 +270,7 @@ export const exportToExcel = (data, filename = 'data') => {
     ];
   }
 
+
   // Prepare data for Excel
   const ws_data = [
     [title],
@@ -207,12 +285,69 @@ export const exportToExcel = (data, filename = 'data') => {
   // Merge title cells
   ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: Object.keys(data[0] || {}).length - 1 } }];
 
-  // Basic styling for title (bold, center)
-  if (ws['A1']) {
-    ws['A1'].s = {
-      font: { bold: true, sz: 16 },
-      alignment: { horizontal: "center", vertical: "center" }
-    };
+  // Define border style
+  const borderStyle = {
+    top: { style: 'thin', color: { rgb: '000000' } },
+    bottom: { style: 'thin', color: { rgb: '000000' } },
+    left: { style: 'thin', color: { rgb: '000000' } },
+    right: { style: 'thin', color: { rgb: '000000' } }
+  };
+
+  // Get range of worksheet
+  const range = XLSX.utils.decode_range(ws['!ref']);
+
+  // Apply styling to all cells
+  for (let R = range.s.r; R <= range.e.r; ++R) {
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+      if (!ws[cellAddress]) continue;
+
+      // Initialize cell style if not exists
+      if (!ws[cellAddress].s) ws[cellAddress].s = {};
+
+      // Add borders to all cells
+      ws[cellAddress].s.border = borderStyle;
+
+      // Title row (row 0)
+      if (R === 0) {
+        ws[cellAddress].s = {
+          font: { bold: true, sz: 16, color: { rgb: 'FFFFFF' } },
+          alignment: { horizontal: 'center', vertical: 'center' },
+          fill: { fgColor: { rgb: '4472C4' } },
+          border: borderStyle
+        };
+      }
+
+      // Header row (row 2)
+      if (R === 2) {
+        ws[cellAddress].s = {
+          font: { bold: true, sz: 12, color: { rgb: 'FFFFFF' } },
+          alignment: { horizontal: 'center', vertical: 'center' },
+          fill: { fgColor: { rgb: '5B9BD5' } },
+          border: borderStyle
+        };
+      }
+
+      // Data rows - add alternating row colors
+      if (R > 2 && R < range.e.r - summaryRows.length + 1) {
+        const isEvenRow = (R - 3) % 2 === 0;
+        ws[cellAddress].s = {
+          alignment: { horizontal: 'left', vertical: 'center' },
+          fill: { fgColor: { rgb: isEvenRow ? 'FFFFFF' : 'F2F2F2' } },
+          border: borderStyle
+        };
+      }
+
+      // Summary rows
+      if (summaryRows.length > 0 && R >= range.e.r - summaryRows.length + 1) {
+        ws[cellAddress].s = {
+          font: { bold: true, sz: 11 },
+          alignment: { horizontal: 'left', vertical: 'center' },
+          fill: { fgColor: { rgb: 'E7E6E6' } },
+          border: borderStyle
+        };
+      }
+    }
   }
 
   // Auto-width columns
@@ -517,24 +652,35 @@ export const prepareRawMaterialStockDataForExport = (materials, units = []) => {
   return materials.map(material => {
     const currentStock = Number(material.current_stock) || 0;
     const menuStock = Number(material.menu_stock) || 0;
-    const price = Number(material.price_per_item) || 0;
+    const pricePerItem = Number(material.price_per_item) || 0;
+    const rawStockPrice = Number(material.raw_stock_price) || 0;
     const totalStock = currentStock + menuStock;
 
     // Determine if unit is calculable
     const unitData = units.find(u => u.name.toLowerCase() === (material.unit || '').toLowerCase());
     const isCalculable = unitData ? unitData.is_calculable : true; // Default to true if not found
 
-    const totalValue = isCalculable ? (totalStock * price) : 0;
+    let menuValue, rawValue, totalValue;
+    if (isCalculable) {
+      menuValue = menuStock * pricePerItem;
+      rawValue = currentStock * rawStockPrice;
+      totalValue = menuValue + rawValue;
+    } else {
+      // For non-calculable units, use prices directly
+      menuValue = pricePerItem;
+      rawValue = rawStockPrice;
+      totalValue = pricePerItem + rawStockPrice;
+    }
 
     return {
       'Nama Bahan': material.name,
-      'Stok Saat Ini': currentStock,
+      'Stok Mentah': currentStock,
       'Stok Menu': menuStock,
       'Total Stok': totalStock,
       'Satuan': material.unit,
       'Stok Min': Number(material.stok_minimum) || 0,
-      'Stok Min': Number(material.stok_minimum) || 0,
-      'Harga per Item': isCalculable ? price : `${price} (Nilai 0)`, // Indicate if value is ignored
+      'Harga Stok Menu': isCalculable ? pricePerItem : `${pricePerItem} (Nilai Langsung)`,
+      'Harga Stok Mentah': isCalculable ? rawStockPrice : `${rawStockPrice} (Nilai Langsung)`,
       'Total Nilai': totalValue, // Keep as number for calculation
       'Status': totalStock < (Number(material.stok_minimum) || 0) ? 'Menipis' : 'Cukup'
     };

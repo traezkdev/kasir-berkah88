@@ -22,7 +22,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 import { prepareTransactionDataForExport } from '../../utils/exportUtils';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 
 
 
@@ -787,9 +787,7 @@ const TransactionHistory = ({ headerTitle }) => {
             <BreadcrumbNavigation customPath={breadcrumbPath} />
 
             <h1 className="text-2xl lg:text-3xl font-semibold text-text-primary mt-2">
-
               Riwayat Transaksi
-
             </h1>
 
             <p className="text-text-secondary mt-1">

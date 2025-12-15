@@ -129,7 +129,7 @@ app.get("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner'
 // Add a new raw material
 app.post("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
-        const { name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, purchase_buffer_amount, menu_stock } = req.body;
+        const { name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, purchase_buffer_amount, menu_stock, raw_stock_price } = req.body;
         if (!name || !unit) { // custom_unit can be optional for now, assuming a default will be set
             return res.status(400).json({ error: "Name and unit are required" });
         }
@@ -143,13 +143,14 @@ app.post("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner
             parseFloat(price_per_item) || 0,
             parseFloat(standard_stock_per_day) || 0,
             parseFloat(purchase_buffer_amount) || 0, // Correct position for purchase_buffer_amount
-            parseFloat(menu_stock) || 0
+            parseFloat(menu_stock) || 0,
+            parseFloat(raw_stock_price) || 0 // New field
         );
 
         // Asumsi result mengandung insertId jika berhasil
         res.status(201).json({
             message: "Raw material added successfully",
-            data: { id: result.insertId, name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, menu_stock },
+            data: { id: result.insertId, name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, menu_stock, raw_stock_price },
         });
 
     } catch (err) {
@@ -166,7 +167,7 @@ app.post("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner
 app.put("/api/raw-materials/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, current_stock, menu_stock, purchase_buffer_amount } = req.body;
+        const { name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, current_stock, menu_stock, purchase_buffer_amount, raw_stock_price } = req.body;
 
         const result = await updateRawMaterial(
             id,
@@ -178,13 +179,14 @@ app.put("/api/raw-materials/:id", authenticateToken, authorizeRoles('admin', 'ow
             parseFloat(standard_stock_per_day) || 0,
             parseFloat(purchase_buffer_amount) || 0, // Correct position for purchase_buffer_amount
             parseFloat(current_stock),
-            parseFloat(menu_stock) || 0
+            parseFloat(menu_stock) || 0,
+            parseFloat(raw_stock_price) || 0 // New field
         );
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: "Raw material not found" });
         }
-        res.json({ message: "success", data: { id, name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, current_stock, menu_stock } });
+        res.json({ message: "success", data: { id, name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, current_stock, menu_stock, raw_stock_price } });
     } catch (err) {
         if (err.message && err.message.includes('ER_DUP_ENTRY')) {
             return res.status(409).json({ error: "Raw material with this name already exists" });
@@ -3209,6 +3211,199 @@ app.get("/api/laporan-lengkap", authenticateToken, authorizeRoles('admin', 'owne
     } catch (err) {
         console.error("Error fetching comprehensive report:", err);
         res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+
+// ===== CASH RECONCILIATION ENDPOINTS =====
+
+// Get cash reconciliation summary for a specific date
+app.get("/api/cash-reconciliation/summary", authenticateToken, async (req, res) => {
+    try {
+        const { date } = req.query;
+
+        if (!date) {
+            return res.status(400).json({ error: "Date parameter is required" });
+        }
+
+        // Get start and end of the day
+        const startDate = new Date(date);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(date);
+        endDate.setHours(23, 59, 59, 999);
+
+        // Query to get transaction summary by payment method
+        const sql = `
+            SELECT 
+                COALESCE(SUM(CASE WHEN LOWER(payment_method) IN ('cash', 'tunai') THEN total ELSE 0 END), 0) as total_tunai,
+                COALESCE(SUM(CASE WHEN LOWER(payment_method) = 'transfer' THEN total ELSE 0 END), 0) as total_transfer,
+                COALESCE(SUM(CASE WHEN LOWER(payment_method) = 'gojek' THEN total ELSE 0 END), 0) as total_gojek,
+                COALESCE(COUNT(CASE WHEN LOWER(payment_method) IN ('cash', 'tunai') THEN 1 END), 0) as count_tunai,
+                COALESCE(COUNT(CASE WHEN LOWER(payment_method) = 'transfer' THEN 1 END), 0) as count_transfer,
+                COALESCE(COUNT(CASE WHEN LOWER(payment_method) = 'gojek' THEN 1 END), 0) as count_gojek
+            FROM transactions
+            WHERE timestamp >= ? AND timestamp <= ?
+            AND (isEmployeeMeal = 0 OR isEmployeeMeal IS NULL)
+        `;
+
+        const [rows] = await db.query(sql, [startDate, endDate]);
+        const summary = rows[0];
+
+        res.json({
+            message: "success",
+            data: {
+                date: date,
+                expected: {
+                    tunai: parseFloat(summary.total_tunai) || 0,
+                    transfer: parseFloat(summary.total_transfer) || 0,
+                    gojek: parseFloat(summary.total_gojek) || 0,
+                    total: (parseFloat(summary.total_tunai) || 0) + (parseFloat(summary.total_transfer) || 0) + (parseFloat(summary.total_gojek) || 0)
+                },
+                transactionCount: {
+                    tunai: parseInt(summary.count_tunai) || 0,
+                    transfer: parseInt(summary.count_transfer) || 0,
+                    gojek: parseInt(summary.count_gojek) || 0,
+                    total: (parseInt(summary.count_tunai) || 0) + (parseInt(summary.count_transfer) || 0) + (parseInt(summary.count_gojek) || 0)
+                }
+            }
+        });
+
+    } catch (err) {
+        console.error("Error fetching cash reconciliation summary:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Save cash reconciliation
+app.post("/api/cash-reconciliation/save", authenticateToken, async (req, res) => {
+    try {
+        const { date, actual_tunai, actual_transfer, actual_gojek, notes } = req.body;
+        const user_id = req.user.id;
+
+        if (!date) {
+            return res.status(400).json({ error: "Date is required" });
+        }
+
+        // Get expected values from transactions
+        const startDate = new Date(date);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(date);
+        endDate.setHours(23, 59, 59, 999);
+
+        const summarySql = `
+            SELECT 
+                COALESCE(SUM(CASE WHEN LOWER(payment_method) IN ('cash', 'tunai') THEN total ELSE 0 END), 0) as total_tunai,
+                COALESCE(SUM(CASE WHEN LOWER(payment_method) = 'transfer' THEN total ELSE 0 END), 0) as total_transfer,
+                COALESCE(SUM(CASE WHEN LOWER(payment_method) = 'gojek' THEN total ELSE 0 END), 0) as total_gojek
+            FROM transactions
+            WHERE timestamp >= ? AND timestamp <= ?
+            AND (isEmployeeMeal = 0 OR isEmployeeMeal IS NULL)
+        `;
+
+        const [summaryRows] = await db.query(summarySql, [startDate, endDate]);
+        const expected = summaryRows[0];
+
+        const expected_tunai = parseFloat(expected.total_tunai) || 0;
+        const expected_transfer = parseFloat(expected.total_transfer) || 0;
+        const expected_gojek = parseFloat(expected.total_gojek) || 0;
+
+        const actual_tunai_val = parseFloat(actual_tunai) || 0;
+        const actual_transfer_val = parseFloat(actual_transfer) || 0;
+        const actual_gojek_val = parseFloat(actual_gojek) || 0;
+
+        // Calculate variance (expected - actual)
+        const variance_tunai = expected_tunai - actual_tunai_val;
+        const variance_transfer = expected_transfer - actual_transfer_val;
+        const variance_gojek = expected_gojek - actual_gojek_val;
+
+        // Insert or update reconciliation
+        const sql = `
+            INSERT INTO cash_reconciliations 
+            (date, expected_tunai, expected_transfer, expected_gojek, 
+             actual_tunai, actual_transfer, actual_gojek,
+             variance_tunai, variance_transfer, variance_gojek, notes, user_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                expected_tunai = VALUES(expected_tunai),
+                expected_transfer = VALUES(expected_transfer),
+                expected_gojek = VALUES(expected_gojek),
+                actual_tunai = VALUES(actual_tunai),
+                actual_transfer = VALUES(actual_transfer),
+                actual_gojek = VALUES(actual_gojek),
+                variance_tunai = VALUES(variance_tunai),
+                variance_transfer = VALUES(variance_transfer),
+                variance_gojek = VALUES(variance_gojek),
+                notes = VALUES(notes),
+                user_id = VALUES(user_id)
+        `;
+
+        await db.query(sql, [
+            date, expected_tunai, expected_transfer, expected_gojek,
+            actual_tunai_val, actual_transfer_val, actual_gojek_val,
+            variance_tunai, variance_transfer, variance_gojek, notes, user_id
+        ]);
+
+        res.json({
+            message: "success",
+            data: {
+                date,
+                expected: { tunai: expected_tunai, transfer: expected_transfer, gojek: expected_gojek },
+                actual: { tunai: actual_tunai_val, transfer: actual_transfer_val, gojek: actual_gojek_val },
+                variance: { tunai: variance_tunai, transfer: variance_transfer, gojek: variance_gojek }
+            }
+        });
+
+    } catch (err) {
+        console.error("Error saving cash reconciliation:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get cash reconciliation history
+app.get("/api/cash-reconciliation/history", authenticateToken, async (req, res) => {
+    try {
+        const { limit = 30 } = req.query;
+
+        const sql = `
+            SELECT 
+                cr.*,
+                u.username as reconciled_by
+            FROM cash_reconciliations cr
+            LEFT JOIN users u ON cr.user_id = u.id
+            ORDER BY cr.date DESC
+            LIMIT ?
+        `;
+
+        const [rows] = await db.query(sql, [parseInt(limit)]);
+
+        res.json({
+            message: "success",
+            data: rows
+        });
+
+    } catch (err) {
+        console.error("Error fetching cash reconciliation history:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete cash reconciliation
+app.delete("/api/cash-reconciliation/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const sql = "DELETE FROM cash_reconciliations WHERE id = ?";
+        const [result] = await db.query(sql, [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Reconciliation record not found" });
+        }
+
+        res.json({ message: "success", deletedId: id });
+
+    } catch (err) {
+        console.error("Error deleting cash reconciliation:", err);
+        res.status(500).json({ error: err.message });
     }
 });
 
