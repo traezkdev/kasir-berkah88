@@ -273,11 +273,25 @@ const MainDashboard = ({ headerTitle }) => {
 
     // --- All-Time & Working Capital Metrics (Unaffected by filter) ---
     const initialCapital = parseFloat(settings?.initial_capital || 0);
-    const allTimeRevenue = allTransactions
+    const initialCapitalDate = settings?.initial_capital_date ? new Date(settings.initial_capital_date) : null;
+
+    // Filter transactions for all-time metrics based on initial capital date
+    const allTimeTransactions = initialCapitalDate
+      ? allTransactions.filter(t => new Date(t.timestamp) >= initialCapitalDate)
+      : allTransactions;
+
+    // Filter expenses for all-time metrics based on initial capital date
+    const allTimeExpensesData = initialCapitalDate
+      ? expenses.filter(e => new Date(e.date) >= initialCapitalDate)
+      : expenses;
+
+    const allTimeRevenue = allTimeTransactions
       .filter(t => t.payment_method !== 'employee_meal')
       .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
-    const allTimeExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+
+    const allTimeExpenses = allTimeExpensesData.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
     const allTimeNetProfit = allTimeRevenue - allTimeExpenses;
+
     const totalMenuStockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
 
     const rawMaterialStockValue = rawMaterialsData.reduce((sum, m) => {

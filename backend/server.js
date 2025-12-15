@@ -3278,7 +3278,7 @@ app.get("/api/cash-reconciliation/summary", authenticateToken, async (req, res) 
 app.post("/api/cash-reconciliation/save", authenticateToken, async (req, res) => {
     try {
         const { date, actual_tunai, actual_transfer, actual_gojek, notes } = req.body;
-        const user_id = req.user.id;
+        const user_id = req.user.userId;
 
         if (!date) {
             return res.status(400).json({ error: "Date is required" });
