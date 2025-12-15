@@ -12,13 +12,14 @@ import useNotification from '../../hooks/useNotification'; // Import useNotifica
 import MetricsCard from '../main-dashboard/components/MetricsCard'; // Import MetricsCard
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation'; // Import BreadcrumbNavigation
 import Icon from '../../components/AppIcon'; // Import Icon
+import { exportToExcel, exportToPdf, prepareRawMaterialStockDataForExport } from '../../utils/exportUtils'; // Import export utilities
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
   })?.format(amount);
 };
 
@@ -115,6 +116,18 @@ const RawMaterialStockDashboard = () => {
     return <div className="p-4 md:p-6 text-center text-red-500">{error}</div>;
   }
 
+  const handleExportExcel = () => {
+    const dataToExport = prepareRawMaterialStockDataForExport(rawMaterials);
+    exportToExcel(dataToExport, `Laporan_Stok_Bahan_Mentah_${new Date().toISOString().split('T')[0]}`);
+  };
+
+  const handleExportPdf = () => {
+    const dataToExport = prepareRawMaterialStockDataForExport(rawMaterials);
+    exportToPdf(dataToExport, `Laporan_Stok_Bahan_Mentah_${new Date().toISOString().split('T')[0]}`);
+  };
+
+  // Calculate metrics
+
   // Calculate metrics
   const totalStockQuantity = rawMaterials.reduce((sum, material) => sum + parseInt(material.current_stock || 0) + parseInt(material.menu_stock || 0), 0);
   const totalStockValue = rawMaterials.reduce((sum, material) => sum + ((parseInt(material.current_stock || 0) + parseInt(material.menu_stock || 0)) * parseFloat(material.price_per_item || 0)), 0);
@@ -131,7 +144,7 @@ const RawMaterialStockDashboard = () => {
         {/* Breadcrumb Navigation */}
         <BreadcrumbNavigation className="mb-4" />
         <h1 className="text-2xl font-bold mb-4">Dashboard Stok Bahan Mentah</h1>
-        
+
         {/* Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <MetricsCard
@@ -177,6 +190,21 @@ const RawMaterialStockDashboard = () => {
           >
             <FaExclamationTriangle className="mr-2" /> Lihat Stok Kritis
           </button>
+          <button
+            onClick={handleExportExcel}
+            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center w-full sm:w-auto"
+            title="Export ke Excel"
+          >
+            <Icon name="FileText" className="mr-2" /> Export Excel
+          </button>
+          <button
+            onClick={handleExportPdf}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded flex items-center w-full sm:w-auto"
+            title="Export ke PDF"
+          >
+            <Icon name="FileText" className="mr-2" /> Export PDF
+          </button>
+
 
         </div>
 
@@ -231,7 +259,7 @@ const RawMaterialStockDashboard = () => {
                     {(Number(material.current_stock) || 0) + (Number(material.menu_stock) || 0)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground cursor-pointer"
-                      onClick={() => handleEditClick(material)}
+                    onClick={() => handleEditClick(material)}
                   >
                     {material.unit}
                   </td>
@@ -279,71 +307,71 @@ const RawMaterialStockDashboard = () => {
           </table>
         </div>
 
-              {/* Card View for Mobile */}
-              <div className="block sm:hidden space-y-4 mt-4 pb-24">          {rawMaterials.map((material) => (
-            <div key={material.id} className="bg-card rounded-lg shadow p-4 border border-border">
-              <div className="flex justify-between items-center pb-2 mb-2 border-b border-border">
-                <p className="text-lg font-bold text-card-foreground">{material.name}</p>
-                <div className="flex-shrink-0">
-                  {(Number(material.current_stock) + Number(material.menu_stock)) < Number(material.stok_minimum) && (
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                      Stok Menipis!
-                    </span>
-                  )}
-                  {(Number(material.current_stock) + Number(material.menu_stock)) >= Number(material.stok_minimum) && (
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        Cukup
-                      </span>
-                    )}
-                  </div>
-                </div>
-                              <div className="grid grid-cols-2 gap-2 text-sm text-text-secondary pb-2 mb-2 border-b border-border">
-                                <div>
-                                  <p className="font-medium">Stok Saat Ini:</p>
-                                  <p>{(Number(material.current_stock) || 0)} {material.unit}</p>
-                                </div>
-                                <div>
-                                  <p className="font-medium">Stok Menu:</p>
-                                  <p>{(Number(material.menu_stock) || 0)} {material.unit}</p>
-                                </div>
-                                <div>
-                                  <p className="font-medium">Total Stok:</p>
-                                  <p>{(Number(material.current_stock) || 0) + (Number(material.menu_stock) || 0)} {material.unit}</p>
-                                </div>
-                                <div>
-                                  <p className="font-medium">Stok Min:</p>
-                                  <p onClick={() => handleEditClick(material)} className="cursor-pointer">{(Number(material.stok_minimum) || 0)} {material.unit}</p>
-                                </div>
-                              </div>
-
-                              {/* Block 2: Harga per Item only */}
-                              <div className="grid grid-cols-1 gap-2 text-sm text-text-secondary pb-2 mb-2 border-b border-border">
-                                <div> {/* Harga per Item */}
-                                  <p className="font-medium">Harga per Item:</p>
-                                  <p>{(Number(material.price_per_item) || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
-                                </div>
-                              </div>
-                <div className="flex justify-end space-x-2">
-
-
-                  <button
-                    onClick={() => handleEditClick(material)}
-                    className="text-blue-600 hover:text-blue-900 p-2 rounded-full bg-primary/10"
-                    title="Edit Bahan"
-                  >
-                    <FaEdit />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteClick(material.id)}
-                    className="text-red-600 hover:text-red-900 p-2 rounded-full bg-destructive/10"
-                    title="Hapus Bahan"
-                  >
-                    <FaTrash />
-                  </button>
-                </div>
+        {/* Card View for Mobile */}
+        <div className="block sm:hidden space-y-4 mt-4 pb-24">          {rawMaterials.map((material) => (
+          <div key={material.id} className="bg-card rounded-lg shadow p-4 border border-border">
+            <div className="flex justify-between items-center pb-2 mb-2 border-b border-border">
+              <p className="text-lg font-bold text-card-foreground">{material.name}</p>
+              <div className="flex-shrink-0">
+                {(Number(material.current_stock) + Number(material.menu_stock)) < Number(material.stok_minimum) && (
+                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                    Stok Menipis!
+                  </span>
+                )}
+                {(Number(material.current_stock) + Number(material.menu_stock)) >= Number(material.stok_minimum) && (
+                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                    Cukup
+                  </span>
+                )}
               </div>
-            ))}
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-sm text-text-secondary pb-2 mb-2 border-b border-border">
+              <div>
+                <p className="font-medium">Stok Saat Ini:</p>
+                <p>{(Number(material.current_stock) || 0)} {material.unit}</p>
+              </div>
+              <div>
+                <p className="font-medium">Stok Menu:</p>
+                <p>{(Number(material.menu_stock) || 0)} {material.unit}</p>
+              </div>
+              <div>
+                <p className="font-medium">Total Stok:</p>
+                <p>{(Number(material.current_stock) || 0) + (Number(material.menu_stock) || 0)} {material.unit}</p>
+              </div>
+              <div>
+                <p className="font-medium">Stok Min:</p>
+                <p onClick={() => handleEditClick(material)} className="cursor-pointer">{(Number(material.stok_minimum) || 0)} {material.unit}</p>
+              </div>
+            </div>
+
+            {/* Block 2: Harga per Item only */}
+            <div className="grid grid-cols-1 gap-2 text-sm text-text-secondary pb-2 mb-2 border-b border-border">
+              <div> {/* Harga per Item */}
+                <p className="font-medium">Harga per Item:</p>
+                <p>{(Number(material.price_per_item) || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+              </div>
+            </div>
+            <div className="flex justify-end space-x-2">
+
+
+              <button
+                onClick={() => handleEditClick(material)}
+                className="text-blue-600 hover:text-blue-900 p-2 rounded-full bg-primary/10"
+                title="Edit Bahan"
+              >
+                <FaEdit />
+              </button>
+              <button
+                onClick={() => handleDeleteClick(material.id)}
+                className="text-red-600 hover:text-red-900 p-2 rounded-full bg-destructive/10"
+                title="Hapus Bahan"
+              >
+                <FaTrash />
+              </button>
+            </div>
           </div>
+        ))}
+        </div>
 
 
         {selectedMaterial && (
