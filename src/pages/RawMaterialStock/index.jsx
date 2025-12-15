@@ -13,6 +13,7 @@ import MetricsCard from '../main-dashboard/components/MetricsCard'; // Import Me
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation'; // Import BreadcrumbNavigation
 import Icon from '../../components/AppIcon'; // Import Icon
 import { exportToExcel, exportToPdf, prepareRawMaterialStockDataForExport } from '../../utils/exportUtils'; // Import export utilities
+import UnitSettingsModal from './UnitSettingsModal';
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('id-ID', {
@@ -20,7 +21,7 @@ const formatCurrency = (amount) => {
     currency: 'IDR',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
-  })?.format(amount);
+  }).format(amount);
 };
 
 const RawMaterialStockDashboard = () => {
@@ -38,10 +39,15 @@ const RawMaterialStockDashboard = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false); // Tambahkan state ini
   const [selectedMaterial, setSelectedMaterial] = useState(null);
 
+  // State for Unit Settings
+  const [isUnitSettingsOpen, setIsUnitSettingsOpen] = useState(false);
+  const [units, setUnits] = useState([]); // Store units for calculation logic
+
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
   useEffect(() => {
     fetchRawMaterials();
+    fetchUnits(); // Fetch units
   }, []);
 
   const fetchRawMaterials = async () => {
@@ -59,6 +65,18 @@ const RawMaterialStockDashboard = () => {
       console.error("Error fetching raw materials:", err);
       setError("Gagal memuat data bahan mentah.");
       setLoading(false);
+    }
+  };
+
+  const fetchUnits = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_BASE_URL}/api/units`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUnits(response.data.data);
+    } catch (err) {
+      console.error("Error fetching units:", err);
     }
   };
 
@@ -86,8 +104,10 @@ const RawMaterialStockDashboard = () => {
     setIsStockOutModalOpen(false);
     setIsEditModalOpen(false);
     setIsAddModalOpen(false); // Tambahkan ini
+    setIsUnitSettingsOpen(false);
     setSelectedMaterial(null);
     fetchRawMaterials(); // Refresh data setelah modal ditutup dan transaksi dilakukan
+    fetchUnits(); // Logic might change if units changed
   };
 
   const handleDeleteClick = async (materialId) => {
@@ -117,21 +137,41 @@ const RawMaterialStockDashboard = () => {
   }
 
   const handleExportExcel = () => {
-    const dataToExport = prepareRawMaterialStockDataForExport(rawMaterials);
+    const dataToExport = prepareRawMaterialStockDataForExport(rawMaterials, units);
     exportToExcel(dataToExport, `Laporan_Stok_Bahan_Mentah_${new Date().toISOString().split('T')[0]}`);
   };
 
   const handleExportPdf = () => {
-    const dataToExport = prepareRawMaterialStockDataForExport(rawMaterials);
+    const dataToExport = prepareRawMaterialStockDataForExport(rawMaterials, units);
     exportToPdf(dataToExport, `Laporan_Stok_Bahan_Mentah_${new Date().toISOString().split('T')[0]}`);
   };
 
-  // Calculate metrics
+
+
+  // Helper to check if unit is calculable
+  const isUnitCalculable = (unitName) => {
+    // Default to true if units not loaded yet or logic fails, to be safe? Or strict? 
+    // Plan said: "If no, value = 0". So default false if not found? 
+    // But standard units like 'kg' might be missing from DB if not seeded correctly?
+    // Assuming DB is seeded.
+    const unit = units.find(u => u.name.toLowerCase() === (unitName || '').toLowerCase());
+    return unit ? unit.is_calculable : true; // Default to true if unit not found in settings (fallback behavior)
+  };
 
   // Calculate metrics
   const totalStockQuantity = rawMaterials.reduce((sum, material) => sum + parseInt(material.current_stock || 0) + parseInt(material.menu_stock || 0), 0);
-  const totalStockValue = rawMaterials.reduce((sum, material) => sum + ((parseInt(material.current_stock || 0) + parseInt(material.menu_stock || 0)) * parseFloat(material.price_per_item || 0)), 0);
-  const currentRawMaterialStockValue = rawMaterials.reduce((sum, material) => sum + (parseInt(material.current_stock || 0) * parseFloat(material.price_per_item || 0)), 0); // New calculation
+
+  // Revised calculations based on unit calculability
+  const totalStockValue = rawMaterials.reduce((sum, material) => {
+    if (!isUnitCalculable(material.unit)) return sum;
+    return sum + ((parseInt(material.current_stock || 0) + parseInt(material.menu_stock || 0)) * parseFloat(material.price_per_item || 0));
+  }, 0);
+
+  const currentRawMaterialStockValue = rawMaterials.reduce((sum, material) => {
+    if (!isUnitCalculable(material.unit)) return sum;
+    return sum + (parseInt(material.current_stock || 0) * parseFloat(material.price_per_item || 0));
+  }, 0);
+
   const lowStockItemsCount = rawMaterials.filter(material => (Number(material.current_stock) + Number(material.menu_stock)) < Number(material.stok_minimum)).length;
 
 
@@ -204,6 +244,13 @@ const RawMaterialStockDashboard = () => {
           >
             <Icon name="FileText" className="mr-2" /> Export PDF
           </button>
+          <button
+            onClick={() => setIsUnitSettingsOpen(true)}
+            className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded flex items-center w-full sm:w-auto"
+            title="Atur Satuan"
+          >
+            <Icon name="Settings" className="mr-2" /> Atur Satuan
+          </button>
 
 
         </div>
@@ -270,6 +317,7 @@ const RawMaterialStockDashboard = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {/* Harga per Item */}
                     {(Number(material.price_per_item) || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    {!isUnitCalculable(material.unit) && <span className="text-xs text-red-500 block">(Nilai 0)</span>}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {(Number(material.current_stock) + Number(material.menu_stock)) < Number(material.stok_minimum) && (
@@ -410,6 +458,13 @@ const RawMaterialStockDashboard = () => {
           onMaterialAdded={fetchRawMaterials}
           showMessage={showMessage} // Pass showMessage
           showError={showError}   // Pass showError
+        />
+
+        <UnitSettingsModal
+          isOpen={isUnitSettingsOpen}
+          onClose={handleCloseModals}
+          showMessage={showMessage}
+          showError={showError}
         />
       </div>
       {message && <div className="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{message}</div>}

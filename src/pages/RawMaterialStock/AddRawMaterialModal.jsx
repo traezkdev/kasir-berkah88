@@ -12,6 +12,7 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
   const [menuStock, setMenuStock] = useState(''); // New state for menu_stock
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [units, setUnits] = useState([]); // State for units
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
@@ -26,8 +27,21 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
       setPurchaseBufferAmount(''); // Initialize purchaseBufferAmount
       setMenuStock(''); // Initialize menuStock
       setError(null);
+      fetchUnits(); // Fetch units when modal opens
     }
   }, [isOpen]);
+
+  const fetchUnits = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_BASE_URL}/api/units`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUnits(response.data.data);
+    } catch (err) {
+      console.error("Error fetching units:", err);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -90,14 +104,18 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
           </div>
           <div className="mb-4">
             <label htmlFor="unit" className="block text-gray-700 text-sm font-bold mb-2">Satuan (Contoh: kg, liter, pcs)</label>
-            <input
-              type="text"
+            <select
               id="unit"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
               required
-            />
+            >
+              <option value="">Pilih Satuan</option>
+              {units.map((u) => (
+                <option key={u.id} value={u.name}>{u.name}</option>
+              ))}
+            </select>
           </div>
           <div className="mb-4">
             <label htmlFor="customUnit" className="block text-gray-700 text-sm font-bold mb-2">Satuan (Untuk Tampilan, Contoh: potong, buah)</label>

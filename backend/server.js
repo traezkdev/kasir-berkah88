@@ -149,7 +149,7 @@ app.post("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner
         // Asumsi result mengandung insertId jika berhasil
         res.status(201).json({
             message: "Raw material added successfully",
-            data: { id: result.insertId, name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, menu_stock },
+            data: { id: result.insertId, name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, menu_stock },
         });
 
     } catch (err) {
@@ -204,6 +204,73 @@ app.delete("/api/raw-materials/:id", authenticateToken, authorizeRoles('admin', 
             return res.status(404).json({ error: "Raw material not found" });
         }
         res.json({ message: "Raw material and its history deleted successfully" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get all material units
+app.get("/api/units", authenticateToken, authorizeRoles('admin', 'owner', 'user', 'kasir'), async (req, res) => {
+    try {
+        const sql = "SELECT * FROM material_units ORDER BY name ASC";
+        const [rows] = await db.query(sql);
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Add a new material unit
+app.post("/api/units", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { name } = req.body;
+        if (!name) {
+            return res.status(400).json({ error: "Unit name is required" });
+        }
+        const sql = 'INSERT INTO material_units (name) VALUES (?)';
+        const [result] = await db.query(sql, [name]);
+        res.status(201).json({
+            message: "Unit added successfully",
+            data: { id: result.insertId, name, is_calculable: true } // Default is true
+        });
+    } catch (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ error: "Unit name already exists" });
+        }
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update unit calculable status
+app.put("/api/units/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { is_calculable } = req.body;
+
+        const sql = 'UPDATE material_units SET is_calculable = ? WHERE id = ?';
+        const [result] = await db.query(sql, [is_calculable, id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Unit not found" });
+        }
+
+        res.json({ message: "Unit updated successfully" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete a unit
+app.delete("/api/units/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const sql = 'DELETE FROM material_units WHERE id = ?';
+        const [result] = await db.query(sql, [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Unit not found" });
+        }
+        res.json({ message: "Unit deleted successfully" });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

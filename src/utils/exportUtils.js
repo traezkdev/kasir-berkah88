@@ -513,13 +513,18 @@ export const prepareCombinedDataForExport = (reportData) => {
   return sections;
 };
 
-export const prepareRawMaterialStockDataForExport = (materials) => {
+export const prepareRawMaterialStockDataForExport = (materials, units = []) => {
   return materials.map(material => {
     const currentStock = Number(material.current_stock) || 0;
     const menuStock = Number(material.menu_stock) || 0;
     const price = Number(material.price_per_item) || 0;
     const totalStock = currentStock + menuStock;
-    const totalValue = totalStock * price;
+
+    // Determine if unit is calculable
+    const unitData = units.find(u => u.name.toLowerCase() === (material.unit || '').toLowerCase());
+    const isCalculable = unitData ? unitData.is_calculable : true; // Default to true if not found
+
+    const totalValue = isCalculable ? (totalStock * price) : 0;
 
     return {
       'Nama Bahan': material.name,
@@ -528,7 +533,8 @@ export const prepareRawMaterialStockDataForExport = (materials) => {
       'Total Stok': totalStock,
       'Satuan': material.unit,
       'Stok Min': Number(material.stok_minimum) || 0,
-      'Harga per Item': price, // Keep as number for calculation
+      'Stok Min': Number(material.stok_minimum) || 0,
+      'Harga per Item': isCalculable ? price : `${price} (Nilai 0)`, // Indicate if value is ignored
       'Total Nilai': totalValue, // Keep as number for calculation
       'Status': totalStock < (Number(material.stok_minimum) || 0) ? 'Menipis' : 'Cukup'
     };

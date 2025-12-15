@@ -259,6 +259,39 @@ const setupDatabase = async () => {
     await connection.query(createRawMaterialsTable);
     console.log('raw_materials table is ready.');
 
+    const createMaterialUnitsTable = `
+      CREATE TABLE IF NOT EXISTS material_units (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(50) NOT NULL UNIQUE,
+        is_calculable BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    await connection.query(createMaterialUnitsTable);
+    console.log('material_units table is ready.');
+
+    // Populate default units
+    const [unitCountRows] = await connection.query('SELECT COUNT(*) as count FROM material_units');
+    if (unitCountRows[0].count === 0) {
+      const defaultUnits = [
+        { name: 'kg', is_calculable: true },
+        { name: 'pcs', is_calculable: true },
+        { name: 'box', is_calculable: true },
+        { name: 'botol', is_calculable: true },
+        { name: 'liter', is_calculable: true },
+        { name: 'gram', is_calculable: false },
+        { name: 'ml', is_calculable: false },
+        { name: 'ikat', is_calculable: true },
+        { name: 'piring', is_calculable: true },
+        { name: 'cup', is_calculable: true }
+      ];
+
+      const insertUnitSql = 'INSERT INTO material_units (name, is_calculable) VALUES ?';
+      const unitValues = defaultUnits.map(u => [u.name, u.is_calculable]);
+      await connection.query(insertUnitSql, [unitValues]);
+      console.log('Default material units inserted.');
+    }
+
     // Check and add name column to raw_materials if it doesn't exist
     const checkNameColumn = `
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
