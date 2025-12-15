@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 
-const BulkActions = ({ 
-  onClearAllTransactions, 
-  onExportTransactions, 
+const BulkActions = ({
+  onClearAllTransactions,
+  onExportTransactions,
   onOpenRecapPopup,
   transactionCount,
   isExporting = false,
-  userRole 
+  userRole
 }) => {
+  const navigate = useNavigate();
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [password, setPassword] = useState(''); // State for password
   const [passwordError, setPasswordError] = useState(''); // State for password error
@@ -77,11 +78,11 @@ const BulkActions = ({
       default:
         break;
     }
-    
+
     if (startDate && endDate) {
       onExportTransactions(currentExportType, startDate.toISOString(), endDate.toISOString());
     }
-    
+
     setShowExportOptionsModal(false);
     setExportOption('today'); // Reset to default
     setCustomDateRange({ startDate: null, endDate: null }); // Reset custom date range
@@ -101,7 +102,18 @@ const BulkActions = ({
         </div>
 
         <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3">
-          
+          {['admin', 'kasir'].includes(userRole) && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => navigate('/cash-reconciliation')}
+              iconName="Calculator"
+              iconPosition="left"
+            >
+              Rekonsiliasi Kas
+            </Button>
+          )}
+
           <Button
             variant="secondary"
             size="sm"
@@ -168,10 +180,10 @@ const BulkActions = ({
                 Hapus Semua Transaksi
               </h3>
             </div>
-            
+
             <div className="mb-6">
               <p className="text-text-secondary mb-3">
-                Apakah Anda yakin ingin menghapus semua {transactionCount} transaksi? 
+                Apakah Anda yakin ingin menghapus semua {transactionCount} transaksi?
               </p>
               <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3 mb-4">
                 <p className="text-sm text-destructive font-medium">
@@ -181,7 +193,7 @@ const BulkActions = ({
                   Semua data riwayat transaksi akan hilang secara permanen.
                 </p>
               </div>
-              
+
               {/* Password Input */}
               <div>
                 <label htmlFor="password-confirm" className="text-sm font-medium text-text-primary">
@@ -233,10 +245,10 @@ const BulkActions = ({
                 Export Transaksi ke {currentExportType === 'excel' ? 'Excel' : 'PDF'}
               </h3>
             </div>
-            
+
             <div className="mb-6 space-y-4">
               <p className="text-text-secondary">Pilih rentang waktu untuk export:</p>
-              
+
               {/* Export Option Radios */}
               <div className="space-y-2">
                 <label className="flex items-center space-x-2">

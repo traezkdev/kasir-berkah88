@@ -69,7 +69,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
     { label: 'Menu', path: '/menu-management', icon: 'UtensilsCrossed', roles: ['admin', 'user'] },
     { label: 'Pengeluaran', path: '/expense-tracking', icon: 'Receipt', roles: ['admin', 'user'] },
     { label: 'Transaksi', path: '/transaction-history', icon: 'ListOrdered', roles: ['admin', 'user', 'kasir'] },
-    { label: 'Rekonsiliasi Kas', path: '/cash-reconciliation', icon: 'Calculator', roles: ['admin', 'kasir'] },
+
     { label: 'Catatan', path: '/notes', icon: 'Notebook', roles: ['admin', 'user'] },
     { label: 'Profil', path: '/profile', icon: 'User', roles: ['admin', 'user', 'kasir'] },
     { label: 'Pengaturan', path: '/settings', icon: 'Settings', roles: ['admin'] },
@@ -131,7 +131,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
                   key={item?.path}
                   to={item?.path}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${isActiveRoute(item?.path)
-                      ? 'bg-primary text-primary-foreground' : 'text-text-secondary hover:text-text-primary hover:bg-muted'
+                    ? 'bg-primary text-primary-foreground' : 'text-text-secondary hover:text-text-primary hover:bg-muted'
                     }`}
                 >
                   <Icon name={item?.icon} size={18} />
@@ -170,7 +170,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
                   to={item?.path}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center space-x-3 px-3 py-3 rounded-md text-sm font-medium transition-colors duration-200 ${isActiveRoute(item?.path)
-                      ? 'bg-primary text-primary-foreground' : 'text-text-secondary hover:text-text-primary hover:bg-muted'
+                    ? 'bg-primary text-primary-foreground' : 'text-text-secondary hover:text-text-primary hover:bg-muted'
                     }`}
                 >
                   <Icon name={item?.icon} size={20} />
@@ -205,7 +205,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
               key={item?.path}
               to={item?.path}
               className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-md transition-colors duration-200 min-h-44 ${isActiveRoute(item?.path)
-                  ? 'text-primary' : 'text-text-secondary hover:text-text-primary'
+                ? 'text-primary' : 'text-text-secondary hover:text-text-primary'
                 }`}
             >
               <Icon

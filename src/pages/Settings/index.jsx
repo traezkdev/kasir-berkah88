@@ -184,7 +184,7 @@ const Settings = () => {
 
       } else {
         setError(data.error || 'Failed to fetch settings');
-      } 
+      }
     } catch (err) {
       setError('Kesalahan jaringan atau server tidak dapat dijangkau');
     } finally {
@@ -281,7 +281,7 @@ const Settings = () => {
       setIsLoading(false);
     }
   };
-  
+
   const handleDeleteLogo = async () => {
     clearMessages();
     setIsLoading(true);
@@ -301,7 +301,7 @@ const Settings = () => {
       setIsLoading(false);
     }
   };
-  
+
   const handleRoleChange = async (userId, newRole) => {
     clearMessages();
     setIsLoading(true);
@@ -536,7 +536,7 @@ const Settings = () => {
               <SettingsCard icon="Share2" title="Tampilan Media Sosial" description="Atur judul, deskripsi, dan gambar untuk berbagi di media sosial." onClick={() => setActiveModal('socialShare')} disabled={!isAdmin} />
               <SettingsCard icon="Type" title="Judul Dasbor Kasir" description="Ubah judul yang ditampilkan di halaman dasbor kasir." onClick={() => setActiveModal('cashierDashboardTitle')} disabled={!isAdmin} />
 
-          <SettingsCard icon="ChartNoAxesColumnIncreasing" title="Laporan Transaksi Owner" description="Lihat laporan pendapatan dan pengeluaran bisnis owner." onClick={() => navigate('/admin-uang-bisnis')} />
+              <SettingsCard icon="ChartNoAxesColumnIncreasing" title="Laporan Transaksi Owner" description="Lihat laporan pendapatan dan pengeluaran bisnis owner." onClick={() => navigate('/admin-uang-bisnis')} />
               <SettingsCard
                 icon="Store"
                 title="Pengaturan Restoran"
@@ -550,6 +550,7 @@ const Settings = () => {
               <SettingsCard icon="Wallet" title="Pengeluaran Lapak" description="Kelola uang masuk dan keluar untuk operasional lapak." onClick={() => navigate('/lapak-deposit')} disabled={!isAdmin && userRole !== 'user' && userRole !== 'kasir' && userRole !== 'owner'} />
               <SettingsCard icon="ClipboardCheck" title="Konfirmasi Pesanan" description="Akses halaman konfirmasi pesanan." onClick={() => navigate('/order-confirmation')} disabled={!isAdmin && userRole !== 'user' && userRole !== 'kasir'} />
               <SettingsCard icon="Package" title="Stok Bahan Baku" description="Kelola persediaan bahan baku produk Anda." onClick={() => navigate('/raw-material-stock')} disabled={!isAdmin} />
+              <SettingsCard icon="Calculator" title="Rekonsiliasi Kas" description="Cocokkan uang fisik dengan transaksi tercatat." onClick={() => navigate('/cash-reconciliation')} disabled={!isAdmin && userRole !== 'kasir'} />
 
 
 
@@ -575,7 +576,7 @@ const Settings = () => {
 
       {/* --- ALL MODALS --- */}
       <DataSyncModal isOpen={isDataSyncModalOpen} onClose={() => setIsDataSyncModalOpen(false)} />
-      
+
       <SettingsModal title="Ubah Judul Dasbor Kasir" isOpen={activeModal === 'cashierDashboardTitle'} onClose={handleModalClose}>
         <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/cashier_dashboard_title', { value: newCashierDashboardTitle }, 'Judul dasbor kasir berhasil diperbarui!')} className="space-y-4">
           <Input label="Judul Dasbor Kasir Baru" name="newCashierDashboardTitle" type="text" value={newCashierDashboardTitle} onChange={(e) => setNewCashierDashboardTitle(e.target.value)} required />
@@ -615,7 +616,7 @@ const Settings = () => {
       </SettingsModal>
 
       <SettingsModal title="Atur Modal Awal" isOpen={activeModal === 'initialCapital'} onClose={handleModalClose}>
-         <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/initial_capital', { value: initialCapital }, 'Modal awal berhasil diperbarui!')} className="space-y-4">
+        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/initial_capital', { value: initialCapital }, 'Modal awal berhasil diperbarui!')} className="space-y-4">
           <Input label="Jumlah Modal Awal (Rp)" name="initialCapital" type="number" value={initialCapital} onChange={(e) => setInitialCapital(e.target.value)} required />
           <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
         </form>
@@ -630,43 +631,43 @@ const Settings = () => {
 
       <SettingsModal title="Pendaftaran Pengguna" isOpen={activeModal === 'registration'} onClose={handleModalClose}>
         <div className="flex items-center justify-between p-4 rounded-lg bg-background">
-            <span className="text-text-primary">Izinkan pengguna baru mendaftar</span>
-            <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" checked={registrationEnabled} onChange={(e) => handleUpdateSetting(e, '/api/settings/registration', { enabled: !registrationEnabled }, 'Pengaturan pendaftaran diperbarui!')} className="sr-only peer" />
-                <div className="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-            </label>
+          <span className="text-text-primary">Izinkan pengguna baru mendaftar</span>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" checked={registrationEnabled} onChange={(e) => handleUpdateSetting(e, '/api/settings/registration', { enabled: !registrationEnabled }, 'Pengaturan pendaftaran diperbarui!')} className="sr-only peer" />
+            <div className="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+          </label>
         </div>
       </SettingsModal>
 
       <SettingsModal title="Manajemen Pengguna" isOpen={activeModal === 'userManagement'} onClose={handleModalClose} size="3xl">
         <div className="space-y-4">
-            <div className="flex justify-between items-center mb-4">
-                <h4 className="text-lg font-semibold">Daftar Pengguna</h4>
-                <Button onClick={() => setActiveModal('createAdminUser')}><AppIcon name="UserPlus" className="w-4 h-4 mr-2"/>Tambah Admin Baru</Button>
-            </div>
-            <div className="overflow-x-auto border border-border rounded-lg">
-                <table className="min-w-full text-sm">
-                    <thead className="bg-gray-100 dark:bg-gray-800 text-left text-text-secondary"><tr><th className="p-3">ID</th><th className="p-3">Nama</th><th className="p-3">Peran</th><th className="p-3">Aksi</th></tr></thead>
-                    <tbody>
-                        {users.map(user => (
-                            <tr key={user.id} className="border-t border-border">
-                                <td className="p-3">{user.id}</td>
-                                <td className="p-3">{user.username}</td>
-                                <td className="p-3">
-                                    <select value={user.role} onChange={(e) => handleRoleChange(user.id, e.target.value)} className="bg-background border border-input rounded-md p-1" disabled={isLoading || user.id === 1}>
-                                        <option value="user">Pengguna</option>
-                                        <option value="kasir">Kasir</option>
-                                        <option value="admin">Admin</option>
-                                    </select>
-                                </td>
-                                <td className="p-3">
-                                    <Button variant="destructive" size="sm" onClick={() => confirmDeleteUser(user.id, user.username)} disabled={isLoading || user.id === 1 || (decodedToken && user.id === decodedToken.userId)}>Hapus</Button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+          <div className="flex justify-between items-center mb-4">
+            <h4 className="text-lg font-semibold">Daftar Pengguna</h4>
+            <Button onClick={() => setActiveModal('createAdminUser')}><AppIcon name="UserPlus" className="w-4 h-4 mr-2" />Tambah Admin Baru</Button>
+          </div>
+          <div className="overflow-x-auto border border-border rounded-lg">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-100 dark:bg-gray-800 text-left text-text-secondary"><tr><th className="p-3">ID</th><th className="p-3">Nama</th><th className="p-3">Peran</th><th className="p-3">Aksi</th></tr></thead>
+              <tbody>
+                {users.map(user => (
+                  <tr key={user.id} className="border-t border-border">
+                    <td className="p-3">{user.id}</td>
+                    <td className="p-3">{user.username}</td>
+                    <td className="p-3">
+                      <select value={user.role} onChange={(e) => handleRoleChange(user.id, e.target.value)} className="bg-background border border-input rounded-md p-1" disabled={isLoading || user.id === 1}>
+                        <option value="user">Pengguna</option>
+                        <option value="kasir">Kasir</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </td>
+                    <td className="p-3">
+                      <Button variant="destructive" size="sm" onClick={() => confirmDeleteUser(user.id, user.username)} disabled={isLoading || user.id === 1 || (decodedToken && user.id === decodedToken.userId)}>Hapus</Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </SettingsModal>
 
@@ -692,7 +693,7 @@ const Settings = () => {
 
       <SettingsModal title="Manajemen Karyawan" isOpen={activeModal === 'employeeManagement'} onClose={handleModalClose} size="3xl">
         <div className="space-y-4">
-          <Button onClick={() => openEmployeeForm(null)} className="w-full md:w-auto"><AppIcon name="Plus" className="w-4 h-4 mr-2"/>Tambah Karyawan</Button>
+          <Button onClick={() => openEmployeeForm(null)} className="w-full md:w-auto"><AppIcon name="Plus" className="w-4 h-4 mr-2" />Tambah Karyawan</Button>
           {message && <p className="text-sm text-center text-green-500 mt-2">{message}</p>}
           {error && <p className="text-sm text-center text-red-500 mt-2">{error}</p>}
           <div className="overflow-x-auto border border-border rounded-lg">
@@ -703,9 +704,9 @@ const Settings = () => {
               <tbody>
                 {employees.map(emp => (
                   <tr key={emp.id} className="border-t border-border">
-                    <td className="px-2 py-1 flex items-center gap-3 min-w-max"><img src={emp.avatar ? `${apiUrl}${emp.avatar}` : '/assets/images/no_image.png'} className="w-10 h-10 rounded-full object-cover"/>{emp.name}</td>
+                    <td className="px-2 py-1 flex items-center gap-3 min-w-max"><img src={emp.avatar ? `${apiUrl}${emp.avatar}` : '/assets/images/no_image.png'} className="w-10 h-10 rounded-full object-cover" />{emp.name}</td>
                     <td className="px-2 py-1 min-w-max">{emp.position}</td>
-                    <td className="p-3">{emp.phone}<br/>{emp.email}</td>
+                    <td className="p-3">{emp.phone}<br />{emp.email}</td>
                     <td className="p-3"><div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => openEmployeeForm(emp)}>Edit</Button>
                       <Button variant="destructive" size="sm" onClick={() => confirmDeleteEmployee(emp.id)}>Hapus</Button>
@@ -725,7 +726,7 @@ const Settings = () => {
           <Input label="Telepon" name="phone" defaultValue={editingEmployee?.phone} />
           <Input label="Email" name="email" type="email" defaultValue={editingEmployee?.email} />
           <Input label="Avatar" name="avatar" type="file" accept="image/*" />
-          {editingEmployee?.avatar && !editingEmployee?.avatar.startsWith('blob:') && <img src={`${apiUrl}${editingEmployee.avatar}`} className="w-20 h-20 rounded-full object-cover mt-2"/>}
+          {editingEmployee?.avatar && !editingEmployee?.avatar.startsWith('blob:') && <img src={`${apiUrl}${editingEmployee.avatar}`} className="w-20 h-20 rounded-full object-cover mt-2" />}
           <div className="flex justify-end gap-4 pt-4">
             <Button type="button" variant="outline" onClick={() => setActiveModal('employeeManagement')}>Batal</Button>
             <Button type="submit" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan'}</Button>
@@ -798,6 +799,8 @@ const Settings = () => {
           <Button type="submit" variant="destructive" className="w-full" disabled={isLoading}>{isLoading ? 'Menghapus...' : 'Hapus Semua Data'}</Button>
         </form>
       </SettingsModal>
+
+
 
       <SettingsModal title="Pengaturan Tampilan Media Sosial" isOpen={activeModal === 'socialShare'} onClose={handleModalClose}>
         <SocialShareSettings onClose={handleModalClose} />
