@@ -10,6 +10,7 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
   const [stokMinimum, setStokMinimum] = useState('');
   const [purchaseBufferAmount, setPurchaseBufferAmount] = useState(''); // New state for purchase buffer
   const [menuStock, setMenuStock] = useState(''); // New state for menu_stock
+  const [rawStockPrice, setRawStockPrice] = useState(''); // New state for raw_stock_price
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [units, setUnits] = useState([]); // State for units
@@ -26,6 +27,7 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
       setStokMinimum('');
       setPurchaseBufferAmount(''); // Initialize purchaseBufferAmount
       setMenuStock(''); // Initialize menuStock
+      setRawStockPrice(''); // Initialize rawStockPrice
       setError(null);
       fetchUnits(); // Fetch units when modal opens
     }
@@ -49,7 +51,7 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
       setError("Nama dan satuan bahan mentah tidak boleh kosong.");
       return;
     }
-    if (parseFloat(pricePerItem) < 0 || parseFloat(standardStockPerDay) < 0 || parseFloat(stokMinimum) < 0 || parseFloat(purchaseBufferAmount) < 0 || parseFloat(menuStock) < 0) { // Add purchaseBufferAmount validation
+    if (parseFloat(pricePerItem) < 0 || parseFloat(standardStockPerDay) < 0 || parseFloat(stokMinimum) < 0 || parseFloat(purchaseBufferAmount) < 0 || parseFloat(menuStock) < 0 || parseFloat(rawStockPrice) < 0) { // Add purchaseBufferAmount validation
       setError("Nilai numerik tidak boleh negatif.");
       return;
     }
@@ -68,6 +70,7 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
         standard_stock_per_day: parseFloat(standardStockPerDay) || 0,
         purchase_buffer_amount: parseFloat(purchaseBufferAmount) || 0, // Include purchase_buffer_amount
         menu_stock: parseFloat(menuStock) || 0, // Include menu_stock in the creation
+        raw_stock_price: parseFloat(rawStockPrice) || 0, // Include raw_stock_price
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -118,17 +121,6 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
             </select>
           </div>
           <div className="mb-4">
-            <label htmlFor="customUnit" className="block text-gray-700 text-sm font-bold mb-2">Satuan (Untuk Tampilan, Contoh: potong, buah)</label>
-            <input
-              type="text"
-              id="customUnit"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={customUnit}
-              onChange={(e) => setCustomUnit(e.target.value)}
-              placeholder="Contoh: pcs, potong, buah"
-            />
-          </div>
-          <div className="mb-4">
             <label htmlFor="currentStock" className="block text-gray-700 text-sm font-bold mb-2">Stok Menu (Opsional, default 0)</label>
             <input
               type="number"
@@ -141,7 +133,7 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="pricePerItem" className="block text-gray-700 text-sm font-bold mb-2">Harga per Item (Opsional)</label>
+            <label htmlFor="pricePerItem" className="block text-gray-700 text-sm font-bold mb-2">Harga Stok Menu (Opsional)</label>
             <input
               type="number"
               id="pricePerItem"
@@ -153,13 +145,13 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="standardStockPerDay" className="block text-gray-700 text-sm font-bold mb-2">Stok Standar per Hari (Opsional)</label>
+            <label htmlFor="rawStockPrice" className="block text-gray-700 text-sm font-bold mb-2">Harga Stok Mentah (Opsional)</label>
             <input
               type="number"
-              id="standardStockPerDay"
+              id="rawStockPrice"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={standardStockPerDay}
-              onChange={(e) => setStandardStockPerDay(e.target.value)}
+              value={rawStockPrice}
+              onChange={(e) => setRawStockPrice(e.target.value)}
               min="0"
               step="0.01"
             />
@@ -207,8 +199,8 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
             </button>
           </div>
         </form>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 

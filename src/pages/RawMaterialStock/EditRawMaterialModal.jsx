@@ -27,6 +27,8 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
   const [stokMinimum, setStokMinimum] = useState('');
   const [pricePerItem, setPricePerItem] = useState(''); // Stores numeric value
   const [displayPricePerItem, setDisplayPricePerItem] = useState(''); // Stores formatted string for display
+  const [rawStockPrice, setRawStockPrice] = useState(''); // Stores numeric value
+  const [displayRawStockPrice, setDisplayRawStockPrice] = useState(''); // Stores formatted string for display
 
   const [purchaseBufferAmount, setPurchaseBufferAmount] = useState(''); // New state for purchase buffer
   const [currentStock, setCurrentStock] = useState('');
@@ -91,6 +93,13 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
         setMenuStock('');
       }
 
+      // Initialize rawStockPrice (numeric) and displayRawStockPrice (formatted)
+      const matRawStockPrice = material.raw_stock_price ?? '';
+      const numericRawStockPrice = Number(matRawStockPrice); // Ensure it's a clean number
+      setRawStockPrice(numericRawStockPrice);
+      setDisplayRawStockPrice(formatRupiah(numericRawStockPrice)); // Format the clean number
+
+
       setError(null);
       fetchUnits();
     }
@@ -121,13 +130,24 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
     setDisplayPricePerItem(formatRupiah(pricePerItem));
   };
 
+  const handleRawStockPriceChange = (e) => {
+    const rawValue = e.target.value;
+    const numericValue = parseRupiah(rawValue);
+    setRawStockPrice(numericValue);
+    setDisplayRawStockPrice(rawValue);
+  };
+
+  const handleRawStockPriceBlur = () => {
+    setDisplayRawStockPrice(formatRupiah(rawStockPrice));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name || !unit) {
       setError("Nama dan satuan tidak boleh kosong.");
       return;
     }
-    if (parseFloat(stokMinimum) < 0 || parseFloat(purchaseBufferAmount) < 0 || pricePerItem < 0) { // Add pricePerItem validation
+    if (parseFloat(stokMinimum) < 0 || parseFloat(purchaseBufferAmount) < 0 || pricePerItem < 0 || rawStockPrice < 0) { // Add pricePerItem validation
       setError("Nilai numerik tidak boleh negatif.");
       return;
     }
@@ -146,6 +166,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
         purchase_buffer_amount: parseFloat(purchaseBufferAmount) || 0, // Include purchase_buffer_amount in the update
         current_stock: parseFloat(currentStock) || 0,
         menu_stock: parseFloat(menuStock) || 0, // Include menu_stock in the update
+        raw_stock_price: rawStockPrice || 0, // Use the numeric rawStockPrice
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -245,7 +266,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="pricePerItem" className="block text-muted-foreground text-sm font-bold mb-2">Harga per Item</label>
+            <label htmlFor="pricePerItem" className="block text-muted-foreground text-sm font-bold mb-2">Harga Stok Menu</label>
             <input
               type="text" // Changed to text
               id="pricePerItem"
@@ -253,6 +274,18 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
               value={displayPricePerItem} // Use display state
               onChange={handlePricePerItemChange} // Use custom handler
               onBlur={handlePricePerItemBlur} // Add onBlur for final formatting
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="rawStockPrice" className="block text-muted-foreground text-sm font-bold mb-2">Harga Stok Mentah</label>
+            <input
+              type="text" // Changed to text
+              id="rawStockPrice"
+              className="appearance-none bg-input border-border rounded w-full py-2 px-3 text-foreground leading-tight focus:outline-none focus:ring-2 focus:ring-primary/50"
+              value={displayRawStockPrice} // Use display state
+              onChange={handleRawStockPriceChange} // Use custom handler
+              onBlur={handleRawStockPriceBlur} // Add onBlur for final formatting
               required
             />
           </div>
@@ -276,8 +309,8 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
             </button>
           </div>
         </form>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 

@@ -287,21 +287,35 @@ const MainDashboard = ({ headerTitle }) => {
       // Note: boolean in DB might be returned as 0/1 number.
       const isCalculable = unitDef ? (unitDef.is_calculable === 1 || unitDef.is_calculable === true) : true;
 
-      if (!isCalculable) return sum;
-
-      const currentStock = parseInt(m.current_stock || 0);
-      const pricePerItem = parseFloat(m.price_per_item || 0);
-      const itemValue = currentStock * pricePerItem;
-      return sum + itemValue;
+      if (isCalculable) {
+        const currentStock = parseInt(m.current_stock || 0);
+        const rawStockPrice = parseFloat(m.raw_stock_price || 0);
+        return sum + (currentStock * rawStockPrice);
+      } else {
+        // For non-calculable units, use raw_stock_price directly
+        return sum + parseFloat(m.raw_stock_price || 0);
+      }
     }, 0);
 
-    const totalRawMaterialQuantity = rawMaterialsData.reduce((sum, m) => {
-      return sum + parseInt(m.current_stock || 0) + parseInt(m.menu_stock || 0);
+    const totalCombinedRawMaterialValue = rawMaterialsData.reduce((sum, m) => {
+      const unitDef = unitsData.find(u => u.name.toLowerCase() === (m.unit || '').toLowerCase());
+      const isCalculable = unitDef ? (unitDef.is_calculable === 1 || unitDef.is_calculable === true) : true;
+
+      if (isCalculable) {
+        const menuStockValue = parseInt(m.menu_stock || 0) * parseFloat(m.price_per_item || 0);
+        const rawStockValue = parseInt(m.current_stock || 0) * parseFloat(m.raw_stock_price || 0);
+        return sum + menuStockValue + rawStockValue;
+      } else {
+        // For non-calculable units, use prices directly
+        const menuStockValue = parseFloat(m.price_per_item || 0);
+        const rawStockValue = parseFloat(m.raw_stock_price || 0);
+        return sum + menuStockValue + rawStockValue;
+      }
     }, 0);
 
-    const stockValue = totalMenuStockValue + rawMaterialStockValue; let workingCapital = 0;
+    const stockValue = totalCombinedRawMaterialValue; let workingCapital = 0;
     if (!isNaN(initialCapital)) {
-      workingCapital = initialCapital + allTimeRevenue + totalMenuStockValue + rawMaterialStockValue - allTimeExpenses;
+      workingCapital = initialCapital + allTimeRevenue + totalCombinedRawMaterialValue - allTimeExpenses;
     }
 
     // --- Metrics for Filtered Period ---
@@ -312,7 +326,7 @@ const MainDashboard = ({ headerTitle }) => {
     const totalExpenses = filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
 
     // Corrected "Keuntungan Kotor" calculation to use all-time figures for consistency
-    const netProfit = allTimeRevenue - allTimeExpenses + totalMenuStockValue + rawMaterialStockValue;
+    const netProfit = allTimeRevenue - allTimeExpenses + totalCombinedRawMaterialValue;
 
     // --- Daily Stats Calculation (Unaffected by filter) ---
     const todayTransactions = allTransactions.filter(t => new Date(t.timestamp).toDateString() === todayString && t.payment_method !== 'employee_meal');
@@ -374,9 +388,9 @@ const MainDashboard = ({ headerTitle }) => {
         allTimeNetProfit,
         initialCapital,
         // Other
-        stockValue, // Now only totalMenuStockValue
-        rawMaterialStockValue, // Add raw material stock value
-        totalRawMaterialQuantity, // Add total quantity
+        stockValue, // Now correctly reflects totalCombinedRawMaterialValue
+        rawMaterialStockValue, // Add raw material stock value (current stock only)
+        totalCombinedRawMaterialValue, // Add total combined value (current + menu stock)
         ownerBalance: ownerAccountData?.account?.balance || 0,
         lapakBalance: lapakAccountData?.account?.balance || 0,
       },
@@ -522,11 +536,11 @@ const MainDashboard = ({ headerTitle }) => {
       description: 'Operasional & pembelian'
     },
     {
-      title: 'Total Kuantitas Stok',
-      value: `${dashboardData.metrics.totalRawMaterialQuantity} Item`,
-      icon: 'Package',
+      title: 'Total Nilai Stok (Mentah + Menu)',
+      value: formatCurrency(dashboardData.metrics.totalCombinedRawMaterialValue),
+      icon: 'DollarSign',
       color: 'primary',
-      description: 'Jumlah total semua bahan mentah'
+      description: 'Nilai total stok bahan mentah dan stok menu'
     },
     {
       title: 'Saldo Owner',

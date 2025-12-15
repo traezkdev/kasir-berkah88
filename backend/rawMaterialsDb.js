@@ -1,11 +1,11 @@
 const pool = require('./database'); // Menggunakan koneksi pool yang sudah ada
 
-const addRawMaterial = async (name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, purchase_buffer_amount = 10, menu_stock = 0) => {
+const addRawMaterial = async (name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, purchase_buffer_amount = 10, menu_stock = 0, raw_stock_price = 0) => {
   const connection = await pool.getConnection();
   try {
     const [result] = await connection.query(
-      `INSERT INTO raw_materials (name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, purchase_buffer_amount, menu_stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, purchase_buffer_amount, menu_stock]
+      `INSERT INTO raw_materials (name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, purchase_buffer_amount, menu_stock, raw_stock_price) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, purchase_buffer_amount, menu_stock, raw_stock_price]
     );
     return result;
   } finally {
@@ -17,7 +17,7 @@ const getRawMaterials = async () => {
   const connection = await pool.getConnection();
   try {
     const [rows] = await connection.query(`
-      SELECT id, name, unit, custom_unit, current_stock, stok_minimum, price_per_item, standard_stock_per_day, purchase_buffer_amount, menu_stock
+      SELECT id, name, unit, custom_unit, current_stock, stok_minimum, price_per_item, standard_stock_per_day, purchase_buffer_amount, menu_stock, raw_stock_price
       FROM raw_materials
     `);
     return rows;
@@ -30,7 +30,7 @@ const getRawMaterialById = async (id) => {
   const connection = await pool.getConnection();
   try {
     const [rows] = await connection.query(
-      `SELECT id, name, unit, custom_unit, current_stock, stok_minimum, price_per_item, standard_stock_per_day, purchase_buffer_amount, menu_stock FROM raw_materials WHERE id = ?`,
+      `SELECT id, name, unit, custom_unit, current_stock, stok_minimum, price_per_item, standard_stock_per_day, purchase_buffer_amount, menu_stock, raw_stock_price FROM raw_materials WHERE id = ?`,
       [id]
     );
     return rows[0]; // Mengembalikan satu objek bahan mentah
@@ -39,12 +39,12 @@ const getRawMaterialById = async (id) => {
   }
 };
 
-const updateRawMaterial = async (id, name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, purchase_buffer_amount, current_stock, menu_stock) => {
+const updateRawMaterial = async (id, name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, purchase_buffer_amount, current_stock, menu_stock, raw_stock_price) => {
   const connection = await pool.getConnection();
   try {
     const [result] = await connection.query(
-      `UPDATE raw_materials SET name = ?, unit = ?, custom_unit = ?, stok_minimum = ?, price_per_item = ?, standard_stock_per_day = ?, purchase_buffer_amount = ?, current_stock = ?, menu_stock = ? WHERE id = ?`,
-      [name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, purchase_buffer_amount, current_stock, menu_stock, id]
+      `UPDATE raw_materials SET name = ?, unit = ?, custom_unit = ?, stok_minimum = ?, price_per_item = ?, standard_stock_per_day = ?, purchase_buffer_amount = ?, current_stock = ?, menu_stock = ?, raw_stock_price = ? WHERE id = ?`,
+      [name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, purchase_buffer_amount, current_stock, menu_stock, raw_stock_price, id]
     );
     return result;
   } finally {

@@ -485,6 +485,20 @@ const setupDatabase = async () => {
       console.log('Added menu_stock column to raw_materials table.');
     }
 
+    // Check and add raw_stock_price column to raw_materials if it doesn't exist
+    const checkRawStockPriceColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'raw_materials' AND COLUMN_NAME = 'raw_stock_price';
+    `;
+    const addRawStockPriceColumn = `
+      ALTER TABLE raw_materials ADD COLUMN raw_stock_price DECIMAL(10, 2) DEFAULT 0.00;
+    `;
+    const [rawStockPriceRows] = await connection.query(checkRawStockPriceColumn);
+    if (rawStockPriceRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addRawStockPriceColumn);
+      console.log('Added raw_stock_price column to raw_materials table.');
+    }
+
     const createMenuRecipesTable = `
       CREATE TABLE IF NOT EXISTS menu_recipes (
         id INT AUTO_INCREMENT PRIMARY KEY,

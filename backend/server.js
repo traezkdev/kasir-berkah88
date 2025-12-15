@@ -129,7 +129,7 @@ app.get("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner'
 // Add a new raw material
 app.post("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
-        const { name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, purchase_buffer_amount, menu_stock } = req.body;
+        const { name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, purchase_buffer_amount, menu_stock, raw_stock_price } = req.body;
         if (!name || !unit) { // custom_unit can be optional for now, assuming a default will be set
             return res.status(400).json({ error: "Name and unit are required" });
         }
@@ -143,13 +143,14 @@ app.post("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner
             parseFloat(price_per_item) || 0,
             parseFloat(standard_stock_per_day) || 0,
             parseFloat(purchase_buffer_amount) || 0, // Correct position for purchase_buffer_amount
-            parseFloat(menu_stock) || 0
+            parseFloat(menu_stock) || 0,
+            parseFloat(raw_stock_price) || 0 // New field
         );
 
         // Asumsi result mengandung insertId jika berhasil
         res.status(201).json({
             message: "Raw material added successfully",
-            data: { id: result.insertId, name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, menu_stock },
+            data: { id: result.insertId, name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, menu_stock, raw_stock_price },
         });
 
     } catch (err) {
@@ -166,7 +167,7 @@ app.post("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner
 app.put("/api/raw-materials/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, current_stock, menu_stock, purchase_buffer_amount } = req.body;
+        const { name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, current_stock, menu_stock, purchase_buffer_amount, raw_stock_price } = req.body;
 
         const result = await updateRawMaterial(
             id,
@@ -178,13 +179,14 @@ app.put("/api/raw-materials/:id", authenticateToken, authorizeRoles('admin', 'ow
             parseFloat(standard_stock_per_day) || 0,
             parseFloat(purchase_buffer_amount) || 0, // Correct position for purchase_buffer_amount
             parseFloat(current_stock),
-            parseFloat(menu_stock) || 0
+            parseFloat(menu_stock) || 0,
+            parseFloat(raw_stock_price) || 0 // New field
         );
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: "Raw material not found" });
         }
-        res.json({ message: "success", data: { id, name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, current_stock, menu_stock } });
+        res.json({ message: "success", data: { id, name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, current_stock, menu_stock, raw_stock_price } });
     } catch (err) {
         if (err.message && err.message.includes('ER_DUP_ENTRY')) {
             return res.status(409).json({ error: "Raw material with this name already exists" });

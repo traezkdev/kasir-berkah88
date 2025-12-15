@@ -517,14 +517,25 @@ export const prepareRawMaterialStockDataForExport = (materials, units = []) => {
   return materials.map(material => {
     const currentStock = Number(material.current_stock) || 0;
     const menuStock = Number(material.menu_stock) || 0;
-    const price = Number(material.price_per_item) || 0;
+    const pricePerItem = Number(material.price_per_item) || 0;
+    const rawStockPrice = Number(material.raw_stock_price) || 0;
     const totalStock = currentStock + menuStock;
 
     // Determine if unit is calculable
     const unitData = units.find(u => u.name.toLowerCase() === (material.unit || '').toLowerCase());
     const isCalculable = unitData ? unitData.is_calculable : true; // Default to true if not found
 
-    const totalValue = isCalculable ? (totalStock * price) : 0;
+    let menuValue, rawValue, totalValue;
+    if (isCalculable) {
+      menuValue = menuStock * pricePerItem;
+      rawValue = currentStock * rawStockPrice;
+      totalValue = menuValue + rawValue;
+    } else {
+      // For non-calculable units, use prices directly
+      menuValue = pricePerItem;
+      rawValue = rawStockPrice;
+      totalValue = pricePerItem + rawStockPrice;
+    }
 
     return {
       'Nama Bahan': material.name,
@@ -533,8 +544,8 @@ export const prepareRawMaterialStockDataForExport = (materials, units = []) => {
       'Total Stok': totalStock,
       'Satuan': material.unit,
       'Stok Min': Number(material.stok_minimum) || 0,
-      'Stok Min': Number(material.stok_minimum) || 0,
-      'Harga per Item': isCalculable ? price : `${price} (Nilai 0)`, // Indicate if value is ignored
+      'Harga Stok Menu': isCalculable ? pricePerItem : `${pricePerItem} (Nilai Langsung)`,
+      'Harga Stok Mentah': isCalculable ? rawStockPrice : `${rawStockPrice} (Nilai Langsung)`,
       'Total Nilai': totalValue, // Keep as number for calculation
       'Status': totalStock < (Number(material.stok_minimum) || 0) ? 'Menipis' : 'Cukup'
     };
