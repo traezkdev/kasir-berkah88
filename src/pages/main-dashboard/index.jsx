@@ -526,7 +526,7 @@ const MainDashboard = ({ headerTitle }) => {
       value: formatCurrency(dashboardData.metrics.workingCapital),
       icon: 'Wallet',
       color: 'info',
-      description: 'Modal awal + pendapatan + nilai stok + nilai stok mentah - pengeluaran'
+      description: 'Modal awal + pendapatan + stok mentah + stok menu - pengeluaran'
     },
     {
       title: 'Pendapatan',
