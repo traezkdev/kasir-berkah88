@@ -12,6 +12,25 @@ const calculateTotalPriceOfStock = (data) => {
   return data.reduce((sum, item) => sum + ((item.stock || 0) * (item.price || 0)), 0);
 };
 
+// Helper function to calculate total raw material value
+const calculateTotalRawMaterialValue = (data) => {
+  // Parsing currency string back to number for calculation if needed, but here we expect pre-calculated values or raw numbers
+  // However, looking at the plan and data, we will likely pass formatted strings or raw numbers.
+  // Let's assume we pass raw numbers in a specific way or just sum the raw data before formatting if possible.
+  // Actually, for the summary in `exportToExcel` and `exportToPdf`, we iterate over `data`.
+  // If `data` contains formatted strings, we can't easily sum them.
+  // Strategy: The component should calculate the totals and pass them, OR we calculate here if data allows.
+  // But standard pattern here is calculating from `data` array which is ready for export (keys are Indonesian headers).
+  // Let's look at `prepareRawMaterialStockDataForExport`. It maps to headers.
+  // So 'Total Stok' in the row might be a number or string.
+  // use `prepareRawMaterialStockDataForExport` sets 'Total Stok' as number.
+  return data.reduce((sum, item) => sum + (item['Total Nilai'] || 0), 0);
+};
+
+const calculateTotalRawMaterialStock = (data) => {
+  return data.reduce((sum, item) => sum + (item['Total Stok'] || 0), 0);
+}
+
 // New helper function to calculate total sold items from prepared data
 const calculateTotalSoldItems = (data) => {
   return data.reduce((sum, item) => sum + (item['Terjual'] || 0), 0);
@@ -45,7 +64,7 @@ export const exportToExcel = (data, filename = 'data') => {
       }
     });
     // Ensure a minimum of 2 columns for summary sections if no headers are found or are too small
-    if (maxCols < 2) maxCols = 2; 
+    if (maxCols < 2) maxCols = 2;
 
     // Main Report Title
     XLSX.utils.sheet_add_aoa(ws, [["Laporan Bisnis Gabungan"]], { origin: `A${rowIdx}` });
@@ -124,6 +143,7 @@ export const exportToExcel = (data, filename = 'data') => {
   const isExpenseData = filename.includes('Pengeluaran'); // Simple check
   const isSoldStockData = filename.includes('Stok_Terjual'); // Check for sold stock data
   const isTopSellingData = filename.includes('Menu_Terlaris'); // New check for top selling items data
+  const isRawMaterialStockData = filename.includes('Stok_Bahan_Mentah'); // Check for raw material stock data
 
   let title;
   let summaryRows = [];
@@ -152,6 +172,15 @@ export const exportToExcel = (data, filename = 'data') => {
       [], // Empty row before summary
       ['Total Item Terjual:', totalSoldItems.toString()],
       ['Total Pendapatan:', formatCurrency(totalRevenueFromSoldItems)]
+    ];
+  } else if (isRawMaterialStockData) {
+    title = "Laporan Stok Bahan Mentah";
+    const totalStock = calculateTotalRawMaterialStock(data);
+    const totalValue = calculateTotalRawMaterialValue(data);
+    summaryRows = [
+      [], // Empty row before summary
+      ['Total Quantity Stok:', totalStock],
+      ['Total Nilai Stok:', formatCurrency(totalValue)]
     ];
   } else {
     title = "Laporan Stok Menu"; // Default title for original stock data
@@ -192,7 +221,7 @@ export const exportToExcel = (data, filename = 'data') => {
   ws['!cols'] = max_width.map(w => ({ wch: w + 2 }));
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, isExpenseData ? "Pengeluaran" : (isSoldStockData ? "Stok Terjual" : (isTopSellingData ? "Menu Terlaris" : "Stok Menu")));
+  XLSX.utils.book_append_sheet(wb, ws, isExpenseData ? "Pengeluaran" : (isSoldStockData ? "Stok Terjual" : (isTopSellingData ? "Menu Terlaris" : (isRawMaterialStockData ? "Stok Bahan Mentah" : "Stok Menu"))));
   XLSX.writeFile(wb, `${filename}.xlsx`);
 };
 
@@ -211,12 +240,12 @@ export const exportToPdf = (data, filename = 'data') => {
     let finalY = 40;
     data.forEach(section => {
       // Calculate required space for title (~15mm) + at least one table row (~7mm) + margin (~20mm)
-      const requiredSpace = 15 + 7 + 20; 
-      const remainingPageSpace = doc.internal.pageSize.height - finalY; 
+      const requiredSpace = 15 + 7 + 20;
+      const remainingPageSpace = doc.internal.pageSize.height - finalY;
 
       // If not enough space for title and first row, add a new page
       // Also, ensure it's not the very first section on the very first page
-      if (finalY > 40 && remainingPageSpace < requiredSpace) { 
+      if (finalY > 40 && remainingPageSpace < requiredSpace) {
         doc.addPage();
         finalY = 20;
       }
@@ -262,6 +291,7 @@ export const exportToPdf = (data, filename = 'data') => {
 
   const isExpenseData = filename.includes('Pengeluaran'); // Simple check
   const isTopSellingData = filename.includes('Menu_Terlaris'); // New check for top selling items data
+  const isRawMaterialStockData = filename.includes('Stok_Bahan_Mentah'); // Check for raw material stock data
 
   let title = "Laporan Stok Menu";
   let summaryLines = [];
@@ -279,6 +309,14 @@ export const exportToPdf = (data, filename = 'data') => {
     summaryLines = [
       `Total Item Terjual: ${totalSoldItems}`,
       `Total Pendapatan: ${formatCurrency(totalRevenueFromSoldItems)}`
+    ];
+  } else if (isRawMaterialStockData) {
+    title = "Laporan Stok Bahan Mentah";
+    const totalStock = calculateTotalRawMaterialStock(data);
+    const totalValue = calculateTotalRawMaterialValue(data);
+    summaryLines = [
+      `Total Quantity Stok: ${totalStock}`,
+      `Total Nilai Stok: ${formatCurrency(totalValue)}`
     ];
   } else {
     const totalStock = calculateTotalStock(data);
@@ -473,4 +511,26 @@ export const prepareCombinedDataForExport = (reportData) => {
   });
 
   return sections;
+};
+
+export const prepareRawMaterialStockDataForExport = (materials) => {
+  return materials.map(material => {
+    const currentStock = Number(material.current_stock) || 0;
+    const menuStock = Number(material.menu_stock) || 0;
+    const price = Number(material.price_per_item) || 0;
+    const totalStock = currentStock + menuStock;
+    const totalValue = totalStock * price;
+
+    return {
+      'Nama Bahan': material.name,
+      'Stok Saat Ini': currentStock,
+      'Stok Menu': menuStock,
+      'Total Stok': totalStock,
+      'Satuan': material.unit,
+      'Stok Min': Number(material.stok_minimum) || 0,
+      'Harga per Item': price, // Keep as number for calculation
+      'Total Nilai': totalValue, // Keep as number for calculation
+      'Status': totalStock < (Number(material.stok_minimum) || 0) ? 'Menipis' : 'Cukup'
+    };
+  });
 };
