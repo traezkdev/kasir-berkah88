@@ -237,6 +237,31 @@ const setupDatabase = async () => {
     await connection.query(createSimpleTransactionItemsTable);
     console.log('simple_transaction_items table is ready.');
 
+    // Create cash_reconciliations table
+    const createCashReconciliationsTable = `
+      CREATE TABLE IF NOT EXISTS cash_reconciliations (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        date DATE NOT NULL UNIQUE,
+        expected_tunai DECIMAL(15, 2) DEFAULT 0,
+        expected_transfer DECIMAL(15, 2) DEFAULT 0,
+        expected_gojek DECIMAL(15, 2) DEFAULT 0,
+        actual_tunai DECIMAL(15, 2) DEFAULT 0,
+        actual_transfer DECIMAL(15, 2) DEFAULT 0,
+        actual_gojek DECIMAL(15, 2) DEFAULT 0,
+        variance_tunai DECIMAL(15, 2) DEFAULT 0,
+        variance_transfer DECIMAL(15, 2) DEFAULT 0,
+        variance_gojek DECIMAL(15, 2) DEFAULT 0,
+        notes TEXT,
+        user_id INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+      );
+    `;
+    await connection.query(createCashReconciliationsTable);
+    console.log('cash_reconciliations table is ready.');
+
+
     await connection.query(createNotesTable);
     console.log('notes table is ready.');
     await connection.query(createEmployeesTable);

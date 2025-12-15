@@ -37,6 +37,7 @@ import MainCriticalStockPage from './pages/MainCriticalStock';
 import AdminUangBisnis from './pages/AdminUangBisnis'; // Add this import
 import LaporanLengkap from './pages/LaporanLengkap';
 import SimpleTransactionPage from './pages/SimpleTransaction';
+import CashReconciliation from './pages/cash-reconciliation';
 
 import TransactionTrash from './pages/TransactionTrash';
 
@@ -84,7 +85,7 @@ const AppRoutes = () => {
       <Route path="/" element={<GuestCheckout />} />
 
       {/* Admin Dashboard Routes */}
-      <Route 
+      <Route
         element={
           <ProtectedRoute allowedRoles={['admin', 'user']} redirectPathForForbiddenRoles="/cashier-dashboard">
             <DynamicLayout />
@@ -112,10 +113,11 @@ const AppRoutes = () => {
         <Route path="/main-critical-stock" element={<MainCriticalStockPage />} />
         <Route path="/admin-uang-bisnis" element={<AdminUangBisnis headerTitle="Uang Bisnis" />} /> {/* Add this route */}
         <Route path="/laporan-lengkap" element={<LaporanLengkap headerTitle="Laporan Lengkap" />} />
+        <Route path="/cash-reconciliation" element={<CashReconciliation headerTitle="Rekonsiliasi Kas" />} />
       </Route>
 
       {/* Cashier Dashboard Routes */}
-      <Route 
+      <Route
         element={
           <ProtectedRoute allowedRoles={['kasir']}>
             <DynamicLayout />
@@ -126,7 +128,7 @@ const AppRoutes = () => {
         <Route path="/cashier-transaction-history" element={<CashierTransactionHistory />} />
       </Route>
       {/* Lapak Deposit Routes (Accessible by Admin, User, Kasir, Owner) */}
-      <Route 
+      <Route
         element={
           <ProtectedRoute allowedRoles={['admin', 'user', 'kasir', 'owner']}>
             <DynamicLayout />
@@ -138,7 +140,7 @@ const AppRoutes = () => {
       <Route path="/receipt" element={<ProtectedRoute allowedRoles={['admin', 'kasir', 'user']}><ReceiptPage /></ProtectedRoute>} />
 
       {/* Owner Dashboard Routes */}
-      <Route 
+      <Route
         element={
           <ProtectedRoute allowedRoles={['owner']}>
             <DynamicLayout />

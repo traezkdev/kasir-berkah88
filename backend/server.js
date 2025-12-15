@@ -3215,6 +3215,199 @@ app.get("/api/laporan-lengkap", authenticateToken, authorizeRoles('admin', 'owne
 });
 
 
+// ===== CASH RECONCILIATION ENDPOINTS =====
+
+// Get cash reconciliation summary for a specific date
+app.get("/api/cash-reconciliation/summary", authenticateToken, async (req, res) => {
+    try {
+        const { date } = req.query;
+
+        if (!date) {
+            return res.status(400).json({ error: "Date parameter is required" });
+        }
+
+        // Get start and end of the day
+        const startDate = new Date(date);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(date);
+        endDate.setHours(23, 59, 59, 999);
+
+        // Query to get transaction summary by payment method
+        const sql = `
+            SELECT 
+                COALESCE(SUM(CASE WHEN LOWER(payment_method) IN ('cash', 'tunai') THEN total ELSE 0 END), 0) as total_tunai,
+                COALESCE(SUM(CASE WHEN LOWER(payment_method) = 'transfer' THEN total ELSE 0 END), 0) as total_transfer,
+                COALESCE(SUM(CASE WHEN LOWER(payment_method) = 'gojek' THEN total ELSE 0 END), 0) as total_gojek,
+                COALESCE(COUNT(CASE WHEN LOWER(payment_method) IN ('cash', 'tunai') THEN 1 END), 0) as count_tunai,
+                COALESCE(COUNT(CASE WHEN LOWER(payment_method) = 'transfer' THEN 1 END), 0) as count_transfer,
+                COALESCE(COUNT(CASE WHEN LOWER(payment_method) = 'gojek' THEN 1 END), 0) as count_gojek
+            FROM transactions
+            WHERE timestamp >= ? AND timestamp <= ?
+            AND (isEmployeeMeal = 0 OR isEmployeeMeal IS NULL)
+        `;
+
+        const [rows] = await db.query(sql, [startDate, endDate]);
+        const summary = rows[0];
+
+        res.json({
+            message: "success",
+            data: {
+                date: date,
+                expected: {
+                    tunai: parseFloat(summary.total_tunai) || 0,
+                    transfer: parseFloat(summary.total_transfer) || 0,
+                    gojek: parseFloat(summary.total_gojek) || 0,
+                    total: (parseFloat(summary.total_tunai) || 0) + (parseFloat(summary.total_transfer) || 0) + (parseFloat(summary.total_gojek) || 0)
+                },
+                transactionCount: {
+                    tunai: parseInt(summary.count_tunai) || 0,
+                    transfer: parseInt(summary.count_transfer) || 0,
+                    gojek: parseInt(summary.count_gojek) || 0,
+                    total: (parseInt(summary.count_tunai) || 0) + (parseInt(summary.count_transfer) || 0) + (parseInt(summary.count_gojek) || 0)
+                }
+            }
+        });
+
+    } catch (err) {
+        console.error("Error fetching cash reconciliation summary:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Save cash reconciliation
+app.post("/api/cash-reconciliation/save", authenticateToken, async (req, res) => {
+    try {
+        const { date, actual_tunai, actual_transfer, actual_gojek, notes } = req.body;
+        const user_id = req.user.id;
+
+        if (!date) {
+            return res.status(400).json({ error: "Date is required" });
+        }
+
+        // Get expected values from transactions
+        const startDate = new Date(date);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(date);
+        endDate.setHours(23, 59, 59, 999);
+
+        const summarySql = `
+            SELECT 
+                COALESCE(SUM(CASE WHEN LOWER(payment_method) IN ('cash', 'tunai') THEN total ELSE 0 END), 0) as total_tunai,
+                COALESCE(SUM(CASE WHEN LOWER(payment_method) = 'transfer' THEN total ELSE 0 END), 0) as total_transfer,
+                COALESCE(SUM(CASE WHEN LOWER(payment_method) = 'gojek' THEN total ELSE 0 END), 0) as total_gojek
+            FROM transactions
+            WHERE timestamp >= ? AND timestamp <= ?
+            AND (isEmployeeMeal = 0 OR isEmployeeMeal IS NULL)
+        `;
+
+        const [summaryRows] = await db.query(summarySql, [startDate, endDate]);
+        const expected = summaryRows[0];
+
+        const expected_tunai = parseFloat(expected.total_tunai) || 0;
+        const expected_transfer = parseFloat(expected.total_transfer) || 0;
+        const expected_gojek = parseFloat(expected.total_gojek) || 0;
+
+        const actual_tunai_val = parseFloat(actual_tunai) || 0;
+        const actual_transfer_val = parseFloat(actual_transfer) || 0;
+        const actual_gojek_val = parseFloat(actual_gojek) || 0;
+
+        // Calculate variance (expected - actual)
+        const variance_tunai = expected_tunai - actual_tunai_val;
+        const variance_transfer = expected_transfer - actual_transfer_val;
+        const variance_gojek = expected_gojek - actual_gojek_val;
+
+        // Insert or update reconciliation
+        const sql = `
+            INSERT INTO cash_reconciliations 
+            (date, expected_tunai, expected_transfer, expected_gojek, 
+             actual_tunai, actual_transfer, actual_gojek,
+             variance_tunai, variance_transfer, variance_gojek, notes, user_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                expected_tunai = VALUES(expected_tunai),
+                expected_transfer = VALUES(expected_transfer),
+                expected_gojek = VALUES(expected_gojek),
+                actual_tunai = VALUES(actual_tunai),
+                actual_transfer = VALUES(actual_transfer),
+                actual_gojek = VALUES(actual_gojek),
+                variance_tunai = VALUES(variance_tunai),
+                variance_transfer = VALUES(variance_transfer),
+                variance_gojek = VALUES(variance_gojek),
+                notes = VALUES(notes),
+                user_id = VALUES(user_id)
+        `;
+
+        await db.query(sql, [
+            date, expected_tunai, expected_transfer, expected_gojek,
+            actual_tunai_val, actual_transfer_val, actual_gojek_val,
+            variance_tunai, variance_transfer, variance_gojek, notes, user_id
+        ]);
+
+        res.json({
+            message: "success",
+            data: {
+                date,
+                expected: { tunai: expected_tunai, transfer: expected_transfer, gojek: expected_gojek },
+                actual: { tunai: actual_tunai_val, transfer: actual_transfer_val, gojek: actual_gojek_val },
+                variance: { tunai: variance_tunai, transfer: variance_transfer, gojek: variance_gojek }
+            }
+        });
+
+    } catch (err) {
+        console.error("Error saving cash reconciliation:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get cash reconciliation history
+app.get("/api/cash-reconciliation/history", authenticateToken, async (req, res) => {
+    try {
+        const { limit = 30 } = req.query;
+
+        const sql = `
+            SELECT 
+                cr.*,
+                u.username as reconciled_by
+            FROM cash_reconciliations cr
+            LEFT JOIN users u ON cr.user_id = u.id
+            ORDER BY cr.date DESC
+            LIMIT ?
+        `;
+
+        const [rows] = await db.query(sql, [parseInt(limit)]);
+
+        res.json({
+            message: "success",
+            data: rows
+        });
+
+    } catch (err) {
+        console.error("Error fetching cash reconciliation history:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete cash reconciliation
+app.delete("/api/cash-reconciliation/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const sql = "DELETE FROM cash_reconciliations WHERE id = ?";
+        const [result] = await db.query(sql, [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Reconciliation record not found" });
+        }
+
+        res.json({ message: "success", deletedId: id });
+
+    } catch (err) {
+        console.error("Error deleting cash reconciliation:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
 // Public API to get all menu items for guest users (no authentication required)
 app.get("/api/guest/menu-items", async (req, res) => {
     try {
