@@ -27,47 +27,49 @@ const MainDashboard = ({ headerTitle }) => {
     end: new Date().toISOString().split('T')[0],
   });
 
-      const fetchData = async (currentUserRole) => { // Add currentUserRole parameter
-      const token = localStorage.getItem('token');
-      if (!token) return; // Exit if no token
-      try {
-        const [paginatedTransRes, allTransRes, menuRes, expenseRes, settingsRes, ownerAccountRes, lapakAccountRes, rawMaterialsRes] = await Promise.all([
-          authFetch(`${apiUrl}/api/transactions`), // This fetches paginated transactions (default limit 20)
-          authFetch(`${apiUrl}/api/transactions/all`), // Fetch all transactions for all-time metrics
-          authFetch(`${apiUrl}/api/menu-items/all`),
-          authFetch(`${apiUrl}/api/expenses/all`), // Fetch all expenses
-          authFetch(`${apiUrl}/api/all-settings`),
-          authFetch(`${apiUrl}/api/accounts/owner_deposit`),
-          authFetch(`${apiUrl}/api/accounts/lapak_deposit`),
-          authFetch(`${apiUrl}/api/raw-materials`) // Fetch raw materials
-        ]);
-  
-        let paginatedTransactionsData = [];
-        let allTransactionsData = [];
-        let menuItemsData = [];
-        let expensesData = [];
-        let settingsData = {};
-        let ownerAccountData = null;
-        let lapakAccountData = null;
-        let rawMaterialsData = []; // Initialize rawMaterialsData
-  
-              // Handle paginated transactions data (for recent transactions list)
-  
-              if (paginatedTransRes.ok) {
-  
-                const paginatedTransactions = await paginatedTransRes.json();
-  
-                if (paginatedTransactions.message === 'success') {
-  
-                  paginatedTransactionsData = paginatedTransactions.data;
-  
-                }
-  
-              } else {
-  
-                console.error("Failed to fetch paginated transactions:", paginatedTransRes.status, paginatedTransRes.statusText);
-  
-              }
+  const fetchData = async (currentUserRole) => { // Add currentUserRole parameter
+    const token = localStorage.getItem('token');
+    if (!token) return; // Exit if no token
+    try {
+      const [paginatedTransRes, allTransRes, menuRes, expenseRes, settingsRes, ownerAccountRes, lapakAccountRes, rawMaterialsRes, unitsRes] = await Promise.all([
+        authFetch(`${apiUrl}/api/transactions`), // This fetches paginated transactions (default limit 20)
+        authFetch(`${apiUrl}/api/transactions/all`), // Fetch all transactions for all-time metrics
+        authFetch(`${apiUrl}/api/menu-items/all`),
+        authFetch(`${apiUrl}/api/expenses/all`), // Fetch all expenses
+        authFetch(`${apiUrl}/api/all-settings`),
+        authFetch(`${apiUrl}/api/accounts/owner_deposit`),
+        authFetch(`${apiUrl}/api/accounts/lapak_deposit`),
+        authFetch(`${apiUrl}/api/raw-materials`), // Fetch raw materials
+        authFetch(`${apiUrl}/api/units`) // Fetch units
+      ]);
+
+      let paginatedTransactionsData = [];
+      let allTransactionsData = [];
+      let menuItemsData = [];
+      let expensesData = [];
+      let settingsData = {};
+      let ownerAccountData = null;
+      let lapakAccountData = null;
+      let rawMaterialsData = []; // Initialize rawMaterialsData
+      let unitsData = []; // Initialize unitsData
+
+      // Handle paginated transactions data (for recent transactions list)
+
+      if (paginatedTransRes.ok) {
+
+        const paginatedTransactions = await paginatedTransRes.json();
+
+        if (paginatedTransactions.message === 'success') {
+
+          paginatedTransactionsData = paginatedTransactions.data;
+
+        }
+
+      } else {
+
+        console.error("Failed to fetch paginated transactions:", paginatedTransRes.status, paginatedTransRes.statusText);
+
+      }
 
       // Handle all transactions data (for all-time metrics)
       if (allTransRes.ok) {
@@ -139,12 +141,23 @@ const MainDashboard = ({ headerTitle }) => {
         console.error("Failed to fetch raw materials data:", rawMaterialsRes.status, rawMaterialsRes.statusText);
       }
 
+      // Handle units data
+      if (unitsRes.ok) {
+        const units = await unitsRes.json();
+        if (unitsRes.ok && units.message === 'success') {
+          unitsData = units.data;
+        }
+      } else {
+        console.error("Failed to fetch units data:", unitsRes.status, unitsRes.statusText);
+      }
+
+
 
 
       // Process data if menu items are available (always expected)
       // and other data is fetched (or empty if not available)
       if (menuItemsData.length > 0 || paginatedTransactionsData.length > 0 || allTransactionsData.length > 0 || expensesData.length > 0 || rawMaterialsData.length > 0) {
-        processDashboardData(paginatedTransactionsData, allTransactionsData, menuItemsData, expensesData, settingsData, ownerAccountData, lapakAccountData, rawMaterialsData);
+        processDashboardData(paginatedTransactionsData, allTransactionsData, menuItemsData, expensesData, settingsData, ownerAccountData, lapakAccountData, rawMaterialsData, unitsData);
       } else {
         // Optionally, set dashboardData to an empty state to stop loading spinner
         setDashboardData({
@@ -196,193 +209,206 @@ const MainDashboard = ({ headerTitle }) => {
     }
   }, [filterType, customDateRange]); // Re-fetch and process data when filter changes
 
-    const processDashboardData = (paginatedTransactions, allTransactions, menuItems, expenses, settings, ownerAccountData, lapakAccountData, rawMaterialsData) => {
-      // --- Date and Filter Logic ---
-      const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
-      let startDate, endDate;
+  const processDashboardData = (paginatedTransactions, allTransactions, menuItems, expenses, settings, ownerAccountData, lapakAccountData, rawMaterialsData, unitsData = []) => {
+    // --- Date and Filter Logic ---
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+    let startDate, endDate;
 
-      switch (filterType) {
-        case 'this_week':
-          startDate = new Date(now);
-          const firstDayOfWeek = now.getDate() - now.getDay(); // Sunday
-          startDate.setDate(firstDayOfWeek);
-          endDate = new Date(startDate);
-          endDate.setDate(startDate.getDate() + 6); // Saturday
-          break;
-        case 'yearly':
-          startDate = new Date(now.getFullYear(), 0, 1); // Start of year
-          endDate = new Date(now.getFullYear(), 11, 31); // End of year
-          break;
-        case 'custom':
-          // The date from input is 'YYYY-MM-DD'. new Date() will treat it as UTC midnight.
-          // To avoid timezone issues, we construct the date carefully.
-          const startParts = customDateRange.start.split('-').map(Number);
-          const endParts = customDateRange.end.split('-').map(Number);
-          startDate = new Date(startParts[0], startParts[1] - 1, startParts[2]);
-          endDate = new Date(endParts[0], endParts[1] - 1, endParts[2]);
-          break;
-        case 'all_time':
-          // No date filtering needed, handled below
-          break;
-        case 'monthly':
-        default:
-          startDate = new Date(now.getFullYear(), now.getMonth(), 1); // Start of month
-          endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0); // End of month
-          break;
-      }
+    switch (filterType) {
+      case 'this_week':
+        startDate = new Date(now);
+        const firstDayOfWeek = now.getDate() - now.getDay(); // Sunday
+        startDate.setDate(firstDayOfWeek);
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6); // Saturday
+        break;
+      case 'yearly':
+        startDate = new Date(now.getFullYear(), 0, 1); // Start of year
+        endDate = new Date(now.getFullYear(), 11, 31); // End of year
+        break;
+      case 'custom':
+        // The date from input is 'YYYY-MM-DD'. new Date() will treat it as UTC midnight.
+        // To avoid timezone issues, we construct the date carefully.
+        const startParts = customDateRange.start.split('-').map(Number);
+        const endParts = customDateRange.end.split('-').map(Number);
+        startDate = new Date(startParts[0], startParts[1] - 1, startParts[2]);
+        endDate = new Date(endParts[0], endParts[1] - 1, endParts[2]);
+        break;
+      case 'all_time':
+        // No date filtering needed, handled below
+        break;
+      case 'monthly':
+      default:
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1); // Start of month
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0); // End of month
+        break;
+    }
 
-      // Set time to beginning and end of day for accurate filtering on all types except all_time
-      if (filterType !== 'all_time') {
-          if (startDate) startDate.setHours(0, 0, 0, 0);
-          if (endDate) endDate.setHours(23, 59, 59, 999);
-      }
-      
-      const filteredTransactions = filterType === 'all_time'
-        ? allTransactions
-        : allTransactions.filter(t => {
-            const transactionDate = new Date(t.timestamp);
-            return transactionDate >= startDate && transactionDate <= endDate;
-          });
-          
-      const filteredExpenses = filterType === 'all_time'
-        ? expenses
-        : expenses.filter(e => {
-            const expenseDate = new Date(e.date);
-            return expenseDate >= startDate && expenseDate <= endDate;
-          });
-      
-      const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-  
-      const todayString = today.toDateString();
-      const yesterdayString = yesterday.toDateString();
-  
-      // --- All-Time & Working Capital Metrics (Unaffected by filter) ---
-      const initialCapital = parseFloat(settings?.initial_capital || 0);
-      const allTimeRevenue = allTransactions
-        .filter(t => t.payment_method !== 'employee_meal')
-        .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
-      const allTimeExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
-      const allTimeNetProfit = allTimeRevenue - allTimeExpenses;
-          const totalMenuStockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
-      
-          const rawMaterialStockValue = rawMaterialsData.reduce((sum, m) => {
-              const currentStock = parseInt(m.current_stock || 0);
-              const pricePerItem = parseFloat(m.price_per_item || 0);
-              const itemValue = currentStock * pricePerItem;
-              return sum + itemValue;
-          }, 0);
-      
-          const stockValue = totalMenuStockValue + rawMaterialStockValue;      let workingCapital = 0;
-      if (!isNaN(initialCapital)) {
-          workingCapital = initialCapital + allTimeRevenue + totalMenuStockValue + rawMaterialStockValue - allTimeExpenses;
-      }
-  
-      // --- Metrics for Filtered Period ---
-      const totalRevenue = filteredTransactions
-        .filter(t => t.payment_method !== 'employee_meal')
-        .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
-      
-      const totalExpenses = filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+    // Set time to beginning and end of day for accurate filtering on all types except all_time
+    if (filterType !== 'all_time') {
+      if (startDate) startDate.setHours(0, 0, 0, 0);
+      if (endDate) endDate.setHours(23, 59, 59, 999);
+    }
 
-      // Corrected "Keuntungan Kotor" calculation to use all-time figures for consistency
-      const netProfit = allTimeRevenue - allTimeExpenses + totalMenuStockValue + rawMaterialStockValue;
-  
-      // --- Daily Stats Calculation (Unaffected by filter) ---
-      const todayTransactions = allTransactions.filter(t => new Date(t.timestamp).toDateString() === todayString && t.payment_method !== 'employee_meal');
-      const todaySales = todayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
-      const averageOrderToday = todayTransactions.length > 0 ? todaySales / todayTransactions.length : 0;
-  
-      const yesterdayTransactions = allTransactions.filter(t => new Date(t.timestamp).toDateString() === yesterdayString && t.payment_method !== 'employee_meal');
-      const yesterdaySales = yesterdayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
-      const averageOrderYesterday = yesterdayTransactions.length > 0 ? yesterdaySales / yesterdayTransactions.length : 0;
-  
-      // --- Change & Trend Calculation ---
-      let salesChange = 0;
-      if (yesterdaySales > 0) {
-        salesChange = ((todaySales - yesterdaySales) / yesterdaySales) * 100;
-      } else if (todaySales > 0) {
-        salesChange = 100;
-      }
-      const salesChangeFormatted = `${salesChange >= 0 ? '+' : ''}${salesChange.toFixed(0)}%`;
-      const salesTrend = salesChange >= 0 ? 'up' : 'down';
-  
-      const transChange = todayTransactions.length - yesterdayTransactions.length;
-      const transChangeFormatted = `${transChange >= 0 ? '+' : ''}${transChange}`;
-      const transTrend = transChange >= 0 ? 'up' : 'down';
-  
-      let avgOrderChange = 0;
-      if (averageOrderYesterday > 0) {
-        avgOrderChange = ((averageOrderToday - averageOrderYesterday) / averageOrderYesterday) * 100;
-      } else if (averageOrderToday > 0) {
-        avgOrderChange = 100;
-      }
-      const avgOrderChangeFormatted = `${avgOrderChange >= 0 ? '+' : ''}${avgOrderChange.toFixed(0)}%`;
-      const avgOrderTrend = avgOrderChange >= 0 ? 'up' : 'down';
-  
-      // --- Other Metrics ---
-      const itemsSoldToday = todayTransactions.flatMap(t => {
-        try {
-          const items = typeof t.items === 'string' ? JSON.parse(t.items) : t.items;
-          return Array.isArray(items) ? items : [];
-        } catch (e) {
-          console.error("Failed to parse transaction items:", e);
-          return [];
-        }
-      }).reduce((sum, i) => sum + (i.quantity || 0), 0);
-      const lowStockItems = menuItems.filter(item => item.stock <= 5 && item.stock > 0).length;
-      const recentTransactions = paginatedTransactions.slice(0, 6); // Use paginated for recent list
-
-
-  
-      setDashboardData({
-        metrics: {
-          // Filtered Metrics
-          totalRevenue,
-          totalExpenses,
-          // All-Time / Unfiltered Metrics
-          netProfit, // This is the "Keuntungan Kotor" metric
-          workingCapital,
-          allTimeRevenue,
-          allTimeExpenses,
-          allTimeNetProfit,
-          initialCapital,
-          // Other
-          stockValue, // Now only totalMenuStockValue
-          rawMaterialStockValue, // Add raw material stock value
-          ownerBalance: ownerAccountData?.account?.balance || 0,
-          lapakBalance: lapakAccountData?.account?.balance || 0,
-        },
-        todayStats: {
-          transactions: todayTransactions.length,
-          itemsSold: itemsSoldToday,
-          averageOrder: averageOrderToday,
-          peakHour: (() => {
-            if (todayTransactions.length === 0) return 'N/A';
-            const hourCounts = Array(24).fill(0);
-            todayTransactions.forEach(t => {
-              const hour = new Date(t.timestamp).getHours();
-              hourCounts[hour]++;
-            });
-            const busiestHour = hourCounts.indexOf(Math.max(...hourCounts));
-            return `${String(busiestHour).padStart(2, '0')}:00 - ${String(busiestHour + 1).padStart(2, '0')}:00`;
-          })()
-        },
-        recentTransactions,
-        dashboardMetrics: {
-          todaySales: { value: formatCurrency(todaySales), change: salesChangeFormatted, trend: salesTrend },
-          totalTransactions: { value: todayTransactions.length.toString(), change: transChangeFormatted, trend: transTrend },
-          averageOrder: { value: formatCurrency(averageOrderToday), change: avgOrderChangeFormatted, trend: avgOrderTrend },
-          lowStock: { value: lowStockItems.toString(), change: '', trend: 'down' }
-        },
-        timestamps: {
-          menuStock: settings?.menu_stock_last_updated,
-          rawMaterials: settings?.raw_materials_last_updated,
-          lapakFunds: settings?.lapak_funds_last_updated
-        }
+    const filteredTransactions = filterType === 'all_time'
+      ? allTransactions
+      : allTransactions.filter(t => {
+        const transactionDate = new Date(t.timestamp);
+        return transactionDate >= startDate && transactionDate <= endDate;
       });
-    };
+
+    const filteredExpenses = filterType === 'all_time'
+      ? expenses
+      : expenses.filter(e => {
+        const expenseDate = new Date(e.date);
+        return expenseDate >= startDate && expenseDate <= endDate;
+      });
+
+    const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const todayString = today.toDateString();
+    const yesterdayString = yesterday.toDateString();
+
+    // --- All-Time & Working Capital Metrics (Unaffected by filter) ---
+    const initialCapital = parseFloat(settings?.initial_capital || 0);
+    const allTimeRevenue = allTransactions
+      .filter(t => t.payment_method !== 'employee_meal')
+      .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+    const allTimeExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+    const allTimeNetProfit = allTimeRevenue - allTimeExpenses;
+    const totalMenuStockValue = menuItems.reduce((sum, i) => sum + (i.stock * parseFloat(i.price || 0)), 0);
+
+    const rawMaterialStockValue = rawMaterialsData.reduce((sum, m) => {
+      // Find unit definition to check if calculable
+      const unitDef = unitsData.find(u => u.name.toLowerCase() === (m.unit || '').toLowerCase());
+      // Default to true if not found, or use the flag.
+      // Note: boolean in DB might be returned as 0/1 number.
+      const isCalculable = unitDef ? (unitDef.is_calculable === 1 || unitDef.is_calculable === true) : true;
+
+      if (!isCalculable) return sum;
+
+      const currentStock = parseInt(m.current_stock || 0);
+      const pricePerItem = parseFloat(m.price_per_item || 0);
+      const itemValue = currentStock * pricePerItem;
+      return sum + itemValue;
+    }, 0);
+
+    const totalRawMaterialQuantity = rawMaterialsData.reduce((sum, m) => {
+      return sum + parseInt(m.current_stock || 0) + parseInt(m.menu_stock || 0);
+    }, 0);
+
+    const stockValue = totalMenuStockValue + rawMaterialStockValue; let workingCapital = 0;
+    if (!isNaN(initialCapital)) {
+      workingCapital = initialCapital + allTimeRevenue + totalMenuStockValue + rawMaterialStockValue - allTimeExpenses;
+    }
+
+    // --- Metrics for Filtered Period ---
+    const totalRevenue = filteredTransactions
+      .filter(t => t.payment_method !== 'employee_meal')
+      .reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+
+    const totalExpenses = filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+
+    // Corrected "Keuntungan Kotor" calculation to use all-time figures for consistency
+    const netProfit = allTimeRevenue - allTimeExpenses + totalMenuStockValue + rawMaterialStockValue;
+
+    // --- Daily Stats Calculation (Unaffected by filter) ---
+    const todayTransactions = allTransactions.filter(t => new Date(t.timestamp).toDateString() === todayString && t.payment_method !== 'employee_meal');
+    const todaySales = todayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+    const averageOrderToday = todayTransactions.length > 0 ? todaySales / todayTransactions.length : 0;
+
+    const yesterdayTransactions = allTransactions.filter(t => new Date(t.timestamp).toDateString() === yesterdayString && t.payment_method !== 'employee_meal');
+    const yesterdaySales = yesterdayTransactions.reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
+    const averageOrderYesterday = yesterdayTransactions.length > 0 ? yesterdaySales / yesterdayTransactions.length : 0;
+
+    // --- Change & Trend Calculation ---
+    let salesChange = 0;
+    if (yesterdaySales > 0) {
+      salesChange = ((todaySales - yesterdaySales) / yesterdaySales) * 100;
+    } else if (todaySales > 0) {
+      salesChange = 100;
+    }
+    const salesChangeFormatted = `${salesChange >= 0 ? '+' : ''}${salesChange.toFixed(0)}%`;
+    const salesTrend = salesChange >= 0 ? 'up' : 'down';
+
+    const transChange = todayTransactions.length - yesterdayTransactions.length;
+    const transChangeFormatted = `${transChange >= 0 ? '+' : ''}${transChange}`;
+    const transTrend = transChange >= 0 ? 'up' : 'down';
+
+    let avgOrderChange = 0;
+    if (averageOrderYesterday > 0) {
+      avgOrderChange = ((averageOrderToday - averageOrderYesterday) / averageOrderYesterday) * 100;
+    } else if (averageOrderToday > 0) {
+      avgOrderChange = 100;
+    }
+    const avgOrderChangeFormatted = `${avgOrderChange >= 0 ? '+' : ''}${avgOrderChange.toFixed(0)}%`;
+    const avgOrderTrend = avgOrderChange >= 0 ? 'up' : 'down';
+
+    // --- Other Metrics ---
+    const itemsSoldToday = todayTransactions.flatMap(t => {
+      try {
+        const items = typeof t.items === 'string' ? JSON.parse(t.items) : t.items;
+        return Array.isArray(items) ? items : [];
+      } catch (e) {
+        console.error("Failed to parse transaction items:", e);
+        return [];
+      }
+    }).reduce((sum, i) => sum + (i.quantity || 0), 0);
+    const lowStockItems = menuItems.filter(item => item.stock <= 5 && item.stock > 0).length;
+    const recentTransactions = paginatedTransactions.slice(0, 6); // Use paginated for recent list
+
+
+
+    setDashboardData({
+      metrics: {
+        // Filtered Metrics
+        totalRevenue,
+        totalExpenses,
+        // All-Time / Unfiltered Metrics
+        netProfit, // This is the "Keuntungan Kotor" metric
+        workingCapital,
+        allTimeRevenue,
+        allTimeExpenses,
+        allTimeNetProfit,
+        initialCapital,
+        // Other
+        stockValue, // Now only totalMenuStockValue
+        rawMaterialStockValue, // Add raw material stock value
+        totalRawMaterialQuantity, // Add total quantity
+        ownerBalance: ownerAccountData?.account?.balance || 0,
+        lapakBalance: lapakAccountData?.account?.balance || 0,
+      },
+      todayStats: {
+        transactions: todayTransactions.length,
+        itemsSold: itemsSoldToday,
+        averageOrder: averageOrderToday,
+        peakHour: (() => {
+          if (todayTransactions.length === 0) return 'N/A';
+          const hourCounts = Array(24).fill(0);
+          todayTransactions.forEach(t => {
+            const hour = new Date(t.timestamp).getHours();
+            hourCounts[hour]++;
+          });
+          const busiestHour = hourCounts.indexOf(Math.max(...hourCounts));
+          return `${String(busiestHour).padStart(2, '0')}:00 - ${String(busiestHour + 1).padStart(2, '0')}:00`;
+        })()
+      },
+      recentTransactions,
+      dashboardMetrics: {
+        todaySales: { value: formatCurrency(todaySales), change: salesChangeFormatted, trend: salesTrend },
+        totalTransactions: { value: todayTransactions.length.toString(), change: transChangeFormatted, trend: transTrend },
+        averageOrder: { value: formatCurrency(averageOrderToday), change: avgOrderChangeFormatted, trend: avgOrderTrend },
+        lowStock: { value: lowStockItems.toString(), change: '', trend: 'down' }
+      },
+      timestamps: {
+        menuStock: settings?.menu_stock_last_updated,
+        rawMaterials: settings?.raw_materials_last_updated,
+        lapakFunds: settings?.lapak_funds_last_updated
+      }
+    });
+  };
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -496,16 +522,16 @@ const MainDashboard = ({ headerTitle }) => {
       description: 'Operasional & pembelian'
     },
     {
-      title: 'Nilai Stok',
-      value: formatCurrency(dashboardData.metrics.stockValue),
+      title: 'Total Kuantitas Stok',
+      value: `${dashboardData.metrics.totalRawMaterialQuantity} Item`,
       icon: 'Package',
       color: 'primary',
-      description: 'Berdasarkan harga jual'
+      description: 'Jumlah total semua bahan mentah'
     },
-        {
+    {
       title: 'Saldo Owner',
       value: formatCurrency(dashboardData.metrics.ownerBalance),
-      icon: 'Wallet', 
+      icon: 'Wallet',
       color: 'success',
       description: 'Dana lapak Di Owner'
     },
@@ -548,7 +574,7 @@ const MainDashboard = ({ headerTitle }) => {
 
   return (
     <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
-      {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
+      {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} />}
       <div className={`${theme === 'default' ? 'pt-16' : ''}`}>
         <DashboardMetricsBar metrics={dashboardData.dashboardMetrics} />
         <main className="pb-20 lg:pb-8">
@@ -677,9 +703,9 @@ const MainDashboard = ({ headerTitle }) => {
                     </div>
                     <h3 className="font-semibold text-text-primary">Stok Menu</h3>
                   </div>
-                   <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
+                  <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
                   <p className="text-sm font-medium text-text-primary">
-                    {dashboardData.timestamps?.menuStock 
+                    {dashboardData.timestamps?.menuStock
                       ? new Date(dashboardData.timestamps.menuStock).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
                       : 'Belum pernah'}
                   </p>
@@ -693,7 +719,7 @@ const MainDashboard = ({ headerTitle }) => {
                     </div>
                     <h3 className="font-semibold text-text-primary">Bahan Baku</h3>
                   </div>
-                   <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
+                  <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
                   <p className="text-sm font-medium text-text-primary">
                     {dashboardData.timestamps?.rawMaterials
                       ? new Date(dashboardData.timestamps.rawMaterials).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -709,7 +735,7 @@ const MainDashboard = ({ headerTitle }) => {
                     </div>
                     <h3 className="font-semibold text-text-primary">Uang Lapak</h3>
                   </div>
-                   <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
+                  <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
                   <p className="text-sm font-medium text-text-primary">
                     {dashboardData.timestamps?.lapakFunds
                       ? new Date(dashboardData.timestamps.lapakFunds).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -725,8 +751,8 @@ const MainDashboard = ({ headerTitle }) => {
             </div>
           </div>
         </main>
-        
+
       </div>
-              </div>
-            );
-          };export default MainDashboard;
+    </div>
+  );
+}; export default MainDashboard;

@@ -159,7 +159,10 @@ const RawMaterialStockDashboard = () => {
   };
 
   // Calculate metrics
-  const totalStockQuantity = rawMaterials.reduce((sum, material) => sum + parseInt(material.current_stock || 0) + parseInt(material.menu_stock || 0), 0);
+  const totalMenuStockValue = rawMaterials.reduce((sum, material) => {
+    if (!isUnitCalculable(material.unit)) return sum;
+    return sum + (parseInt(material.menu_stock || 0) * parseFloat(material.price_per_item || 0));
+  }, 0);
 
   // Revised calculations based on unit calculability
   const totalStockValue = rawMaterials.reduce((sum, material) => {
@@ -188,11 +191,11 @@ const RawMaterialStockDashboard = () => {
         {/* Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <MetricsCard
-            title="Total Kuantitas Stok"
-            value={`${totalStockQuantity} Item`}
-            icon="Package"
+            title="Total Nilai Stok Menu"
+            value={formatCurrency(totalMenuStockValue)}
+            icon="DollarSign"
             color="primary"
-            description="Jumlah total semua bahan mentah"
+            description="Total nilai rupiah stok menu"
           />
           <MetricsCard
             title="Total Nilai Stok"
