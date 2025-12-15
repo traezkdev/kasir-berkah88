@@ -22,7 +22,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 import { prepareTransactionDataForExport } from '../../utils/exportUtils';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 
 
 

@@ -66,40 +66,98 @@ export const exportToExcel = (data, filename = 'data') => {
     // Ensure a minimum of 2 columns for summary sections if no headers are found or are too small
     if (maxCols < 2) maxCols = 2;
 
+    // Define border style
+    const borderStyle = {
+      top: { style: 'thin', color: { rgb: '000000' } },
+      bottom: { style: 'thin', color: { rgb: '000000' } },
+      left: { style: 'thin', color: { rgb: '000000' } },
+      right: { style: 'thin', color: { rgb: '000000' } }
+    };
+
     // Main Report Title
     XLSX.utils.sheet_add_aoa(ws, [["Laporan Bisnis Gabungan"]], { origin: `A${rowIdx}` });
     if (ws[`A${rowIdx}`]) {
-      ws[`A${rowIdx}`].s = { font: { bold: true, sz: 18 }, alignment: { horizontal: "center" } };
+      ws[`A${rowIdx}`].s = {
+        font: { bold: true, sz: 18, color: { rgb: 'FFFFFF' } },
+        alignment: { horizontal: "center", vertical: "center" },
+        fill: { fgColor: { rgb: '4472C4' } },
+        border: borderStyle
+      };
     }
     // Merge main title
     if (maxCols > 1) {
       if (!ws['!merges']) ws['!merges'] = [];
       ws['!merges'].push({ s: { r: rowIdx - 1, c: 0 }, e: { r: rowIdx - 1, c: maxCols - 1 } });
+      // Apply border to all merged cells in title
+      for (let c = 0; c < maxCols; c++) {
+        const cellRef = XLSX.utils.encode_cell({ r: rowIdx - 1, c });
+        if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' };
+        ws[cellRef].s = {
+          font: { bold: true, sz: 18, color: { rgb: 'FFFFFF' } },
+          alignment: { horizontal: "center", vertical: "center" },
+          fill: { fgColor: { rgb: '4472C4' } },
+          border: borderStyle
+        };
+      }
     }
     rowIdx++;
 
     // Export Date
     XLSX.utils.sheet_add_aoa(ws, [[`Tanggal Export: ${new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}`]], { origin: `A${rowIdx}` });
     if (ws[`A${rowIdx}`]) {
-      ws[`A${rowIdx}`].s = { font: { sz: 11 }, alignment: { horizontal: "center" } };
+      ws[`A${rowIdx}`].s = {
+        font: { sz: 11 },
+        alignment: { horizontal: "center", vertical: "center" },
+        fill: { fgColor: { rgb: 'E7E6E6' } },
+        border: borderStyle
+      };
     }
     // Merge date
     if (maxCols > 1) {
       if (!ws['!merges']) ws['!merges'] = [];
       ws['!merges'].push({ s: { r: rowIdx - 1, c: 0 }, e: { r: rowIdx - 1, c: maxCols - 1 } });
+      // Apply border to all merged cells in date
+      for (let c = 0; c < maxCols; c++) {
+        const cellRef = XLSX.utils.encode_cell({ r: rowIdx - 1, c });
+        if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' };
+        ws[cellRef].s = {
+          font: { sz: 11 },
+          alignment: { horizontal: "center", vertical: "center" },
+          fill: { fgColor: { rgb: 'E7E6E6' } },
+          border: borderStyle
+        };
+      }
     }
     rowIdx += 2; // Add spacing after main title and date
 
     data.forEach(section => {
+      const sectionStartRow = rowIdx;
+
       // Section Title
       XLSX.utils.sheet_add_aoa(ws, [[section.title]], { origin: `A${rowIdx}` });
       if (ws[`A${rowIdx}`]) {
-        ws[`A${rowIdx}`].s = { font: { bold: true, sz: 14 } };
+        ws[`A${rowIdx}`].s = {
+          font: { bold: true, sz: 14, color: { rgb: 'FFFFFF' } },
+          alignment: { horizontal: "left", vertical: "center" },
+          fill: { fgColor: { rgb: '70AD47' } },
+          border: borderStyle
+        };
       }
       // Merge section title
       if (maxCols > 1) {
         if (!ws['!merges']) ws['!merges'] = [];
         ws['!merges'].push({ s: { r: rowIdx - 1, c: 0 }, e: { r: rowIdx - 1, c: maxCols - 1 } });
+        // Apply border to all merged cells in section title
+        for (let c = 0; c < maxCols; c++) {
+          const cellRef = XLSX.utils.encode_cell({ r: rowIdx - 1, c });
+          if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' };
+          ws[cellRef].s = {
+            font: { bold: true, sz: 14, color: { rgb: 'FFFFFF' } },
+            alignment: { horizontal: "left", vertical: "center" },
+            fill: { fgColor: { rgb: '70AD47' } },
+            border: borderStyle
+          };
+        }
       }
       rowIdx++;
 
@@ -108,13 +166,32 @@ export const exportToExcel = (data, filename = 'data') => {
       section.headers.forEach((_, colIdx) => {
         const cellRef = XLSX.utils.encode_cell({ r: rowIdx - 1, c: colIdx });
         if (ws[cellRef]) {
-          ws[cellRef].s = { font: { bold: true } };
+          ws[cellRef].s = {
+            font: { bold: true, sz: 11, color: { rgb: 'FFFFFF' } },
+            alignment: { horizontal: "center", vertical: "center" },
+            fill: { fgColor: { rgb: '5B9BD5' } },
+            border: borderStyle
+          };
         }
       });
       rowIdx++;
 
       // Section Rows
       XLSX.utils.sheet_add_aoa(ws, section.rows, { origin: `A${rowIdx}` });
+      // Apply styling to data rows
+      section.rows.forEach((row, rowOffset) => {
+        const isEvenRow = rowOffset % 2 === 0;
+        row.forEach((_, colIdx) => {
+          const cellRef = XLSX.utils.encode_cell({ r: rowIdx - 1 + rowOffset, c: colIdx });
+          if (ws[cellRef]) {
+            ws[cellRef].s = {
+              alignment: { horizontal: "left", vertical: "center" },
+              fill: { fgColor: { rgb: isEvenRow ? 'FFFFFF' : 'F2F2F2' } },
+              border: borderStyle
+            };
+          }
+        });
+      });
       rowIdx += section.rows.length;
       rowIdx++; // Add spacing between sections
     });

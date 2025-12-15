@@ -4,21 +4,21 @@ import Button from '../../../components/ui/Button';
 import authFetch from '../../../utils/authFetch';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
 
 const DailyRecapPopup = ({ isOpen, onClose }) => {
-    const [selectedDate, setSelectedDate] = useState(() => {
+  const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
@@ -96,7 +96,7 @@ const DailyRecapPopup = ({ isOpen, onClose }) => {
             <Icon name="X" size={24} />
           </button>
         </div>
-        
+
         <div className="space-y-4">
           <div>
             <label htmlFor="recap-date" className="block text-sm font-medium text-text-secondary mb-1">
