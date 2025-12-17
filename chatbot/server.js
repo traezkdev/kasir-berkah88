@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const mysql = require('mysql2/promise');
 const envPath = path.join(__dirname, '.env');
 
 console.log(`[DEBUG_STARTUP] Current Dir (__dirname): ${__dirname}`);
@@ -136,6 +137,15 @@ app.post('/chat', async (req, res) => {
 
         console.log(`[DEBUG] Menerima pesan: "${message}"`);
 
+        // --- DB CONFIGURATION (Global in Route) ---
+        const dbConfig = {
+            host: process.env.DB_HOST || 'localhost',
+            user: process.env.DB_USER || 'root',
+            password: process.env.DB_PASSWORD || '',
+            database: process.env.DB_DATABASE || 'kasir',
+            port: process.env.DB_PORT || 3306
+        };
+
         // Trigger keywords
         // Trigger keywords (Expanded)
         if (lowerMessage.includes('jual') || lowerMessage.includes('sales') || lowerMessage.includes('laporan') ||
@@ -149,20 +159,9 @@ app.post('/chat', async (req, res) => {
             lowerMessage.includes('beli') || lowerMessage.includes('sisa')) {
             console.log("[DEBUG] Keyword keuangan terdeteksi. Mencoba akses database...");
             try {
-                const axios = require('axios');
-                const path = require('path');
-                const fs = require('fs');
-                const mysql = require('mysql2/promise');
+                // mysql is now global
 
-                // --- DB CONFIGURATION ---
-                // Menggunakan konfigurasi dari .env di folder chatbot saja.
-                const dbConfig = {
-                    host: process.env.DB_HOST || 'localhost',
-                    user: process.env.DB_USER || 'root',
-                    password: process.env.DB_PASSWORD || '',
-                    database: process.env.DB_DATABASE || 'kasir',
-                    port: process.env.DB_PORT || 3306
-                };
+                // dbConfig is now defined in outer scope
 
                 console.log("[DEBUG] Konfigurasi DB:", { ...dbConfig, password: '***' });
 
@@ -313,7 +312,7 @@ app.post('/chat', async (req, res) => {
 
         const finalContext = appDescription + "\n\n" + contextText + (dynamicContext ? "\n\n" + dynamicContext : "");
 
-        // 3. System Prompt (Indonesian - GAUL STYLE & FLEXIBLE)
+        // 3. System Prompt (Indonesian - GAUL STYLE & FLEXIBLE & ACTION CAPABLE)
         const systemPrompt = `
 Anda adalah asisten AI yang asik dan cerdas untuk aplikasi "Kasir Berkah88".
 Nama panggilan Anda: "BerkahBot".
@@ -323,6 +322,30 @@ STYLE BICARA:
 2.  **Ramah & Helpful**: Selalu berusaha membantu dengan nada positif.
 3.  **Humoris**: Boleh bercanda sedikit biar gak kaku.
 4.  **Emoji**: Gunakan emoji biar chat terasa hidup 😉.
+
+FITUR SPESIAL (TRANSAKSI VIA CHAT):
+Jika user INGIN MELAKUKAN TRANSAKSI/PENJUALAN (misal: "Jual 2 Ayam", "Beli es teh 1"), JANGAN MENJAWAB DENGAN TEKS BIASA.
+Gunakan format JSON "COMMAND_TRANSACTION" berikut:
+\`\`\`json
+{
+  "command": "TRANSACTION",
+  "items": [
+    { "name": "nama menu (sesuaikan dgn database)", "qty": 1 }
+  ]
+}
+\`\`\`
+CONTOH:
+User: "Jual 2 Lele Penyet dan 1 Es Teh"
+Output Anda:
+\`\`\`json
+{
+  "command": "TRANSACTION",
+  "items": [
+    { "name": "Lele penyet", "qty": 2 },
+    { "name": "Es Teh", "qty": 1 }
+  ]
+}
+\`\`\`
 
 ATURAN MENJAWAB:
 - **Pertanyaan Teknis/Data**: Prioritaskan [DATA REAL-TIME] dan KONTEKS yang diberikan.
@@ -347,7 +370,47 @@ ${finalContext}
             max_tokens: 500,
         });
 
-        const reply = chatCompletion.choices[0]?.message?.content || "Maaf, terjadi kesalahan.";
+        let reply = chatCompletion.choices[0]?.message?.content || "Maaf, terjadi kesalahan.";
+
+        // --- CHECK FOR TRANSACTION COMMAND (JSON) ---
+        if (reply.includes('"command": "TRANSACTION"')) {
+            try {
+                // Extract JSON from potential markdown blocks
+                const jsonMatch = reply.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    const commandObj = JSON.parse(jsonMatch[0]);
+                    console.log("[DEBUG] Mendeteksi Command Transaksi:", commandObj);
+
+                    if (commandObj.command === 'TRANSACTION') {
+                        // Process the transaction
+                        const result = await processTransaction(commandObj.items, dbConfig);
+
+                        // Ask AI to confirm the result to the user
+                        const confirmationCtx = `
+                        [SYSTEM RESULT]
+                        Status: ${result.status}
+                        Detail: ${result.message}
+                        Total: Rp ${result.total ? result.total.toLocaleString('id-ID') : 0}
+                        Items: ${JSON.stringify(result.items)}
+                        `;
+
+                        const confirmCompletion = await groq.chat.completions.create({
+                            messages: [
+                                { role: 'system', content: systemPrompt + "\n\n" + confirmationCtx },
+                                { role: 'user', content: "Berikan konfirmasi ke user berdasarkan [SYSTEM RESULT] di atas dengan gaya santai." }
+                            ],
+                            model: 'llama-3.3-70b-versatile',
+                            temperature: 0.7
+                        });
+                        reply = confirmCompletion.choices[0]?.message?.content;
+                    }
+                }
+            } catch (e) {
+                console.error("[DEBUG] Gagal memproses JSON transaksi:", e);
+                reply = "Waduh, aku bingung bacanya bro. Coba lagi ya!";
+            }
+        }
+
         res.json({ reply });
 
     } catch (error) {
@@ -355,6 +418,82 @@ ${finalContext}
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
+
+// --- HELPER FUNCTION: Process Transaction ---
+async function processTransaction(itemsRequested, config) {
+    const connection = await mysql.createConnection(config);
+    let totalTransaction = 0;
+    let successItems = [];
+    let failedItems = [];
+
+    try {
+        await connection.beginTransaction();
+
+        // 1. Get All Menu Items for matching
+        const [menuRows] = await connection.execute('SELECT * FROM menu_items');
+
+        for (const reqItem of itemsRequested) {
+            // Simple Fuzzy Match (Case insensitive check)
+            const matchedMenu = menuRows.find(m => m.name.toLowerCase().includes(reqItem.name.toLowerCase()));
+
+            if (matchedMenu) {
+                const qty = parseInt(reqItem.qty) || 1;
+                const price = parseFloat(matchedMenu.price);
+                const subtotal = price * qty;
+
+                // Update Stock
+                // NOTE: In strict logic we check stock first. For prototype we allow negative for now 
+                // or we can implement strict check. Let's do simple deduction.
+                await connection.execute('UPDATE menu_items SET stock = stock - ? WHERE id = ?', [qty, matchedMenu.id]);
+
+                totalTransaction += subtotal;
+                successItems.push({
+                    id: matchedMenu.id,
+                    name: matchedMenu.name,
+                    price: price,
+                    quantity: qty,
+                    category: matchedMenu.category,
+                    image_url: matchedMenu.image_url
+                });
+            } else {
+                failedItems.push(reqItem.name);
+            }
+        }
+
+        if (successItems.length > 0) {
+            // Create Transaction Record
+            const txnId = `TXN${Date.now()}`;
+            const txnDate = new Date(); // Local time will be used by DB or adjusted
+
+            // Insert into 'transactions' TABLE
+            // Structure: id, timestamp, items (JSON), total, ppn, isEmployeeMeal, payment_method, cash_paid, change
+            await connection.execute(
+                `INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, cash_paid, \`change\`) 
+                 VALUES (?, NOW(), ?, ?, 0, 0, 'Tunai', ?, 0)`,
+                [txnId, JSON.stringify(successItems), totalTransaction, totalTransaction]
+            );
+
+            await connection.commit();
+            return {
+                status: 'SUCCESS',
+                message: failedItems.length > 0 ? `Transaksi berhasil sebagian. Item tidak ditemukan: ${failedItems.join(', ')}` : 'Transaksi Berhasil!',
+                total: totalTransaction,
+                items: successItems
+            };
+        } else {
+            await connection.rollback();
+            return { status: 'FAILED', message: 'Tidak ada menu yang cocok ditemukan.' };
+        }
+
+    } catch (err) {
+        await connection.rollback();
+        console.error("Transaction Error:", err);
+        return { status: 'ERROR', message: err.message };
+    } finally {
+        await connection.end();
+    }
+}
+
 
 app.listen(PORT, () => {
     console.log(`Chatbot Server running on port ${PORT}`);
