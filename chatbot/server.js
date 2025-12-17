@@ -137,7 +137,16 @@ app.post('/chat', async (req, res) => {
         console.log(`[DEBUG] Menerima pesan: "${message}"`);
 
         // Trigger keywords
-        if (lowerMessage.includes('jual') || lowerMessage.includes('sales') || lowerMessage.includes('laporan') || lowerMessage.includes('pendapatan') || lowerMessage.includes('uang') || lowerMessage.includes('transaksi') || lowerMessage.includes('revenue') || lowerMessage.includes('income') || lowerMessage.includes('modal') || lowerMessage.includes('saldo') || lowerMessage.includes('owner') || lowerMessage.includes('kas')) {
+        // Trigger keywords (Expanded)
+        if (lowerMessage.includes('jual') || lowerMessage.includes('sales') || lowerMessage.includes('laporan') ||
+            lowerMessage.includes('pendapatan') || lowerMessage.includes('uang') || lowerMessage.includes('transaksi') ||
+            lowerMessage.includes('revenue') || lowerMessage.includes('income') || lowerMessage.includes('modal') ||
+            lowerMessage.includes('saldo') || lowerMessage.includes('owner') || lowerMessage.includes('kas') ||
+            lowerMessage.includes('stok') || lowerMessage.includes('stock') || lowerMessage.includes('bahan') ||
+            lowerMessage.includes('menu') || lowerMessage.includes('harga') || lowerMessage.includes('price') ||
+            lowerMessage.includes('karyawan') || lowerMessage.includes('pegawai') || lowerMessage.includes('staff') ||
+            lowerMessage.includes('belanja') || lowerMessage.includes('expense') || lowerMessage.includes('pengeluaran') ||
+            lowerMessage.includes('beli') || lowerMessage.includes('sisa')) {
             console.log("[DEBUG] Keyword keuangan terdeteksi. Mencoba akses database...");
             try {
                 const axios = require('axios');
@@ -163,19 +172,19 @@ app.post('/chat', async (req, res) => {
                     const connection = await mysql.createConnection(dbConfig);
                     console.log("[DEBUG] Koneksi DB berhasil. Mengambil data lengkap (Penjualan + Saldo)...");
 
-                    // 1. Query Hari Ini
+                    // 1. Query Hari Ini (Penjualan)
                     const [rowsToday] = await connection.execute(
                         `SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as revenue 
                          FROM transactions WHERE DATE(timestamp) = CURDATE() AND deleted_at IS NULL`
                     );
 
-                    // 2. Query Kemarin
+                    // 2. Query Kemarin (Penjualan)
                     const [rowsYesterday] = await connection.execute(
                         `SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as revenue 
                          FROM transactions WHERE DATE(timestamp) = CURDATE() - INTERVAL 1 DAY AND deleted_at IS NULL`
                     );
 
-                    // 3. Query Bulan Ini
+                    // 3. Query Bulan Ini (Penjualan)
                     const [rowsMonth] = await connection.execute(
                         `SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as revenue 
                          FROM transactions 
@@ -190,7 +199,38 @@ app.post('/chat', async (req, res) => {
                         const [accRows] = await connection.execute(`SELECT name, balance FROM accounts`);
                         rowsAccounts = accRows;
                     } catch (accErr) {
-                        console.warn("[DEBUG] Tabel accounts tidak ditemukan atau error:", accErr.message);
+                        console.warn("[DEBUG] Tabel accounts tidak ditemukan:", accErr.message);
+                    }
+
+                    // 5. Query Menu & Stok (Menu Items)
+                    const [rowsMenu] = await connection.execute(
+                        `SELECT name, price, stock FROM menu_items ORDER BY name ASC`
+                    );
+
+                    // 6. Query Bahan Baku Menipis (Raw Materials)
+                    const [rowsMaterialsLow] = await connection.execute(
+                        `SELECT name, current_stock, unit, stok_minimum 
+                         FROM raw_materials 
+                         WHERE current_stock <= stok_minimum 
+                         ORDER BY current_stock ASC`
+                    );
+
+                    // 7. Query Pengeluaran (Expenses)
+                    const [rowsExpenseToday] = await connection.execute(
+                        `SELECT COALESCE(SUM(amount), 0) as total FROM expenses WHERE DATE(date) = CURDATE()`
+                    );
+                    const [rowsExpenseMonth] = await connection.execute(
+                        `SELECT COALESCE(SUM(amount), 0) as total FROM expenses 
+                         WHERE MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())`
+                    );
+
+                    // 8. Query Karyawan (Employees)
+                    let rowsEmployees = [];
+                    try {
+                        const [empRows] = await connection.execute(`SELECT name, position FROM employees`);
+                        rowsEmployees = empRows;
+                    } catch (empErr) {
+                        console.warn("[DEBUG] Tabel employees tidak ditemukan:", empErr.message);
                     }
 
                     await connection.end();
@@ -198,35 +238,72 @@ app.post('/chat', async (req, res) => {
                     const today = rowsToday[0];
                     const yesterday = rowsYesterday[0];
                     const month = rowsMonth[0];
+                    const expenseToday = rowsExpenseToday[0].total;
+                    const expenseMonth = rowsExpenseMonth[0].total;
 
-                    // Format Account Data
+                    // Format Account (Saldo)
                     let accountsInfo = "";
                     if (rowsAccounts.length > 0) {
-                        accountsInfo += "\n=== SISA SALDO / MODAL ===\n";
+                        accountsInfo += "\n=== 💰 SISA SALDO / MODAL ===\n";
                         rowsAccounts.forEach(acc => {
                             const formattedName = acc.name.replace(/_/g, ' ').toUpperCase();
                             accountsInfo += `- ${formattedName}: Rp ${parseInt(acc.balance).toLocaleString('id-ID')}\n`;
                         });
                     }
 
+                    // Format Menu
+                    let menuInfo = "\n=== 🍔 DAFTAR MENU & STOK ===\n";
+                    if (rowsMenu.length > 0) {
+                        rowsMenu.forEach(m => {
+                            menuInfo += `- ${m.name}: Rp ${parseInt(m.price).toLocaleString('id-ID')} (Stok: ${m.stock})\n`;
+                        });
+                    } else {
+                        menuInfo += "(Tidak ada data menu)\n";
+                    }
+
+                    // Format Low Stock Materials
+                    let materialsInfo = "\n=== ⚠️ PERINGATAN STOK BAHAN BAKU (MENIPIS) ===\n";
+                    if (rowsMaterialsLow.length > 0) {
+                        rowsMaterialsLow.forEach(m => {
+                            materialsInfo += `- ${m.name}: Sisa ${parseFloat(m.current_stock)} ${m.unit} (Min: ${parseFloat(m.stok_minimum)})\n`;
+                        });
+                    } else {
+                        materialsInfo += "(Aman! Tidak ada bahan baku yang mendesak)\n";
+                    }
+
+                    // Format Employees
+                    let employeeInfo = "\n=== 👥 DATA KARYAWAN ===\n";
+                    if (rowsEmployees.length > 0) {
+                        rowsEmployees.forEach(e => {
+                            employeeInfo += `- ${e.name} (${e.position})\n`;
+                        });
+                    }
+
                     dynamicContext = `
                     [DATA REAL-TIME DARI DATABASE]
                     
-                    === LAPORAN PENJUALAN ===
+                    === 📊 LAPORAN KEUANGAN ===
                     Hari Ini (${new Date().toLocaleDateString('id-ID')}):
-                    - Transaksi: ${today.count}
-                    - Pendapatan: Rp ${parseInt(today.revenue).toLocaleString('id-ID')}
+                    - Transaksi Masuk: ${today.count}
+                    - Omzet Penjualan: Rp ${parseInt(today.revenue).toLocaleString('id-ID')}
+                    - Pengeluaran: Rp ${parseInt(expenseToday).toLocaleString('id-ID')}
+                    - Profit Bersih (Est): Rp ${(today.revenue - expenseToday).toLocaleString('id-ID')}
                     
                     Kemarin:
                     - Transaksi: ${yesterday.count}
-                    - Pendapatan: Rp ${parseInt(yesterday.revenue).toLocaleString('id-ID')}
+                    - Omzet: Rp ${parseInt(yesterday.revenue).toLocaleString('id-ID')}
                     
                     Bulan Ini:
                     - Transaksi: ${month.count}
-                    - Pendapatan: Rp ${parseInt(month.revenue).toLocaleString('id-ID')}
+                    - Omzet: Rp ${parseInt(month.revenue).toLocaleString('id-ID')}
+                    - Pengeluaran: Rp ${parseInt(expenseMonth).toLocaleString('id-ID')}
+
                     ${accountsInfo}
+                    ${menuInfo}
+                    ${materialsInfo}
+                    ${employeeInfo}
                     `;
-                    console.log("[DEBUG] Context Data Terupdate:", dynamicContext);
+                    console.log("[DEBUG] Context Data Terupdate Lengkap!");
                 }
             } catch (err) {
                 console.error("[DEBUG] Error fetching dynamic data:", err.message);
@@ -249,8 +326,11 @@ STYLE BICARA:
 
 ATURAN MENJAWAB:
 - **Pertanyaan Teknis/Data**: Prioritaskan [DATA REAL-TIME] dan KONTEKS yang diberikan.
-- **Pertanyaan Umum/Curhat**: Jawablah secara bebas menggunakan pengetahuan umum Anda. Jangan terpaku pada data toko jika user cuma mau ngobrol santai (misal: sapaan, basa-basi, atau pertanyaan umum).
-- **Unknown Data**: Jika ditanya data toko tapi datanya tidak ada di konteks, bilang aja jujur "Waduh, data itu gak ada di catetanku bos."
+    - Soal Stok/Menu: Cek bagian "DAFTAR MENU & STOK" atau "PERINGATAN STOK BAHAN BAKU".
+    - Soal Keuangan/Profit: Cek "LAPORAN KEUANGAN".
+    - Soal Karyawan: Cek "DATA KARYAWAN".
+- **Pertanyaan Umum/Curhat**: Jawablah secara bebas.
+- **Unknown Data**: Jika data tidak ada di "DATA REAL-TIME", katakan jujur bahwa Anda tidak menemukannya.
 
 KONTEKS PENGETAHUAN & DATA:
 ${finalContext}
