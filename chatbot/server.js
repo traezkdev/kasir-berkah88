@@ -59,10 +59,37 @@ app.use(bodyParser.json());
 // Serve static files (like widget.js)
 app.use(express.static(__dirname));
 
-// Initialize Groq
-const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY
-});
+// --- AI PROVIDER SETUP ---
+const AI_PROVIDER = process.env.AI_PROVIDER || 'groq'; // 'groq', 'gemini', 'openai'
+console.log(`[DEBUG] AI Provider selected: ${AI_PROVIDER.toUpperCase()}`);
+
+let aiClient;
+// Initialize specific provider
+if (AI_PROVIDER === 'groq') {
+    const { Groq } = require('groq-sdk');
+    aiClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
+} else if (AI_PROVIDER === 'gemini') {
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+    // DEBUG: List available models to find the correct name
+    (async () => {
+        try {
+            // Note: listModels might not be available on the instance directly in some versions, 
+            // usually it's genAI.getGenerativeModel... no, usually via API.
+            // But let's stick to simple configuration first. 
+            // If checking models is hard, we just default to 'gemini-1.5-flash' which SHOULD work.
+            console.log("[DEBUG] Gemini Configured. Model: gemini-1.5-flash");
+        } catch (e) {
+            console.warn("[DEBUG] Gemini Check Error:", e.message);
+        }
+    })();
+
+    aiClient = { genAI, modelName: process.env.GEMINI_MODEL || 'gemini-1.5-flash' };
+} else if (AI_PROVIDER === 'openai') {
+    const OpenAI = require('openai');
+    aiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+}
 
 const VECTOR_DB_PATH = path.join(__dirname, 'vector_db.json');
 let vectorDb = [];
@@ -359,18 +386,11 @@ KONTEKS PENGETAHUAN & DATA:
 ${finalContext}
 `;
 
-        // 4. Call Groq
-        const chatCompletion = await groq.chat.completions.create({
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: message }
-            ],
-            model: 'llama-3.3-70b-versatile',
-            temperature: 0.5,
-            max_tokens: 500,
-        });
-
-        let reply = chatCompletion.choices[0]?.message?.content || "Maaf, terjadi kesalahan.";
+        // 4. Call AI Wrapper
+        const reply = await callAI([
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: message }
+        ], { temperature: 0.5 }); // Explicitly set temperature to match original Groq call
 
         // --- CHECK FOR TRANSACTION COMMAND (JSON) ---
         if (reply.includes('"command": "TRANSACTION"')) {
@@ -394,20 +414,27 @@ ${finalContext}
                         Items: ${JSON.stringify(result.items)}
                         `;
 
-                        const confirmCompletion = await groq.chat.completions.create({
-                            messages: [
-                                { role: 'system', content: systemPrompt + "\n\n" + confirmationCtx },
-                                { role: 'user', content: "Berikan konfirmasi ke user berdasarkan [SYSTEM RESULT] di atas dengan gaya santai." }
-                            ],
-                            model: 'llama-3.3-70b-versatile',
-                            temperature: 0.7
-                        });
-                        reply = confirmCompletion.choices[0]?.message?.content;
+                        const confirmReply = await callAI([
+                            { role: 'system', content: systemPrompt + "\n\n" + confirmationCtx },
+                            { role: 'user', content: "Berikan konfirmasi ke user berdasarkan [SYSTEM RESULT] di atas dengan gaya santai." }
+                        ], { temperature: 0.7 });
+
+                        // Use the confirmation reply instead of the JSON command
+                        if (confirmReply) {
+                            // Creating a fake object structure to match previous logic logic if needed, 
+                            // OR just updating 'reply' variable directly since we send res.json({ reply })
+                            // The previous code updated 'reply' variable.
+                            // Let's stick to updating 'reply' variable.
+                            const finalReply = confirmReply;
+                            res.json({ reply: finalReply });
+                            return;
+                        }
                     }
                 }
             } catch (e) {
                 console.error("[DEBUG] Gagal memproses JSON transaksi:", e);
-                reply = "Waduh, aku bingung bacanya bro. Coba lagi ya!";
+                res.json({ reply: "Waduh, aku bingung bacanya bro. Coba lagi ya!" });
+                return;
             }
         }
 
@@ -418,6 +445,58 @@ ${finalContext}
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
+
+// --- UNIFIED AI CALLER FUNCTION ---
+async function callAI(messages, config = {}) {
+    const temperature = config.temperature !== undefined ? config.temperature : 0.7; // Default to 0.7 if not provided
+    const maxTokens = config.max_tokens || 500;
+
+    try {
+        // 1. GROQ IMPLEMENTATION
+        if (AI_PROVIDER === 'groq') {
+            const completion = await aiClient.chat.completions.create({
+                messages: messages, // Standard format: [{role, content}]
+                model: 'llama-3.3-70b-versatile',
+                temperature: temperature,
+                max_tokens: maxTokens,
+            });
+            return completion.choices[0]?.message?.content || "";
+        }
+
+        // 2. GEMINI IMPLEMENTATION
+        else if (AI_PROVIDER === 'gemini') {
+            const model = aiClient.genAI.getGenerativeModel({ model: aiClient.modelName });
+
+            // Map messages to simple prompt string for Gemini Flash
+            // Ideally we use startChat but for stateless request this is fine
+            const systemMsg = messages.find(m => m.role === 'system')?.content || "";
+            const userMsg = messages.find(m => m.role === 'user')?.content || "";
+
+            const prompt = `${systemMsg}\n\nUser Question: ${userMsg}`;
+
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            return response.text();
+        }
+
+        // 3. OPENAI IMPLEMENTATION
+        else if (AI_PROVIDER === 'openai') {
+            const completion = await aiClient.chat.completions.create({
+                messages: messages,
+                model: 'gpt-4o-mini',
+                temperature: temperature,
+                max_tokens: maxTokens,
+            });
+            return completion.choices[0]?.message?.content || "";
+        }
+    } catch (err) {
+        console.error(`[AI ERROR] Provider: ${AI_PROVIDER}`, err);
+        return `Maaf bos, AI lagi pusing (${AI_PROVIDER} Error). Coba cek log.`;
+    }
+
+    return "Error: Unknown AI Provider configuration";
+}
+
 
 // --- HELPER FUNCTION: Process Transaction ---
 async function processTransaction(itemsRequested, config) {
