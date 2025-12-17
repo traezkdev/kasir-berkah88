@@ -1,9 +1,51 @@
-require('dotenv').config();
+const path = require('path');
+const fs = require('fs');
+const envPath = path.join(__dirname, '.env');
+
+console.log(`[DEBUG_STARTUP] Current Dir (__dirname): ${__dirname}`);
+console.log(`[DEBUG_STARTUP] VERSION CHECK: v-${Date.now()} (Pastikan kode ini ter-upload)`);
+console.log(`[DEBUG_STARTUP] Target .env Path: ${envPath}`);
+
+if (fs.existsSync(envPath)) {
+    console.log(`[DEBUG_STARTUP] File .env DITEMUKAN. Mencoba memuat...`);
+
+    // DEBUG: Read raw file content to see what's actually inside
+    try {
+        const rawEnv = fs.readFileSync(envPath, 'utf8');
+        console.log(`[DEBUG_STARTUP] Isi file .env (Masked):`);
+        rawEnv.split('\n').forEach(line => {
+            if (line.trim().startsWith('DB_PASSWORD')) {
+                console.log(`   DB_PASSWORD=**** (Panjang: ${line.split('=')[1]?.trim().length || 0})`);
+            } else if (line.trim()) {
+                console.log(`   ${line.trim()}`);
+            }
+        });
+    } catch (err) {
+        console.error(`[DEBUG_STARTUP] Gagal membaca raw file: ${err.message}`);
+    }
+
+    // Force override in case system env vars are set
+    const result = require('dotenv').config({ path: envPath, override: true });
+
+    if (result.error) {
+        console.error(`[DEBUG_STARTUP] Error parsing .env: ${result.error.message}`);
+    } else {
+        console.log(`[DEBUG_STARTUP] .env berhasil dimuat via dotenv (Override active).`);
+    }
+} else {
+    console.warn(`[DEBUG_STARTUP] 🔥 File .env TIDAK DITEMUKAN di path tersebut!`);
+}
+
+// Log loaded values
+console.log(`[DEBUG_STARTUP] FINAL PROCESS.ENV VALUES:`);
+console.log(`- DB_HOST: ${process.env.DB_HOST}`);
+console.log(`- DB_USER: ${process.env.DB_USER}`);
+console.log(`- DB_DATABASE: ${process.env.DB_DATABASE}`);
+console.log(`- DB_PORT: ${process.env.DB_PORT}`);
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const fs = require('fs');
-const path = require('path');
 const { pipeline } = require('@xenova/transformers');
 const Groq = require('groq-sdk');
 
