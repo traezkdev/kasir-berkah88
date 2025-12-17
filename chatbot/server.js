@@ -103,63 +103,17 @@ app.post('/chat', async (req, res) => {
                 const fs = require('fs');
                 const mysql = require('mysql2/promise');
 
-                // --- DB CONFIGURATION STRATEGY ---
-                // 1. Try to read credentials from Standard Environment Variables (Process.env)
-                // 2. Fallback to reading ../backend/.env file (Local Dev)
-
-                let dbConfig = {
-                    host: process.env.DB_HOST,
-                    user: process.env.DB_USER,
-                    password: process.env.DB_PASSWORD,
-                    database: process.env.DB_DATABASE,
-                    port: process.env.DB_PORT
+                // --- DB CONFIGURATION ---
+                // Menggunakan konfigurasi dari .env di folder chatbot saja.
+                const dbConfig = {
+                    host: process.env.DB_HOST || 'localhost',
+                    user: process.env.DB_USER || 'root',
+                    password: process.env.DB_PASSWORD || '',
+                    database: process.env.DB_DATABASE || 'kasir',
+                    port: process.env.DB_PORT || 3306
                 };
 
-                // Helper to safely parse env lines
-                const parseEnvLine = (line) => {
-                    const idx = line.indexOf('=');
-                    if (idx === -1) return null;
-                    const key = line.substring(0, idx).trim();
-                    const val = line.substring(idx + 1).trim();
-                    return { key, val };
-                };
-
-                // If any Env var is missing, try to load from backend .env
-                if (!dbConfig.host || !dbConfig.user || !dbConfig.database) {
-                    const backendEnvPath = path.join(__dirname, '..', 'backend', '.env');
-                    console.log(`[DEBUG] Process Env belum lengkap. Mencoba fallback ke file: ${backendEnvPath}`);
-
-                    if (fs.existsSync(backendEnvPath)) {
-                        try {
-                            const envFile = fs.readFileSync(backendEnvPath, 'utf8');
-                            const envConfig = {};
-                            envFile.split('\n').forEach(line => {
-                                const parsed = parseEnvLine(line);
-                                if (parsed) envConfig[parsed.key] = parsed.val;
-                            });
-
-                            // Merge File Config with existing config (Process Env wins if present)
-                            dbConfig.host = dbConfig.host || envConfig.DB_HOST || 'localhost';
-                            dbConfig.user = dbConfig.user || envConfig.DB_USER || 'root';
-                            dbConfig.password = dbConfig.password || envConfig.DB_PASSWORD || '';
-                            dbConfig.database = dbConfig.database || envConfig.DB_DATABASE || 'kasir';
-                            dbConfig.port = dbConfig.port || envConfig.DB_PORT || 3306;
-
-                            console.log("[DEBUG] Berhasil memuat credential dari file .env backend.");
-                        } catch (e) {
-                            console.warn("[DEBUG] Gagal membaca ../backend/.env", e.message);
-                        }
-                    } else {
-                        console.warn("[DEBUG] File .env backend TIDAK DITEMUKAN dan Env Vars tidak lengkap.");
-                    }
-                }
-
-                // Final check before connection
-                dbConfig.host = dbConfig.host || 'localhost';
-                dbConfig.user = dbConfig.user || 'root';
-                dbConfig.password = dbConfig.password || '';
-                dbConfig.database = dbConfig.database || 'kasir';
-                dbConfig.port = dbConfig.port || 3306;
+                console.log("[DEBUG] Konfigurasi DB:", { ...dbConfig, password: '***' });
 
                 console.log("[DEBUG] Konfigurasi DB Final:", { ...dbConfig, password: '***' });
 
@@ -240,24 +194,21 @@ app.post('/chat', async (req, res) => {
 
         const finalContext = appDescription + "\n\n" + contextText + (dynamicContext ? "\n\n" + dynamicContext : "");
 
-        // 3. System Prompt (Indonesian - GAUL STYLE)
+        // 3. System Prompt (Indonesian - GAUL STYLE & FLEXIBLE)
         const systemPrompt = `
 Anda adalah asisten AI yang asik dan cerdas untuk aplikasi "Kasir Berkah88".
 Nama panggilan Anda: "BerkahBot".
 
 STYLE BICARA:
-1.  **Santai & Gaul**: Jangan kaku kayak robot. Pake bahasa percakapan sehari-hari (gue/lo boleh, aku/kamu boleh, tergantung user).
-2.  **Ramah & Helpful**: Jawab dengan nada membantu tapi tetep santuy.
-3.  **To The Point**: Gak usah bertele-tele, tapi tetep jelas.
-4.  **Emoji**: Pake emoji secukupnya biar seru 😉.
+1.  **Santai & Gaul**: Gunakan bahasa percakapan sehari-hari yang luwes (gue/lo, aku/kamu).
+2.  **Ramah & Helpful**: Selalu berusaha membantu dengan nada positif.
+3.  **Humoris**: Boleh bercanda sedikit biar gak kaku.
+4.  **Emoji**: Gunakan emoji biar chat terasa hidup 😉.
 
-TUGAS UTAMA:
-- Bantuin owner toko ngecek laporan penjualan.
-- Jelasin fitur aplikasi kalo ada yang nanya.
-
-SUMBER DATA:
-- Gunakan [DATA REAL-TIME] di bawah untuk jawab pertanyaan soal "berapa omzet", "laporan hari ini", dsb.
-- Jika data 0 atau tidak ada, bilang aja "Belum ada transaksi nih hari ini, semangat bos!" atau sejenisnya.
+ATURAN MENJAWAB:
+- **Pertanyaan Teknis/Data**: Prioritaskan [DATA REAL-TIME] dan KONTEKS yang diberikan.
+- **Pertanyaan Umum/Curhat**: Jawablah secara bebas menggunakan pengetahuan umum Anda. Jangan terpaku pada data toko jika user cuma mau ngobrol santai (misal: sapaan, basa-basi, atau pertanyaan umum).
+- **Unknown Data**: Jika ditanya data toko tapi datanya tidak ada di konteks, bilang aja jujur "Waduh, data itu gak ada di catetanku bos."
 
 KONTEKS PENGETAHUAN & DATA:
 ${finalContext}
