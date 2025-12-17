@@ -115,6 +115,15 @@ app.post('/chat', async (req, res) => {
                     port: process.env.DB_PORT
                 };
 
+                // Helper to safely parse env lines
+                const parseEnvLine = (line) => {
+                    const idx = line.indexOf('=');
+                    if (idx === -1) return null;
+                    const key = line.substring(0, idx).trim();
+                    const val = line.substring(idx + 1).trim();
+                    return { key, val };
+                };
+
                 // If any Env var is missing, try to load from backend .env
                 if (!dbConfig.host || !dbConfig.user || !dbConfig.database) {
                     const backendEnvPath = path.join(__dirname, '..', 'backend', '.env');
@@ -125,15 +134,15 @@ app.post('/chat', async (req, res) => {
                             const envFile = fs.readFileSync(backendEnvPath, 'utf8');
                             const envConfig = {};
                             envFile.split('\n').forEach(line => {
-                                const [key, val] = line.split('=');
-                                if (key && val) envConfig[key.trim()] = val.trim();
+                                const parsed = parseEnvLine(line);
+                                if (parsed) envConfig[parsed.key] = parsed.val;
                             });
 
                             // Merge File Config with existing config (Process Env wins if present)
                             dbConfig.host = dbConfig.host || envConfig.DB_HOST || 'localhost';
                             dbConfig.user = dbConfig.user || envConfig.DB_USER || 'root';
                             dbConfig.password = dbConfig.password || envConfig.DB_PASSWORD || '';
-                            dbConfig.database = dbConfig.database || envConfig.DB_DATABASE || 'kasir_berkah88';
+                            dbConfig.database = dbConfig.database || envConfig.DB_DATABASE || 'kasir';
                             dbConfig.port = dbConfig.port || envConfig.DB_PORT || 3306;
 
                             console.log("[DEBUG] Berhasil memuat credential dari file .env backend.");
@@ -149,7 +158,7 @@ app.post('/chat', async (req, res) => {
                 dbConfig.host = dbConfig.host || 'localhost';
                 dbConfig.user = dbConfig.user || 'root';
                 dbConfig.password = dbConfig.password || '';
-                dbConfig.database = dbConfig.database || 'kasir_berkah88';
+                dbConfig.database = dbConfig.database || 'kasir';
                 dbConfig.port = dbConfig.port || 3306;
 
                 console.log("[DEBUG] Konfigurasi DB Final:", { ...dbConfig, password: '***' });
@@ -180,9 +189,13 @@ app.post('/chat', async (req, res) => {
                     );
 
                     // 4. Query Saldo/Modal (Accounts)
-                    const [rowsAccounts] = await connection.execute(
-                        `SELECT name, balance, type FROM accounts`
-                    );
+                    let rowsAccounts = [];
+                    try {
+                        const [accRows] = await connection.execute(`SELECT name, balance FROM accounts`);
+                        rowsAccounts = accRows;
+                    } catch (accErr) {
+                        console.warn("[DEBUG] Tabel accounts tidak ditemukan atau error:", accErr.message);
+                    }
 
                     await connection.end();
 
@@ -227,18 +240,26 @@ app.post('/chat', async (req, res) => {
 
         const finalContext = appDescription + "\n\n" + contextText + (dynamicContext ? "\n\n" + dynamicContext : "");
 
-        // 3. System Prompt (Indonesian)
+        // 3. System Prompt (Indonesian - GAUL STYLE)
         const systemPrompt = `
-Anda adalah asisten AI cerdas untuk aplikasi "Kasir Berkah88".
-Tugas Anda adalah membantu pemilik toko dengan informasi seputar aplikasi dan data penjualan.
+Anda adalah asisten AI yang asik dan cerdas untuk aplikasi "Kasir Berkah88".
+Nama panggilan Anda: "BerkahBot".
 
-ATURAN PENTING:
-1. Jawablah HANYA berdasarkan KONTEKS yang diberikan di bawah.
-2. Jika ada [DATA REAL-TIME], prioritaskan data tersebut untuk menjawab pertanyaan tentang penjualan/pendapatan.
-3. Gunakan Bahasa Indonesia yang santai, luwes, dan tidak kaku (boleh sedikit humor profesional).
-4. Jika konteks tidak memuat jawaban, katakan dengan sopan bahwa Anda belum tahu hal itu.
+STYLE BICARA:
+1.  **Santai & Gaul**: Jangan kaku kayak robot. Pake bahasa percakapan sehari-hari (gue/lo boleh, aku/kamu boleh, tergantung user).
+2.  **Ramah & Helpful**: Jawab dengan nada membantu tapi tetep santuy.
+3.  **To The Point**: Gak usah bertele-tele, tapi tetep jelas.
+4.  **Emoji**: Pake emoji secukupnya biar seru 😉.
 
-KONTEKS:
+TUGAS UTAMA:
+- Bantuin owner toko ngecek laporan penjualan.
+- Jelasin fitur aplikasi kalo ada yang nanya.
+
+SUMBER DATA:
+- Gunakan [DATA REAL-TIME] di bawah untuk jawab pertanyaan soal "berapa omzet", "laporan hari ini", dsb.
+- Jika data 0 atau tidak ada, bilang aja "Belum ada transaksi nih hari ini, semangat bos!" atau sejenisnya.
+
+KONTEKS PENGETAHUAN & DATA:
 ${finalContext}
 `;
 
