@@ -74,11 +74,21 @@ const CashReconciliation = ({ headerTitle, isModal = false }) => {
     };
 
     const [history, setHistory] = useState([]);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
     useEffect(() => {
         fetchSummary();
         fetchHistory();
     }, [selectedDate]);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const fetchSummary = async () => {
         setLoading(true);
@@ -455,79 +465,160 @@ const CashReconciliation = ({ headerTitle, isModal = false }) => {
                             </h2>
                         </div>
 
-                        <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-left">
-                                    <thead className="bg-muted text-text-secondary uppercase text-xs font-medium">
-                                        <tr>
-                                            <th className="px-6 py-3">Tanggal</th>
-                                            <th className="px-6 py-3">User</th>
-                                            <th className="px-6 py-3">Tunai (Act)</th>
-                                            <th className="px-6 py-3">Transfer (Act)</th>
-                                            <th className="px-6 py-3">Gojek (Act)</th>
-                                            <th className="px-6 py-3">Total Selisih</th>
-                                            <th className="px-6 py-3">Status</th>
-                                            <th className="px-6 py-3">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-border">
-                                        {history.length > 0 ? (
-                                            history.map((item) => {
-                                                const totalVariance = parseFloat(item.variance_tunai) + parseFloat(item.variance_transfer) + parseFloat(item.variance_gojek);
-                                                const status = getVarianceStatus(totalVariance);
+                        {/* Mobile View - Cards */}
+                        {isMobile ? (
+                            <div className="space-y-4">
+                                {history.length > 0 ? (
+                                    history.map((item) => {
+                                        const totalVariance = parseFloat(item.variance_tunai) + parseFloat(item.variance_transfer) + parseFloat(item.variance_gojek);
+                                        const status = getVarianceStatus(totalVariance);
 
-                                                return (
-                                                    <tr key={item.id} className="hover:bg-muted/50 transition-colors">
-                                                        <td className="px-6 py-4 whitespace-nowrap text-text-primary font-medium">
+                                        return (
+                                            <div key={item.id} className="bg-card rounded-lg shadow-sm border border-border p-4">
+                                                {/* Header Card */}
+                                                <div className="flex justify-between items-start mb-3 pb-3 border-b border-border">
+                                                    <div>
+                                                        <div className="text-sm font-semibold text-text-primary">
                                                             {new Date(item.date).toLocaleDateString('id-ID', {
                                                                 day: 'numeric',
                                                                 month: 'long',
                                                                 year: 'numeric'
                                                             })}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-text-secondary">
-                                                            {item.reconciled_by || '-'}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-text-primary">
+                                                        </div>
+                                                        <div className="text-xs text-text-secondary mt-1">
+                                                            User: {item.reconciled_by || '-'}
+                                                        </div>
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => handleDelete(item.id)}
+                                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 -mt-1 -mr-2"
+                                                        iconName="Trash2"
+                                                    />
+                                                </div>
+
+                                                {/* Payment Methods */}
+                                                <div className="space-y-2 mb-3">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-xs text-text-secondary">Tunai (Aktual)</span>
+                                                        <span className="text-sm font-medium text-text-primary">
                                                             {formatCurrency(item.actual_tunai)}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-text-primary">
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-xs text-text-secondary">Transfer (Aktual)</span>
+                                                        <span className="text-sm font-medium text-text-primary">
                                                             {formatCurrency(item.actual_transfer)}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-text-primary">
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-xs text-text-secondary">Gojek (Aktual)</span>
+                                                        <span className="text-sm font-medium text-text-primary">
                                                             {formatCurrency(item.actual_gojek)}
-                                                        </td>
-                                                        <td className={`px-6 py-4 whitespace-nowrap font-bold ${status.color}`}>
-                                                            {formatCurrency(Math.abs(totalVariance))}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status.bgColor} ${status.color}`}>
-                                                                {status.label}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => handleDelete(item.id)}
-                                                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                                iconName="Trash2"
-                                                            />
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })
-                                        ) : (
-                                            <tr>
-                                                <td colSpan="8" className="px-6 py-8 text-center text-text-secondary">
-                                                    Belum ada data rekonsiliasi
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Total Variance & Status */}
+                                                <div className="pt-3 border-t border-border">
+                                                    <div className="flex justify-between items-center">
+                                                        <div>
+                                                            <div className="text-xs text-text-secondary mb-1">Total Selisih</div>
+                                                            <div className={`text-lg font-bold ${status.color}`}>
+                                                                {formatCurrency(Math.abs(totalVariance))}
+                                                            </div>
+                                                        </div>
+                                                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${status.bgColor} ${status.color}`}>
+                                                            {status.label}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="bg-card rounded-lg shadow-sm border border-border p-8 text-center text-text-secondary">
+                                        Belum ada data rekonsiliasi
+                                    </div>
+                                )}
                             </div>
-                        </div>
+                        ) : (
+                            /* Desktop View - Table */
+                            <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-muted text-text-secondary uppercase text-xs font-medium">
+                                            <tr>
+                                                <th className="px-6 py-3">Tanggal</th>
+                                                <th className="px-6 py-3">User</th>
+                                                <th className="px-6 py-3">Tunai (Act)</th>
+                                                <th className="px-6 py-3">Transfer (Act)</th>
+                                                <th className="px-6 py-3">Gojek (Act)</th>
+                                                <th className="px-6 py-3">Total Selisih</th>
+                                                <th className="px-6 py-3">Status</th>
+                                                <th className="px-6 py-3">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border">
+                                            {history.length > 0 ? (
+                                                history.map((item) => {
+                                                    const totalVariance = parseFloat(item.variance_tunai) + parseFloat(item.variance_transfer) + parseFloat(item.variance_gojek);
+                                                    const status = getVarianceStatus(totalVariance);
+
+                                                    return (
+                                                        <tr key={item.id} className="hover:bg-muted/50 transition-colors">
+                                                            <td className="px-6 py-4 whitespace-nowrap text-text-primary font-medium">
+                                                                {new Date(item.date).toLocaleDateString('id-ID', {
+                                                                    day: 'numeric',
+                                                                    month: 'long',
+                                                                    year: 'numeric'
+                                                                })}
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-text-secondary">
+                                                                {item.reconciled_by || '-'}
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-text-primary">
+                                                                {formatCurrency(item.actual_tunai)}
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-text-primary">
+                                                                {formatCurrency(item.actual_transfer)}
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-text-primary">
+                                                                {formatCurrency(item.actual_gojek)}
+                                                            </td>
+                                                            <td className={`px-6 py-4 whitespace-nowrap font-bold ${status.color}`}>
+                                                                {formatCurrency(Math.abs(totalVariance))}
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status.bgColor} ${status.color}`}>
+                                                                    {status.label}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => handleDelete(item.id)}
+                                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                                    iconName="Trash2"
+                                                                />
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan="8" className="px-6 py-8 text-center text-text-secondary">
+                                                        Belum ada data rekonsiliasi
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                 </div>
