@@ -39,6 +39,7 @@ import LaporanLengkap from './pages/LaporanLengkap';
 import SimpleTransactionPage from './pages/SimpleTransaction';
 import CashReconciliation from './pages/cash-reconciliation';
 import ChatbotPage from './pages/chatbot';
+import LandingPage from './pages/landing-page';
 
 import TransactionTrash from './pages/TransactionTrash';
 
@@ -83,6 +84,7 @@ const AppRoutes = () => {
       {/* Public Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/home" element={<LandingPage />} />
       <Route path="/" element={<GuestCheckout />} />
 
       {/* Admin Dashboard Routes */}
