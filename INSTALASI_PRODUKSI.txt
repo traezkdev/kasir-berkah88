@@ -1,0 +1,448 @@
+================================================================================
+                    TUTORIAL INSTALASI KASIR BERKAH88
+                    DEPLOYMENT KE SERVER PRODUKSI
+================================================================================
+
+DAFTAR ISI:
+1. Persiapan Server
+2. Instalasi Database MySQL
+3. Instalasi Backend (Node.js API)
+4. Instalasi Frontend (React Vite)
+5. Instalasi Chatbot AI
+6. Konfigurasi Domain & SSL
+7. Setup PM2 untuk Auto-Restart
+8. Troubleshooting
+
+================================================================================
+1. PERSIAPAN SERVER
+================================================================================
+
+REQUIREMENTS:
+- VPS/Server dengan Ubuntu 20.04 atau lebih baru
+- RAM minimal 2GB (recommended 4GB)
+- Storage minimal 20GB
+- Akses root/sudo
+- Domain (opsional, tapi recommended)
+
+LANGKAH PERSIAPAN:
+
+1.1. Update sistem
+    sudo apt update
+    sudo apt upgrade -y
+
+1.2. Install Node.js (versi 18 atau lebih baru)
+    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    sudo apt install -y nodejs
+    
+    # Verifikasi instalasi
+    node --version
+    npm --version
+
+1.3. Install MySQL Server
+    sudo apt install mysql-server -y
+    
+    # Secure MySQL installation
+    sudo mysql_secure_installation
+
+1.4. Install Git
+    sudo apt install git -y
+
+1.5. Install PM2 (Process Manager)
+    sudo npm install -g pm2
+
+1.6. Install Nginx (Web Server)
+    sudo apt install nginx -y
+
+================================================================================
+2. INSTALASI DATABASE MYSQL
+================================================================================
+
+2.1. Login ke MySQL
+    sudo mysql -u root -p
+
+2.2. Buat database dan user
+    CREATE DATABASE kasir CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE USER 'kasir_user'@'localhost' IDENTIFIED BY 'password_anda_yang_kuat';
+    GRANT ALL PRIVILEGES ON kasir.* TO 'kasir_user'@'localhost';
+    FLUSH PRIVILEGES;
+    EXIT;
+
+2.3. Set timezone MySQL ke WIB
+    sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
+    
+    # Tambahkan di bawah [mysqld]:
+    default-time-zone = '+07:00'
+    
+    # Restart MySQL
+    sudo systemctl restart mysql
+
+CATATAN: Simpan password database dengan aman!
+
+================================================================================
+3. INSTALASI BACKEND (Node.js API)
+================================================================================
+
+3.1. Clone repository atau upload file
+    cd /var/www
+    # Jika dari Git:
+    git clone <repository-url> kasir-berkah88
+    # Atau upload file via FTP/SCP
+    
+    cd kasir-berkah88
+
+3.2. Install dependencies backend
+    cd backend
+    npm install
+
+3.3. Konfigurasi environment variables
+    nano .env
+    
+    # Isi dengan:
+    DB_HOST=localhost
+    DB_USER=kasir_user
+    DB_PASSWORD=password_anda_yang_kuat
+    DB_DATABASE=kasir
+    DB_PORT=3306
+    JWT_SECRET=GANTI_DENGAN_STRING_RANDOM_PANJANG_DAN_AMAN
+    
+    # Generate JWT_SECRET yang aman:
+    # node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+
+3.4. Inisialisasi database (otomatis membuat tabel)
+    node server.js
+    # Tekan Ctrl+C setelah melihat "Server running on port 4000"
+    # Database schema sudah otomatis dibuat
+
+3.5. Setup PM2 untuk backend
+    pm2 start server.js --name kasir-backend
+    pm2 save
+    pm2 startup
+    # Ikuti instruksi yang muncul
+
+3.6. Verifikasi backend berjalan
+    pm2 status
+    curl http://localhost:4000/api/health
+    # Seharusnya return: {"status":"ok"}
+
+================================================================================
+4. INSTALASI FRONTEND (React Vite)
+================================================================================
+
+4.1. Install dependencies frontend
+    cd /var/www/kasir-berkah88
+    npm install
+
+4.2. Konfigurasi environment variables
+    nano .env
+    
+    # Isi dengan:
+    VITE_API_URL=https://api.yourdomain.com
+    # Atau jika backend di server yang sama:
+    VITE_API_URL=https://yourdomain.com/api
+    
+    JWT_SECRET=SAMA_DENGAN_BACKEND
+
+4.3. Build production
+    npm run build
+    
+    # Hasil build ada di folder: dist/
+
+4.4. Setup Nginx untuk frontend
+    sudo nano /etc/nginx/sites-available/kasir-berkah88
+    
+    # Isi dengan:
+    server {
+        listen 80;
+        server_name yourdomain.com www.yourdomain.com;
+        
+        root /var/www/kasir-berkah88/dist;
+        index index.html;
+        
+        # Frontend
+        location / {
+            try_files $uri $uri/ /index.html;
+        }
+        
+        # Backend API Proxy
+        location /api {
+            proxy_pass http://localhost:4000;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_cache_bypass $http_upgrade;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+        
+        # Chatbot Widget
+        location /chatbot-widget {
+            proxy_pass http://localhost:4001;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_cache_bypass $http_upgrade;
+        }
+    }
+
+4.5. Aktifkan konfigurasi Nginx
+    sudo ln -s /etc/nginx/sites-available/kasir-berkah88 /etc/nginx/sites-enabled/
+    sudo nginx -t
+    sudo systemctl restart nginx
+
+4.6. Set permission
+    sudo chown -R www-data:www-data /var/www/kasir-berkah88/dist
+    sudo chmod -R 755 /var/www/kasir-berkah88/dist
+
+================================================================================
+5. INSTALASI CHATBOT AI
+================================================================================
+
+5.1. Install dependencies chatbot
+    cd /var/www/kasir-berkah88/chatbot
+    npm install
+
+5.2. Konfigurasi environment variables
+    nano .env
+    
+    # Isi dengan:
+    GROQ_API_KEY=your_groq_api_key_here
+    GEMINI_API_KEY=your_gemini_api_key_here
+    OPENAI_API_KEY=your_openai_api_key_here
+    PORT=4001
+    
+    # Database (sama dengan backend)
+    DB_HOST=localhost
+    DB_USER=kasir_user
+    DB_PASSWORD=password_anda_yang_kuat
+    DB_DATABASE=kasir
+    DB_PORT=3306
+    
+    # AI Provider (pilih salah satu: groq, gemini, openai)
+    AI_PROVIDER=groq
+
+5.3. Generate vector database (opsional, untuk RAG)
+    npm run ingest
+    # Ini akan membuat file vector_db.json
+
+5.4. Setup PM2 untuk chatbot
+    pm2 start server.js --name kasir-chatbot
+    pm2 save
+
+5.5. Verifikasi chatbot berjalan
+    pm2 status
+    curl http://localhost:4001/widget.js
+    # Seharusnya return JavaScript code
+
+5.6. Update widget URL di index.html
+    nano /var/www/kasir-berkah88/dist/index.html
+    
+    # Cari baris:
+    <script src="http://localhost:4001/widget.js"></script>
+    
+    # Ganti dengan:
+    <script src="https://yourdomain.com/chatbot-widget/widget.js"></script>
+
+================================================================================
+6. KONFIGURASI DOMAIN & SSL
+================================================================================
+
+6.1. Install Certbot untuk SSL gratis
+    sudo apt install certbot python3-certbot-nginx -y
+
+6.2. Generate SSL certificate
+    sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+    
+    # Ikuti instruksi, pilih redirect HTTP ke HTTPS
+
+6.3. Auto-renewal SSL
+    sudo certbot renew --dry-run
+    # Jika sukses, cron job sudah otomatis dibuat
+
+6.4. Update .env frontend dengan HTTPS
+    cd /var/www/kasir-berkah88
+    nano .env
+    
+    # Update:
+    VITE_API_URL=https://yourdomain.com/api
+    
+    # Rebuild
+    npm run build
+    sudo systemctl restart nginx
+
+================================================================================
+7. SETUP PM2 UNTUK AUTO-RESTART
+================================================================================
+
+7.1. Konfigurasi PM2 ecosystem
+    cd /var/www/kasir-berkah88
+    nano ecosystem.config.js
+    
+    # Isi dengan:
+    module.exports = {
+      apps: [
+        {
+          name: 'kasir-backend',
+          cwd: './backend',
+          script: 'server.js',
+          instances: 1,
+          autorestart: true,
+          watch: false,
+          max_memory_restart: '1G',
+          env: {
+            NODE_ENV: 'production'
+          }
+        },
+        {
+          name: 'kasir-chatbot',
+          cwd: './chatbot',
+          script: 'server.js',
+          instances: 1,
+          autorestart: true,
+          watch: false,
+          max_memory_restart: '500M',
+          env: {
+            NODE_ENV: 'production'
+          }
+        }
+      ]
+    };
+
+7.2. Restart dengan ecosystem
+    pm2 delete all
+    pm2 start ecosystem.config.js
+    pm2 save
+    pm2 startup
+
+7.3. Monitoring
+    pm2 monit
+    pm2 logs
+    pm2 logs kasir-backend
+    pm2 logs kasir-chatbot
+
+================================================================================
+8. TROUBLESHOOTING
+================================================================================
+
+MASALAH: Backend tidak bisa connect ke database
+SOLUSI:
+    - Cek credentials di backend/.env
+    - Cek MySQL service: sudo systemctl status mysql
+    - Cek user permissions: sudo mysql -u kasir_user -p
+    - Cek firewall: sudo ufw status
+
+MASALAH: Frontend tidak bisa akses API
+SOLUSI:
+    - Cek VITE_API_URL di .env
+    - Cek Nginx config: sudo nginx -t
+    - Cek backend running: pm2 status
+    - Cek logs: pm2 logs kasir-backend
+
+MASALAH: Chatbot widget tidak muncul
+SOLUSI:
+    - Cek chatbot running: pm2 status
+    - Cek widget URL di index.html
+    - Cek Nginx proxy: sudo nginx -t
+    - Cek browser console untuk error
+    - Cek CORS settings di chatbot/server.js
+
+MASALAH: SSL certificate error
+SOLUSI:
+    - Cek domain pointing ke server IP
+    - Renew certificate: sudo certbot renew
+    - Restart Nginx: sudo systemctl restart nginx
+
+MASALAH: PM2 tidak auto-restart setelah reboot
+SOLUSI:
+    - Run: pm2 startup
+    - Copy paste command yang muncul
+    - Run: pm2 save
+
+MASALAH: Timezone salah (data tanggal tidak akurat)
+SOLUSI:
+    - Set server timezone: sudo timedatectl set-timezone Asia/Jakarta
+    - Set MySQL timezone (lihat section 2.3)
+    - Restart semua service
+
+================================================================================
+PERINTAH BERGUNA
+================================================================================
+
+# Restart semua service
+pm2 restart all
+sudo systemctl restart nginx
+sudo systemctl restart mysql
+
+# Cek logs
+pm2 logs
+sudo tail -f /var/log/nginx/error.log
+sudo tail -f /var/log/nginx/access.log
+
+# Update aplikasi (setelah git pull atau upload file baru)
+cd /var/www/kasir-berkah88
+git pull  # Jika dari Git
+npm install  # Frontend
+npm run build
+cd backend && npm install
+cd ../chatbot && npm install
+pm2 restart all
+sudo systemctl restart nginx
+
+# Backup database
+mysqldump -u kasir_user -p kasir > backup_$(date +%Y%m%d).sql
+
+# Restore database
+mysql -u kasir_user -p kasir < backup_20241219.sql
+
+# Monitor resource usage
+htop
+pm2 monit
+df -h  # Disk usage
+free -h  # Memory usage
+
+================================================================================
+KEAMANAN TAMBAHAN (RECOMMENDED)
+================================================================================
+
+1. Setup Firewall
+    sudo ufw allow 22/tcp
+    sudo ufw allow 80/tcp
+    sudo ufw allow 443/tcp
+    sudo ufw enable
+
+2. Disable root login SSH
+    sudo nano /etc/ssh/sshd_config
+    # Set: PermitRootLogin no
+    sudo systemctl restart sshd
+
+3. Install Fail2Ban
+    sudo apt install fail2ban -y
+    sudo systemctl enable fail2ban
+
+4. Regular backup
+    # Setup cron job untuk backup otomatis
+    crontab -e
+    # Tambahkan:
+    0 2 * * * mysqldump -u kasir_user -p'password' kasir > /backup/kasir_$(date +\%Y\%m\%d).sql
+
+5. Update regular
+    sudo apt update && sudo apt upgrade -y
+    npm update -g
+    pm2 update
+
+================================================================================
+KONTAK & SUPPORT
+================================================================================
+
+Jika ada masalah atau pertanyaan:
+- Developer: Kang Alfin
+- Email: [traezkdev@gmail.com]
+- Documentation: README.md di repository
+
+Selamat menggunakan Kasir Berkah88! 🚀
+
+================================================================================
+                            END OF TUTORIAL
+================================================================================
