@@ -38,6 +38,7 @@ import AdminUangBisnis from './pages/AdminUangBisnis'; // Add this import
 import LaporanLengkap from './pages/LaporanLengkap';
 import SimpleTransactionPage from './pages/SimpleTransaction';
 import CashReconciliation from './pages/cash-reconciliation';
+import ChatbotPage from './pages/chatbot';
 
 import TransactionTrash from './pages/TransactionTrash';
 
@@ -114,6 +115,7 @@ const AppRoutes = () => {
         <Route path="/admin-uang-bisnis" element={<AdminUangBisnis headerTitle="Uang Bisnis" />} /> {/* Add this route */}
         <Route path="/laporan-lengkap" element={<LaporanLengkap headerTitle="Laporan Lengkap" />} />
         <Route path="/cash-reconciliation" element={<CashReconciliation headerTitle="Rekonsiliasi Kas" />} />
+        <Route path="/chatbot" element={<ChatbotPage headerTitle="AI Assistant" />} />
       </Route>
 
       {/* Cashier Dashboard Routes */}
