@@ -534,6 +534,16 @@ const CashReconciliation = ({ headerTitle, isModal = false }) => {
                                                         </span>
                                                     </div>
                                                 </div>
+
+                                                {/* Notes */}
+                                                {item.notes && (
+                                                    <div className="pt-3 border-t border-border mt-3">
+                                                        <div className="text-xs text-text-secondary mb-1">Catatan</div>
+                                                        <div className="text-sm text-text-primary italic">
+                                                            {item.notes}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })
@@ -557,6 +567,7 @@ const CashReconciliation = ({ headerTitle, isModal = false }) => {
                                                 <th className="px-6 py-3">Gojek (Act)</th>
                                                 <th className="px-6 py-3">Total Selisih</th>
                                                 <th className="px-6 py-3">Status</th>
+                                                <th className="px-6 py-3">Catatan</th>
                                                 <th className="px-6 py-3">Aksi</th>
                                             </tr>
                                         </thead>
@@ -595,6 +606,15 @@ const CashReconciliation = ({ headerTitle, isModal = false }) => {
                                                                     {status.label}
                                                                 </span>
                                                             </td>
+                                                            <td className="px-6 py-4 max-w-xs">
+                                                                <div className="text-sm text-text-primary truncate" title={item.notes || ''}>
+                                                                    {item.notes ? (
+                                                                        <span className="italic">{item.notes}</span>
+                                                                    ) : (
+                                                                        <span className="text-text-secondary">-</span>
+                                                                    )}
+                                                                </div>
+                                                            </td>
                                                             <td className="px-6 py-4 whitespace-nowrap">
                                                                 <Button
                                                                     variant="ghost"
@@ -609,7 +629,7 @@ const CashReconciliation = ({ headerTitle, isModal = false }) => {
                                                 })
                                             ) : (
                                                 <tr>
-                                                    <td colSpan="8" className="px-6 py-8 text-center text-text-secondary">
+                                                    <td colSpan="9" className="px-6 py-8 text-center text-text-secondary">
                                                         Belum ada data rekonsiliasi
                                                     </td>
                                                 </tr>

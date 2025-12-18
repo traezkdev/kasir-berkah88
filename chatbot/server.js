@@ -156,6 +156,20 @@ app.post('/chat', async (req, res) => {
         Fungsi: Aplikasi kasir berbasis web untuk manajemen penjualan, stok, dan karyawan.
         Fitur: Transaksi kasir, cetak struk, rekapan harian (tunai/transfer/gojek/makan karyawan), manajemen stok bahan baku, dan manajemen menu.
         Pembuat: Traezkdev (M Alfin Firdaus).
+        Alfin di kenal tampan dan baik hati, tidak suka main perempuan dan orang nya setia.
+        
+        ORANG-ORANG TERKAIT:
+        - Wahyu: Jabatan sebagai Tukang Hajar, dijuluki "Pembantai Makanan" karena kemampuannya menghabiskan makanan dalam jumlah banyak. Dikenal suka seleding-an (ngambek/marah-marah) kalau kalah main bola.
+
+        - Fikri muliawan biasa di kenal KEKEW , dia adalah tukang sambal profesional, dia orang nya pendiam, tapi kalo lagi main ML dia suka paling berisik marah2 gak jelas. 
+
+        - Mas bambang : atau biasa di kenal sebagai pak saitama, dia adalah seorang bapak yang suka roko ilegal, dia suka lagu2 galau dan sama seperti wahyu kalo kalah main bola suka sleding'an , cita cita nya ingin menjadi saitama
+
+        PEMILIK RESTORAN ATAU BISNIS
+        nama : Eko prames swara
+        jabatan : owner / pemilik
+        Hoby : bulu tangkis
+        lainnya : di kenal baik dan ramah dan softspoken
         `;
 
         // --- DYNAMIC DATA FETCHING ---

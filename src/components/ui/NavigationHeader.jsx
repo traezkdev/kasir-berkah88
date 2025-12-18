@@ -198,26 +198,28 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
         )}
       </header>
       {/* Mobile Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 bg-card border-t border-border shadow-elevation-2 lg:hidden">
-        <nav className="flex items-center justify-around py-2">
-          {navigationItems?.slice(0, 5)?.map((item) => (
-            <Link
-              key={item?.path}
-              to={item?.path}
-              className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-md transition-colors duration-200 min-h-44 ${isActiveRoute(item?.path)
-                ? 'text-primary' : 'text-text-secondary hover:text-text-primary'
-                }`}
-            >
-              <Icon
-                name={item?.icon}
-                size={20}
-                color={isActiveRoute(item?.path) ? 'var(--color-primary)' : 'currentColor'}
-              />
-              <span className="text-xs font-medium">{item?.label}</span>
-            </Link>
-          ))}
-        </nav>
-      </div>
+      {location.pathname !== '/chatbot' && (
+        <div className="fixed bottom-0 left-0 right-0 z-30 bg-card border-t border-border shadow-elevation-2 lg:hidden">
+          <nav className="flex items-center justify-around py-2">
+            {navigationItems?.slice(0, 5)?.map((item) => (
+              <Link
+                key={item?.path}
+                to={item?.path}
+                className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-md transition-colors duration-200 min-h-44 ${isActiveRoute(item?.path)
+                  ? 'text-primary' : 'text-text-secondary hover:text-text-primary'
+                  }`}
+              >
+                <Icon
+                  name={item?.icon}
+                  size={20}
+                  color={isActiveRoute(item?.path) ? 'var(--color-primary)' : 'currentColor'}
+                />
+                <span className="text-xs font-medium">{item?.label}</span>
+              </Link>
+            ))}
+          </nav>
+        </div>
+      )}
     </>
   );
 };

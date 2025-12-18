@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   FaTachometerAlt, FaBoxOpen, FaClipboardList, FaChartLine,
-  FaUsers, FaCog, FaFileInvoiceDollar, FaCalculator, FaBook, FaSignOutAlt
+  FaUsers, FaCog, FaFileInvoiceDollar, FaCalculator, FaBook, FaSignOutAlt, FaRobot
 } from 'react-icons/fa';
 
 const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
@@ -64,6 +64,10 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
           <NavLink to="/notes" className={({ isActive }) => `${navLinkClasses} ${isActive ? activeLinkClasses : ''}`} onClick={toggleSidebar}>
             <FaBook className="mr-3" />
             Catatan
+          </NavLink>
+          <NavLink to="/chatbot" className={({ isActive }) => `${navLinkClasses} ${isActive ? activeLinkClasses : ''}`} onClick={toggleSidebar}>
+            <FaRobot className="mr-3" />
+            AI Assistant
           </NavLink>
           <NavLink to="/settings" className={({ isActive }) => `${navLinkClasses} ${isActive ? activeLinkClasses : ''}`} onClick={toggleSidebar}>
             <FaCog className="mr-3" />

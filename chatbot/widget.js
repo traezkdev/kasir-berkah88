@@ -154,6 +154,24 @@
     container.appendChild(toggleBtn);
     document.body.appendChild(container);
 
+    // Hide widget on /chatbot page
+    function updateWidgetVisibility() {
+        if (window.location.pathname === '/chatbot') {
+            container.style.display = 'none';
+        } else {
+            container.style.display = 'block';
+        }
+    }
+
+    // Check on load
+    updateWidgetVisibility();
+
+    // Listen for route changes (for SPA)
+    window.addEventListener('popstate', updateWidgetVisibility);
+
+    // Also check periodically for hash-based routing
+    setInterval(updateWidgetVisibility, 500);
+
     // Event Listeners
     const input = document.getElementById('chatbot-input');
     const sendBtn = document.getElementById('chatbot-send-btn');
