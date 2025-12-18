@@ -8,7 +8,11 @@ const ExpenseSummaryCard = ({
   weeklyExpenses = 0,
   monthlyExpenses = 0,
   monthlyExpenseCount = 0,
-  className = "" 
+  filterDate = '',
+  referenceDate,
+  weekStart,
+  weekEnd,
+  className = ""
 }) => {
   const gradientClasses = [
     "bg-gradient-to-br from-purple-500 to-indigo-500",
@@ -18,7 +22,8 @@ const ExpenseSummaryCard = ({
     "bg-gradient-to-br from-red-500 to-pink-500",
   ];
 
-  const formatCurrency = (amount) => {    return new Intl.NumberFormat('id-ID', {
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
@@ -26,30 +31,57 @@ const ExpenseSummaryCard = ({
     })?.format(amount);
   };
 
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const formatMonthYear = (date) => {
+    return new Date(date).toLocaleDateString('id-ID', {
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+
+  const formatDateRange = (start, end) => {
+    const startFormatted = new Date(start).toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: '2-digit'
+    });
+    const endFormatted = new Date(end).toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: '2-digit'
+    });
+    return `${startFormatted} - ${endFormatted}`;
+  };
+
   const summaryItems = [
     {
-      label: 'Pengeluaran Bulan Ini',
+      label: filterDate ? `Pengeluaran Bulan ${formatMonthYear(referenceDate)}` : 'Pengeluaran Bulan Ini',
       value: formatCurrency(monthlyExpenses),
-      icon: 'Wallet', // Replace with a different icon that is less likely to have arcs
+      icon: 'Wallet',
       color: 'text-destructive',
       bgColor: 'bg-destructive/10',
-      description: `${monthlyExpenseCount} transaksi bulan ini`
+      description: filterDate ? `${monthlyExpenseCount} transaksi` : `${monthlyExpenseCount} transaksi bulan ini`
     },
     {
-      label: 'Pengeluaran Hari Ini',
+      label: filterDate ? `Pengeluaran ${formatDate(referenceDate)}` : 'Pengeluaran Hari Ini',
       value: formatCurrency(todayExpenses),
       icon: 'Calendar',
       color: 'text-warning',
       bgColor: 'bg-warning/10',
-      description: 'Hari ini'
+      description: filterDate ? 'Tanggal terpilih' : 'Hari ini'
     },
     {
-      label: 'Pengeluaran Minggu Ini',
+      label: filterDate ? `Pengeluaran Minggu (${formatDateRange(weekStart, weekEnd)})` : 'Pengeluaran Minggu Ini',
       value: formatCurrency(weeklyExpenses),
       icon: 'TrendingDown',
       color: 'text-accent',
       bgColor: 'bg-accent/10',
-      description: 'Minggu berjalan'
+      description: filterDate ? 'Minggu terpilih' : 'Minggu berjalan'
     }
   ];
 
@@ -74,7 +106,7 @@ const ExpenseSummaryCard = ({
                   <Icon name={item?.icon} size={20} className="text-white" />
                 </div>
               </div>
-              
+
               <div>
                 <p className="text-2xl font-mono font-bold text-white mb-1">
                   {item?.value}
@@ -97,7 +129,7 @@ const ExpenseSummaryCard = ({
               <span className="text-sm font-medium text-text-primary">Informasi Keuangan</span>
             </div>
             <p className="text-sm text-text-secondary">
-              Total pengeluaran akan mengurangi keuntungan bersih bisnis. 
+              Total pengeluaran akan mengurangi keuntungan bersih bisnis.
               Pastikan untuk mencatat semua pengeluaran agar laporan keuangan akurat.
             </p>
           </div>

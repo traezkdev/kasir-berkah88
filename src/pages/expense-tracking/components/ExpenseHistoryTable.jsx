@@ -5,21 +5,25 @@ import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Icon from '../../../components/AppIcon';
 
-const ExpenseHistoryTable = ({ 
-  expenses = [], 
-  onDeleteExpense, 
+const ExpenseHistoryTable = ({
+  expenses = [],
+  onDeleteExpense,
   onBulkDelete,
   onExportData,
   onEditExpense,
   isLoading = false,
-  userRole 
+  userRole,
+  dateFilter = '',
+  onDateFilterChange,
+  onFilteredCountChange, // New prop to send filtered count to parent
+  currentPage = 1,
+  itemsPerPage = 20
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [selectedExpenses, setSelectedExpenses] = useState([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
-  const [dateFilter, setDateFilter] = useState('');
 
   const categoryOptions = [
     { value: '', label: 'Semua Kategori' },
@@ -73,9 +77,21 @@ const ExpenseHistoryTable = ({
     return matchesSearch && matchesCategory && matchesDate;
   });
 
+  // Notify parent about filtered count for pagination
+  React.useEffect(() => {
+    if (onFilteredCountChange) {
+      onFilteredCountChange(filteredExpenses?.length || 0);
+    }
+  }, [filteredExpenses?.length, onFilteredCountChange]);
+
+  // Client-side pagination after filtering
+  const indexOfLastExpense = currentPage * itemsPerPage;
+  const indexOfFirstExpense = indexOfLastExpense - itemsPerPage;
+  const paginatedExpenses = filteredExpenses?.slice(indexOfFirstExpense, indexOfLastExpense) || [];
+
   const handleSelectExpense = (expenseId) => {
-    setSelectedExpenses(prev => 
-      prev?.includes(expenseId) 
+    setSelectedExpenses(prev =>
+      prev?.includes(expenseId)
         ? prev?.filter(id => id !== expenseId)
         : [...prev, expenseId]
     );
@@ -154,7 +170,7 @@ const ExpenseHistoryTable = ({
             >
               Export PDF
             </Button>
-            
+
             <Button
               variant="destructive"
               onClick={() => setShowBulkDeleteConfirm(true)}
@@ -176,7 +192,7 @@ const ExpenseHistoryTable = ({
             onChange={(e) => setSearchTerm(e?.target?.value)}
             className="lg:col-span-2"
           />
-          
+
           <Select
             placeholder="Filter kategori"
             options={categoryOptions}
@@ -188,7 +204,7 @@ const ExpenseHistoryTable = ({
           <Input
             type="date"
             value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
+            onChange={(e) => onDateFilterChange(e.target.value)}
             className="lg:col-span-1"
           />
         </div>
@@ -215,7 +231,7 @@ const ExpenseHistoryTable = ({
             </tr>
           </thead>
           <tbody>
-            {filteredExpenses?.map((expense) => (
+            {paginatedExpenses?.map((expense) => (
               <tr key={expense?.id} className="border-b border-border dark:border-dark-border hover:bg-background-alt dark:hover:bg-dark-background-alt">
                 <td className="p-4">
                   <input
@@ -285,7 +301,7 @@ const ExpenseHistoryTable = ({
       </div>
       {/* Mobile Cards */}
       <div className="lg:hidden divide-y divide-border dark:divide-dark-border">
-        {filteredExpenses?.map((expense) => (
+        {paginatedExpenses?.map((expense) => (
           <div key={expense?.id} className="p-4">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center space-x-3">
@@ -307,7 +323,7 @@ const ExpenseHistoryTable = ({
                   </div>
                 </div>
               </div>
-              
+
               <div>
                 {userRole !== 'guest' && (
                   <Button
@@ -362,11 +378,11 @@ const ExpenseHistoryTable = ({
                 </div>
                 <h3 className="text-lg font-semibold text-text-primary">Hapus Pengeluaran</h3>
               </div>
-              
+
               <p className="text-text-secondary mb-6">
                 Apakah Anda yakin ingin menghapus pengeluaran ini? Tindakan ini tidak dapat dibatalkan.
               </p>
-              
+
               <div className="flex space-x-3">
                 <Button
                   variant="outline"
@@ -400,14 +416,14 @@ const ExpenseHistoryTable = ({
                   {selectedExpenses?.length > 0 ? 'Hapus Pengeluaran Terpilih' : 'Hapus Semua Pengeluaran'}
                 </h3>
               </div>
-              
+
               <p className="text-text-secondary mb-6">
-                {selectedExpenses?.length > 0 
+                {selectedExpenses?.length > 0
                   ? `Apakah Anda yakin ingin menghapus ${selectedExpenses?.length} pengeluaran yang dipilih?`
                   : 'Apakah Anda yakin ingin menghapus semua pengeluaran? Tindakan ini tidak dapat dibatalkan.'
                 }
               </p>
-              
+
               <div className="flex space-x-3">
                 <Button
                   variant="outline"

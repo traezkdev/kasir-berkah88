@@ -26,77 +26,81 @@ const apiUrl = import.meta.env.VITE_API_URL;
 import { useTheme } from '../../contexts/ThemeContext';
 
 const ExpenseTracking = ({ headerTitle }) => {
-    const { theme } = useTheme();
-    const [expenses, setExpenses] = useState([]); // For paginated table
-    const [allExpenses, setAllExpenses] = useState([]); // For summary cards and analytics
-    const [menuItems, setMenuItems] = useState([]);
-    const [transactions, setTransactions] = useState([]);
-    const [dashboardMetrics, setDashboardMetrics] = useState({});
-    const [isLoading, setIsLoading] = useState(false);
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [userRole, setUserRole] = useState(null); // New state for user role
-    const [notification, setNotification] = useState(null); // New state for notification
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [editingExpense, setEditingExpense] = useState(null);
-    const [showBulkDeleteConfirmModal, setShowBulkDeleteConfirmModal] = useState(false); // New state
-    const [bulkDeleteTarget, setBulkDeleteTarget] = useState(null); // New state
-    const [password, setPassword] = useState(''); // State for password
-    const [passwordError, setPasswordError] = useState(''); // State for password error
-  
-    // Pagination states
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(20); // Display 20 items per page
-    const [pagination, setPagination] = useState(null);
-  
-    const showNotification = (message, type) => {
-      setNotification({ message, type });
-      setTimeout(() => {
-        setNotification(null);
-      }, 3000); // Hide after 3 seconds
-    };
-  
-    // Fetches ALL expenses for summary cards
-    const fetchAllExpenses = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-      // No loading state change here to not interfere with table loading
-      try {
-        const response = await authFetch(`${apiUrl}/api/expenses/all`);
-        const data = await response.json();
-        if (data.message === 'success') {
-          setAllExpenses(data.data);
-        } else {
-          // console.error('Failed to fetch all expenses:', data.error);
-          setAllExpenses([]);
-        }
-      } catch (error) {
-        // console.error('Error fetching all expenses:', error);
+  const { theme } = useTheme();
+  const [expenses, setExpenses] = useState([]); // For paginated table
+  const [allExpenses, setAllExpenses] = useState([]); // For summary cards and analytics
+  const [menuItems, setMenuItems] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [dashboardMetrics, setDashboardMetrics] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userRole, setUserRole] = useState(null); // New state for user role
+  const [notification, setNotification] = useState(null); // New state for notification
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
+  const [showBulkDeleteConfirmModal, setShowBulkDeleteConfirmModal] = useState(false); // New state
+  const [bulkDeleteTarget, setBulkDeleteTarget] = useState(null); // New state
+  const [password, setPassword] = useState(''); // State for password
+  const [passwordError, setPasswordError] = useState(''); // State for password error
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20); // Display 20 items per page
+  const [pagination, setPagination] = useState(null);
+
+  // Filter state (lifted from ExpenseHistoryTable)
+  const [dateFilter, setDateFilter] = useState('');
+  const [filteredCount, setFilteredCount] = useState(0); // Track filtered expenses count for pagination
+
+  const showNotification = (message, type) => {
+    setNotification({ message, type });
+    setTimeout(() => {
+      setNotification(null);
+    }, 3000); // Hide after 3 seconds
+  };
+
+  // Fetches ALL expenses for summary cards
+  const fetchAllExpenses = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    // No loading state change here to not interfere with table loading
+    try {
+      const response = await authFetch(`${apiUrl}/api/expenses/all`);
+      const data = await response.json();
+      if (data.message === 'success') {
+        setAllExpenses(data.data);
+      } else {
+        // console.error('Failed to fetch all expenses:', data.error);
         setAllExpenses([]);
       }
-    };
-  
-    // Fetches paginated expenses for the table
-    const fetchExpenses = async (page) => {
-      const token = localStorage.getItem('token');
-      if (!token) return; // Exit if no token
-      setIsLoading(true);
-      try {
-        const response = await authFetch(`${apiUrl}/api/expenses?page=${page}&limit=${itemsPerPage}`);
-        const data = await response.json();
-        if (data.message === 'success') {
-          setExpenses(data.data);
-          setPagination(data.pagination); // Set pagination data
-        } else {
-          // console.error('Failed to fetch expenses:', data.error);
-          setExpenses([]);
-        }
-      } catch (error) {
-        // console.error('Error fetching expenses:', error);
+    } catch (error) {
+      // console.error('Error fetching all expenses:', error);
+      setAllExpenses([]);
+    }
+  };
+
+  // Fetches paginated expenses for the table
+  const fetchExpenses = async (page) => {
+    const token = localStorage.getItem('token');
+    if (!token) return; // Exit if no token
+    setIsLoading(true);
+    try {
+      const response = await authFetch(`${apiUrl}/api/expenses?page=${page}&limit=${itemsPerPage}`);
+      const data = await response.json();
+      if (data.message === 'success') {
+        setExpenses(data.data);
+        setPagination(data.pagination); // Set pagination data
+      } else {
+        // console.error('Failed to fetch expenses:', data.error);
         setExpenses([]);
-      } finally {
-        setIsLoading(false);
       }
-    };
+    } catch (error) {
+      // console.error('Error fetching expenses:', error);
+      setExpenses([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const fetchMenuItems = async () => {
     const token = localStorage.getItem('token');
@@ -128,7 +132,7 @@ const ExpenseTracking = ({ headerTitle }) => {
         console.error('Failed to fetch transactions:', data.error);
         setTransactions([]);
       }
-      } catch (error) {
+    } catch (error) {
       console.error('Error fetching transactions:', error);
       setTransactions([]);
     }
@@ -336,28 +340,29 @@ const ExpenseTracking = ({ headerTitle }) => {
     const totalExpenses = allExpenses?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
     const expenseCount = allExpenses?.length;
 
-    const today = new Date();
-    const todayFormatted = formatInTimeZone(today, 'Asia/Jakarta', 'yyyy-MM-dd');
+    // Determine reference date: use filter date if exists, otherwise use today
+    const referenceDate = dateFilter ? new Date(dateFilter) : new Date();
+    const referenceDateFormatted = formatInTimeZone(referenceDate, 'Asia/Jakarta', 'yyyy-MM-dd');
 
+    // Calculate "today" expenses (or filtered date expenses)
     const todayExpenses = allExpenses?.filter(expense => {
-        const expenseDateFormatted = formatInTimeZone(new Date(expense.date), 'Asia/Jakarta', 'yyyy-MM-dd');
-        return expenseDateFormatted === todayFormatted;
-      })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
+      const expenseDateFormatted = formatInTimeZone(new Date(expense.date), 'Asia/Jakarta', 'yyyy-MM-dd');
+      return expenseDateFormatted === referenceDateFormatted;
+    })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
 
-    const startOfCurrentWeek = startOfWeek(today, { weekStartsOn: 1 }); // Monday as start of week
-    const endOfCurrentWeek = endOfWeek(today, { weekStartsOn: 1 }); // Sunday as end of week
+    // Calculate week expenses for the week containing the reference date
+    const startOfCurrentWeek = startOfWeek(referenceDate, { weekStartsOn: 1 }); // Monday as start of week
+    const endOfCurrentWeek = endOfWeek(referenceDate, { weekStartsOn: 1 }); // Sunday as end of week
 
     const weeklyExpenses = allExpenses?.filter(expense => {
-        const expenseDate = new Date(expense.date);
-        return expenseDate >= startOfCurrentWeek && expenseDate <= endOfCurrentWeek;
-      })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
-    
-    const startOfCurrentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const endOfCurrentMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      const expenseDate = new Date(expense.date);
+      return expenseDate >= startOfCurrentWeek && expenseDate <= endOfCurrentWeek;
+    })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
+
+    // Calculate month expenses for the month containing the reference date
     const monthlyExpenses = allExpenses?.filter(expense => {
       const expenseDate = new Date(expense.date);
-      // Adjust for timezone issues by comparing dates in the correct timezone
-      return expenseDate.getMonth() === today.getMonth() && expenseDate.getFullYear() === today.getFullYear();
+      return expenseDate.getMonth() === referenceDate.getMonth() && expenseDate.getFullYear() === referenceDate.getFullYear();
     });
 
     const monthlyExpenseTotal = monthlyExpenses.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
@@ -368,8 +373,12 @@ const ExpenseTracking = ({ headerTitle }) => {
       expenseCount,
       todayExpenses,
       weeklyExpenses,
-      monthlyExpenses: monthlyExpenseTotal, // Rename to avoid conflict
-      monthlyExpenseCount
+      monthlyExpenses: monthlyExpenseTotal,
+      monthlyExpenseCount,
+      filterDate: dateFilter, // Pass filter date to summary card
+      referenceDate, // Pass reference date for label formatting
+      weekStart: startOfCurrentWeek,
+      weekEnd: endOfCurrentWeek
     };
   };
 
@@ -384,11 +393,10 @@ const ExpenseTracking = ({ headerTitle }) => {
 
   return (
     <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
-      {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
+      {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} />}
       {notification && (
-        <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg z-[1002] ${
-          notification.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-        }`}>
+        <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg z-[1002] ${notification.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+          }`}>
           {notification.message}
         </div>
       )}
@@ -412,18 +420,23 @@ const ExpenseTracking = ({ headerTitle }) => {
             <ExpenseEntryForm onAddExpense={handleAddExpense} isLoading={isLoading} userRole={userRole} />
             {allExpenses?.length > 0 && <ExpenseAnalytics expenses={allExpenses} />}
             <ExpenseHistoryTable
-              expenses={expenses} // Pass expenses directly
+              expenses={allExpenses} // Use allExpenses for proper filtering
               onDeleteExpense={handleDeleteExpense}
               onBulkDelete={handleBulkDelete}
               onExportData={handleExportData}
               onEditExpense={handleOpenEditModal} // Pass the handler
               isLoading={isLoading}
               userRole={userRole}
+              dateFilter={dateFilter}
+              onDateFilterChange={setDateFilter}
+              onFilteredCountChange={setFilteredCount}
+              currentPage={currentPage}
+              itemsPerPage={itemsPerPage}
             />
             <div className="flex justify-center mt-4">
               <Pagination
                 itemsPerPage={itemsPerPage}
-                totalItems={pagination?.totalItems || 0}
+                totalItems={filteredCount > 0 ? filteredCount : (pagination?.totalItems || 0)}
                 paginate={paginate}
                 currentPage={currentPage}
               />
@@ -450,7 +463,7 @@ const ExpenseTracking = ({ headerTitle }) => {
                 </div>
                 <h3 className="text-lg font-semibold text-text-primary dark:text-white">Konfirmasi Hapus Pengeluaran</h3>
               </div>
-              
+
               <div className="mb-6">
                 <p className="text-text-secondary dark:text-gray-300 mb-3">
                   Apakah Anda yakin ingin menghapus semua pengeluaran? Tindakan ini tidak dapat dibatalkan.
@@ -463,7 +476,7 @@ const ExpenseTracking = ({ headerTitle }) => {
                     Semua data pengeluaran akan hilang secara permanen.
                   </p>
                 </div>
-                
+
                 {/* Password Input */}
                 <div>
                   <label htmlFor="password-confirm" className="text-sm font-medium text-text-primary dark:text-gray-300">
