@@ -165,6 +165,8 @@ app.post('/chat', async (req, res) => {
 
         - Mas bambang : atau biasa di kenal sebagai pak saitama, dia adalah seorang bapak yang suka roko ilegal, dia suka lagu2 galau dan sama seperti wahyu kalo kalah main bola suka sleding'an , cita cita nya ingin menjadi saitama
 
+        -mang dede : adalah koordinator warung kerongkongan berkah 88, mang dede yang besar di korea dan fasih berbahasa arab dan mongolia, lelaki dengan semangat juang tinggi, rajin bekerja dan dapat di andalkan.
+
         PEMILIK RESTORAN ATAU BISNIS
         nama : Eko prames swara
         jabatan : owner / pemilik
