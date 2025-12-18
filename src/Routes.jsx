@@ -115,7 +115,7 @@ const AppRoutes = () => {
         <Route path="/admin-uang-bisnis" element={<AdminUangBisnis headerTitle="Uang Bisnis" />} /> {/* Add this route */}
         <Route path="/laporan-lengkap" element={<LaporanLengkap headerTitle="Laporan Lengkap" />} />
         <Route path="/cash-reconciliation" element={<CashReconciliation headerTitle="Rekonsiliasi Kas" />} />
-        <Route path="/chatbot" element={<ChatbotPage headerTitle="AI Assistant" />} />
+        <Route path="/chatbot" element={<ChatbotPage />} />
       </Route>
 
       {/* Cashier Dashboard Routes */}

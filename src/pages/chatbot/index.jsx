@@ -139,7 +139,7 @@ const ChatbotPage = ({ headerTitle, isModal = false }) => {
                             <div className="flex justify-between items-center mt-2">
                                 <div>
                                     <h1 className="text-2xl lg:text-3xl font-semibold text-text-primary">
-                                        AI Assistant
+                                        {headerTitle}
                                     </h1>
                                     <p className="text-text-secondary mt-1">
                                         Chat dengan BerkahBot untuk bantuan dan informasi
@@ -183,16 +183,16 @@ const ChatbotPage = ({ headerTitle, isModal = false }) => {
                                         >
                                             <div
                                                 className={`max-w-[75%] md:max-w-[60%] rounded-2xl px-4 py-2 ${message.sender === 'user'
-                                                        ? 'bg-primary text-primary-foreground'
-                                                        : 'bg-muted text-foreground'
+                                                    ? 'bg-primary text-primary-foreground'
+                                                    : 'bg-muted text-foreground'
                                                     }`}
                                             >
                                                 <p className="text-sm whitespace-pre-wrap break-words">
                                                     {message.text}
                                                 </p>
                                                 <p className={`text-xs mt-1 ${message.sender === 'user'
-                                                        ? 'text-primary-foreground/70'
-                                                        : 'text-muted-foreground'
+                                                    ? 'text-primary-foreground/70'
+                                                    : 'text-muted-foreground'
                                                     }`}>
                                                     {formatTime(message.timestamp)}
                                                 </p>

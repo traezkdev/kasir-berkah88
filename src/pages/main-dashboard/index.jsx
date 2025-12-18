@@ -511,6 +511,13 @@ const MainDashboard = ({ headerTitle }) => {
       icon: 'DollarSign',
       route: '/hpp',
       color: 'primary'
+    },
+    {
+      title: 'AI Assistant',
+      description: 'Chat dengan BerkahBot',
+      icon: 'Bot',
+      route: '/chatbot',
+      color: 'accent'
     }
   ];
 
