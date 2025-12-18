@@ -840,7 +840,7 @@ async function callAI(messages, config = {}) {
         }
     } catch (err) {
         console.error(`[AI ERROR] Provider: ${AI_PROVIDER}`, err);
-        return `Maaf bos, AI lagi pusing (${AI_PROVIDER} Error). Coba cek log.`;
+        return `Maaf bos, Saya (AI) lagi pusing, Mau ngopi dulu (Error). Coba lagi nanti yah, Atau tanya ke Kang Alfin .`;
     }
 
     return "Error: Unknown AI Provider configuration";
