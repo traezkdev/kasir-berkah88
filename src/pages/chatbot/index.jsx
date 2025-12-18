@@ -161,9 +161,9 @@ const ChatbotPage = ({ headerTitle, isModal = false }) => {
                     )}
 
                     {/* Chat Container */}
-                    <div className="flex-1 flex flex-col bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+                    <div className="flex-1 flex flex-col bg-card rounded-lg shadow-sm border border-border overflow-hidden max-h-[calc(100vh-200px)] lg:max-h-[calc(100vh-280px)] min-h-[400px]">
                         {/* Messages Area */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                             {messages.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-full text-center py-12">
                                     <Icon name="MessageCircle" size={64} className="text-muted-foreground mb-4" />
