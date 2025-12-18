@@ -6,15 +6,15 @@ import {
 } from 'react-icons/fa';
 
 const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
-  const navLinkClasses = "flex items-center px-4 py-3 mx-2 text-sm font-medium text-gray-600 rounded-lg transition-all duration-200 hover:bg-gray-50 hover:text-gray-900 group";
-  const activeLinkClasses = "bg-indigo-50 text-indigo-600 shadow-sm ring-1 ring-indigo-200";
+  const navLinkClasses = "flex items-center px-4 py-3 mx-2 text-sm font-medium text-gray-600 dark:text-gray-300 rounded-lg transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white group";
+  const activeLinkClasses = "bg-indigo-50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-indigo-200 dark:ring-indigo-800";
 
   return (
     <>
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:w-64`}>
-        <div className="flex items-center justify-center h-20 border-b border-gray-100">
-          <h1 className="text-2xl font-bold text-indigo-700">{headerTitle}</h1>
+      <div className={`fixed inset-y-0 left-0 z-30 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:w-64`}>
+        <div className="flex items-center justify-center h-20 border-b border-gray-100 dark:border-gray-700">
+          <h1 className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">{headerTitle}</h1>
         </div>
         <nav className="flex-1 px-2 py-4 space-y-2">
           <NavLink to="/main-dashboard" className={({ isActive }) => `${navLinkClasses} ${isActive ? activeLinkClasses : ''}`} onClick={toggleSidebar}>
@@ -54,7 +54,7 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
             Pengeluaran Lapak
           </NavLink>
           <NavLink to="/raw-material-stock" className={({ isActive }) => `${navLinkClasses} ${isActive ? activeLinkClasses : ''}`} onClick={toggleSidebar}>
-            <FaBoxOpen className="mr-3" /> {/* Menggunakan FaBoxOpen karena FaBoxes tidak terdaftar */}
+            <FaBoxOpen className="mr-3" />
             Stok Bahan Mentah
           </NavLink>
           <NavLink to="/hpp" className={({ isActive }) => `${navLinkClasses} ${isActive ? activeLinkClasses : ''}`} onClick={toggleSidebar}>
@@ -74,7 +74,7 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
             Pengaturan
           </NavLink>
         </nav>
-        <div className="px-2 py-4 border-t border-gray-100 bg-gray-50/50">
+        <div className="px-2 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
           <button className={`${navLinkClasses} w-full`}>
             <FaSignOutAlt className="mr-3" />
             Logout
