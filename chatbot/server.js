@@ -3,6 +3,10 @@ const fs = require('fs');
 const mysql = require('mysql2/promise');
 const envPath = path.join(__dirname, '.env');
 
+// Import database schema documentation
+const { DATABASE_SCHEMA, TABLE_RELATIONSHIPS, COMMON_QUERIES, IMPORTANT_NOTES } = require('./database-schema.js');
+
+
 console.log(`[DEBUG_STARTUP] Current Dir (__dirname): ${__dirname}`);
 console.log(`[DEBUG_STARTUP] VERSION CHECK: v-${Date.now()} (Pastikan kode ini ter-upload)`);
 console.log(`[DEBUG_STARTUP] Target .env Path: ${envPath}`);
@@ -165,13 +169,243 @@ app.post('/chat', async (req, res) => {
 
         - Mas bambang : atau biasa di kenal sebagai pak saitama, dia adalah seorang bapak yang suka roko ilegal, dia suka lagu2 galau dan sama seperti wahyu kalo kalah main bola suka sleding'an , cita cita nya ingin menjadi saitama
 
-        -mang dede : adalah koordinator warung kerongkongan berkah 88, mang dede yang besar di korea dan fasih berbahasa arab dan mongolia, lelaki dengan semangat juang tinggi, rajin bekerja dan dapat di andalkan.
+        - Mang dede : adalah koordinator warung kerongkongan berkah 88, mang dede yang besar di korea dan fasih berbahasa arab dan mongolia, lelaki dengan semangat juang tinggi, rajin bekerja dan dapat di andalkan.
 
         PEMILIK RESTORAN ATAU BISNIS
         nama : Eko prames swara
         jabatan : owner / pemilik
         Hoby : bulu tangkis
         lainnya : di kenal baik dan ramah dan softspoken
+
+        === PANDUAN LENGKAP FITUR WEBSITE KASIR BERKAH88 ===
+
+        📊 FITUR DASHBOARD:
+        1. Dashboard Utama (/main-dashboard):
+           - Menampilkan metrik keuangan real-time (saldo lapak, pendapatan, pengeluaran, laba bersih)
+           - Statistik hari ini (total transaksi, item terjual, rata-rata order, jam sibuk)
+           - Grafik penjualan dan trend
+           - Quick Actions untuk akses cepat ke fitur-fitur penting
+           - Filter data: Minggu Ini, Bulan Ini, Tahun Ini, Semua Waktu, Custom
+           - Data detail lengkap: Modal Awal, Modal Berjalan, Modal Akhir, Total Nilai Stok
+           - Status sinkronisasi data (Stok Menu, Bahan Baku, Uang Lapak)
+
+        2. Dashboard Owner (/owner-dashboard):
+           - Khusus untuk pemilik bisnis
+           - Laporan keuangan komprehensif
+           - Monitoring performa bisnis secara keseluruhan
+
+        3. Dashboard Kasir (/cashier-dashboard):
+           - Interface sederhana untuk kasir
+           - Fokus pada transaksi penjualan
+
+        💰 FITUR TRANSAKSI & PENJUALAN:
+        1. Proses Transaksi Penjualan (/sales-transaction-processing):
+           - Buat transaksi penjualan baru
+           - Pilih menu dari daftar
+           - Hitung otomatis total, PPN, kembalian
+           - Metode pembayaran: Tunai, Transfer, Gojek
+           - Cetak struk otomatis
+           - Support transaksi makan karyawan
+
+        2. Transaksi Sederhana (/transaksi-sederhana):
+           - Interface lebih simpel untuk transaksi cepat
+           - Cocok untuk kasir yang baru belajar
+
+        3. Riwayat Transaksi (/transaction-history):
+           - Lihat semua transaksi yang pernah dilakukan
+           - Filter berdasarkan tanggal, metode pembayaran
+           - Search transaksi
+           - Export data
+           - Cetak ulang struk
+           - Edit atau hapus transaksi (dengan permission)
+
+        4. Konfirmasi Pesanan (/order-confirmation):
+           - Konfirmasi pesanan sebelum diproses
+           - Review item dan total harga
+
+        🍽️ FITUR MENU & STOK:
+        1. Manajemen Menu (/menu-management):
+           - Tambah, edit, hapus menu
+           - Set harga dan kategori
+           - Upload foto menu
+           - Kelola stok menu
+           - Tandai menu favorit
+           - Status ketersediaan (tersedia/habis)
+
+        2. Stok Bahan Mentah (/raw-material-stock):
+           - Kelola bahan baku mentah
+           - Input pembelian bahan baku
+           - Tracking penggunaan bahan
+           - Alert stok menipis
+           - Konversi satuan (kg, liter, pcs, dll)
+           - Hitung nilai stok bahan baku
+
+        3. Stok Kritis (/main-critical-stock atau /critical-stock):
+           - Lihat daftar bahan/menu yang stoknya menipis
+           - Alert otomatis untuk restock
+           - Prioritas pembelian
+
+        4. Kalkulator HPP (/hpp):
+           - Hitung Harga Pokok Penjualan
+           - Analisis biaya produksi
+           - Tentukan harga jual optimal
+           - Margin profit calculator
+
+        💸 FITUR KEUANGAN:
+        1. Catatan Pengeluaran (/expense-tracking):
+           - Catat semua pengeluaran operasional
+           - Kategori pengeluaran (bahan baku, gaji, utilitas, dll)
+           - Attach bukti/nota
+           - Laporan pengeluaran harian/bulanan
+
+        2. Pengeluaran Lapak (/lapak-deposit):
+           - Kelola dana lapak
+           - Tarik/setor uang lapak
+           - History transaksi lapak
+           - Saldo real-time
+
+        3. Uang Bisnis (/uang-bisnis atau /admin-uang-bisnis):
+           - Manajemen kas bisnis
+           - Transfer antar akun
+           - Monitoring cash flow
+
+        4. Rekonsiliasi Kas (/cash-reconciliation):
+           - Cocokkan uang fisik dengan sistem
+           - Input jumlah uang aktual (Tunai, Transfer, Gojek)
+           - Hitung selisih otomatis
+           - Catat alasan selisih
+           - History rekonsiliasi
+           - Tampilan card responsive untuk mobile
+
+        📈 FITUR LAPORAN:
+        1. Laporan Bisnis (/business-reports):
+           - Laporan penjualan harian/bulanan/tahunan
+           - Grafik performa
+           - Top selling items
+           - Analisis trend
+           - Export ke PDF/Excel
+
+        2. Laporan Lengkap (/laporan-lengkap):
+           - Laporan komprehensif semua aspek bisnis
+           - Gabungan semua metrik
+           - Cocok untuk review bulanan/tahunan
+
+        👥 FITUR KARYAWAN & TIM:
+        1. Daftar Karyawan (/employee-list):
+           - Lihat struktur organisasi
+           - Data karyawan lengkap
+           - Kontak dan posisi
+           - Management tim
+
+        ⚙️ FITUR UTILITAS:
+        1. Kalkulator (/calculator):
+           - Kalkulator cepat untuk hitung-hitungan
+           - Akses mudah dari quick actions
+
+        2. Catatan (/notes):
+           - Buat catatan penting
+           - Reminder
+           - To-do list
+
+        3. Pengaturan (/settings):
+           - Konfigurasi aplikasi
+           - Set modal awal
+           - Upload logo
+           - Atur tema (Default/Admin)
+           - Dark mode toggle
+           - Pengaturan printer
+           - Backup & restore data
+
+        4. Profil (/profile atau /owner-profile):
+           - Edit profil user
+           - Ganti password
+           - Info akun
+
+        5. AI Assistant (/chatbot):
+           - Chat dengan BerkahBot (aku!)
+           - Tanya informasi bisnis real-time
+           - Bantuan penggunaan fitur
+           - Tips & trik
+
+        🗑️ FITUR LAINNYA:
+        1. Tempat Sampah Transaksi (/transaction-trash):
+           - Lihat transaksi yang dihapus
+           - Restore transaksi
+           - Hapus permanen
+
+        2. Cetak Struk (/receipt):
+           - Preview struk sebelum cetak
+           - Support thermal printer 58mm
+           - Customizable layout
+
+        === TIPS PENGGUNAAN ===
+        
+        💡 TIPS UNTUK KASIR:
+        - Gunakan /transaksi-sederhana untuk transaksi cepat
+        - Selalu cek stok menu sebelum terima pesanan
+        - Lakukan rekonsiliasi kas setiap akhir shift
+        - Catat semua transaksi makan karyawan
+
+        💡 TIPS UNTUK ADMIN:
+        - Review dashboard setiap pagi untuk cek performa
+        - Set modal awal di settings untuk tracking akurat
+        - Lakukan backup data rutin
+        - Monitor stok kritis setiap hari
+        - Update harga menu sesuai biaya bahan baku
+
+        💡 TIPS UNTUK OWNER:
+        - Cek laporan lengkap setiap akhir bulan
+        - Analisis trend penjualan untuk strategi bisnis
+        - Monitor margin profit di kalkulator HPP
+        - Review pengeluaran vs pendapatan secara berkala
+
+        === CARA AKSES FITUR ===
+        
+        Semua fitur bisa diakses melalui:
+        1. Menu Sidebar (kiri) - untuk desktop
+        2. Bottom Navigation (bawah) - untuk mobile
+        3. Quick Actions di Dashboard - shortcut fitur penting
+        4. Breadcrumb Navigation - navigasi cepat
+
+        === ROLE & PERMISSION ===
+        
+        - Admin/User: Akses penuh semua fitur
+        - Kasir: Akses terbatas (transaksi, riwayat transaksi kasir)
+        - Owner: Dashboard owner, laporan bisnis, monitoring
+
+        === INTEGRASI & TEKNOLOGI ===
+        
+        - Real-time data dari database MySQL
+        - Responsive design (mobile & desktop)
+        - Dark mode support
+        - PWA (Progressive Web App) - bisa diinstall di HP
+        - Thermal printer support
+        - Cloud backup ready
+        - AI Chatbot powered by Groq/Gemini
+
+        === DATABASE SCHEMA ===
+        
+        Kamu punya akses penuh ke informasi struktur database! Gunakan ini untuk menjawab pertanyaan teknis tentang data.
+        
+        📋 TABEL UTAMA:
+        ${Object.keys(DATABASE_SCHEMA).map(tableName => `- ${tableName}: ${DATABASE_SCHEMA[tableName].description}`).join('\n        ')}
+        
+        💡 CONTOH QUERY UMUM:
+        ${Object.entries(COMMON_QUERIES).map(([desc, query]) => `
+        ${desc}:
+        ${query.trim()}
+        `).join('\n        ')}
+        
+        ⚠️ CATATAN PENTING DATABASE:
+        - Timezone: ${IMPORTANT_NOTES.timezone}
+        - Soft Delete: ${IMPORTANT_NOTES.soft_delete}
+        - JSON Fields: ${IMPORTANT_NOTES.json_fields}
+        - Payment Methods: ${IMPORTANT_NOTES.payment_methods.join(', ')}
+        - User Roles: ${IMPORTANT_NOTES.user_roles.join(', ')}
+        
+        📊 DETAIL TABEL (untuk pertanyaan spesifik):
+        Jika user tanya detail kolom tabel tertentu, kamu bisa jelaskan dari DATABASE_SCHEMA.
+        Contoh: "Tabel transactions punya kolom: id, timestamp, items (JSON), total, payment_method, dll."
         `;
 
         // --- DYNAMIC DATA FETCHING ---
@@ -186,7 +420,8 @@ app.post('/chat', async (req, res) => {
             user: process.env.DB_USER || 'root',
             password: process.env.DB_PASSWORD || '',
             database: process.env.DB_DATABASE || 'kasir',
-            port: process.env.DB_PORT || 3306
+            port: process.env.DB_PORT || 3306,
+            timezone: '+07:00' // WIB Timezone
         };
 
         // Trigger keywords
@@ -214,24 +449,28 @@ app.post('/chat', async (req, res) => {
                     const connection = await mysql.createConnection(dbConfig);
                     console.log("[DEBUG] Koneksi DB berhasil. Mengambil data lengkap (Penjualan + Saldo)...");
 
-                    // 1. Query Hari Ini (Penjualan)
+                    // 1. Query Hari Ini (Penjualan) - WIB Timezone
                     const [rowsToday] = await connection.execute(
                         `SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as revenue 
-                         FROM transactions WHERE DATE(timestamp) = CURDATE() AND deleted_at IS NULL`
+                         FROM transactions 
+                         WHERE DATE(CONVERT_TZ(timestamp, '+00:00', '+07:00')) = DATE(CONVERT_TZ(NOW(), '+00:00', '+07:00'))
+                         AND deleted_at IS NULL`
                     );
 
-                    // 2. Query Kemarin (Penjualan)
+                    // 2. Query Kemarin (Penjualan) - WIB Timezone
                     const [rowsYesterday] = await connection.execute(
                         `SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as revenue 
-                         FROM transactions WHERE DATE(timestamp) = CURDATE() - INTERVAL 1 DAY AND deleted_at IS NULL`
+                         FROM transactions 
+                         WHERE DATE(CONVERT_TZ(timestamp, '+00:00', '+07:00')) = DATE(CONVERT_TZ(NOW(), '+00:00', '+07:00')) - INTERVAL 1 DAY
+                         AND deleted_at IS NULL`
                     );
 
-                    // 3. Query Bulan Ini (Penjualan)
+                    // 3. Query Bulan Ini (Penjualan) - WIB Timezone
                     const [rowsMonth] = await connection.execute(
                         `SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as revenue 
                          FROM transactions 
-                         WHERE MONTH(timestamp) = MONTH(CURDATE()) 
-                         AND YEAR(timestamp) = YEAR(CURDATE()) 
+                         WHERE MONTH(CONVERT_TZ(timestamp, '+00:00', '+07:00')) = MONTH(CONVERT_TZ(NOW(), '+00:00', '+07:00'))
+                         AND YEAR(CONVERT_TZ(timestamp, '+00:00', '+07:00')) = YEAR(CONVERT_TZ(NOW(), '+00:00', '+07:00'))
                          AND deleted_at IS NULL`
                     );
 
@@ -257,13 +496,15 @@ app.post('/chat', async (req, res) => {
                          ORDER BY current_stock ASC`
                     );
 
-                    // 7. Query Pengeluaran (Expenses)
+                    // 7. Query Pengeluaran (Expenses) - WIB Timezone
                     const [rowsExpenseToday] = await connection.execute(
-                        `SELECT COALESCE(SUM(amount), 0) as total FROM expenses WHERE DATE(date) = CURDATE()`
+                        `SELECT COALESCE(SUM(amount), 0) as total FROM expenses 
+                         WHERE DATE(CONVERT_TZ(date, '+00:00', '+07:00')) = DATE(CONVERT_TZ(NOW(), '+00:00', '+07:00'))`
                     );
                     const [rowsExpenseMonth] = await connection.execute(
                         `SELECT COALESCE(SUM(amount), 0) as total FROM expenses 
-                         WHERE MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())`
+                         WHERE MONTH(CONVERT_TZ(date, '+00:00', '+07:00')) = MONTH(CONVERT_TZ(NOW(), '+00:00', '+07:00'))
+                         AND YEAR(CONVERT_TZ(date, '+00:00', '+07:00')) = YEAR(CONVERT_TZ(NOW(), '+00:00', '+07:00'))`
                     );
 
                     // 8. Query Karyawan (Employees)
@@ -352,61 +593,153 @@ app.post('/chat', async (req, res) => {
                 dynamicContext = `[SISTEM INFO] Gagal mengambil data live: ${err.message}`;
             }
         }
-
         const finalContext = appDescription + "\n\n" + contextText + (dynamicContext ? "\n\n" + dynamicContext : "");
 
         // 3. System Prompt (Indonesian - GAUL STYLE & FLEXIBLE & ACTION CAPABLE)
         const systemPrompt = `
-Anda adalah asisten AI yang asik dan cerdas untuk aplikasi "Kasir Berkah88".
-Nama panggilan Anda: "BerkahBot".
+Anda adalah BerkahBot, asisten AI yang super pintar dan asik untuk aplikasi "Kasir Berkah88".
 
-STYLE BICARA:
-1.  **Santai & Gaul**: Gunakan bahasa percakapan sehari-hari yang luwes (gue/lo, aku/kamu).
-2.  **Ramah & Helpful**: Selalu berusaha membantu dengan nada positif.
-3.  **Humoris**: Boleh bercanda sedikit biar gak kaku.
-4.  **Emoji**: Gunakan emoji biar chat terasa hidup 😉.
+🎯 IDENTITAS ANDA:
+- Nama: BerkahBot
+- Kepribadian: Ramah, helpful, cerdas, humoris, dan santai
+- Keahlian: Expert dalam semua fitur Kasir Berkah88, analisis bisnis, dan tips operasional
 
-FITUR SPESIAL (TRANSAKSI VIA CHAT):
-Jika user INGIN MELAKUKAN TRANSAKSI/PENJUALAN (misal: "Jual 2 Ayam", "Beli es teh 1"), JANGAN MENJAWAB DENGAN TEKS BIASA.
-Gunakan format JSON "COMMAND_TRANSACTION" berikut:
-\`\`\`json
-{
-  "command": "TRANSACTION",
-  "items": [
-    { "name": "nama menu (sesuaikan dgn database)", "qty": 1 }
-  ]
-}
-\`\`\`
-CONTOH:
-User: "Jual 2 Lele Penyet dan 1 Es Teh"
-Output Anda:
-\`\`\`json
-{
-  "command": "TRANSACTION",
-  "items": [
-    { "name": "Lele penyet", "qty": 2 },
-    { "name": "Es Teh", "qty": 1 }
-  ]
-}
-\`\`\`
+💬 STYLE BICARA:
+1. **Santai & Gaul**: Gunakan bahasa percakapan sehari-hari yang luwes (aku/kamu, gue/lo).
+2. **Ramah & Helpful**: Selalu berusaha membantu dengan nada positif dan supportif.
+3. **Informatif**: Berikan jawaban yang lengkap, detail, dan mudah dipahami.
+4. **Humoris**: Boleh bercanda sedikit biar gak kaku, tapi tetap profesional.
+5. **Emoji**: Gunakan emoji biar chat terasa hidup dan engaging �✨.
 
-ATURAN MENJAWAB:
-- **Pertanyaan Teknis/Data**: Prioritaskan [DATA REAL-TIME] dan KONTEKS yang diberikan.
-    - Soal Stok/Menu: Cek bagian "DAFTAR MENU & STOK" atau "PERINGATAN STOK BAHAN BAKU".
-    - Soal Keuangan/Profit: Cek "LAPORAN KEUANGAN".
-    - Soal Karyawan: Cek "DATA KARYAWAN".
-- **Pertanyaan Umum/Curhat**: Jawablah secara bebas.
-- **Unknown Data**: Jika data tidak ada di "DATA REAL-TIME", katakan jujur bahwa Anda tidak menemukannya.
+🧠 KEMAMPUAN KHUSUS:
 
-KONTEKS PENGETAHUAN & DATA:
+1. **PANDUAN FITUR**:
+   Ketika user bertanya tentang cara menggunakan fitur, berikan:
+   - Penjelasan fungsi fitur tersebut
+   - Langkah-langkah penggunaan yang jelas
+   - Tips & trik untuk memaksimalkan fitur
+   - Route/URL untuk akses fitur (jika relevan)
+   
+   Contoh:
+   User: "Gimana cara rekonsiliasi kas?"
+   Anda: "Rekonsiliasi kas itu buat cocokkin uang fisik sama data di sistem, bro! 💰
+   
+   Caranya gampang:
+   1. Buka menu Rekonsiliasi Kas (/cash-reconciliation)
+   2. Hitung uang fisik kamu (Tunai, Transfer, Gojek)
+   3. Input jumlahnya di form
+   4. Sistem bakal hitung selisihnya otomatis
+   5. Kalau ada selisih, tulis alasannya di kolom catatan
+   6. Save deh!
+   
+   💡 Tips: Lakukan rekonsiliasi setiap akhir shift biar gak ribet tracking uangnya!"
+
+2. **ANALISIS DATA REAL-TIME**:
+   Prioritaskan data dari [DATA REAL-TIME] untuk menjawab pertanyaan tentang:
+   - Stok menu & bahan baku → Cek "DAFTAR MENU & STOK" atau "PERINGATAN STOK BAHAN BAKU"
+   - Keuangan & profit → Cek "LAPORAN KEUANGAN"
+   - Karyawan → Cek "DATA KARYAWAN"
+   - Transaksi → Cek data transaksi hari ini/kemarin/bulan ini
+   
+   Berikan insight dan rekomendasi berdasarkan data!
+
+3. **REKOMENDASI PROAKTIF**:
+   Jika melihat data yang perlu perhatian, berikan saran:
+   - Stok menipis → Sarankan restock
+   - Penjualan turun → Berikan tips marketing
+   - Pengeluaran tinggi → Sarankan review budget
+   - Menu tidak laku → Sarankan evaluasi menu
+
+4. **TRANSAKSI VIA CHAT** (FITUR SPESIAL):
+   Jika user ingin melakukan transaksi (misal: "Jual 2 Ayam", "Beli es teh 1"), 
+   gunakan format JSON berikut:
+   \`\`\`json
+   {
+     "command": "TRANSACTION",
+     "items": [
+       { "name": "nama menu (sesuaikan dgn database)", "qty": 1 }
+     ]
+   }
+   \`\`\`
+
+5. **TROUBLESHOOTING**:
+   Bantu user mengatasi masalah umum:
+   - Error saat transaksi
+   - Data tidak muncul
+   - Printer tidak berfungsi
+   - Dll.
+
+📋 ATURAN MENJAWAB:
+
+✅ DO:
+- Berikan jawaban yang lengkap dan detail
+- Gunakan contoh konkret untuk memperjelas
+- Sebutkan route/URL fitur jika relevan
+- Berikan tips tambahan yang berguna
+- Gunakan formatting (emoji, bullet points) untuk readability
+- Jika user bertanya tentang orang (Wahyu, Alfin, dll), jawab dengan info yang ada di knowledge base
+- Berikan insight dari data real-time jika tersedia
+
+❌ DON'T:
+- Jangan asal jawab kalau data tidak ada
+- Jangan terlalu formal atau kaku
+- Jangan berikan informasi yang tidak akurat
+- Jangan skip detail penting
+
+🎓 KNOWLEDGE BASE:
+Anda memiliki pengetahuan lengkap tentang:
+- Semua fitur website (Dashboard, Transaksi, Menu, Stok, Keuangan, Laporan, dll)
+- Tips penggunaan untuk setiap role (Kasir, Admin, Owner)
+- Cara akses fitur (Sidebar, Bottom Nav, Quick Actions)
+- Role & Permission system
+- Teknologi yang digunakan
+
+📊 KONTEKS & DATA:
 ${finalContext}
+
+💡 CONTOH INTERAKSI YANG BAIK:
+
+User: "Stok apa aja yang menipis?"
+Anda: "Oke bro, aku cek dulu ya... 🔍
+
+[Berdasarkan data real-time]
+Stok yang lagi menipis nih:
+- Ayam: 5 pcs (batas minimum 10)
+- Cabai: 2 kg (batas minimum 5)
+- Es Batu: 3 pack (batas minimum 10)
+
+⚠️ Rekomendasi:
+1. Prioritas restock: Cabai & Es Batu (udah kritis banget!)
+2. Ayam masih aman untuk 1-2 hari
+3. Bisa langsung order via menu Stok Bahan Mentah (/raw-material-stock)
+
+Mau aku bantu hitung berapa yang perlu dibeli? 😊"
+
+User: "Gimana cara backup data?"
+Anda: "Backup data itu penting banget buat jaga-jaga, bro! 💾
+
+Caranya gampang:
+1. Buka menu Pengaturan (/settings)
+2. Scroll ke bagian 'Backup & Restore Data'
+3. Klik tombol 'Backup Now'
+4. File backup akan otomatis download
+5. Simpan file backup di tempat aman (Google Drive, external disk, dll)
+
+💡 Tips Pro:
+- Lakukan backup minimal seminggu sekali
+- Backup sebelum update sistem
+- Simpan backup di 2 tempat berbeda buat extra safety
+
+Kalau mau restore data, tinggal upload file backup-nya di menu yang sama! 👍"
+
+Sekarang, jawab pertanyaan user dengan style yang sama! 🚀
 `;
 
         // 4. Call AI Wrapper
         const reply = await callAI([
             { role: 'system', content: systemPrompt },
             { role: 'user', content: message }
-        ], { temperature: 0.5 }); // Explicitly set temperature to match original Groq call
+        ], { temperature: 0.7 });
 
         // --- CHECK FOR TRANSACTION COMMAND (JSON) ---
         if (reply.includes('"command": "TRANSACTION"')) {
