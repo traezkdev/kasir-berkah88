@@ -481,6 +481,46 @@ app.get("/api/menu-items/all", authenticateToken, authorizeRoles('user', 'admin'
     }
 });
 
+// PUBLIC: Get all menu items for landing page (No Auth)
+app.get("/api/public/menu-items", async (req, res) => {
+    try {
+        const sql = `
+            SELECT 
+                mi.*,
+                COALESCE(
+                    (
+                        SELECT JSON_ARRAYAGG(
+                            JSON_OBJECT(
+                                'id', mio.id, 
+                                'name', mio.name, 
+                                'price_adjustment', mio.price_adjustment
+                            )
+                        )
+                        FROM menu_item_options mio 
+                        WHERE mio.menu_item_id = mi.id
+                    ),
+                    '[]'
+                ) AS options
+            FROM menu_items mi
+            ORDER BY mi.order_index ASC;
+        `;
+        const [rows] = await db.query(sql);
+
+        // Parse the options string for each item
+        const data = rows.map(row => ({
+            ...row,
+            options: JSON.parse(row.options)
+        }));
+
+        res.json({
+            "message": "success",
+            "data": data
+        });
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
 // Add a new menu item
 app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin'), upload.single('image'), async (req, res, next) => {
     let connection;

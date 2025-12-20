@@ -40,6 +40,7 @@ import SimpleTransactionPage from './pages/SimpleTransaction';
 import CashReconciliation from './pages/cash-reconciliation';
 import ChatbotPage from './pages/chatbot';
 import LandingPage from './pages/landing-page';
+import BerkahLandingPage from './pages/berkah88';
 
 import TransactionTrash from './pages/TransactionTrash';
 
@@ -161,6 +162,7 @@ const AppRoutes = () => {
         <Route path="/laporan-lengkap" element={<LaporanLengkap headerTitle="Laporan Lengkap" />} />
       </Route>
 
+      <Route path="/berkah88" element={<BerkahLandingPage />} />
       {/* Catch all other routes */}
       <Route path="*" element={<NotFound />} />
     </Routes>
