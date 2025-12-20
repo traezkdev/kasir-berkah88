@@ -106,7 +106,7 @@ const LandingFooter = () => {
 
                 <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
                     <p className="text-gray-500 text-sm">
-                        © 2024 Kasir Berkah88. All rights reserved.
+                        © 2025 Kasir Berkah88. All rights reserved.
                     </p>
                     <div className="flex gap-6 text-sm text-gray-500">
                         <a href="#" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
