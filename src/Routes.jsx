@@ -86,7 +86,8 @@ const AppRoutes = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/home" element={<LandingPage />} />
-      <Route path="/" element={<GuestCheckout />} />
+      <Route path="/" element={<BerkahLandingPage />} />
+      <Route path="/guest-checkout" element={<GuestCheckout />} />
 
       {/* Admin Dashboard Routes */}
       <Route
@@ -162,7 +163,7 @@ const AppRoutes = () => {
         <Route path="/laporan-lengkap" element={<LaporanLengkap headerTitle="Laporan Lengkap" />} />
       </Route>
 
-      <Route path="/berkah88" element={<BerkahLandingPage />} />
+
       {/* Catch all other routes */}
       <Route path="*" element={<NotFound />} />
     </Routes>
