@@ -155,8 +155,10 @@
     document.body.appendChild(container);
 
     // Hide widget on /chatbot page
+    // Hide widget on specific pages
     function updateWidgetVisibility() {
-        if (window.location.pathname === '/chatbot') {
+        const hiddenPaths = ['/chatbot', '/', '/berkah88'];
+        if (hiddenPaths.includes(window.location.pathname)) {
             container.style.display = 'none';
         } else {
             container.style.display = 'block';
