@@ -74,8 +74,8 @@ function App() {
       <ThemeProvider> {/* Tambahkan ThemeProvider di sini */}
         <Toaster position="bottom-center" reverseOrder={false} />
         <Routes />
-        {!['/cashier-dashboard', '/'].includes(location.pathname) && <StickyThemeSwitcher />}
-        {theme === 'default' && !['/cashier-dashboard', '/'].includes(location.pathname) && <StickyDarkModeToggle />}
+        {!['/cashier-dashboard', '/', '/transaksi-sederhana'].includes(location.pathname) && <StickyThemeSwitcher />}
+        {theme === 'default' && !['/cashier-dashboard', '/', '/transaksi-sederhana'].includes(location.pathname) && <StickyDarkModeToggle />}
       </ThemeProvider>
     </AppSettingsProvider>
   );
