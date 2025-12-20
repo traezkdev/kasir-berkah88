@@ -1,7 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 
 const LandingFooter = () => {
+    const [logoUrl, setLogoUrl] = useState('');
+    const apiUrl = import.meta.env.VITE_API_URL;
+
+    useEffect(() => {
+        const fetchLogo = async () => {
+            try {
+                const response = await fetch(`${apiUrl}/api/settings/logo`);
+                const data = await response.json();
+                if (data.data && data.data.logo_url) {
+                    setLogoUrl(`${apiUrl}${data.data.logo_url}`);
+                }
+            } catch (error) {
+                console.error("Error fetching logo", error);
+            }
+        };
+        fetchLogo();
+    }, []);
+
     return (
         <footer id="footer" className="bg-slate-900 text-white pt-16 pb-8">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -9,9 +27,13 @@ const LandingFooter = () => {
                     {/* Brand Info */}
                     <div>
                         <div className="flex items-center gap-2 mb-6">
-                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xl">
-                                B
-                            </div>
+                            {logoUrl ? (
+                                <img src={logoUrl} alt="Logo" className="w-10 h-10 rounded-lg object-cover" />
+                            ) : (
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xl">
+                                    B
+                                </div>
+                            )}
                             <span className="text-xl font-bold">Berkah88</span>
                         </div>
                         <p className="text-gray-400 leading-relaxed mb-6">
