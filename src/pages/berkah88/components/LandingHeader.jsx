@@ -84,10 +84,10 @@ const LandingHeader = () => {
                             </button>
                         ))}
                         <button
-                            onClick={() => navigate('/login')}
+                            onClick={() => navigate('/guest-checkout')}
                             className="px-5 py-2 text-sm font-semibold text-white bg-white/10 hover:bg-white/20 border border-white/10 rounded-full transition-all duration-300 hover:scale-105"
                         >
-                            Masuk
+                            Pesan
                         </button>
                     </nav>
 
@@ -116,10 +116,10 @@ const LandingHeader = () => {
                         ))}
                         <div className="pt-4 border-t border-white/10">
                             <button
-                                onClick={() => navigate('/login')}
+                                onClick={() => navigate('/guest-checkout')}
                                 className="w-full flex items-center justify-center px-4 py-3 text-base font-semibold text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg hover:shadow-lg hover:shadow-purple-500/25 transition-all"
                             >
-                                Masuk ke Dashboard
+                                Pesan Sekarang
                             </button>
                         </div>
                     </div>

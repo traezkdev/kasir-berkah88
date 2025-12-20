@@ -1,7 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 
 const ProductCard = ({ product }) => {
+    const navigate = useNavigate();
+
     // Determine image URL
     const apiUrl = import.meta.env.VITE_API_URL;
     let imageUrl = product.image_url
@@ -59,7 +62,10 @@ const ProductCard = ({ product }) => {
                         </span>
                     </div>
 
-                    <button className="w-10 h-10 rounded-full bg-gray-100 text-gray-600 hover:bg-purple-600 hover:text-white transition-all duration-300 flex items-center justify-center shadow-sm hover:shadow-purple-500/50">
+                    <button
+                        onClick={() => navigate('/guest-checkout')}
+                        className="w-10 h-10 rounded-full bg-gray-100 text-gray-600 hover:bg-purple-600 hover:text-white transition-all duration-300 flex items-center justify-center shadow-sm hover:shadow-purple-500/50"
+                    >
                         <Icon name="ShoppingCart" size={18} />
                     </button>
                 </div>
