@@ -74,8 +74,8 @@ function App() {
       <ThemeProvider> {/* Tambahkan ThemeProvider di sini */}
         <Toaster position="bottom-center" reverseOrder={false} />
         <Routes />
-        {location.pathname !== '/cashier-dashboard' && <StickyThemeSwitcher />}
-        {theme === 'default' && location.pathname !== '/cashier-dashboard' && <StickyDarkModeToggle />}
+        {!['/cashier-dashboard', '/'].includes(location.pathname) && <StickyThemeSwitcher />}
+        {theme === 'default' && !['/cashier-dashboard', '/'].includes(location.pathname) && <StickyDarkModeToggle />}
       </ThemeProvider>
     </AppSettingsProvider>
   );
