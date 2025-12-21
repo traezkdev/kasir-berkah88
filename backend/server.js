@@ -1162,7 +1162,7 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
     try {
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 20;
-        const { startDate, endDate, paymentMethod } = req.query; // Extract paymentMethod
+        const { startDate, endDate, paymentMethod, minTotal, maxTotal } = req.query; // Extract paymentMethod and Amount Range
         const offset = (page - 1) * limit;
 
         let whereClauses = ['t.deleted_at IS NULL'];
@@ -1179,7 +1179,7 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
         }
 
         if (paymentMethod && paymentMethod !== 'all') {
-            if (paymentMethod === 'Makan Karyawan') {
+            if (paymentMethod === 'employee_meal') {
                 // Handle Employee Meal special case
                 whereClauses.push('(t.isEmployeeMeal = 1 OR t.payment_method = "employee_meal")');
             } else if (paymentMethod.toLowerCase() === 'tunai' || paymentMethod.toLowerCase() === 'cash') {
@@ -1189,6 +1189,16 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
                 whereClauses.push('t.payment_method = ?');
                 queryParams.push(paymentMethod);
             }
+        }
+
+        // Amount Filtering
+        if (minTotal) {
+            whereClauses.push('t.total >= ?');
+            queryParams.push(minTotal);
+        }
+        if (maxTotal) {
+            whereClauses.push('t.total <= ?');
+            queryParams.push(maxTotal);
         }
 
         const whereSql = `WHERE ${whereClauses.join(' AND ')}`;

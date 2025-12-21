@@ -167,13 +167,22 @@ const TransactionFilters = ({
               </div>
 
               {/* Amount Range Filter */}
-              <div>
+              <div className="md:col-span-2 lg:col-span-1">
                 <label className="block text-sm font-medium text-text-primary mb-2">
                   Rentang Jumlah
                 </label>
                 <select
                   value={activeFilters?.amountRange}
-                  onChange={(e) => handleFilterChange('amountRange', e?.target?.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    handleFilterChange('amountRange', value);
+
+                    // Reset custom inputs if not custom
+                    if (value !== 'custom') {
+                      handleFilterChange('minAmount', '');
+                      handleFilterChange('maxAmount', '');
+                    }
+                  }}
                   className="w-full px-3 py-2 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
                 >
                   <option value="all">Semua Jumlah</option>
@@ -181,7 +190,35 @@ const TransactionFilters = ({
                   <option value="50000-100000">Rp 50.000 - Rp 100.000</option>
                   <option value="100000-200000">Rp 100.000 - Rp 200.000</option>
                   <option value="200000+">Rp 200.000+</option>
+                  <option value="custom">Custom (Atur Sendiri)</option>
                 </select>
+
+                {/* Custom Amount Inputs */}
+                {activeFilters?.amountRange === 'custom' && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="relative flex-1">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-text-secondary">Rp</span>
+                      <input
+                        type="number"
+                        placeholder="Min"
+                        value={activeFilters?.minAmount || ''}
+                        onChange={(e) => handleFilterChange('minAmount', e.target.value)}
+                        className="w-full pl-7 pr-2 py-1.5 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
+                      />
+                    </div>
+                    <span className="text-text-secondary">-</span>
+                    <div className="relative flex-1">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-text-secondary">Rp</span>
+                      <input
+                        type="number"
+                        placeholder="Max"
+                        value={activeFilters?.maxAmount || ''}
+                        onChange={(e) => handleFilterChange('maxAmount', e.target.value)}
+                        className="w-full pl-7 pr-2 py-1.5 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

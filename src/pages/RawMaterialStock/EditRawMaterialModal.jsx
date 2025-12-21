@@ -202,7 +202,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="currentStock" className="block text-muted-foreground text-sm font-bold mb-2">Stok Saat Ini</label>
+            <label htmlFor="currentStock" className="block text-muted-foreground text-sm font-bold mb-2">Stok Mentah</label>
             <input
               type="number"
               id="currentStock"

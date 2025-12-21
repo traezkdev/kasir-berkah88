@@ -47,7 +47,9 @@ const TransactionHistory = ({ headerTitle }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
     paymentMethod: 'all',
-    amountRange: 'all'
+    amountRange: 'all',
+    minAmount: '',
+    maxAmount: ''
   });
   const [dateRange, setDateRange] = useState({
     startDate: '',
@@ -142,6 +144,31 @@ const TransactionHistory = ({ headerTitle }) => {
       params.append('paymentMethod', filters.paymentMethod);
     }
 
+    // Add Amount Range to query params
+    let minTotal = null;
+    let maxTotal = null;
+
+    if (filters.amountRange && filters.amountRange !== 'all') {
+      if (filters.amountRange === 'custom') {
+        if (filters.minAmount) minTotal = filters.minAmount;
+        if (filters.maxAmount) maxTotal = filters.maxAmount;
+      } else {
+        // Parse predefined range
+        if (filters.amountRange.includes('+')) {
+          minTotal = parseInt(filters.amountRange.replace('+', ''));
+        } else {
+          const parts = filters.amountRange.split('-');
+          if (parts.length === 2) {
+            minTotal = parseInt(parts[0]);
+            maxTotal = parseInt(parts[1]);
+          }
+        }
+      }
+    }
+
+    if (minTotal !== null) params.append('minTotal', minTotal);
+    if (maxTotal !== null) params.append('maxTotal', maxTotal);
+
     try {
       const response = await authFetch(`${apiUrl}/api/transactions?${params.toString()}`);
       const data = await response.json();
@@ -173,7 +200,7 @@ const TransactionHistory = ({ headerTitle }) => {
 
   useEffect(() => {
     fetchPaginatedTransactions(currentPage);
-  }, [currentPage, dateRange, filters.paymentMethod]); // Add filters.paymentMethod dependency
+  }, [currentPage, dateRange, filters.paymentMethod, filters.amountRange, filters.minAmount, filters.maxAmount]); // Add filters dependencies
 
   // Fetch all transactions for the chart whenever dateRange changes
   useEffect(() => {
@@ -259,24 +286,8 @@ const TransactionHistory = ({ headerTitle }) => {
     //   filtered = filtered.filter(transaction => transaction.payment_method === filters.paymentMethod);
     // }
 
-    // Amount range filter
-    if (filters.amountRange !== 'all') {
-      filtered = filtered.filter(transaction => {
-        const amount = transaction.total;
-        switch (filters.amountRange) {
-          case '0-50000':
-            return amount >= 0 && amount <= 50000;
-          case '50000-100000':
-            return amount > 50000 && amount <= 100000;
-          case '100000-200000':
-            return amount > 100000 && amount <= 200000;
-          case '200000+':
-            return amount > 200000;
-          default:
-            return true;
-        }
-      });
-    }
+    // Amount range filter is now handled by backend
+    // if (filters.amountRange !== 'all') { ... }
     // Date range filtering and sorting are now done on the backend.
     return filtered;
   }, [transactions, searchTerm, filters]);
