@@ -13,7 +13,7 @@ const ProductCard = ({ product }) => {
 
     // Fallback if no image
     if (!imageUrl) {
-        imageUrl = '/assets/images/no_image.png'; // Use local asset
+        imageUrl = '/assets/images/no_image.png'; // menggunakan local asset
     }
 
     return (

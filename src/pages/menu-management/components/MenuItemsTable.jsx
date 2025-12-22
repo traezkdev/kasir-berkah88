@@ -5,10 +5,10 @@ import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import { useTheme } from '../../../contexts/ThemeContext';
 
-const MenuItemsTable = ({ 
-  menuItems, 
-  onUpdateItem, 
-  onDeleteItem, 
+const MenuItemsTable = ({
+  menuItems,
+  onUpdateItem,
+  onDeleteItem,
   userRole,
   apiUrl,
   onEditItem,
@@ -88,11 +88,11 @@ const MenuItemsTable = ({
               </Button>
             </div>
 
-            <img 
+            <img
               src={item?.image_url ? `${apiUrl}${item.image_url}` : '/assets/images/no_image.png'}
               alt={item?.name}
               className="w-16 h-16 object-cover rounded-md"
-              onError={(e) => { e.target.onerror = null; e.target.src='/assets/images/no_image.png'}}
+              onError={(e) => { e.target.onerror = null; e.target.src = '/assets/images/no_image.png' }}
             />
             <div className="flex-1">
               <h3 className="font-medium text-foreground flex items-center">
@@ -123,7 +123,7 @@ const MenuItemsTable = ({
               </span>
             </div>
           </div>
-          
+
           <div>
             <p className="text-xs text-muted-foreground mb-1">Harga</p>
             <p className="font-mono font-medium text-foreground">
@@ -144,19 +144,9 @@ const MenuItemsTable = ({
           <p className="text-xs text-muted-foreground">
             Diperbarui: {item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('id-ID') : '-'}
           </p>
-          
+
           <div className="flex items-center space-x-2">
-            {userRole !== 'guest' && (
-              <Button
-                variant="outline"
-                size="xs"
-                onClick={() => onOpenRecipeModal(item)}
-                iconName="BookText"
-                iconPosition="left"
-              >
-                Resep
-              </Button>
-            )}
+
             {userRole !== 'guest' && (
               <Button
                 variant="ghost"
@@ -215,7 +205,7 @@ const MenuItemsTable = ({
               {menuItems?.length} item menu tersedia
             </p>
           </div>
-          
+
           <div className="flex flex-col sm:flex-row gap-3">
           </div>
         </div>
@@ -223,9 +213,9 @@ const MenuItemsTable = ({
       {/* Mobile View */}
       <div className="block lg:hidden p-4 space-y-4">
         {menuItems?.map(item => (
-          <MobileCard 
-            key={item?.id} 
-            item={item} 
+          <MobileCard
+            key={item?.id}
+            item={item}
             setShowDeleteConfirm={setShowDeleteConfirm}
             apiUrl={apiUrl}
             onEditItem={onEditItem}
@@ -261,21 +251,21 @@ const MenuItemsTable = ({
                     <Icon name="ChevronDown" size={16} />
                   </Button>
                 </div>
-              </td><td className="p-4"><img src={item?.image_url ? `${apiUrl}${item.image_url}` : '/assets/images/no_image.png'} alt={item?.name} className="w-16 h-16 object-cover rounded-md" onError={(e) => { e.target.onerror = null; e.target.src='/assets/images/no_image.png'}}/></td><td className="p-4">
-                <div className="flex flex-col">
-                  <span className="font-medium text-foreground">{item?.name}</span>
-                  {/* Display options for desktop view */}
-                  {item.options && item.options.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {item.options.map(opt => (
-                        <span key={opt.id || opt.name} className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded-full">
-                          {opt.name} (+{formatCurrency(opt.price_adjustment)})
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </td><td className="p-4"><span className="font-medium text-foreground">{item?.category}</span></td><td className="p-4"><span className="font-mono font-medium">{item?.stock}</span></td><td className="p-4"><span className="font-mono font-medium">{formatCurrency(item?.price)}</span></td><td className="p-4 text-center"> {/* New data cell */}{item?.discount > 0 ? (<span className="font-mono font-medium text-success">{`${(item?.discount * 100).toFixed(0)}%`}</span>) : (<span className="text-muted-foreground">-</span>)}</td><td className="p-4">{item?.is_featured ? <Icon name="Star" size={18} className="text-yellow-500" title="Menu Unggulan" /> : '-'}</td><td className="p-4"><span className={`px-3 py-1 rounded-full text-sm font-medium ${stockStatus?.color} ${stockStatus?.bg}`}>{stockStatus?.label}</span></td><td className="p-4 text-sm text-muted-foreground">{item.updatedAt ? (!isNaN(new Date(item.updatedAt)) ? new Date(item.updatedAt).toLocaleDateString('id-ID', {day: '2-digit',month: '2-digit',year: 'numeric',hour: '2-digit',minute: '2-digit'}) : `Invalid Date: ${item.updatedAt}`) : '-'}</td><td className="p-4"><div className="flex items-center justify-center space-x-1">{userRole !== 'guest' && (<Button variant="outline" size="xs" onClick={() => onOpenRecipeModal(item)} iconName="BookText"/>)}{userRole !== 'guest' && (<Button variant="ghost" size="xs" onClick={() => onEditItem(item)} iconName="Edit"/>)}{userRole !== 'guest' && (<Button variant="destructive" size="xs" onClick={() => setShowDeleteConfirm(item?.id)} iconName="Trash2"/>)}</div></td></tr>);
+              </td><td className="p-4"><img src={item?.image_url ? `${apiUrl}${item.image_url}` : '/assets/images/no_image.png'} alt={item?.name} className="w-16 h-16 object-cover rounded-md" onError={(e) => { e.target.onerror = null; e.target.src = '/assets/images/no_image.png' }} /></td><td className="p-4">
+                  <div className="flex flex-col">
+                    <span className="font-medium text-foreground">{item?.name}</span>
+                    {/* Display options for desktop view */}
+                    {item.options && item.options.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {item.options.map(opt => (
+                          <span key={opt.id || opt.name} className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded-full">
+                            {opt.name} (+{formatCurrency(opt.price_adjustment)})
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </td><td className="p-4"><span className="font-medium text-foreground">{item?.category}</span></td><td className="p-4"><span className="font-mono font-medium">{item?.stock}</span></td><td className="p-4"><span className="font-mono font-medium">{formatCurrency(item?.price)}</span></td><td className="p-4 text-center"> {/* New data cell */}{item?.discount > 0 ? (<span className="font-mono font-medium text-success">{`${(item?.discount * 100).toFixed(0)}%`}</span>) : (<span className="text-muted-foreground">-</span>)}</td><td className="p-4">{item?.is_featured ? <Icon name="Star" size={18} className="text-yellow-500" title="Menu Unggulan" /> : '-'}</td><td className="p-4"><span className={`px-3 py-1 rounded-full text-sm font-medium ${stockStatus?.color} ${stockStatus?.bg}`}>{stockStatus?.label}</span></td><td className="p-4 text-sm text-muted-foreground">{item.updatedAt ? (!isNaN(new Date(item.updatedAt)) ? new Date(item.updatedAt).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : `Invalid Date: ${item.updatedAt}`) : '-'}</td><td className="p-4"><div className="flex items-center justify-center space-x-1">{userRole !== 'guest' && (<Button variant="ghost" size="xs" onClick={() => onEditItem(item)} iconName="Edit" />)}{userRole !== 'guest' && (<Button variant="destructive" size="xs" onClick={() => setShowDeleteConfirm(item?.id)} iconName="Trash2" />)}</div></td></tr>);
             })}
           </tbody>
         </table>
@@ -293,11 +283,11 @@ const MenuItemsTable = ({
                 <p className="text-sm text-muted-foreground">Tindakan ini tidak dapat dibatalkan</p>
               </div>
             </div>
-            
+
             <p className="text-muted-foreground mb-6">
               Apakah Anda yakin ingin menghapus menu "{menuItems?.find(item => item?.id === showDeleteConfirm)?.name}"?
             </p>
-            
+
             <div className="flex space-x-3">
               <Button
                 variant="destructive"
