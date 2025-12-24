@@ -259,10 +259,10 @@ const AdminUangBisnis = ({ headerTitle }) => { // Changed component name
 
     return (
         <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
-            {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle || 'Uang Bisnis'} />}
-            <main className={`pb-20 lg:pb-8 pt-16`}>
-                <div className="max-w-7xl mx-auto px-4 lg:px-6">
-                    <div className="mb-6 mt-4">
+            {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || 'Uang Bisnis'} />}
+            <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'pt-16' : ''}`}>
+                <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
+                    <div className={`mb-6 ${theme === 'default' ? 'mt-4' : ''}`}>
                         <BreadcrumbNavigation className="mb-4" />
                         <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
                             Riwayat Transaksi Owner
