@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { formatInTimeZone } from 'date-fns-tz';
 import ReportCard from './ReportCard';
 import Icon from '../../../components/AppIcon';
+import Pagination from '../../../components/ui/Pagination';
 
 // Helper function to format currency
 const formatCurrency = (value) => {
@@ -17,9 +18,19 @@ const formatCurrency = (value) => {
 };
 
 const ExpenseReportSection = ({ data, onExportExpenses }) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   if (!data || !data.summary) return null;
 
   const { summary, items } = data;
+
+  // Pagination logic for items
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = items ? items.slice(indexOfFirstItem, indexOfLastItem) : [];
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   const expenseMetrics = [
     { label: 'Total Pengeluaran', value: formatCurrency(summary.totalExpenses) },
@@ -55,15 +66,16 @@ const ExpenseReportSection = ({ data, onExportExpenses }) => {
                 </tr>
               </thead>
               <tbody>
-                {items && items.map((item, index) => (
-                  <tr key={index} className="border-b border-slate-100">
-                    <td className="py-3 text-text-primary font-mono">{formatInTimeZone(new Date(item.date), 'Asia/Jakarta', 'dd/MM/yyyy')}</td>
-                    <td className="py-3 text-text-primary font-medium">{item.name}</td>
-                    <td className="py-3 text-text-primary">{item.category}</td>
-                    <td className="py-3 text-right font-mono text-text-primary">{formatCurrency(item.amount)}</td>
-                  </tr>
-                ))}
-                {(!items || items.length === 0) && (
+                {currentItems.length > 0 ? (
+                  currentItems.map((item, index) => (
+                    <tr key={index} className="border-b border-slate-100">
+                      <td className="py-3 text-text-primary font-mono">{formatInTimeZone(new Date(item.date), 'Asia/Jakarta', 'dd/MM/yyyy')}</td>
+                      <td className="py-3 text-text-primary font-medium">{item.name}</td>
+                      <td className="py-3 text-text-primary">{item.category}</td>
+                      <td className="py-3 text-right font-mono text-text-primary">{formatCurrency(item.amount)}</td>
+                    </tr>
+                  ))
+                ) : (
                   <tr>
                     <td colSpan="4" className="text-center py-8 text-text-secondary">
                       Tidak ada data pengeluaran pada periode ini.
@@ -73,6 +85,13 @@ const ExpenseReportSection = ({ data, onExportExpenses }) => {
               </tbody>
             </table>
           </div>
+
+          <Pagination
+            itemsPerPage={itemsPerPage}
+            totalItems={items ? items.length : 0}
+            paginate={paginate}
+            currentPage={currentPage}
+          />
         </div>
       </div>
     </ReportCard>

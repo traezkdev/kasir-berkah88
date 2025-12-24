@@ -1,14 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ReportCard from './ReportCard';
 import Icon from '../../../components/AppIcon';
+import Pagination from '../../../components/ui/Pagination';
 import { exportToExcel, exportToPdf, prepareSoldStockDataForExport } from '../../../utils/exportUtils';
 
 const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
 
 const StockReportSection = ({ data }) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   if (!data) return null;
 
   const { totalValue, totalItems, lowStockItems, items, lowStock, currentStockValue } = data;
+
+  // Pagination logic for lowStock
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentLowStockItems = lowStock ? lowStock.slice(indexOfFirstItem, indexOfLastItem) : [];
 
   const stockMetrics = [
     { label: 'Total Nilai Stok (Saat Ini)', value: formatCurrency(currentStockValue) },
@@ -32,6 +41,8 @@ const StockReportSection = ({ data }) => {
     { label: 'Export Excel', onClick: handleExportExcelStock },
   ];
 
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
   return (
     <ReportCard
       title="Laporan Stok"
@@ -50,29 +61,37 @@ const StockReportSection = ({ data }) => {
             Stok Menipis (Saat Ini)
           </h4>
           <div className="space-y-2">
-            {lowStock && lowStock.map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-warning/5 border border-warning/20 rounded-lg">
-                <div>
-                  <p className="font-medium text-text-primary">{item.name}</p>
-                  <p className="text-sm text-text-secondary">
-                    Stok: {item.stock}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-mono text-sm text-text-primary">
-                    {formatCurrency(item.price)}
-                  </p>
-                  <div className="flex items-center text-xs text-warning">
-                    <Icon name="TrendingDown" size={12} className="mr-1" />
-                    Perlu Restock
+            {currentLowStockItems.length > 0 ? (
+              currentLowStockItems.map((item, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-warning/5 border border-warning/20 rounded-lg">
+                  <div>
+                    <p className="font-medium text-text-primary">{item.name}</p>
+                    <p className="text-sm text-text-secondary">
+                      Stok: {item.stock}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-mono text-sm text-text-primary">
+                      {formatCurrency(item.price)}
+                    </p>
+                    <div className="flex items-center text-xs text-warning">
+                      <Icon name="TrendingDown" size={12} className="mr-1" />
+                      Perlu Restock
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-            {(!lowStock || lowStock.length === 0) && (
-                <p className="text-center py-4 text-text-secondary">Tidak ada item dengan stok menipis.</p>
+              ))
+            ) : (
+              <p className="text-center py-4 text-text-secondary">Tidak ada item dengan stok menipis.</p>
             )}
           </div>
+
+          <Pagination
+            itemsPerPage={itemsPerPage}
+            totalItems={lowStock ? lowStock.length : 0}
+            paginate={paginate}
+            currentPage={currentPage}
+          />
         </div>
       </div>
     </ReportCard>

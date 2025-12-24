@@ -1,15 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ReportCard from './ReportCard';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import Pagination from '../../../components/ui/Pagination';
 import { exportToExcel, exportToPdf, prepareCombinedDataForExport, prepareTopSellingItemsForExport } from '../../../utils/exportUtils';
 
 const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
 
 const SalesReportSection = ({ data }) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   if (!data) return null;
 
   const { totalRevenue, totalTransactions, averageOrder, topItems } = data;
+
+  // Pagination logic for topItems
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentTopItems = topItems ? topItems.slice(indexOfFirstItem, indexOfLastItem) : [];
 
   const salesMetrics = [
     { label: 'Total Penjualan', value: formatCurrency(totalRevenue) },
@@ -24,11 +33,11 @@ const SalesReportSection = ({ data }) => {
         totalTransactions,
         averageOrder,
         topItems,
-        initialCapital: 0, 
-        workingCapital: 0, 
+        initialCapital: 0,
+        workingCapital: 0,
       },
-      expenses: { summary: {}, items: [] }, 
-      stock: { totalValue: 0, totalItems: 0, lowStockItems: 0, lowStock: [] }, 
+      expenses: { summary: {}, items: [] },
+      stock: { totalValue: 0, totalItems: 0, lowStockItems: 0, lowStock: [] },
     });
     exportToPdf(combinedData, 'Laporan_Penjualan');
   };
@@ -40,11 +49,11 @@ const SalesReportSection = ({ data }) => {
         totalTransactions,
         averageOrder,
         topItems,
-        initialCapital: 0, 
-        workingCapital: 0, 
+        initialCapital: 0,
+        workingCapital: 0,
       },
-      expenses: { summary: {}, items: [] }, 
-      stock: { totalValue: 0, totalItems: 0, lowStockItems: 0, lowStock: [] }, 
+      expenses: { summary: {}, items: [] },
+      stock: { totalValue: 0, totalItems: 0, lowStockItems: 0, lowStock: [] },
     });
     exportToExcel(combinedData, 'Laporan_Penjualan');
   };
@@ -63,6 +72,8 @@ const SalesReportSection = ({ data }) => {
     { label: 'Export PDF', onClick: handleExportPdfSales },
     { label: 'Export Excel', onClick: handleExportExcelSales },
   ];
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
     <ReportCard
@@ -101,31 +112,39 @@ const SalesReportSection = ({ data }) => {
             </Button>
           </div>
         </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 dark:border-gray-700">
-                  <th className="text-left py-2 text-text-secondary font-medium dark:text-gray-400">Nama Menu</th>
-                  <th className="text-right py-2 text-text-secondary font-medium dark:text-gray-400">Terjual</th>
-                  <th className="text-right py-2 text-text-secondary font-medium dark:text-gray-400">Pendapatan</th>
-                </tr>
-              </thead>
-              <tbody>
-                {topItems && topItems.map((item, index) => (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 dark:border-gray-700">
+                <th className="text-left py-2 text-text-secondary font-medium dark:text-gray-400">Nama Menu</th>
+                <th className="text-right py-2 text-text-secondary font-medium dark:text-gray-400">Terjual</th>
+                <th className="text-right py-2 text-text-secondary font-medium dark:text-gray-400">Pendapatan</th>
+              </tr>
+            </thead>
+            <tbody>
+              {currentTopItems.length > 0 ? (
+                currentTopItems.map((item, index) => (
                   <tr key={index} className="border-b border-slate-100 dark:border-gray-800">
                     <td className="py-3 text-text-primary font-medium dark:text-white">{item.name}</td>
                     <td className="py-3 text-right font-mono text-text-primary dark:text-white">{item.sold}</td>
                     <td className="py-3 text-right font-mono text-text-primary dark:text-white">{formatCurrency(item.revenue)}</td>
                   </tr>
-                ))}
-                 {(!topItems || topItems.length === 0) && (
-                  <tr>
-                    <td colSpan="3" className="text-center py-4 text-text-secondary dark:text-gray-400">Tidak ada data penjualan pada periode ini.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="3" className="text-center py-4 text-text-secondary dark:text-gray-400">Tidak ada data penjualan pada periode ini.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <Pagination
+          itemsPerPage={itemsPerPage}
+          totalItems={topItems ? topItems.length : 0}
+          paginate={paginate}
+          currentPage={currentPage}
+        />
       </div>
     </ReportCard>
   );

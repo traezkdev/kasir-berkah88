@@ -7,6 +7,7 @@ import { Toaster } from 'react-hot-toast';
 import { useTheme } from './contexts/ThemeContext';
 import StickyDarkModeToggle from './components/ui/StickyDarkModeToggle';
 import StickyThemeSwitcher from './components/ui/StickyThemeSwitcher';
+import DailyWelcomeModal from './components/ui/DailyWelcomeModal';
 import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext';
 
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -73,6 +74,7 @@ function App() {
     <AppSettingsProvider>
       <ThemeProvider> {/* Tambahkan ThemeProvider di sini */}
         <Toaster position="bottom-center" reverseOrder={false} />
+        <DailyWelcomeModal />
         <Routes />
         {!['/cashier-dashboard', '/', '/transaksi-sederhana'].includes(location.pathname) && <StickyThemeSwitcher />}
         {theme === 'default' && !['/cashier-dashboard', '/', '/transaksi-sederhana'].includes(location.pathname) && <StickyDarkModeToggle />}

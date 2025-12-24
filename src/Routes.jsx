@@ -102,7 +102,7 @@ const AppRoutes = () => {
         <Route path="/expense-tracking" element={<ExpenseTracking />} />
         <Route path="/transaction-history" element={<TransactionHistory />} />
         <Route path="/transaction-trash" element={<TransactionTrash />} />
-        <Route path="/business-reports" element={<BusinessReports />} />
+        <Route path="/laporan" element={<BusinessReports />} />
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/credits" element={<Credits />} />

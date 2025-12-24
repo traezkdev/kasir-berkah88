@@ -1861,13 +1861,36 @@ app.get("/api/accounts/:accountName", authenticateToken, async (req, res) => {
         const account = await getAccountAndAuthorize(req, res, accountName, allowedRoles);
         if (!account) return; // Response already sent by helper
 
-        // Fetch transactions for this account
+        // Fetch transactions for this account with filtering
+        const { type, startDate, endDate, search } = req.query;
+        let whereClauses = ['at.account_id = ?'];
+        let queryParams = [account.id];
+
+        if (type && type !== 'all') {
+            whereClauses.push('at.type = ?');
+            queryParams.push(type);
+        }
+        if (startDate) {
+            whereClauses.push('at.created_at >= ?');
+            queryParams.push(startDate);
+        }
+        if (endDate) {
+            whereClauses.push('at.created_at <= ?');
+            queryParams.push(`${endDate} 23:59:59`);
+        }
+        if (search) {
+            whereClauses.push('at.description LIKE ?');
+            queryParams.push(`%${search}%`);
+        }
+
+        const whereSql = whereClauses.join(' AND ');
+
         const [transactions] = await db.query(
             `SELECT at.*, u.username as created_by_username 
              FROM account_transactions at 
              JOIN users u ON at.created_by_user_id = u.id 
-             WHERE at.account_id = ? ORDER BY at.created_at DESC`,
-            [account.id]
+             WHERE ${whereSql} ORDER BY at.created_at DESC`,
+            queryParams
         );
 
         res.json({
