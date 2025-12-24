@@ -26,7 +26,7 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
 
           {/* Grup Penjualan */}
           <div className="px-4 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Penjualan</div>
-          <NavLink to="/sales-transaction-processing" className={({ isActive }) => `${navLinkClasses} ${isActive ? activeLinkClasses : ''}`} onClick={toggleSidebar}>
+          <NavLink to="/transaksi" className={({ isActive }) => `${navLinkClasses} ${isActive ? activeLinkClasses : ''}`} onClick={toggleSidebar}>
             <FaFileInvoiceDollar className="mr-3" />
             Proses Transaksi
           </NavLink>

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import authFetch from '../../utils/authFetch';
 import { useTheme } from '../../contexts/ThemeContext';
 import NavigationHeader from '../../components/ui/NavigationHeader';
+import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import MetricsCard from '../main-dashboard/components/MetricsCard'; // Re-use MetricsCard
@@ -37,6 +38,7 @@ const LapakDeposit = ({ headerTitle }) => {
         endDate: '',
         search: ''
     });
+    const [logoUrl, setLogoUrl] = useState(''); // Add logoUrl state
 
     const { showToast } = useToast(); // <--- Panggil useToast
 
@@ -86,6 +88,24 @@ const LapakDeposit = ({ headerTitle }) => {
 
     useEffect(() => {
         fetchLapakAccountData(true); // Initial fetch with full page loading
+
+        // Fetch logo settings
+        const fetchLogo = async () => {
+            try {
+                const response = await fetch(`${apiUrl}/api/settings/logo`);
+                const data = await response.json();
+                if (response.ok && typeof data.data.logo_url === 'string' && data.data.logo_url.length > 0) {
+                    if (data.data.logo_url.startsWith('/public')) {
+                        setLogoUrl(`${apiUrl}${data.data.logo_url}`);
+                    } else {
+                        setLogoUrl(data.data.logo_url);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to fetch logo:', error);
+            }
+        };
+        fetchLogo();
     }, []);
 
     const handleFilterChange = (name, value) => {
@@ -242,13 +262,17 @@ const LapakDeposit = ({ headerTitle }) => {
 
     return (
         <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
-            {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || 'Pengeluaran Lapak'} />}
+            {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} />}
             <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'pt-16' : ''}`}>
                 <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
                     <div className="mb-6 mt-4">
-                        <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
-                            Pengeluaran Lapak
-                        </h1>
+                        <BreadcrumbNavigation />
+                        <div className="flex items-center space-x-3 mt-4">
+                            {logoUrl && <img src={logoUrl} alt="Logo" className="w-10 h-10 rounded-lg" onError={(e) => { e.target.style.display = 'none'; }} />}
+                            <div>
+                                <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">Pengeluaran Lapak</h1>
+                            </div>
+                        </div>
                         <p className="text-text-secondary mt-1">
                             Kelola uang masuk dan keluar untuk operasional lapak di sini.
                         </p>

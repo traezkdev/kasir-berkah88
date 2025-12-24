@@ -12,7 +12,7 @@ const BreadcrumbNavigation = ({ customPath = null, className = "" }) => {
   const routeLabels = {
     '/': 'Dashboard',
     '/main-dashboard': 'Dashboard',
-    '/sales-transaction-processing': 'Penjualan',
+    '/transaksi': 'Penjualan',
     '/menu-management': 'Menu',
     '/expense-tracking': 'Pengeluaran',
     '/transaction-history': 'Riwayat Transaksi',
@@ -26,6 +26,7 @@ const BreadcrumbNavigation = ({ customPath = null, className = "" }) => {
     '/owner/business-reports': 'Laporan Bisnis', // Explicitly define for owner
     '/admin-uang-bisnis': 'Riwayat Transaksi Owner',
     '/raw-material-stock': 'Stok Bahan Baku',
+    '/lapak-deposit': 'Pengeluaran Lapak',
   };
 
   const generateBreadcrumbs = () => {

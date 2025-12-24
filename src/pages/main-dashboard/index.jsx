@@ -467,7 +467,7 @@ const MainDashboard = ({ headerTitle }) => {
       title: 'Proses Penjualan',
       description: 'Buat transaksi penjualan baru',
       icon: 'ShoppingCart',
-      route: '/sales-transaction-processing',
+      route: '/transaksi',
       color: 'primary'
     },
     {
@@ -681,7 +681,7 @@ const MainDashboard = ({ headerTitle }) => {
                       variant="primary"
                       iconName="Plus"
                       iconPosition="left"
-                      onClick={() => navigate('/sales-transaction-processing')}
+                      onClick={() => navigate('/transaksi')}
                     >
                       Transaksi Baru
                     </Button>
