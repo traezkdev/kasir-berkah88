@@ -1,10 +1,13 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Icon from '../AppIcon';
-import { jwtDecode } from 'jwt-decode'; // Add this import
+import { jwtDecode } from 'jwt-decode';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const BreadcrumbNavigation = ({ customPath = null, className = "" }) => {
   const location = useLocation();
+  const { theme } = useTheme();
+  const paddingClass = theme === 'default' ? 'pt-4' : '';
 
   const routeLabels = {
     '/': 'Dashboard',
@@ -96,7 +99,7 @@ const BreadcrumbNavigation = ({ customPath = null, className = "" }) => {
   }
 
   return (
-    <nav className={`flex items-center space-x-2 text-xs md:text-sm pt-4 ${className}`} aria-label="Breadcrumb">
+    <nav className={`flex items-center space-x-2 text-xs md:text-sm ${paddingClass} ${className}`} aria-label="Breadcrumb">
       {breadcrumbs?.map((crumb, index) => (
         <React.Fragment key={crumb?.path}>
           {index > 0 && (

@@ -3,13 +3,15 @@ import axios from 'axios';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import { FaSync, FaExclamationTriangle, FaArrowLeft } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation'; // Import BreadcrumbNavigation
+import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const MainCriticalStockPage = () => {
   const [lowStockItems, setLowStockItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const { theme } = useTheme();
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
@@ -37,11 +39,11 @@ const MainCriticalStockPage = () => {
   }, []);
 
   return (
-    <>
-      <NavigationHeader />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 mt-16">
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
+      {theme === 'default' && <NavigationHeader />}
+      <div className={`${theme === 'default' ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 mt-16" : "p-4 sm:p-6"}`}>
         {/* Breadcrumb Navigation */}
-        <BreadcrumbNavigation paths={[{ name: 'Beranda', path: '/main-dashboard' }, { name: 'Stok Kritis', path: '/main-critical-stock' }]} className="mb-4" />
+        <BreadcrumbNavigation className="mb-4" />
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6">
           <h1 className="text-2xl font-bold mb-4 sm:mb-0">Daftar Pembelian Stok (Stok Kritis)</h1>
           <div className="flex items-center gap-2"> {/* New div for buttons */}
@@ -144,18 +146,18 @@ const MainCriticalStockPage = () => {
                   <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                     <div className="font-medium text-muted-foreground">Stok Saat Ini:</div>
                     <div className="text-destructive font-bold">{parseInt(item.current_stock)} {item.unit}</div>
-                    
+
                     <div className="font-medium text-muted-foreground">Stok Menu:</div>
                     <div className="text-destructive font-bold">{parseInt(item.menu_stock)} {item.unit}</div>
-                    
+
                     <div className="font-medium text-muted-foreground">Total Stok:</div>
                     <div className="text-foreground font-bold">{parseInt(item.current_stock) + parseInt(item.menu_stock)} {item.unit}</div>
-                    
 
-                    
+
+
                     <div className="font-medium text-muted-foreground">Stok Minimum:</div>
                     <div className="text-foreground">{parseInt(item.stok_minimum)} {item.unit}</div>
-                    
+
                     <div className="font-medium text-muted-foreground">Estimasi Porsi:</div>
                     <div className="text-foreground">{item.estimated_menu_portions !== null ? `${parseInt(item.estimated_menu_portions)} porsi` : 'N/A'}</div>
                   </div>
@@ -174,7 +176,7 @@ const MainCriticalStockPage = () => {
           </>
         )}
       </div>
-    </>
+    </div>
   );
 };
 
