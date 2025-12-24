@@ -16,7 +16,7 @@ const BreadcrumbNavigation = ({ customPath = null, className = "" }) => {
     '/menu-management': 'Menu',
     '/expense-tracking': 'Pengeluaran',
     '/transaction-history': 'Riwayat Transaksi',
-    '/business-reports': 'Laporan Bisnis', // This will now be primarily for admin/user
+    '/laporan': 'Laporan Bisnis', // This will now be primarily for admin/user
     '/order-confirmation': 'Konfirmasi Pesanan',
     // Owner-specific routes
     '/owner-dashboard': 'Dashboard Owner',

@@ -488,7 +488,7 @@ const MainDashboard = ({ headerTitle }) => {
       title: 'Lihat Laporan',
       description: 'Analisis performa bisnis',
       icon: 'FileText',
-      route: '/business-reports',
+      route: '/laporan',
       color: 'secondary'
     },
     {

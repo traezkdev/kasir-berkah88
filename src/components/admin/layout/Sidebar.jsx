@@ -83,7 +83,7 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
             <FaTrashAlt className="mr-3" />
             Sampah Transaksi
           </NavLink>
-          <NavLink to="/business-reports" className={({ isActive }) => `${navLinkClasses} ${isActive ? activeLinkClasses : ''}`} onClick={toggleSidebar}>
+          <NavLink to="/laporan" className={({ isActive }) => `${navLinkClasses} ${isActive ? activeLinkClasses : ''}`} onClick={toggleSidebar}>
             <FaChartLine className="mr-3" />
             Laporan Bisnis
           </NavLink>

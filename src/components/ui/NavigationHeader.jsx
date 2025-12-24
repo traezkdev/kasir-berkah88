@@ -101,7 +101,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
     if (path === '/main-dashboard') {
       return location?.pathname === '/' || location?.pathname === '/main-dashboard';
     }
-    return location?.pathname?.startsWith(path);
+    return location?.pathname?.startsWith(path === '/business-reports' ? '/laporan' : path);
   };
 
   const toggleMobileMenu = () => {
