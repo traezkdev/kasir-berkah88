@@ -65,7 +65,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
   const allNavigationItems = [
     { label: 'Dashboard', path: '/main-dashboard', icon: 'LayoutDashboard', roles: ['admin', 'user'] },
     { label: 'Dashboard Kasir', path: '/cashier-dashboard', icon: 'ScanBarcode', roles: ['kasir'] },
-    { label: 'Penjualan', path: '/sales-transaction-processing', icon: 'ShoppingCart', roles: ['admin', 'user', 'kasir'] },
+    { label: 'Penjualan', path: '/transaksi', icon: 'ShoppingCart', roles: ['admin', 'user', 'kasir'] },
     { label: 'Menu', path: '/menu-management', icon: 'UtensilsCrossed', roles: ['admin', 'user'] },
     { label: 'Pengeluaran', path: '/expense-tracking', icon: 'Receipt', roles: ['admin', 'user'] },
     { label: 'Transaksi', path: '/transaction-history', icon: 'ListOrdered', roles: ['admin', 'user', 'kasir'] },

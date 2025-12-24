@@ -39,7 +39,7 @@ const ReceiptPage = () => {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
         <p className="text-red-500 text-lg mb-4">Data transaksi tidak ditemukan.</p>
-        <Button onClick={() => navigate('/sales-transaction-processing')}>Kembali ke Kasir</Button>
+        <Button onClick={() => navigate('/transaksi')}>Kembali ke Kasir</Button>
       </div>
     );
   }
@@ -225,7 +225,7 @@ const ReceiptPage = () => {
             </div>
           </div>
           <div className="p-4 bg-muted/50 dark:bg-gray-900 rounded-b-lg flex items-center justify-between print:hidden">
-            <Button variant="outline" onClick={() => navigate('/sales-transaction-processing')} className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => navigate('/transaksi')} className="flex items-center gap-2">
               <ArrowLeft size={16} />
               Kembali
             </Button>

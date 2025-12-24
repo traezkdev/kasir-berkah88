@@ -12,7 +12,7 @@ const BreadcrumbNavigation = ({ customPath = null, className = "" }) => {
   const routeLabels = {
     '/': 'Dashboard',
     '/main-dashboard': 'Dashboard',
-    '/sales-transaction-processing': 'Penjualan',
+    '/transaksi': 'Penjualan',
     '/menu-management': 'Menu',
     '/expense-tracking': 'Pengeluaran',
     '/transaction-history': 'Riwayat Transaksi',

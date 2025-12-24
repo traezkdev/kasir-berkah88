@@ -11,38 +11,38 @@ const QuickActionPanel = ({ className = "" }) => {
 
   const getContextualActions = () => {
     const currentPath = location?.pathname;
-    
+
     const actionSets = {
       '/main-dashboard': [
-        { label: 'Transaksi Baru', icon: 'Plus', action: () => navigate('/sales-transaction-processing'), color: 'primary' },
+        { label: 'Transaksi Baru', icon: 'Plus', action: () => navigate('/transaksi'), color: 'primary' },
         { label: 'Tambah Menu', icon: 'UtensilsCrossed', action: () => navigate('/menu-management'), color: 'secondary' },
         { label: 'Catat Pengeluaran', icon: 'Receipt', action: () => navigate('/expense-tracking'), color: 'accent' },
         { label: 'Lihat Laporan', icon: 'FileText', action: () => navigate('/business-reports'), color: 'muted' }
       ],
-      '/sales-transaction-processing': [
+      '/transaksi': [
         { label: 'Transaksi Baru', icon: 'Plus', action: () => window.location?.reload(), color: 'primary' },
         { label: 'Riwayat Hari Ini', icon: 'Clock', action: () => navigate('/transaction-history'), color: 'secondary' },
         { label: 'Kelola Menu', icon: 'Settings', action: () => navigate('/menu-management'), color: 'muted' }
       ],
       '/menu-management': [
-        { label: 'Tambah Menu', icon: 'Plus', action: () => {}, color: 'primary' },
-        { label: 'Import Menu', icon: 'Upload', action: () => {}, color: 'secondary' },
-        { label: 'Kategori', icon: 'Tag', action: () => {}, color: 'accent' }
+        { label: 'Tambah Menu', icon: 'Plus', action: () => { }, color: 'primary' },
+        { label: 'Import Menu', icon: 'Upload', action: () => { }, color: 'secondary' },
+        { label: 'Kategori', icon: 'Tag', action: () => { }, color: 'accent' }
       ],
       '/expense-tracking': [
-        { label: 'Tambah Pengeluaran', icon: 'Plus', action: () => {}, color: 'primary' },
-        { label: 'Template', icon: 'Copy', action: () => {}, color: 'secondary' },
-        { label: 'Kategori', icon: 'Tag', action: () => {}, color: 'accent' }
+        { label: 'Tambah Pengeluaran', icon: 'Plus', action: () => { }, color: 'primary' },
+        { label: 'Template', icon: 'Copy', action: () => { }, color: 'secondary' },
+        { label: 'Kategori', icon: 'Tag', action: () => { }, color: 'accent' }
       ],
       '/transaction-history': [
-        { label: 'Export Data', icon: 'Download', action: () => {}, color: 'primary' },
-        { label: 'Filter', icon: 'Filter', action: () => {}, color: 'secondary' },
-        { label: 'Cetak', icon: 'Printer', action: () => {}, color: 'accent' }
+        { label: 'Export Data', icon: 'Download', action: () => { }, color: 'primary' },
+        { label: 'Filter', icon: 'Filter', action: () => { }, color: 'secondary' },
+        { label: 'Cetak', icon: 'Printer', action: () => { }, color: 'accent' }
       ],
       '/business-reports': [
-        { label: 'Export Laporan', icon: 'Download', action: () => {}, color: 'primary' },
-        { label: 'Jadwal Otomatis', icon: 'Calendar', action: () => {}, color: 'secondary' },
-        { label: 'Bagikan', icon: 'Share', action: () => {}, color: 'accent' }
+        { label: 'Export Laporan', icon: 'Download', action: () => { }, color: 'primary' },
+        { label: 'Jadwal Otomatis', icon: 'Calendar', action: () => { }, color: 'secondary' },
+        { label: 'Bagikan', icon: 'Share', action: () => { }, color: 'accent' }
       ]
     };
 
@@ -83,7 +83,7 @@ const QuickActionPanel = ({ className = "" }) => {
               <Icon name={isExpanded ? "X" : "MoreHorizontal"} size={20} />
             </Button>
           )}
-          
+
           <Button
             variant={actions?.[0]?.color}
             size="icon"
@@ -98,41 +98,41 @@ const QuickActionPanel = ({ className = "" }) => {
       {/* Desktop View */}
       <div className={`hidden lg:block fixed right-6 top-1/2 transform -translate-y-1/2 z-500 ${className}`}>
         <div className="flex flex-col items-end space-y-2">
-            {isDesktopExpanded && (
-                <div className="bg-white rounded-lg shadow-elevation-2 border border-slate-200 p-2 space-y-1">
-                    {actions?.slice(1)?.map((action, index) => (
-                        <Button
-                            key={index}
-                            variant="ghost"
-                            size="sm"
-                            onClick={action?.action}
-                            className="w-full justify-start"
-                            iconName={action?.icon}
-                            iconPosition="left"
-                        >
-                            {action?.label}
-                        </Button>
-                    ))}
-                </div>
-            )}
-            {actions?.length > 1 && (
+          {isDesktopExpanded && (
+            <div className="bg-white rounded-lg shadow-elevation-2 border border-slate-200 p-2 space-y-1">
+              {actions?.slice(1)?.map((action, index) => (
                 <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsDesktopExpanded(!isDesktopExpanded)}
-                    className="w-12 h-12 rounded-full shadow-elevation-2 bg-white border border-slate-200"
+                  key={index}
+                  variant="ghost"
+                  size="sm"
+                  onClick={action?.action}
+                  className="w-full justify-start"
+                  iconName={action?.icon}
+                  iconPosition="left"
                 >
-                    <Icon name={isDesktopExpanded ? "X" : "MoreHorizontal"} size={20} />
+                  {action?.label}
                 </Button>
-            )}
+              ))}
+            </div>
+          )}
+          {actions?.length > 1 && (
             <Button
-                variant={actions?.[0]?.color}
-                size="icon"
-                onClick={actions?.[0]?.action}
-                className="w-14 h-14 rounded-full shadow-elevation-3"
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsDesktopExpanded(!isDesktopExpanded)}
+              className="w-12 h-12 rounded-full shadow-elevation-2 bg-white border border-slate-200"
             >
-                <Icon name={actions?.[0]?.icon} size={24} />
+              <Icon name={isDesktopExpanded ? "X" : "MoreHorizontal"} size={20} />
             </Button>
+          )}
+          <Button
+            variant={actions?.[0]?.color}
+            size="icon"
+            onClick={actions?.[0]?.action}
+            className="w-14 h-14 rounded-full shadow-elevation-3"
+          >
+            <Icon name={actions?.[0]?.icon} size={24} />
+          </Button>
         </div>
       </div>
     </>
