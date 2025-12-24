@@ -10,7 +10,9 @@ import DepositModal from '../../components/ui/DepositModal'; // Import DepositMo
 import ExpenseModal from '../../components/ui/ExpenseModal'; // Import ExpenseModal
 import EditTransactionDescriptionModal from '../../components/ui/EditTransactionDescriptionModal'; // Import EditTransactionDescriptionModal
 import ConfirmationModal from '../../components/ui/ConfirmationModal'; // Import ConfirmationModal
-import { useToast } from '../../components/ui/ToastNotification'; // <--- Import useToast
+import { useToast } from '../../components/ui/ToastNotification';
+import Input from '../../components/ui/Input';
+import Select from '../../components/ui/Select';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -19,6 +21,7 @@ const LapakDeposit = ({ headerTitle }) => {
     const navigate = useNavigate();
     const [lapakAccount, setLapakAccount] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isFilteringLoading, setIsFilteringLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -28,6 +31,12 @@ const LapakDeposit = ({ headerTitle }) => {
     const [transactionToDelete, setTransactionToDelete] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(20);
+    const [filters, setFilters] = useState({
+        type: 'all',
+        startDate: '',
+        endDate: '',
+        search: ''
+    });
 
     const { showToast } = useToast(); // <--- Panggil useToast
 
@@ -40,11 +49,18 @@ const LapakDeposit = ({ headerTitle }) => {
         })?.format(amount);
     };
 
-    const fetchLapakAccountData = async () => {
-        setLoading(true);
+    const fetchLapakAccountData = async (isInitialLoad = false) => {
+        if (isInitialLoad) setLoading(true); // Only set full page loading on first load
+        else setIsFilteringLoading(true); // Set partial loading for filters
         setError(null);
         try {
-            const response = await authFetch(`${apiUrl}/api/accounts/lapak_deposit`);
+            const queryParams = new URLSearchParams();
+            if (filters.type && filters.type !== 'all') queryParams.append('type', filters.type);
+            if (filters.startDate) queryParams.append('startDate', filters.startDate);
+            if (filters.endDate) queryParams.append('endDate', filters.endDate);
+            if (filters.search) queryParams.append('search', filters.search);
+
+            const response = await authFetch(`${apiUrl}/api/accounts/lapak_deposit?${queryParams.toString()}`);
             if (!response.ok) {
                 const errData = await response.json();
                 throw new Error(errData.error || 'Failed to fetch lapak account data');
@@ -55,13 +71,37 @@ const LapakDeposit = ({ headerTitle }) => {
             console.error("Error fetching lapak account data:", err);
             setError(err.message);
         } finally {
-            setLoading(false);
+            if (isInitialLoad) setLoading(false);
+            setIsFilteringLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchLapakAccountData();
+        const timer = setTimeout(() => {
+            fetchLapakAccountData();
+        }, 500); // 500ms debounce
+
+        return () => clearTimeout(timer);
+    }, [filters]);
+
+    useEffect(() => {
+        fetchLapakAccountData(true); // Initial fetch with full page loading
     }, []);
+
+    const handleFilterChange = (name, value) => {
+        setFilters(prev => ({ ...prev, [name]: value }));
+        setCurrentPage(1); // Reset page on filter
+    };
+
+    const handleResetFilters = () => {
+        setFilters({
+            type: 'all',
+            startDate: '',
+            endDate: '',
+            search: ''
+        });
+        setCurrentPage(1);
+    };
 
     const handleAddDeposit = () => {
         setIsDepositModalOpen(true);
@@ -178,7 +218,7 @@ const LapakDeposit = ({ headerTitle }) => {
     // --- End Edit and Delete Transaction Handlers ---
 
 
-    if (loading) {
+    if (loading && !lapakAccount) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center">
                 <div className="text-center">
@@ -202,7 +242,7 @@ const LapakDeposit = ({ headerTitle }) => {
 
     return (
         <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
-            {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle || 'Pengeluaran Lapak'} />}
+            {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || 'Pengeluaran Lapak'} />}
             <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'pt-16' : ''}`}>
                 <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
                     <div className="mb-6 mt-4">
@@ -232,6 +272,57 @@ const LapakDeposit = ({ headerTitle }) => {
                         <Button variant="destructive" iconName="Minus" onClick={handleRecordExpense}>
                             Catat Pengeluaran
                         </Button>
+                    </div>
+
+                    {/* Filter Section */}
+                    <div className="bg-card p-6 rounded-md shadow mb-8">
+                        <div className="flex flex-row items-center justify-between mb-4">
+                            <h2 className="text-lg font-semibold text-text-primary flex items-center gap-2">
+                                <Icon name="Filter" className="h-5 w-5" /> Filter Transaksi
+                            </h2>
+                            <Button variant="ghost" size="sm" onClick={handleResetFilters} className="text-primary hover:underline">
+                                Reset Filter
+                            </Button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-text-secondary mb-1">Tipe</label>
+                                <Select
+                                    value={filters.type}
+                                    onChange={(value) => handleFilterChange('type', value)}
+                                    options={[
+                                        { label: 'Semua Tipe', value: 'all' },
+                                        { label: 'Deposit', value: 'deposit' },
+                                        { label: 'Pengeluaran', value: 'expense' },
+                                    ]}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-text-secondary mb-1">Cari Deskripsi</label>
+                                <Input
+                                    placeholder="Cari..."
+                                    value={filters.search}
+                                    onChange={(e) => handleFilterChange('search', e.target.value)}
+                                    rightIcon={<Icon name="Search" className="h-4 w-4 text-muted-foreground" />}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-text-secondary mb-1">Dari Tanggal</label>
+                                <Input
+                                    type="date"
+                                    value={filters.startDate}
+                                    onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-text-secondary mb-1">Sampai Tanggal</label>
+                                <Input
+                                    type="date"
+                                    value={filters.endDate}
+                                    onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     {/* Transaction List */}
