@@ -3,6 +3,8 @@ const cors = require('cors');
 const db = require('./database.js'); // db is now the promisePool
 const bcrypt = require('bcryptjs'); // Import bcryptjs
 const jwt = require('jsonwebtoken'); // Import jsonwebtoken
+const helmet = require('helmet'); // Security headers
+const rateLimit = require('express-rate-limit'); // Rate limiting
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -22,8 +24,27 @@ const {
 } = require('./rawMaterialsDb');
 
 const app = express();
+
+// Security Headers
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" } // Allow images/assets to be loaded from other origins if needed
+}));
+
+// Rate Limiting to prevent brute force
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: { error: 'Terlalu banyak permintaan dari IP ini, silakan coba lagi setelah 15 menit.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Apply rate limiter to auth routes
+app.use('/api/login', apiLimiter);
+app.use('/api/register', apiLimiter);
+
 app.use(cors({
-    origin: '*', // Allow all origins
+    origin: process.env.FRONTEND_URL || '*', // Restrict to frontend URL in production
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: 'Content-Type,Authorization',
     preflightContinue: false,
@@ -57,7 +78,15 @@ app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
 
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey'; // Fallback for development
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error("FATAL ERROR: JWT_SECRET is not defined.");
+    } else {
+        console.warn("WARNING: JWT_SECRET is not defined. Using insecure fallback for development.");
+    }
+}
+const ACTUAL_JWT_SECRET = JWT_SECRET || 'supersecretjwtkey';
 
 // Auth Middleware
 const authenticateToken = (req, res, next) => {
@@ -70,7 +99,7 @@ const authenticateToken = (req, res, next) => {
         return res.status(401).json({ error: "Authentication token required" });
     }
 
-    jwt.verify(token, JWT_SECRET, (err, user) => {
+    jwt.verify(token, ACTUAL_JWT_SECRET, (err, user) => {
         if (err) {
             console.log('Invalid or expired token:', err.message);
             return res.status(401).json({ error: "Invalid or expired token" });
@@ -2797,6 +2826,14 @@ app.post("/api/register", async (req, res) => {
             return res.status(400).json({ error: "Username and password are required" });
         }
 
+        // --- SECURITY CHECK: Verify if registration is enabled ---
+        const [regSetting] = await db.query('SELECT value FROM settings WHERE `key` = ?', ['registration_enabled']);
+        const isRegistrationEnabled = regSetting.length > 0 ? (regSetting[0].value === 'true') : false;
+
+        if (!isRegistrationEnabled) {
+            return res.status(403).json({ error: "Pendaftaran akun baru saat ini dinonaktifkan oleh Admin." });
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10); // Hash password
         const sql = 'INSERT INTO users (username, password, role) VALUES (?, ?, ?)';
         const [result] = await db.query(sql, [username, hashedPassword, 'user']);
@@ -2832,7 +2869,7 @@ app.post("/api/login", async (req, res) => {
             return res.status(401).json({ error: "Invalid credentials" });
         }
 
-        const token = jwt.sign({ userId: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign({ userId: user.id, username: user.username, role: user.role }, ACTUAL_JWT_SECRET, { expiresIn: '7d' });
 
         res.json({ message: "Login successful", token });
     } catch (err) {
@@ -3498,6 +3535,18 @@ app.get("/api/guest/menu-items", async (req, res) => {
     } catch (err) {
         res.status(500).json({ "error": err.message });
     }
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    const status = err.status || 500;
+    const message = err.message || 'Internal Server Error';
+
+    res.status(status).json({
+        error: message,
+        stack: process.env.NODE_ENV === 'production' ? undefined : err.stack
+    });
 });
 
 // Default response for any other request
