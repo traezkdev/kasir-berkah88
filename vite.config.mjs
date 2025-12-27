@@ -46,6 +46,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // Increase limit to 10MB
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/api\.inviteshare\.my\.id\/api\/.*/i,
@@ -65,6 +66,19 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-utils': ['xlsx', 'jspdf', 'jspdf-autotable', 'html2canvas', 'axios'],
+          'vendor-ui': ['lucide-react', 'react-icons', 'react-spinners', 'framer-motion'],
+          'vendor-charts': ['chart.js', 'react-chartjs-2'],
+        }
+      }
+    }
+  },
   server: {
     port: "4028",
     host: "0.0.0.0",
