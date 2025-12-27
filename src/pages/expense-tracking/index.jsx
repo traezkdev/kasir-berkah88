@@ -20,6 +20,7 @@ import authFetch from '../../utils/authFetch';
 import { exportToExcel, exportToPdf, prepareExpenseDataForExport } from '../../utils/exportUtils';
 import { formatInTimeZone } from 'date-fns-tz';
 import { startOfWeek, endOfWeek } from 'date-fns';
+import { savePendingExpense } from '../../utils/offlinePersistence';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -190,6 +191,23 @@ const ExpenseTracking = ({ headerTitle }) => {
 
   const handleAddExpense = async (expenseData) => {
     setIsLoading(true);
+
+    // Check if offline
+    if (!navigator.onLine) {
+      try {
+        await savePendingExpense(expenseData);
+        showNotification('Sedang offline. Pengeluaran disimpan di perangkat!', 'success');
+        // We can't easily update local state without server ID, 
+        // but for expenses we can just wait for sync.
+        setIsLoading(false);
+        return;
+      } catch (err) {
+        showNotification('Gagal menyimpan pengeluaran offline.', 'error');
+        setIsLoading(false);
+        return;
+      }
+    }
+
     try {
       const response = await authFetch(`${apiUrl}/api/expenses`, {
         method: 'POST',
@@ -216,7 +234,13 @@ const ExpenseTracking = ({ headerTitle }) => {
         console.error('Failed to add expense (HTTP error):', result.error || result.message || 'Unknown error');
       }
     } catch (error) {
-      // console.error('Error adding expense:', error);
+      console.error('Network error, attempting offline save:', error);
+      try {
+        await savePendingExpense(expenseData);
+        showNotification('Koneksi bermasalah. Pengeluaran disimpan offline.', 'success');
+      } catch (offlineErr) {
+        showNotification('Gagal menyimpan pengeluaran. Periksa koneksi internet.', 'error');
+      }
     } finally {
       setIsLoading(false);
     }

@@ -42,6 +42,7 @@
     "d3": "^7.9.0",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
+    "dexie": "^4.2.1",
     "dotenv": "^16.0.1",
     "framer-motion": "^10.18.0",
     "html-to-image": "^1.11.13",
@@ -115,6 +116,7 @@
     "util": "^0.12.5",
     "vite": "5.0.0",
     "vite-plugin-node-polyfills": "^0.24.0",
+    "vite-plugin-pwa": "^1.2.0",
     "vite-tsconfig-paths": "3.6.0"
   }
 }

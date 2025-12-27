@@ -12,6 +12,7 @@ import NavigationHeader from '../../components/ui/NavigationHeader'; // Added im
 import { useTheme } from '../../contexts/ThemeContext'; // Added import
 import { Checkbox } from '../../components/ui/Checkbox';
 import OptionSelectionModal from '../CashierDashboard/components/OptionSelectionModal'; // Import the new modal, adjust path
+import { savePendingTransaction } from '../../utils/offlinePersistence';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -338,31 +339,49 @@ export default function SimpleTransaction() { // Renamed component
     setIsLoading(true);
     setError('');
 
-    try {
-      const transactionItems = cart.map(item => ({
-        id: item.id,
-        name: item.name,
-        basePrice: item.basePrice, // Original base price
-        price: item.finalPrice, // Store final price per item (after discount and options)
-        quantity: item.quantity,
-        discount: item.discount || 0, // Include discount, default to 0 if not present
-        options: item.selectedOptions ? item.selectedOptions.map(opt => ({ name: opt.name, price_adjustment: opt.price_adjustment })) : [] // Include selected options
-      }));
+    const transactionItems = cart.map(item => ({
+      id: item.id,
+      name: item.name,
+      basePrice: item.basePrice, // Original base price
+      price: item.finalPrice, // Store final price per item (after discount and options)
+      quantity: item.quantity,
+      discount: item.discount || 0, // Include discount, default to 0 if not present
+      options: item.selectedOptions ? item.selectedOptions.map(opt => ({ name: opt.name, price_adjustment: opt.price_adjustment })) : [] // Include selected options
+    }));
 
+    const transactionData = {
+      items: transactionItems,
+      total: totalAmount,
+      ppn: taxAmount,
+      cashPaid: finalCashPaid,
+      change: finalChange,
+      payment_method: paymentMethod,
+      ignoreStock: ignoreStock,
+    };
+
+    // Check if offline
+    if (!navigator.onLine) {
+      try {
+        await savePendingTransaction(transactionData);
+        toast.success('Offline: Transaksi disimpan di perangkat!');
+        setCart([]);
+        setCashPaid(0);
+        return;
+      } catch (err) {
+        toast.error('Gagal menyimpan transaksi offline.');
+        return;
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    try {
       const response = await authFetch(`${apiUrl}/api/transactions/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          items: transactionItems,
-          total: totalAmount,
-          ppn: taxAmount,
-          cashPaid: finalCashPaid,
-          change: finalChange,
-          payment_method: paymentMethod,
-          ignoreStock: ignoreStock,
-        }),
+        body: JSON.stringify(transactionData),
       });
 
       const data = await response.json();
@@ -376,8 +395,16 @@ export default function SimpleTransaction() { // Renamed component
         throw new Error(data.error || 'Gagal memproses transaksi');
       }
     } catch (err) {
-      setError(err.message);
-      toast.error(err.message);
+      console.error('Network error, attempting offline save:', err);
+      try {
+        await savePendingTransaction(transactionData);
+        toast.success('Koneksi bermasalah. Transaksi disimpan secara offline.');
+        setCart([]);
+        setCashPaid(0);
+      } catch (offlineErr) {
+        setError(err.message);
+        toast.error(err.message);
+      }
     } finally {
       setIsLoading(false);
     }

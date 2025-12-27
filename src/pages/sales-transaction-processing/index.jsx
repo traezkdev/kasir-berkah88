@@ -8,6 +8,7 @@ import authFetch from '../../utils/authFetch';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 import Button from '../../components/ui/Button'; // Added import for Button
+import { savePendingTransaction } from '../../utils/offlinePersistence';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -212,12 +213,31 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       isEmployeeMeal,
       payment_method: paymentMethod,
       ignoreStock,
-
       cashPaid: paymentData.cashPaid,
       change: paymentData.change,
       manual_discount: paymentData.manual_discount,
       catatan: paymentData.catatan,
     };
+
+    // Check if offline
+    if (!navigator.onLine) {
+      try {
+        await savePendingTransaction(transaction);
+        alert('Anda sedang offline. Transaksi telah disimpan di perangkat ini dan akan dikirim saat koneksi tersedia kembali.');
+        setCart([]);
+        setIsEmployeeMeal(false);
+        // We can't navigate to /receipt because the server hasn't generated an ID yet.
+        // We might want a local receipt page or just go back.
+        navigate('/main-dashboard');
+        return;
+      } catch (err) {
+        console.error('Failed to save offline transaction:', err);
+        alert('Gagal menyimpan transaksi offline.');
+        return;
+      } finally {
+        setIsLoading(false);
+      }
+    }
 
     try {
       const response = await authFetch(`${apiUrl}/api/transactions/`, {
@@ -234,9 +254,19 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
         navigate('/receipt', { state: { transaction: result.data } });
       } else {
         console.error('Failed to save transaction:', result.error);
+        alert('Gagal menyimpan transaksi: ' + (result.error || 'Unknown error'));
       }
     } catch (error) {
-      console.error('Error saving transaction:', error);
+      console.error('Error saving transaction, attempting offline save:', error);
+      try {
+        await savePendingTransaction(transaction);
+        alert('Koneksi bermasalah. Transaksi telah disimpan secara offline dan akan disinkronisasi nanti.');
+        setCart([]);
+        setIsEmployeeMeal(false);
+        navigate('/main-dashboard');
+      } catch (offlineErr) {
+        alert('Gagal menyimpan transaksi. Periksa koneksi internet Anda.');
+      }
     } finally {
       setIsLoading(false);
     }

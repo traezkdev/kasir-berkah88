@@ -9,6 +9,8 @@ const apiUrl = import.meta.env.VITE_API_URL;
 const RestaurantSettingsModal = ({ isOpen, onClose, onSave, initialSettings }) => {
   const [restaurantName, setRestaurantName] = useState('');
   const [restaurantSlogan, setRestaurantSlogan] = useState('');
+  const [ownerPhone, setOwnerPhone] = useState('');
+  const [showStockAlert, setShowStockAlert] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -16,6 +18,8 @@ const RestaurantSettingsModal = ({ isOpen, onClose, onSave, initialSettings }) =
     if (isOpen && initialSettings) {
       setRestaurantName(initialSettings.restaurant_name || '');
       setRestaurantSlogan(initialSettings.restaurant_slogan || '');
+      setOwnerPhone(initialSettings.owner_phone || '');
+      setShowStockAlert(initialSettings.show_stock_alert === 1 || initialSettings.show_stock_alert === true);
     }
   }, [isOpen, initialSettings]);
 
@@ -23,7 +27,12 @@ const RestaurantSettingsModal = ({ isOpen, onClose, onSave, initialSettings }) =
     setIsLoading(true);
     setError(null);
     try {
-      await onSave({ restaurant_name: restaurantName, restaurant_slogan: restaurantSlogan });
+      await onSave({
+        restaurant_name: restaurantName,
+        restaurant_slogan: restaurantSlogan,
+        owner_phone: ownerPhone,
+        show_stock_alert: showStockAlert ? 1 : 0
+      });
       onClose();
     } catch (err) {
       setError(err.message || 'Gagal menyimpan pengaturan restoran.');
@@ -77,6 +86,32 @@ const RestaurantSettingsModal = ({ isOpen, onClose, onSave, initialSettings }) =
                 placeholder="Slogan Restoran Anda"
                 className="w-full"
               />
+            </div>
+            <div>
+              <label htmlFor="owner-phone" className="block text-sm font-medium text-text-primary mb-1">
+                Nomor WhatsApp Owner
+              </label>
+              <Input
+                id="owner-phone"
+                type="text"
+                value={ownerPhone}
+                onChange={(e) => setOwnerPhone(e.target.value)}
+                placeholder="Contoh: 08123456789"
+                className="w-full"
+              />
+              <p className="text-[10px] text-text-secondary mt-1">Nomor ini digunakan untuk mengirim laporan stok kritis via WhatsApp.</p>
+            </div>
+            <div className="flex items-center space-x-2 pt-2">
+              <input
+                id="show-stock-alert"
+                type="checkbox"
+                checked={showStockAlert}
+                onChange={(e) => setShowStockAlert(e.target.checked)}
+                className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary cursor-pointer"
+              />
+              <label htmlFor="show-stock-alert" className="text-sm font-medium text-text-primary cursor-pointer">
+                Aktifkan Peringatan Stok Kritis di Dashboard
+              </label>
             </div>
           </div>
 

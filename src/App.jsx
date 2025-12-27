@@ -9,6 +9,7 @@ import StickyDarkModeToggle from './components/ui/StickyDarkModeToggle';
 import StickyThemeSwitcher from './components/ui/StickyThemeSwitcher';
 import DailyWelcomeModal from './components/ui/DailyWelcomeModal';
 import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext';
+import OfflineSyncManager from './components/OfflineSyncManager';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -78,6 +79,7 @@ function App() {
         <Routes />
         {!['/cashier-dashboard', '/', '/transaksi-sederhana'].includes(location.pathname) && <StickyThemeSwitcher />}
         {theme === 'default' && !['/cashier-dashboard', '/', '/transaksi-sederhana'].includes(location.pathname) && <StickyDarkModeToggle />}
+        <OfflineSyncManager />
       </ThemeProvider>
     </AppSettingsProvider>
   );
