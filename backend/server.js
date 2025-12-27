@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const db = require('./database.js'); // db is now the promisePool
@@ -25,9 +26,40 @@ const {
 
 const app = express();
 
-// Security Headers
+// 1. CORS (Must be first to handle preflight requests)
+app.use(cors({
+    origin: function (origin, callback) {
+        // Allow all origins in development
+        if (process.env.NODE_ENV !== 'production') {
+            return callback(null, true);
+        }
+        // In production, allow origins from FRONTEND_URL in .env
+        const frontendUrlEnv = process.env.FRONTEND_URL || '';
+        const rawOrigins = frontendUrlEnv.split(',').map(url => url.trim()).filter(Boolean);
+        const allowedOrigins = rawOrigins.map(o => o.replace(/\/$/, ""));
+
+        if (!origin || allowedOrigins.includes(origin) || rawOrigins.length === 0) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    allowedHeaders: 'Content-Type,Authorization',
+    credentials: true,
+    optionsSuccessStatus: 204
+}));
+
+// Explicitly handle OPTIONS requests for all routes
+app.options('*', cors());
+
+// 2. Body Parser
+app.use(express.json());
+
+// 3. Security Headers
 app.use(helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" } // Allow images/assets to be loaded from other origins if needed
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginEmbedderPolicy: false // Deactivate for easier resource sharing
 }));
 
 // Rate Limiting to prevent brute force
@@ -39,18 +71,9 @@ const apiLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-// Apply rate limiter to auth routes
+// Apply rate limiter to auth routes AFTER cors
 app.use('/api/login', apiLimiter);
 app.use('/api/register', apiLimiter);
-
-app.use(cors({
-    origin: process.env.FRONTEND_URL || '*', // Restrict to frontend URL in production
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    allowedHeaders: 'Content-Type,Authorization',
-    preflightContinue: false,
-    optionsSuccessStatus: 204
-}));
-app.use(express.json());
 // Error handling for JSON parsing
 app.use((err, req, res, next) => {
     if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
