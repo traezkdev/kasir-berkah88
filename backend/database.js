@@ -957,6 +957,34 @@ const setupDatabase = async () => {
       console.log('Added restaurant_slogan column to app_settings table.');
     }
 
+    // Check and add owner_phone column to app_settings if it doesn't exist
+    const checkOwnerPhoneColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'app_settings' AND COLUMN_NAME = 'owner_phone';
+    `;
+    const addOwnerPhoneColumn = `
+      ALTER TABLE app_settings ADD COLUMN owner_phone VARCHAR(20) DEFAULT NULL;
+    `;
+    const [ownerPhoneRows] = await connection.query(checkOwnerPhoneColumn);
+    if (ownerPhoneRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addOwnerPhoneColumn);
+      console.log('Added owner_phone column to app_settings table.');
+    }
+
+    // Check and add show_stock_alert column to app_settings if it doesn't exist
+    const checkShowStockAlertColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'app_settings' AND COLUMN_NAME = 'show_stock_alert';
+    `;
+    const addShowStockAlertColumn = `
+      ALTER TABLE app_settings ADD COLUMN show_stock_alert TINYINT(1) DEFAULT 1;
+    `;
+    const [showStockAlertRows] = await connection.query(checkShowStockAlertColumn);
+    if (showStockAlertRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addShowStockAlertColumn);
+      console.log('Added show_stock_alert column to app_settings table.');
+    }
+
     // --- Optimasi: Tambahkan Indeks untuk Peningkatan Performa ---
     const addIndexIfNotExists = async (connection, tableName, indexName, columns) => {
       const checkIndexQuery = `

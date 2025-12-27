@@ -7,6 +7,7 @@ import QuickActionCard from '../main-dashboard/components/QuickActionCard';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import authFetch from '../../utils/authFetch';
 import Icon from '../../components/AppIcon';
+import StockAlertBanner from '../../components/StockAlertBanner';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -243,6 +244,9 @@ const OwnerDashboard = ({ headerTitle }) => {
             <OwnerNavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || 'Dashboard Owner'} />
             <main className={`pb-20 lg:pb-8 pt-16`}>
                 <div className="max-w-7xl mx-auto px-4 lg:px-6">
+                    {/* Stock Alert Banner */}
+                    <StockAlertBanner isOwner={true} />
+
                     <div className="mb-6 mt-4">
                         <BreadcrumbNavigation />
                         <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">

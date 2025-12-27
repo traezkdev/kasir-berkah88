@@ -12,6 +12,7 @@ import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 // import DarkModeToggle from '../../components/ui/DarkModeToggle';
 import authFetch from '../../utils/authFetch'; // Add this import
+import StockAlertBanner from '../../components/StockAlertBanner';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -631,6 +632,9 @@ const MainDashboard = ({ headerTitle }) => {
         <DashboardMetricsBar metrics={dashboardData.dashboardMetrics} />
         <main className="pb-20 lg:pb-8">
           <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
+            {/* Stock Alert Banner */}
+            <StockAlertBanner />
+
             {/* Header Section */}
             <div className="mb-6">
               <BreadcrumbNavigation />
