@@ -2096,16 +2096,21 @@ app.post("/api/accounts/expense", authenticateToken, async (req, res) => {
 });
 
 
-// PUT Update Account Transaction (only description)
+// PUT Update Account Transaction (description and amount)
 app.put("/api/accounts/transactions/:id", authenticateToken, async (req, res) => {
     let connection;
     try {
         const { id } = req.params;
-        const { description } = req.body;
+        const { description, amount } = req.body;
         const userId = req.user.userId;
 
         if (!description || description.trim() === '') {
             return res.status(400).json({ error: "Description is required and cannot be empty" });
+        }
+
+        const newAmount = parseFloat(amount);
+        if (isNaN(newAmount) || newAmount < 0) {
+            return res.status(400).json({ error: "Valid amount is required" });
         }
 
         connection = await db.getConnection();
@@ -2118,6 +2123,9 @@ app.put("/api/accounts/transactions/:id", authenticateToken, async (req, res) =>
             return res.status(404).json({ error: "Transaction not found" });
         }
         const transaction = transRows[0];
+        const oldAmount = parseFloat(transaction.amount);
+        const accountId = transaction.account_id;
+        const type = transaction.type; // 'deposit' or 'expense'
 
         // Check ownership or admin role
         if (transaction.created_by_user_id !== userId && req.user.role !== 'admin') {
@@ -2125,10 +2133,26 @@ app.put("/api/accounts/transactions/:id", authenticateToken, async (req, res) =>
             return res.status(403).json({ error: "Forbidden: You are not authorized to edit this transaction" });
         }
 
-        await connection.query('UPDATE account_transactions SET description = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?', [description, id]);
+        // Calculate balance difference
+        // If deposit: increase by (newAmount - oldAmount)
+        // If expense: decrease by (newAmount - oldAmount)
+        let balanceDiff = 0;
+        if (type === 'deposit') {
+            balanceDiff = newAmount - oldAmount;
+        } else if (type === 'expense') {
+            balanceDiff = -(newAmount - oldAmount);
+        }
+
+        // Update transaction
+        await connection.query('UPDATE account_transactions SET description = ?, amount = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?', [description, newAmount, id]);
+
+        // Update account balance
+        if (balanceDiff !== 0) {
+            await connection.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [balanceDiff, accountId]);
+        }
 
         await connection.commit();
-        res.json({ message: "Transaction updated successfully", data: { id, description } });
+        res.json({ message: "Transaction updated successfully", data: { id, description, amount: newAmount } });
 
     } catch (err) {
         if (connection) {

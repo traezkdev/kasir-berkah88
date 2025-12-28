@@ -174,20 +174,23 @@ const AdminUangBisnis = ({ headerTitle }) => { // Changed component name
         setIsDeleteConfirmOpen(true);
     };
 
-    const handleSaveEditedDescription = async (id, newDescription) => {
+    const handleSaveEditedDescription = async (id, newDescription, newAmount) => {
         try {
             const response = await authFetch(`${apiUrl}/api/accounts/transactions/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ description: newDescription }),
+                body: JSON.stringify({
+                    description: newDescription,
+                    amount: newAmount
+                }),
             });
             if (!response.ok) {
                 const errData = await response.json();
-                throw new Error(errData.error || 'Gagal mengedit deskripsi transaksi');
+                throw new Error(errData.error || 'Gagal mengedit transaksi');
             }
-            showToast('Deskripsi transaksi berhasil diperbarui!', 'success');
+            showToast('Transaksi berhasil diperbarui!', 'success');
             setIsEditModalOpen(false);
             setTransactionToEdit(null);
             fetchOwnerAccountData(); // Refresh data
