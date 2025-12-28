@@ -411,7 +411,7 @@ export default function SimpleTransaction() { // Renamed component
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white no-select overflow-x-hidden">
+    <div className={`flex flex-col ${theme === 'admin' ? 'h-full' : 'h-screen'} bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white no-select overflow-x-hidden transition-all duration-300`}>
       {theme === 'default' && (
         <NavigationHeader
           headerTitle={dashboardTitle}
@@ -435,7 +435,7 @@ export default function SimpleTransaction() { // Renamed component
 
       <div className={`flex flex-1 flex-col md:flex-row overflow-hidden ${theme === 'default' ? 'pt-16' : ''}`}>
         {/* Menu Items Section */}
-        <div className="w-full md:w-2/3 p-4 overflow-y-auto md:border-r dark:md:border-gray-700 pb-24 md:pb-16">
+        <div className={`w-full ${theme === 'admin' ? 'md:flex-1' : 'md:w-2/3'} p-4 overflow-y-auto md:border-r dark:md:border-gray-700 pb-24 md:pb-16 h-full`}>
           <Input
             type="text"
             placeholder="Cari menu..."
@@ -511,8 +511,8 @@ export default function SimpleTransaction() { // Renamed component
         </div>
 
         {/* Transaction Cart Section */}
-        <div className={`fixed inset-0 z-50 bg-gray-50 dark:bg-gray-800 flex-col ${showMobileCart ? 'flex' : 'hidden'} md:relative md:flex md:w-1/2 lg:w-1/3 p-4`}>
-          <div className="flex justify-between items-center mb-4">
+        <div className={`fixed inset-0 z-50 bg-gray-50 dark:bg-gray-800 flex-col ${showMobileCart ? 'flex' : 'hidden'} md:relative md:flex ${theme === 'admin' ? 'md:w-[450px] lg:w-[500px] border-l dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xl' : 'md:w-1/2 lg:w-1/3 p-4'} h-full transition-all duration-300`}>
+          <div className={`flex justify-between items-center mb-4 ${theme === 'admin' ? 'p-6 pb-0' : ''}`}>
             <h2 className="text-xl font-bold flex items-center"><FiShoppingCart className="mr-2" />Keranjang</h2>
             <div className="flex items-center space-x-2"> {/* New wrapper div */}
               <Button
@@ -531,7 +531,7 @@ export default function SimpleTransaction() { // Renamed component
               </button>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto mb-4">
+          <div className={`flex-1 overflow-y-auto mb-4 ${theme === 'admin' ? 'px-6' : ''}`}>
             {cart.length === 0 ? (
               <p className="text-gray-500">Keranjang kosong.</p>
             ) : (
@@ -578,7 +578,7 @@ export default function SimpleTransaction() { // Renamed component
             )}
           </div>
 
-          <div className="border-t dark:border-gray-700 pt-4 space-y-2">
+          <div className={`border-t dark:border-gray-700 space-y-2 ${theme === 'admin' ? 'p-4 bg-gray-50 dark:bg-gray-800/50' : 'pt-4'}`}>
             <div className="flex justify-between text-lg font-medium">
               <span>Subtotal:</span>
               <span>Rp{formatNumber(originalSubtotal)}</span>
@@ -608,13 +608,13 @@ export default function SimpleTransaction() { // Renamed component
 
             {paymentMethod === 'tunai' && (
               <div className="mt-4">
-                <div className="grid grid-cols-2 md:grid-cols-2 gap-2 mb-4">
+                <div className={`grid ${theme === 'admin' ? 'grid-cols-3 gap-1' : 'grid-cols-2 gap-2'} mb-4`}>
                   {quickCashAmounts.map((amount) => (
                     <Button
                       key={amount}
                       variant="outline"
                       onClick={() => setCashPaid(amount)}
-                      className="py-3 text-md"
+                      className={`${theme === 'admin' ? 'py-2 text-sm' : 'py-3 text-md'}`}
                       disabled={amount < totalAmount}
                     >
                       Rp{amount.toLocaleString('id-ID')}
@@ -623,7 +623,7 @@ export default function SimpleTransaction() { // Renamed component
                   <Button
                     variant="default" // Highlight this button
                     onClick={() => setCashPaid(totalAmount)}
-                    className="py-3 text-md w-full col-span-2" // Added col-span-2
+                    className={`py-3 text-md w-full ${theme === 'admin' ? 'col-span-3' : 'col-span-2'}`}
                     disabled={totalAmount === 0}
                   >
                     Uang Pass (Rp{formatNumber(totalAmount)})
