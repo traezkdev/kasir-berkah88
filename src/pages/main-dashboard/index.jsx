@@ -575,10 +575,10 @@ const MainDashboard = ({ headerTitle }) => {
     },
     {
       title: 'Modal Akhir Saat Ini',
-      value: formatCurrency(dashboardData.metrics.initialCapital + dashboardData.metrics.allTimeRevenue - dashboardData.metrics.allTimeExpenses),
+      value: formatCurrency((parseFloat(dashboardData.metrics.ownerBalance) || 0) + (parseFloat(dashboardData.metrics.lapakBalance) || 0)),
       icon: 'TrendingUp',
       color: 'success',
-      description: 'Modal awal + pendapatan - pengeluaran'
+      description: 'Saldo owner + saldo lapak'
     },
     {
       title: 'Total Nilai Stok (Mentah + Menu)',
