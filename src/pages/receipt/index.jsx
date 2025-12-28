@@ -54,8 +54,13 @@ const ReceiptPage = () => {
       const dataUrl = await htmlToImage.toPng(receiptRef.current, {
         backgroundColor: '#ffffff',
         cacheBust: true,
+        pixelRatio: 2,
         style: {
-          padding: '10px'
+          transform: 'scale(1)',
+          transformOrigin: 'top left',
+          width: '520px',
+          minWidth: '520px',
+          maxWidth: '520px',
         }
       });
 
@@ -173,121 +178,165 @@ const ReceiptPage = () => {
     <>
       <div className="bg-background min-h-screen flex flex-col items-center justify-center p-4">
         <div id="receipt-container" className="relative bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col">
-          <div ref={receiptRef} className="p-6 overflow-y-auto bg-white">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">{restaurantName}</h2>
-              <p className="text-sm text-gray-900">{restaurantSlogan}</p>
-            </div>
-            <div className="border-b border-dashed border-gray-400 mb-4"></div>
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-gray-900">ID Transaksi:</span>
-              <span className="text-gray-900">{transaction.id}</span>
-            </div>
-            <div className="flex justify-between text-sm mb-4">
-              <span className="text-gray-900">Tanggal:</span>
-              <span className="text-gray-900">{transactionDate}</span>
-            </div>
-            <div className="border-b border-dashed border-gray-400 mb-4"></div>
-            <h3 className="font-semibold mb-2 text-gray-900">Detail Item:</h3>
-            <div className="space-y-2">
-              {transaction.items.map((item, index) => {
-                // item.price here is the final price per unit (after options and discount)
-                const pricePerUnitAfterDiscount = Number(item.price) || 0;
-                const lineTotalAfterDiscount = pricePerUnitAfterDiscount * (Number(item.quantity) || 0);
+          <div className="flex-1 overflow-y-auto bg-gray-50 flex justify-center p-4 sm:p-6">
+            <div
+              ref={receiptRef}
+              className="bg-white shadow-2xl h-fit rounded-lg w-full max-w-[520px]"
+            >
+              <div className="p-8">
+                <div className="text-center mb-5">
+                  <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight leading-tight">{restaurantName}</h2>
+                  <p className="text-sm text-gray-500 mt-2 font-medium tracking-wide uppercase">{restaurantSlogan}</p>
+                </div>
 
-                // Calculate original price per unit including options but before discount
-                const originalBasePrice = Number(item.basePrice) || 0;
-                const optionAdjustment = item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0);
-                const originalPricePerUnitBeforeDiscount = originalBasePrice + optionAdjustment;
-                const lineTotalBeforeDiscount = originalPricePerUnitBeforeDiscount * (Number(item.quantity) || 0);
+                <div className="border-b-2 border-dashed border-gray-200 mb-6"></div>
 
-                return (
-                  <div key={index} className="text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-900">
-                        {item.name} <span className="text-gray-500">x{item.quantity}</span>
-                      </span>
-                      {item.discount > 0 && (
-                        <span className="text-red-500 ml-2">({(item.discount * 100).toFixed(0)}% Diskon)</span>
-                      )}
-                      <span className="text-gray-900 flex items-baseline gap-2 justify-end">
-                        {item.discount > 0 && (
-                          <span className="line-through text-gray-500 text-xs">
-                            Rp {lineTotalBeforeDiscount.toLocaleString("id-ID")}
-                          </span>
-                        )}
-                        <span>Rp {lineTotalAfterDiscount.toLocaleString("id-ID")}</span>
-                      </span>
-                    </div>
-                    {item.options && item.options.length > 0 && (
-                      <div className="pl-4 text-xs text-gray-500">
-                        {item.options.map(opt => `+ ${opt.name}`).join(', ')}
-                      </div>
-                    )}
+                <div className="space-y-3 mb-6">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500 font-medium">ID Transaksi:</span>
+                    <span className="text-gray-900 font-bold">{transaction.id}</span>
                   </div>
-                );
-              })}
-            </div>
-            <div className="border-b border-dashed border-gray-400 my-4"></div>
-            <div className="flex justify-between font-semibold text-sm mb-2">
-              <span className="text-gray-900">Subtotal:</span>
-              <span className="text-gray-900">Rp {Number(subtotalBeforeAllDiscounts).toLocaleString("id-ID")}</span>
-            </div>
-            {subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts > 0 && (
-              <div className="flex justify-between font-semibold text-sm mb-2 text-red-500"> {/* Diskon biasanya merah */}
-                <span className="text-gray-900">Diskon Item:</span>
-                <span className="text-gray-900">- Rp {(subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts).toLocaleString("id-ID")}</span>
-              </div>
-            )}
-            {ppnAmount > 0 && (
-              <div className="flex justify-between font-semibold text-sm mb-2">
-                <span className="text-gray-900">PPN:</span>
-                <span className="text-gray-900">Rp {ppnAmount.toLocaleString("id-ID")}</span>
-              </div>
-            )}
-            {manualDiscountAmount > 0 && (
-              <div className="flex justify-between font-semibold text-sm mb-2 text-red-500">
-                <span className="text-red-500">Diskon Manual:</span> {/* Ubah menjadi Diskon Manual */}
-                <span className="text-red-500">- Rp {manualDiscountAmount.toLocaleString("id-ID")}</span>
-              </div>
-            )}
-            <div className="flex justify-between font-semibold">
-              <span className="text-lg text-gray-900">TOTAL:</span>
-              <span className="text-lg text-gray-900">Rp {Number(transaction.total).toLocaleString("id-ID")}</span>
-            </div>
-            <div className="border-b border-dashed border-gray-400 my-4"></div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500 font-medium">Tanggal:</span>
+                    <span className="text-gray-900 font-semibold">{transactionDate}</span>
+                  </div>
+                </div>
 
-            <div className="flex justify-between text-sm">
-              <span className="text-black">Metode Pembayaran:</span>
-              <span className="text-black">{transaction.payment_method === 'employee_meal' ? 'Makan Karyawan' : (transaction.payment_method === 'cash' ? 'Tunai' : transaction.payment_method)}</span>
-            </div>
-            {(transaction.payment_method === 'Tunai' || transaction.payment_method === 'cash') && transaction.cash_paid > 0 && (
-              <>
-                <div className="flex justify-between text-sm mt-2">
-                  <span className="text-black">Tunai:</span>
-                  <span className="text-black">
-                    Rp {Number(transaction.cash_paid).toLocaleString("id-ID")}
+                <div className="border-b-2 border-dashed border-gray-200 mb-6"></div>
+
+                <div className="mb-6">
+                  <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <span className="w-1 h-4 bg-primary rounded-full"></span>
+                    Detail Item
+                  </h3>
+                  <div className="space-y-4">
+                    {transaction.items.map((item, index) => {
+                      const pricePerUnitAfterDiscount = Number(item.price) || 0;
+                      const lineTotalAfterDiscount = pricePerUnitAfterDiscount * (Number(item.quantity) || 0);
+
+                      const originalBasePrice = Number(item.basePrice) || 0;
+                      const optionAdjustment = item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0);
+                      const originalPricePerUnitBeforeDiscount = originalBasePrice + optionAdjustment;
+                      const lineTotalBeforeDiscount = originalPricePerUnitBeforeDiscount * (Number(item.quantity) || 0);
+
+                      return (
+                        <div key={index} className="group">
+                          <div className="flex justify-between items-start gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-900 font-semibold leading-tight">{item.name}</span>
+                                <span className="text-gray-400 text-xs font-bold bg-gray-100 px-1.5 py-0.5 rounded">x{item.quantity}</span>
+                              </div>
+                              {item.discount > 0 && (
+                                <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider">
+                                  {(item.discount * 100).toFixed(0)}% OFF
+                                </span>
+                              )}
+                              {item.options && item.options.length > 0 && (
+                                <div className="mt-1 flex flex-wrap gap-1">
+                                  {item.options.map((opt, optIndex) => (
+                                    <span key={optIndex} className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 italic">
+                                      + {opt.name}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-right flex flex-col items-end">
+                              {item.discount > 0 && (
+                                <span className="line-through text-gray-300 text-[10px] font-medium">
+                                  Rp {lineTotalBeforeDiscount.toLocaleString("id-ID")}
+                                </span>
+                              )}
+                              <span className="text-gray-900 font-bold tabular-nums">
+                                Rp {lineTotalAfterDiscount.toLocaleString("id-ID")}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="border-b-2 border-dashed border-gray-200 my-6"></div>
+
+                <div className="space-y-3 mb-6">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500 font-medium">Subtotal</span>
+                    <span className="text-gray-900 font-semibold">Rp {Number(subtotalBeforeAllDiscounts).toLocaleString("id-ID")}</span>
+                  </div>
+                  {subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts > 0 && (
+                    <div className="flex justify-between text-sm text-red-500">
+                      <span className="font-medium">Total Hemat Item</span>
+                      <span className="font-semibold">- Rp {(subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts).toLocaleString("id-ID")}</span>
+                    </div>
+                  )}
+                  {ppnAmount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500 font-medium">PPN</span>
+                      <span className="text-gray-900 font-semibold">Rp {ppnAmount.toLocaleString("id-ID")}</span>
+                    </div>
+                  )}
+                  {manualDiscountAmount > 0 && (
+                    <div className="flex justify-between text-sm text-red-500">
+                      <span className="font-medium">Diskon Tambahan</span>
+                      <span className="font-semibold">- Rp {manualDiscountAmount.toLocaleString("id-ID")}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-gray-900 text-white rounded-xl p-4 flex justify-between items-center mb-6 shadow-lg shadow-gray-200">
+                  <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Total Pembayaran</span>
+                  <span className="text-xl font-black tabular-nums whitespace-nowrap">
+                    Rp {Number(transaction.total).toLocaleString("id-ID")}
                   </span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-black">Kembalian:</span>
-                  <span className="text-black">
-                    Rp {Number(transaction.change).toLocaleString("id-ID")}
-                  </span>
+
+                <div className="space-y-3 mb-6">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500 font-medium">Metode Pembayaran</span>
+                    <span className="text-gray-900 font-bold capitalize">
+                      {transaction.payment_method === 'employee_meal' ? 'Makan Karyawan' : (transaction.payment_method === 'cash' ? 'Tunai' : transaction.payment_method)}
+                    </span>
+                  </div>
+                  {(transaction.payment_method === 'Tunai' || transaction.payment_method === 'cash') && transaction.cash_paid > 0 && (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500 font-medium">Bayar Tunai</span>
+                        <span className="text-gray-900 font-semibold">Rp {Number(transaction.cash_paid).toLocaleString("id-ID")}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500 font-medium">Kembalian</span>
+                        <span className="text-green-600 font-bold">Rp {Number(transaction.change).toLocaleString("id-ID")}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
-              </>
-            )}
-            {transaction.catatan && (
-              <div className="border-b border-dashed border-gray-400 my-4"></div>
-            )}
-            {transaction.catatan && (
-              <div className="text-left text-sm mb-2">
-                <span className="text-black font-semibold block">Catatan:</span>
-                <p className="text-black whitespace-pre-wrap">{transaction.catatan}</p>
+
+                {transaction.catatan && (
+                  <>
+                    <div className="border-b-2 border-dashed border-gray-200 my-6"></div>
+                    <div className="bg-amber-50 rounded-lg p-4 border border-amber-100">
+                      <span className="text-amber-800 font-bold text-xs uppercase tracking-wider mb-2 block">Catatan Pesanan:</span>
+                      <p className="text-amber-900 text-sm italic leading-relaxed whitespace-pre-wrap">"{transaction.catatan}"</p>
+                    </div>
+                  </>
+                )}
+
+                <div className="text-center mt-10">
+                  <div className="inline-block px-4 py-2 bg-gray-50 rounded-full mb-4">
+                    <p className="text-gray-500 text-xs font-bold tracking-widest uppercase italic">
+                      Terima kasih telah berbelanja!
+                    </p>
+                  </div>
+                  <div className="flex justify-center gap-1">
+                    {[...Array(20)].map((_, i) => (
+                      <div key={i} className="w-1 h-1 bg-gray-200 rounded-full"></div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            )}
-            <div className="text-center mt-8 text-sm text-gray-500">
-              <p>Terima kasih telah berbelanja!</p>
             </div>
           </div>
           <div className="p-6 bg-gray-50 dark:bg-gray-900 rounded-b-lg space-y-4 print:hidden border-t dark:border-gray-800">
