@@ -39,6 +39,8 @@ const LandingHeader = () => {
     const navLinks = [
         { name: 'Beranda', target: 'hero' },
         { name: 'Menu Favorit', target: 'products' },
+        { name: 'Pesan Online', target: 'delivery' },
+        { name: 'Lokasi', target: 'location' },
         { name: 'Tentang Kami', target: 'footer' },
     ];
 

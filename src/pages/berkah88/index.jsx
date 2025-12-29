@@ -163,6 +163,106 @@ const BerkahLandingPage = () => {
                 </div>
             </section>
 
+            {/* Delivery Services Section */}
+            <section id="delivery" className="py-20 bg-slate-50 relative overflow-hidden">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div className="text-center mb-16">
+                        <h2 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600 mb-4 inline-block">
+                            Pesan Melalui Aplikasi
+                        </h2>
+                        <div className="h-1 w-24 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto rounded-full" />
+                        <p className="mt-4 text-gray-500 text-lg">Nikmati kemudahan memesan dari rumah melalui partner delivery kami</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                        {/* GoFood */}
+                        <a
+                            href="https://gofood.link/a/QVAjFq9"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-white p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 border border-gray-100 flex flex-col items-center text-center group"
+                        >
+                            <div className="w-20 h-20 bg-red-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                <img
+                                    src="/assets/images/gofood6210-removebg-preview.png"
+                                    alt="GoFood"
+                                    className="w-16 h-16 object-contain"
+                                />
+                            </div>
+                            <h3 className="text-2xl font-bold text-gray-900 mb-2">GoFood</h3>
+                            <p className="text-gray-500 mb-6">Pesan lebih cepat dan praktis lewat aplikasi Gojek.</p>
+                            <span className="px-6 py-2 bg-red-600 text-white rounded-full font-semibold group-hover:bg-red-700 transition-colors">Pesan Sekarang</span>
+                        </a>
+
+                        {/* GrabFood */}
+                        <a
+                            href="https://r.grab.com/g/6-20251229_174338_37485b0ebedc4ef5b3754243f90f52ff_MEXMPS-6-C7LELKEFJKL2HE"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-white p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 border border-gray-100 flex flex-col items-center text-center group"
+                        >
+                            <div className="w-20 h-20 bg-green-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                <img
+                                    src="/assets/images/grab-food-logo-png_seeklogo-389124-removebg-preview.png"
+                                    alt="GrabFood"
+                                    className="w-16 h-16 object-contain"
+                                />
+                            </div>
+                            <h3 className="text-2xl font-bold text-gray-900 mb-2">GrabFood</h3>
+                            <p className="text-gray-500 mb-6">Nikmati promo menarik setiap hari di GrabFood.</p>
+                            <span className="px-6 py-2 bg-green-600 text-white rounded-full font-semibold group-hover:bg-green-700 transition-colors">Pesan Sekarang</span>
+                        </a>
+
+                        {/* ShopeeFood */}
+                        <a
+                            href="https://shopee.co.id/universal-link/now-food/shop/22596619?deep_and_deferred=1&shareChannel=copy_link"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-white p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 border border-gray-100 flex flex-col items-center text-center group"
+                        >
+                            <div className="w-20 h-20 bg-orange-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                <img
+                                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Shopee.svg/512px-Shopee.svg.png"
+                                    alt="ShopeeFood"
+                                    className="w-12 h-12 object-contain"
+                                />
+                            </div>
+                            <h3 className="text-2xl font-bold text-gray-900 mb-2">ShopeeFood</h3>
+                            <p className="text-gray-500 mb-6">Gratis ongkir dan cashback melimpah di ShopeeFood.</p>
+                            <span className="px-6 py-2 bg-orange-600 text-white rounded-full font-semibold group-hover:bg-orange-700 transition-colors">Pesan Sekarang</span>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            {/* Location Section */}
+            <section id="location" className="py-20 bg-white">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-12">
+                        <h2 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600 mb-4 inline-block">
+                            Lokasi Kami
+                        </h2>
+                        <div className="h-1 w-24 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto rounded-full" />
+                        <p className="mt-4 text-gray-500 text-lg">Kunjungi outlet kami di lokasi strategis</p>
+                    </div>
+
+                    <div className="w-full max-w-6xl mx-auto rounded-2xl overflow-hidden shadow-2xl border border-gray-100 relative group">
+                        <div className="absolute inset-0 bg-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity z-0 pointer-events-none"></div>
+                        <iframe
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3963.481862573946!2d106.74469039576967!3d-6.586867632287096!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69c5b6b9c1dcbb%3A0xa0c72d1985eb1b95!2sKerongkongan%20Berkah%2088!5e0!3m2!1sid!2sid!4v1767004583440!5m2!1sid!2sid"
+                            width="100%"
+                            height="500"
+                            style={{ border: 0 }}
+                            allowFullScreen=""
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                            title="Lokasi Berkah88"
+                            className="w-full h-[400px] md:h-[500px] z-10 relative"
+                        ></iframe>
+                    </div>
+                </div>
+            </section>
+
             <LandingFooter />
 
             {/* Global Styles for Animations */}

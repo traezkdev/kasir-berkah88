@@ -7,36 +7,49 @@ export const useAppSettings = () => useContext(AppSettingsContext);
 
 export const AppSettingsProvider = ({ children }) => {
   const [headerTitle, setHeaderTitle] = useState('Berkah 88'); // Default value
+  const [logoUrl, setLogoUrl] = useState('');
   const apiUrl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    const fetchHeaderTitle = async () => {
+    const fetchSettings = async () => {
       const token = localStorage.getItem('token');
       if (!token) {
-    
         return; // Skip fetch if no token
       }
 
+      // Fetch Header Title
       try {
         const response = await authFetch(`${apiUrl}/api/all-settings`);
         const data = await response.json();
         if (response.ok && data.data && data.data.header_title) {
           setHeaderTitle(data.data.header_title);
-        } else {
-          console.warn('Failed to fetch header title, using default.');
         }
       } catch (error) {
-        console.error('Error fetching app settings:', error);
+        console.error('Error fetching header title:', error);
+      }
+
+      // Fetch Logo
+      try {
+        const logoResponse = await authFetch(`${apiUrl}/api/settings/logo`);
+        const logoData = await logoResponse.json();
+        if (logoResponse.ok && logoData.data && typeof logoData.data.logo_url === 'string' && logoData.data.logo_url.length > 0) {
+          if (logoData.data.logo_url.startsWith('/public')) {
+            setLogoUrl(`${apiUrl}${logoData.data.logo_url}`);
+          } else {
+            setLogoUrl(logoData.data.logo_url);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching logo:', error);
       }
     };
 
-    fetchHeaderTitle();
+    fetchSettings();
   }, [apiUrl]);
 
   const value = {
     headerTitle,
-    // If there's a need to update the header title from other parts of the app,
-    // a function like setHeaderTitle can be exposed here.
+    logoUrl
   };
 
   return (
