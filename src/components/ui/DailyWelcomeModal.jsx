@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLocation } from 'react-router-dom';
 import Icon from '../AppIcon';
 import Button from './Button';
 
@@ -42,8 +43,18 @@ const QURAN_VERSES = [
 const DailyWelcomeModal = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [content, setContent] = useState({ quote: '', verse: null });
+    const location = useLocation();
+
+    // Daftar halaman di mana popup tidak boleh muncul
+    const hiddenPages = ['/', '/guest-checkout', '/login', '/register'];
+    const shouldHidePopup = hiddenPages.includes(location.pathname);
 
     useEffect(() => {
+        // Jangan tampilkan popup jika berada di halaman yang disembunyikan
+        if (shouldHidePopup) {
+            return;
+        }
+
         const checkShouldShow = () => {
             const now = new Date();
             const currentHour = now.getHours();
@@ -69,7 +80,7 @@ const DailyWelcomeModal = () => {
         };
 
         checkShouldShow();
-    }, []);
+    }, [shouldHidePopup, location.pathname]);
 
     const handleClose = () => {
         const todayDate = new Date().toISOString().split('T')[0];

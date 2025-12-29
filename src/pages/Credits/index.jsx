@@ -2,18 +2,22 @@ import React from 'react';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import Icon from '../../components/AppIcon'; // Import the Icon component
+import { useTheme } from '../../contexts/ThemeContext';
 
 const Credits = ({ headerTitle }) => {
+  const { theme } = useTheme();
   const breadcrumbs = [
     { name: 'Beranda', path: '/main-dashboard' },
     { name: 'Credits', path: '/credits' },
   ];
 
+  const isDefaultTheme = theme === 'default';
+
   return (
-    <div className="flex flex-col h-screen bg-background">
-      <NavigationHeader title="Credits" headerTitle={headerTitle} />
+    <div className={`flex flex-col ${isDefaultTheme ? 'h-screen bg-background' : 'h-full bg-transparent'}`}>
+      {isDefaultTheme && <NavigationHeader title="Credits" headerTitle={headerTitle} />}
       <BreadcrumbNavigation paths={breadcrumbs} />
-      <div className="flex-grow pt-20 px-6 pb-20 overflow-auto">
+      <div className={`flex-grow ${isDefaultTheme ? 'pt-20' : 'pt-0'} px-6 pb-20 overflow-auto`}>
         <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg dark:shadow-none p-8 space-y-8 text-center">
           <h2 className="text-2xl font-bold text-text-primary dark:text-white">Credits</h2>
           <p className="text-text-secondary dark:text-gray-300">Aplikasi ini di buat oleh:</p>
