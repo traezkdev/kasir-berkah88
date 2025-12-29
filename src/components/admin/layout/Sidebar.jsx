@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   FaTachometerAlt, FaBoxOpen, FaClipboardList, FaChartLine,
@@ -8,7 +8,16 @@ import {
 } from 'react-icons/fa';
 
 const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  // Inisialisasi state dari localStorage
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const savedState = localStorage.getItem('sidebar_collapsed');
+    return savedState === 'true';
+  });
+
+  // Simpan ke localStorage setiap kali state berubah
+  useEffect(() => {
+    localStorage.setItem('sidebar_collapsed', isCollapsed);
+  }, [isCollapsed]);
 
   // Ref untuk tooltip elemen (menghindari re-render React saat hover)
   const tooltipRef = useRef(null);

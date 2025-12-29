@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   FaTachometerAlt, FaUser, FaSignOutAlt, FaAngleDoubleLeft, FaAngleDoubleRight
@@ -6,7 +6,15 @@ import {
 
 const OwnerSidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
   const navigate = useNavigate();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const savedState = localStorage.getItem('sidebar_collapsed');
+    return savedState === 'true';
+  });
+
+  // Simpan ke localStorage setiap kali state berubah
+  useEffect(() => {
+    localStorage.setItem('sidebar_collapsed', isCollapsed);
+  }, [isCollapsed]);
 
   // Ref untuk tooltip (No Re-render)
   const tooltipRef = useRef(null);
