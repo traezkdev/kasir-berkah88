@@ -6,9 +6,11 @@ import {
   FaCashRegister, FaExclamationTriangle, FaTrashAlt, FaWallet, FaBalanceScale,
   FaFileAlt, FaHandHoldingUsd, FaUserCircle, FaHistory, FaCheckCircle, FaBars, FaAngleDoubleLeft, FaAngleDoubleRight
 } from 'react-icons/fa';
+import { useAppSettings } from '../../../contexts/AppSettingsContext';
 
 const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
   const navigate = useNavigate();
+  const { logoUrl } = useAppSettings();
   // Inisialisasi state dari localStorage
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const savedState = localStorage.getItem('sidebar_collapsed');
@@ -82,8 +84,21 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-30 ${isCollapsed ? 'w-20' : 'w-64'} bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out lg:relative lg:translate-x-0 flex flex-col h-screen`}>
         <div className={`flex-shrink-0 flex items-center ${isCollapsed ? 'justify-center mx-2' : 'justify-between px-4'} h-20 border-b border-gray-100 dark:border-gray-700`}>
-          {!isCollapsed && <h1 className="text-2xl font-bold text-indigo-700 dark:text-indigo-400 whitespace-nowrap overflow-hidden text-ellipsis">{headerTitle}</h1>}
-          {isCollapsed && <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center flex-shrink-0"><span className="text-indigo-700 dark:text-indigo-400 font-bold text-xl">B</span></div>}
+          {!isCollapsed && (
+            <div className="flex items-center space-x-3 overflow-hidden">
+              {logoUrl && <img src={logoUrl} alt="Logo" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />}
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white whitespace-nowrap overflow-hidden text-ellipsis">{headerTitle}</h1>
+            </div>
+          )}
+          {isCollapsed && (
+            <div className={`w-10 h-10 ${!logoUrl ? 'bg-indigo-100 dark:bg-indigo-900' : ''} rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden`}>
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-indigo-700 dark:text-indigo-400 font-bold text-xl">B</span>
+              )}
+            </div>
+          )}
           <button
             onClick={toggleCollapse}
             className={`hidden lg:flex p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors ${isCollapsed ? 'absolute -right-3 top-7 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-sm z-50 rounded-full w-6 h-6 items-center justify-center p-0' : 'ml-2'}`}
