@@ -179,7 +179,7 @@ const OrderSummary = ({
   const disablePaymentButton = isLoading || !isCartValid();
 
   return (
-    <div className={`bg-card rounded-lg shadow-lg p-6 lg:sticky lg:top-16`}>
+    <div className={`bg-card rounded-lg shadow-lg p-6 lg:sticky ${theme === 'admin' ? 'lg:top-4' : 'lg:top-16'}`}>
       <h2 className="text-xl font-bold text-foreground mb-4">Ringkasan Pesanan</h2>
 
       {cart.length === 0 ? (

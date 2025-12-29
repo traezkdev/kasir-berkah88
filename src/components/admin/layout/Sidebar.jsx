@@ -8,6 +8,20 @@ import {
 } from 'react-icons/fa';
 import { useAppSettings } from '../../../contexts/AppSettingsContext';
 
+// Component untuk menu item - Dipindah ke luar agar tidak re-mount setiap render Sidebar
+const MenuItem = ({ to, icon: Icon, children, onClick, isCollapsed, handleMouseEnter, handleMouseLeave, navLinkClasses, activeLinkClasses }) => (
+  <NavLink
+    to={to}
+    className={({ isActive }) => `${navLinkClasses} ${isActive ? activeLinkClasses : ''}`}
+    onClick={onClick}
+    onMouseEnter={(e) => handleMouseEnter(e, children)}
+    onMouseLeave={handleMouseLeave}
+  >
+    <Icon className={`${isCollapsed ? '' : 'mr-3'} text-lg flex-shrink-0 transition-transform group-hover:scale-110`} />
+    {!isCollapsed && <span>{children}</span>}
+  </NavLink>
+);
+
 const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
   const navigate = useNavigate();
   const { logoUrl } = useAppSettings();
@@ -65,20 +79,6 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
     tooltipRef.current.style.visibility = 'hidden';
   };
 
-  // Component untuk menu item
-  const MenuItem = ({ to, icon: Icon, children, onClick }) => (
-    <NavLink
-      to={to}
-      className={({ isActive }) => `${navLinkClasses} ${isActive ? activeLinkClasses : ''}`}
-      onClick={onClick}
-      onMouseEnter={(e) => handleMouseEnter(e, children)}
-      onMouseLeave={handleMouseLeave}
-    >
-      <Icon className={`${isCollapsed ? '' : 'mr-3'} text-lg flex-shrink-0 transition-transform group-hover:scale-110`} />
-      {!isCollapsed && <span>{children}</span>}
-    </NavLink>
-  );
-
   return (
     <>
       {/* Sidebar */}
@@ -108,97 +108,304 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
           </button>
         </div>
         <nav className="flex-1 px-2 py-4 space-y-2 overflow-y-auto overflow-x-hidden custom-scrollbar">
-          <MenuItem to="/main-dashboard" icon={FaTachometerAlt} onClick={toggleSidebar}>
+          <MenuItem
+            to="/main-dashboard"
+            icon={FaTachometerAlt}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Dashboard
           </MenuItem>
 
           {/* Grup Penjualan */}
           {!isCollapsed && <div className={groupTitleClasses}>Penjualan</div>}
           {isCollapsed && <div className="h-px bg-gray-200 dark:bg-gray-700 mx-4 my-2"></div>}
-          <MenuItem to="/transaksi" icon={FaFileInvoiceDollar} onClick={toggleSidebar}>
+          <MenuItem
+            to="/transaksi"
+            icon={FaFileInvoiceDollar}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Proses Transaksi
           </MenuItem>
-          <MenuItem to="/transaksi-sederhana" icon={FaCashRegister} onClick={toggleSidebar}>
+          <MenuItem
+            to="/transaksi-sederhana"
+            icon={FaCashRegister}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Transaksi Sederhana
           </MenuItem>
-          <MenuItem to="/order-confirmation" icon={FaCheckCircle} onClick={toggleSidebar}>
+          <MenuItem
+            to="/order-confirmation"
+            icon={FaCheckCircle}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Konfirmasi Pesanan
           </MenuItem>
 
           {/* Grup Inventaris */}
           {!isCollapsed && <div className={groupTitleClasses}>Inventaris</div>}
           {isCollapsed && <div className="h-px bg-gray-200 dark:bg-gray-700 mx-4 my-2"></div>}
-          <MenuItem to="/menu-management" icon={FaBoxOpen} onClick={toggleSidebar}>
+          <MenuItem
+            to="/menu-management"
+            icon={FaBoxOpen}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Manajemen Menu
           </MenuItem>
-          <MenuItem to="/raw-material-stock" icon={FaBoxOpen} onClick={toggleSidebar}>
+          <MenuItem
+            to="/raw-material-stock"
+            icon={FaBoxOpen}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Stok Bahan Mentah
           </MenuItem>
-          <MenuItem to="/main-critical-stock" icon={FaExclamationTriangle} onClick={toggleSidebar}>
+          <MenuItem
+            to="/main-critical-stock"
+            icon={FaExclamationTriangle}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Stok Menipis
           </MenuItem>
 
           {/* Grup Keuangan */}
           {!isCollapsed && <div className={groupTitleClasses}>Keuangan</div>}
           {isCollapsed && <div className="h-px bg-gray-200 dark:bg-gray-700 mx-4 my-2"></div>}
-          <MenuItem to="/expense-tracking" icon={FaFileInvoiceDollar} onClick={toggleSidebar}>
+          <MenuItem
+            to="/expense-tracking"
+            icon={FaFileInvoiceDollar}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Pengeluaran Operasional
           </MenuItem>
-          <MenuItem to="/lapak-deposit" icon={FaWallet} onClick={toggleSidebar}>
+          <MenuItem
+            to="/lapak-deposit"
+            icon={FaWallet}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Pengeluaran Lapak
           </MenuItem>
-          <MenuItem to="/admin-uang-bisnis" icon={FaWallet} onClick={toggleSidebar}>
+          <MenuItem
+            to="/admin-uang-bisnis"
+            icon={FaWallet}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Uang Bisnis
           </MenuItem>
-          <MenuItem to="/cash-reconciliation" icon={FaBalanceScale} onClick={toggleSidebar}>
+          <MenuItem
+            to="/cash-reconciliation"
+            icon={FaBalanceScale}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Rekonsiliasi Kas
           </MenuItem>
 
           {/* Grup Riwayat & Laporan */}
           {!isCollapsed && <div className={groupTitleClasses}>Laporan</div>}
           {isCollapsed && <div className="h-px bg-gray-200 dark:bg-gray-700 mx-4 my-2"></div>}
-          <MenuItem to="/transaction-history" icon={FaHistory} onClick={toggleSidebar}>
+          <MenuItem
+            to="/transaction-history"
+            icon={FaHistory}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Riwayat Transaksi
           </MenuItem>
-          <MenuItem to="/transaction-trash" icon={FaTrashAlt} onClick={toggleSidebar}>
+          <MenuItem
+            to="/transaction-trash"
+            icon={FaTrashAlt}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Sampah Transaksi
           </MenuItem>
-          <MenuItem to="/laporan" icon={FaChartLine} onClick={toggleSidebar}>
+          <MenuItem
+            to="/laporan"
+            icon={FaChartLine}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Laporan Bisnis
           </MenuItem>
-          <MenuItem to="/laporan-lengkap" icon={FaFileAlt} onClick={toggleSidebar}>
+          <MenuItem
+            to="/laporan-lengkap"
+            icon={FaFileAlt}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Laporan Lengkap
           </MenuItem>
 
           {/* Grup Alat & Personalia */}
           {!isCollapsed && <div className={groupTitleClasses}>Alat & SDM</div>}
           {isCollapsed && <div className="h-px bg-gray-200 dark:bg-gray-700 mx-4 my-2"></div>}
-          <MenuItem to="/hpp" icon={FaCalculator} onClick={toggleSidebar}>
+          <MenuItem
+            to="/hpp"
+            icon={FaCalculator}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Perhitungan HPP
           </MenuItem>
-          <MenuItem to="/calculator" icon={FaCalculator} onClick={toggleSidebar}>
+          <MenuItem
+            to="/calculator"
+            icon={FaCalculator}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Kalkulator Cepat
           </MenuItem>
-          <MenuItem to="/chatbot" icon={FaRobot} onClick={toggleSidebar}>
+          <MenuItem
+            to="/chatbot"
+            icon={FaRobot}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             AI Assistant
           </MenuItem>
-          <MenuItem to="/employee-list" icon={FaUsers} onClick={toggleSidebar}>
+          <MenuItem
+            to="/employee-list"
+            icon={FaUsers}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Daftar Karyawan
           </MenuItem>
-          <MenuItem to="/credits" icon={FaHandHoldingUsd} onClick={toggleSidebar}>
+          <MenuItem
+            to="/credits"
+            icon={FaHandHoldingUsd}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Kredit / Piutang
           </MenuItem>
-          <MenuItem to="/notes" icon={FaBook} onClick={toggleSidebar}>
+          <MenuItem
+            to="/notes"
+            icon={FaBook}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Catatan
           </MenuItem>
 
           {/* Grup Akun */}
           {!isCollapsed && <div className={groupTitleClasses}>Sistem</div>}
           {isCollapsed && <div className="h-px bg-gray-200 dark:bg-gray-700 mx-4 my-2"></div>}
-          <MenuItem to="/profile" icon={FaUserCircle} onClick={toggleSidebar}>
+          <MenuItem
+            to="/profile"
+            icon={FaUserCircle}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Profil Saya
           </MenuItem>
-          <MenuItem to="/settings" icon={FaCog} onClick={toggleSidebar}>
+          <MenuItem
+            to="/settings"
+            icon={FaCog}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Pengaturan
           </MenuItem>
         </nav>
