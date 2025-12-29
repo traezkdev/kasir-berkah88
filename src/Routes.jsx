@@ -78,6 +78,27 @@ const ProtectedRoute = ({ children, allowedRoles, redirectPathForForbiddenRoles 
 };
 
 import DynamicLayout from './components/DynamicLayout';
+import { useAppSettings } from './contexts/AppSettingsContext';
+
+// ProtectedRoute component based on app mode
+const ModeProtectedRoute = ({ children, modeRequired }) => {
+  const { appMode, isLoadingMode } = useAppSettings();
+
+  if (isLoadingMode) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // Jika halaman butuh 'full' mode tapi mode saat ini 'simple'
+  if (modeRequired === 'full' && appMode === 'simple') {
+    return <Navigate to="/main-dashboard" replace />;
+  }
+
+  return children;
+};
 
 const AppRoutes = () => {
   return (
@@ -100,27 +121,32 @@ const AppRoutes = () => {
         <Route path="/main-dashboard" element={<MainDashboard />} />
         <Route path="/menu-management" element={<MenuManagement />} />
         <Route path="/expense-tracking" element={<ExpenseTracking />} />
+
+        {/* Full Mode Only Routes */}
         <Route path="/transaction-history" element={<TransactionHistory />} />
-        <Route path="/transaction-trash" element={<TransactionTrash />} />
+        <Route path="/transaction-trash" element={<ModeProtectedRoute modeRequired="full"><TransactionTrash /></ModeProtectedRoute>} />
+        <Route path="/notes" element={<ModeProtectedRoute modeRequired="full"><NotesPage /></ModeProtectedRoute>} />
+        <Route path="/calculator" element={<ModeProtectedRoute modeRequired="full"><CalculatorPage /></ModeProtectedRoute>} />
+        <Route path="/employee-list" element={<ModeProtectedRoute modeRequired="full"><EmployeeListPage /></ModeProtectedRoute>} />
+        <Route path="/hpp" element={<ModeProtectedRoute modeRequired="full"><Hpp /></ModeProtectedRoute>} />
+        <Route path="/order-confirmation" element={<ModeProtectedRoute modeRequired="full"><OrderConfirmationPage /></ModeProtectedRoute>} />
+        <Route path="/transaksi" element={<ModeProtectedRoute modeRequired="full"><SalesTransactionProcessing /></ModeProtectedRoute>} />
+        <Route path="/raw-material-stock" element={<ModeProtectedRoute modeRequired="full"><RawMaterialStockDashboard /></ModeProtectedRoute>} />
+        <Route path="/raw-material-stock/history" element={<ModeProtectedRoute modeRequired="full"><RawMaterialStockHistory /></ModeProtectedRoute>} />
+        <Route path="/main-critical-stock" element={<ModeProtectedRoute modeRequired="full"><MainCriticalStockPage /></ModeProtectedRoute>} />
+        <Route path="/admin-uang-bisnis" element={<ModeProtectedRoute modeRequired="full"><AdminUangBisnis headerTitle="Uang Bisnis" /></ModeProtectedRoute>} />
+        <Route path="/laporan-lengkap" element={<ModeProtectedRoute modeRequired="full"><LaporanLengkap headerTitle="Laporan Lengkap" /></ModeProtectedRoute>} />
+        <Route path="/cash-reconciliation" element={<ModeProtectedRoute modeRequired="full"><CashReconciliation headerTitle="Rekonsiliasi Kas" /></ModeProtectedRoute>} />
+
+        {/* Simple Mode Allowed Routes */}
         <Route path="/laporan" element={<BusinessReports />} />
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/credits" element={<Credits />} />
-        <Route path="/notes" element={<NotesPage />} />
-        <Route path="/calculator" element={<CalculatorPage />} />
-        <Route path="/employee-list" element={<EmployeeListPage />} />
-        <Route path="/hpp" element={<Hpp />} />
-        <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
-        <Route path="/transaksi" element={<SalesTransactionProcessing />} />
         <Route path="/transaksi-sederhana" element={<SimpleTransactionPage />} />
-        <Route path="/raw-material-stock" element={<RawMaterialStockDashboard />} />
-        <Route path="/raw-material-stock/history" element={<RawMaterialStockHistory />} />
-        <Route path="/main-critical-stock" element={<MainCriticalStockPage />} />
-        <Route path="/admin-uang-bisnis" element={<AdminUangBisnis headerTitle="Uang Bisnis" />} /> {/* Add this route */}
-        <Route path="/laporan-lengkap" element={<LaporanLengkap headerTitle="Laporan Lengkap" />} />
-        <Route path="/cash-reconciliation" element={<CashReconciliation headerTitle="Rekonsiliasi Kas" />} />
         <Route path="/chatbot" element={<ChatbotPage />} />
       </Route>
+
 
       {/* Cashier Dashboard Routes */}
       <Route

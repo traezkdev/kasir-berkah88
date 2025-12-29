@@ -17,10 +17,17 @@ const apiUrl = import.meta.env.VITE_API_URL;
 
 const BusinessReportView = ({ headerTitle, isOwner = false }) => {
     const { theme } = useTheme();
-    const [selectedDateRange, setSelectedDateRange] = useState({
-        startDate: new Date(),
-        endDate: new Date(),
-        range: 'today'
+    const [selectedDateRange, setSelectedDateRange] = useState(() => {
+        const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+        const start = new Date(now);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(now);
+        end.setHours(23, 59, 59, 999);
+        return {
+            startDate: start,
+            endDate: end,
+            range: 'today'
+        };
     });
     const [transactions, setTransactions] = useState([]);
     const [menuItems, setMenuItems] = useState([]);

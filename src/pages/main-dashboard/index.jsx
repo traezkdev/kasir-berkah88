@@ -17,9 +17,11 @@ import StockAlertBanner from '../../components/StockAlertBanner';
 const apiUrl = import.meta.env.VITE_API_URL;
 
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAppSettings } from '../../contexts/AppSettingsContext';
 
 const MainDashboard = ({ headerTitle }) => {
   const { theme } = useTheme();
+  const { appMode } = useAppSettings();
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
   const [filterType, setFilterType] = useState('monthly'); // Options: 'this_week', 'monthly', 'yearly', 'all_time', 'custom'
@@ -391,11 +393,14 @@ const MainDashboard = ({ headerTitle }) => {
 
 
 
+    const todayExpenses = expenses.filter(e => new Date(e.date).toDateString() === todayString).reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+
     setDashboardData({
       metrics: {
         // Filtered Metrics
         totalRevenue,
         totalExpenses,
+        todayExpenses,
         // All-Time / Unfiltered Metrics
         netProfit, // This is the "Keuntungan Kotor" metric
         workingCapital,
@@ -428,6 +433,7 @@ const MainDashboard = ({ headerTitle }) => {
       recentTransactions,
       dashboardMetrics: {
         todaySales: { value: formatCurrency(todaySales), change: salesChangeFormatted, trend: salesTrend },
+        todayExpenses: { value: formatCurrency(todayExpenses) },
         totalTransactions: { value: todayTransactions.length.toString(), change: transChangeFormatted, trend: transTrend },
         averageOrder: { value: formatCurrency(averageOrderToday), change: avgOrderChangeFormatted, trend: avgOrderTrend },
         lowStock: { value: lowStockItems.toString(), change: '', trend: 'down' }
@@ -525,6 +531,41 @@ const MainDashboard = ({ headerTitle }) => {
   // --- Main Metrics (Always Visible) ---
   const monthlyProfit = dashboardData.metrics.totalRevenue - dashboardData.metrics.totalExpenses;
 
+  // Metrics untuk Mode Sederhana (fokus pada data harian)
+  const todaySalesValue = dashboardData.dashboardMetrics.todaySales.value;
+
+  const simpleMetrics = [
+    {
+      title: 'Penjualan Hari Ini',
+      value: todaySalesValue,
+      icon: 'TrendingUp',
+      color: 'success',
+      description: 'Total penjualan hari ini'
+    },
+    {
+      title: 'Pengeluaran Bulan Ini',
+      value: formatCurrency(dashboardData.metrics.totalExpenses),
+      icon: 'FileText',
+      color: 'danger',
+      description: 'Total pengeluaran bulan ini'
+    },
+    {
+      title: 'Pendapatan Bulan Ini',
+      value: formatCurrency(dashboardData.metrics.totalRevenue),
+      icon: 'BarChart',
+      color: 'info',
+      description: 'Total pendapatan bulan ini'
+    },
+    {
+      title: 'Laba Bulan Ini',
+      value: formatCurrency(monthlyProfit),
+      icon: 'DollarSign',
+      color: 'accent',
+      description: 'Pendapatan - Pengeluaran bulan ini'
+    }
+  ];
+
+  // Metrics untuk Mode Lengkap (data lebih detail)
   const mainMetrics = [
     {
       title: 'Saldo Lapak',
@@ -555,6 +596,7 @@ const MainDashboard = ({ headerTitle }) => {
       description: 'Pendapatan - Pengeluaran periode ini'
     }
   ];
+
 
   // --- Detailed Metrics (Hidden by default) ---
 
@@ -685,7 +727,7 @@ const MainDashboard = ({ headerTitle }) => {
                       variant="primary"
                       iconName="Plus"
                       iconPosition="left"
-                      onClick={() => navigate('/transaksi')}
+                      onClick={() => navigate(appMode === 'simple' ? '/transaksi-sederhana' : '/transaksi')}
                     >
                       Transaksi Baru
                     </Button>
@@ -694,9 +736,10 @@ const MainDashboard = ({ headerTitle }) => {
               </div>
             </div>
 
+
             {/* Metrics Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-              {mainMetrics.map((metric, index) => (
+              {(appMode === 'simple' ? simpleMetrics : mainMetrics).map((metric, index) => (
                 <MetricsCard
                   key={index}
                   title={metric.title}
@@ -708,20 +751,22 @@ const MainDashboard = ({ headerTitle }) => {
               ))}
             </div>
 
-            {/* Toggle Details Button */}
-            <div className="flex justify-center mb-6">
-              <Button
-                variant="ghost"
-                onClick={() => setShowDetails(!showDetails)}
-                className="flex items-center gap-2 text-text-secondary hover:text-primary transition-colors"
-              >
-                <span>{showDetails ? 'Sembunyikan Detail Lengkap' : 'Tampilkan Data Detail Lengkap'}</span>
-                <Icon name={showDetails ? 'ChevronUp' : 'ChevronDown'} size={16} />
-              </Button>
-            </div>
+            {/* Toggle Details Button - Hanya untuk mode lengkap */}
+            {appMode !== 'simple' && (
+              <div className="flex justify-center mb-6">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowDetails(!showDetails)}
+                  className="flex items-center gap-2 text-text-secondary hover:text-primary transition-colors"
+                >
+                  <span>{showDetails ? 'Sembunyikan Detail Lengkap' : 'Tampilkan Data Detail Lengkap'}</span>
+                  <Icon name={showDetails ? 'ChevronUp' : 'ChevronDown'} size={16} />
+                </Button>
+              </div>
+            )}
 
-            {/* Detailed Metrics (Collapsible) */}
-            {showDetails && (
+            {/* Detailed Metrics (Collapsible) - Hanya untuk mode lengkap */}
+            {appMode !== 'simple' && showDetails && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 animate-in fade-in slide-in-from-top-4 duration-300">
                 {detailedMetrics.map((metric, index) => (
                   <MetricsCard
@@ -736,22 +781,42 @@ const MainDashboard = ({ headerTitle }) => {
               </div>
             )}
 
+
             {/* Quick Actions */}
             <div className="mb-8">
               <h2 className="text-xl font-semibold text-text-primary mb-4">
                 Aksi Cepat
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {quickActions.map((action, index) => (
-                  <QuickActionCard
-                    key={index}
-                    title={action.title}
-                    description={action.description}
-                    icon={action.icon}
-                    route={action.route}
-                    color={action.color}
-                  />
-                ))}
+                {quickActions
+                  .filter(action => {
+                    // Filter berdasarkan mode
+                    if (appMode === 'simple') {
+                      // Mode sederhana: hanya tampilkan fitur penting
+                      const simpleActions = ['Proses Penjualan', 'Kelola Menu', 'Catat Pengeluaran', 'Lihat Laporan'];
+                      return simpleActions.includes(action.title);
+                    }
+                    // Mode lengkap: tampilkan semua
+                    return true;
+                  })
+                  .map((action, index) => {
+                    // Ubah route untuk mode sederhana
+                    let route = action.route;
+                    if (appMode === 'simple' && action.title === 'Proses Penjualan') {
+                      route = '/transaksi-sederhana';
+                    }
+
+                    return (
+                      <QuickActionCard
+                        key={index}
+                        title={action.title}
+                        description={action.description}
+                        icon={action.icon}
+                        route={route}
+                        color={action.color}
+                      />
+                    );
+                  })}
               </div>
             </div>
 
@@ -774,60 +839,62 @@ const MainDashboard = ({ headerTitle }) => {
             </div>
 
             {/* Data Sync Status Section */}
-            <div className="mt-8">
-              <h2 className="text-xl font-semibold text-text-primary mb-4">
-                Status Sinkronisasi Data
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Status Card: Menu Stock */}
-                <div className="bg-card border border-border rounded-lg p-4 text-center">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <div className="p-2 bg-primary/10 rounded-md">
-                      <Icon name="BookUser" size={20} className="text-primary" />
+            {appMode === 'full' && (
+              <div className="mt-8">
+                <h2 className="text-xl font-semibold text-text-primary mb-4">
+                  Status Sinkronisasi Data
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Status Card: Menu Stock */}
+                  <div className="bg-card border border-border rounded-lg p-4 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <div className="p-2 bg-primary/10 rounded-md">
+                        <Icon name="BookUser" size={20} className="text-primary" />
+                      </div>
+                      <h3 className="font-semibold text-text-primary">Stok Menu</h3>
                     </div>
-                    <h3 className="font-semibold text-text-primary">Stok Menu</h3>
+                    <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
+                    <p className="text-sm font-medium text-text-primary">
+                      {dashboardData.timestamps?.menuStock
+                        ? new Date(dashboardData.timestamps.menuStock).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                        : 'Belum pernah'}
+                    </p>
                   </div>
-                  <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
-                  <p className="text-sm font-medium text-text-primary">
-                    {dashboardData.timestamps?.menuStock
-                      ? new Date(dashboardData.timestamps.menuStock).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                      : 'Belum pernah'}
-                  </p>
-                </div>
 
-                {/* Status Card: Raw Materials */}
-                <div className="bg-card border border-border rounded-lg p-4 text-center">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <div className="p-2 bg-success/10 rounded-md">
-                      <Icon name="Package" size={20} className="text-success" />
+                  {/* Status Card: Raw Materials */}
+                  <div className="bg-card border border-border rounded-lg p-4 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <div className="p-2 bg-success/10 rounded-md">
+                        <Icon name="Package" size={20} className="text-success" />
+                      </div>
+                      <h3 className="font-semibold text-text-primary">Bahan Baku</h3>
                     </div>
-                    <h3 className="font-semibold text-text-primary">Bahan Baku</h3>
+                    <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
+                    <p className="text-sm font-medium text-text-primary">
+                      {dashboardData.timestamps?.rawMaterials
+                        ? new Date(dashboardData.timestamps.rawMaterials).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                        : 'Belum pernah'}
+                    </p>
                   </div>
-                  <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
-                  <p className="text-sm font-medium text-text-primary">
-                    {dashboardData.timestamps?.rawMaterials
-                      ? new Date(dashboardData.timestamps.rawMaterials).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                      : 'Belum pernah'}
-                  </p>
-                </div>
 
-                {/* Status Card: Lapak Funds */}
-                <div className="bg-card border border-border rounded-lg p-4 text-center">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <div className="p-2 bg-accent/10 rounded-md">
-                      <Icon name="Wallet" size={20} className="text-accent" />
+                  {/* Status Card: Lapak Funds */}
+                  <div className="bg-card border border-border rounded-lg p-4 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <div className="p-2 bg-accent/10 rounded-md">
+                        <Icon name="Wallet" size={20} className="text-accent" />
+                      </div>
+                      <h3 className="font-semibold text-text-primary">Uang Lapak</h3>
                     </div>
-                    <h3 className="font-semibold text-text-primary">Uang Lapak</h3>
+                    <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
+                    <p className="text-sm font-medium text-text-primary">
+                      {dashboardData.timestamps?.lapakFunds
+                        ? new Date(dashboardData.timestamps.lapakFunds).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                        : 'Belum pernah'}
+                    </p>
                   </div>
-                  <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
-                  <p className="text-sm font-medium text-text-primary">
-                    {dashboardData.timestamps?.lapakFunds
-                      ? new Date(dashboardData.timestamps.lapakFunds).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                      : 'Belum pernah'}
-                  </p>
                 </div>
               </div>
-            </div>
+            )}
 
             <div className="mt-8 flex flex-col justify-center items-center">
               {/* <DarkModeToggle /> */}

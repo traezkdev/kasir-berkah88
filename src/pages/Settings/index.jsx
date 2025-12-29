@@ -52,9 +52,11 @@ const SettingsCard = ({ icon, title, description, onClick, disabled = false }) =
 );
 
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAppSettings } from '../../contexts/AppSettingsContext';
 
 const Settings = () => {
   const { theme, toggleTheme } = useTheme();
+  const { appMode, toggleAppMode } = useAppSettings();
   // --- States ---
   const [websiteTitle, setWebsiteTitle] = useState('');
   const [newWebsiteTitle, setNewWebsiteTitle] = useState('');
@@ -530,13 +532,17 @@ const Settings = () => {
               <SettingsCard icon="Type" title="Judul Situs Web" description="Ubah judul di tab browser dan hasil pencarian." onClick={() => setActiveModal('websiteTitle')} disabled={!isAdmin} />
               <SettingsCard icon="Heading" title="Judul Header Web" description="Sesuaikan teks judul di header utama aplikasi." onClick={() => setActiveModal('headerTitle')} disabled={!isAdmin} />
               <SettingsCard icon="Image" title="Ganti Logo Header" description="Unggah logo baru yang tampil di header." onClick={() => setActiveModal('logo')} disabled={!isAdmin} />
-              <SettingsCard icon="DollarSign" title="Modal Awal" description="Atur jumlah modal awal untuk perhitungan bisnis." onClick={() => setActiveModal('initialCapital')} disabled={!isAdmin} />
-              <SettingsCard icon="FileText" title="Deskripsi Web" description="Kelola deskripsi meta untuk optimasi SEO." onClick={() => setActiveModal('webDescription')} disabled={!isAdmin} />
-              <SettingsCard icon="ToggleRight" title="Pendaftaran Pengguna" description="Izinkan atau blokir pengguna baru untuk mendaftar." onClick={() => setActiveModal('registration')} disabled={!isAdmin} />
-              <SettingsCard icon="Share2" title="Tampilan Media Sosial" description="Atur judul, deskripsi, dan gambar untuk berbagi di media sosial." onClick={() => setActiveModal('socialShare')} disabled={!isAdmin} />
-              <SettingsCard icon="Type" title="Judul Dasbor Kasir" description="Ubah judul yang ditampilkan di halaman dasbor kasir." onClick={() => setActiveModal('cashierDashboardTitle')} disabled={!isAdmin} />
 
-              <SettingsCard icon="ChartNoAxesColumnIncreasing" title="Laporan Transaksi Owner" description="Lihat laporan pendapatan dan pengeluaran bisnis owner." onClick={() => navigate('/admin-uang-bisnis')} />
+              {appMode === 'full' && (
+                <>
+                  <SettingsCard icon="DollarSign" title="Modal Awal" description="Atur jumlah modal awal untuk perhitungan bisnis." onClick={() => setActiveModal('initialCapital')} disabled={!isAdmin} />
+                  <SettingsCard icon="FileText" title="Deskripsi Web" description="Kelola deskripsi meta untuk optimasi SEO." onClick={() => setActiveModal('webDescription')} disabled={!isAdmin} />
+                  <SettingsCard icon="ToggleRight" title="Pendaftaran Pengguna" description="Izinkan atau blokir pengguna baru untuk mendaftar." onClick={() => setActiveModal('registration')} disabled={!isAdmin} />
+                  <SettingsCard icon="Share2" title="Tampilan Media Sosial" description="Atur judul, deskripsi, dan gambar untuk berbagi di media sosial." onClick={() => setActiveModal('socialShare')} disabled={!isAdmin} />
+                  <SettingsCard icon="Type" title="Judul Dasbor Kasir" description="Ubah judul yang ditampilkan di halaman dasbor kasir." onClick={() => setActiveModal('cashierDashboardTitle')} disabled={!isAdmin} />
+                  <SettingsCard icon="ChartNoAxesColumnIncreasing" title="Laporan Transaksi Owner" description="Lihat laporan pendapatan dan pengeluaran bisnis owner." onClick={() => navigate('/admin-uang-bisnis')} />
+                </>
+              )}
               <SettingsCard
                 icon="Store"
                 title="Pengaturan Restoran"
@@ -545,12 +551,22 @@ const Settings = () => {
                 disabled={!isAdmin}
               />
               <SettingsCard icon="Layout" title={`Beralih ke Tema ${theme === 'default' ? 'Admin' : 'Bawaan'}`} description={`Tema saat ini: ${theme === 'default' ? 'Bawaan' : 'Admin'}. Klik untuk mengganti.`} onClick={toggleTheme} />
+              <SettingsCard
+                icon="Layers"
+                title="Mode Aplikasi"
+                description={`Mode saat ini: ${appMode === 'simple' ? 'Sederhana' : 'Lengkap'}. ${appMode === 'simple' ? 'Klik untuk beralih ke mode Lengkap dengan semua fitur.' : 'Klik untuk beralih ke mode Sederhana yang lebih mudah.'}`}
+                onClick={() => setActiveModal('appMode')}
+              />
               <SettingsCard icon="List" title="Kelola Kategori Menu" description="Tambah, ubah, atau hapus kategori untuk item menu." onClick={() => setActiveModal('categoryManagement')} disabled={!isAdmin} />
-              {/* Card baru untuk Pengeluaran Lapak */}
-              <SettingsCard icon="Wallet" title="Pengeluaran Lapak" description="Kelola uang masuk dan keluar untuk operasional lapak." onClick={() => navigate('/lapak-deposit')} disabled={!isAdmin && userRole !== 'user' && userRole !== 'kasir' && userRole !== 'owner'} />
-              <SettingsCard icon="ClipboardCheck" title="Konfirmasi Pesanan" description="Akses halaman konfirmasi pesanan." onClick={() => navigate('/order-confirmation')} disabled={!isAdmin && userRole !== 'user' && userRole !== 'kasir'} />
-              <SettingsCard icon="Package" title="Stok Bahan Baku" description="Kelola persediaan bahan baku produk Anda." onClick={() => navigate('/raw-material-stock')} disabled={!isAdmin} />
-              <SettingsCard icon="Calculator" title="Rekonsiliasi Kas" description="Cocokkan uang fisik dengan transaksi tercatat." onClick={() => navigate('/cash-reconciliation')} disabled={!isAdmin && userRole !== 'kasir'} />
+
+              {appMode === 'full' && (
+                <>
+                  <SettingsCard icon="Wallet" title="Pengeluaran Lapak" description="Kelola uang masuk dan keluar untuk operasional lapak." onClick={() => navigate('/lapak-deposit')} disabled={!isAdmin && userRole !== 'user' && userRole !== 'kasir' && userRole !== 'owner'} />
+                  <SettingsCard icon="ClipboardCheck" title="Konfirmasi Pesanan" description="Akses halaman konfirmasi pesanan." onClick={() => navigate('/order-confirmation')} disabled={!isAdmin && userRole !== 'user' && userRole !== 'kasir'} />
+                  <SettingsCard icon="Package" title="Stok Bahan Baku" description="Kelola persediaan bahan baku produk Anda." onClick={() => navigate('/raw-material-stock')} disabled={!isAdmin} />
+                  <SettingsCard icon="Calculator" title="Rekonsiliasi Kas" description="Cocokkan uang fisik dengan transaksi tercatat." onClick={() => navigate('/cash-reconciliation')} disabled={!isAdmin && userRole !== 'kasir'} />
+                </>
+              )}
 
 
 
@@ -565,7 +581,9 @@ const Settings = () => {
                 <SettingsCard icon="Contact" title="Manajemen Karyawan" description="Tambah, ubah, dan hapus data karyawan." onClick={() => setActiveModal('employeeManagement')} />
                 <SettingsCard icon="ShieldAlert" title="Kata Sandi Master" description="Ubah kata sandi master untuk tindakan sensitif." onClick={() => setActiveModal('masterPassword')} />
                 <SettingsCard icon="Trash2" title="Hapus Semua Data" description="Hapus semua transaksi, pengeluaran, dan reset stok." onClick={() => setActiveModal('clearAllData')} />
-                <SettingsCard icon="RefreshCw" title="Sinkronisasi Data" description="Kelola pembaruan data menu, stok, dan kas." onClick={() => setIsDataSyncModalOpen(true)} />
+                {appMode === 'full' && (
+                  <SettingsCard icon="RefreshCw" title="Sinkronisasi Data" description="Kelola pembaruan data menu, stok, dan kas." onClick={() => setIsDataSyncModalOpen(true)} />
+                )}
               </div>
             </div>
           )}
@@ -846,6 +864,101 @@ const Settings = () => {
         confirmText="Ya, Hapus Logo"
         cancelText="Batal"
       />
+
+      {/* Modal App Mode */}
+      <SettingsModal title="Mode Aplikasi" isOpen={activeModal === 'appMode'} onClose={handleModalClose}>
+        <div className="space-y-6">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
+              <AppIcon name="Info" className="w-5 h-5" />
+              Mode Saat Ini: {appMode === 'simple' ? 'Sederhana' : 'Lengkap'}
+            </h4>
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              {appMode === 'simple'
+                ? 'Anda sedang menggunakan mode Sederhana dengan fitur-fitur penting saja.'
+                : 'Anda sedang menggunakan mode Lengkap dengan semua fitur tersedia.'}
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="border border-border rounded-lg p-4">
+              <h5 className="font-semibold text-text-primary mb-2 flex items-center gap-2">
+                <AppIcon name="Zap" className="w-5 h-5 text-green-600" />
+                Mode Sederhana
+              </h5>
+              <p className="text-sm text-text-secondary mb-3">
+                Cocok untuk warung kecil yang ingin fokus pada fitur utama tanpa kompleksitas.
+              </p>
+              <ul className="text-sm text-text-secondary space-y-1 ml-4 list-disc">
+                <li>Dashboard ringkasan</li>
+                <li>Proses Transaksi</li>
+                <li>Manajemen Menu</li>
+                <li>Pengeluaran</li>
+                <li>Laporan Bisnis (Harian & Bulanan)</li>
+                <li>Profil & Pengaturan</li>
+              </ul>
+            </div>
+
+            <div className="border border-border rounded-lg p-4">
+              <h5 className="font-semibold text-text-primary mb-2 flex items-center gap-2">
+                <AppIcon name="Layers" className="w-5 h-5 text-purple-600" />
+                Mode Lengkap
+              </h5>
+              <p className="text-sm text-text-secondary mb-3">
+                Untuk bisnis yang membutuhkan kontrol penuh dengan semua fitur advanced.
+              </p>
+              <ul className="text-sm text-text-secondary space-y-1 ml-4 list-disc">
+                <li>Semua fitur Mode Sederhana</li>
+                <li>Manajemen Menu & Stok Bahan Mentah</li>
+                <li>Lapak Deposit & Uang Bisnis</li>
+                <li>Rekonsiliasi Kas</li>
+                <li>Riwayat & Sampah Transaksi</li>
+                <li>HPP, Kalkulator, AI Assistant</li>
+                <li>Karyawan, Kredit/Piutang, Catatan</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200 flex items-start gap-2">
+              <AppIcon name="AlertTriangle" className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <span>
+                <strong>Catatan:</strong> Data Anda tetap aman dan tersinkronisasi.
+                Anda dapat beralih mode kapan saja tanpa kehilangan data.
+              </span>
+            </p>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={handleModalClose}
+            >
+              Batal
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={async () => {
+                const newMode = appMode === 'simple' ? 'full' : 'simple';
+                const result = await toggleAppMode(newMode);
+                if (result.success) {
+                  setMessage(result.message);
+                  handleModalClose();
+                  setTimeout(() => {
+                    window.location.reload(); // Reload untuk apply perubahan sidebar
+                  }, 1000);
+                } else {
+                  setError(result.message);
+                }
+              }}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Mengubah...' : `Beralih ke Mode ${appMode === 'simple' ? 'Lengkap' : 'Sederhana'}`}
+            </Button>
+          </div>
+        </div>
+      </SettingsModal>
 
       {message && <div className="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{message}</div>}
       {error && <div className="fixed bottom-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{error}</div>}

@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import authFetch from '../utils/authFetch';
 import Icon from './AppIcon';
 import Button from './ui/Button';
+import { useAppSettings } from '../contexts/AppSettingsContext';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const StockAlertBanner = ({ isOwner = false }) => {
+    const { appMode } = useAppSettings();
     const [criticalCount, setCriticalCount] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
     const [settings, setSettings] = useState(null);
@@ -95,7 +97,7 @@ const StockAlertBanner = ({ isOwner = false }) => {
         }
     };
 
-    if (!isVisible || isLoading) return null;
+    if (!isVisible || isLoading || appMode === 'simple') return null;
 
     return (
         <div className="my-6 animate-in fade-in slide-in-from-top duration-500 px-1">
