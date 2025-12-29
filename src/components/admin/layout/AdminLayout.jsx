@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import OwnerSidebar from './OwnerSidebar'; // Import OwnerSidebar
 import Header from './Header';
@@ -8,9 +8,14 @@ import { useAppSettings } from '../../../contexts/AppSettingsContext';
 import { jwtDecode } from 'jwt-decode'; // Import jwtDecode
 
 const AdminLayout = () => {
+  const location = useLocation();
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const { headerTitle } = useAppSettings();
   const [userRole, setUserRole] = useState(null); // Add userRole state
+
+  // List of paths that should not have default padding
+  const fullWidthPaths = ['/transaksi'];
+  const isFullWidth = fullWidthPaths.includes(location.pathname);
 
   useEffect(() => {
     document.body.classList.add('admin-no-scroll');
@@ -51,7 +56,7 @@ const AdminLayout = () => {
         ) : (
           <Header toggleSidebar={toggleSidebar} />
         )}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-900 p-4 sm:p-6">
+        <main className={`flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-900 ${isFullWidth ? '' : 'p-4 sm:p-6'}`}>
           <Outlet />
         </main>
       </div>

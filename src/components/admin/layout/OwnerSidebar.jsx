@@ -4,6 +4,20 @@ import {
   FaTachometerAlt, FaUser, FaSignOutAlt, FaAngleDoubleLeft, FaAngleDoubleRight
 } from 'react-icons/fa';
 
+// Component untuk menu item dengan tooltip - Dipindah ke luar agar tidak re-mount setiap render
+const MenuItem = ({ to, icon: Icon, children, onClick, isCollapsed, handleMouseEnter, handleMouseLeave, navLinkClasses, activeLinkClasses }) => (
+  <NavLink
+    to={to}
+    className={({ isActive }) => `${navLinkClasses} ${isActive ? activeLinkClasses : ''}`}
+    onClick={onClick}
+    onMouseEnter={(e) => handleMouseEnter(e, children)}
+    onMouseLeave={handleMouseLeave}
+  >
+    <Icon className={`${isCollapsed ? '' : 'mr-3'} text-lg flex-shrink-0 transition-transform group-hover:scale-110`} />
+    {!isCollapsed && <span>{children}</span>}
+  </NavLink>
+);
+
 const OwnerSidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -58,20 +72,6 @@ const OwnerSidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
     tooltipRef.current.style.visibility = 'hidden';
   };
 
-  // Component untuk menu item dengan tooltip
-  const MenuItem = ({ to, icon: Icon, children, onClick }) => (
-    <NavLink
-      to={to}
-      className={({ isActive }) => `${navLinkClasses} ${isActive ? activeLinkClasses : ''}`}
-      onClick={onClick}
-      onMouseEnter={(e) => handleMouseEnter(e, children)}
-      onMouseLeave={handleMouseLeave}
-    >
-      <Icon className={`${isCollapsed ? '' : 'mr-3'} text-lg flex-shrink-0 transition-transform group-hover:scale-110`} />
-      {!isCollapsed && <span>{children}</span>}
-    </NavLink>
-  );
-
   return (
     <>
       {/* Sidebar */}
@@ -88,10 +88,28 @@ const OwnerSidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
           </button>
         </div>
         <nav className="flex-1 px-2 py-4 space-y-2 overflow-y-auto overflow-x-hidden custom-scrollbar">
-          <MenuItem to="/owner-dashboard" icon={FaTachometerAlt} onClick={toggleSidebar}>
+          <MenuItem
+            to="/owner-dashboard"
+            icon={FaTachometerAlt}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Dashboard Owner
           </MenuItem>
-          <MenuItem to="/profile" icon={FaUser} onClick={toggleSidebar}>
+          <MenuItem
+            to="/profile"
+            icon={FaUser}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
             Profil
           </MenuItem>
         </nav>
