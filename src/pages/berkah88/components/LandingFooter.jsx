@@ -59,8 +59,8 @@ const LandingFooter = () => {
                         <ul className="space-y-4">
                             {[
                                 { name: 'Daftar Menu', link: '#products' },
-                                { name: 'Tentang', link: '#' },
-                                { name: 'Lokasi Outlet', link: '#' },
+                                { name: 'Pesan Online', link: '#delivery' },
+                                { name: 'Lokasi Outlet', link: '#location' },
                                 { name: 'Karir', link: '#' },
                             ].map((item) => (
                                 <li key={item.name}>
@@ -85,20 +85,20 @@ const LandingFooter = () => {
                                     <Icon name="MapPin" size={16} />
                                 </div>
                                 <span className="text-gray-400">
-                                    Jl. Kaliurang Km 12, Sleman, Yogyakarta, Indonesia
+                                    Ciherang Dramaga, Bogor, Indonesia
                                 </span>
                             </li>
                             <li className="flex items-center gap-4">
                                 <div className="w-8 h-8 rounded-full bg-pink-500/10 flex items-center justify-center text-pink-400 shrink-0">
                                     <Icon name="Phone" size={16} />
                                 </div>
-                                <span className="text-gray-400">+62 812-3456-7890</span>
+                                <span className="text-gray-400">0858-6487-5536</span>
                             </li>
                             <li className="flex items-center gap-4">
                                 <div className="w-8 h-8 rounded-full bg-cyan-500/10 flex items-center justify-center text-cyan-400 shrink-0">
                                     <Icon name="Mail" size={16} />
                                 </div>
-                                <span className="text-gray-400">halo@berkah88.com</span>
+                                <span className="text-gray-400">kerongkonganberkah88@gmail.com</span>
                             </li>
                         </ul>
                     </div>
