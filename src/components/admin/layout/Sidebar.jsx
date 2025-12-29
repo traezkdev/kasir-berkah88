@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
   FaTachometerAlt, FaBoxOpen, FaClipboardList, FaChartLine,
   FaUsers, FaCog, FaFileInvoiceDollar, FaCalculator, FaBook, FaSignOutAlt, FaRobot,
@@ -8,6 +8,7 @@ import {
 } from 'react-icons/fa';
 
 const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
+  const navigate = useNavigate();
   // Inisialisasi state dari localStorage
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const savedState = localStorage.getItem('sidebar_collapsed');
@@ -22,6 +23,11 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
   // Ref untuk tooltip elemen (menghindari re-render React saat hover)
   const tooltipRef = useRef(null);
   const tooltipTextRef = useRef(null);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
 
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
@@ -183,6 +189,7 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
         </nav>
         <div className="px-2 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
           <button
+            onClick={handleLogout}
             className={`${navLinkClasses} w-full relative group`}
             onMouseEnter={(e) => handleMouseEnter(e, 'Logout')}
             onMouseLeave={handleMouseLeave}
