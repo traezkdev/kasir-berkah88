@@ -21,6 +21,12 @@
                 left: 20px;
                 right: auto;
             }
+            
+            /* Admin Theme: Move to Right */
+            #chatbot-widget-container.admin-right {
+                left: auto !important;
+                right: 20px !important;
+            }
         }
         #chatbot-toggle-btn {
             background-color: ${PRIMARY_COLOR};
@@ -163,6 +169,14 @@
         } else {
             container.style.display = 'block';
         }
+
+        // Check theme for positioning
+        const theme = localStorage.getItem('app-theme');
+        if (theme === 'admin') {
+            container.classList.add('admin-right');
+        } else {
+            container.classList.remove('admin-right');
+        }
     }
 
     // Check on load
@@ -171,7 +185,7 @@
     // Listen for route changes (for SPA)
     window.addEventListener('popstate', updateWidgetVisibility);
 
-    // Also check periodically for hash-based routing
+    // Also check periodically for hash-based routing and theme changes
     setInterval(updateWidgetVisibility, 500);
 
     // Event Listeners
