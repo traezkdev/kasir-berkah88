@@ -3307,6 +3307,43 @@ app.post("/api/user/profile/avatar", authenticateToken, upload.single('avatar'),
     }
 });
 
+// Get User App Mode
+app.get("/api/user/app-mode", authenticateToken, async (req, res) => {
+    try {
+        const sql = 'SELECT app_mode FROM users WHERE id = ?';
+        const [rows] = await db.query(sql, [req.user.userId]);
+        if (rows.length > 0) {
+            res.json({ message: "success", data: { app_mode: rows[0].app_mode || 'full' } });
+        } else {
+            res.status(404).json({ error: "User not found" });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// Update User App Mode
+app.put("/api/user/app-mode", authenticateToken, async (req, res) => {
+    try {
+        const { app_mode } = req.body;
+
+        if (!app_mode || !['simple', 'full'].includes(app_mode)) {
+            return res.status(400).json({ error: "Invalid app_mode. Must be 'simple' or 'full'" });
+        }
+
+        const sql = 'UPDATE users SET app_mode = ? WHERE id = ?';
+        const [result] = await db.query(sql, [app_mode, req.user.userId]);
+
+        if (result.affectedRows > 0) {
+            res.json({ message: "App mode updated successfully", data: { app_mode } });
+        } else {
+            res.status(404).json({ error: "User not found or app mode not changed" });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
 // Logout (client-side token removal is primary, this is for completeness)
 app.post("/api/logout", authenticateToken, (req, res) => {
     // On the server-side, if using JWTs, there's no session to destroy.

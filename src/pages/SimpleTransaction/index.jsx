@@ -464,9 +464,10 @@ export default function SimpleTransaction() { // Renamed component
             >
               Abaikan Stok: {ignoreStock ? "Ya" : "Tidak"}
             </Button>
-          </div>          {isLoading && <p>Memuat menu...</p>}
+          </div>
+          {isLoading && <p>Memuat menu...</p>}
           {error && <p className="text-red-500">Error: {error}</p>}
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3 sm:gap-4">
             {filteredMenuItems.map((item) => {
               const itemInCart = cart.find(cartItem => cartItem.id === item.id);
               const currentAvailableStock = item.stock - (itemInCart ? itemInCart.quantity : 0);
@@ -475,35 +476,53 @@ export default function SimpleTransaction() { // Renamed component
               return (
                 <div
                   key={item.id}
-                  className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 transition-shadow duration-200 relative
-                                      ${isOutOfStock && !ignoreStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'}
-                                      ${isInCart ? 'border-2 border-green-500' : ''}`
+                  className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 transition-all duration-200 relative flex flex-col h-full
+                                      ${isOutOfStock && !ignoreStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-md hover:-translate-y-0.5'}
+                                      ${isInCart ? 'ring-2 ring-primary ring-inset' : 'border border-transparent'}`
                   } onClick={() => (currentAvailableStock > 0 || ignoreStock) && handleItemClick(item)}
                 >
                   {isOutOfStock && (
-                    <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">Stok Habis</div>
+                    <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-md z-10 shadow-sm">STOK HABIS</div>
                   )}
                   {!isOutOfStock && currentAvailableStock > 0 && (
-                    <div className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">Tersedia</div>
+                    <div className="absolute top-2 right-2 bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-md z-10 shadow-sm">TERSEDIA</div>
                   )}
-                  <img
-                    src={item.image_url ? `${apiUrl}${item.image_url}` : '/assets/images/no_image.png'}
-                    alt={item.name}
-                    className="w-full h-32 object-cover rounded-md mb-2"
-                  />
-                  {item.discount > 0 && (
-                    <div className="relative block left-[-0.5rem] mt-[-1.5rem] bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10 w-fit">Diskon {item.discount * 100}%</div>
-                  )}
-                  <h3 className="font-semibold text-lg flex justify-between items-center">
-                    <span className="truncate">{item.name}</span>
-                    {isInCart && (
-                      <span className="ml-2 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full flex-shrink-0">
-                        {itemInCart.quantity}
-                      </span>
+
+                  <div className="relative aspect-square overflow-hidden rounded-lg mb-3 bg-gray-100 dark:bg-gray-700">
+                    <img
+                      src={item.image_url ? `${apiUrl}${item.image_url}` : '/assets/images/no_image.png'}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                    />
+                    {item.discount > 0 && (
+                      <div className="absolute bottom-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm">
+                        -{item.discount * 100}%
+                      </div>
                     )}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400">Rp{item.price.toLocaleString('id-ID')}</p>
-                  <p className="text-sm text-gray-500">Stok: {item.stock}</p>
+                  </div>
+
+                  <div className="flex flex-col flex-1">
+                    <h3 className="font-bold text-base text-text-primary leading-tight mb-1 line-clamp-2">
+                      {item.name}
+                    </h3>
+
+                    <div className="mt-auto">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-bold text-primary truncate">
+                          Rp{parseFloat(item.price).toLocaleString('id-ID')}
+                        </p>
+                        {isInCart && (
+                          <span className="bg-primary/10 text-primary text-xs font-bold px-2 py-1 rounded-md">
+                            {itemInCart.quantity}x
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-text-secondary mt-1 flex items-center gap-1">
+                        <span className={`w-1.5 h-1.5 rounded-full ${item.stock > 5 ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                        Stok: {item.stock}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               );
             })}
@@ -511,7 +530,7 @@ export default function SimpleTransaction() { // Renamed component
         </div>
 
         {/* Transaction Cart Section */}
-        <div className={`fixed inset-0 z-50 bg-gray-50 dark:bg-gray-800 flex-col ${showMobileCart ? 'flex' : 'hidden'} md:relative md:flex ${theme === 'admin' ? 'md:w-[450px] lg:w-[500px] border-l dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xl' : 'md:w-1/2 lg:w-1/3 p-4'} h-full transition-all duration-300`}>
+        <div className={`fixed inset-0 z-50 bg-gray-50 dark:bg-gray-800 flex-col ${showMobileCart ? 'flex' : 'hidden'} md:relative md:flex ${theme === 'admin' ? 'md:w-[350px] lg:w-[380px] border-l dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xl' : 'md:w-1/2 lg:w-1/3 p-4'} h-full transition-all duration-300`}>
           <div className={`flex justify-between items-center mb-4 ${theme === 'admin' ? 'p-6 pb-0' : ''}`}>
             <h2 className="text-xl font-bold flex items-center"><FiShoppingCart className="mr-2" />Keranjang</h2>
             <div className="flex items-center space-x-2"> {/* New wrapper div */}
@@ -664,43 +683,47 @@ export default function SimpleTransaction() { // Renamed component
         </div>
       </div>
 
-      {showLogoutConfirm && (
-        <ConfirmationModal
-          isOpen={showLogoutConfirm}
-          onClose={() => setShowLogoutConfirm(false)}
-          onConfirm={handleLogout}
-          title="Konfirmasi Logout"
-          message="Apakah Anda yakin ingin keluar dari akun ini?"
-          confirmText="Logout"
-          cancelText="Batal"
-        />
-      )}
-      {cart.length > 0 && !showMobileCart && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-1000 bg-card border-t border-border shadow-[0_-2px_10px_rgba(0,0,0,0.1)] p-3">
-          <div className="flex justify-between items-center max-w-7xl mx-auto">
-            <div className="flex items-center space-x-2">
-              <Button onClick={handleResetKeranjang} className="text-destructive rounded-full">
-                <FiTrash2 className="text-white" />
-              </Button>
-              <div>
-                <p className="font-bold text-sm">{cart.length} item</p>
-                <p className="text-lg font-bold text-primary">
-                  Rp{totalAmount.toLocaleString('id-ID')}
-                </p>
+      {
+        showLogoutConfirm && (
+          <ConfirmationModal
+            isOpen={showLogoutConfirm}
+            onClose={() => setShowLogoutConfirm(false)}
+            onConfirm={handleLogout}
+            title="Konfirmasi Logout"
+            message="Apakah Anda yakin ingin keluar dari akun ini?"
+            confirmText="Logout"
+            cancelText="Batal"
+          />
+        )
+      }
+      {
+        cart.length > 0 && !showMobileCart && (
+          <div className="md:hidden fixed bottom-0 left-0 right-0 z-1000 bg-card border-t border-border shadow-[0_-2px_10px_rgba(0,0,0,0.1)] p-3">
+            <div className="flex justify-between items-center max-w-7xl mx-auto">
+              <div className="flex items-center space-x-2">
+                <Button onClick={handleResetKeranjang} className="text-destructive rounded-full">
+                  <FiTrash2 className="text-white" />
+                </Button>
+                <div>
+                  <p className="font-bold text-sm">{cart.length} item</p>
+                  <p className="text-lg font-bold text-primary">
+                    Rp{totalAmount.toLocaleString('id-ID')}
+                  </p>
+                </div>
               </div>
-            </div>
-            <Button onClick={() => setShowMobileCart(true)} className="bg-success text-success-foreground hover:bg-success/90">
-              <FiShoppingCart className="mr-2 text-white" />
-              Proses Transaksi
-            </Button>          </div>
-        </div>
-      )}
+              <Button onClick={() => setShowMobileCart(true)} className="bg-success text-success-foreground hover:bg-success/90">
+                <FiShoppingCart className="mr-2 text-white" />
+                Proses Transaksi
+              </Button>          </div>
+          </div>
+        )
+      }
       <OptionSelectionModal
         isOpen={isOptionsModalOpen}
         onClose={() => setIsOptionsModalOpen(false)}
         item={selectedItemForOptions}
         onAddToCartWithOptions={addItemToCart}
       />
-    </div>
+    </div >
   );
 }

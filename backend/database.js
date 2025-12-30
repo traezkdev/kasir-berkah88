@@ -706,6 +706,20 @@ const setupDatabase = async () => {
       console.log('Added avatar_url column to users table.');
     }
 
+    // Check and add app_mode column to users if it doesn't exist
+    const checkAppModeColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'app_mode';
+    `;
+    const addAppModeColumn = `
+      ALTER TABLE users ADD COLUMN app_mode ENUM('simple', 'full') DEFAULT 'full';
+    `;
+    const [appModeRows] = await connection.query(checkAppModeColumn);
+    if (appModeRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addAppModeColumn);
+      console.log('Added app_mode column to users table.');
+    }
+
     const addUpdatedAtToMenuItems = `
       ALTER TABLE menu_items ADD COLUMN updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
     `;

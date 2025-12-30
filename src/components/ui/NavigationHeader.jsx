@@ -4,12 +4,14 @@ import { Capacitor } from '@capacitor/core';
 import Icon from '../AppIcon';
 import Button from './Button';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAppSettings } from '../../contexts/AppSettingsContext';
 import DarkModeToggle from './DarkModeToggle';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = "Kasir Berkah 88", rightContent }) => {
   const { setTheme } = useTheme();
+  const { appMode } = useAppSettings();
   const isNativePlatform = Capacitor.isNativePlatform();
   const navigate = useNavigate(); // Declare navigate here
 
@@ -65,7 +67,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
   const allNavigationItems = [
     { label: 'Dashboard', path: '/main-dashboard', icon: 'LayoutDashboard', roles: ['admin', 'user'] },
     { label: 'Dashboard Kasir', path: '/cashier-dashboard', icon: 'ScanBarcode', roles: ['kasir'] },
-    { label: 'Penjualan', path: '/transaksi', icon: 'ShoppingCart', roles: ['admin', 'user', 'kasir'] },
+    { label: 'Penjualan', path: appMode === 'simple' ? '/transaksi-sederhana' : '/transaksi', icon: 'ShoppingCart', roles: ['admin', 'user', 'kasir'] },
     { label: 'Menu', path: '/menu-management', icon: 'UtensilsCrossed', roles: ['admin', 'user'] },
     { label: 'Pengeluaran', path: '/expense-tracking', icon: 'Receipt', roles: ['admin', 'user'] },
     { label: 'Transaksi', path: '/transaction-history', icon: 'ListOrdered', roles: ['admin', 'user', 'kasir'] },
@@ -85,6 +87,14 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
       return false;
     }
 
+    // Filter based on appMode
+    if (appMode === 'simple') {
+      const simpleMenuItems = ['Dashboard', 'Penjualan', 'Menu', 'Pengeluaran', 'Transaksi', 'Profil', 'Pengaturan'];
+      if (!simpleMenuItems.includes(item.label)) {
+        return false;
+      }
+    }
+
     // Hide cashiers dashboard from non-cashiers
     if (item.path === '/cashier-dashboard' && userRole !== 'kasir') {
       return false;
@@ -101,7 +111,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
     if (path === '/main-dashboard') {
       return location?.pathname === '/' || location?.pathname === '/main-dashboard';
     }
-    return location?.pathname?.startsWith(path === '/business-reports' ? '/laporan' : path);
+    return location?.pathname?.startsWith(path === '/business-reports' ? '/laporan' : (path === '/transaksi-sederhana' ? '/transaksi-sederhana' : path));
   };
 
   const toggleMobileMenu = () => {
