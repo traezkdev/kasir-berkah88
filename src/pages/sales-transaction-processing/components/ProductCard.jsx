@@ -9,7 +9,7 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl, i
   // Calculate the total quantity of this item across all its variations in the cart
   const itemsInCart = cart.filter(cartItem => cartItem.id === item.id);
   const quantityInCart = itemsInCart.reduce((sum, cartItem) => sum + cartItem.quantity, 0);
-  
+
   const canIncrement = item.stock > quantityInCart;
   const isOutOfStock = item.stock === 0;
 
@@ -19,7 +19,7 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl, i
 
   return (
     <div className={cn(
-      "bg-card rounded-lg shadow-md overflow-hidden transform transition-transform duration-200 hover:scale-105" // Always allow hover/interaction
+      "bg-card rounded-lg shadow-md overflow-hidden border border-transparent dark:border-gray-700 transform transition-transform duration-200 hover:scale-105" // Always allow hover/interaction
     )}>
       <div className="relative">
         <AppImage
@@ -55,13 +55,13 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl, i
           )}
         </div>
         <p className="text-xs text-text-secondary mt-1">Stok: {item.stock}</p>
-        
+
         <div className="mt-4">
           {isOutOfStock ? ( // If out of stock
             ignoreStock ? ( // If ignoring stock
-              <Button 
-                size="sm" 
-                className="w-full" 
+              <Button
+                size="sm"
+                className="w-full"
                 onClick={() => onIncrement(item)}
                 disabled={userRole === 'guest'} // Only disabled by role, not stock
               >
@@ -91,9 +91,9 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl, i
               </Button>
             </div>
           ) : ( // In stock, not in cart yet
-            <Button 
-              size="sm" 
-              className="w-full" 
+            <Button
+              size="sm"
+              className="w-full"
               onClick={() => onIncrement(item)}
               disabled={userRole === 'guest'} // Stock is > 0, so only disabled by role
             >

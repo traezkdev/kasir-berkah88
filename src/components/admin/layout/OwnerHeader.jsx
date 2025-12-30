@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom'; // Import useNavigate
-import { FaUserCircle, FaBars, FaDesktop, FaSignOutAlt, FaBell } from 'react-icons/fa'; // Import FaSignOutAlt and FaBell
+import { FaBars, FaDesktop, FaSignOutAlt, FaBell } from 'react-icons/fa'; // Import FaSignOutAlt and FaBell
 import authFetch from '../../../utils/authFetch';
 import DarkModeToggle from '../../ui/DarkModeToggle';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -80,13 +80,7 @@ const OwnerHeader = ({ toggleSidebar }) => {
           )}
         </Link>
 
-        <Link to="/profile" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
-          {user.avatar_url ? (
-            <img src={avatarSrc} alt="Profile" className="h-6 w-6 rounded-full object-cover" />
-          ) : (
-            <FaUserCircle className="h-6 w-6 text-gray-600 dark:text-gray-300" />
-          )}
-        </Link>
+
         <button onClick={handleLogout} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 ml-2">
           <FaSignOutAlt className="h-6 w-6 text-gray-600 dark:text-gray-300" />
         </button>

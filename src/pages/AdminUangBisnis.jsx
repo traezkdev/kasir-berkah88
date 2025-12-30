@@ -174,7 +174,7 @@ const AdminUangBisnis = ({ headerTitle }) => { // Changed component name
         setIsDeleteConfirmOpen(true);
     };
 
-    const handleSaveEditedDescription = async (id, newDescription, newAmount) => {
+    const handleSaveEditedDescription = async (id, newDescription, newAmount, newDate) => {
         try {
             const response = await authFetch(`${apiUrl}/api/accounts/transactions/${id}`, {
                 method: 'PUT',
@@ -183,7 +183,8 @@ const AdminUangBisnis = ({ headerTitle }) => { // Changed component name
                 },
                 body: JSON.stringify({
                     description: newDescription,
-                    amount: newAmount
+                    amount: newAmount,
+                    date: newDate
                 }),
             });
             if (!response.ok) {

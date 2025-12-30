@@ -1,8 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  FaTachometerAlt, FaUser, FaSignOutAlt, FaAngleDoubleLeft, FaAngleDoubleRight
+  FaTachometerAlt, FaUser, FaSignOutAlt, FaAngleDoubleLeft, FaAngleDoubleRight,
+  FaWallet, FaChartBar, FaBoxOpen, FaExclamationTriangle, FaUserCircle
 } from 'react-icons/fa';
+import authFetch from '../../../utils/authFetch';
+
+const apiUrl = import.meta.env.VITE_API_URL;
 
 // Component untuk menu item dengan tooltip - Dipindah ke luar agar tidak re-mount setiap render
 const MenuItem = ({ to, icon: Icon, children, onClick, isCollapsed, handleMouseEnter, handleMouseLeave, navLinkClasses, activeLinkClasses }) => (
@@ -20,6 +24,7 @@ const MenuItem = ({ to, icon: Icon, children, onClick, isCollapsed, handleMouseE
 
 const OwnerSidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
   const navigate = useNavigate();
+  const [lowStockCount, setLowStockCount] = useState(0);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const savedState = localStorage.getItem('sidebar_collapsed');
     return savedState === 'true';
@@ -30,6 +35,24 @@ const OwnerSidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
     localStorage.setItem('sidebar_collapsed', isCollapsed);
   }, [isCollapsed]);
 
+  useEffect(() => {
+    const fetchLowStockCount = async () => {
+      try {
+        const response = await authFetch(`${apiUrl}/api/stock-alerts/count`);
+        const data = await response.json();
+        if (response.ok && data.data) {
+          setLowStockCount(data.data.low_stock_count);
+        }
+      } catch (error) {
+        console.error("Error fetching low stock count in OwnerSidebar:", error);
+      }
+    };
+
+    fetchLowStockCount();
+    const interval = setInterval(fetchLowStockCount, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Ref untuk tooltip (No Re-render)
   const tooltipRef = useRef(null);
   const tooltipTextRef = useRef(null);
@@ -38,8 +61,9 @@ const OwnerSidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
     setIsCollapsed(!isCollapsed);
   };
 
-  const navLinkClasses = `flex items-center ${isCollapsed ? 'justify-center py-3' : 'px-6 py-3'} w-full text-sm font-medium text-gray-300 transition-all duration-200 hover:bg-gray-700 hover:text-white group relative z-10 ${isCollapsed ? '' : 'border-l-4 border-transparent hover:border-gray-500'}`;
-  const activeLinkClasses = `bg-gray-700 text-white active-item ${isCollapsed ? '' : 'border-l-4 border-white'}`;
+  const navLinkClasses = `flex items-center ${isCollapsed ? 'justify-center py-3' : 'px-6 py-3'} w-full text-sm font-medium text-gray-500 dark:text-gray-400 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary dark:hover:text-primary group relative z-10 ${isCollapsed ? '' : 'border-l-4 border-transparent hover:border-primary'}`;
+  const activeLinkClasses = `bg-gray-100 dark:bg-gray-700 text-primary active-item ${isCollapsed ? '' : 'border-l-4 border-primary'}`;
+  const groupTitleClasses = "px-6 pt-4 pb-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider select-none";
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -75,19 +99,22 @@ const OwnerSidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
   return (
     <>
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-30 ${isCollapsed ? 'w-20' : 'w-64'} bg-gray-800 text-white transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out lg:relative lg:translate-x-0 flex flex-col h-screen sidebar-root`}>
-        <div className={`flex-shrink-0 flex items-center ${isCollapsed ? 'justify-center mx-2' : 'justify-between px-4'} h-20 border-b border-gray-700`}>
-          {!isCollapsed && <h1 className="text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">{headerTitle}</h1>}
-          {isCollapsed && <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0"><span className="text-white font-bold text-xl">O</span></div>}
+      <div className={`fixed inset-y-0 left-0 z-30 ${isCollapsed ? 'w-20' : 'w-64'} bg-white dark:bg-[#111827] text-gray-800 dark:text-gray-200 border-r border-gray-200 dark:border-gray-800 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out lg:relative lg:translate-x-0 flex flex-col h-screen sidebar-root shadow-sm`}>
+        <div className={`flex-shrink-0 flex items-center ${isCollapsed ? 'justify-center mx-2' : 'justify-between px-4'} h-20 border-b border-gray-100 dark:border-white/10 dark:bg-[#1F2937]`}>
+          {!isCollapsed && <h1 className="text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis text-primary">{headerTitle}</h1>}
+          {isCollapsed && <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0"><span className="text-primary font-bold text-xl">O</span></div>}
           <button
             onClick={toggleCollapse}
-            className={`hidden lg:flex p-2 rounded-lg hover:bg-gray-700 text-gray-300 transition-colors ${isCollapsed ? 'absolute -right-3 top-7 bg-gray-800 border border-gray-600 shadow-sm z-50 rounded-full w-6 h-6 items-center justify-center p-0' : 'ml-2'}`}
+            className={`hidden lg:flex p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors ${isCollapsed ? 'absolute -right-3 top-7 bg-white dark:bg-[#1F2937] border border-gray-200 dark:border-gray-700 shadow-sm z-50 rounded-full w-6 h-6 items-center justify-center p-0' : 'ml-2'}`}
             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
             {isCollapsed ? <FaAngleDoubleRight className="text-xs" /> : <FaAngleDoubleLeft className="text-lg" />}
           </button>
         </div>
-        <nav className="flex-1 px-2 py-4 space-y-2 overflow-y-auto overflow-x-hidden custom-scrollbar">
+        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
+          {/* Utama */}
+          {!isCollapsed && <div className={groupTitleClasses}>Utama</div>}
+          {isCollapsed && <div className="h-px bg-gray-100 dark:bg-gray-800 mx-4 my-2"></div>}
           <MenuItem
             to="/owner-dashboard"
             icon={FaTachometerAlt}
@@ -98,11 +125,90 @@ const OwnerSidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
             navLinkClasses={navLinkClasses}
             activeLinkClasses={activeLinkClasses}
           >
-            Dashboard Owner
+            Dashboard
+          </MenuItem>
+
+          {/* Bisnis */}
+          {!isCollapsed && <div className={groupTitleClasses}>Bisnis</div>}
+          {isCollapsed && <div className="h-px bg-gray-100 dark:bg-gray-800 mx-4 my-2"></div>}
+          <MenuItem
+            to="/uang-bisnis"
+            icon={FaWallet}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
+            Uang Bisnis
           </MenuItem>
           <MenuItem
-            to="/profile"
-            icon={FaUser}
+            to="/owner/business-reports"
+            icon={FaChartBar}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
+            Laporan Bisnis
+          </MenuItem>
+          <MenuItem
+            to="/laporan-lengkap"
+            icon={FaWallet} /* Using Wallet as placeholder or generic report icon */
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
+            Laporan Lengkap
+          </MenuItem>
+
+          {/* Stok */}
+          {!isCollapsed && <div className={groupTitleClasses}>Stok Bahan</div>}
+          {isCollapsed && <div className="h-px bg-gray-100 dark:bg-gray-800 mx-4 my-2"></div>}
+          <MenuItem
+            to="/owner-raw-material-stock"
+            icon={FaBoxOpen}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
+            Stok Mentah
+          </MenuItem>
+          <div className="relative">
+            <MenuItem
+              to="/critical-stock"
+              icon={FaExclamationTriangle}
+              onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+              isCollapsed={isCollapsed}
+              handleMouseEnter={handleMouseEnter}
+              handleMouseLeave={handleMouseLeave}
+              navLinkClasses={navLinkClasses}
+              activeLinkClasses={activeLinkClasses}
+            >
+              Stok Kritis
+            </MenuItem>
+            {lowStockCount > 0 && (
+              <span className={`absolute ${isCollapsed ? 'top-2 right-4' : 'top-3 right-6'} h-5 w-5 rounded-full bg-red-600 text-white text-[10px] flex items-center justify-center font-bold ring-2 ring-white dark:ring-gray-900`}>
+                {lowStockCount}
+              </span>
+            )}
+          </div>
+
+          {/* Akun */}
+          {!isCollapsed && <div className={groupTitleClasses}>Akun</div>}
+          {isCollapsed && <div className="h-px bg-gray-100 dark:bg-gray-800 mx-4 my-2"></div>}
+          <MenuItem
+            to="/owner-profile"
+            icon={FaUserCircle}
             onClick={() => window.innerWidth < 1024 && toggleSidebar()}
             isCollapsed={isCollapsed}
             handleMouseEnter={handleMouseEnter}
@@ -113,7 +219,7 @@ const OwnerSidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
             Profil
           </MenuItem>
         </nav>
-        <div className="px-2 py-4 border-t border-gray-700">
+        <div className="px-2 py-4 border-t border-gray-100 dark:border-gray-800">
           <button
             onClick={handleLogout}
             className={`${navLinkClasses} w-full relative group`}

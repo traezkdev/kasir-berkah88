@@ -5,7 +5,10 @@ import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import { FaSync, FaExclamationTriangle, FaArrowLeft } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
+import { useTheme } from '../../contexts/ThemeContext';
+
 const CriticalStockPage = () => {
+  const { theme } = useTheme();
   const [lowStockItems, setLowStockItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -37,10 +40,10 @@ const CriticalStockPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      <OwnerNavigationHeader headerTitle="Stok Kritis" />
-      <main className="pb-20 lg:pb-8 pt-16">
-        <div className="max-w-7xl mx-auto px-4 lg:px-6">
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
+      {theme === 'default' && <OwnerNavigationHeader headerTitle="Stok Kritis" />}
+      <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'pt-16' : ''}`}>
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
           <div className="mb-6 mt-4">
             <BreadcrumbNavigation className="mb-4" />
             <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">

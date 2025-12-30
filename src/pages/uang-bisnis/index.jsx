@@ -159,7 +159,7 @@ const UangBisnis = ({ headerTitle }) => {
         setIsDeleteConfirmOpen(true);
     };
 
-    const handleSaveEditedDescription = async (id, newDescription, newAmount) => {
+    const handleSaveEditedDescription = async (id, newDescription, newAmount, newDate) => {
         try {
             const response = await authFetch(`${apiUrl}/api/accounts/transactions/${id}`, {
                 method: 'PUT',
@@ -168,7 +168,8 @@ const UangBisnis = ({ headerTitle }) => {
                 },
                 body: JSON.stringify({
                     description: newDescription,
-                    amount: newAmount
+                    amount: newAmount,
+                    date: newDate
                 }),
             });
             if (!response.ok) {
@@ -247,9 +248,9 @@ const UangBisnis = ({ headerTitle }) => {
 
     return (
         <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
-            <OwnerNavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || 'Uang Bisnis'} />
-            <main className={`pb-20 lg:pb-8 pt-16`}>
-                <div className="max-w-7xl mx-auto px-4 lg:px-6">
+            {theme === 'default' && <OwnerNavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || 'Uang Bisnis'} />}
+            <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'pt-16' : ''}`}>
+                <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
                     <div className="mb-6 mt-4">
                         <BreadcrumbNavigation paths={[{ name: 'Beranda Owner', path: '/owner-dashboard' }, { name: 'Uang Bisnis', path: '/uang-bisnis' }]} className="mb-4" />
                         <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">

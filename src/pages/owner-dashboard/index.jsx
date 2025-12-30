@@ -173,10 +173,10 @@ const OwnerDashboard = ({ headerTitle }) => {
         },
         {
             title: 'Modal Akhir Saat Ini',
-            value: formatCurrency(dashboardData.currentFinalCapital),
+            value: formatCurrency((parseFloat(dashboardData.ownerBalance) || 0) + (parseFloat(dashboardData.lapakBalance) || 0)),
             icon: 'TrendingUp',
             color: 'success',
-            description: 'Modal awal + pendapatan - pengeluaran'
+            description: 'saldo owner + saldo lapak'
         },
         {
             title: 'Modal Berjalan',
@@ -241,9 +241,9 @@ const OwnerDashboard = ({ headerTitle }) => {
 
     return (
         <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
-            <OwnerNavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || 'Dashboard Owner'} />
-            <main className={`pb-20 lg:pb-8 pt-16`}>
-                <div className="max-w-7xl mx-auto px-4 lg:px-6">
+            {theme === 'default' && <OwnerNavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || 'Dashboard Owner'} />}
+            <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'pt-16' : ''}`}>
+                <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
                     {/* Stock Alert Banner */}
                     <StockAlertBanner isOwner={true} />
 

@@ -15,10 +15,10 @@ import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 const formatCurrency = (amount) => {
   const safeAmount = isNaN(amount) || amount === null || amount === undefined ? 0 : amount;
   return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
   })?.format(safeAmount);
 };
 
@@ -117,13 +117,13 @@ const OwnerRawMaterialStockDashboard = () => {
 
 
   return (
-    <>
-      <OwnerNavigationHeader />
-      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 mt-16`}>
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
+      {theme === 'default' && <OwnerNavigationHeader />}
+      <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 mt-16" : "py-4 md:py-6"}>
         {/* Breadcrumb Navigation */}
         <BreadcrumbNavigation paths={[{ name: 'Beranda Owner', path: '/owner-dashboard' }, { name: 'Stok Bahan Mentah Owner', path: '/owner-raw-material-stock' }]} className="mb-4" />
-      <h1 className="text-2xl font-bold mb-4">Dashboard Stok Bahan Mentah Owner</h1>
-        
+        <h1 className="text-2xl font-bold mb-4">Dashboard Stok Bahan Mentah Owner</h1>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <MetricsCard
             title="Total Kuantitas Stok"
@@ -168,7 +168,7 @@ const OwnerRawMaterialStockDashboard = () => {
           >
             <FaExclamationTriangle className="mr-2" /> Lihat Stok Kritis
           </button>
-          
+
         </div>
 
         <div className="overflow-x-auto bg-card rounded-lg shadow p-4 hidden sm:block">
@@ -222,7 +222,7 @@ const OwnerRawMaterialStockDashboard = () => {
                     {toSafeNumber(material.current_stock) + toSafeNumber(material.menu_stock)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground cursor-pointer"
-                      onClick={() => handleEditClick(material)}
+                    onClick={() => handleEditClick(material)}
                   >
                     {material.unit}
                   </td>
@@ -270,71 +270,71 @@ const OwnerRawMaterialStockDashboard = () => {
           </table>
         </div>
 
-              <div className="block sm:hidden space-y-4 mt-4 pb-24">          {rawMaterials.map((material) => (
-            <div key={material.id} className="bg-card rounded-lg shadow p-4 border border-border">
-              <div className="flex justify-between items-center pb-2 mb-2 border-b border-border">
-                <p className="text-lg font-bold text-card-foreground">{material.name}</p>
-                <div className="flex-shrink-0">
-                  {Number(material.current_stock) < Number(material.stok_minimum) && (
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-destructive/10 text-destructive">
-                      Stok Menipis!
-                    </span>
-                  )}
-                  {Number(material.current_stock) >= Number(material.stok_minimum) && (
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-success/10 text-success">
-                        Cukup
-                      </span>
-                    )}
-                  </div>
-                </div>
-                              <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground pb-2 mb-2 border-b border-border">
-                                <div>
-                                  <p className="font-medium">Stok Mentah:</p>
-                                  <p>{(Number(material.current_stock) || 0)} {material.unit}</p>
-                                </div>
-                                <div>
-                                  <p className="font-medium">Stok Menu:</p>
-                                  <p>{(Number(material.menu_stock) || 0)} {material.unit}</p>
-                                </div>
-                                <div>
-                                  <p className="font-medium">Total Stok:</p>
-                                  <p>{(Number(material.current_stock) || 0) + (Number(material.menu_stock) || 0)} {material.unit}</p>
-                                </div>
-                                <div>
-                                  <p className="font-medium">Stok Min:</p>
-                                  <p onClick={() => handleEditClick(material)} className="cursor-pointer">{(Number(material.stok_minimum) || 0)} {material.unit}</p>
-                                </div>
-                              </div>
-
-                              {/* Block 2: Harga per Item only */}
-                              <div className="grid grid-cols-1 gap-2 text-sm text-muted-foreground pb-2 mb-2 border-b border-border">
-                                <div> {/* Harga per Item */}
-                                  <p className="font-medium">Harga per Item:</p>
-                                  <p>{(Number(material.price_per_item) || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
-                                </div>
-                              </div>
-                <div className="flex justify-end space-x-2">
-
-
-
-                  <button
-                    onClick={() => handleEditClick(material)}
-                    className="text-blue-600 hover:text-blue-900 p-2 rounded-full bg-primary/10"
-                    title="Edit Bahan"
-                  >
-                    <FaEdit />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteClick(material.id)}
-                    className="text-red-600 hover:text-red-900 p-2 rounded-full bg-destructive/10"
-                    title="Hapus Bahan"
-                  >
-                    <FaTrash />
-                  </button>
-                </div>
+        <div className="block sm:hidden space-y-4 mt-4 pb-24">          {rawMaterials.map((material) => (
+          <div key={material.id} className="bg-card rounded-lg shadow p-4 border border-border">
+            <div className="flex justify-between items-center pb-2 mb-2 border-b border-border">
+              <p className="text-lg font-bold text-card-foreground">{material.name}</p>
+              <div className="flex-shrink-0">
+                {Number(material.current_stock) < Number(material.stok_minimum) && (
+                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-destructive/10 text-destructive">
+                    Stok Menipis!
+                  </span>
+                )}
+                {Number(material.current_stock) >= Number(material.stok_minimum) && (
+                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-success/10 text-success">
+                    Cukup
+                  </span>
+                )}
               </div>
-            ))}
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground pb-2 mb-2 border-b border-border">
+              <div>
+                <p className="font-medium">Stok Mentah:</p>
+                <p>{(Number(material.current_stock) || 0)} {material.unit}</p>
+              </div>
+              <div>
+                <p className="font-medium">Stok Menu:</p>
+                <p>{(Number(material.menu_stock) || 0)} {material.unit}</p>
+              </div>
+              <div>
+                <p className="font-medium">Total Stok:</p>
+                <p>{(Number(material.current_stock) || 0) + (Number(material.menu_stock) || 0)} {material.unit}</p>
+              </div>
+              <div>
+                <p className="font-medium">Stok Min:</p>
+                <p onClick={() => handleEditClick(material)} className="cursor-pointer">{(Number(material.stok_minimum) || 0)} {material.unit}</p>
+              </div>
+            </div>
+
+            {/* Block 2: Harga per Item only */}
+            <div className="grid grid-cols-1 gap-2 text-sm text-muted-foreground pb-2 mb-2 border-b border-border">
+              <div> {/* Harga per Item */}
+                <p className="font-medium">Harga per Item:</p>
+                <p>{(Number(material.price_per_item) || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+              </div>
+            </div>
+            <div className="flex justify-end space-x-2">
+
+
+
+              <button
+                onClick={() => handleEditClick(material)}
+                className="text-blue-600 hover:text-blue-900 p-2 rounded-full bg-primary/10"
+                title="Edit Bahan"
+              >
+                <FaEdit />
+              </button>
+              <button
+                onClick={() => handleDeleteClick(material.id)}
+                className="text-red-600 hover:text-red-900 p-2 rounded-full bg-destructive/10"
+                title="Hapus Bahan"
+              >
+                <FaTrash />
+              </button>
+            </div>
           </div>
+        ))}
+        </div>
 
 
         {selectedMaterial && (
@@ -361,7 +361,7 @@ const OwnerRawMaterialStockDashboard = () => {
       </div>
       {message && <div className="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{message}</div>}
       {notificationError && <div className="fixed bottom-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{notificationError}</div>}
-    </>
+    </div>
   );
 };
 
