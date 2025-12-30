@@ -3,8 +3,16 @@ import Button from './Button';
 import Icon from '../AppIcon';
 
 const DepositModal = ({ isOpen, onClose, onSave, accountType }) => {
+    // Standardize date to YYYY-MM-DDTHH:mm for datetime-local input
+    const getNowFormatted = () => {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        return now.toISOString().slice(0, 16);
+    };
+
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
+    const [date, setDate] = useState(getNowFormatted());
     const [error, setError] = useState('');
 
     const handleSave = () => {
@@ -13,9 +21,10 @@ const DepositModal = ({ isOpen, onClose, onSave, accountType }) => {
             setError('Jumlah harus angka positif.');
             return;
         }
-        onSave(parsedAmount, description);
+        onSave(parsedAmount, description, date);
         setAmount('');
         setDescription('');
+        setDate(getNowFormatted());
         setError('');
     };
 
@@ -31,6 +40,17 @@ const DepositModal = ({ isOpen, onClose, onSave, accountType }) => {
                     </Button>
                 </div>
                 <div className="space-y-4">
+                    <div>
+                        <label htmlFor="date" className="block text-sm font-medium text-text-secondary mb-1">Tanggal & Waktu</label>
+                        <input
+                            type="datetime-local"
+                            id="date"
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            className="w-full p-2 border border-border rounded-md bg-background text-text-primary focus:ring-primary focus:border-primary"
+                            required
+                        />
+                    </div>
                     <div>
                         <label htmlFor="amount" className="block text-sm font-medium text-text-secondary mb-1">Jumlah</label>
                         <input

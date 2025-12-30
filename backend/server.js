@@ -1975,7 +1975,7 @@ app.get("/api/accounts/:accountName", authenticateToken, async (req, res) => {
 app.post("/api/accounts/deposit", authenticateToken, async (req, res) => {
     let connection;
     try {
-        const { account_name, amount, description } = req.body;
+        const { account_name, amount, description, created_at } = req.body;
         const created_by_user_id = req.user.userId;
 
         if (!account_name || !amount || amount <= 0) {
@@ -2008,8 +2008,8 @@ app.post("/api/accounts/deposit", authenticateToken, async (req, res) => {
 
         // Record transaction
         await connection.query(
-            'INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id) VALUES (?, ?, ?, ?, ?)',
-            [account.id, 'deposit', amount, description, created_by_user_id]
+            'INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+            [account.id, 'deposit', amount, description, created_by_user_id, created_at || new Date()]
         );
 
         await connection.commit();
@@ -2034,7 +2034,7 @@ app.post("/api/accounts/deposit", authenticateToken, async (req, res) => {
 app.post("/api/accounts/expense", authenticateToken, async (req, res) => {
     let connection;
     try {
-        const { account_name, amount, description } = req.body;
+        const { account_name, amount, description, created_at } = req.body;
         const created_by_user_id = req.user.userId;
 
         if (!account_name || !amount || amount <= 0) {
@@ -2073,8 +2073,8 @@ app.post("/api/accounts/expense", authenticateToken, async (req, res) => {
 
         // Record transaction
         await connection.query(
-            'INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id) VALUES (?, ?, ?, ?, ?)',
-            [account.id, 'expense', amount, description, created_by_user_id]
+            'INSERT INTO account_transactions (account_id, type, amount, description, created_by_user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+            [account.id, 'expense', amount, description, created_by_user_id, created_at || new Date()]
         );
 
         await connection.commit();
