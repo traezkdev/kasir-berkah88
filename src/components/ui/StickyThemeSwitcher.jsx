@@ -37,15 +37,11 @@ const StickyThemeSwitcher = () => {
     '/owner-profile'
   ];
 
-  // Hide the switcher if the current path is an owner-related path, if the theme is 'admin', or if the user is
-  //      an owner
-  if (ownerPaths.includes(location.pathname) || theme === 'admin' || userRole === 'owner') { // Changed theme !== 'default' to theme === 'admin'
-
-
-
-
+  // Show the switcher only for owner and admin roles when in default theme
+  // Hide if already in admin theme or if role is not authorized
+  if (theme === 'admin' || !['owner', 'admin'].includes(userRole)) {
     return null;
-  } // MISSING CLOSING BRACE WAS HERE
+  }
 
   return (
     <button

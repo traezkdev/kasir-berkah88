@@ -120,199 +120,199 @@ const OwnerRawMaterialStockHistory = () => { // Component name changed
   }
 
   return (
-    <>
-      <OwnerNavigationHeader /> {/* Replaced NavigationHeader and removed theme conditional */}
-      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 mt-16`}> {/* Removed theme conditional */}
-      <h1 className="text-2xl font-bold mb-4">Riwayat Stok Bahan Mentah Owner</h1> {/* Title changed */}
-      
-      {/* Tombol Kembali */}
-      <button
-        onClick={() => navigate('/owner-raw-material-stock')} // Link changed
-        className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center mb-4"
-      >
-        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-        Kembali ke Dashboard Stok Owner {/* Text changed */}
-      </button>
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
+      {theme === 'default' && <OwnerNavigationHeader />} {/* Replaced NavigationHeader and removed theme conditional */}
+      <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 mt-16" : "py-4 md:py-6"}> {/* Removed theme conditional */}
+        <h1 className="text-2xl font-bold mb-4">Riwayat Stok Bahan Mentah Owner</h1> {/* Title changed */}
 
-      {/* Filter Section */}
-      <form onSubmit={handleFilterSubmit} className="bg-white p-4 rounded-lg shadow-md mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div>
-          <label htmlFor="materialFilter" className="block text-sm font-medium text-gray-700">Bahan Mentah:</label>
-          <select
-            id="materialFilter"
-            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-            value={filterMaterialId}
-            onChange={(e) => setFilterMaterialId(e.target.value)}
-          >
-            <option value="">Semua Bahan</option>
-            {rawMaterials.map(material => (
-              <option key={material.id} value={material.id}>{material.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="typeFilter" className="block text-sm font-medium text-gray-700">Jenis Transaksi:</label>
-          <select
-            id="typeFilter"
-            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-          >
-            <option value="">Semua Jenis</option>
-            <option value="in">Stok Masuk</option>
-            <option value="out">Stok Keluar</option>
-          </select>
-        </div>
-        <div>
-          <label htmlFor="startDateFilter" className="block text-sm font-medium text-gray-700">Dari Tanggal:</label>
-          <input
-            type="date"
-            id="startDateFilter"
-            className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-            value={filterStartDate}
-            onChange={(e) => setFilterStartDate(e.target.value)}
-          />
-        </div>
-        <div>
-          <label htmlFor="endDateFilter" className="block text-sm font-medium text-gray-700">Sampai Tanggal:</label>
-          <input
-            type="date"
-            id="endDateFilter"
-            className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-            value={filterEndDate}
-            onChange={(e) => setFilterEndDate(e.target.value)}
-          />
-        </div>
-        <div className="md:col-span-2 lg:col-span-4 flex justify-end space-x-2 mt-4">
-          <button
-            type="button"
-            onClick={handleResetFilters}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            <FaSyncAlt className="mr-2" /> Reset Filter
-          </button>
-          <button
-            type="submit"
-            className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            <FaFilter className="mr-2" /> Terapkan Filter
-          </button>
-        </div>
-      </form>
+        {/* Tombol Kembali */}
+        <button
+          onClick={() => navigate('/owner-raw-material-stock')} // Link changed
+          className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center mb-4"
+        >
+          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+          Kembali ke Dashboard Stok Owner {/* Text changed */}
+        </button>
 
-      {/* Table View for Larger Screens */}
-      <div className="overflow-x-auto bg-white rounded-lg shadow p-4 lg:pb-0 pb-24 hidden sm:block">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tanggal Transaksi
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Nama Bahan
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Jenis
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Jumlah
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Satuan
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Keterangan
-              </th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Aksi
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {history.length > 0 ? (
-              history.map((record) => (
-                <tr key={record.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {moment(record.transaction_date).format('DD MMMM YYYY, HH:mm')}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {record.material_name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${record.type === 'in' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                      {record.type === 'in' ? 'Masuk' : 'Keluar'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {parseInt(record.quantity)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {record.material_unit}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {record.notes}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => handleDeleteHistoryEntry(record.id)}
-                      className="text-red-600 hover:text-red-900"
-                      title="Hapus Riwayat"
-                    >
-                      <FaTrash />
-                    </button>
+        {/* Filter Section */}
+        <form onSubmit={handleFilterSubmit} className="bg-white p-4 rounded-lg shadow-md mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label htmlFor="materialFilter" className="block text-sm font-medium text-gray-700">Bahan Mentah:</label>
+            <select
+              id="materialFilter"
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              value={filterMaterialId}
+              onChange={(e) => setFilterMaterialId(e.target.value)}
+            >
+              <option value="">Semua Bahan</option>
+              {rawMaterials.map(material => (
+                <option key={material.id} value={material.id}>{material.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="typeFilter" className="block text-sm font-medium text-gray-700">Jenis Transaksi:</label>
+            <select
+              id="typeFilter"
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+            >
+              <option value="">Semua Jenis</option>
+              <option value="in">Stok Masuk</option>
+              <option value="out">Stok Keluar</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="startDateFilter" className="block text-sm font-medium text-gray-700">Dari Tanggal:</label>
+            <input
+              type="date"
+              id="startDateFilter"
+              className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+              value={filterStartDate}
+              onChange={(e) => setFilterStartDate(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="endDateFilter" className="block text-sm font-medium text-gray-700">Sampai Tanggal:</label>
+            <input
+              type="date"
+              id="endDateFilter"
+              className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+              value={filterEndDate}
+              onChange={(e) => setFilterEndDate(e.target.value)}
+            />
+          </div>
+          <div className="md:col-span-2 lg:col-span-4 flex justify-end space-x-2 mt-4">
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <FaSyncAlt className="mr-2" /> Reset Filter
+            </button>
+            <button
+              type="submit"
+              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <FaFilter className="mr-2" /> Terapkan Filter
+            </button>
+          </div>
+        </form>
+
+        {/* Table View for Larger Screens */}
+        <div className="overflow-x-auto bg-white rounded-lg shadow p-4 lg:pb-0 pb-24 hidden sm:block">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Tanggal Transaksi
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Nama Bahan
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Jenis
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Jumlah
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Satuan
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Keterangan
+                </th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Aksi
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {history.length > 0 ? (
+                history.map((record) => (
+                  <tr key={record.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {moment(record.transaction_date).format('DD MMMM YYYY, HH:mm')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {record.material_name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${record.type === 'in' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {record.type === 'in' ? 'Masuk' : 'Keluar'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {parseInt(record.quantity)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {record.material_unit}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {record.notes}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={() => handleDeleteHistoryEntry(record.id)}
+                        className="text-red-600 hover:text-red-900"
+                        title="Hapus Riwayat"
+                      >
+                        <FaTrash />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                    Tidak ada riwayat stok yang ditemukan.
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="6" className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                  Tidak ada riwayat stok yang ditemukan.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Card View for Mobile */}
-      <div className="block sm:hidden space-y-4 mt-4 lg:pb-0 pb-24">
-        {history.length > 0 ? (
-          history.map((record) => (
-            <div key={record.id} className="bg-white rounded-lg shadow-md p-4 border border-gray-200 mb-4 w-full">
-              <p className="text-sm text-gray-500 mb-1">
-                <span className="font-medium">Tanggal:</span> {moment(record.transaction_date).format('DD MMMM YYYY, HH:mm')}
-              </p>
-              <p className="text-lg font-bold text-gray-900 mb-1">{record.material_name}</p>
-              <div className="flex items-center mb-2">
-                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${record.type === 'in' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} mr-2`}>
-                  {record.type === 'in' ? 'Masuk' : 'Keluar'}
-                </span>
-                <p className="text-sm text-gray-700">
-                  <span className="font-medium">Jumlah:</span> {parseInt(record.quantity)} {record.material_unit}
-                </p>
-              </div>
-              {record.notes && (
-                <p className="text-sm text-gray-700">
-                  <span className="font-medium">Keterangan:</span> {record.notes}
-                </p>
               )}
-              <div className="flex justify-end mt-2">
-                <button
-                  onClick={() => handleDeleteHistoryEntry(record.id)}
-                  className="text-red-600 hover:text-red-900 p-2 rounded-full bg-red-100"
-                  title="Hapus Riwayat"
-                >
-                  <FaTrash />
-                </button>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Card View for Mobile */}
+        <div className="block sm:hidden space-y-4 mt-4 lg:pb-0 pb-24">
+          {history.length > 0 ? (
+            history.map((record) => (
+              <div key={record.id} className="bg-white rounded-lg shadow-md p-4 border border-gray-200 mb-4 w-full">
+                <p className="text-sm text-gray-500 mb-1">
+                  <span className="font-medium">Tanggal:</span> {moment(record.transaction_date).format('DD MMMM YYYY, HH:mm')}
+                </p>
+                <p className="text-lg font-bold text-gray-900 mb-1">{record.material_name}</p>
+                <div className="flex items-center mb-2">
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${record.type === 'in' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} mr-2`}>
+                    {record.type === 'in' ? 'Masuk' : 'Keluar'}
+                  </span>
+                  <p className="text-sm text-gray-700">
+                    <span className="font-medium">Jumlah:</span> {parseInt(record.quantity)} {record.material_unit}
+                  </p>
+                </div>
+                {record.notes && (
+                  <p className="text-sm text-gray-700">
+                    <span className="font-medium">Keterangan:</span> {record.notes}
+                  </p>
+                )}
+                <div className="flex justify-end mt-2">
+                  <button
+                    onClick={() => handleDeleteHistoryEntry(record.id)}
+                    className="text-red-600 hover:text-red-900 p-2 rounded-full bg-red-100"
+                    title="Hapus Riwayat"
+                  >
+                    <FaTrash />
+                  </button>
+                </div>
               </div>
+            ))
+          ) : (
+            <div className="text-center text-gray-500 mt-4">
+              Tidak ada riwayat stok yang ditemukan.
             </div>
-          ))
-        ) : (
-          <div className="text-center text-gray-500 mt-4">
-            Tidak ada riwayat stok yang ditemukan.
-          </div>
-        )}
-      </div>
+          )}
+        </div>
       </div>
       {message && <div className="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{message}</div>}
       {notificationError && <div className="fixed bottom-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{notificationError}</div>}
@@ -326,7 +326,7 @@ const OwnerRawMaterialStockHistory = () => { // Component name changed
         confirmText="Ya, Hapus"
         cancelText="Batal"
       />
-    </>
+    </div>
   );
 };
 

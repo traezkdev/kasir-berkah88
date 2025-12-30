@@ -2101,7 +2101,7 @@ app.put("/api/accounts/transactions/:id", authenticateToken, async (req, res) =>
     let connection;
     try {
         const { id } = req.params;
-        const { description, amount } = req.body;
+        const { description, amount, date } = req.body;
         const userId = req.user.userId;
 
         if (!description || description.trim() === '') {
@@ -2143,8 +2143,9 @@ app.put("/api/accounts/transactions/:id", authenticateToken, async (req, res) =>
             balanceDiff = -(newAmount - oldAmount);
         }
 
-        // Update transaction
-        await connection.query('UPDATE account_transactions SET description = ?, amount = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?', [description, newAmount, id]);
+        // Update transaction - use provided date or keep existing one if not provided
+        const finalDate = date ? new Date(date) : new Date(transaction.created_at);
+        await connection.query('UPDATE account_transactions SET description = ?, amount = ?, created_at = ? WHERE id = ?', [description, newAmount, finalDate, id]);
 
         // Update account balance
         if (balanceDiff !== 0) {
@@ -2152,7 +2153,7 @@ app.put("/api/accounts/transactions/:id", authenticateToken, async (req, res) =>
         }
 
         await connection.commit();
-        res.json({ message: "Transaction updated successfully", data: { id, description, amount: newAmount } });
+        res.json({ message: "Transaction updated successfully", data: { id, description, amount: newAmount, created_at: finalDate } });
 
     } catch (err) {
         if (connection) {

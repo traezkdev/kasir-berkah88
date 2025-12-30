@@ -3,8 +3,10 @@ import authFetch from '../../utils/authFetch';
 import { RingLoader } from 'react-spinners';
 import * as XLSX from 'xlsx';
 import { exportToPdf } from '../../utils/exportUtils'; // Correctly import the utility
+import { useTheme } from '../../contexts/ThemeContext';
 
 const LaporanLengkap = () => {
+  const { theme } = useTheme();
   const [laporanData, setLaporanData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -31,7 +33,7 @@ const LaporanLengkap = () => {
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
       if (startDate && endDate) url += `?${params.toString()}`;
-      
+
       const response = await authFetch(url);
       if (response.status !== 200) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -61,8 +63,8 @@ const LaporanLengkap = () => {
   const handleFilter = () => {
     fetchLaporan();
   };
-  
-    const handleExportExcel = () => {
+
+  const handleExportExcel = () => {
     const wb = XLSX.utils.book_new();
 
     // Transactions
@@ -87,20 +89,20 @@ const LaporanLengkap = () => {
 
     // Lapak & Owner
     const wsLapak = XLSX.utils.json_to_sheet(laporanData.lapakAccountTransactions.map(t => ({
-        'Tipe': t.type,
-        'Jumlah': t.amount,
-        'Deskripsi': t.description,
-        'Dibuat Oleh': t.created_by_username,
-        'Tanggal': new Date(t.created_at).toLocaleString()
+      'Tipe': t.type,
+      'Jumlah': t.amount,
+      'Deskripsi': t.description,
+      'Dibuat Oleh': t.created_by_username,
+      'Tanggal': new Date(t.created_at).toLocaleString()
     })));
-     XLSX.utils.book_append_sheet(wb, wsLapak, "Uang Lapak");
+    XLSX.utils.book_append_sheet(wb, wsLapak, "Uang Lapak");
 
     const wsOwner = XLSX.utils.json_to_sheet(laporanData.ownerAccountTransactions.map(t => ({
-        'Tipe': t.type,
-        'Jumlah': t.amount,
-        'Deskripsi': t.description,
-        'Dibuat Oleh': t.created_by_username,
-        'Tanggal': new Date(t.created_at).toLocaleString()
+      'Tipe': t.type,
+      'Jumlah': t.amount,
+      'Deskripsi': t.description,
+      'Dibuat Oleh': t.created_by_username,
+      'Tanggal': new Date(t.created_at).toLocaleString()
     })));
     XLSX.utils.book_append_sheet(wb, wsOwner, "Uang Owner");
 
@@ -119,60 +121,60 @@ const LaporanLengkap = () => {
     const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
 
     const sections = [
-        {
-            title: "Laporan Transaksi",
-            headers: ['ID', 'Tanggal', 'Total', 'Metode Pembayaran'],
-            rows: laporanData.transactions.map(t => [
-                t.id, 
-                new Date(t.timestamp).toLocaleString(), 
-                formatCurrency(t.total), 
-                t.payment_method
-            ]),
-        },
-        {
-            title: "Laporan Pengeluaran",
-            headers: ['Nama', 'Jumlah', 'Tanggal'],
-            rows: laporanData.expenses.map(e => [
-                e.name, 
-                formatCurrency(e.amount), 
-                new Date(e.date).toLocaleDateString()
-            ]),
-        },
-        {
-            title: "Laporan Uang Lapak",
-            headers: ['Tipe', 'Jumlah', 'Deskripsi', 'Tanggal'],
-            rows: laporanData.lapakAccountTransactions.map(t => [
-                t.type, 
-                formatCurrency(t.amount), 
-                t.description,
-                new Date(t.created_at).toLocaleString()
-            ]),
-        },
-        {
-            title: "Laporan Uang Owner",
-            headers: ['Tipe', 'Jumlah', 'Deskripsi', 'Tanggal'],
-            rows: laporanData.ownerAccountTransactions.map(t => [
-                t.type, 
-                formatCurrency(t.amount), 
-                t.description,
-                new Date(t.created_at).toLocaleString()
-            ]),
-        },
-        {
-            title: "Laporan Stok Menu",
-            headers: ['Nama Menu', 'Stok Tersisa'],
-            rows: laporanData.menuStock.map(item => [item.name, item.stock]),
-        },
-        {
-            title: "Laporan Stok Bahan Mentah",
-            headers: ['Nama Bahan', 'Stok Tersisa'],
-            rows: laporanData.rawMaterialStock.map(item => [item.name, `${item.current_stock} ${item.unit}`]),
-        },
+      {
+        title: "Laporan Transaksi",
+        headers: ['ID', 'Tanggal', 'Total', 'Metode Pembayaran'],
+        rows: laporanData.transactions.map(t => [
+          t.id,
+          new Date(t.timestamp).toLocaleString(),
+          formatCurrency(t.total),
+          t.payment_method
+        ]),
+      },
+      {
+        title: "Laporan Pengeluaran",
+        headers: ['Nama', 'Jumlah', 'Tanggal'],
+        rows: laporanData.expenses.map(e => [
+          e.name,
+          formatCurrency(e.amount),
+          new Date(e.date).toLocaleDateString()
+        ]),
+      },
+      {
+        title: "Laporan Uang Lapak",
+        headers: ['Tipe', 'Jumlah', 'Deskripsi', 'Tanggal'],
+        rows: laporanData.lapakAccountTransactions.map(t => [
+          t.type,
+          formatCurrency(t.amount),
+          t.description,
+          new Date(t.created_at).toLocaleString()
+        ]),
+      },
+      {
+        title: "Laporan Uang Owner",
+        headers: ['Tipe', 'Jumlah', 'Deskripsi', 'Tanggal'],
+        rows: laporanData.ownerAccountTransactions.map(t => [
+          t.type,
+          formatCurrency(t.amount),
+          t.description,
+          new Date(t.created_at).toLocaleString()
+        ]),
+      },
+      {
+        title: "Laporan Stok Menu",
+        headers: ['Nama Menu', 'Stok Tersisa'],
+        rows: laporanData.menuStock.map(item => [item.name, item.stock]),
+      },
+      {
+        title: "Laporan Stok Bahan Mentah",
+        headers: ['Nama Bahan', 'Stok Tersisa'],
+        rows: laporanData.rawMaterialStock.map(item => [item.name, `${item.current_stock} ${item.unit}`]),
+      },
     ];
 
     exportToPdf(sections, 'Laporan_Lengkap');
   };
-  
+
   // Generic pagination logic
   const getPaginatedData = (data, page) => {
     if (!data) return { paginated: [], totalPages: 0 };
@@ -192,50 +194,50 @@ const LaporanLengkap = () => {
   const { paginated: paginatedOwner, totalPages: totalPagesOwner } = getPaginatedData(laporanData?.ownerAccountTransactions, pagination.owner);
   const { paginated: paginatedMenu, totalPages: totalPagesMenu } = getPaginatedData(laporanData?.menuStock, pagination.menu);
   const { paginated: paginatedRaw, totalPages: totalPagesRaw } = getPaginatedData(laporanData?.rawMaterialStock, pagination.raw);
-  
+
   const PaginationControls = ({ section, currentPage, totalPages }) => {
     if (totalPages <= 1) return null;
     return (
-        <div className="mt-4 flex justify-between items-center">
-            <button 
-                onClick={() => handlePageChange(section, Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className="btn btn-sm"
-            >
-                Previous
-            </button>
-            <span>Page {currentPage} of {totalPages}</span>
-            <button 
-                onClick={() => handlePageChange(section, Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-                className="btn btn-sm"
-            >
-                Next
-            </button>
-        </div>
+      <div className="mt-4 flex justify-between items-center">
+        <button
+          onClick={() => handlePageChange(section, Math.max(1, currentPage - 1))}
+          disabled={currentPage === 1}
+          className="btn btn-sm"
+        >
+          Previous
+        </button>
+        <span>Page {currentPage} of {totalPages}</span>
+        <button
+          onClick={() => handlePageChange(section, Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage === totalPages}
+          className="btn btn-sm"
+        >
+          Next
+        </button>
+      </div>
     );
   };
 
   return (
-    <div className="p-4 md:p-6">
+    <div className={theme === 'default' ? "p-4 md:p-6" : ""}>
       <h1 className="text-2xl md:text-3xl font-bold mb-4">Laporan Lengkap</h1>
 
-        <div className="mb-6 p-4 bg-white rounded-lg shadow-md flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
-                <label htmlFor="startDate" className="text-sm font-medium">Dari:</label>
-                <input type="date" id="startDate" value={startDate} onChange={e => setStartDate(e.target.value)} className="input input-bordered input-sm" />
-            </div>
-            <div className="flex items-center gap-2">
-                <label htmlFor="endDate" className="text-sm font-medium">Sampai:</label>
-                <input type="date" id="endDate" value={endDate} onChange={e => setEndDate(e.target.value)} className="input input-bordered input-sm" />
-            </div>
-            <button onClick={handleFilter} className="btn btn-primary btn-sm">Filter</button>
-            <div className="flex-grow"></div>
-            <div className="flex items-center gap-2">
-                 <button onClick={handleExportExcel} className="btn btn-success btn-sm" disabled={!laporanData || loading}>Export Excel</button>
-                 <button onClick={handleExportPDF} className="btn btn-error btn-sm" disabled={!laporanData || loading}>Export PDF</button>
-            </div>
+      <div className="mb-6 p-4 bg-white rounded-lg shadow-md flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-2">
+          <label htmlFor="startDate" className="text-sm font-medium">Dari:</label>
+          <input type="date" id="startDate" value={startDate} onChange={e => setStartDate(e.target.value)} className="input input-bordered input-sm" />
         </div>
+        <div className="flex items-center gap-2">
+          <label htmlFor="endDate" className="text-sm font-medium">Sampai:</label>
+          <input type="date" id="endDate" value={endDate} onChange={e => setEndDate(e.target.value)} className="input input-bordered input-sm" />
+        </div>
+        <button onClick={handleFilter} className="btn btn-primary btn-sm">Filter</button>
+        <div className="flex-grow"></div>
+        <div className="flex items-center gap-2">
+          <button onClick={handleExportExcel} className="btn btn-success btn-sm" disabled={!laporanData || loading}>Export Excel</button>
+          <button onClick={handleExportPDF} className="btn btn-error btn-sm" disabled={!laporanData || loading}>Export PDF</button>
+        </div>
+      </div>
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
@@ -296,58 +298,58 @@ const LaporanLengkap = () => {
             </div>
             <PaginationControls section="expenses" currentPage={pagination.expenses} totalPages={totalPagesExpenses} />
           </section>
-          
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <section>
-                <h2 className="text-xl font-semibold mb-3">Uang Lapak</h2>
-                 <div className="overflow-x-auto bg-white rounded-lg shadow">
-                   <table className="min-w-full divide-y divide-gray-200">
-                     <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deskripsi</th>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <section>
+              <h2 className="text-xl font-semibold mb-3">Uang Lapak</h2>
+              <div className="overflow-x-auto bg-white rounded-lg shadow">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deskripsi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedLapak?.map(item => (
+                      <tr key={item.id}>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${item.type === 'deposit' ? 'text-green-600' : 'text-red-600'}`}>{item.type}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">Rp {item.amount.toLocaleString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">{item.description}</td>
                       </tr>
-                     </thead>
-                     <tbody>
-                      {paginatedLapak?.map(item => (
-                        <tr key={item.id}>
-                          <td className={`px-6 py-4 whitespace-nowrap text-sm ${item.type === 'deposit' ? 'text-green-600' : 'text-red-600'}`}>{item.type}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">Rp {item.amount.toLocaleString()}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">{item.description}</td>
-                        </tr>
-                      ))}
-                     </tbody>
-                   </table>
-                 </div>
-                 <PaginationControls section="lapak" currentPage={pagination.lapak} totalPages={totalPagesLapak} />
-              </section>
-              <section>
-                <h2 className="text-xl font-semibold mb-3">Uang Owner</h2>
-                 <div className="overflow-x-auto bg-white rounded-lg shadow">
-                   <table className="min-w-full divide-y divide-gray-200">
-                     <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deskripsi</th>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <PaginationControls section="lapak" currentPage={pagination.lapak} totalPages={totalPagesLapak} />
+            </section>
+            <section>
+              <h2 className="text-xl font-semibold mb-3">Uang Owner</h2>
+              <div className="overflow-x-auto bg-white rounded-lg shadow">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deskripsi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedOwner?.map(item => (
+                      <tr key={item.id}>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${item.type === 'deposit' ? 'text-green-600' : 'text-red-600'}`}>{item.type}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">Rp {item.amount.toLocaleString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">{item.description}</td>
                       </tr>
-                     </thead>
-                     <tbody>
-                      {paginatedOwner?.map(item => (
-                        <tr key={item.id}>
-                          <td className={`px-6 py-4 whitespace-nowrap text-sm ${item.type === 'deposit' ? 'text-green-600' : 'text-red-600'}`}>{item.type}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">Rp {item.amount.toLocaleString()}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">{item.description}</td>
-                        </tr>
-                      ))}
-                     </tbody>
-                   </table>
-                 </div>
-                 <PaginationControls section="owner" currentPage={pagination.owner} totalPages={totalPagesOwner} />
-              </section>
-            </div>
-          
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <PaginationControls section="owner" currentPage={pagination.owner} totalPages={totalPagesOwner} />
+            </section>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <section>
               <h2 className="text-xl font-semibold mb-3">Stok Menu</h2>

@@ -205,11 +205,11 @@ const OwnerProfile = ({ headerTitle }) => { // Component name changed to OwnerPr
   const avatarSrc = user.avatar_url ? `${apiUrl}${user.avatar_url}` : '/assets/images/no_image.png';
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className={`flex flex-col h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
       {/* Changed to OwnerNavigationHeader and removed theme conditional */}
-      <OwnerNavigationHeader title="Profil Owner" headerTitle={headerTitle} />
-      <main className="flex-grow pt-16">
-        <div className="max-w-7xl mx-auto px-4 lg:px-8 py-8">
+      {theme === 'default' && <OwnerNavigationHeader title="Profil Owner" headerTitle={headerTitle} />}
+      <main className={`flex-grow ${theme === 'default' ? 'pt-16' : ''}`}>
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-8 py-8" : "py-8"}>
           <BreadcrumbNavigation customPath={breadcrumbs} />
           <header className="mt-6 mb-8">
             <h1 className="text-2xl lg:text-4xl font-bold tracking-tight text-text-primary flex items-center gap-3">
@@ -222,37 +222,37 @@ const OwnerProfile = ({ headerTitle }) => { // Component name changed to OwnerPr
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-24">
             {/* Info Card */}
             <div className="md:col-span-3 bg-gradient-to-br from-sky-400 to-blue-600 text-white rounded-lg p-4 shadow-lg flex items-center gap-6">
-                <img src={avatarSrc} alt="Foto Profil" className="w-24 h-24 rounded-full object-cover border-4 border-white/20" />
-                <div className="flex-grow">
-                    <h3 className="text-xl font-bold mb-2">Informasi Akun</h3>
-                    <div className="space-y-2 text-sm">
-                        <p><strong className="font-medium">ID Owner:</strong> {user.id}</p> {/* Text changed */}
-                        <p><strong className="font-medium">Nama Owner:</strong> {user.username}</p> {/* Text changed */}
-                        <p><strong className="font-medium">Peran:</strong> <span className="capitalize px-2 py-1 bg-white/20 rounded-full text-xs">{user.role}</span></p>
-                    </div>
+              <img src={avatarSrc} alt="Foto Profil" className="w-24 h-24 rounded-full object-cover border-4 border-white/20" />
+              <div className="flex-grow">
+                <h3 className="text-xl font-bold mb-2">Informasi Akun</h3>
+                <div className="space-y-2 text-sm">
+                  <p><strong className="font-medium">ID Owner:</strong> {user.id}</p> {/* Text changed */}
+                  <p><strong className="font-medium">Nama Owner:</strong> {user.username}</p> {/* Text changed */}
+                  <p><strong className="font-medium">Peran:</strong> <span className="capitalize px-2 py-1 bg-white/20 rounded-full text-xs">{user.role}</span></p>
                 </div>
+              </div>
             </div>
-            <ProfileCard 
-              icon="Camera" 
-              title="Ubah Foto Profil" 
+            <ProfileCard
+              icon="Camera"
+              title="Ubah Foto Profil"
               description="Perbarui foto profil Anda."
               onClick={() => setActiveModal('avatar')}
             />
-            <ProfileCard 
-              icon="UserCog" 
-              title="Ubah Nama Pengguna" 
+            <ProfileCard
+              icon="UserCog"
+              title="Ubah Nama Pengguna"
               description="Perbarui nama pengguna Anda."
               onClick={() => setActiveModal('username')}
             />
-            <ProfileCard 
-              icon="KeyRound" 
-              title="Ubah Kata Sandi" 
+            <ProfileCard
+              icon="KeyRound"
+              title="Ubah Kata Sandi"
               description="Ganti kata sandi untuk keamanan."
               onClick={() => setActiveModal('password')}
             />
-            <ProfileCard 
-              icon="LogOut" 
-              title="Keluar" 
+            <ProfileCard
+              icon="LogOut"
+              title="Keluar"
               description="Keluar dari sesi Anda saat ini."
               onClick={handleLogout}
               isDestructive
@@ -264,12 +264,12 @@ const OwnerProfile = ({ headerTitle }) => { // Component name changed to OwnerPr
       {/* Modals */}
       <ProfileModal title="Ubah Foto Profil" isOpen={activeModal === 'avatar'} onClose={handleModalClose}>
         <form onSubmit={handleAvatarUpload} className="space-y-6">
-            <p className="text-sm text-text-secondary">Pilih gambar baru untuk dijadikan foto profil. Disarankan gambar persegi.</p>
-            <Input label="Pilih File Gambar" name="avatarFile" type="file" accept="image/*" onChange={handleAvatarFileChange} />
-            {avatarPreview && <img src={avatarPreview} alt="Pratinjau" className="w-32 h-32 rounded-full object-cover mx-auto border-4 border-dashed p-1" />}
-            <Button type="submit" className="w-full" disabled={isLoading || !avatarFile}>{isLoading ? 'Mengunggah...' : 'Unggah & Simpan'}</Button>
-            {message && <p className="text-sm text-center text-green-500 mt-2">{message}</p>}
-            {error && <p className="text-sm text-center text-red-500 mt-2">{error}</p>}
+          <p className="text-sm text-text-secondary">Pilih gambar baru untuk dijadikan foto profil. Disarankan gambar persegi.</p>
+          <Input label="Pilih File Gambar" name="avatarFile" type="file" accept="image/*" onChange={handleAvatarFileChange} />
+          {avatarPreview && <img src={avatarPreview} alt="Pratinjau" className="w-32 h-32 rounded-full object-cover mx-auto border-4 border-dashed p-1" />}
+          <Button type="submit" className="w-full" disabled={isLoading || !avatarFile}>{isLoading ? 'Mengunggah...' : 'Unggah & Simpan'}</Button>
+          {message && <p className="text-sm text-center text-green-500 mt-2">{message}</p>}
+          {error && <p className="text-sm text-center text-red-500 mt-2">{error}</p>}
         </form>
       </ProfileModal>
 

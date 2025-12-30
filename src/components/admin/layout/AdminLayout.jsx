@@ -44,7 +44,7 @@ const AdminLayout = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="flex h-screen bg-background text-foreground">
       {userRole === 'owner' ? (
         <OwnerSidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} headerTitle={headerTitle} />
       ) : (
@@ -56,7 +56,7 @@ const AdminLayout = () => {
         ) : (
           <Header toggleSidebar={toggleSidebar} />
         )}
-        <main className={`flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-900 ${isFullWidth ? '' : 'p-4 sm:p-6'}`}>
+        <main className={`flex-1 overflow-x-hidden overflow-y-auto bg-background ${isFullWidth ? '' : 'p-4 sm:p-6'}`}>
           <Outlet />
         </main>
       </div>

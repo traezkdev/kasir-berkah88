@@ -6,12 +6,23 @@ import Input from './Input';
 const EditTransactionDescriptionModal = ({ isOpen, onClose, onSave, transaction }) => {
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState(0);
+    const [date, setDate] = useState('');
     const [error, setError] = useState('');
 
     useEffect(() => {
         if (isOpen && transaction) {
             setDescription(transaction.description || '');
             setAmount(transaction.amount || 0);
+
+            // Format created_at to YYYY-MM-DDTHH:mm for datetime-local input
+            const d = new Date(transaction.created_at);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const hours = String(d.getHours()).padStart(2, '0');
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            setDate(`${year}-${month}-${day}T${hours}:${minutes}`);
+
             setError('');
         }
     }, [isOpen, transaction]);
@@ -25,7 +36,11 @@ const EditTransactionDescriptionModal = ({ isOpen, onClose, onSave, transaction 
             setError('Nominal harus berupa angka yang valid.');
             return;
         }
-        onSave(transaction.id, description, parseFloat(amount));
+        if (!date) {
+            setError('Tanggal & waktu tidak boleh kosong.');
+            return;
+        }
+        onSave(transaction.id, description, parseFloat(amount), date);
     };
 
     const formatNumber = (num) => {
@@ -49,6 +64,16 @@ const EditTransactionDescriptionModal = ({ isOpen, onClose, onSave, transaction 
                     </Button>
                 </div>
                 <div className="space-y-4">
+                    <div>
+                        <label htmlFor="date" className="block text-sm font-medium text-text-secondary mb-1">Tanggal & Waktu</label>
+                        <Input
+                            id="date"
+                            type="datetime-local"
+                            value={date}
+                            onChange={(e) => { setDate(e.target.value); setError(''); }}
+                            required
+                        />
+                    </div>
                     <div>
                         <label htmlFor="amount" className="block text-sm font-medium text-text-secondary mb-1">Nominal (Rp)</label>
                         <Input
