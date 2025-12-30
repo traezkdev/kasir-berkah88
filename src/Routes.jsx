@@ -110,6 +110,24 @@ const AppRoutes = () => {
       <Route path="/" element={<BerkahLandingPage />} />
       <Route path="/guest-checkout" element={<GuestCheckout />} />
 
+      {/* Owner Dashboard Routes */}
+      <Route
+        element={
+          <ProtectedRoute allowedRoles={['owner']}>
+            <DynamicLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/owner-dashboard" element={<OwnerDashboard headerTitle="Dashboard Owner" />} />
+        <Route path="/uang-bisnis" element={<UangBisnis headerTitle="Uang Bisnis" />} />
+        <Route path="/owner/business-reports" element={<OwnerBusinessReports headerTitle="Laporan Bisnis" />} />
+        <Route path="/owner-profile" element={<OwnerProfile />} />
+        <Route path="/owner-raw-material-stock" element={<OwnerRawMaterialStockDashboard />} />
+        <Route path="/owner-raw-material-stock/history" element={<OwnerRawMaterialStockHistory />} />
+        <Route path="/critical-stock" element={<CriticalStockPage />} />
+        <Route path="/laporan-lengkap" element={<LaporanLengkap headerTitle="Laporan Lengkap" />} />
+      </Route>
+
       {/* Admin Dashboard Routes */}
       <Route
         element={
@@ -170,24 +188,6 @@ const AppRoutes = () => {
         <Route path="/lapak-deposit" element={<LapakDeposit />} />
       </Route>
       <Route path="/receipt" element={<ProtectedRoute allowedRoles={['admin', 'kasir', 'user']}><ReceiptPage /></ProtectedRoute>} />
-
-      {/* Owner Dashboard Routes */}
-      <Route
-        element={
-          <ProtectedRoute allowedRoles={['owner']}>
-            <DynamicLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/owner-dashboard" element={<OwnerDashboard headerTitle="Dashboard Owner" />} />
-        <Route path="/uang-bisnis" element={<UangBisnis headerTitle="Uang Bisnis" />} />
-        <Route path="/owner/business-reports" element={<OwnerBusinessReports headerTitle="Laporan Bisnis" />} />
-        <Route path="/owner-profile" element={<OwnerProfile />} />
-        <Route path="/owner-raw-material-stock" element={<OwnerRawMaterialStockDashboard />} />
-        <Route path="/owner-raw-material-stock/history" element={<OwnerRawMaterialStockHistory />} />
-        <Route path="/critical-stock" element={<CriticalStockPage />} />
-        <Route path="/laporan-lengkap" element={<LaporanLengkap headerTitle="Laporan Lengkap" />} />
-      </Route>
 
 
       {/* Catch all other routes */}
