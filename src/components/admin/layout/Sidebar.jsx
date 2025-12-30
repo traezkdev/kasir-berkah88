@@ -50,7 +50,7 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
   };
 
   const navLinkClasses = `flex items-center ${isCollapsed ? 'justify-center py-3' : 'px-6 py-3'} w-full text-sm font-medium text-gray-600 dark:text-gray-300 transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white group relative z-10 ${isCollapsed ? '' : 'border-l-4 border-transparent hover:border-gray-300 dark:hover:border-gray-600'}`;
-  const activeLinkClasses = `bg-indigo-50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 ${isCollapsed ? '' : 'border-l-4 border-indigo-600 dark:border-indigo-400'}`;
+  const activeLinkClasses = `bg-indigo-50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 active-item ${isCollapsed ? '' : 'border-l-4 border-indigo-600 dark:border-indigo-400'}`;
   const groupTitleClasses = `px-6 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider ${isCollapsed ? 'text-center' : ''}`;
 
   // Handler native JS untuk performa hover terbaik tanpa re-render component
@@ -82,7 +82,7 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
   return (
     <>
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-30 ${isCollapsed ? 'w-20' : 'w-64'} bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out lg:relative lg:translate-x-0 flex flex-col h-screen`}>
+      <div className={`fixed inset-y-0 left-0 z-30 ${isCollapsed ? 'w-20' : 'w-64'} bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out lg:relative lg:translate-x-0 flex flex-col h-screen sidebar-root`}>
         <div className={`flex-shrink-0 flex items-center ${isCollapsed ? 'justify-center mx-2' : 'justify-between px-4'} h-20 border-b border-gray-100 dark:border-gray-700`}>
           {!isCollapsed && (
             <div className="flex items-center space-x-3 overflow-hidden">

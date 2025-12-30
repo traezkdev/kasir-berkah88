@@ -120,7 +120,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
 
   return (
     <>
-      <header className={`fixed top-0 left-0 right-0 z-30 bg-card border-b border-border shadow-elevation-1 ${isNativePlatform ? 'pt-8' : ''}`}>
+      <header className={`fixed top-0 left-0 right-0 z-30 bg-card border-b border-border shadow-elevation-1 navigation-header-root ${isNativePlatform ? 'pt-8' : ''}`}>
         <div className="flex items-center justify-between h-16 px-4 lg:px-6">
           {/* Logo Section */}
           <div className="flex items-center space-x-4">
@@ -151,7 +151,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
             </nav>
 
             {/* DarkModeToggle and Mobile Menu Button */}
-            <div className="flex items-center md:space-x-2">
+            <div className="flex items-center space-x-2">
               {rightContent} {/* Render additional right-aligned content here */}
               <div className="lg:hidden">
                 <DarkModeToggle />

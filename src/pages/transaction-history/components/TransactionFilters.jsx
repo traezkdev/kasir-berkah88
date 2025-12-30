@@ -68,10 +68,10 @@ const TransactionFilters = ({
   };
 
   return (
-    <div className="bg-card border-b border-border shadow-elevation-1">
+    <div className="transaction-filters-root">
 
       {/* Search and Filter Controls */}
-      <div className="px-4 lg:px-6 py-4">
+      <div className="px-4 lg:px-6 py-4 transition-all duration-300 filter-section-container">
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Search Input */}
           <div className="flex-1">

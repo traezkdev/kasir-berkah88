@@ -39,7 +39,7 @@ const OwnerSidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
   };
 
   const navLinkClasses = `flex items-center ${isCollapsed ? 'justify-center py-3' : 'px-6 py-3'} w-full text-sm font-medium text-gray-300 transition-all duration-200 hover:bg-gray-700 hover:text-white group relative z-10 ${isCollapsed ? '' : 'border-l-4 border-transparent hover:border-gray-500'}`;
-  const activeLinkClasses = `bg-gray-700 text-white ${isCollapsed ? '' : 'border-l-4 border-white'}`;
+  const activeLinkClasses = `bg-gray-700 text-white active-item ${isCollapsed ? '' : 'border-l-4 border-white'}`;
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -75,7 +75,7 @@ const OwnerSidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
   return (
     <>
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-30 ${isCollapsed ? 'w-20' : 'w-64'} bg-gray-800 text-white transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out lg:relative lg:translate-x-0 flex flex-col h-screen`}>
+      <div className={`fixed inset-y-0 left-0 z-30 ${isCollapsed ? 'w-20' : 'w-64'} bg-gray-800 text-white transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out lg:relative lg:translate-x-0 flex flex-col h-screen sidebar-root`}>
         <div className={`flex-shrink-0 flex items-center ${isCollapsed ? 'justify-center mx-2' : 'justify-between px-4'} h-20 border-b border-gray-700`}>
           {!isCollapsed && <h1 className="text-2xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">{headerTitle}</h1>}
           {isCollapsed && <div className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0"><span className="text-white font-bold text-xl">O</span></div>}

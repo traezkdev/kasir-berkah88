@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import App from './App';
 import './styles/tailwind.css';
+import './styles/index.css';
 
 import { ThemeProvider as LayoutThemeProvider } from './contexts/ThemeContext';
 import { DarkModeProvider } from './contexts/DarkModeContext';
@@ -20,13 +21,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <HelmetProvider>
       <BrowserRouter>
-          <DarkModeProvider>
-            <LayoutThemeProvider>
-              <ToastProvider> {/* <--- Bungkus dengan ToastProvider */}
-                <App />
-              </ToastProvider>
-            </LayoutThemeProvider>
-          </DarkModeProvider>
+        <DarkModeProvider>
+          <LayoutThemeProvider>
+            <ToastProvider> {/* <--- Bungkus dengan ToastProvider */}
+              <App />
+            </ToastProvider>
+          </LayoutThemeProvider>
+        </DarkModeProvider>
       </BrowserRouter>
     </HelmetProvider>
   </React.StrictMode>
