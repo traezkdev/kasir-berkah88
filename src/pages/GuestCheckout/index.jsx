@@ -256,10 +256,10 @@ const GuestCheckout = () => {
                             const effectivelyOutOfStock = item.stock <= quantityInCart;
 
                             return (
-                                <div 
-                                    key={item.id} 
+                                <div
+                                    key={item.id}
                                     className={`relative bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 shadow-md dark:shadow-none overflow-hidden transform transition-transform duration-200 hover:scale-105 ${initiallyOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                                    
+
                                     {effectivelyOutOfStock ? (
                                         <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-full z-10">
                                             Stok Habis
@@ -269,14 +269,14 @@ const GuestCheckout = () => {
                                             Tersedia
                                         </span>
                                     )}
-                                    
+
                                     {item.discount > 0 && (
                                         <span className="absolute top-10 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
                                             Diskon {item.discount * 100}%
                                         </span>
                                     )}
                                     <AppImage
-                                        src={`${import.meta.env.VITE_API_URL}${item.image_url}`}
+                                        src={item.image_url ? `${import.meta.env.VITE_API_URL}${item.image_url}` : "/assets/images/no_image.png"}
                                         fallbackSrc="/assets/images/no_image.png"
                                         alt={item.name}
                                         className="w-full h-32 object-cover"
@@ -285,7 +285,7 @@ const GuestCheckout = () => {
                                         <h3 className="text-md font-semibold text-text-primary dark:text-white flex-grow">{item.name}</h3>
                                         <p className="text-sm text-text-secondary dark:text-gray-300 mt-1">Rp {item.price.toLocaleString('id-ID')}</p>
                                         <p className="text-xs text-text-secondary dark:text-gray-300 mt-1">Stok: {item.stock}</p>
-                                        
+
                                         <div className="mt-4">
                                             {initiallyOutOfStock ? (
                                                 <Button className="w-full" disabled>Stok Habis</Button>
@@ -315,7 +315,7 @@ const GuestCheckout = () => {
                                     </div>
                                 </div>
                             );
-                        })} 
+                        })}
                     </div>
 
                     {/* Order Summary Section */}
@@ -349,9 +349,9 @@ const GuestCheckout = () => {
                                                     <span className="font-medium">
                                                         Rp {((item.price * (1 - (item.discount || 0))) * quantity).toLocaleString('id-ID')}
                                                     </span>
-                                                    <Button 
-                                                        variant="ghost" 
-                                                        size="icon" 
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
                                                         className="h-6 w-6 text-destructive"
                                                         onClick={() => handleDeleteItemFromCart(itemId)}
                                                     >
@@ -365,7 +365,7 @@ const GuestCheckout = () => {
                             </div>
                             <div className="p-4 bg-background rounded-b-lg">
                                 <div ref={customerInfoRef} className="space-y-4 mb-4">
-                                    <Input 
+                                    <Input
                                         label="Nama Pelanggan"
                                         id="customerName"
                                         type="text"
@@ -374,7 +374,7 @@ const GuestCheckout = () => {
                                         onChange={(e) => setCustomerName(e.target.value)}
                                         required
                                     />
-                                    <Input 
+                                    <Input
                                         label="Alamat Pengiriman"
                                         id="customerAddress"
                                         type="text"

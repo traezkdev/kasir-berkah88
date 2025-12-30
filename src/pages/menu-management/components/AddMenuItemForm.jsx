@@ -211,7 +211,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               accept="image/*"
             />
             {isEditing && formData.image_url && (
-              <p className="text-sm text-muted-foreground mt-1">Gambar saat ini: <a href={`${import.meta.env.VITE_API_URL}${formData.image_url}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Lihat Gambar</a></p>
+              <p className="text-sm text-muted-foreground mt-1">Gambar saat ini: <a href={formData.image_url ? `${import.meta.env.VITE_API_URL}${formData.image_url}` : '#'} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Lihat Gambar</a></p>
             )}
           </div>
         </div>
