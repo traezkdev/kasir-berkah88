@@ -8,6 +8,8 @@ const BerkahLandingPage = () => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeCategory, setActiveCategory] = useState('all');
+    const [visibleCount, setVisibleCount] = useState(8);
+    const initialCount = 8;
     const apiUrl = import.meta.env.VITE_API_URL;
 
     useEffect(() => {
@@ -34,6 +36,17 @@ const BerkahLandingPage = () => {
     const filteredProducts = activeCategory === 'all'
         ? products
         : products.filter(p => p.category === activeCategory);
+
+    const productsToShow = filteredProducts.slice(0, visibleCount);
+
+    const handleCategoryChange = (cat) => {
+        setActiveCategory(cat);
+        setVisibleCount(initialCount);
+    };
+
+    const handleShowMore = () => {
+        setVisibleCount(prev => prev + 8);
+    };
 
     // Get 3 featured products for hero/highlights
     const featuredProducts = products.filter(p => p.is_featured === 1).slice(0, 3);
@@ -116,7 +129,7 @@ const BerkahLandingPage = () => {
                         {categories.map((cat) => (
                             <button
                                 key={cat}
-                                onClick={() => setActiveCategory(cat)}
+                                onClick={() => handleCategoryChange(cat)}
                                 className={`px-6 py-2 rounded-full font-medium transition-all duration-300 capitalize ${activeCategory === cat
                                     ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30 scale-105'
                                     : 'bg-white text-gray-500 hover:bg-purple-50 hover:text-purple-600 border border-gray-100'
@@ -133,11 +146,25 @@ const BerkahLandingPage = () => {
                             <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500" />
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                            {filteredProducts.map((product) => (
-                                <ProductCard key={product.id} product={product} />
-                            ))}
-                        </div>
+                        <>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                                {productsToShow.map((product) => (
+                                    <ProductCard key={product.id} product={product} />
+                                ))}
+                            </div>
+
+                            {visibleCount < filteredProducts.length && (
+                                <div className="mt-16 text-center">
+                                    <button
+                                        onClick={handleShowMore}
+                                        className="inline-flex items-center gap-2 px-10 py-4 bg-white border-2 border-purple-600 text-purple-600 rounded-full font-bold text-lg hover:bg-purple-600 hover:text-white transition-all duration-300 shadow-lg hover:shadow-purple-500/30 active:scale-95 group"
+                                    >
+                                        Tampilkan Lebih Banyak
+                                        <Icon name="ChevronDown" size={20} className="group-hover:translate-y-1 transition-transform" />
+                                    </button>
+                                </div>
+                            )}
+                        </>
                     )}
 
                     {filteredProducts.length === 0 && !loading && (
