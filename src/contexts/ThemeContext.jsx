@@ -7,13 +7,25 @@ export const useTheme = () => useContext(ThemeContext);
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem('app-theme');
-    // Default to 'default' theme if nothing is saved or the value is invalid
     return savedTheme === 'admin' ? 'admin' : 'default';
+  });
+
+  const [appStyle, setAppStyle] = useState(() => {
+    return localStorage.getItem('app-style') || 'clean';
   });
 
   useEffect(() => {
     localStorage.setItem('app-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('app-style', appStyle);
+    if (appStyle === 'elegant') {
+      document.documentElement.classList.add('style-elegant');
+    } else {
+      document.documentElement.classList.remove('style-elegant');
+    }
+  }, [appStyle]);
 
   const toggleTheme = () => {
     setTheme(prevTheme => prevTheme === 'default' ? 'admin' : 'default');
@@ -22,7 +34,9 @@ export const ThemeProvider = ({ children }) => {
   const value = {
     theme,
     toggleTheme,
-    setTheme, // Exposing setTheme for more direct control if needed
+    setTheme,
+    appStyle,
+    setAppStyle,
   };
 
   return (

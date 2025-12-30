@@ -55,7 +55,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 
 const Settings = () => {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, appStyle, setAppStyle } = useTheme();
   const { appMode, toggleAppMode } = useAppSettings();
   // --- States ---
   const [websiteTitle, setWebsiteTitle] = useState('');
@@ -573,6 +573,18 @@ const Settings = () => {
             </div>
           </div>
 
+          <div className="mb-12">
+            <h2 className="text-2xl font-semibold text-text-primary mb-6 border-b border-border pb-3">Preferensi Tampilan</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <SettingsCard
+                icon="Palette"
+                title="Gaya Aplikasi"
+                description={`Gaya saat ini: ${appStyle === 'clean' ? 'Option 1 (Clean White)' : 'Option 2 (Elegant Colorful)'}. Klik untuk mengganti.`}
+                onClick={() => setActiveModal('appStyleSelection')}
+              />
+            </div>
+          </div>
+
           {isAdmin && (
             <div className="mb-12">
               <h2 className="text-2xl font-semibold text-text-primary mb-6 border-b border-border pb-3">Manajemen & Keamanan</h2>
@@ -864,6 +876,42 @@ const Settings = () => {
         confirmText="Ya, Hapus Logo"
         cancelText="Batal"
       />
+
+      {/* Modal App Style Selection */}
+      <SettingsModal title="Pilih Gaya Aplikasi" isOpen={activeModal === 'appStyleSelection'} onClose={handleModalClose}>
+        <div className="space-y-4">
+          <div
+            onClick={() => { setAppStyle('clean'); handleModalClose(); }}
+            className={`cursor-pointer p-4 border-2 rounded-xl transition-all duration-200 flex items-center gap-4 ${appStyle === 'clean' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
+          >
+            <div className="w-12 h-12 rounded-lg bg-white border border-border shadow-sm flex items-center justify-center">
+              <div className="w-6 h-6 bg-primary rounded-sm opacity-20"></div>
+            </div>
+            <div>
+              <h4 className="font-bold text-text-primary">Option 1: Clean White</h4>
+              <p className="text-sm text-text-secondary">Tampilan bersih, minimalis, dan profesional dengan latar belakang putih.</p>
+            </div>
+            {appStyle === 'clean' && <AppIcon name="Check" className="ml-auto text-primary w-6 h-6" />}
+          </div>
+
+          <div
+            onClick={() => { setAppStyle('elegant'); handleModalClose(); }}
+            className={`cursor-pointer p-4 border-2 rounded-xl transition-all duration-200 flex items-center gap-4 ${appStyle === 'elegant' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
+          >
+            <div className="w-12 h-12 rounded-lg bg-indigo-950 border border-white/10 shadow-lg flex items-center justify-center overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-600/30 to-blue-600/30"></div>
+              <div className="w-6 h-6 bg-purple-500 rounded-sm shadow-lg z-10"></div>
+            </div>
+            <div>
+              <h4 className="font-bold text-text-primary">Option 2: Elegant Colorful</h4>
+              <p className="text-sm text-text-secondary">Tampilan mewah dengan latar belakang gradien dan efek kaca yang elegan.</p>
+            </div>
+            {appStyle === 'elegant' && <AppIcon name="Check" className="ml-auto text-primary w-6 h-6" />}
+          </div>
+
+          <Button variant="outline" className="w-full mt-4" onClick={handleModalClose}>Batal</Button>
+        </div>
+      </SettingsModal>
 
       {/* Modal App Mode */}
       <SettingsModal title="Mode Aplikasi" isOpen={activeModal === 'appMode'} onClose={handleModalClose}>

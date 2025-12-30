@@ -223,7 +223,7 @@ const GuestCheckout = () => {
 
     return (
         <div className="min-h-screen bg-background">
-            <header className="bg-card shadow-sm sticky top-0 z-30">
+            <header className="bg-card shadow-sm sticky top-0 z-30 navigation-header-root">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
                     <div className="flex items-center space-x-3">
                         <AppImage src="/assets/images/logoberkah88.png" alt="Logo" className="h-10 w-auto" />

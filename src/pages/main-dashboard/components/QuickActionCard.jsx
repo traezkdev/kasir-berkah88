@@ -21,19 +21,17 @@ const QuickActionCard = ({ title, description, icon, route, color = 'primary', d
   };
 
   return (
-    <div 
-      className={`bg-card border border-border rounded-lg p-4 transition-all duration-200 cursor-pointer hover:shadow-elevation-2 ${colorClasses?.[color]} ${
-        disabled ? 'opacity-50 cursor-not-allowed' : ''
-      }`}
+    <div
+      className={`bg-card border border-border rounded-lg p-4 transition-all duration-200 cursor-pointer hover:shadow-elevation-2 ${colorClasses?.[color]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''
+        }`}
       onClick={handleClick}
     >
       <div className="flex items-center space-x-3 mb-3">
-        <div className={`p-2 rounded-md ${
-          color === 'primary' ? 'bg-primary text-primary-foreground' :
-          color === 'success' ? 'bg-success text-success-foreground' :
-          color === 'accent'? 'bg-accent text-accent-foreground' :
-          color === 'destructive'? 'bg-destructive text-destructive-foreground' : 'bg-secondary text-secondary-foreground'
-        }`}>
+        <div className={`p-2 rounded-md ${color === 'primary' ? 'bg-primary text-primary-foreground' :
+            color === 'success' ? 'bg-success text-success-foreground' :
+              color === 'accent' ? 'bg-accent text-accent-foreground' :
+                color === 'destructive' ? 'bg-destructive text-destructive-foreground' : 'bg-secondary text-secondary-foreground'
+          }`}>
           <Icon name={icon} size={20} />
         </div>
         <div className="flex-1">

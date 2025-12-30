@@ -34,7 +34,7 @@ const OwnerHeader = ({ toggleSidebar }) => {
         console.error("Error fetching user data:", error);
       }
     };
-    
+
     const fetchLowStockCount = async () => {
       try {
         const response = await authFetch(`${apiUrl}/api/stock-alerts/count`);
@@ -57,7 +57,7 @@ const OwnerHeader = ({ toggleSidebar }) => {
   const avatarSrc = user.avatar_url ? `${apiUrl}${user.avatar_url}` : '/assets/images/no_image.png';
 
   return (
-    <header className="flex items-center justify-between h-20 p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+    <header className="flex items-center justify-between h-20 p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 navigation-header-root">
       <div className="flex items-center">
         <button onClick={toggleSidebar} className="text-gray-500 dark:text-gray-400 focus:outline-none lg:hidden">
           <FaBars className="h-6 w-6" />
@@ -70,7 +70,7 @@ const OwnerHeader = ({ toggleSidebar }) => {
         <button onClick={handleSwitchToDefaultTheme} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 mr-2">
           <FaDesktop className="h-6 w-6 text-gray-600 dark:text-gray-300" />
         </button>
-        
+
         <Link to="/critical-stock" className="relative p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 mr-2">
           <FaBell className="h-6 w-6 text-gray-600 dark:text-gray-300" />
           {lowStockCount > 0 && (

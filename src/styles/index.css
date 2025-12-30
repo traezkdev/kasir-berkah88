@@ -24,8 +24,8 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
-    --color-text-primary: 222.2 84% 4.9%; /* Custom text primary color for light mode */
-    --color-text-secondary: 215.4 16.3% 46.9%; /* Custom text secondary color for light mode */
+    --color-text-primary: 222.2 84% 4.9%;
+    --color-text-secondary: 215.4 16.3% 46.9%;
   }
 
   .dark {
@@ -48,31 +48,455 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
-    --color-text-primary: 210 40% 98%; /* Custom text primary color for dark mode */
-    --color-text-secondary: 215 20.2% 65.1%; /* Custom text secondary color for dark mode */
+    --color-text-primary: 210 40% 98%;
+    --color-text-secondary: 215 20.2% 65.1%;
   }
+}
+
+/* Option 2: Elegant Colorful Style - Clean Body with Colored Framework */
+.style-elegant {
+  --background: 210 40% 98%;
+  /* Slightly off-white background to make white cards pop */
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  /* Pure bright white cards */
+  --card-foreground: 222.2 84% 4.9%;
+  --primary: 222.2 84% 4.9%;
+  --primary-gradient: linear-gradient(135deg, #4f46e5, #7c3aed, #db2777);
+}
+
+/* Dark Mode support for Elegant Style */
+.dark.style-elegant,
+.dark .style-elegant {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --card: 222.2 47.4% 11.2%;
+  /* Darker card background */
+  --card-foreground: 210 40% 98%;
+  --primary: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+}
+
+/* Header Gradient Utility */
+.style-elegant .bg-header-gradient,
+.style-elegant .filter-section-container,
+.style-elegant .bulk-actions-container {
+  background: var(--primary-gradient) !important;
+  color: white !important;
+  border-radius: 12px !important;
+  margin-top: 16px !important;
+  margin-bottom: 24px !important;
+  box-shadow: 0 10px 25px rgba(79, 70, 229, 0.1) !important;
+  border: none !important;
+}
+
+.style-elegant .bulk-actions-container button {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: white !important;
+}
+
+.style-elegant .bulk-actions-container button:hover {
+  background-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Default style for filter root (Option 1) */
+.transaction-filters-root {
+  background-color: white;
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* Remove white background behind the filter card (Option 2) */
+.style-elegant .transaction-filters-root {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.style-elegant .bg-header-gradient *,
+.style-elegant .filter-section-container * {
+  color: white !important;
+}
+
+/* Ensure inputs inside colorful filter look good */
+.style-elegant .filter-section-container input {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+}
+
+.style-elegant .filter-section-container input::placeholder {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.style-elegant .filter-section-container .lucide-search {
+  color: white !important;
+}
+
+/* Fix Filter Button in colorful container */
+.style-elegant .filter-section-container button {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: white !important;
+}
+
+.style-elegant .filter-section-container button:hover {
+  background-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.style-elegant .filter-section-container button * {
+  color: white !important;
+}
+
+/* Apply Gradient only to Top Navigation Header */
+/* Base Navigation Header Style (Admin Header) */
+.style-elegant .navigation-header-root {
+  background: white !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.dark.style-elegant .navigation-header-root,
+.dark .style-elegant .navigation-header-root {
+  background: #1e1b4b !important;
+  /* Match sidebar/dark theme */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Ensure text in Admin Header is dark/readable in light mode */
+.style-elegant .navigation-header-root:not(.fixed):not(.sticky) *,
+.style-elegant .navigation-header-root:not(.fixed):not(.sticky) h1 {
+  color: #1e293b !important;
+}
+
+/* Ensure text in Admin Header is white/readable in dark mode */
+.dark.style-elegant .navigation-header-root:not(.fixed):not(.sticky) *,
+.dark .style-elegant .navigation-header-root:not(.fixed):not(.sticky) *,
+.dark.style-elegant .navigation-header-root:not(.fixed):not(.sticky) h1,
+.dark .style-elegant .navigation-header-root:not(.fixed):not(.sticky) h1 {
+  color: white !important;
+}
+
+/* Floating Navigation Header Style (Cashier/Checkout) */
+.style-elegant .navigation-header-root.fixed,
+.style-elegant .navigation-header-root.sticky {
+  background: var(--primary-gradient) !important;
+  border-bottom: none !important;
+  box-shadow: 0 4px 20px rgba(79, 70, 229, 0.2) !important;
+}
+
+/* Make floating navigation header text white */
+.style-elegant .navigation-header-root.fixed *,
+.style-elegant .navigation-header-root.sticky * {
+  color: white !important;
+}
+
+/* Main Content Header Styles */
+.style-elegant main header {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.style-elegant main header * {
+  color: inherit !important;
+}
+
+.style-elegant main header * {
+  color: inherit !important;
+}
+
+.style-elegant main header .text-text-primary,
+.style-elegant main header h1 {
+  color: var(--foreground) !important;
+}
+
+/* Fix hover state on header menus and buttons */
+/* 1. For Floating Headers (Gradient + White Text) */
+.style-elegant .navigation-header-root.fixed button,
+.style-elegant .navigation-header-root.sticky button {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+  backdrop-filter: blur(4px);
+}
+
+/* 2. For Static Admin Headers (White/Dark Header + Contrast Text) */
+.style-elegant .navigation-header-root:not(.fixed):not(.sticky) button {
+  background-color: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+.dark.style-elegant .navigation-header-root:not(.fixed):not(.sticky) button,
+.dark .style-elegant .navigation-header-root:not(.fixed):not(.sticky) button {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #cbd5e1 !important;
+}
+
+.style-elegant .navigation-header-root:not(.fixed):not(.sticky) button:hover {
+  background-color: #f1f5f9 !important;
+  color: #1e293b !important;
+}
+
+.dark.style-elegant .navigation-header-root:not(.fixed):not(.sticky) button:hover,
+.dark .style-elegant .navigation-header-root:not(.fixed):not(.sticky) button:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+}
+
+/* Link colors in header */
+.style-elegant .navigation-header-root.fixed a,
+.style-elegant .navigation-header-root.sticky a {
+  background-color: transparent !important;
+  border: none !important;
+  color: white !important;
+}
+
+.style-elegant .navigation-header-root:not(.fixed):not(.sticky) a {
+  background-color: transparent !important;
+  border: none !important;
+  color: #475569 !important;
+}
+
+/* Active and Hover states for Floating Headers */
+.style-elegant .navigation-header-root.fixed a:hover,
+.style-elegant .navigation-header-root.fixed button:hover,
+.style-elegant .navigation-header-root.sticky a:hover,
+.style-elegant .navigation-header-root.sticky button:hover,
+.style-elegant .navigation-header-root.fixed [class*="active"],
+.style-elegant .navigation-header-root.sticky [class*="active"],
+.style-elegant .navigation-header-root.fixed .bg-primary,
+.style-elegant .navigation-header-root.sticky .bg-primary {
+  background-color: rgba(255, 255, 255, 0.25) !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* Active and Hover states for Static Admin Headers */
+.style-elegant .navigation-header-root:not(.fixed):not(.sticky) a:hover,
+.style-elegant .navigation-header-root:not(.fixed):not(.sticky) [class*="active"] {
+  background-color: #f1f5f9 !important;
+  color: #1e293b !important;
+  border-radius: 0.5rem;
+}
+
+/* Fix DarkModeToggle specifically in elegant floating header */
+.style-elegant .navigation-header-root.fixed button[class*="rounded-md"],
+.style-elegant .navigation-header-root.sticky button[class*="rounded-md"] {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.style-elegant .navigation-header-root.fixed button[class*="rounded-md"]:hover,
+.style-elegant .navigation-header-root.sticky button[class*="rounded-md"]:hover {
+  background-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* For Static Admin Header DarkModeToggle */
+.style-elegant .navigation-header-root:not(.fixed):not(.sticky) button[class*="rounded-md"] {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  color: #475569 !important;
+}
+
+.dark.style-elegant .navigation-header-root:not(.fixed):not(.sticky) button[class*="rounded-md"],
+.dark .style-elegant .navigation-header-root:not(.fixed):not(.sticky) button[class*="rounded-md"] {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+}
+
+.style-elegant .navigation-header-root:not(.fixed):not(.sticky) button[class*="rounded-md"] * {
+  color: inherit !important;
+}
+
+.style-elegant .navigation-header-root .text-primary-foreground,
+.style-elegant .navigation-header-root.fixed .text-primary-foreground,
+.style-elegant .navigation-header-root.sticky .text-primary-foreground {
+  color: white !important;
+}
+
+/* Mobile Dropdown Menu & Bottom Nav in Elegant Theme */
+.style-elegant .navigation-header-root div.lg\:hidden.bg-card,
+.style-elegant .fixed.bottom-0.bg-card {
+  background: linear-gradient(135deg, #1e1b4b, #312e81) !important;
+  background-color: #1e1b4b !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.style-elegant .navigation-header-root div.lg\:hidden.bg-card *,
+.style-elegant .fixed.bottom-0.bg-card * {
+  color: white !important;
+}
+
+.style-elegant .fixed.bottom-0.bg-card .text-primary {
+  color: #db2777 !important;
+  /* Pink accent for active bottom nav item */
+}
+
+/* Sidebar Styling */
+.style-elegant aside,
+.style-elegant .sidebar-container,
+.style-elegant .sidebar-root {
+  background: linear-gradient(180deg, #1e1b4b, #2d2a70) !important;
+  /* Elegant dark navy/indigo */
+  border-right: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove white border under logo in sidebar */
+.style-elegant .sidebar-root div.border-b {
+  border-bottom: none !important;
+}
+
+.style-elegant aside *,
+.style-elegant .sidebar-container *,
+.style-elegant .sidebar-root * {
+  color: white !important;
+}
+
+/* Ensure Sidebar Toggle button is ALWAYS visible as a white circle in Style 2 */
+.style-elegant .sidebar-root button[class*="absolute"],
+.style-elegant .sidebar-root button[title*="Sidebar"] {
+  background-color: white !important;
+  border-radius: 9999px !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  transition: all 0.2s ease !important;
+}
+
+.style-elegant .sidebar-root button[class*="absolute"] *,
+.style-elegant .sidebar-root button[title*="Sidebar"] * {
+  color: #1e1b4b !important;
+  /* Dark Indigo icon for contrast */
+}
+
+.style-elegant .sidebar-root button[title*="Sidebar"]:hover {
+  background-color: #f1f5f9 !important;
+  transform: scale(1.1);
+}
+
+/* Custom Scrollbar for Elegant Sidebar */
+.style-elegant .sidebar-root nav::-webkit-scrollbar {
+  width: 5px;
+}
+
+.style-elegant .sidebar-root nav::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.style-elegant .sidebar-root nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 10px;
+}
+
+.style-elegant .sidebar-root nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Hide scrollbar for Firefox */
+.style-elegant .sidebar-root nav {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+/* Ensure secondary text in sidebar is readable but slightly dimmer */
+.style-elegant .sidebar-root div[class*="groupTitleClasses"],
+.style-elegant .sidebar-root .uppercase {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Sidebar Active Item */
+.style-elegant aside .active-item,
+.style-elegant .sidebar-container .active-item,
+.style-elegant .sidebar-root .active-item,
+.style-elegant aside [class*="active"],
+.style-elegant .sidebar-container [class*="active"],
+.style-elegant .sidebar-root [class*="active"] {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: white !important;
+  border-left: 4px solid #db2777 !important;
+  /* Pink accent */
+}
+
+/* Sidebar Hover State - Smooth Transparent White */
+.style-elegant .sidebar-root a:hover,
+.style-elegant .sidebar-root button:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+}
+
+/* Fix sidebar logout area background */
+.style-elegant .sidebar-root div.border-t {
+  background: transparent !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Ensure Body text follows Theme 2 while allowing background to fallback */
+.style-elegant body {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark.style-elegant body {
+  background-color: #020617 !important;
+  /* Rich deep dark for elegant dark mode */
+}
+
+/* Ensure Body and Main follow Theme 1 standard colors */
+.style-elegant body,
+.style-elegant main {
+  background-color: transparent !important;
+}
+
+.dark.style-elegant main {
+  background-color: #0f172a !important;
+}
+
+/* Cards on white background should have soft shadows */
+.style-elegant .bg-card:not(header):not(.navigation-header-root) {
+  background-color: hsl(var(--card)) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  color: hsl(var(--card-foreground)) !important;
+}
+
+.dark.style-elegant .bg-card:not(header):not(.navigation-header-root) {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
 }
 
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
 }
 
-/* Add these animation styles */
 @keyframes blob {
   0% {
     transform: translate(0px, 0px) scale(1);
   }
+
   33% {
     transform: translate(30px, -50px) scale(1.1);
   }
+
   66% {
     transform: translate(-20px, 20px) scale(0.9);
   }
+
   100% {
     transform: translate(0px, 0px) scale(1);
   }
@@ -86,22 +510,21 @@
   animation-delay: 2s;
 }
 
-  .animation-delay-4000 {
-    animation-delay: 4s;
-  }
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
 
-  .no-select {
-    -webkit-user-select: none !important; /* Safari */
-    -moz-user-select: none !important; /* Firefox */
-    -ms-user-select: none !important; /* IE10+/Edge */
-    user-select: none !important; /* Standard */
+.no-select {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
 
-    /* Allow text selection on input and textarea elements */
-    input,
-    textarea {
-      -webkit-user-select: text !important;
-      -moz-user-select: text !important;
-      -ms-user-select: text !important;
-      user-select: text !important;
-    }
+  input,
+  textarea {
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    user-select: text !important;
   }
+}
