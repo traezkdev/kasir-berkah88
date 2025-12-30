@@ -8,6 +8,7 @@ import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import authFetch from '../../utils/authFetch';
 import Icon from '../../components/AppIcon';
 import StockAlertBanner from '../../components/StockAlertBanner';
+import OwnerMotivationalModal from '../../components/ui/OwnerMotivationalModal';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -246,6 +247,9 @@ const OwnerDashboard = ({ headerTitle }) => {
                 <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
                     {/* Stock Alert Banner */}
                     <StockAlertBanner isOwner={true} />
+
+                    {/* Owner AI Motivational Popup */}
+                    <OwnerMotivationalModal />
 
                     <div className="mb-6 mt-4">
                         <BreadcrumbNavigation />

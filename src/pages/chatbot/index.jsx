@@ -6,7 +6,7 @@ import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
 import useNotification from '../../hooks/useNotification';
 
-const chatbotApiUrl = 'https://chat.inviteshare.my.id';
+const chatbotApiUrl = import.meta.env.VITE_CHATBOT_API_URL || 'https://chat.inviteshare.my.id';
 
 const ChatbotPage = ({ headerTitle, isModal = false }) => {
     const { theme } = useTheme();
