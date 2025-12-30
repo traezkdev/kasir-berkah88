@@ -96,7 +96,7 @@ const UangBisnis = ({ headerTitle }) => {
         setIsExpenseModalOpen(true);
     };
 
-    const handleSaveDeposit = async (amount, description) => {
+    const handleSaveDeposit = async (amount, description, date) => {
         try {
             const response = await authFetch(`${apiUrl}/api/accounts/deposit`, {
                 method: 'POST',
@@ -107,6 +107,7 @@ const UangBisnis = ({ headerTitle }) => {
                     account_name: 'owner_deposit',
                     amount: amount,
                     description: description,
+                    created_at: date // Pass user's local date
                 }),
             });
             if (!response.ok) {
@@ -122,7 +123,7 @@ const UangBisnis = ({ headerTitle }) => {
         }
     };
 
-    const handleSaveExpense = async (amount, description) => {
+    const handleSaveExpense = async (amount, description, date) => {
         try {
             const response = await authFetch(`${apiUrl}/api/accounts/expense`, {
                 method: 'POST',
@@ -133,6 +134,7 @@ const UangBisnis = ({ headerTitle }) => {
                     account_name: 'owner_deposit',
                     amount: amount,
                     description: description,
+                    created_at: date // Pass user's local date
                 }),
             });
             if (!response.ok) {

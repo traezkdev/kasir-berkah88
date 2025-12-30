@@ -131,7 +131,7 @@ const LapakDeposit = ({ headerTitle }) => {
         setIsExpenseModalOpen(true);
     };
 
-    const handleSaveDeposit = async (amount, description) => {
+    const handleSaveDeposit = async (amount, description, date) => {
         try {
             const response = await authFetch(`${apiUrl}/api/accounts/deposit`, {
                 method: 'POST',
@@ -142,6 +142,7 @@ const LapakDeposit = ({ headerTitle }) => {
                     account_name: 'lapak_deposit',
                     amount: amount,
                     description: description,
+                    created_at: date // Pass the user's local date
                 }),
             });
             if (!response.ok) {
@@ -157,7 +158,7 @@ const LapakDeposit = ({ headerTitle }) => {
         }
     };
 
-    const handleSaveExpense = async (amount, description) => {
+    const handleSaveExpense = async (amount, description, date) => {
         try {
             const response = await authFetch(`${apiUrl}/api/accounts/expense`, {
                 method: 'POST',
@@ -168,6 +169,7 @@ const LapakDeposit = ({ headerTitle }) => {
                     account_name: 'lapak_deposit',
                     amount: amount,
                     description: description,
+                    created_at: date // Pass the user's local date
                 }),
             });
             if (!response.ok) {

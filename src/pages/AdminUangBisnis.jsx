@@ -111,7 +111,7 @@ const AdminUangBisnis = ({ headerTitle }) => { // Changed component name
         setIsExpenseModalOpen(true);
     };
 
-    const handleSaveDeposit = async (amount, description) => {
+    const handleSaveDeposit = async (amount, description, date) => {
         try {
             const response = await authFetch(`${apiUrl}/api/accounts/deposit`, {
                 method: 'POST',
@@ -122,6 +122,7 @@ const AdminUangBisnis = ({ headerTitle }) => { // Changed component name
                     account_name: 'owner_deposit',
                     amount: amount,
                     description: description,
+                    created_at: date // Pass user's local date
                 }),
             });
             if (!response.ok) {
@@ -137,7 +138,7 @@ const AdminUangBisnis = ({ headerTitle }) => { // Changed component name
         }
     };
 
-    const handleSaveExpense = async (amount, description) => {
+    const handleSaveExpense = async (amount, description, date) => {
         try {
             const response = await authFetch(`${apiUrl}/api/accounts/expense`, {
                 method: 'POST',
@@ -148,6 +149,7 @@ const AdminUangBisnis = ({ headerTitle }) => { // Changed component name
                     account_name: 'owner_deposit',
                     amount: amount,
                     description: description,
+                    created_at: date // Pass user's local date
                 }),
             });
             if (!response.ok) {
