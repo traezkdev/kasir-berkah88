@@ -6,7 +6,7 @@ import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
 import useNotification from '../../hooks/useNotification';
 
-const chatbotApiUrl = 'http://localhost:4001';
+const chatbotApiUrl = import.meta.env.VITE_CHATBOT_API_URL || 'http://localhost:4001';
 
 const ChatbotPage = ({ headerTitle, isModal = false }) => {
     const { theme } = useTheme();
