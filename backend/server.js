@@ -1763,7 +1763,13 @@ app.get("/api/expenses", authenticateToken, authorizeRoles('user', 'admin', 'gue
         // Query to get paginated data
         const dataSql = `
             SELECT 
-                e.*, 
+                e.id,
+                e.name,
+                e.amount,
+                e.category,
+                DATE_FORMAT(e.date, '%Y-%m-%d %H:%i:%s+07:00') AS date,
+                e.notes,
+                e.user_id,
                 u.username AS recorded_by
             FROM expenses e
             LEFT JOIN users u ON e.user_id = u.id
@@ -1819,7 +1825,7 @@ app.put("/api/expenses/:id", authenticateToken, authorizeRoles('user', 'admin'),
            date = COALESCE(?, date), 
            notes = COALESCE(?, notes) 
            WHERE id = ?`;
-        const params = [name, amount, category, date ? new Date(date) : null, notes, req.params.id];
+        const params = [name, amount, category, date ? date.replace('T', ' ') : null, notes, req.params.id];
         const [result] = await db.query(sql, params);
 
         if (result.affectedRows === 0) {
@@ -1943,7 +1949,15 @@ app.get("/api/accounts/:accountName", authenticateToken, async (req, res) => {
         const whereSql = whereClauses.join(' AND ');
 
         const [transactions] = await db.query(
-            `SELECT at.*, u.username as created_by_username 
+            `SELECT 
+                at.id,
+                at.account_id,
+                at.type,
+                at.amount,
+                at.description,
+                at.created_by_user_id,
+                DATE_FORMAT(at.created_at, '%Y-%m-%d %H:%i:%s+07:00') AS created_at,
+                u.username as created_by_username 
              FROM account_transactions at 
              JOIN users u ON at.created_by_user_id = u.id 
              WHERE ${whereSql} ORDER BY at.created_at DESC, at.id DESC`,
@@ -2144,7 +2158,7 @@ app.put("/api/accounts/transactions/:id", authenticateToken, async (req, res) =>
         }
 
         // Update transaction - use provided date or keep existing one if not provided
-        const finalDate = date ? new Date(date) : new Date(transaction.created_at);
+        const finalDate = date ? date.replace('T', ' ') : transaction.created_at;
         await connection.query('UPDATE account_transactions SET description = ?, amount = ?, created_at = ? WHERE id = ?', [description, newAmount, finalDate, id]);
 
         // Update account balance
@@ -3362,20 +3376,20 @@ app.get("/api/laporan-lengkap", authenticateToken, authorizeRoles('admin', 'owne
         const hasDateFilter = startDate && endDate;
 
         // Base queries
-        let transactionsQuery = `SELECT * FROM transactions ORDER BY timestamp DESC, id DESC`;
-        let expensesQuery = `SELECT * FROM expenses ORDER BY date DESC, id DESC`;
-        let lapakAccountQuery = `SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'lapak_deposit' ORDER BY at.created_at DESC, at.id DESC`;
-        let ownerAccountQuery = `SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'owner_deposit' ORDER BY at.created_at DESC, at.id DESC`;
+        let transactionsQuery = `SELECT id, DATE_FORMAT(timestamp, '%Y-%m-%d %H:%i:%s+07:00') AS timestamp, items, total, ppn, isEmployeeMeal, payment_method, cash_paid, \`change\`, order_id, user_id, manual_discount, catatan, deleted_at FROM transactions ORDER BY timestamp DESC, id DESC`;
+        let expensesQuery = `SELECT id, name, amount, category, DATE_FORMAT(date, '%Y-%m-%d %H:%i:%s+07:00') AS date, notes, user_id FROM expenses ORDER BY date DESC, id DESC`;
+        let lapakAccountQuery = `SELECT at.id, at.account_id, at.type, at.amount, at.description, at.created_by_user_id, DATE_FORMAT(at.created_at, '%Y-%m-%d %H:%i:%s+07:00') AS created_at, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'lapak_deposit' ORDER BY at.created_at DESC, at.id DESC`;
+        let ownerAccountQuery = `SELECT at.id, at.account_id, at.type, at.amount, at.description, at.created_by_user_id, DATE_FORMAT(at.created_at, '%Y-%m-%d %H:%i:%s+07:00') AS created_at, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'owner_deposit' ORDER BY at.created_at DESC, at.id DESC`;
         const menuStockQuery = `SELECT id, name, stock, category, price, hpp FROM menu_items ORDER BY name ASC`;
         const rawMaterialStockQuery = `SELECT id, name, current_stock, unit, price_per_item FROM raw_materials ORDER BY name ASC`;
 
         const queryParams = hasDateFilter ? [startDate, `${endDate} 23:59:59`] : [];
 
         if (hasDateFilter) {
-            transactionsQuery = `SELECT * FROM transactions WHERE timestamp BETWEEN ? AND ? ORDER BY timestamp DESC, id DESC`;
-            expensesQuery = `SELECT * FROM expenses WHERE date BETWEEN ? AND ? ORDER BY date DESC, id DESC`;
-            lapakAccountQuery = `SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'lapak_deposit' AND at.created_at BETWEEN ? AND ? ORDER BY at.created_at DESC, at.id DESC`;
-            ownerAccountQuery = `SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'owner_deposit' AND at.created_at BETWEEN ? AND ? ORDER BY at.created_at DESC, at.id DESC`;
+            transactionsQuery = `SELECT id, DATE_FORMAT(timestamp, '%Y-%m-%d %H:%i:%s+07:00') AS timestamp, items, total, ppn, isEmployeeMeal, payment_method, cash_paid, \`change\`, order_id, user_id, manual_discount, catatan, deleted_at FROM transactions WHERE timestamp BETWEEN ? AND ? ORDER BY timestamp DESC, id DESC`;
+            expensesQuery = `SELECT id, name, amount, category, DATE_FORMAT(date, '%Y-%m-%d %H:%i:%s+07:00') AS date, notes, user_id FROM expenses WHERE date BETWEEN ? AND ? ORDER BY date DESC, id DESC`;
+            lapakAccountQuery = `SELECT at.id, at.account_id, at.type, at.amount, at.description, at.created_by_user_id, DATE_FORMAT(at.created_at, '%Y-%m-%d %H:%i:%s+07:00') AS created_at, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'lapak_deposit' AND at.created_at BETWEEN ? AND ? ORDER BY at.created_at DESC, at.id DESC`;
+            ownerAccountQuery = `SELECT at.id, at.account_id, at.type, at.amount, at.description, at.created_by_user_id, DATE_FORMAT(at.created_at, '%Y-%m-%d %H:%i:%s+07:00') AS created_at, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'owner_deposit' AND at.created_at BETWEEN ? AND ? ORDER BY at.created_at DESC, at.id DESC`;
         }
 
         const queries = [

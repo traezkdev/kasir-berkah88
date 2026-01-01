@@ -10,10 +10,10 @@ const EditExpenseModal = ({ isOpen, onClose, expense, onUpdateExpense, isLoading
 
   useEffect(() => {
     if (expense) {
-      // Format date to YYYY-MM-DDTHH:MM for datetime-local input
-      const date = new Date(expense.date);
-      const formattedDateTime = date.toISOString().slice(0, 16); // "YYYY-MM-DDTHH:MM"
-      setFormData({ ...expense, date: formattedDateTime });
+      // Format date to YYYY-MM-DDTHH:mm:ss for datetime-local input
+      // Ensuring it's treated as Asia/Jakarta time
+      const dateStr = formatInTimeZone(new Date(expense.date), 'Asia/Jakarta', "yyyy-MM-dd'T'HH:mm:ss");
+      setFormData({ ...expense, date: dateStr });
     } else {
       setFormData({});
     }
@@ -40,18 +40,18 @@ const EditExpenseModal = ({ isOpen, onClose, expense, onUpdateExpense, isLoading
     setFormData(prev => ({ ...prev, category: value }));
   };
 
-    const handleSubmit = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
     if (!expense || !formData.date) {
-      alert('Tanggal dan waktu pengeluaran wajib diisi.'); // Added alert for clarity
+      alert('Tanggal dan waktu pengeluaran wajib diisi.');
       return;
     }
 
     const updatedFormData = {
       ...formData,
-      // Directly use the datetime-local value and convert to ISO string
-      date: new Date(formData.date).toISOString(), 
+      // Pass the date string directly without converting to UTC ISO
+      date: formData.date.replace('T', ' '),
     };
     onUpdateExpense(updatedFormData);
   };
@@ -63,10 +63,10 @@ const EditExpenseModal = ({ isOpen, onClose, expense, onUpdateExpense, isLoading
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-border">
             <div className="flex items-center space-x-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                    <Icon name="Edit3" size={24} className="text-primary" />
-                </div>
-                <h3 className="text-lg font-semibold text-text-primary">Edit Pengeluaran</h3>
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Icon name="Edit3" size={24} className="text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold text-text-primary">Edit Pengeluaran</h3>
             </div>
           </div>
 
@@ -93,6 +93,7 @@ const EditExpenseModal = ({ isOpen, onClose, expense, onUpdateExpense, isLoading
                 label="Tanggal & Waktu"
                 name="date"
                 type="datetime-local"
+                step="1"
                 value={formData.date || ''}
                 onChange={handleChange}
                 required
@@ -106,7 +107,7 @@ const EditExpenseModal = ({ isOpen, onClose, expense, onUpdateExpense, isLoading
                 required
               />
             </div>
-             <Input
+            <Input
               label="Catatan (Opsional)"
               name="notes"
               value={formData.notes || ''}
