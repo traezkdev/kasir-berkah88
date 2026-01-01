@@ -14,14 +14,15 @@ const EditTransactionDescriptionModal = ({ isOpen, onClose, onSave, transaction 
             setDescription(transaction.description || '');
             setAmount(transaction.amount || 0);
 
-            // Format created_at to YYYY-MM-DDTHH:mm for datetime-local input
+            // Format created_at to YYYY-MM-DDTHH:mm:ss for datetime-local input
             const d = new Date(transaction.created_at);
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
             const hours = String(d.getHours()).padStart(2, '0');
             const minutes = String(d.getMinutes()).padStart(2, '0');
-            setDate(`${year}-${month}-${day}T${hours}:${minutes}`);
+            const seconds = String(d.getSeconds()).padStart(2, '0');
+            setDate(`${year}-${month}-${day}T${hours}:${minutes}:${seconds}`);
 
             setError('');
         }
@@ -69,6 +70,7 @@ const EditTransactionDescriptionModal = ({ isOpen, onClose, onSave, transaction 
                         <Input
                             id="date"
                             type="datetime-local"
+                            step="1"
                             value={date}
                             onChange={(e) => { setDate(e.target.value); setError(''); }}
                             required

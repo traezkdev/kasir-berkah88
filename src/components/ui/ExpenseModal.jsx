@@ -7,7 +7,7 @@ const ExpenseModal = ({ isOpen, onClose, onSave, accountType }) => {
     const getNowFormatted = () => {
         const now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        return now.toISOString().slice(0, 16);
+        return now.toISOString().slice(0, 19);
     };
 
     const [amount, setAmount] = useState('');
@@ -49,6 +49,7 @@ const ExpenseModal = ({ isOpen, onClose, onSave, accountType }) => {
                         <input
                             type="datetime-local"
                             id="date"
+                            step="1"
                             value={date}
                             onChange={(e) => setDate(e.target.value)}
                             className="w-full p-2 border border-border rounded-md bg-background text-text-primary focus:ring-primary focus:border-primary"
