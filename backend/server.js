@@ -1946,7 +1946,7 @@ app.get("/api/accounts/:accountName", authenticateToken, async (req, res) => {
             `SELECT at.*, u.username as created_by_username 
              FROM account_transactions at 
              JOIN users u ON at.created_by_user_id = u.id 
-             WHERE ${whereSql} ORDER BY at.created_at DESC`,
+             WHERE ${whereSql} ORDER BY at.created_at DESC, at.id DESC`,
             queryParams
         );
 
@@ -3362,20 +3362,20 @@ app.get("/api/laporan-lengkap", authenticateToken, authorizeRoles('admin', 'owne
         const hasDateFilter = startDate && endDate;
 
         // Base queries
-        let transactionsQuery = `SELECT * FROM transactions ORDER BY timestamp DESC`;
-        let expensesQuery = `SELECT * FROM expenses ORDER BY date DESC`;
-        let lapakAccountQuery = `SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'lapak_deposit' ORDER BY at.created_at DESC`;
-        let ownerAccountQuery = `SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'owner_deposit' ORDER BY at.created_at DESC`;
+        let transactionsQuery = `SELECT * FROM transactions ORDER BY timestamp DESC, id DESC`;
+        let expensesQuery = `SELECT * FROM expenses ORDER BY date DESC, id DESC`;
+        let lapakAccountQuery = `SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'lapak_deposit' ORDER BY at.created_at DESC, at.id DESC`;
+        let ownerAccountQuery = `SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'owner_deposit' ORDER BY at.created_at DESC, at.id DESC`;
         const menuStockQuery = `SELECT id, name, stock, category, price, hpp FROM menu_items ORDER BY name ASC`;
         const rawMaterialStockQuery = `SELECT id, name, current_stock, unit, price_per_item FROM raw_materials ORDER BY name ASC`;
 
         const queryParams = hasDateFilter ? [startDate, `${endDate} 23:59:59`] : [];
 
         if (hasDateFilter) {
-            transactionsQuery = `SELECT * FROM transactions WHERE timestamp BETWEEN ? AND ? ORDER BY timestamp DESC`;
-            expensesQuery = `SELECT * FROM expenses WHERE date BETWEEN ? AND ? ORDER BY date DESC`;
-            lapakAccountQuery = `SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'lapak_deposit' AND at.created_at BETWEEN ? AND ? ORDER BY at.created_at DESC`;
-            ownerAccountQuery = `SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'owner_deposit' AND at.created_at BETWEEN ? AND ? ORDER BY at.created_at DESC`;
+            transactionsQuery = `SELECT * FROM transactions WHERE timestamp BETWEEN ? AND ? ORDER BY timestamp DESC, id DESC`;
+            expensesQuery = `SELECT * FROM expenses WHERE date BETWEEN ? AND ? ORDER BY date DESC, id DESC`;
+            lapakAccountQuery = `SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'lapak_deposit' AND at.created_at BETWEEN ? AND ? ORDER BY at.created_at DESC, at.id DESC`;
+            ownerAccountQuery = `SELECT at.*, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'owner_deposit' AND at.created_at BETWEEN ? AND ? ORDER BY at.created_at DESC, at.id DESC`;
         }
 
         const queries = [
