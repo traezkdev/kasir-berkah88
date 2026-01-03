@@ -240,7 +240,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
     }
 
     try {
-      const response = await authFetch(`${apiUrl}/api/transactions/`, {
+      const response = await authFetch(`${apiUrl}/api/transactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(transaction),

@@ -376,7 +376,7 @@ export default function SimpleTransaction() { // Renamed component
     }
 
     try {
-      const response = await authFetch(`${apiUrl}/api/transactions/`, {
+      const response = await authFetch(`${apiUrl}/api/transactions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
