@@ -411,7 +411,7 @@ export default function SimpleTransaction() { // Renamed component
   };
 
   return (
-    <div className={`flex flex-col ${theme === 'admin' ? 'h-full' : 'h-screen'} bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white no-select overflow-x-hidden transition-all duration-300`}>
+    <div className={`flex flex-col ${theme === 'admin' ? 'h-full bg-gray-50' : 'h-screen bg-gray-100'} dark:bg-gray-900 text-gray-900 dark:text-white no-select overflow-x-hidden transition-all duration-300`}>
       {theme === 'default' && (
         <NavigationHeader
           headerTitle={dashboardTitle}
@@ -435,7 +435,7 @@ export default function SimpleTransaction() { // Renamed component
 
       <div className={`flex flex-1 flex-col md:flex-row overflow-hidden ${theme === 'default' ? 'pt-16' : ''}`}>
         {/* Menu Items Section */}
-        <div className={`w-full ${theme === 'admin' ? 'md:flex-1' : 'md:w-2/3'} p-4 overflow-y-auto md:border-r dark:md:border-gray-700 pb-24 md:pb-16 h-full`}>
+        <div className={`w-full ${theme === 'admin' ? 'md:flex-1 p-1 md:p-4' : 'md:w-2/3 p-4'} overflow-y-auto md:border-r dark:md:border-gray-700 pb-24 md:pb-16 h-full`}>
           <Input
             type="text"
             placeholder="Cari menu..."
@@ -476,7 +476,7 @@ export default function SimpleTransaction() { // Renamed component
               return (
                 <div
                   key={item.id}
-                  className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 transition-all duration-200 relative flex flex-col h-full
+                  className={`${theme === 'admin' ? 'bg-white shadow-sm' : 'bg-white shadow-sm'} dark:bg-gray-800 rounded-xl p-4 transition-all duration-200 relative flex flex-col h-full
                                       ${isOutOfStock && !ignoreStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-md hover:-translate-y-0.5'}
                                       ${isInCart ? 'ring-2 ring-primary ring-inset' : 'border border-transparent'}`
                   } onClick={() => (currentAvailableStock > 0 || ignoreStock) && handleItemClick(item)}
@@ -488,7 +488,7 @@ export default function SimpleTransaction() { // Renamed component
                     <div className="absolute top-2 right-2 bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-md z-10 shadow-sm">TERSEDIA</div>
                   )}
 
-                  <div className="relative aspect-square overflow-hidden rounded-lg mb-3 bg-gray-100 dark:bg-gray-700">
+                  <div className={`relative aspect-square overflow-hidden rounded-lg mb-3 ${theme === 'admin' ? 'bg-gray-50' : 'bg-gray-100'} dark:bg-gray-700`}>
                     <img
                       src={item.image_url ? `${apiUrl}${item.image_url}` : '/assets/images/no_image.png'}
                       alt={item.name}
