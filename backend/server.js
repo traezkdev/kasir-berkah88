@@ -1452,7 +1452,7 @@ app.get("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
 
 
 // Create a new transaction
-app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res, next) => {
+app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res, next) => {
     try {
         const { items, total: frontendTotal, ppn: frontendPpn, ignoreStock, cashPaid, change, isEmployeeMeal, payment_method, manual_discount, catatan } = req.body;
         const errors = [];
@@ -1499,36 +1499,40 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
 
         // Backend calculation for reference or fallback
         let calculatedSubtotal = 0;
-        const itemsWithDiscount = items.map(item => {
-            const discountedPrice = item.price; // item.price is already the final price after item-level discount from frontend
-            calculatedSubtotal += discountedPrice * item.quantity;
-            return { ...item, price: discountedPrice };
+        const itemsWithDiscount = (items || []).map(item => {
+            const price = parseFloat(item.price) || 0;
+            const quantity = parseInt(item.quantity) || 0;
+            calculatedSubtotal += price * quantity;
+            return { ...item, price: price, quantity: quantity };
         });
 
-        const [ppnSetting] = await db.query("SELECT value FROM settings WHERE `key` = 'ppn'");
-        const ppnRate = ppnSetting.length > 0 ? parseFloat(ppnSetting[0].value) : 0.11;
+        const [ppnSetting] = await db.query("SELECT value FROM settings WHERE `key` = ?", ['ppn']);
+        const ppnRate = ppnSetting.length > 0 ? parseFloat(ppnSetting[0].value) : 0.12;
         const calculatedPpn = calculatedSubtotal * ppnRate;
         const calculatedTotal = calculatedSubtotal + calculatedPpn;
 
-        // Use frontend's total if provided, otherwise use backend's calculation
-        const finalTotal = frontendTotal !== undefined ? frontendTotal : calculatedTotal;
+        // Use frontend's total if provided and valid, otherwise use backend's calculation
+        const finalTotal = (frontendTotal !== undefined && frontendTotal !== null && !isNaN(parseFloat(frontendTotal)))
+            ? parseFloat(frontendTotal)
+            : calculatedTotal;
+
         // The stored PPN should reflect the calculated amount based on items, even if total is overridden.
-        const finalPpnAmount = calculatedPpn;
+        const finalPpnAmount = (isNaN(calculatedPpn) || calculatedPpn === null) ? 0 : calculatedPpn;
 
 
         const data = {
             id: newTransactionId,
             timestamp: new Date(),
             items: JSON.stringify(itemsWithDiscount),
-            total: finalTotal,
-            ppn: finalPpnAmount,
+            total: parseFloat(finalTotal || 0).toFixed(2),
+            ppn: parseFloat(finalPpnAmount || 0).toFixed(2),
             isEmployeeMeal: isEmployeeMeal ? 1 : 0,
-            payment_method: payment_method || 'tunai', // Reintroduce fallback
+            payment_method: payment_method || 'tunai',
             ignore_stock: ignoreStock ? 1 : 0,
-            cash_paid: cashPaid || 0,
-            change: change || 0,
-            user_id: req.user.userId,
-            manual_discount: manual_discount || 0,
+            cash_paid: parseFloat(cashPaid || 0).toFixed(2),
+            change: parseFloat(change || 0).toFixed(2),
+            user_id: req.user ? req.user.userId : null,
+            manual_discount: parseFloat(manual_discount || 0).toFixed(2),
             catatan: catatan || null
         };
         const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock, cash_paid, `change`, user_id, manual_discount, catatan) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)';
@@ -1538,7 +1542,7 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
 
         if (!ignoreStock) {
             // --- STOCK REDUCTION LOGIC --- 
-            for (const item of req.body.items) {
+            for (const item of itemsWithDiscount) {
                 const updateStockSql = 'UPDATE menu_items SET stock = stock - ? WHERE id = ?';
                 await db.query(updateStockSql, [item.quantity, item.id]);
             }
@@ -1560,6 +1564,24 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
             res.status(404).json({ "error": "Failed to retrieve the newly created transaction." });
         }
     } catch (err) {
+        const errorLog = `
+--- TRANSACTION ERROR ---
+Time: ${new Date().toISOString()}
+Body: ${JSON.stringify(req.body, null, 2)}
+Error: ${err.message}
+Stack: ${err.stack}
+-------------------------
+`;
+        try {
+            const fs = require('fs');
+            const path = require('path');
+            fs.appendFileSync(path.join(__dirname, 'error.log'), errorLog);
+        } catch (fsErr) {
+            console.error("Failed to write to error.log:", fsErr);
+        }
+
+        console.error("DEBUG: Transaction Error Body:", req.body);
+        console.error("DEBUG: Transaction Error Message:", err.message);
         res.status(400).json({ "error": err.message, "stack": err.stack });
     }
 });
@@ -1567,7 +1589,7 @@ app.post("/api/transactions/", authenticateToken, authorizeRoles('user', 'admin'
 // Update a transaction
 app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res, next) => {
     try {
-        const { total, ppn, isEmployeeMeal, payment_method, timestamp, manual_discount, catatan } = req.body;
+        const { total, ppn, isEmployeeMeal, payment_method, timestamp, manual_discount, catatan, items } = req.body;
         console.log(`[UPDATE TRANSACTION] ID: ${req.params.id}`, req.body); // Debug log
         const { id } = req.params;
 
@@ -1578,9 +1600,22 @@ app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
            payment_method = COALESCE(?, payment_method),
            timestamp = COALESCE(?, timestamp),
            manual_discount = COALESCE(?, manual_discount),
-           catatan = COALESCE(?, catatan)
+           catatan = COALESCE(?, catatan),
+           items = COALESCE(?, items)
            WHERE id = ? AND deleted_at IS NULL`;
-        const params = [total, ppn, isEmployeeMeal ? 1 : 0, payment_method, timestamp ? new Date(timestamp) : null, manual_discount, catatan, id];
+
+        const params = [
+            total,
+            ppn,
+            isEmployeeMeal !== undefined ? (isEmployeeMeal ? 1 : 0) : null,
+            payment_method,
+            timestamp ? new Date(timestamp) : null,
+            manual_discount,
+            catatan,
+            items ? (typeof items === 'string' ? items : JSON.stringify(items)) : null,
+            id
+        ];
+
         const [result] = await db.query(sql, params);
 
         if (result.affectedRows === 0) {

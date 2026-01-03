@@ -32,7 +32,7 @@ const OfflineSyncManager = () => {
         // Sync Transactions
         for (const item of transactions) {
             try {
-                const response = await authFetch(`${apiUrl}/api/transactions/`, {
+                const response = await authFetch(`${apiUrl}/api/transactions`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(item.data),
@@ -108,8 +108,8 @@ const OfflineSyncManager = () => {
                 onClick={syncData}
                 disabled={isSyncing || !navigator.onLine}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-lg transition-all ${!navigator.onLine
-                        ? 'bg-gray-500 text-white cursor-not-allowed'
-                        : 'bg-primary text-white hover:scale-105 active:scale-95'
+                    ? 'bg-gray-500 text-white cursor-not-allowed'
+                    : 'bg-primary text-white hover:scale-105 active:scale-95'
                     }`}
             >
                 <AppIcon

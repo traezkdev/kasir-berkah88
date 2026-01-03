@@ -100,6 +100,8 @@ const Settings = () => {
   const [isRestaurantSettingsModalOpen, setIsRestaurantSettingsModalOpen] = useState(false);
   const [restaurantSettings, setRestaurantSettings] = useState({ restaurant_name: 'Trz Kasir Apps', restaurant_slogan: 'Aplikasi kasir modern cepat dan keren' });
   const [isDataSyncModalOpen, setIsDataSyncModalOpen] = useState(false);
+  const [ppnRate, setPpnRate] = useState('');
+  const [newPpnRate, setNewPpnRate] = useState('');
 
   // --- Effects ---
   useEffect(() => {
@@ -166,6 +168,8 @@ const Settings = () => {
         setInitialCapital(data.data.initial_capital || '');
         setCashierDashboardTitle(data.data.cashier_dashboard_title || 'Dasbor Kasir');
         setNewCashierDashboardTitle(data.data.cashier_dashboard_title || 'Dasbor Kasir');
+        setPpnRate(data.data.ppn || '0.12');
+        setNewPpnRate(data.data.ppn || '0.12');
 
         // Fetch current logo URL
         const logoResponse = await authFetch(`${apiUrl}/api/settings/logo`);
@@ -210,7 +214,7 @@ const Settings = () => {
     } catch (err) { console.error('Fetch employees error:', err); }
   };
 
-  const handleUpdateSetting = async (e, endpoint, body, successMessage) => {
+  const handleUpdateSetting = async (e, endpoint, body, successMessage, method = 'PUT') => {
     e.preventDefault();
     clearMessages();
     setIsLoading(true);
@@ -234,7 +238,7 @@ const Settings = () => {
 
     try {
       const response = await authFetch(`${apiUrl}${endpoint}`, {
-        method: 'PUT',
+        method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
@@ -540,6 +544,7 @@ const Settings = () => {
                   <SettingsCard icon="ToggleRight" title="Pendaftaran Pengguna" description="Izinkan atau blokir pengguna baru untuk mendaftar." onClick={() => setActiveModal('registration')} disabled={!isAdmin} />
                   <SettingsCard icon="Share2" title="Tampilan Media Sosial" description="Atur judul, deskripsi, dan gambar untuk berbagi di media sosial." onClick={() => setActiveModal('socialShare')} disabled={!isAdmin} />
                   <SettingsCard icon="Type" title="Judul Dasbor Kasir" description="Ubah judul yang ditampilkan di halaman dasbor kasir." onClick={() => setActiveModal('cashierDashboardTitle')} disabled={!isAdmin} />
+                  <SettingsCard icon="Percent" title="Pengaturan PPN Global" description="Atur persentase pajak (PPN) default untuk semua transaksi." onClick={() => setActiveModal('ppnRate')} disabled={!isAdmin} />
                   <SettingsCard icon="ChartNoAxesColumnIncreasing" title="Laporan Transaksi Owner" description="Lihat laporan pendapatan dan pengeluaran bisnis owner." onClick={() => navigate('/admin-uang-bisnis')} />
                 </>
               )}
@@ -610,6 +615,26 @@ const Settings = () => {
       <SettingsModal title="Ubah Judul Dasbor Kasir" isOpen={activeModal === 'cashierDashboardTitle'} onClose={handleModalClose}>
         <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/cashier_dashboard_title', { value: newCashierDashboardTitle }, 'Judul dasbor kasir berhasil diperbarui!')} className="space-y-4">
           <Input label="Judul Dasbor Kasir Baru" name="newCashierDashboardTitle" type="text" value={newCashierDashboardTitle} onChange={(e) => setNewCashierDashboardTitle(e.target.value)} required />
+          <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
+        </form>
+      </SettingsModal>
+
+      <SettingsModal title="Atur PPN Global" isOpen={activeModal === 'ppnRate'} onClose={handleModalClose}>
+        <form onSubmit={(e) => {
+          // Use POST /api/settings which accepts an object
+          e.preventDefault();
+          handleUpdateSetting(e, '/api/settings', { ppn: newPpnRate }, 'PPN Global berhasil diperbarui!', 'POST');
+        }} className="space-y-4">
+          <p className="text-sm text-text-secondary mb-4">Nilai 0.12 berarti 12%. Gunakan titik (.) untuk desimal.</p>
+          <Input
+            label="Rate PPN (Contoh: 0.12 untuk 12%)"
+            name="newPpnRate"
+            type="number"
+            step="0.01"
+            value={newPpnRate}
+            onChange={(e) => setNewPpnRate(e.target.value)}
+            required
+          />
           <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
         </form>
       </SettingsModal>

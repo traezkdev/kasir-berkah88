@@ -185,7 +185,8 @@ const setupDatabase = async () => {
     // Ensure ignore_stock_simple_transaction setting exists and defaults to '0' (false)
     const ensureIgnoreStockSimpleTransactionSetting = `
       INSERT INTO settings (\`key\`, \`value\`) VALUES
-      ('ignore_stock_simple_transaction', '0')
+      ('ignore_stock_simple_transaction', '0'),
+      ('ppn', '0.12')
       ON DUPLICATE KEY UPDATE \`value\` = \`value\`;
     `;
     await connection.query(ensureIgnoreStockSimpleTransactionSetting);
