@@ -32,7 +32,7 @@ const EditTransactionModal = ({
     const fetchData = async () => {
       try {
         const [menuRes, settingsRes] = await Promise.all([
-          authFetch(`${apiUrl}/api/menu-items`),
+          authFetch(`${apiUrl}/api/menu-items/all`),
           authFetch(`${apiUrl}/api/all-settings`)
         ]);
 
