@@ -1506,8 +1506,8 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
             return { ...item, price: price, quantity: quantity };
         });
 
-        const [ppnSetting] = await db.query("SELECT value FROM settings WHERE `key` = 'ppn'");
-        const ppnRate = ppnSetting.length > 0 ? parseFloat(ppnSetting[0].value) : 0.11;
+        const [ppnSetting] = await db.query("SELECT value FROM settings WHERE `key` = ?", ['ppn']);
+        const ppnRate = ppnSetting.length > 0 ? parseFloat(ppnSetting[0].value) : 0.12;
         const calculatedPpn = calculatedSubtotal * ppnRate;
         const calculatedTotal = calculatedSubtotal + calculatedPpn;
 
@@ -1589,7 +1589,7 @@ Stack: ${err.stack}
 // Update a transaction
 app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res, next) => {
     try {
-        const { total, ppn, isEmployeeMeal, payment_method, timestamp, manual_discount, catatan } = req.body;
+        const { total, ppn, isEmployeeMeal, payment_method, timestamp, manual_discount, catatan, items } = req.body;
         console.log(`[UPDATE TRANSACTION] ID: ${req.params.id}`, req.body); // Debug log
         const { id } = req.params;
 
@@ -1600,9 +1600,22 @@ app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
            payment_method = COALESCE(?, payment_method),
            timestamp = COALESCE(?, timestamp),
            manual_discount = COALESCE(?, manual_discount),
-           catatan = COALESCE(?, catatan)
+           catatan = COALESCE(?, catatan),
+           items = COALESCE(?, items)
            WHERE id = ? AND deleted_at IS NULL`;
-        const params = [total, ppn, isEmployeeMeal ? 1 : 0, payment_method, timestamp ? new Date(timestamp) : null, manual_discount, catatan, id];
+
+        const params = [
+            total,
+            ppn,
+            isEmployeeMeal !== undefined ? (isEmployeeMeal ? 1 : 0) : null,
+            payment_method,
+            timestamp ? new Date(timestamp) : null,
+            manual_discount,
+            catatan,
+            items ? (typeof items === 'string' ? items : JSON.stringify(items)) : null,
+            id
+        ];
+
         const [result] = await db.query(sql, params);
 
         if (result.affectedRows === 0) {
