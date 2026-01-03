@@ -163,7 +163,7 @@
     // Hide widget on /chatbot page
     // Hide widget on specific pages
     function updateWidgetVisibility() {
-        const hiddenPaths = ['/chatbot', '/', '/berkah88'];
+        const hiddenPaths = ['/chatbot', '/', '/berkah88', '/guest-checkout'];
         if (hiddenPaths.includes(window.location.pathname)) {
             container.style.display = 'none';
         } else {
