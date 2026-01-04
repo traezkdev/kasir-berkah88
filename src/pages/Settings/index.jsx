@@ -601,6 +601,7 @@ const Settings = () => {
                 <SettingsCard icon="Contact" title="Manajemen Karyawan" description="Tambah, ubah, dan hapus data karyawan." onClick={() => setActiveModal('employeeManagement')} />
                 <SettingsCard icon="ShieldAlert" title="Kata Sandi Master" description="Ubah kata sandi master untuk tindakan sensitif." onClick={() => setActiveModal('masterPassword')} />
 
+                <SettingsCard icon="Database" title="Manajemen Database" description="Cadangkan (backup) atau kembalikan (restore) data database Anda." onClick={() => navigate('/settings/database')} />
                 <SettingsCard icon="Trash2" title="Hapus Semua Data" description="Hapus semua transaksi, pengeluaran, uang bisnis, riwayat stok, dan reset stok." onClick={() => setActiveModal('clearAllData')} />
                 {appMode === 'full' && (
                   <SettingsCard icon="RefreshCw" title="Sinkronisasi Data" description="Kelola pembaruan data menu, stok, dan kas." onClick={() => setIsDataSyncModalOpen(true)} />
