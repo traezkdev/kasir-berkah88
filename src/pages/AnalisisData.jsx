@@ -594,28 +594,20 @@ const AnalisisData = () => {
 // Sub-component for simple card
 // Sub-component for simple card
 const SummaryCard = ({ title, value, icon, colorClass, desc, isCurrency = true }) => {
-    // Dynamic font size calculation based on length
-    const valStr = String(value);
-    const len = valStr.length;
-
-    let fontSizeClass = 'text-2xl';
-    if (len > 22) fontSizeClass = 'text-sm';
-    else if (len > 18) fontSizeClass = 'text-base';
-    else if (len > 14) fontSizeClass = 'text-lg';
-    else if (len > 11) fontSizeClass = 'text-xl';
-
     return (
         <Card className="shadow-md border-border/60 hover:shadow-lg transition-shadow">
-            <CardContent className="p-6 flex items-center justify-between">
-                <div className="min-w-0 pr-2 flex-1">
-                    <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>
-                    <h3 className={`${fontSizeClass} font-bold ${colorClass} transition-all duration-200 whitespace-nowrap`}>
+            <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-muted-foreground">{title}</p>
+                    <div className={`p-3 rounded-full bg-secondary/50 shrink-0`}>
+                        {icon}
+                    </div>
+                </div>
+                <div>
+                    <h3 className={`text-2xl font-bold ${colorClass} break-words`}>
                         {value}
                     </h3>
                     {desc && <p className="text-xs text-muted-foreground mt-1">{desc}</p>}
-                </div>
-                <div className={`p-3 rounded-full bg-secondary/50 shrink-0`}>
-                    {icon}
                 </div>
             </CardContent>
         </Card>

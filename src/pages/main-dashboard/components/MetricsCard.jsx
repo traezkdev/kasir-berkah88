@@ -23,16 +23,6 @@ const MetricsCard = ({ title, value, icon, color = 'primary', trend = null, desc
   const gradient = gradientClasses[color] || gradientClasses.primary;
   const iconColors = colorClasses[color] || colorClasses.primary;
 
-  // Dynamic font scaling for value
-  const valStr = String(value);
-  const len = valStr.length;
-
-  let fontSizeClass = 'text-2xl';
-  if (len > 22) fontSizeClass = 'text-sm';
-  else if (len > 18) fontSizeClass = 'text-base';
-  else if (len > 14) fontSizeClass = 'text-lg';
-  else if (len > 11) fontSizeClass = 'text-xl';
-
   return (
     <div className={`${gradient} rounded-lg p-0.5 shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out`}>
       <div className="bg-card rounded-md p-4 h-full">
@@ -52,7 +42,7 @@ const MetricsCard = ({ title, value, icon, color = 'primary', trend = null, desc
           )}
         </div>
         <div>
-          <p className={`${fontSizeClass} font-mono font-semibold text-text-primary mb-1 whitespace-nowrap transition-all`}>
+          <p className={`text-2xl font-mono font-semibold text-text-primary mb-1 break-words transition-all`}>
             {value}
           </p>
           <p className="text-sm text-text-secondary">{title}</p>
