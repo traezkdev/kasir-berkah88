@@ -195,6 +195,18 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
               >
                 Laporan Bisnis
               </MenuItem>
+              <MenuItem
+                to="/analisis-data"
+                icon={FaChartLine}
+                onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+                isCollapsed={isCollapsed}
+                handleMouseEnter={handleMouseEnter}
+                handleMouseLeave={handleMouseLeave}
+                navLinkClasses={navLinkClasses}
+                activeLinkClasses={activeLinkClasses}
+              >
+                Analisis Data
+              </MenuItem>
 
               {/* Grup Sistem - Simple */}
               {!isCollapsed && <div className={groupTitleClasses}>Sistem</div>}
@@ -399,8 +411,8 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
                 Laporan Bisnis
               </MenuItem>
               <MenuItem
-                to="/laporan-lengkap"
-                icon={FaFileAlt}
+                to="/analisis-data"
+                icon={FaChartLine}
                 onClick={() => window.innerWidth < 1024 && toggleSidebar()}
                 isCollapsed={isCollapsed}
                 handleMouseEnter={handleMouseEnter}
@@ -408,7 +420,7 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
                 navLinkClasses={navLinkClasses}
                 activeLinkClasses={activeLinkClasses}
               >
-                Laporan Lengkap
+                Analisis Data
               </MenuItem>
 
               {/* Grup Alat & Personalia */}

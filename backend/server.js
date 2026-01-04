@@ -379,7 +379,120 @@ app.get("/api/stock-alerts/count", authenticateToken, authorizeRoles('admin', 'o
     }
 });
 
-// --- Menu Recipes Endpoints ---
+// --- Analytics Breakdown Endpoint ---
+app.get("/api/analytics/breakdown", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        if (!startDate || !endDate) {
+            return res.status(400).json({ error: "startDate and endDate are required" });
+        }
+
+        // 1. Get Transactions
+        const transactionSql = `
+            SELECT t.id, t.timestamp, t.items, t.total
+            FROM transactions t
+            WHERE t.timestamp BETWEEN ? AND ?
+            AND (t.payment_method != 'employee_meal' OR t.payment_method IS NULL)
+            ORDER BY t.timestamp DESC
+        `;
+        const [transactions] = await db.query(transactionSql, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
+
+        // 2. Process Transactions for Item Breakdown
+        const itemSales = {}; // { itemId: { name, quantity, revenue } }
+        let totalRevenue = 0;
+
+        transactions.forEach(t => {
+            totalRevenue += parseFloat(t.total);
+            let items = [];
+            try {
+                // Handle different storage formats just in case
+                items = typeof t.items === 'string' ? JSON.parse(t.items) : t.items;
+            } catch (e) {
+                console.error("Error parsing items JSON for transaction", t.id, e);
+            }
+
+            if (Array.isArray(items)) {
+                items.forEach(item => {
+                    // Item structure check: usually { id, name, qty, price ... }
+                    const id = item.id || item.name; // Fallback to name if id missing
+                    const name = item.name;
+                    const qty = parseInt(item.qty || item.quantity || 0);
+                    const price = parseFloat(item.price || 0);
+                    const total = qty * price;
+
+                    if (!itemSales[id]) {
+                        itemSales[id] = { name, quantity: 0, revenue: 0 };
+                    }
+                    itemSales[id].quantity += qty;
+                    itemSales[id].revenue += total;
+                });
+            }
+        });
+
+        // Convert object to sorted array
+        const topSellingItems = Object.values(itemSales)
+            .sort((a, b) => b.quantity - a.quantity); // Sort by quantity desc
+
+        // 3. Get Expenses Aggregated by Category
+        const expenseSql = `
+            SELECT category, SUM(amount) as total
+            FROM expenses
+            WHERE date BETWEEN ? AND ?
+            GROUP BY category
+        `;
+        const [expensesByCategory] = await db.query(expenseSql, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
+
+        // 4. Get Top Expenses Details
+        const topExpensesSql = `
+             SELECT name, amount, category, date
+             FROM expenses
+             WHERE date BETWEEN ? AND ?
+             ORDER BY amount DESC
+             LIMIT 10
+        `;
+        const [topExpenses] = await db.query(topExpensesSql, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
+
+        const totalExpense = expensesByCategory.reduce((sum, item) => sum + parseFloat(item.total), 0);
+
+        // 5. Calculate Payment Method Stats (Initiative)
+        const paymentMethodSql = `
+            SELECT payment_method, COUNT(*) as count, SUM(total) as total
+            FROM transactions
+            WHERE timestamp BETWEEN ? AND ?
+            GROUP BY payment_method
+        `;
+        const [paymentMethods] = await db.query(paymentMethodSql, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
+
+
+        res.json({
+            message: "success",
+            data: {
+                period: { startDate, endDate },
+                summary: {
+                    totalRevenue,
+                    totalExpense,
+                    netIncome: totalRevenue - totalExpense
+                },
+                sales: {
+                    topSellingItems,
+                    totalTransactions: transactions.length,
+                    paymentMethods
+                },
+                expenses: {
+                    byCategory: expensesByCategory,
+                    topExpenses,
+                    total: totalExpense
+                }
+            }
+        });
+
+    } catch (err) {
+        console.error("Error in analytics breakdown:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- Cash Reconciliations Endpoints ---
 app.get("/api/menu-recipes/:menu_item_id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
         const { menu_item_id } = req.params;
@@ -1215,7 +1328,7 @@ app.post('/api/app-settings', authenticateToken, authorizeRoles('admin'), upload
 // --- Transaction Endpoints ---
 
 // Get all transactions with pagination
-app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir'), async (req, res, next) => {
+app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'owner'), async (req, res, next) => {
     try {
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 20;
@@ -1768,7 +1881,7 @@ app.get("/api/expenses/all", authenticateToken, authorizeRoles('user', 'admin', 
 });
 
 // Get all expenses with pagination and date range filtering
-app.get("/api/expenses", authenticateToken, authorizeRoles('user', 'admin', 'guest'), async (req, res, next) => {
+app.get("/api/expenses", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'owner'), async (req, res, next) => {
     try {
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 20;

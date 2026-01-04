@@ -98,6 +98,9 @@ const OwnerDashboard = ({ headerTitle }) => {
         const totalMenuItemStockValue = allMenuItems.reduce((sum, item) => sum + (parseFloat(item.stock || 0) * parseFloat(item.price || 0)), 0);
         const runningCapital = initialCapital + totalLifetimeRevenue + totalMenuItemStockValue + rawMaterialStockValue - totalLifetimeExpenses;
 
+        const allTimeNetProfit = totalLifetimeRevenue - totalLifetimeExpenses;
+        const totalCombinedStockValue = rawMaterialStockValue + totalMenuItemStockValue;
+
 
         setDashboardData({
             ownerBalance: ownerAccountData?.account?.balance || 0,
@@ -110,6 +113,10 @@ const OwnerDashboard = ({ headerTitle }) => {
             currentFinalCapital: currentFinalCapital,
             initialCapital: initialCapital,
             runningCapital: runningCapital,
+            allTimeRevenue: totalLifetimeRevenue,
+            allTimeExpenses: totalLifetimeExpenses,
+            allTimeNetProfit: allTimeNetProfit,
+            totalCombinedStockValue: totalCombinedStockValue,
             timestamps: {
                 menuStock: allSettings?.menu_stock_last_updated,
                 rawMaterials: allSettings?.raw_materials_last_updated,
@@ -138,48 +145,6 @@ const OwnerDashboard = ({ headerTitle }) => {
             description: 'Jumlah modal awal yang disetor'
         },
         {
-            title: 'Saldo Owner',
-            value: formatCurrency(dashboardData.ownerBalance),
-            icon: 'Wallet',
-            color: 'success',
-            description: 'Total dana pribadi yang tersimpan'
-        },
-        {
-            title: 'Saldo Lapak',
-            value: formatCurrency(dashboardData.lapakBalance),
-            icon: 'Store',
-            color: 'info',
-            description: 'Total dana untuk operasional lapak'
-        },
-        {
-            title: 'Pendapatan (Bulan Ini)',
-            value: formatCurrency(dashboardData.monthlyRevenue),
-            icon: 'TrendingUp',
-            color: 'primary',
-            description: 'Total pendapatan di bulan berjalan'
-        },
-        {
-            title: 'Pengeluaran (Bulan Ini)',
-            value: formatCurrency(dashboardData.monthlyExpenses),
-            icon: 'TrendingDown',
-            color: 'warning',
-            description: 'Total pengeluaran di bulan berjalan'
-        },
-        {
-            title: 'Laba Bersih (Bulan Ini)',
-            value: formatCurrency(dashboardData.monthlyNetProfit),
-            icon: 'BarChart3',
-            color: 'success',
-            description: 'Pendapatan dikurangi pengeluaran bulan ini'
-        },
-        {
-            title: 'Modal Akhir Saat Ini',
-            value: formatCurrency((parseFloat(dashboardData.ownerBalance) || 0) + (parseFloat(dashboardData.lapakBalance) || 0)),
-            icon: 'TrendingUp',
-            color: 'success',
-            description: 'saldo owner + saldo lapak'
-        },
-        {
             title: 'Modal Berjalan',
             value: formatCurrency(dashboardData.runningCapital),
             icon: 'Wallet',
@@ -187,19 +152,85 @@ const OwnerDashboard = ({ headerTitle }) => {
             description: 'Modal awal + pendapatan + stok mentah + stok menu - pengeluaran'
         },
         {
-            title: 'Nilai Stok Mentah',
-            value: formatCurrency(dashboardData.rawMaterialStockValue),
-            icon: 'Package',
-            color: 'secondary',
-            description: 'Estimasi nilai total bahan mentah'
+            title: 'Modal Akhir Saat Ini',
+            value: formatCurrency((parseFloat(dashboardData.ownerBalance) || 0) + (parseFloat(dashboardData.lapakBalance) || 0)),
+            icon: 'TrendingUp',
+            color: 'success',
+            description: 'Saldo owner + saldo lapak'
         },
         {
-            title: 'Item Stok Kritis',
-            value: `${dashboardData.criticalItemsCount} Jenis`,
-            icon: 'AlertTriangle',
-            color: 'destructive',
-            description: 'Bahan yang perlu segera dibeli'
+            title: 'Total Nilai Stok (Mentah + Menu)',
+            value: formatCurrency(dashboardData.totalCombinedStockValue),
+            icon: 'DollarSign',
+            color: 'primary',
+            description: 'Nilai total stok bahan mentah dan stok menu'
         },
+        {
+            title: 'Saldo Owner',
+            value: formatCurrency(dashboardData.ownerBalance),
+            icon: 'Wallet',
+            color: 'success',
+            description: 'Dana lapak Di Owner'
+        },
+        {
+            title: 'Keuntungan Kotor (Equity)',
+            value: formatCurrency(dashboardData.runningCapital - dashboardData.initialCapital),
+            icon: 'DollarSign',
+            color: 'accent',
+            description: 'Pendapatan (all) - Pengeluaran (all) + Stok'
+        },
+        {
+            title: 'Total Pendapatan (Semua Waktu)',
+            value: formatCurrency(dashboardData.allTimeRevenue),
+            icon: 'TrendingUp',
+            color: 'success',
+            description: 'Total seluruh pendapatan yang tercatat'
+        },
+        {
+            title: 'Total Pengeluaran (Semua Waktu)',
+            value: formatCurrency(dashboardData.allTimeExpenses),
+            icon: 'TrendingDown',
+            color: 'destructive',
+            description: 'Total seluruh pengeluaran yang tercatat'
+        },
+        {
+            title: 'Total Laba Bersih (Semua Waktu)',
+            value: formatCurrency(dashboardData.allTimeNetProfit),
+            icon: 'BarChart',
+            color: 'accent',
+            description: 'Total seluruh laba/rugi yang tercatat'
+        },
+        // Dynamic logic for 'Selisih Perhitungan'
+        (() => {
+            const currentEndingCapital = (parseFloat(dashboardData.ownerBalance) || 0) + (parseFloat(dashboardData.lapakBalance) || 0);
+            const sumCapital = currentEndingCapital + (parseFloat(dashboardData.initialCapital) || 0);
+            const recordedProfit = parseFloat(dashboardData.allTimeNetProfit) || 0;
+            const diff = sumCapital - recordedProfit;
+
+            let color = 'success';
+            let icon = 'CheckCircle';
+            let valueText = 'Pas dengan data';
+
+            if (diff > 100) {
+                // Surplus (Lebih)
+                color = 'info'; // Blue
+                icon = 'TrendingUp';
+                valueText = `+ ${formatCurrency(diff)}`;
+            } else if (diff < -100) {
+                // Deficit (Kurang)
+                color = 'destructive'; // Red
+                icon = 'TrendingDown';
+                valueText = formatCurrency(diff);
+            }
+
+            return {
+                title: 'Selisih Perhitungan',
+                value: valueText,
+                icon: icon,
+                color: color,
+                description: '(Modal Akhir + Modal Awal) - Laba Bersih'
+            };
+        })()
     ];
 
     const ownerFeatures = [

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import BreadcrumbNavigation from '../../../components/ui/BreadcrumbNavigation';
 import DateRangeSelector from './DateRangeSelector';
 import StockReportSection from './StockReportSection';
@@ -17,6 +18,7 @@ const apiUrl = import.meta.env.VITE_API_URL;
 
 const BusinessReportView = ({ headerTitle, isOwner = false }) => {
     const { theme } = useTheme();
+    const navigate = useNavigate();
     const [selectedDateRange, setSelectedDateRange] = useState(() => {
         const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
         const start = new Date(now);
@@ -270,7 +272,7 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
             {/* Header Section */}
             <div className="mb-6 mt-4">
                 <BreadcrumbNavigation className="mb-4" />
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <h1 className="text-2xl lg:text-3xl font-bold text-text-primary mb-2">
                             {headerTitle || "Laporan Bisnis"}
@@ -279,9 +281,19 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                             Analisis komprehensif performa bisnis Anda.
                         </p>
                     </div>
-                    <Button variant="destructive" onClick={() => setIsModalOpen(true)} className="mt-4 sm:mt-0">
-                        Hapus Semua Data
-                    </Button>
+                    <div className="flex gap-2 flex-wrap">
+                        <Button
+                            variant="primary"
+                            onClick={() => navigate('/analisis-data')}
+                            iconName="BarChart3"
+                            iconPosition="left"
+                        >
+                            Analisis Data
+                        </Button>
+                        <Button variant="destructive" onClick={() => setIsModalOpen(true)}>
+                            Hapus Semua Data
+                        </Button>
+                    </div>
                 </div>
             </div>
 

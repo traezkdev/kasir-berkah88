@@ -36,6 +36,7 @@ import CriticalStockPage from './pages/CriticalStock';
 import MainCriticalStockPage from './pages/MainCriticalStock';
 import AdminUangBisnis from './pages/AdminUangBisnis'; // Add this import
 import LaporanLengkap from './pages/LaporanLengkap';
+import AnalisisData from './pages/AnalisisData';
 import SimpleTransactionPage from './pages/SimpleTransaction';
 import CashReconciliation from './pages/cash-reconciliation';
 import ChatbotPage from './pages/chatbot';
@@ -188,6 +189,17 @@ const AppRoutes = () => {
         <Route path="/lapak-deposit" element={<LapakDeposit />} />
       </Route>
       <Route path="/receipt" element={<ProtectedRoute allowedRoles={['admin', 'kasir', 'user']}><ReceiptPage /></ProtectedRoute>} />
+
+      {/* Shared Admin/Owner Routes */}
+      <Route
+        element={
+          <ProtectedRoute allowedRoles={['admin', 'user', 'owner']}>
+            <DynamicLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/analisis-data" element={<AnalisisData />} />
+      </Route>
 
 
       {/* Catch all other routes */}
