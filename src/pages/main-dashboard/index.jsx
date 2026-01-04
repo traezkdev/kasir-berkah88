@@ -277,17 +277,10 @@ const MainDashboard = ({ headerTitle }) => {
 
     // --- All-Time & Working Capital Metrics (Unaffected by filter) ---
     const initialCapital = parseFloat(settings?.initial_capital || 0);
-    const initialCapitalDate = settings?.initial_capital_date ? new Date(settings.initial_capital_date) : null;
 
-    // Filter transactions for all-time metrics based on initial capital date
-    const allTimeTransactions = initialCapitalDate
-      ? allTransactions.filter(t => new Date(t.timestamp) >= initialCapitalDate)
-      : allTransactions;
-
-    // Filter expenses for all-time metrics based on initial capital date
-    const allTimeExpensesData = initialCapitalDate
-      ? expenses.filter(e => new Date(e.date) >= initialCapitalDate)
-      : expenses;
+    // Use ALL transactions and expenses regardless of initial capital date
+    const allTimeTransactions = allTransactions;
+    const allTimeExpensesData = expenses;
 
     const allTimeRevenue = allTimeTransactions
       .filter(t => t.payment_method !== 'employee_meal')
@@ -649,22 +642,53 @@ const MainDashboard = ({ headerTitle }) => {
       value: formatCurrency(dashboardData.metrics.allTimeRevenue),
       icon: 'TrendingUp',
       color: 'success',
-      description: 'Total pendapatan sejak modal awal diatur'
+      description: 'Total seluruh pendapatan yang tercatat'
     },
     {
       title: 'Total Pengeluaran (Semua Waktu)',
       value: formatCurrency(dashboardData.metrics.allTimeExpenses),
       icon: 'TrendingDown',
       color: 'destructive',
-      description: 'Total pengeluaran sejak modal awal diatur'
+      description: 'Total seluruh pengeluaran yang tercatat'
     },
     {
       title: 'Total Laba Bersih (Semua Waktu)',
       value: formatCurrency(dashboardData.metrics.allTimeNetProfit),
       icon: 'BarChart',
       color: 'accent',
-      description: 'Total laba/rugi sejak modal awal diatur'
-    }
+      description: 'Total seluruh laba/rugi yang tercatat'
+    },
+    // Dynamic logic for 'Selisih Perhitungan'
+    (() => {
+      const currentEndingCapital = (parseFloat(dashboardData.metrics.ownerBalance) || 0) + (parseFloat(dashboardData.metrics.lapakBalance) || 0);
+      const sumCapital = currentEndingCapital + (parseFloat(dashboardData.metrics.initialCapital) || 0);
+      const recordedProfit = parseFloat(dashboardData.metrics.allTimeNetProfit) || 0;
+      const diff = sumCapital - recordedProfit;
+
+      let color = 'success';
+      let icon = 'CheckCircle';
+      let valueText = 'Pas dengan data';
+
+      if (diff > 100) {
+        // Surplus (Lebih)
+        color = 'info'; // Blue
+        icon = 'TrendingUp';
+        valueText = `+ ${formatCurrency(diff)}`;
+      } else if (diff < -100) {
+        // Deficit (Kurang)
+        color = 'destructive'; // Red
+        icon = 'TrendingDown';
+        valueText = formatCurrency(diff);
+      }
+
+      return {
+        title: 'Selisih Perhitungan',
+        value: valueText,
+        icon: icon,
+        color: color,
+        description: '(Modal Akhir + Modal Awal) - Laba Bersih'
+      };
+    })()
   ];
 
   return (
