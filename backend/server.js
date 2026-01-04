@@ -26,6 +26,12 @@ const {
 
 const app = express();
 
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 // 1. CORS (Must be first to handle preflight requests)
 app.use(cors({
     origin: function (origin, callback) {
@@ -3920,6 +3926,7 @@ app.post("/api/database/restore", authenticateToken, authorizeRoles('admin', 'ow
             return res.status(400).json({ error: "No backup file uploaded." });
         }
 
+        // Ensure we can read the file
         const backupContent = fs.readFileSync(req.file.path, 'utf8');
         const backupData = JSON.parse(backupContent);
 
@@ -3928,6 +3935,11 @@ app.post("/api/database/restore", authenticateToken, authorizeRoles('admin', 'ow
         }
 
         connection = await db.getConnection();
+
+        // Increase timeout for this connection if possible
+        await connection.query("SET SESSION wait_timeout = 600");
+        await connection.query("SET SESSION interactive_timeout = 600");
+
         await connection.beginTransaction();
 
         // 1. Disable foreign key checks
@@ -3942,20 +3954,30 @@ app.post("/api/database/restore", authenticateToken, authorizeRoles('admin', 'ow
 
             if (rows.length > 0) {
                 const columns = Object.keys(rows[0]);
-                const placeholders = columns.map(() => '?').join(',');
-                const sql = `INSERT INTO \`${tableName}\` (\`${columns.join('`,`')}\`) VALUES (${placeholders})`;
+                const sql = `INSERT INTO \`${tableName}\` (\`${columns.join('`,`')}\`) VALUES ?`;
 
-                for (const row of rows) {
-                    const values = columns.map(col => {
-                        // Handle potential JSON objects (stored as strings in some DBs or objects in mysql2)
-                        const val = row[col];
+                // Map rows into an array of arrays for bulk insert
+                const values = rows.map(row => {
+                    return columns.map(col => {
+                        let val = row[col];
+
+                        // Handle potential JSON objects
                         if (val !== null && typeof val === 'object' && !(val instanceof Date)) {
                             return JSON.stringify(val);
                         }
+
+                        // NEW: Handle ISO Date strings for MySQL DATETIME columns
+                        if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(val)) {
+                            // Convert '2025-11-21T23:37:58.000Z' to '2025-11-21 23:37:58'
+                            return val.replace('T', ' ').split('.')[0].replace('Z', '');
+                        }
+
                         return val;
                     });
-                    await connection.query(sql, values);
-                }
+                });
+
+                // Execute Bulk Insert (much faster)
+                await connection.query(sql, [values]);
             }
         }
 
@@ -3965,13 +3987,19 @@ app.post("/api/database/restore", authenticateToken, authorizeRoles('admin', 'ow
         await connection.commit();
 
         // Cleanup the uploaded file
-        fs.unlinkSync(req.file.path);
+        if (fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
 
         res.json({ message: "Database restored successfully!" });
     } catch (err) {
         if (connection) {
-            await connection.rollback();
-            await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+            try {
+                await connection.rollback();
+                await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+            } catch (rollbackErr) {
+                console.error("Rollback error:", rollbackErr);
+            }
         }
         console.error("Error restoring database:", err);
         if (req.file && fs.existsSync(req.file.path)) {
