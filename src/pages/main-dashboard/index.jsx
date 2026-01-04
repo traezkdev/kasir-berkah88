@@ -287,7 +287,7 @@ const MainDashboard = ({ headerTitle }) => {
     const yesterdayString = yesterday.toDateString();
 
     // --- All-Time & Working Capital Metrics (Unaffected by filter) ---
-    const initialCapital = parseFloat(settings?.initial_capital || 0);
+    const initialCapital = parseFloat(settings?.initial_capital) || 0;
 
     // Use ALL transactions and expenses regardless of initial capital date
     const allTimeTransactions = allTransactions;
@@ -335,10 +335,12 @@ const MainDashboard = ({ headerTitle }) => {
       }
     }, 0);
 
-    const stockValue = totalCombinedRawMaterialValue; let workingCapital = 0;
+    const stockValue = totalCombinedRawMaterialValue || 0;
+    let workingCapital = 0;
     if (!isNaN(initialCapital)) {
-      workingCapital = initialCapital + allTimeRevenue + totalCombinedRawMaterialValue - allTimeExpenses;
+      workingCapital = (initialCapital || 0) + (allTimeRevenue || 0) + (totalCombinedRawMaterialValue || 0) - (allTimeExpenses || 0);
     }
+    if (isNaN(workingCapital)) workingCapital = 0;
 
     // --- Metrics for Filtered Period ---
     const totalRevenue = filteredTransactions
@@ -451,12 +453,14 @@ const MainDashboard = ({ headerTitle }) => {
     });
   };
   const formatCurrency = (amount) => {
+    const value = parseFloat(amount);
+    if (isNaN(value)) return 'Rp 0';
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-    })?.format(amount);
+    })?.format(value);
   };
 
   if (!dashboardData) {

@@ -3402,17 +3402,26 @@ app.delete("/api/admin/data/all", authenticateToken, authorizeRoles('admin'), as
         await connection.query('TRUNCATE TABLE account_transactions');
         await connection.query('TRUNCATE TABLE notes');
 
-        // Reset stocks and balances
-        await connection.query('UPDATE menu_items SET stock = 0');
-        await connection.query('UPDATE raw_materials SET current_stock = 0');
+        // --- NEW: Clear Menu and Material related data ---
+        await connection.query('TRUNCATE TABLE menu_item_options');
+        await connection.query('TRUNCATE TABLE menu_recipes');
+        await connection.query('DELETE FROM menu_items'); // Cannot TRUNCATE if referenced, so DELETE
+        await connection.query('DELETE FROM raw_materials');
+        await connection.query('DELETE FROM categories'); // Reset categories as well
+
+        // Reset balances
         await connection.query('UPDATE accounts SET balance = 0');
+
+        // Reset settings related to money/closing
+        await connection.query("UPDATE settings SET value = '0' WHERE `key` = 'initial_capital'");
+        await connection.query("DELETE FROM settings WHERE `key` = 'last_closing_date'");
 
         // Re-enable foreign key checks
         await connection.query('SET FOREIGN_KEY_CHECKS = 1');
 
         await connection.commit();
 
-        res.json({ message: "Semua data transaksi, riwayat stok, uang bisnis, dan reset stok telah berhasil dihapus." });
+        res.json({ message: "Semua data transaksi, pengeluaran, uang bisnis, menu, kategori, bahan baku, dan riwayat stok telah berhasil dihapus." });
     } catch (err) {
         if (connection) await connection.rollback();
         res.status(500).json({ error: err.message, stack: err.stack });
@@ -3869,6 +3878,112 @@ app.delete("/api/cash-reconciliation/:id", authenticateToken, async (req, res) =
     }
 });
 
+
+// --- Database Backup & Restore Endpoints ---
+
+// Backup Database (Export to JSON)
+app.get("/api/database/backup", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const [tables] = await db.query("SHOW TABLES");
+        const dbName = process.env.DB_DATABASE || 'database';
+        const tableNames = tables.map(t => Object.values(t)[0]);
+
+        const backupData = {
+            version: "1.0",
+            timestamp: new Date().toISOString(),
+            database: dbName,
+            data: {}
+        };
+
+        for (const tableName of tableNames) {
+            const [rows] = await db.query(`SELECT * FROM \`${tableName}\``);
+            backupData.data[tableName] = rows;
+        }
+
+        const fileName = `backup-${dbName}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+
+        res.setHeader('Content-disposition', `attachment; filename=${fileName}`);
+        res.setHeader('Content-type', 'application/json');
+        res.write(JSON.stringify(backupData, null, 2));
+        res.end();
+    } catch (err) {
+        console.error("Error creating database backup:", err);
+        res.status(500).json({ error: "Failed to create backup: " + err.message });
+    }
+});
+
+// Restore Database (Import from JSON)
+app.post("/api/database/restore", authenticateToken, authorizeRoles('admin', 'owner'), upload.single('backupFile'), async (req, res) => {
+    let connection;
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: "No backup file uploaded." });
+        }
+
+        const backupContent = fs.readFileSync(req.file.path, 'utf8');
+        const backupData = JSON.parse(backupContent);
+
+        if (!backupData.data || typeof backupData.data !== 'object') {
+            return res.status(400).json({ error: "Invalid backup file format." });
+        }
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // 1. Disable foreign key checks
+        await connection.query("SET FOREIGN_KEY_CHECKS = 0");
+
+        // 2. Clear and Insert data for each table
+        for (const [tableName, rows] of Object.entries(backupData.data)) {
+            if (!Array.isArray(rows)) continue;
+
+            // Clear table
+            await connection.query(`DELETE FROM \`${tableName}\``);
+
+            if (rows.length > 0) {
+                const columns = Object.keys(rows[0]);
+                const placeholders = columns.map(() => '?').join(',');
+                const sql = `INSERT INTO \`${tableName}\` (\`${columns.join('`,`')}\`) VALUES (${placeholders})`;
+
+                for (const row of rows) {
+                    const values = columns.map(col => {
+                        // Handle potential JSON objects (stored as strings in some DBs or objects in mysql2)
+                        const val = row[col];
+                        if (val !== null && typeof val === 'object' && !(val instanceof Date)) {
+                            return JSON.stringify(val);
+                        }
+                        return val;
+                    });
+                    await connection.query(sql, values);
+                }
+            }
+        }
+
+        // 3. Re-enable foreign key checks
+        await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+
+        await connection.commit();
+
+        // Cleanup the uploaded file
+        fs.unlinkSync(req.file.path);
+
+        res.json({ message: "Database restored successfully!" });
+    } catch (err) {
+        if (connection) {
+            await connection.rollback();
+            await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+        }
+        console.error("Error restoring database:", err);
+        if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
+        res.status(500).json({ error: "Failed to restore database: " + err.message });
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
+});
 
 // Public API to get all menu items for guest users (no authentication required)
 app.get("/api/guest/menu-items", async (req, res) => {

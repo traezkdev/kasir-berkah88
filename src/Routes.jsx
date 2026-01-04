@@ -44,6 +44,7 @@ import LandingPage from './pages/landing-page';
 import BerkahLandingPage from './pages/berkah88';
 
 import TransactionTrash from './pages/TransactionTrash';
+import DatabaseManagement from './pages/Settings/DatabaseManagement';
 
 // ProtectedRoute component
 const ProtectedRoute = ({ children, allowedRoles, redirectPathForForbiddenRoles }) => {
@@ -161,6 +162,7 @@ const AppRoutes = () => {
         <Route path="/laporan" element={<BusinessReports />} />
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/settings/database" element={<DatabaseManagement />} />
         <Route path="/credits" element={<Credits />} />
         <Route path="/transaksi-sederhana" element={<SimpleTransactionPage />} />
         <Route path="/chatbot" element={<ChatbotPage />} />
