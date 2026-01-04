@@ -165,6 +165,7 @@ const MainDashboard = ({ headerTitle }) => {
       } else {
         // Optionally, set dashboardData to an empty state to stop loading spinner
         setDashboardData({
+          settings: {},
           metrics: { totalRevenue: 0, totalExpenses: 0, stockValue: 0, netProfit: 0, workingCapital: 0, allTimeRevenue: 0, allTimeExpenses: 0, allTimeNetProfit: 0, ownerBalance: 0, lapakBalance: 0, rawMaterialStockValue: 0 },
           todayStats: { transactions: 0, itemsSold: 0, averageOrder: 0, peakHour: 'N/A' },
           recentTransactions: [],
@@ -180,7 +181,8 @@ const MainDashboard = ({ headerTitle }) => {
       console.error("Error during dashboard data fetch:", error);
       // In case of network error, stop loading and show empty data
       setDashboardData({
-        metrics: { totalRevenue: 0, totalExpenses: 0, stockValue: 0, netProfit: 0, workingCapital: 0, allTimeRevenue: 0, allTimeExpenses: 0, allTimeNetProfit: 0, ownerBalance: 0 }, // Ensure all metrics are initialized
+        settings: {},
+        metrics: { totalRevenue: 0, totalExpenses: 0, stockValue: 0, netProfit: 0, workingCapital: 0, allTimeRevenue: 0, allTimeExpenses: 0, allTimeNetProfit: 0, ownerBalance: 0, lapakBalance: 0, rawMaterialStockValue: 0 }, // Ensure all metrics are initialized
         todayStats: { transactions: 0, itemsSold: 0, averageOrder: 0, peakHour: 'N/A' },
         recentTransactions: [],
         dashboardMetrics: {
@@ -252,6 +254,15 @@ const MainDashboard = ({ headerTitle }) => {
     if (filterType !== 'all_time') {
       if (startDate) startDate.setHours(0, 0, 0, 0);
       if (endDate) endDate.setHours(23, 59, 59, 999);
+    }
+
+    // --- last_closing_date Clamping ---
+    const lastClosingDateStr = settings?.last_closing_date;
+    if (lastClosingDateStr && filterType !== 'all_time') {
+      const lastClosingDate = new Date(lastClosingDateStr);
+      if (startDate < lastClosingDate) {
+        startDate = lastClosingDate;
+      }
     }
 
     const filteredTransactions = filterType === 'all_time'
@@ -435,7 +446,8 @@ const MainDashboard = ({ headerTitle }) => {
         menuStock: settings?.menu_stock_last_updated,
         rawMaterials: settings?.raw_materials_last_updated,
         lapakFunds: settings?.lapak_funds_last_updated
-      }
+      },
+      settings: settings || {}
     });
   };
   const formatCurrency = (amount) => {
@@ -522,10 +534,12 @@ const MainDashboard = ({ headerTitle }) => {
   ];
 
   // --- Main Metrics (Always Visible) ---
-  const monthlyProfit = dashboardData.metrics.totalRevenue - dashboardData.metrics.totalExpenses;
+  const monthlyProfit = (dashboardData.metrics?.totalRevenue || 0) - (dashboardData.metrics?.totalExpenses || 0);
+  const isClosingActive = Boolean(dashboardData.settings?.last_closing_date);
+  const periodLabel = isClosingActive ? 'Periode Ini' : 'Bulan Ini';
 
   // Metrics untuk Mode Sederhana (fokus pada data harian)
-  const todaySalesValue = dashboardData.dashboardMetrics.todaySales.value;
+  const todaySalesValue = dashboardData.dashboardMetrics?.todaySales?.value || 0;
 
   const simpleMetrics = [
     {
@@ -536,25 +550,25 @@ const MainDashboard = ({ headerTitle }) => {
       description: 'Total penjualan hari ini'
     },
     {
-      title: 'Pengeluaran Bulan Ini',
-      value: formatCurrency(dashboardData.metrics.totalExpenses),
-      icon: 'FileText',
-      color: 'danger',
-      description: 'Total pengeluaran bulan ini'
-    },
-    {
-      title: 'Pendapatan Bulan Ini',
+      title: `Pendapatan ${periodLabel}`,
       value: formatCurrency(dashboardData.metrics.totalRevenue),
       icon: 'BarChart',
       color: 'info',
-      description: 'Total pendapatan bulan ini'
+      description: `Total pendapatan ${periodLabel.toLowerCase()}`
     },
     {
-      title: 'Laba Bulan Ini',
+      title: `Pengeluaran ${periodLabel}`,
+      value: formatCurrency(dashboardData.metrics.totalExpenses),
+      icon: 'FileText',
+      color: 'danger',
+      description: `Total pengeluaran ${periodLabel.toLowerCase()}`
+    },
+    {
+      title: `Laba ${periodLabel}`,
       value: formatCurrency(monthlyProfit),
       icon: 'DollarSign',
       color: 'accent',
-      description: 'Pendapatan - Pengeluaran bulan ini'
+      description: `Pendapatan - Pengeluaran ${periodLabel.toLowerCase()}`
     }
   ];
 
@@ -568,25 +582,25 @@ const MainDashboard = ({ headerTitle }) => {
       description: 'Total dana tersedia untuk operasional lapak'
     },
     {
-      title: 'Pendapatan Bulan Ini',
+      title: `Pendapatan ${periodLabel}`,
       value: formatCurrency(dashboardData.metrics.totalRevenue),
       icon: 'BarChart',
       color: 'success',
-      description: 'Total pendapatan periode ini'
+      description: `Total pendapatan ${periodLabel.toLowerCase()}`
     },
     {
-      title: 'Pengeluaran Bulan Ini',
+      title: `Pengeluaran ${periodLabel}`,
       value: formatCurrency(dashboardData.metrics.totalExpenses),
       icon: 'Receipt',
       color: 'warning',
-      description: 'Operasional & pembelian periode ini'
+      description: `Operasional & pembelian ${periodLabel.toLowerCase()}`
     },
     {
-      title: 'Laba Bersih Bulan Ini',
+      title: `Laba Bersih ${periodLabel}`,
       value: formatCurrency(monthlyProfit),
       icon: 'TrendingUp', // Use TrendingUp for profit
       color: 'accent', // Distinct color
-      description: 'Pendapatan - Pengeluaran periode ini'
+      description: `Pendapatan - Pengeluaran ${periodLabel.toLowerCase()}`
     }
   ];
 

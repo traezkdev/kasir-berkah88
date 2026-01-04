@@ -268,6 +268,9 @@ const setupDatabase = async () => {
     await connection.query(createEmployeesTable);
     console.log('employees table is ready.');
 
+
+
+
     const createRawMaterialsTable = `
       CREATE TABLE IF NOT EXISTS raw_materials (
         id INT AUTO_INCREMENT PRIMARY KEY,
