@@ -382,9 +382,21 @@ app.get("/api/stock-alerts/count", authenticateToken, authorizeRoles('admin', 'o
 // --- Analytics Breakdown Endpoint ---
 app.get("/api/analytics/breakdown", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
-        const { startDate, endDate } = req.query;
+        let { startDate, endDate } = req.query;
         if (!startDate || !endDate) {
             return res.status(400).json({ error: "startDate and endDate are required" });
+        }
+
+        const [closingRow] = await db.query("SELECT value FROM settings WHERE `key` = 'last_closing_date'");
+        const lastClosingDate = closingRow.length > 0 ? closingRow[0].value : null;
+
+        // If lastClosingDate exists and is later than startDate, clamp startDate to it
+        if (lastClosingDate) {
+            const closingTime = new Date(lastClosingDate).getTime();
+            const startReqTime = new Date(`${startDate} 00:00:00`).getTime();
+            if (closingTime > startReqTime) {
+                startDate = lastClosingDate.split('T')[0];
+            }
         }
 
         // 1. Get Transactions
@@ -1855,6 +1867,9 @@ app.post("/api/v2/transactions", authenticateToken, authorizeRoles('user', 'admi
 // Get all expenses without pagination
 app.get("/api/expenses/all", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'owner'), async (req, res) => {
     try {
+        const [closingRow] = await db.query("SELECT value FROM settings WHERE `key` = 'last_closing_date'");
+        const lastClosingDate = closingRow.length > 0 ? closingRow[0].value : null;
+
         const dataSql = `
             SELECT 
                 e.id,
@@ -1867,9 +1882,10 @@ app.get("/api/expenses/all", authenticateToken, authorizeRoles('user', 'admin', 
                 u.username AS recorded_by
             FROM expenses e
             LEFT JOIN users u ON e.user_id = u.id
+            ${lastClosingDate ? 'WHERE e.date >= ?' : ''}
             ORDER BY e.date DESC
         `;
-        const [rows] = await db.query(dataSql);
+        const [rows] = await db.query(dataSql, lastClosingDate ? [lastClosingDate] : []);
 
         res.json({
             "message": "success",
@@ -1891,9 +1907,23 @@ app.get("/api/expenses", authenticateToken, authorizeRoles('user', 'admin', 'gue
         let whereClauses = [];
         let queryParams = [];
 
+        const [closingRow] = await db.query("SELECT value FROM settings WHERE `key` = 'last_closing_date'");
+        const lastClosingDate = closingRow.length > 0 ? closingRow[0].value : null;
+
         if (startDate) {
+            let effectiveStartDate = startDate;
+            if (lastClosingDate) {
+                const closingTime = new Date(lastClosingDate).getTime();
+                const startReqTime = startDate.includes(':') ? new Date(startDate).getTime() : new Date(`${startDate} 00:00:00`).getTime();
+                if (closingTime > startReqTime) {
+                    effectiveStartDate = lastClosingDate;
+                }
+            }
             whereClauses.push('e.date >= ?');
-            queryParams.push(startDate);
+            queryParams.push(effectiveStartDate);
+        } else if (lastClosingDate) {
+            whereClauses.push('e.date >= ?');
+            queryParams.push(lastClosingDate);
         }
         if (endDate) {
             whereClauses.push('e.date <= ?');
@@ -2077,13 +2107,28 @@ app.get("/api/accounts/:accountName", authenticateToken, async (req, res) => {
         let whereClauses = ['at.account_id = ?'];
         let queryParams = [account.id];
 
+        const [closingRow] = await db.query("SELECT value FROM settings WHERE `key` = 'last_closing_date'");
+        const lastClosingDate = closingRow.length > 0 ? closingRow[0].value : null;
+
         if (type && type !== 'all') {
             whereClauses.push('at.type = ?');
             queryParams.push(type);
         }
+
         if (startDate) {
+            let effectiveStartDate = startDate;
+            if (lastClosingDate) {
+                const closingTime = new Date(lastClosingDate).getTime();
+                const startReqTime = startDate.includes(':') ? new Date(startDate).getTime() : new Date(`${startDate} 00:00:00`).getTime();
+                if (closingTime > startReqTime) {
+                    effectiveStartDate = lastClosingDate;
+                }
+            }
             whereClauses.push('at.created_at >= ?');
-            queryParams.push(startDate);
+            queryParams.push(effectiveStartDate);
+        } else if (lastClosingDate) {
+            whereClauses.push('at.created_at >= ?');
+            queryParams.push(lastClosingDate);
         }
         if (endDate) {
             whereClauses.push('at.created_at <= ?');
@@ -2095,6 +2140,16 @@ app.get("/api/accounts/:accountName", authenticateToken, async (req, res) => {
         }
 
         const whereSql = whereClauses.join(' AND ');
+
+        // Calculate displayed balance (if lastClosingDate exists and no startDate provided, show current period balance)
+        let displayedBalance = account.balance;
+        if (lastClosingDate && !startDate) {
+            const [sumResult] = await db.query(
+                "SELECT SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) as current_balance FROM account_transactions WHERE account_id = ? AND created_at >= ?",
+                [account.id, lastClosingDate]
+            );
+            displayedBalance = sumResult[0].current_balance || 0;
+        }
 
         const [transactions] = await db.query(
             `SELECT 
@@ -2118,7 +2173,7 @@ app.get("/api/accounts/:accountName", authenticateToken, async (req, res) => {
                 account: {
                     id: account.id,
                     name: account.name,
-                    balance: account.balance,
+                    balance: displayedBalance,
                     type: account.type,
                     updated_at: account.updated_at
                 },
@@ -3331,19 +3386,42 @@ app.delete("/api/admin/data/all", authenticateToken, authorizeRoles('admin'), as
         }
 
         await connection.beginTransaction();
+
+        // Disable foreign key checks to allow truncating related tables
+        await connection.query('SET FOREIGN_KEY_CHECKS = 0');
+
+        // Clear transaction and operational data
         await connection.query('TRUNCATE TABLE transactions');
         await connection.query('TRUNCATE TABLE expenses');
-        await connection.query('UPDATE menu_items SET stock = 0'); // Reset stock
+        await connection.query('TRUNCATE TABLE orders');
+        await connection.query('TRUNCATE TABLE simple_transactions');
+        await connection.query('TRUNCATE TABLE simple_transaction_items');
+        await connection.query('TRUNCATE TABLE cash_reconciliations');
+
+        await connection.query('TRUNCATE TABLE raw_material_stock_history');
+        await connection.query('TRUNCATE TABLE account_transactions');
+        await connection.query('TRUNCATE TABLE notes');
+
+        // Reset stocks and balances
+        await connection.query('UPDATE menu_items SET stock = 0');
+        await connection.query('UPDATE raw_materials SET current_stock = 0');
+        await connection.query('UPDATE accounts SET balance = 0');
+
+        // Re-enable foreign key checks
+        await connection.query('SET FOREIGN_KEY_CHECKS = 1');
+
         await connection.commit();
 
-        res.json({ message: "All transactions, expenses, and menu item stock have been cleared." });
+        res.json({ message: "Semua data transaksi, riwayat stok, uang bisnis, dan reset stok telah berhasil dihapus." });
     } catch (err) {
-        await connection.rollback();
+        if (connection) await connection.rollback();
         res.status(500).json({ error: err.message, stack: err.stack });
     } finally {
         connection.release();
     }
 });
+
+
 
 // Delete a user (Admin only)
 app.delete("/api/admin/users/:id", authenticateToken, authorizeRoles('admin'), async (req, res) => {
@@ -3521,7 +3599,25 @@ app.post("/api/logout", authenticateToken, (req, res) => {
 app.get("/api/laporan-lengkap", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
-        const hasDateFilter = startDate && endDate;
+        let hasDateFilter = startDate && endDate;
+
+        const [closingRow] = await db.query("SELECT value FROM settings WHERE `key` = 'last_closing_date'");
+        const lastClosingDate = closingRow.length > 0 ? closingRow[0].value : null;
+
+        let effectiveStartDate = startDate;
+        let effectiveEndDate = endDate ? `${endDate} 23:59:59` : null;
+
+        if (!effectiveStartDate && lastClosingDate) {
+            effectiveStartDate = lastClosingDate;
+            hasDateFilter = true; // Use the filter logic
+        } else if (effectiveStartDate && lastClosingDate) {
+            const closingTime = new Date(lastClosingDate).getTime();
+            const startReqTime = effectiveStartDate.includes(':') ? new Date(effectiveStartDate).getTime() : new Date(`${effectiveStartDate} 00:00:00`).getTime();
+            if (closingTime > startReqTime) {
+                effectiveStartDate = lastClosingDate;
+            }
+            hasDateFilter = true;
+        }
 
         // Base queries
         let transactionsQuery = `SELECT id, DATE_FORMAT(timestamp, '%Y-%m-%d %H:%i:%s+07:00') AS timestamp, items, total, ppn, isEmployeeMeal, payment_method, cash_paid, \`change\`, order_id, user_id, manual_discount, catatan, deleted_at FROM transactions ORDER BY timestamp DESC, id DESC`;
@@ -3531,13 +3627,17 @@ app.get("/api/laporan-lengkap", authenticateToken, authorizeRoles('admin', 'owne
         const menuStockQuery = `SELECT id, name, stock, category, price, hpp FROM menu_items ORDER BY name ASC`;
         const rawMaterialStockQuery = `SELECT id, name, current_stock, unit, price_per_item FROM raw_materials ORDER BY name ASC`;
 
-        const queryParams = hasDateFilter ? [startDate, `${endDate} 23:59:59`] : [];
-
+        let queryParams = [];
         if (hasDateFilter) {
-            transactionsQuery = `SELECT id, DATE_FORMAT(timestamp, '%Y-%m-%d %H:%i:%s+07:00') AS timestamp, items, total, ppn, isEmployeeMeal, payment_method, cash_paid, \`change\`, order_id, user_id, manual_discount, catatan, deleted_at FROM transactions WHERE timestamp BETWEEN ? AND ? ORDER BY timestamp DESC, id DESC`;
-            expensesQuery = `SELECT id, name, amount, category, DATE_FORMAT(date, '%Y-%m-%d %H:%i:%s+07:00') AS date, notes, user_id FROM expenses WHERE date BETWEEN ? AND ? ORDER BY date DESC, id DESC`;
-            lapakAccountQuery = `SELECT at.id, at.account_id, at.type, at.amount, at.description, at.created_by_user_id, DATE_FORMAT(at.created_at, '%Y-%m-%d %H:%i:%s+07:00') AS created_at, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'lapak_deposit' AND at.created_at BETWEEN ? AND ? ORDER BY at.created_at DESC, at.id DESC`;
-            ownerAccountQuery = `SELECT at.id, at.account_id, at.type, at.amount, at.description, at.created_by_user_id, DATE_FORMAT(at.created_at, '%Y-%m-%d %H:%i:%s+07:00') AS created_at, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'owner_deposit' AND at.created_at BETWEEN ? AND ? ORDER BY at.created_at DESC, at.id DESC`;
+            const dateClause = effectiveEndDate ? "BETWEEN ? AND ?" : ">= ?";
+            const params = effectiveEndDate ? [effectiveStartDate, effectiveEndDate] : [effectiveStartDate];
+
+            transactionsQuery = `SELECT id, DATE_FORMAT(timestamp, '%Y-%m-%d %H:%i:%s+07:00') AS timestamp, items, total, ppn, isEmployeeMeal, payment_method, cash_paid, \`change\`, order_id, user_id, manual_discount, catatan, deleted_at FROM transactions WHERE timestamp ${dateClause} ORDER BY timestamp DESC, id DESC`;
+            expensesQuery = `SELECT id, name, amount, category, DATE_FORMAT(date, '%Y-%m-%d %H:%i:%s+07:00') AS date, notes, user_id FROM expenses WHERE date ${dateClause} ORDER BY date DESC, id DESC`;
+            lapakAccountQuery = `SELECT at.id, at.account_id, at.type, at.amount, at.description, at.created_by_user_id, DATE_FORMAT(at.created_at, '%Y-%m-%d %H:%i:%s+07:00') AS created_at, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'lapak_deposit' AND at.created_at ${dateClause} ORDER BY at.created_at DESC, at.id DESC`;
+            ownerAccountQuery = `SELECT at.id, at.account_id, at.type, at.amount, at.description, at.created_by_user_id, DATE_FORMAT(at.created_at, '%Y-%m-%d %H:%i:%s+07:00') AS created_at, u.username as created_by_username FROM account_transactions at JOIN users u ON at.created_by_user_id = u.id JOIN accounts a ON at.account_id = a.id WHERE a.name = 'owner_deposit' AND at.created_at ${dateClause} ORDER BY at.created_at DESC, at.id DESC`;
+
+            queryParams = params;
         }
 
         const queries = [

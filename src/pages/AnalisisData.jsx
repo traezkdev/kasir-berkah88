@@ -61,12 +61,32 @@ const AnalisisData = () => {
     }, []);
 
     // State
-    const [startDate, setStartDate] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd')); // Default 30 hari terakhir
+    const [startDate, setStartDate] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd')); // Default 30 hari terakhir, akan disesuaikan di useEffect
     const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState(null);
     const [error, setError] = useState(null);
     const [showExportMenu, setShowExportMenu] = useState(false); // State for export dropdown
+
+    // Fetch Settings to check for last_closing_date
+    useEffect(() => {
+        const fetchSettingsAndAdjustDate = async () => {
+            try {
+                const res = await api.get('/api/all-settings');
+                if (res.data.data && res.data.data.last_closing_date) {
+                    const lcd = new Date(res.data.data.last_closing_date);
+                    const thirtyDaysAgo = subDays(new Date(), 30);
+                    // Jika tutup buku dilakukan dalam 30 hari terakhir, gunakan tanggal tersebut sebagai awal default
+                    if (lcd > thirtyDaysAgo) {
+                        setStartDate(format(lcd, 'yyyy-MM-dd'));
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching settings for date adjustment:", err);
+            }
+        };
+        fetchSettingsAndAdjustDate();
+    }, []);
 
     // Initial check for all-time range (Dynamic)
     const handleSetAllTime = async () => {

@@ -79,10 +79,11 @@ const Settings = () => {
   const [showNewMasterPassword, setShowNewMasterPassword] = useState(false);
   const [confirmNewMasterPassword, setConfirmNewMasterPassword] = useState('');
   const [showConfirmNewMasterPassword, setShowConfirmNewMasterPassword] = useState(false);
+  const [webDescription, setWebDescription] = useState('');
+
   const [masterPasswordForClear, setMasterPasswordForClear] = useState('');
   const [showMasterPasswordForClear, setShowMasterPasswordForClear] = useState(false);
   const [showAdminPassword, setShowAdminPassword] = useState(false);
-  const [webDescription, setWebDescription] = useState('');
   const [initialCapital, setInitialCapital] = useState('');
   const [employees, setEmployees] = useState([]);
   const [editingEmployee, setEditingEmployee] = useState(null);
@@ -510,6 +511,8 @@ const Settings = () => {
     }
   };
 
+
+
   const confirmDeleteLogo = () => {
     setShowDeleteLogoConfirmation(true);
   };
@@ -597,7 +600,8 @@ const Settings = () => {
                 <SettingsCard icon="Users" title="Kelola Pengguna" description="Lihat, ubah peran, dan hapus akun pengguna." onClick={() => setActiveModal('userManagement')} />
                 <SettingsCard icon="Contact" title="Manajemen Karyawan" description="Tambah, ubah, dan hapus data karyawan." onClick={() => setActiveModal('employeeManagement')} />
                 <SettingsCard icon="ShieldAlert" title="Kata Sandi Master" description="Ubah kata sandi master untuk tindakan sensitif." onClick={() => setActiveModal('masterPassword')} />
-                <SettingsCard icon="Trash2" title="Hapus Semua Data" description="Hapus semua transaksi, pengeluaran, dan reset stok." onClick={() => setActiveModal('clearAllData')} />
+
+                <SettingsCard icon="Trash2" title="Hapus Semua Data" description="Hapus semua transaksi, pengeluaran, uang bisnis, riwayat stok, dan reset stok." onClick={() => setActiveModal('clearAllData')} />
                 {appMode === 'full' && (
                   <SettingsCard icon="RefreshCw" title="Sinkronisasi Data" description="Kelola pembaruan data menu, stok, dan kas." onClick={() => setIsDataSyncModalOpen(true)} />
                 )}
@@ -835,9 +839,11 @@ const Settings = () => {
         </form>
       </SettingsModal>
 
+
+
       <SettingsModal title="Hapus Semua Data" isOpen={activeModal === 'clearAllData'} onClose={handleModalClose}>
         <form onSubmit={handleClearAllData} className="space-y-4">
-          <p className="text-sm text-text-secondary">Tindakan ini akan menghapus semua transaksi, pengeluaran, dan mengatur ulang stok item menu menjadi nol. Ini tidak dapat dibatalkan.</p>
+          <p className="text-sm text-text-secondary">Tindakan ini akan menghapus semua transaksi, pengeluaran, riwayat stok, uang bisnis, dan mengatur ulang stok menjadi nol. Ini tidak dapat dibatalkan.</p>
           <Input
             label="Kata Sandi Master"
             name="masterPasswordForClear"
