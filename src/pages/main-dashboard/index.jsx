@@ -344,6 +344,7 @@ const MainDashboard = ({ headerTitle }) => {
     const stockValue = totalCombinedRawMaterialValue || 0;
     let workingCapital = 0;
     if (!isNaN(initialCapital)) {
+      // Formula: Modal Awal + Total Pendapatan + Total Stok - Total Pengeluaran
       workingCapital = (initialCapital || 0) + (allTimeRevenue || 0) + (totalCombinedRawMaterialValue || 0) - (allTimeExpenses || 0);
     }
     if (isNaN(workingCapital)) workingCapital = 0;
@@ -630,7 +631,7 @@ const MainDashboard = ({ headerTitle }) => {
       value: formatCurrency(dashboardData.metrics.workingCapital),
       icon: 'Wallet',
       color: 'info',
-      description: 'Modal awal + pendapatan + stok mentah + stok menu - pengeluaran'
+      description: 'Modal awal + total pendapatan + total stok (menu dan mentah) - total pengeluaran'
     },
     {
       title: 'Modal Akhir Saat Ini',
@@ -659,7 +660,7 @@ const MainDashboard = ({ headerTitle }) => {
       value: formatCurrency(dashboardData.metrics.netProfit),
       icon: 'DollarSign',
       color: 'accent',
-      description: 'Pendapatan (all) - Pengeluaran (all) + Stok'
+      description: 'Total pendapatan + total stok - total pengeluaran'
     },
     {
       title: 'Total Pendapatan (Semua Waktu)',

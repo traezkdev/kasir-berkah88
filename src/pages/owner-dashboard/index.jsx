@@ -18,12 +18,14 @@ const OwnerDashboard = ({ headerTitle }) => {
     const [dashboardData, setDashboardData] = useState(null);
 
     const formatCurrency = (amount) => {
+        const value = parseFloat(amount);
+        if (isNaN(value)) return 'Rp 0';
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
             currency: 'IDR',
             minimumFractionDigits: 0,
             maximumFractionDigits: 0
-        })?.format(amount);
+        })?.format(value);
     };
 
     useEffect(() => {
@@ -124,10 +126,11 @@ const OwnerDashboard = ({ headerTitle }) => {
             }
         }, 0);
 
-        const runningCapital = initialCapital + totalLifetimeRevenue + totalMenuItemStockValue + rawMaterialStockValue + rawStockInMenuValue - totalLifetimeExpenses;
-
-        const allTimeNetProfit = totalLifetimeRevenue - totalLifetimeExpenses;
         const totalCombinedStockValue = rawMaterialStockValue + rawStockInMenuValue;
+        const allTimeNetProfit = totalLifetimeRevenue - totalLifetimeExpenses;
+
+        // Formula: Modal Awal + Total Pendapatan + Total Stok - Total Pengeluaran
+        const runningCapital = initialCapital + totalLifetimeRevenue + totalCombinedStockValue - totalLifetimeExpenses;
 
 
         setDashboardData({
@@ -177,7 +180,7 @@ const OwnerDashboard = ({ headerTitle }) => {
             value: formatCurrency(dashboardData.runningCapital),
             icon: 'Wallet',
             color: 'info',
-            description: 'Modal awal + pendapatan + stok mentah + stok menu - pengeluaran'
+            description: 'Modal awal + total pendapatan + total stok (menu dan mentah) - total pengeluaran'
         },
         {
             title: 'Modal Akhir Saat Ini',
@@ -202,10 +205,10 @@ const OwnerDashboard = ({ headerTitle }) => {
         },
         {
             title: 'Keuntungan Kotor (Equity)',
-            value: formatCurrency(dashboardData.runningCapital - dashboardData.initialCapital),
+            value: formatCurrency(dashboardData.allTimeNetProfit + dashboardData.totalCombinedStockValue),
             icon: 'DollarSign',
             color: 'accent',
-            description: 'Pendapatan (all) - Pengeluaran (all) + Stok'
+            description: 'Total pendapatan + total stok - total pengeluaran'
         },
         {
             title: 'Total Pendapatan (Semua Waktu)',
