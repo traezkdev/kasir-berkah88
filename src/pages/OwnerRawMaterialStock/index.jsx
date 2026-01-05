@@ -111,9 +111,15 @@ const OwnerRawMaterialStockDashboard = () => {
   }
 
   const totalStockQuantity = rawMaterials.reduce((sum, material) => sum + toSafeNumber(material.current_stock) + toSafeNumber(material.menu_stock), 0);
-  const totalStockValue = rawMaterials.reduce((sum, material) => sum + ((toSafeNumber(material.current_stock) + toSafeNumber(material.menu_stock)) * toSafeNumber(material.price_per_item)), 0);
+  const totalStockValue = rawMaterials.reduce((sum, material) => {
+    const currentStock = toSafeNumber(material.current_stock);
+    const menuStock = toSafeNumber(material.menu_stock);
+    const rawPrice = parseFloat(material.raw_stock_price || 0);
+    const menuPrice = parseFloat(material.price_per_item || 0);
+    return sum + (currentStock * rawPrice) + (menuStock * menuPrice);
+  }, 0);
   const lowStockItemsCount = rawMaterials.filter(material => (toSafeNumber(material.current_stock) + toSafeNumber(material.menu_stock)) < toSafeNumber(material.stok_minimum)).length;
-  const currentRawMaterialStockValue = rawMaterials.reduce((sum, material) => sum + (toSafeNumber(material.current_stock) * toSafeNumber(material.price_per_item)), 0);
+  const currentRawMaterialStockValue = rawMaterials.reduce((sum, material) => sum + (toSafeNumber(material.current_stock) * parseFloat(material.raw_stock_price || 0)), 0);
 
 
   return (

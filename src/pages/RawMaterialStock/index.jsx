@@ -163,38 +163,27 @@ const RawMaterialStockDashboard = () => {
 
   // Calculate metrics
   const totalMenuStockValue = rawMaterials.reduce((sum, material) => {
-    const isCalculable = isUnitCalculable(material.unit);
-    if (isCalculable) {
-      return sum + (parseInt(material.menu_stock || 0) * parseFloat(material.price_per_item || 0));
-    } else {
-      // For non-calculable units, use price directly
-      return sum + parseFloat(material.price_per_item || 0);
-    }
+    const menuStock = parseFloat(material.menu_stock || 0);
+    const pricePerItem = parseFloat(material.price_per_item || 0);
+    return sum + (menuStock * pricePerItem);
   }, 0);
 
   // Revised calculations based on unit calculability
   const totalStockValue = rawMaterials.reduce((sum, material) => {
-    const isCalculable = isUnitCalculable(material.unit);
-    if (isCalculable) {
-      const menuValue = (parseInt(material.menu_stock || 0) * parseFloat(material.price_per_item || 0));
-      const rawValue = (parseInt(material.current_stock || 0) * parseFloat(material.raw_stock_price || 0));
-      return sum + menuValue + rawValue;
-    } else {
-      // For non-calculable units, use prices directly
-      const menuValue = parseFloat(material.price_per_item || 0);
-      const rawValue = parseFloat(material.raw_stock_price || 0);
-      return sum + menuValue + rawValue;
-    }
+    const menuStock = parseFloat(material.menu_stock || 0);
+    const currentStock = parseFloat(material.current_stock || 0);
+    const pricePerItem = parseFloat(material.price_per_item || 0);
+    const rawStockPrice = parseFloat(material.raw_stock_price || 0);
+
+    const menuValue = menuStock * pricePerItem;
+    const rawValue = currentStock * rawStockPrice;
+    return sum + menuValue + rawValue;
   }, 0);
 
   const currentRawMaterialStockValue = rawMaterials.reduce((sum, material) => {
-    const isCalculable = isUnitCalculable(material.unit);
-    if (isCalculable) {
-      return sum + (parseInt(material.current_stock || 0) * parseFloat(material.raw_stock_price || 0));
-    } else {
-      // For non-calculable units, use raw_stock_price directly
-      return sum + parseFloat(material.raw_stock_price || 0);
-    }
+    const currentStock = parseFloat(material.current_stock || 0);
+    const rawStockPrice = parseFloat(material.raw_stock_price || 0);
+    return sum + (currentStock * rawStockPrice);
   }, 0);
 
   const lowStockItemsCount = rawMaterials.filter(material => (Number(material.current_stock) + Number(material.menu_stock)) < Number(material.stok_minimum)).length;
