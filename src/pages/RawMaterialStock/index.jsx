@@ -163,27 +163,46 @@ const RawMaterialStockDashboard = () => {
 
   // Calculate metrics
   const totalMenuStockValue = rawMaterials.reduce((sum, material) => {
+    const isCalculable = isUnitCalculable(material.unit);
     const menuStock = parseFloat(material.menu_stock || 0);
     const pricePerItem = parseFloat(material.price_per_item || 0);
-    return sum + (menuStock * pricePerItem);
+
+    if (isCalculable) {
+      return sum + (menuStock * pricePerItem);
+    } else {
+      return sum + (menuStock > 0 ? pricePerItem : 0);
+    }
   }, 0);
 
   // Revised calculations based on unit calculability
   const totalStockValue = rawMaterials.reduce((sum, material) => {
+    const isCalculable = isUnitCalculable(material.unit);
     const menuStock = parseFloat(material.menu_stock || 0);
     const currentStock = parseFloat(material.current_stock || 0);
     const pricePerItem = parseFloat(material.price_per_item || 0);
     const rawStockPrice = parseFloat(material.raw_stock_price || 0);
 
-    const menuValue = menuStock * pricePerItem;
-    const rawValue = currentStock * rawStockPrice;
-    return sum + menuValue + rawValue;
+    if (isCalculable) {
+      const menuValue = menuStock * pricePerItem;
+      const rawValue = currentStock * rawStockPrice;
+      return sum + menuValue + rawValue;
+    } else {
+      const menuValue = menuStock > 0 ? pricePerItem : 0;
+      const rawValue = currentStock > 0 ? rawStockPrice : 0;
+      return sum + menuValue + rawValue;
+    }
   }, 0);
 
   const currentRawMaterialStockValue = rawMaterials.reduce((sum, material) => {
+    const isCalculable = isUnitCalculable(material.unit);
     const currentStock = parseFloat(material.current_stock || 0);
     const rawStockPrice = parseFloat(material.raw_stock_price || 0);
-    return sum + (currentStock * rawStockPrice);
+
+    if (isCalculable) {
+      return sum + (currentStock * rawStockPrice);
+    } else {
+      return sum + (currentStock > 0 ? rawStockPrice : 0);
+    }
   }, 0);
 
   const lowStockItemsCount = rawMaterials.filter(material => (Number(material.current_stock) + Number(material.menu_stock)) < Number(material.stok_minimum)).length;

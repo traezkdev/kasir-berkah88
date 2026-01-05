@@ -312,8 +312,12 @@ const MainDashboard = ({ headerTitle }) => {
       const currentStock = parseFloat(m.current_stock || 0);
       const rawStockPrice = parseFloat(m.raw_stock_price || 0);
 
-      // Gunakan perkalian untuk semua jenis satuan agar jika stok 0, nilainya tetap 0
-      return sum + (currentStock * rawStockPrice);
+      if (isCalculable) {
+        return sum + (currentStock * rawStockPrice);
+      } else {
+        // Non-calculable: Jangan dikalikan stok (sesuai request user untuk gram), tapi pastikan stok > 0 agar tidak sisa nilai saat kosong
+        return sum + (currentStock > 0 ? rawStockPrice : 0);
+      }
     }, 0);
 
     const totalCombinedRawMaterialValue = rawMaterialsData.reduce((sum, m) => {
@@ -325,11 +329,16 @@ const MainDashboard = ({ headerTitle }) => {
       const pricePerItem = parseFloat(m.price_per_item || 0);
       const rawStockPrice = parseFloat(m.raw_stock_price || 0);
 
-      // Selalu kalikan dengan jumlah stok (baik menu_stock maupun current_stock/raw_stock)
-      const menuStockValue = menuStock * pricePerItem;
-      const rawStockValue = currentStock * rawStockPrice;
-
-      return sum + menuStockValue + rawStockValue;
+      if (isCalculable) {
+        const menuStockValue = menuStock * pricePerItem;
+        const rawStockValue = currentStock * rawStockPrice;
+        return sum + menuStockValue + rawStockValue;
+      } else {
+        // Non-calculable: Harga menu diambil jika menu_stock > 0, harga mentah diambil jika current_stock > 0
+        const menuStockValue = menuStock > 0 ? pricePerItem : 0;
+        const rawStockValue = currentStock > 0 ? rawStockPrice : 0;
+        return sum + menuStockValue + rawStockValue;
+      }
     }, 0);
 
     const stockValue = totalCombinedRawMaterialValue || 0;
