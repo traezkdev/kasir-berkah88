@@ -309,30 +309,27 @@ const MainDashboard = ({ headerTitle }) => {
       // Note: boolean in DB might be returned as 0/1 number.
       const isCalculable = unitDef ? (unitDef.is_calculable === 1 || unitDef.is_calculable === true) : true;
 
-      if (isCalculable) {
-        const currentStock = parseInt(m.current_stock || 0);
-        const rawStockPrice = parseFloat(m.raw_stock_price || 0);
-        return sum + (currentStock * rawStockPrice);
-      } else {
-        // For non-calculable units, use raw_stock_price directly
-        return sum + parseFloat(m.raw_stock_price || 0);
-      }
+      const currentStock = parseFloat(m.current_stock || 0);
+      const rawStockPrice = parseFloat(m.raw_stock_price || 0);
+
+      // Gunakan perkalian untuk semua jenis satuan agar jika stok 0, nilainya tetap 0
+      return sum + (currentStock * rawStockPrice);
     }, 0);
 
     const totalCombinedRawMaterialValue = rawMaterialsData.reduce((sum, m) => {
       const unitDef = unitsData.find(u => u.name.toLowerCase() === (m.unit || '').toLowerCase());
       const isCalculable = unitDef ? (unitDef.is_calculable === 1 || unitDef.is_calculable === true) : true;
 
-      if (isCalculable) {
-        const menuStockValue = parseInt(m.menu_stock || 0) * parseFloat(m.price_per_item || 0);
-        const rawStockValue = parseInt(m.current_stock || 0) * parseFloat(m.raw_stock_price || 0);
-        return sum + menuStockValue + rawStockValue;
-      } else {
-        // For non-calculable units, use prices directly
-        const menuStockValue = parseFloat(m.price_per_item || 0);
-        const rawStockValue = parseFloat(m.raw_stock_price || 0);
-        return sum + menuStockValue + rawStockValue;
-      }
+      const currentStock = parseFloat(m.current_stock || 0);
+      const menuStock = parseFloat(m.menu_stock || 0);
+      const pricePerItem = parseFloat(m.price_per_item || 0);
+      const rawStockPrice = parseFloat(m.raw_stock_price || 0);
+
+      // Selalu kalikan dengan jumlah stok (baik menu_stock maupun current_stock/raw_stock)
+      const menuStockValue = menuStock * pricePerItem;
+      const rawStockValue = currentStock * rawStockPrice;
+
+      return sum + menuStockValue + rawStockValue;
     }, 0);
 
     const stockValue = totalCombinedRawMaterialValue || 0;
