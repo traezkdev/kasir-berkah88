@@ -29,7 +29,7 @@ const OwnerDashboard = ({ headerTitle }) => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [allTransRes, menuRes, expenseRes, ownerAccountRes, lapakAccountRes, rawMaterialsRes, criticalItemsRes, allSettingsRes, allMenuItemsRes] = await Promise.all([
+                const [allTransRes, menuRes, expenseRes, ownerAccountRes, lapakAccountRes, rawMaterialsRes, criticalItemsRes, allSettingsRes, allMenuItemsRes, unitsRes] = await Promise.all([
                     authFetch(`${apiUrl}/api/transactions/all`),
                     authFetch(`${apiUrl}/api/menu-items/all`),
                     authFetch(`${apiUrl}/api/expenses/all`),
@@ -38,7 +38,8 @@ const OwnerDashboard = ({ headerTitle }) => {
                     authFetch(`${apiUrl}/api/raw-materials`),
                     authFetch(`${apiUrl}/api/stock-alerts/count`),
                     authFetch(`${apiUrl}/api/all-settings`),
-                    authFetch(`${apiUrl}/api/menu-items/all`) // Fetch all menu items
+                    authFetch(`${apiUrl}/api/menu-items/all`),
+                    authFetch(`${apiUrl}/api/units`)
                 ]);
 
                 const allTransactions = allTransRes.ok ? (await allTransRes.json()).data : [];
@@ -49,9 +50,10 @@ const OwnerDashboard = ({ headerTitle }) => {
                 const rawMaterials = rawMaterialsRes.ok ? (await rawMaterialsRes.json()).data : [];
                 const criticalItemsCount = criticalItemsRes.ok ? (await criticalItemsRes.json()).data.low_stock_count : 0;
                 const allSettings = allSettingsRes.ok ? (await allSettingsRes.json()).data : {};
-                const allMenuItems = allMenuItemsRes.ok ? (await allMenuItemsRes.json()).data : []; // Get all menu items data
+                const allMenuItems = allMenuItemsRes.ok ? (await allMenuItemsRes.json()).data : [];
+                const unitsData = unitsRes.ok ? (await unitsRes.json()).data : [];
 
-                processDashboardData(allTransactions, menuItems, expenses, ownerAccountData, lapakAccountData, rawMaterials, criticalItemsCount, allSettings, allMenuItems);
+                processDashboardData(allTransactions, menuItems, expenses, ownerAccountData, lapakAccountData, rawMaterials, criticalItemsCount, allSettings, allMenuItems, unitsData);
 
             } catch (error) {
                 console.error("Error fetching dashboard data:", error);
@@ -62,7 +64,7 @@ const OwnerDashboard = ({ headerTitle }) => {
         fetchData();
     }, []);
 
-    const processDashboardData = (allTransactions, menuItems, expenses, ownerAccountData, lapakAccountData, rawMaterials, criticalItemsCount, allSettings, allMenuItems) => {
+    const processDashboardData = (allTransactions, menuItems, expenses, ownerAccountData, lapakAccountData, rawMaterials, criticalItemsCount, allSettings, allMenuItems, unitsData) => {
         const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
         const currentMonth = today.getMonth();
         const currentYear = today.getFullYear();
@@ -83,7 +85,18 @@ const OwnerDashboard = ({ headerTitle }) => {
 
         const totalMonthlyExpenses = monthlyExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
 
-        const rawMaterialStockValue = rawMaterials.reduce((sum, m) => sum + (parseInt(m.current_stock || 0) * parseFloat(m.price_per_item || 0)), 0);
+        const rawMaterialStockValue = rawMaterials.reduce((sum, m) => {
+            const unitDef = unitsData.find(u => u.name.toLowerCase() === (m.unit || '').toLowerCase());
+            const isCalculable = unitDef ? (unitDef.is_calculable === 1 || unitDef.is_calculable === true) : true;
+            const currentStock = parseFloat(m.current_stock || 0);
+            const rawPrice = parseFloat(m.raw_stock_price || 0);
+
+            if (isCalculable) {
+                return sum + (currentStock * rawPrice);
+            } else {
+                return sum + (currentStock > 0 ? rawPrice : 0);
+            }
+        }, 0);
 
         const monthlyNetProfit = totalMonthlyRevenue - totalMonthlyExpenses;
 
@@ -96,10 +109,25 @@ const OwnerDashboard = ({ headerTitle }) => {
         const currentFinalCapital = initialCapital + totalLifetimeRevenue - totalLifetimeExpenses;
 
         const totalMenuItemStockValue = allMenuItems.reduce((sum, item) => sum + (parseFloat(item.stock || 0) * parseFloat(item.price || 0)), 0);
-        const runningCapital = initialCapital + totalLifetimeRevenue + totalMenuItemStockValue + rawMaterialStockValue - totalLifetimeExpenses;
+
+        // Value of raw materials currently in menu_stock form
+        const rawStockInMenuValue = rawMaterials.reduce((sum, m) => {
+            const unitDef = unitsData.find(u => u.name.toLowerCase() === (m.unit || '').toLowerCase());
+            const isCalculable = unitDef ? (unitDef.is_calculable === 1 || unitDef.is_calculable === true) : true;
+            const menuStock = parseFloat(m.menu_stock || 0);
+            const menuPrice = parseFloat(m.price_per_item || 0);
+
+            if (isCalculable) {
+                return sum + (menuStock * menuPrice);
+            } else {
+                return sum + (menuStock > 0 ? menuPrice : 0);
+            }
+        }, 0);
+
+        const runningCapital = initialCapital + totalLifetimeRevenue + totalMenuItemStockValue + rawMaterialStockValue + rawStockInMenuValue - totalLifetimeExpenses;
 
         const allTimeNetProfit = totalLifetimeRevenue - totalLifetimeExpenses;
-        const totalCombinedStockValue = rawMaterialStockValue + totalMenuItemStockValue;
+        const totalCombinedStockValue = rawMaterialStockValue + rawStockInMenuValue;
 
 
         setDashboardData({

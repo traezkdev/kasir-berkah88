@@ -11,6 +11,8 @@ import useNotification from '../../hooks/useNotification';
 import MetricsCard from '../main-dashboard/components/MetricsCard';
 import Icon from '../../components/AppIcon';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
+import { exportToExcel, exportToPdf, prepareRawMaterialStockDataForExport } from '../../utils/exportUtils';
+import UnitSettingsModal from '../RawMaterialStock/UnitSettingsModal';
 
 const formatCurrency = (amount) => {
   const safeAmount = isNaN(amount) || amount === null || amount === undefined ? 0 : amount;
@@ -32,19 +34,16 @@ const OwnerRawMaterialStockDashboard = () => {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-
+  const [isUnitSettingsOpen, setIsUnitSettingsOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
+  const [units, setUnits] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
-  // Helper function for safe number conversion
-  const toSafeNumber = (value) => {
-    const num = Number(value);
-    return isNaN(num) ? 0 : num;
-  };
-
   useEffect(() => {
     fetchRawMaterials();
+    fetchUnits();
   }, []);
 
   const fetchRawMaterials = async () => {
@@ -65,6 +64,18 @@ const OwnerRawMaterialStockDashboard = () => {
     }
   };
 
+  const fetchUnits = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_BASE_URL}/api/units`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUnits(response.data.data);
+    } catch (err) {
+      console.error("Error fetching units:", err);
+    }
+  };
+
   const handleEditClick = (material) => {
     setSelectedMaterial(material);
     setIsEditModalOpen(true);
@@ -74,14 +85,13 @@ const OwnerRawMaterialStockDashboard = () => {
     setIsAddModalOpen(true);
   };
 
-
-
   const handleCloseModals = () => {
     setIsEditModalOpen(false);
     setIsAddModalOpen(false);
-
+    setIsUnitSettingsOpen(false);
     setSelectedMaterial(null);
     fetchRawMaterials();
+    fetchUnits();
   };
 
   const handleDeleteClick = async (materialId) => {
@@ -102,6 +112,70 @@ const OwnerRawMaterialStockDashboard = () => {
     }
   };
 
+  const handleExportExcel = () => {
+    const dataToExport = prepareRawMaterialStockDataForExport(rawMaterials, units);
+    exportToExcel(dataToExport, `Laporan_Stok_Bahan_Mentah_Owner_${new Date().toISOString().split('T')[0]}`);
+  };
+
+  const handleExportPdf = () => {
+    const dataToExport = prepareRawMaterialStockDataForExport(rawMaterials, units);
+    exportToPdf(dataToExport, `Laporan_Stok_Bahan_Mentah_Owner_${new Date().toISOString().split('T')[0]}`);
+  };
+
+  const isUnitCalculable = (unitName) => {
+    const unit = units.find(u => u.name.toLowerCase() === (unitName || '').toLowerCase());
+    return unit ? unit.is_calculable : true;
+  };
+
+  // Metrics calculations
+  const totalMenuStockValue = rawMaterials.reduce((sum, material) => {
+    const isCalculable = isUnitCalculable(material.unit);
+    const menuStock = parseFloat(material.menu_stock || 0);
+    const pricePerItem = parseFloat(material.price_per_item || 0);
+
+    if (isCalculable) {
+      return sum + (menuStock * pricePerItem);
+    } else {
+      return sum + (menuStock > 0 ? pricePerItem : 0);
+    }
+  }, 0);
+
+  const totalStockValue = rawMaterials.reduce((sum, material) => {
+    const isCalculable = isUnitCalculable(material.unit);
+    const menuStock = parseFloat(material.menu_stock || 0);
+    const currentStock = parseFloat(material.current_stock || 0);
+    const pricePerItem = parseFloat(material.price_per_item || 0);
+    const rawStockPrice = parseFloat(material.raw_stock_price || 0);
+
+    if (isCalculable) {
+      const menuValue = menuStock * pricePerItem;
+      const rawValue = currentStock * rawStockPrice;
+      return sum + menuValue + rawValue;
+    } else {
+      const menuValue = menuStock > 0 ? pricePerItem : 0;
+      const rawValue = currentStock > 0 ? rawStockPrice : 0;
+      return sum + menuValue + rawValue;
+    }
+  }, 0);
+
+  const lowStockItemsCount = rawMaterials.filter(material => (parseFloat(material.current_stock || 0) + parseFloat(material.menu_stock || 0)) < parseFloat(material.stok_minimum || 0)).length;
+
+  const currentRawMaterialStockValue = rawMaterials.reduce((sum, material) => {
+    const isCalculable = isUnitCalculable(material.unit);
+    const currentStock = parseFloat(material.current_stock || 0);
+    const rawStockPrice = parseFloat(material.raw_stock_price || 0);
+
+    if (isCalculable) {
+      return sum + (currentStock * rawStockPrice);
+    } else {
+      return sum + (currentStock > 0 ? rawStockPrice : 0);
+    }
+  }, 0);
+
+  const filteredRawMaterials = rawMaterials.filter(material =>
+    material.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (loading) {
     return <div className="p-4 md:p-6 text-center">Memuat data...</div>;
   }
@@ -110,33 +184,21 @@ const OwnerRawMaterialStockDashboard = () => {
     return <div className="p-4 md:p-6 text-center text-red-500">{error}</div>;
   }
 
-  const totalStockQuantity = rawMaterials.reduce((sum, material) => sum + toSafeNumber(material.current_stock) + toSafeNumber(material.menu_stock), 0);
-  const totalStockValue = rawMaterials.reduce((sum, material) => {
-    const currentStock = toSafeNumber(material.current_stock);
-    const menuStock = toSafeNumber(material.menu_stock);
-    const rawPrice = parseFloat(material.raw_stock_price || 0);
-    const menuPrice = parseFloat(material.price_per_item || 0);
-    return sum + (currentStock * rawPrice) + (menuStock * menuPrice);
-  }, 0);
-  const lowStockItemsCount = rawMaterials.filter(material => (toSafeNumber(material.current_stock) + toSafeNumber(material.menu_stock)) < toSafeNumber(material.stok_minimum)).length;
-  const currentRawMaterialStockValue = rawMaterials.reduce((sum, material) => sum + (toSafeNumber(material.current_stock) * parseFloat(material.raw_stock_price || 0)), 0);
-
-
   return (
     <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
       {theme === 'default' && <OwnerNavigationHeader />}
       <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 mt-16" : "py-4 md:py-6"}>
-        {/* Breadcrumb Navigation */}
         <BreadcrumbNavigation paths={[{ name: 'Beranda Owner', path: '/owner-dashboard' }, { name: 'Stok Bahan Mentah Owner', path: '/owner-raw-material-stock' }]} className="mb-4" />
         <h1 className="text-2xl font-bold mb-4">Dashboard Stok Bahan Mentah Owner</h1>
 
+        {/* Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <MetricsCard
-            title="Total Kuantitas Stok"
-            value={`${totalStockQuantity} Item`}
-            icon="Package"
+            title="Total Nilai Stok Menu"
+            value={formatCurrency(totalMenuStockValue)}
+            icon="DollarSign"
             color="primary"
-            description="Jumlah total semua bahan mentah"
+            description="Total nilai rupiah stok menu"
           />
           <MetricsCard
             title="Total Nilai Stok"
@@ -161,6 +223,20 @@ const OwnerRawMaterialStockDashboard = () => {
           />
         </div>
 
+        {/* Search Bar */}
+        <div className="mb-4">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Cari bahan mentah..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-2 pl-10 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-card text-foreground"
+            />
+            <Icon name="Search" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
+          </div>
+        </div>
+
         <div className="flex flex-col sm:flex-row sm:justify-between items-center mb-4 gap-2">
           <button
             onClick={handleAddMaterialClick}
@@ -174,101 +250,74 @@ const OwnerRawMaterialStockDashboard = () => {
           >
             <FaExclamationTriangle className="mr-2" /> Lihat Stok Kritis
           </button>
-
+          <button
+            onClick={handleExportExcel}
+            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center w-full sm:w-auto"
+          >
+            <Icon name="FileText" className="mr-2" /> Export Excel
+          </button>
+          <button
+            onClick={handleExportPdf}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded flex items-center w-full sm:w-auto"
+          >
+            <Icon name="FileText" className="mr-2" /> Export PDF
+          </button>
+          <button
+            onClick={() => setIsUnitSettingsOpen(true)}
+            className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded flex items-center w-full sm:w-auto"
+          >
+            <Icon name="Settings" className="mr-2" /> Atur Satuan
+          </button>
         </div>
 
+        {/* Table View */}
         <div className="overflow-x-auto bg-card rounded-lg shadow p-4 hidden sm:block">
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Nama Bahan
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Stok Mentah
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Stok Menu
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Total Stok
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Satuan
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Stok Min
-                </th>
-
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Harga per Item
-                </th>
-
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Status
-                </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Aksi
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Nama Bahan</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Stok Mentah</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Stok Menu</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Total Stok</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Satuan</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Stok Min</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Harga Stok Menu</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Harga Stok Mentah</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Status</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase">Aksi</th>
               </tr>
             </thead>
             <tbody className="bg-card divide-y divide-border">
-              {rawMaterials.map((material) => (
+              {filteredRawMaterials.map((material) => (
                 <tr key={material.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-card-foreground">
-                    {material.name}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-card-foreground">{material.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{parseFloat(material.current_stock || 0)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{parseFloat(material.menu_stock || 0)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-card-foreground font-bold">{parseFloat(material.current_stock || 0) + parseFloat(material.menu_stock || 0)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{material.unit}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{parseFloat(material.stok_minimum || 0)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    {formatCurrency(material.price_per_item)}
+                    {!isUnitCalculable(material.unit) && <span className="text-xs text-red-500 block">(Nilai Flat)</span>}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                    {toSafeNumber(material.current_stock)}
+                    {formatCurrency(material.raw_stock_price)}
+                    {!isUnitCalculable(material.unit) && <span className="text-xs text-red-500 block">(Nilai Flat)</span>}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                    {toSafeNumber(material.menu_stock)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-card-foreground font-bold">
-                    {toSafeNumber(material.current_stock) + toSafeNumber(material.menu_stock)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground cursor-pointer"
-                    onClick={() => handleEditClick(material)}
-                  >
-                    {material.unit}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                    {toSafeNumber(material.stok_minimum)}
-                  </td>
-
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                    {toSafeNumber(material.price_per_item).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                  </td>
-
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                    {Number(material.current_stock) < Number(material.stok_minimum) && (
+                    {(parseFloat(material.current_stock || 0) + parseFloat(material.menu_stock || 0)) < parseFloat(material.stok_minimum || 0) ? (
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-destructive/10 text-destructive flex items-center">
                         <FaExclamationTriangle className="mr-1" /> Stok Menipis!
                       </span>
-                    )}
-                    {Number(material.current_stock) >= Number(material.stok_minimum) && (
+                    ) : (
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-success/10 text-success">
                         Cukup
                       </span>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-
-
-                    <button
-                      onClick={() => handleEditClick(material)}
-                      className="text-blue-600 hover:text-blue-900 mr-3"
-                      title="Edit Bahan"
-                    >
-                      <FaEdit />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteClick(material.id)}
-                      className="text-red-600 hover:text-red-900"
-                      title="Hapus Bahan"
-                    >
-                      <FaTrash />
-                    </button>
+                    <button onClick={() => handleEditClick(material)} className="text-blue-600 hover:text-blue-900 mr-3"><FaEdit /></button>
+                    <button onClick={() => handleDeleteClick(material.id)} className="text-red-600 hover:text-red-900"><FaTrash /></button>
                   </td>
                 </tr>
               ))}
@@ -276,91 +325,60 @@ const OwnerRawMaterialStockDashboard = () => {
           </table>
         </div>
 
-        <div className="block sm:hidden space-y-4 mt-4 pb-24">          {rawMaterials.map((material) => (
-          <div key={material.id} className="bg-card rounded-lg shadow p-4 border border-border">
-            <div className="flex justify-between items-center pb-2 mb-2 border-b border-border">
-              <p className="text-lg font-bold text-card-foreground">{material.name}</p>
-              <div className="flex-shrink-0">
-                {Number(material.current_stock) < Number(material.stok_minimum) && (
-                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-destructive/10 text-destructive">
-                    Stok Menipis!
-                  </span>
-                )}
-                {Number(material.current_stock) >= Number(material.stok_minimum) && (
-                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-success/10 text-success">
-                    Cukup
-                  </span>
-                )}
+        {/* Mobile View */}
+        <div className="block sm:hidden space-y-4 mt-4 pb-24">
+          {filteredRawMaterials.map((material) => (
+            <div key={material.id} className="bg-card rounded-lg shadow p-4 border border-border">
+              <div className="flex justify-between items-center pb-2 mb-2 border-b border-border">
+                <p className="text-lg font-bold text-card-foreground">{material.name}</p>
+                <div>
+                  {(parseFloat(material.current_stock || 0) + parseFloat(material.menu_stock || 0)) < parseFloat(material.stok_minimum || 0) ? (
+                    <span className="px-2 inline-flex text-xs font-semibold rounded-full bg-destructive/10 text-destructive">Stok Menipis!</span>
+                  ) : (
+                    <span className="px-2 inline-flex text-xs font-semibold rounded-full bg-success/10 text-success">Cukup</span>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground pb-2 mb-2 border-b border-border">
+                <div><p className="font-medium">Stok Mentah:</p><p>{material.current_stock} {material.unit}</p></div>
+                <div><p className="font-medium">Stok Menu:</p><p>{material.menu_stock} {material.unit}</p></div>
+                <div><p className="font-medium">Total Stok:</p><p>{parseFloat(material.current_stock || 0) + parseFloat(material.menu_stock || 0)} {material.unit}</p></div>
+                <div><p className="font-medium">Stok Min:</p><p>{material.stok_minimum} {material.unit}</p></div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground pb-2 mb-2 border-b border-border">
+                <div><p className="font-medium">Harga Stok Menu:</p><p>{formatCurrency(material.price_per_item)}</p></div>
+                <div><p className="font-medium">Harga Stok Mentah:</p><p>{formatCurrency(material.raw_stock_price)}</p></div>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <button onClick={() => handleEditClick(material)} className="text-blue-600 p-2 rounded-full bg-primary/10"><FaEdit /></button>
+                <button onClick={() => handleDeleteClick(material.id)} className="text-red-600 p-2 rounded-full bg-destructive/10"><FaTrash /></button>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground pb-2 mb-2 border-b border-border">
-              <div>
-                <p className="font-medium">Stok Mentah:</p>
-                <p>{(Number(material.current_stock) || 0)} {material.unit}</p>
-              </div>
-              <div>
-                <p className="font-medium">Stok Menu:</p>
-                <p>{(Number(material.menu_stock) || 0)} {material.unit}</p>
-              </div>
-              <div>
-                <p className="font-medium">Total Stok:</p>
-                <p>{(Number(material.current_stock) || 0) + (Number(material.menu_stock) || 0)} {material.unit}</p>
-              </div>
-              <div>
-                <p className="font-medium">Stok Min:</p>
-                <p onClick={() => handleEditClick(material)} className="cursor-pointer">{(Number(material.stok_minimum) || 0)} {material.unit}</p>
-              </div>
-            </div>
-
-            {/* Block 2: Harga per Item only */}
-            <div className="grid grid-cols-1 gap-2 text-sm text-muted-foreground pb-2 mb-2 border-b border-border">
-              <div> {/* Harga per Item */}
-                <p className="font-medium">Harga per Item:</p>
-                <p>{(Number(material.price_per_item) || 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
-              </div>
-            </div>
-            <div className="flex justify-end space-x-2">
-
-
-
-              <button
-                onClick={() => handleEditClick(material)}
-                className="text-blue-600 hover:text-blue-900 p-2 rounded-full bg-primary/10"
-                title="Edit Bahan"
-              >
-                <FaEdit />
-              </button>
-              <button
-                onClick={() => handleDeleteClick(material.id)}
-                className="text-red-600 hover:text-red-900 p-2 rounded-full bg-destructive/10"
-                title="Hapus Bahan"
-              >
-                <FaTrash />
-              </button>
-            </div>
-          </div>
-        ))}
+          ))}
         </div>
 
-
         {selectedMaterial && (
-          <>
-
-            <EditRawMaterialModal
-              isOpen={isEditModalOpen}
-              onClose={handleCloseModals}
-              material={selectedMaterial}
-              onMaterialUpdated={fetchRawMaterials}
-              showMessage={showMessage}
-              showError={showError}
-            />
-          </>
+          <EditRawMaterialModal
+            isOpen={isEditModalOpen}
+            onClose={handleCloseModals}
+            material={selectedMaterial}
+            onMaterialUpdated={fetchRawMaterials}
+            showMessage={showMessage}
+            showError={showError}
+          />
         )}
 
         <AddRawMaterialModal
           isOpen={isAddModalOpen}
           onClose={handleCloseModals}
           onMaterialAdded={fetchRawMaterials}
+          showMessage={showMessage}
+          showError={showError}
+        />
+
+        <UnitSettingsModal
+          isOpen={isUnitSettingsOpen}
+          onClose={handleCloseModals}
           showMessage={showMessage}
           showError={showError}
         />

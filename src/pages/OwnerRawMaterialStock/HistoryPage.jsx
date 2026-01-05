@@ -4,11 +4,12 @@ import moment from 'moment';
 import { FaFilter, FaSyncAlt, FaTrash } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
-import OwnerNavigationHeader from '../../components/ui/OwnerNavigationHeader'; // Changed to OwnerNavigationHeader
+import OwnerNavigationHeader from '../../components/ui/OwnerNavigationHeader';
 import useNotification from '../../hooks/useNotification';
 import ConfirmationModal from '../../components/ui/ConfirmationModal';
+import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 
-const OwnerRawMaterialStockHistory = () => { // Component name changed
+const OwnerRawMaterialStockHistory = () => {
   const [history, setHistory] = useState([]);
   const [rawMaterials, setRawMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -121,26 +122,27 @@ const OwnerRawMaterialStockHistory = () => { // Component name changed
 
   return (
     <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
-      {theme === 'default' && <OwnerNavigationHeader />} {/* Replaced NavigationHeader and removed theme conditional */}
-      <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 mt-16" : "py-4 md:py-6"}> {/* Removed theme conditional */}
-        <h1 className="text-2xl font-bold mb-4">Riwayat Stok Bahan Mentah Owner</h1> {/* Title changed */}
+      {theme === 'default' && <OwnerNavigationHeader />}
+      <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 mt-16" : "py-4 md:py-6"}>
+        <BreadcrumbNavigation paths={[{ name: 'Beranda Owner', path: '/owner-dashboard' }, { name: 'Stok Bahan Mentah Owner', path: '/owner-raw-material-stock' }, { name: 'Riwayat Stok', path: '/owner-raw-material-stock/history' }]} className="mb-4" />
+        <h1 className="text-2xl font-bold mb-4">Riwayat Stok Bahan Mentah Owner</h1>
 
         {/* Tombol Kembali */}
         <button
-          onClick={() => navigate('/owner-raw-material-stock')} // Link changed
+          onClick={() => navigate('/owner-raw-material-stock')}
           className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center mb-4"
         >
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-          Kembali ke Dashboard Stok Owner {/* Text changed */}
+          Kembali ke Dashboard Stok Owner
         </button>
 
         {/* Filter Section */}
-        <form onSubmit={handleFilterSubmit} className="bg-white p-4 rounded-lg shadow-md mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <form onSubmit={handleFilterSubmit} className="bg-card p-4 rounded-lg shadow-md mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 border border-border">
           <div>
-            <label htmlFor="materialFilter" className="block text-sm font-medium text-gray-700">Bahan Mentah:</label>
+            <label htmlFor="materialFilter" className="block text-sm font-medium text-muted-foreground">Bahan Mentah:</label>
             <select
               id="materialFilter"
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-border focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-card text-foreground"
               value={filterMaterialId}
               onChange={(e) => setFilterMaterialId(e.target.value)}
             >
@@ -151,10 +153,10 @@ const OwnerRawMaterialStockHistory = () => { // Component name changed
             </select>
           </div>
           <div>
-            <label htmlFor="typeFilter" className="block text-sm font-medium text-gray-700">Jenis Transaksi:</label>
+            <label htmlFor="typeFilter" className="block text-sm font-medium text-muted-foreground">Jenis Transaksi:</label>
             <select
               id="typeFilter"
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-border focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-card text-foreground"
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
             >
@@ -164,21 +166,21 @@ const OwnerRawMaterialStockHistory = () => { // Component name changed
             </select>
           </div>
           <div>
-            <label htmlFor="startDateFilter" className="block text-sm font-medium text-gray-700">Dari Tanggal:</label>
+            <label htmlFor="startDateFilter" className="block text-sm font-medium text-muted-foreground">Dari Tanggal:</label>
             <input
               type="date"
               id="startDateFilter"
-              className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+              className="mt-1 block w-full shadow-sm sm:text-sm border border-border rounded-md bg-card text-foreground p-2"
               value={filterStartDate}
               onChange={(e) => setFilterStartDate(e.target.value)}
             />
           </div>
           <div>
-            <label htmlFor="endDateFilter" className="block text-sm font-medium text-gray-700">Sampai Tanggal:</label>
+            <label htmlFor="endDateFilter" className="block text-sm font-medium text-muted-foreground">Sampai Tanggal:</label>
             <input
               type="date"
               id="endDateFilter"
-              className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+              className="mt-1 block w-full shadow-sm sm:text-sm border border-border rounded-md bg-card text-foreground p-2"
               value={filterEndDate}
               onChange={(e) => setFilterEndDate(e.target.value)}
             />
@@ -187,13 +189,13 @@ const OwnerRawMaterialStockHistory = () => { // Component name changed
             <button
               type="button"
               onClick={handleResetFilters}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="inline-flex items-center px-4 py-2 border border-border shadow-sm text-sm font-medium rounded-md text-muted-foreground bg-muted hover:bg-muted/80 focus:outline-none"
             >
               <FaSyncAlt className="mr-2" /> Reset Filter
             </button>
             <button
               type="submit"
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none"
             >
               <FaFilter className="mr-2" /> Terapkan Filter
             </button>
@@ -201,73 +203,41 @@ const OwnerRawMaterialStockHistory = () => { // Component name changed
         </form>
 
         {/* Table View for Larger Screens */}
-        <div className="overflow-x-auto bg-white rounded-lg shadow p-4 lg:pb-0 pb-24 hidden sm:block">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="overflow-x-auto bg-card rounded-lg shadow p-4 lg:pb-0 pb-24 hidden sm:block">
+          <table className="min-w-full divide-y divide-border">
+            <thead className="bg-muted">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tanggal Transaksi
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Nama Bahan
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Jenis
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Jumlah
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Satuan
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Keterangan
-                </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Aksi
-                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Tanggal Transaksi</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Nama Bahan</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Jenis</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Jumlah</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Satuan</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Keterangan</th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Aksi</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-border">
               {history.length > 0 ? (
                 history.map((record) => (
                   <tr key={record.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {moment(record.transaction_date).format('DD MMMM YYYY, HH:mm')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {record.material_name}
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">{moment(record.transaction_date).format('DD MMMM YYYY, HH:mm')}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">{record.material_name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${record.type === 'in' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${record.type === 'in' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
                         {record.type === 'in' ? 'Masuk' : 'Keluar'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {parseInt(record.quantity)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {record.material_unit}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {record.notes}
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{parseFloat(record.quantity)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{record.material_unit}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{record.notes}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => handleDeleteHistoryEntry(record.id)}
-                        className="text-red-600 hover:text-red-900"
-                        title="Hapus Riwayat"
-                      >
-                        <FaTrash />
-                      </button>
+                      <button onClick={() => handleDeleteHistoryEntry(record.id)} className="text-destructive hover:text-destructive/80" title="Hapus Riwayat"><FaTrash /></button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                    Tidak ada riwayat stok yang ditemukan.
-                  </td>
+                  <td colSpan="7" className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground text-center">Tidak ada riwayat stok yang ditemukan.</td>
                 </tr>
               )}
             </tbody>
@@ -278,44 +248,34 @@ const OwnerRawMaterialStockHistory = () => { // Component name changed
         <div className="block sm:hidden space-y-4 mt-4 lg:pb-0 pb-24">
           {history.length > 0 ? (
             history.map((record) => (
-              <div key={record.id} className="bg-white rounded-lg shadow-md p-4 border border-gray-200 mb-4 w-full">
-                <p className="text-sm text-gray-500 mb-1">
+              <div key={record.id} className="bg-card rounded-lg shadow-md p-4 border border-border mb-4 w-full">
+                <p className="text-sm text-muted-foreground mb-1">
                   <span className="font-medium">Tanggal:</span> {moment(record.transaction_date).format('DD MMMM YYYY, HH:mm')}
                 </p>
-                <p className="text-lg font-bold text-gray-900 mb-1">{record.material_name}</p>
+                <p className="text-lg font-bold text-foreground mb-1">{record.material_name}</p>
                 <div className="flex items-center mb-2">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${record.type === 'in' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} mr-2`}>
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${record.type === 'in' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'} mr-2`}>
                     {record.type === 'in' ? 'Masuk' : 'Keluar'}
                   </span>
-                  <p className="text-sm text-gray-700">
-                    <span className="font-medium">Jumlah:</span> {parseInt(record.quantity)} {record.material_unit}
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-medium">Jumlah:</span> {parseFloat(record.quantity)} {record.material_unit}
                   </p>
                 </div>
                 {record.notes && (
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-muted-foreground">
                     <span className="font-medium">Keterangan:</span> {record.notes}
                   </p>
                 )}
                 <div className="flex justify-end mt-2">
-                  <button
-                    onClick={() => handleDeleteHistoryEntry(record.id)}
-                    className="text-red-600 hover:text-red-900 p-2 rounded-full bg-red-100"
-                    title="Hapus Riwayat"
-                  >
-                    <FaTrash />
-                  </button>
+                  <button onClick={() => handleDeleteHistoryEntry(record.id)} className="text-destructive hover:text-destructive/80 p-2 rounded-full bg-destructive/10" title="Hapus Riwayat"><FaTrash /></button>
                 </div>
               </div>
             ))
           ) : (
-            <div className="text-center text-gray-500 mt-4">
-              Tidak ada riwayat stok yang ditemukan.
-            </div>
+            <div className="text-center text-muted-foreground mt-4">Tidak ada riwayat stok yang ditemukan.</div>
           )}
         </div>
       </div>
-      {message && <div className="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{message}</div>}
-      {notificationError && <div className="fixed bottom-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{notificationError}</div>}
 
       <ConfirmationModal
         isOpen={showDeleteConfirmationModal}
@@ -326,6 +286,9 @@ const OwnerRawMaterialStockHistory = () => { // Component name changed
         confirmText="Ya, Hapus"
         cancelText="Batal"
       />
+
+      {message && <div className="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{message}</div>}
+      {notificationError && <div className="fixed bottom-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{notificationError}</div>}
     </div>
   );
 };
