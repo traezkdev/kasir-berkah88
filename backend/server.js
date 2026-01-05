@@ -3836,10 +3836,34 @@ app.post("/api/cash-reconciliation/save", authenticateToken, async (req, res) =>
     }
 });
 
-// Get cash reconciliation history
+// Get cash reconciliation history with pagination and date filters
 app.get("/api/cash-reconciliation/history", authenticateToken, async (req, res) => {
     try {
-        const { limit = 30 } = req.query;
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 10;
+        const startDate = req.query.startDate;
+        const endDate = req.query.endDate;
+        const offset = (page - 1) * limit;
+
+        let whereClauses = [];
+        let queryParams = [];
+
+        if (startDate && startDate !== 'null' && startDate !== '') {
+            whereClauses.push("cr.date >= ?");
+            queryParams.push(startDate);
+        }
+        if (endDate && endDate !== 'null' && endDate !== '') {
+            whereClauses.push("cr.date <= ?");
+            queryParams.push(endDate);
+        }
+
+        const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+        // Query to get total count
+        const countSql = `SELECT COUNT(*) as totalItems FROM cash_reconciliations cr ${whereSql}`;
+        const [countRows] = await db.query(countSql, queryParams);
+        const totalItems = countRows[0].totalItems;
+        const totalPages = Math.ceil(totalItems / limit);
 
         const sql = `
             SELECT 
@@ -3847,15 +3871,22 @@ app.get("/api/cash-reconciliation/history", authenticateToken, async (req, res) 
                 u.username as reconciled_by
             FROM cash_reconciliations cr
             LEFT JOIN users u ON cr.user_id = u.id
+            ${whereSql}
             ORDER BY cr.date DESC
-            LIMIT ?
+            LIMIT ? OFFSET ?
         `;
 
-        const [rows] = await db.query(sql, [parseInt(limit)]);
+        const [rows] = await db.query(sql, [...queryParams, limit, offset]);
 
         res.json({
             message: "success",
-            data: rows
+            data: rows,
+            pagination: {
+                currentPage: page,
+                totalPages: totalPages,
+                totalItems: totalItems,
+                limit: limit
+            }
         });
 
     } catch (err) {

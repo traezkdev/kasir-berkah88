@@ -7,6 +7,7 @@ import Icon from '../../components/AppIcon';
 import authFetch from '../../utils/authFetch';
 import useNotification from '../../hooks/useNotification';
 import ConfirmationModal from '../../components/ui/ConfirmationModal';
+import { exportToExcel, exportToPdf, prepareCashReconciliationDataForExport } from '../../utils/exportUtils';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -74,12 +75,28 @@ const CashReconciliation = ({ headerTitle, isModal = false }) => {
     };
 
     const [history, setHistory] = useState([]);
+    const [historyStartDate, setHistoryStartDate] = useState('');
+    const [historyEndDate, setHistoryEndDate] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pagination, setPagination] = useState({
+        totalPages: 1,
+        totalItems: 0,
+        limit: 10
+    });
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
     useEffect(() => {
         fetchSummary();
-        fetchHistory();
+        if (currentPage === 1) {
+            fetchHistory(1);
+        } else {
+            setCurrentPage(1);
+        }
     }, [selectedDate]);
+
+    useEffect(() => {
+        fetchHistory(currentPage);
+    }, [currentPage]);
 
     useEffect(() => {
         const handleResize = () => {
@@ -108,18 +125,46 @@ const CashReconciliation = ({ headerTitle, isModal = false }) => {
         }
     };
 
-    const fetchHistory = async () => {
+    const fetchHistory = async (page = 1) => {
         try {
-            const response = await authFetch(`${apiUrl}/api/cash-reconciliation/history?limit=10`);
+            const response = await authFetch(`${apiUrl}/api/cash-reconciliation/history?page=${page}&limit=10&startDate=${historyStartDate}&endDate=${historyEndDate}`);
             const data = await response.json();
 
             if (data.message === 'success') {
                 setHistory(data.data);
+                if (data.pagination) {
+                    setPagination(data.pagination);
+                }
             }
         } catch (error) {
             console.error('Error fetching history:', error);
         }
     };
+
+    const handleApplyFilter = () => {
+        if (currentPage === 1) {
+            fetchHistory(1);
+        } else {
+            setCurrentPage(1);
+        }
+    };
+
+    const handleResetFilter = () => {
+        setHistoryStartDate('');
+        setHistoryEndDate('');
+        if (currentPage === 1) {
+            // If already at page 1, manually fetch because clearing dates won't trigger the [historyStartDate, historyEndDate] effect if done together?
+            // Actually, the effect [historyStartDate, historyEndDate] handles it.
+        } else {
+            setCurrentPage(1);
+        }
+    };
+
+    useEffect(() => {
+        if (historyStartDate === '' && historyEndDate === '') {
+            fetchHistory(1);
+        }
+    }, [historyStartDate, historyEndDate]);
 
     const handleSave = async () => {
         if (!actualTunai && !actualTransfer && !actualGojek) {
@@ -209,6 +254,46 @@ const CashReconciliation = ({ headerTitle, isModal = false }) => {
         { label: 'Dashboard', path: '/main-dashboard', isActive: false },
         { label: 'Rekonsiliasi Kas', path: '/cash-reconciliation', isActive: true }
     ];
+
+    const handleExportExcel = async () => {
+        try {
+            setLoading(true);
+            const response = await authFetch(`${apiUrl}/api/cash-reconciliation/history?limit=2000&startDate=${historyStartDate}&endDate=${historyEndDate}`);
+            const data = await response.json();
+
+            if (data.message === 'success' && data.data.length > 0) {
+                const preparedData = prepareCashReconciliationDataForExport(data.data);
+                exportToExcel(preparedData, `Laporan_Rekonsiliasi_Kas_${new Date().toISOString().split('T')[0]}`);
+            } else {
+                showError('Tidak ada data untuk diekspor');
+            }
+        } catch (error) {
+            console.error('Error exporting excel:', error);
+            showError('Gagal mengekspor data');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleExportPdf = async () => {
+        try {
+            setLoading(true);
+            const response = await authFetch(`${apiUrl}/api/cash-reconciliation/history?limit=2000&startDate=${historyStartDate}&endDate=${historyEndDate}`);
+            const data = await response.json();
+
+            if (data.message === 'success' && data.data.length > 0) {
+                const preparedData = prepareCashReconciliationDataForExport(data.data);
+                exportToPdf(preparedData, `Laporan_Rekonsiliasi_Kas_${new Date().toISOString().split('T')[0]}`);
+            } else {
+                showError('Tidak ada data untuk diekspor');
+            }
+        } catch (error) {
+            console.error('Error exporting pdf:', error);
+            showError('Gagal mengekspor data');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className={isModal ? "" : "min-h-screen"}>
@@ -458,11 +543,72 @@ const CashReconciliation = ({ headerTitle, isModal = false }) => {
 
                     {/* History Section */}
                     <div className="mt-8">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Icon name="History" className="text-gray-600 dark:text-gray-400" size={24} />
-                            <h2 className="text-lg font-semibold text-text-primary">
-                                Riwayat Rekonsiliasi
-                            </h2>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+                            <div className="flex items-center gap-2">
+                                <Icon name="History" className="text-gray-600 dark:text-gray-400" size={24} />
+                                <h2 className="text-lg font-semibold text-text-primary">
+                                    Riwayat Rekonsiliasi
+                                </h2>
+                            </div>
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                                <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-2 py-1">
+                                    <input
+                                        type="date"
+                                        value={historyStartDate}
+                                        onChange={(e) => setHistoryStartDate(e.target.value)}
+                                        className="bg-transparent border-none text-xs focus:ring-0 text-text-primary p-1"
+                                    />
+                                    <span className="text-text-secondary text-xs">s/d</span>
+                                    <input
+                                        type="date"
+                                        value={historyEndDate}
+                                        onChange={(e) => setHistoryEndDate(e.target.value)}
+                                        className="bg-transparent border-none text-xs focus:ring-0 text-text-primary p-1"
+                                    />
+                                    {(historyStartDate || historyEndDate) && (
+                                        <button
+                                            onClick={handleResetFilter}
+                                            className="text-text-secondary hover:text-red-500 p-1"
+                                            title="Reset Filter"
+                                        >
+                                            <Icon name="XCircle" size={14} />
+                                        </button>
+                                    )}
+                                </div>
+
+                                <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={handleApplyFilter}
+                                    iconName="Search"
+                                    className="sm:w-auto"
+                                >
+                                    Filter
+                                </Button>
+
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleExportExcel}
+                                        iconName="FileSpreadsheet"
+                                        className="flex-1 sm:flex-none border-green-600 text-green-600 hover:bg-green-50"
+                                        loading={loading && history.length > 0}
+                                    >
+                                        Excel
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleExportPdf}
+                                        iconName="FileText"
+                                        className="flex-1 sm:flex-none border-red-600 text-red-600 hover:bg-red-50"
+                                        loading={loading && history.length > 0}
+                                    >
+                                        PDF
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Mobile View - Cards */}
@@ -636,6 +782,71 @@ const CashReconciliation = ({ headerTitle, isModal = false }) => {
                                             )}
                                         </tbody>
                                     </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Pagination Controls */}
+                        {history.length > 0 && pagination.totalPages > 1 && (
+                            <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-card p-4 rounded-lg border border-border shadow-sm">
+                                <div className="text-sm text-text-secondary">
+                                    Menampilkan <span className="font-medium text-text-primary">{history.length}</span> dari <span className="font-medium text-text-primary">{pagination.totalItems}</span> data
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        disabled={currentPage === 1}
+                                        iconName="ChevronLeft"
+                                        iconPosition="left"
+                                        className="h-9"
+                                    >
+                                        Sebelumnya
+                                    </Button>
+
+                                    <div className="flex items-center gap-1 mx-2">
+                                        {[...Array(pagination.totalPages)].map((_, i) => {
+                                            const pageNum = i + 1;
+                                            // Show first page, last page, and pages around current page
+                                            if (
+                                                pageNum === 1 ||
+                                                pageNum === pagination.totalPages ||
+                                                (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                                            ) {
+                                                return (
+                                                    <button
+                                                        key={pageNum}
+                                                        onClick={() => setCurrentPage(pageNum)}
+                                                        className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${currentPage === pageNum
+                                                            ? 'bg-primary text-white'
+                                                            : 'hover:bg-muted text-text-primary'
+                                                            }`}
+                                                    >
+                                                        {pageNum}
+                                                    </button>
+                                                );
+                                            } else if (
+                                                pageNum === currentPage - 2 ||
+                                                pageNum === currentPage + 2
+                                            ) {
+                                                return <span key={pageNum} className="text-text-secondary">...</span>;
+                                            }
+                                            return null;
+                                        })}
+                                    </div>
+
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+                                        disabled={currentPage === pagination.totalPages}
+                                        iconName="ChevronRight"
+                                        iconPosition="right"
+                                        className="h-9"
+                                    >
+                                        Berikutnya
+                                    </Button>
                                 </div>
                             </div>
                         )}

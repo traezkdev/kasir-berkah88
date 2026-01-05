@@ -259,6 +259,15 @@ export const exportToExcel = (data, filename = 'data') => {
       ['Total Quantity Stok:', totalStock],
       ['Total Nilai Stok:', formatCurrency(totalValue)]
     ];
+  } else if (filename.includes('Rekonsiliasi_Kas')) {
+    title = "Laporan Rekonsiliasi Kas";
+    const totalActual = data.reduce((sum, item) => sum + (item['Total Aktual'] || 0), 0);
+    const totalVariance = data.reduce((sum, item) => sum + (item['Total Selisih'] || 0), 0);
+    summaryRows = [
+      [],
+      ['Total Seluruh Aktual:', formatCurrency(totalActual)],
+      ['Total Seluruh Selisih:', formatCurrency(totalVariance)]
+    ];
   } else {
     title = "Laporan Stok Menu"; // Default title for original stock data
     const totalStock = calculateTotalStock(data);
@@ -452,6 +461,14 @@ export const exportToPdf = (data, filename = 'data') => {
     summaryLines = [
       `Total Quantity Stok: ${totalStock}`,
       `Total Nilai Stok: ${formatCurrency(totalValue)}`
+    ];
+  } else if (filename.includes('Rekonsiliasi_Kas')) {
+    title = "Laporan Rekonsiliasi Kas";
+    const totalActual = data.reduce((sum, item) => sum + (item['Total Aktual'] || 0), 0);
+    const totalVariance = data.reduce((sum, item) => sum + (item['Total Selisih'] || 0), 0);
+    summaryLines = [
+      `Total Seluruh Aktual: ${formatCurrency(totalActual)}`,
+      `Total Seluruh Selisih: ${formatCurrency(totalVariance)}`
     ];
   } else {
     const totalStock = calculateTotalStock(data);
@@ -683,6 +700,29 @@ export const prepareRawMaterialStockDataForExport = (materials, units = []) => {
       'Harga Stok Mentah': isCalculable ? rawStockPrice : `${rawStockPrice} (Nilai Langsung)`,
       'Total Nilai': totalValue, // Keep as number for calculation
       'Status': totalStock < (Number(material.stok_minimum) || 0) ? 'Menipis' : 'Cukup'
+    };
+  });
+};
+
+export const prepareCashReconciliationDataForExport = (history) => {
+  return history.map(item => {
+    const totalVariance = parseFloat(item.variance_tunai || 0) + parseFloat(item.variance_transfer || 0) + parseFloat(item.variance_gojek || 0);
+    const totalActual = parseFloat(item.actual_tunai || 0) + parseFloat(item.actual_transfer || 0) + parseFloat(item.actual_gojek || 0);
+
+    let statusLabel = 'PAS';
+    if (totalVariance > 0) statusLabel = 'KURANG';
+    else if (totalVariance < 0) statusLabel = 'LEBIH';
+
+    return {
+      'Tanggal': new Date(item.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+      'User': item.reconciled_by || '-',
+      'Tunai (Act)': parseFloat(item.actual_tunai || 0),
+      'Transfer (Act)': parseFloat(item.actual_transfer || 0),
+      'Gojek (Act)': parseFloat(item.actual_gojek || 0),
+      'Total Aktual': totalActual,
+      'Total Selisih': Math.abs(totalVariance),
+      'Status': statusLabel,
+      'Catatan': item.notes || '-'
     };
   });
 };
