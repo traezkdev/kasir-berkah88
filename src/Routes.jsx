@@ -45,6 +45,7 @@ import BerkahLandingPage from './pages/berkah88';
 
 import TransactionTrash from './pages/TransactionTrash';
 import DatabaseManagement from './pages/Settings/DatabaseManagement';
+import DashboardV2 from './pages/dashboard-v2';
 
 // ProtectedRoute component
 const ProtectedRoute = ({ children, allowedRoles, redirectPathForForbiddenRoles }) => {
@@ -157,6 +158,7 @@ const AppRoutes = () => {
         <Route path="/admin-uang-bisnis" element={<ModeProtectedRoute modeRequired="full"><AdminUangBisnis headerTitle="Uang Bisnis" /></ModeProtectedRoute>} />
         <Route path="/laporan-lengkap" element={<ModeProtectedRoute modeRequired="full"><LaporanLengkap headerTitle="Laporan Lengkap" /></ModeProtectedRoute>} />
         <Route path="/cash-reconciliation" element={<ModeProtectedRoute modeRequired="full"><CashReconciliation headerTitle="Rekonsiliasi Kas" /></ModeProtectedRoute>} />
+        <Route path="/dashboard-v2" element={<DashboardV2 headerTitle="Dashboard Statistik" />} />
 
         {/* Simple Mode Allowed Routes */}
         <Route path="/laporan" element={<BusinessReports />} />

@@ -294,6 +294,13 @@ const OwnerDashboard = ({ headerTitle }) => {
             path: "/critical-stock"
         },
         {
+            title: "Statistik V2",
+            icon: "BarChart3",
+            color: "accent",
+            description: "Visualisasi data bisnis modern",
+            path: "/dashboard-v2"
+        },
+        {
             title: "Profil Pengguna",
             icon: "User",
             color: "secondary",

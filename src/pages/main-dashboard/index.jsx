@@ -515,6 +515,13 @@ const MainDashboard = ({ headerTitle }) => {
       color: 'secondary'
     },
     {
+      title: 'Statistik V2',
+      description: 'Dashboard analisis modern',
+      icon: 'BarChart3',
+      route: '/dashboard-v2',
+      color: 'primary'
+    },
+    {
       title: 'Kalkulator',
       description: 'Akses kalkulator cepat',
       icon: 'Calculator',
@@ -842,7 +849,7 @@ const MainDashboard = ({ headerTitle }) => {
                     // Filter berdasarkan mode
                     if (appMode === 'simple') {
                       // Mode sederhana: hanya tampilkan fitur penting
-                      const simpleActions = ['Proses Penjualan', 'Kelola Menu', 'Catat Pengeluaran', 'Lihat Laporan'];
+                      const simpleActions = ['Proses Penjualan', 'Kelola Menu', 'Catat Pengeluaran', 'Lihat Laporan', 'Statistik V2'];
                       return simpleActions.includes(action.title);
                     }
                     // Mode lengkap: tampilkan semua
