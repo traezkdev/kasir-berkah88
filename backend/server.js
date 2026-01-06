@@ -3408,12 +3408,9 @@ app.delete("/api/admin/data/all", authenticateToken, authorizeRoles('admin'), as
         await connection.query('TRUNCATE TABLE account_transactions');
         await connection.query('TRUNCATE TABLE notes');
 
-        // --- NEW: Clear Menu and Material related data ---
-        await connection.query('TRUNCATE TABLE menu_item_options');
-        await connection.query('TRUNCATE TABLE menu_recipes');
-        await connection.query('DELETE FROM menu_items'); // Cannot TRUNCATE if referenced, so DELETE
-        await connection.query('DELETE FROM raw_materials');
-        await connection.query('DELETE FROM categories'); // Reset categories as well
+        // --- Reset Menu and Material stock instead of deleting them ---
+        await connection.query('UPDATE menu_items SET stock = 0');
+        await connection.query('UPDATE raw_materials SET current_stock = 0, menu_stock = 0');
 
         // Reset balances
         await connection.query('UPDATE accounts SET balance = 0');
@@ -3427,7 +3424,7 @@ app.delete("/api/admin/data/all", authenticateToken, authorizeRoles('admin'), as
 
         await connection.commit();
 
-        res.json({ message: "Semua data transaksi, pengeluaran, uang bisnis, menu, kategori, bahan baku, dan riwayat stok telah berhasil dihapus." });
+        res.json({ message: "Semua transaksi, pengeluaran, uang bisnis, riwayat stok berhasil dihapus, dan stok telah direset." });
     } catch (err) {
         if (connection) await connection.rollback();
         res.status(500).json({ error: err.message, stack: err.stack });
