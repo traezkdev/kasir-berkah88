@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import AppIcon from '../../components/AppIcon';
 import RestaurantSettingsModal from './components/RestaurantSettingsModal';
 import DataSyncModal from './DataSyncModal';
+import ExpenseCategorySettings from './ExpenseCategorySettings';
 
 import SocialShareSettings from './SocialShareSettings';
 import CategorySettings from './CategorySettings';
@@ -566,6 +567,7 @@ const Settings = () => {
                 onClick={() => setActiveModal('appMode')}
               />
               <SettingsCard icon="List" title="Kelola Kategori Menu" description="Tambah, ubah, atau hapus kategori untuk item menu." onClick={() => setActiveModal('categoryManagement')} disabled={!isAdmin} />
+              <SettingsCard icon="CreditCard" title="Kelola Kategori Pengeluaran" description="Tambah, ubah, atau hapus kategori untuk pengeluaran." onClick={() => setActiveModal('expenseCategoryManagement')} disabled={!isAdmin} />
 
               {appMode === 'full' && (
                 <>
@@ -870,6 +872,10 @@ const Settings = () => {
 
       <SettingsModal title="Kelola Kategori Menu" isOpen={activeModal === 'categoryManagement'} onClose={handleModalClose}>
         <CategorySettings onClose={handleModalClose} />
+      </SettingsModal>
+
+      <SettingsModal title="Kelola Kategori Pengeluaran" isOpen={activeModal === 'expenseCategoryManagement'} onClose={handleModalClose}>
+        <ExpenseCategorySettings onClose={handleModalClose} />
       </SettingsModal>
 
       <RestaurantSettingsModal

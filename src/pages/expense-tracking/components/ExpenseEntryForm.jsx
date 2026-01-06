@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { formatInTimeZone } from 'date-fns-tz';
+import authFetch from '../../../utils/authFetch';
 
 const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole }) => {
   const [formData, setFormData] = useState({
@@ -10,18 +11,28 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole }) => {
   });
 
   const [errors, setErrors] = useState({});
+  const [categoryOptions, setCategoryOptions] = useState([]);
 
-  const categoryOptions = [
-    { value: 'supplies', label: 'Bahan Baku & Supplies' },
-    { value: 'utilities', label: 'Listrik & Air' },
-    { value: 'inventory', label: 'Pembelian Stok' },
-    { value: 'equipment', label: 'Peralatan' },
-    { value: 'maintenance', label: 'Perawatan & Perbaikan' },
-    { value: 'transport', label: 'Transportasi' },
-    { value: 'marketing', label: 'Promosi & Marketing' },
-    { value: 'operational', label: 'Operasional Lainnya' },
-    { value: 'other', label: 'Lain-lain' }
-  ];
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await authFetch('/api/expense-categories');
+        const data = await response.json();
+        if (response.ok) {
+          // Map to format suitable for select options
+          const options = data.data.map(cat => ({
+            value: cat.name, // Using name as value to match existing data structure if needed, or cat.id
+            label: cat.name
+          }));
+          setCategoryOptions(options);
+        }
+      } catch (err) {
+        console.error("Failed to fetch expense categories:", err);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -42,7 +53,7 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole }) => {
     if (!value) return '';
     const numericValue = value.replace(/[^\d]/g, '');
     if (!numericValue) return '';
-    
+
     return new Intl.NumberFormat('id-ID').format(parseInt(numericValue));
   };
 
@@ -78,7 +89,7 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -178,7 +189,7 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole }) => {
               {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category}</p>}
             </div>
 
-            
+
 
             <div className="lg:col-span-1">
               <label className="block text-sm font-medium text-text-primary mb-1">Jumlah Pengeluaran</label>
@@ -235,7 +246,7 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole }) => {
                 </>
               )}
             </button>
-            
+
             <button
               type="button"
               onClick={handleClear}

@@ -953,16 +953,127 @@ app.put("/api/categories/:id", authenticateToken, authorizeRoles('user', 'admin'
 
 // Delete a category
 app.delete("/api/categories/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res) => {
+    let connection;
     try {
         const { id } = req.params;
-        const sql = 'DELETE FROM categories WHERE id = ?';
-        const [result] = await db.query(sql, [id]);
-        if (result.affectedRows === 0) {
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // 1. Get the category name before deleting it
+        const [categoryRows] = await connection.query('SELECT name FROM categories WHERE id = ?', [id]);
+        if (categoryRows.length === 0) {
+            await connection.rollback();
             return res.status(404).json({ "error": "Category not found" });
         }
-        res.json({ "message": "deleted", changes: result.affectedRows });
+        const categoryName = categoryRows[0].name;
+
+        // 2. Update all menu items that use this category to "Lainnya"
+        await connection.query('UPDATE menu_items SET category = ? WHERE category = ?', ['Lainnya', categoryName]);
+
+        // 3. Delete the category
+        const [result] = await connection.query('DELETE FROM categories WHERE id = ?', [id]);
+
+        await connection.commit();
+        res.json({ message: "deleted", changes: result.affectedRows, affectedMenuItems: true });
     } catch (err) {
+        if (connection) await connection.rollback();
         res.status(400).json({ "error": err.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// --- Expense Categories Endpoints ---
+
+// Get all expense categories
+app.get("/api/expense-categories", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'owner'), async (req, res) => {
+    try {
+        const sql = "SELECT * FROM expense_categories ORDER BY name ASC";
+        const [rows] = await db.query(sql);
+        res.json({
+            "message": "success",
+            "data": rows
+        });
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
+// Add a new expense category
+app.post("/api/expense-categories", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        const { name } = req.body;
+        if (!name) {
+            return res.status(400).json({ "error": "Expense Category name is required" });
+        }
+        const sql = 'INSERT INTO expense_categories (name) VALUES (?)';
+        const [result] = await db.query(sql, [name]);
+        res.status(201).json({
+            "message": "success",
+            "data": { id: result.insertId, name },
+        });
+    } catch (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ error: "Expense Category name already exists" });
+        }
+        res.status(400).json({ "error": err.message });
+    }
+});
+
+// Update an expense category
+app.put("/api/expense-categories/:id", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        const { name } = req.body;
+        const { id } = req.params;
+        if (!name) {
+            return res.status(400).json({ "error": "Expense Category name is required" });
+        }
+        const sql = 'UPDATE expense_categories SET name = ? WHERE id = ?';
+        const [result] = await db.query(sql, [name, id]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ "error": "Expense Category not found" });
+        }
+        res.json({
+            "message": "success",
+            "data": { id, name },
+        });
+    } catch (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ error: "Expense Category name already exists" });
+        }
+        res.status(400).json({ "error": err.message });
+    }
+});
+
+// Delete an expense category
+app.delete("/api/expense-categories/:id", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    let connection;
+    try {
+        const { id } = req.params;
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // 1. Get the category name before deleting it
+        const [categoryRows] = await connection.query('SELECT name FROM expense_categories WHERE id = ?', [id]);
+        if (categoryRows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ "error": "Expense Category not found" });
+        }
+        const categoryName = categoryRows[0].name;
+
+        // 2. Update all expenses that use this category to "Tanpa Kategori"
+        await connection.query('UPDATE expenses SET category = ? WHERE category = ?', ['Tanpa Kategori', categoryName]);
+
+        // 3. Delete the category from expense_categories
+        const [deleteResult] = await connection.query('DELETE FROM expense_categories WHERE id = ?', [id]);
+
+        await connection.commit();
+        res.json({ message: "success", deletedId: id, affectedExpenses: true });
+    } catch (err) {
+        if (connection) await connection.rollback();
+        res.status(400).json({ "error": err.message });
+    } finally {
+        if (connection) connection.release();
     }
 });
 

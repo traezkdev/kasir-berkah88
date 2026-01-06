@@ -665,6 +665,36 @@ const setupDatabase = async () => {
       console.log('Default categories inserted.');
     }
 
+    const createExpenseCategoriesTable = `
+      CREATE TABLE IF NOT EXISTS expense_categories (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(191) NOT NULL UNIQUE
+      );
+    `;
+    await connection.query(createExpenseCategoriesTable);
+    console.log('expense_categories table is ready.');
+
+    // Insert default expense categories if the table is empty
+    const [expenseCategoryRows] = await connection.query('SELECT id FROM expense_categories LIMIT 1');
+    if (expenseCategoryRows.length === 0) {
+      const defaultExpenseCategories = [
+        'Bahan Baku & Supplies',
+        'Listrik & Air',
+        'Pembelian Stok',
+        'Peralatan',
+        'Perawatan & Perbaikan',
+        'Transportasi',
+        'Promosi & Marketing',
+        'Operasional Lainnya',
+        'Lain-lain'
+      ];
+      const insertPromises = defaultExpenseCategories.map(name => {
+        return connection.query('INSERT INTO expense_categories (name) VALUES (?)', [name]);
+      });
+      await Promise.all(insertPromises);
+      console.log('Default expense categories inserted.');
+    }
+
 
     // Check and add notes column to expenses if it doesn't exist
     const [notesRows] = await connection.query(checkNotesColumn);
