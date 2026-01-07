@@ -7,6 +7,7 @@ import SalesReportSection from './SalesReportSection';
 import ExpenseReportSection from './ExpenseReportSection';
 import EmployeeMealReportSection from './EmployeeMealReportSection';
 import ReconciliationReportSection from './ReconciliationReportSection';
+import RawMaterialReportSection from './RawMaterialReportSection';
 import CombinedAnalyticsSection from './CombinedAnalyticsSection';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
@@ -36,6 +37,8 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
     const [menuItems, setMenuItems] = useState([]);
     const [expenses, setExpenses] = useState([]);
     const [reconciliations, setReconciliations] = useState([]);
+    const [rawMaterials, setRawMaterials] = useState([]);
+    const [units, setUnits] = useState([]);
     const [settings, setSettings] = useState(null);
     const [reportData, setReportData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -53,18 +56,21 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                 return;
             }
             try {
-                const [transRes, menuRes, expenseRes, settingsRes, reconciliationRes] = await Promise.all([
+                const [transRes, menuRes, expenseRes, settingsRes, reconciliationRes, rawMaterialsRes, unitsRes] = await Promise.all([
                     authFetch(`${apiUrl}/api/transactions/all`),
                     authFetch(`${apiUrl}/api/menu-items/all`),
                     authFetch(`${apiUrl}/api/expenses/all`),
                     authFetch(`${apiUrl}/api/all-settings`),
-                    authFetch(`${apiUrl}/api/cash-reconciliation/history?limit=1000`)
+                    authFetch(`${apiUrl}/api/cash-reconciliation/history?limit=1000`),
+                    authFetch(`${apiUrl}/api/raw-materials`),
+                    authFetch(`${apiUrl}/api/units`)
                 ]);
 
                 const transData = await transRes.json();
                 const menuData = await menuRes.json();
                 const expenseData = await expenseRes.json();
                 const settingsData = await settingsRes.json();
+                const reconciliationData = await reconciliationRes.json();
 
                 if (transData.message === 'success') {
                     setTransactions(transData.data.map(t => ({ ...t, timestamp: new Date(t.timestamp) })));
@@ -79,9 +85,18 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                     setSettings(settingsData.data);
                 }
 
-                const reconciliationData = await reconciliationRes.json();
                 if (reconciliationData.message === 'success' || reconciliationData.data) {
                     setReconciliations(reconciliationData.data || []);
+                }
+
+                const rawMaterialsData = await rawMaterialsRes.json();
+                if (rawMaterialsData.message === 'success') {
+                    setRawMaterials(rawMaterialsData.data);
+                }
+
+                const unitsData = await unitsRes.json();
+                if (unitsData.message === 'success') {
+                    setUnits(unitsData.data);
                 }
             } catch (error) {
                 console.error("Failed to fetch data:", error);
@@ -223,12 +238,57 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                 workingCapital = initialCapital + revenueSinceDate - expensesSinceDate;
             }
 
+            // Raw Materials Metrics
+            const isUnitCalculable = (unitName) => {
+                const unit = units.find(u => u.name.toLowerCase() === (unitName || '').toLowerCase());
+                return unit ? unit.is_calculable : true;
+            };
+
+            const totalMenuStockValueRaw = rawMaterials.reduce((sum, material) => {
+                const isCalculable = isUnitCalculable(material.unit);
+                const menuStock = parseFloat(material.menu_stock || 0);
+                const pricePerItem = parseFloat(material.price_per_item || 0);
+                return isCalculable ? sum + (menuStock * pricePerItem) : sum + (menuStock > 0 ? pricePerItem : 0);
+            }, 0);
+
+            const totalStockValueRaw = rawMaterials.reduce((sum, material) => {
+                const isCalculable = isUnitCalculable(material.unit);
+                const menuStock = parseFloat(material.menu_stock || 0);
+                const currentStock = parseFloat(material.current_stock || 0);
+                const pricePerItem = parseFloat(material.price_per_item || 0);
+                const rawStockPrice = parseFloat(material.raw_stock_price || 0);
+
+                if (isCalculable) {
+                    return sum + (menuStock * pricePerItem) + (currentStock * rawStockPrice);
+                } else {
+                    return sum + (menuStock > 0 ? pricePerItem : 0) + (currentStock > 0 ? rawStockPrice : 0);
+                }
+            }, 0);
+
+            const currentRawMaterialStockValueProcessed = rawMaterials.reduce((sum, material) => {
+                const isCalculable = isUnitCalculable(material.unit);
+                const currentStock = parseFloat(material.current_stock || 0);
+                const rawStockPrice = parseFloat(material.raw_stock_price || 0);
+                return isCalculable ? sum + (currentStock * rawStockPrice) : sum + (currentStock > 0 ? rawStockPrice : 0);
+            }, 0);
+
+            const lowStockRawCount = rawMaterials.filter(material =>
+                (Number(material.current_stock) + Number(material.menu_stock)) < Number(material.stok_minimum)
+            ).length;
+
             setReportData({
                 sales: { totalRevenue, totalTransactions, averageOrder, topItems, initialCapital: !isNaN(initialCapital) ? initialCapital : 0, workingCapital },
                 stock: { totalValue: totalValueSold, totalItems: totalItemsSold, lowStockItems: currentLowStockItems.length, currentStockValue, items: Array.from(itemsSoldMap.values()), lowStock: currentLowStockItems },
                 expenses: { summary: { totalExpenses, categories: expenseCategories, averageDaily: averageDailyExpenses }, items: filteredExpenses },
                 employeeMeals: { summary: { totalMeals: employeeMealsTransactions.length, totalItemsServed: totalItemsServedInEmployeeMeals, estimatedValue: estimatedValueEmployeeMeals }, items: employeeMealItems },
-                reconciliations: filteredReconciliations
+                reconciliations: filteredReconciliations,
+                rawMetrics: {
+                    totalMenuStockValue: totalMenuStockValueRaw,
+                    totalStockValue: totalStockValueRaw,
+                    lowStockRawCount,
+                    currentRawMaterialStockValue: currentRawMaterialStockValueProcessed,
+                    rawMaterials: rawMaterials // Include rawMaterials for the list
+                }
             });
         };
 
@@ -325,6 +385,7 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                 <div className="space-y-8 mt-6 bg-card p-4 rounded-lg shadow-md">
                     <SalesReportSection data={reportData.sales} dateRange={selectedDateRange} />
                     <StockReportSection data={reportData.stock} dateRange={selectedDateRange} />
+                    <RawMaterialReportSection data={reportData.rawMetrics} units={units} dateRange={selectedDateRange} />
                     <ExpenseReportSection data={reportData.expenses} dateRange={selectedDateRange} />
                     <EmployeeMealReportSection data={reportData.employeeMeals} dateRange={selectedDateRange} />
                     <ReconciliationReportSection reconciliations={reportData.reconciliations} dateRange={selectedDateRange} />
