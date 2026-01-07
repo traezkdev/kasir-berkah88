@@ -6,7 +6,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, confirm
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
             <div className="bg-card p-6 rounded-lg shadow-xl w-full max-w-sm">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-semibold text-text-primary">{title}</h2>
