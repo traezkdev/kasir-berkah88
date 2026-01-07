@@ -1033,6 +1033,20 @@ const setupDatabase = async () => {
       console.log('Added show_stock_alert column to app_settings table.');
     }
 
+    // Check and add restaurant_url column to app_settings if it doesn't exist
+    const checkRestaurantUrlColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'app_settings' AND COLUMN_NAME = 'restaurant_url';
+    `;
+    const addRestaurantUrlColumn = `
+      ALTER TABLE app_settings ADD COLUMN restaurant_url VARCHAR(255) DEFAULT 'www.berkah88.id';
+    `;
+    const [restaurantUrlRows] = await connection.query(checkRestaurantUrlColumn);
+    if (restaurantUrlRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addRestaurantUrlColumn);
+      console.log('Added restaurant_url column to app_settings table.');
+    }
+
     // --- Optimasi: Tambahkan Indeks untuk Peningkatan Performa ---
     const addIndexIfNotExists = async (connection, tableName, indexName, columns) => {
       const checkIndexQuery = `

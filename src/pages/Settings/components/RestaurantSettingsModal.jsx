@@ -9,6 +9,7 @@ const apiUrl = import.meta.env.VITE_API_URL;
 const RestaurantSettingsModal = ({ isOpen, onClose, onSave, initialSettings }) => {
   const [restaurantName, setRestaurantName] = useState('');
   const [restaurantSlogan, setRestaurantSlogan] = useState('');
+  const [restaurantUrl, setRestaurantUrl] = useState('');
   const [ownerPhone, setOwnerPhone] = useState('');
   const [showStockAlert, setShowStockAlert] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -18,6 +19,7 @@ const RestaurantSettingsModal = ({ isOpen, onClose, onSave, initialSettings }) =
     if (isOpen && initialSettings) {
       setRestaurantName(initialSettings.restaurant_name || '');
       setRestaurantSlogan(initialSettings.restaurant_slogan || '');
+      setRestaurantUrl(initialSettings.restaurant_url || '');
       setOwnerPhone(initialSettings.owner_phone || '');
       setShowStockAlert(initialSettings.show_stock_alert === 1 || initialSettings.show_stock_alert === true);
     }
@@ -30,6 +32,7 @@ const RestaurantSettingsModal = ({ isOpen, onClose, onSave, initialSettings }) =
       await onSave({
         restaurant_name: restaurantName,
         restaurant_slogan: restaurantSlogan,
+        restaurant_url: restaurantUrl,
         owner_phone: ownerPhone,
         show_stock_alert: showStockAlert ? 1 : 0
       });
@@ -100,6 +103,20 @@ const RestaurantSettingsModal = ({ isOpen, onClose, onSave, initialSettings }) =
                 className="w-full"
               />
               <p className="text-[10px] text-text-secondary mt-1">Nomor ini digunakan untuk mengirim laporan stok kritis via WhatsApp.</p>
+            </div>
+            <div>
+              <label htmlFor="restaurant-url" className="block text-sm font-medium text-text-primary mb-1">
+                Website / URL Restoran (Tampil di Struk)
+              </label>
+              <Input
+                id="restaurant-url"
+                type="text"
+                value={restaurantUrl}
+                onChange={(e) => setRestaurantUrl(e.target.value)}
+                placeholder="Contoh: www.berkah88.id"
+                className="w-full"
+              />
+              <p className="text-[10px] text-text-secondary mt-1">Alamat ini akan ditampilkan di bagian paling bawah pada struk transaksi.</p>
             </div>
             <div className="flex items-center space-x-2 pt-2">
               <input
