@@ -627,22 +627,25 @@ export const prepareSoldStockDataForExport = (soldItems) => {
   }));
 };
 
-export const prepareCombinedDataForExport = (reportData) => {
+export const prepareCombinedDataForExport = (reportData, units = []) => {
 
-  const { sales, expenses, stock } = reportData;
+  const { sales = {}, expenses = {}, stock = {}, rawMetrics } = reportData;
   const sections = [];
 
   // --- NEW: Combined Analytics Section ---
-  const netProfit = sales.totalRevenue - expenses.summary.totalExpenses;
-  const capitalGrowth = sales.initialCapital > 0 ? (netProfit / sales.initialCapital) * 100 : 0;
+  const totalRev = parseFloat(sales.totalRevenue || 0);
+  const totalExp = parseFloat(expenses.summary?.totalExpenses || 0);
+  const netProfit = totalRev - totalExp;
+  const initialCap = parseFloat(sales.initialCapital || 0);
+  const capitalGrowth = initialCap > 0 ? (netProfit / initialCap) * 100 : 0;
 
   sections.push({
     title: 'Analisis Gabungan',
     headers: ['Keterangan', 'Nilai'],
     rows: [
-      ['Modal Awal', formatCurrency(sales.initialCapital || 0)],
-      ['Modal Berjalan', formatCurrency(sales.workingCapital || 0)],
-      ['Laba Bersih (Periode Ini)', formatCurrency(netProfit || 0)],
+      ['Modal Awal', formatCurrency(initialCap)],
+      ['Modal Berjalan', formatCurrency(parseFloat(sales.workingCapital || 0))],
+      ['Laba Bersih (Periode Ini)', formatCurrency(netProfit)],
       ['Pertumbuhan Modal (dari Laba Bersih)', `${capitalGrowth.toFixed(1)}%`]
     ],
   });
@@ -705,6 +708,37 @@ export const prepareCombinedDataForExport = (reportData) => {
     headers: ['Nama Menu', 'Stok', 'Harga'],
     rows: stock.lowStock.map(item => [item.name, item.stock.toString(), formatCurrency(item.price)]),
   });
+
+  // --- NEW: Raw Materials Summary ---
+  if (rawMetrics) {
+    sections.push({
+      title: 'Ringkasan Bahan Mentah',
+      headers: ['Keterangan', 'Nilai'],
+      rows: [
+        ['Total Nilai Stok Menu', formatCurrency(rawMetrics.totalMenuStockValue)],
+        ['Total Nilai Stok Mentah', formatCurrency(rawMetrics.currentRawMaterialStockValue)],
+        ['Total Nilai Stok Gabungan', formatCurrency(rawMetrics.totalStockValue)],
+        ['Bahan Stok Menipis', `${rawMetrics.lowStockRawCount} Jenis`],
+      ],
+    });
+
+    if (rawMetrics.rawMaterials && rawMetrics.rawMaterials.length > 0) {
+      const preparedRawMaterials = prepareRawMaterialStockDataForExport(rawMetrics.rawMaterials, units);
+      sections.push({
+        title: 'Detail Stok Bahan Mentah',
+        headers: ['Nama Bahan', 'Stok Mentah', 'Stok Menu', 'Total Stok', 'Satuan', 'Total Nilai', 'Status'],
+        rows: preparedRawMaterials.map(m => [
+          m['Nama Bahan'],
+          m['Stok Mentah'].toString(),
+          m['Stok Menu'].toString(),
+          m['Total Stok'].toString(),
+          m['Satuan'],
+          formatCurrency(m['Total Nilai']),
+          m['Status']
+        ]),
+      });
+    }
+  }
 
   // --- NEW: Reconciliation Summary ---
   if (reportData.reconciliations && reportData.reconciliations.length > 0) {

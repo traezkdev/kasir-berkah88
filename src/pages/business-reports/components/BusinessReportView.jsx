@@ -178,8 +178,13 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                 }
             });
 
-            const currentLowStockItems = menuItems.filter(i => i.stock > 0 && i.stock <= 5);
-            const currentStockValue = menuItems.reduce((sum, item) => sum + (Number(item?.stock || 0) * Number(item?.price || 0)), 0);
+            const currentLowStockItems = menuItems.filter(i => (Number(i.stock) || 0) <= 5);
+            const currentStockValue = menuItems.reduce((sum, item) => {
+                const stock = Number(item?.stock || 0);
+                const price = Number(item?.price || 0);
+                if (stock <= 0 || price <= 0) return sum;
+                return sum + (stock * price);
+            }, 0);
 
             // Expense Report Data
             const totalExpenses = filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
@@ -248,7 +253,8 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                 const isCalculable = isUnitCalculable(material.unit);
                 const menuStock = parseFloat(material.menu_stock || 0);
                 const pricePerItem = parseFloat(material.price_per_item || 0);
-                return isCalculable ? sum + (menuStock * pricePerItem) : sum + (menuStock > 0 ? pricePerItem : 0);
+                if (menuStock <= 0 || pricePerItem <= 0) return sum;
+                return isCalculable ? sum + (menuStock * pricePerItem) : sum + pricePerItem;
             }, 0);
 
             const totalStockValueRaw = rawMaterials.reduce((sum, material) => {
@@ -258,18 +264,21 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                 const pricePerItem = parseFloat(material.price_per_item || 0);
                 const rawStockPrice = parseFloat(material.raw_stock_price || 0);
 
+                let value = 0;
                 if (isCalculable) {
-                    return sum + (menuStock * pricePerItem) + (currentStock * rawStockPrice);
+                    value = (menuStock > 0 ? menuStock * pricePerItem : 0) + (currentStock > 0 ? currentStock * rawStockPrice : 0);
                 } else {
-                    return sum + (menuStock > 0 ? pricePerItem : 0) + (currentStock > 0 ? rawStockPrice : 0);
+                    value = (menuStock > 0 ? pricePerItem : 0) + (currentStock > 0 ? rawStockPrice : 0);
                 }
+                return sum + value;
             }, 0);
 
             const currentRawMaterialStockValueProcessed = rawMaterials.reduce((sum, material) => {
                 const isCalculable = isUnitCalculable(material.unit);
                 const currentStock = parseFloat(material.current_stock || 0);
                 const rawStockPrice = parseFloat(material.raw_stock_price || 0);
-                return isCalculable ? sum + (currentStock * rawStockPrice) : sum + (currentStock > 0 ? rawStockPrice : 0);
+                if (currentStock <= 0 || rawStockPrice <= 0) return sum;
+                return isCalculable ? sum + (currentStock * rawStockPrice) : sum + rawStockPrice;
             }, 0);
 
             const lowStockRawCount = rawMaterials.filter(material =>
@@ -328,7 +337,7 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
             const endDateStr = formatInTimeZone(selectedDateRange.endDate, 'Asia/Jakarta', 'dd-MM-yyyy');
             const filename = `Laporan_Bisnis_Gabungan_${startDateStr}_sd_${endDateStr}`;
 
-            const preparedData = prepareCombinedDataForExport(reportData);
+            const preparedData = prepareCombinedDataForExport(reportData, units);
             if (format === 'excel') {
                 exportToExcel(preparedData, filename);
             } else if (format === 'pdf') {
