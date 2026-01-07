@@ -648,11 +648,11 @@ const MainDashboard = ({ headerTitle }) => {
       description: 'Saldo owner + saldo lapak'
     },
     {
-      title: 'Total Nilai Stok (Mentah + Menu)',
+      title: 'Total Nilai Stok (Bahan & Menu)',
       value: formatCurrency(dashboardData.metrics.totalCombinedRawMaterialValue),
-      icon: 'DollarSign',
+      icon: 'Package',
       color: 'primary',
-      description: 'Nilai total stok bahan mentah dan stok menu'
+      description: 'Modal yang sedang berbentuk barang (stok)'
     },
     {
       title: 'Saldo Owner',
@@ -663,11 +663,11 @@ const MainDashboard = ({ headerTitle }) => {
     },
     // "Keuntungan Kotor" (Equity) - kept as secondary
     {
-      title: 'Keuntungan Kotor (Equity)',
-      value: formatCurrency(dashboardData.metrics.netProfit),
-      icon: 'DollarSign',
+      title: 'Kekayaan Bisnis (Equity)',
+      value: formatCurrency((parseFloat(dashboardData.metrics.initialCapital) || 0) + (parseFloat(dashboardData.metrics.allTimeNetProfit) || 0)),
+      icon: 'ShieldCheck',
       color: 'accent',
-      description: 'Total pendapatan + total stok - total pengeluaran'
+      description: 'Modal Awal + Laba Bersih (Target Kekayaan)'
     },
     {
       title: 'Total Pendapatan (Semua Waktu)',
@@ -692,33 +692,35 @@ const MainDashboard = ({ headerTitle }) => {
     },
     // Dynamic logic for 'Selisih Perhitungan'
     (() => {
-      const currentEndingCapital = (parseFloat(dashboardData.metrics.ownerBalance) || 0) + (parseFloat(dashboardData.metrics.lapakBalance) || 0);
-      const sumCapital = currentEndingCapital + (parseFloat(dashboardData.metrics.initialCapital) || 0);
-      const recordedProfit = parseFloat(dashboardData.metrics.allTimeNetProfit) || 0;
-      const diff = sumCapital - recordedProfit;
+      const currentPhysicalCash = (parseFloat(dashboardData.metrics.ownerBalance) || 0) + (parseFloat(dashboardData.metrics.lapakBalance) || 0);
+      const initialCapital = parseFloat(dashboardData.metrics.initialCapital) || 0;
+      const totalRevenue = parseFloat(dashboardData.metrics.allTimeRevenue) || 0;
+      const totalExpenses = parseFloat(dashboardData.metrics.allTimeExpenses) || 0;
+
+      // Rumus: Modal Akhir - (Modal Awal + Pendapatan - Pengeluaran)
+      const expectedCash = initialCapital + totalRevenue - totalExpenses;
+      const diff = currentPhysicalCash - expectedCash;
 
       let color = 'success';
       let icon = 'CheckCircle';
-      let valueText = 'Pas dengan data';
+      let valueText = 'Data Akurat (Pas)';
 
       if (diff > 100) {
-        // Surplus (Lebih)
-        color = 'info'; // Blue
+        color = 'info';
         icon = 'TrendingUp';
-        valueText = `+ ${formatCurrency(diff)}`;
+        valueText = `+ ${formatCurrency(diff)} (Uang Lebih)`;
       } else if (diff < -100) {
-        // Deficit (Kurang)
-        color = 'destructive'; // Red
-        icon = 'TrendingDown';
-        valueText = formatCurrency(diff);
+        color = 'destructive';
+        icon = 'AlertCircle';
+        valueText = `${formatCurrency(diff)} (Uang Kurang)`;
       }
 
       return {
-        title: 'Selisih Perhitungan',
+        title: 'Selisih Perhitungan (Audit)',
         value: valueText,
         icon: icon,
         color: color,
-        description: '(Modal Akhir + Modal Awal) - Laba Bersih'
+        description: 'Modal Akhir - (Modal Awal + Pendapatan - Pengeluaran)'
       };
     })()
   ];

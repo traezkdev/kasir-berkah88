@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import Icon from '../../../components/AppIcon';
+import authFetch from '../../../utils/authFetch';
 
 const ExpenseAnalytics = ({ expenses = [], className = "" }) => {
+  const [categories, setCategories] = useState([]);
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -12,33 +15,42 @@ const ExpenseAnalytics = ({ expenses = [], className = "" }) => {
     })?.format(amount);
   };
 
-  const categoryTranslations = {
-    supplies: 'Bahan Baku & Supplies',
-    utilities: 'Listrik & Air',
-    inventory: 'Pembelian Stok',
-    equipment: 'Peralatan',
-    maintenance: 'Perawatan & Perbaikan',
-    transport: 'Transportasi',
-    marketing: 'Promosi & Marketing',
-    operational: 'Operasional Lainnya',
-    other: 'Lain-lain',
-  };
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await authFetch('/api/expense-categories');
+        const data = await response.json();
+        if (response.ok) {
+          setCategories(data.data || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch expense categories in analytics:", err);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   // Generate category breakdown data
   const getCategoryBreakdown = () => {
     const categoryTotals = {};
-    
+
     expenses?.forEach(expense => {
-      const category = expense?.categoryLabel || expense?.category;
+      const category = expense?.category;
       categoryTotals[category] = (categoryTotals?.[category] || 0) + parseFloat(expense?.amount || 0);
     });
 
     const totalExpensesSum = expenses?.reduce((sum, exp) => sum + parseFloat(exp?.amount || 0), 0);
 
-    const allCategoriesData = Object.keys(categoryTranslations)?.map(key => {
-      const amount = categoryTotals[key] || 0;
+    // If categories are fetched, use them. Otherwise fallback to unique categories in expenses
+    const categoriesToUse = categories.length > 0
+      ? categories.map(c => c.name)
+      : [...new Set(expenses.map(e => e.category))];
+
+    const allCategoriesData = categoriesToUse?.map(catName => {
+      const amount = categoryTotals[catName] || 0;
       return {
-        category: categoryTranslations[key],
+        category: catName,
         amount,
         percentage: totalExpensesSum > 0 ? ((amount / totalExpensesSum) * 100)?.toFixed(1) : 0
       };
@@ -51,25 +63,25 @@ const ExpenseAnalytics = ({ expenses = [], className = "" }) => {
   const getDailyExpenses = () => {
     const last7Days = [];
     const today = new Date();
-    
+
     for (let i = 6; i >= 0; i--) {
       const date = new Date(today);
       date?.setDate(date?.getDate() - i);
-      
+
       const dayExpenses = expenses?.filter(expense => {
         const expenseDate = new Date(expense.date);
         return expenseDate?.toDateString() === date?.toDateString();
       });
 
       const totalAmount = dayExpenses?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
-      
+
       last7Days?.push({
         date: date?.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit' }),
         amount: totalAmount,
         count: dayExpenses?.length
       });
     }
-    
+
     return last7Days;
   };
 
@@ -83,7 +95,7 @@ const ExpenseAnalytics = ({ expenses = [], className = "" }) => {
 
   if (expenses?.length === 0) {
     return (
-      <div className={`bg-white rounded-lg shadow-elevation-2 border border-slate-200 ${className}`}>
+      <div className={`bg-card rounded-lg shadow-md border border-border dark:bg-dark-card dark:border-dark-border ${className}`}>
         <div className="p-8 text-center">
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
             <Icon name="BarChart3" size={32} className="text-text-secondary" />
@@ -118,17 +130,17 @@ const ExpenseAnalytics = ({ expenses = [], className = "" }) => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={dailyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                  <XAxis 
-                    dataKey="date" 
+                  <XAxis
+                    dataKey="date"
                     stroke="var(--color-text-secondary)"
                     fontSize={12}
                   />
-                  <YAxis 
+                  <YAxis
                     stroke="var(--color-text-secondary)"
                     fontSize={12}
                     tickFormatter={(value) => `${(value / 1000)}K`}
                   />
-                  <Tooltip 
+                  <Tooltip
                     formatter={(value, name) => [formatCurrency(value), 'Pengeluaran']}
                     contentStyle={{
                       backgroundColor: 'var(--color-card)',
@@ -137,9 +149,9 @@ const ExpenseAnalytics = ({ expenses = [], className = "" }) => {
                       fontSize: '12px'
                     }}
                   />
-                  <Bar 
-                    dataKey="amount" 
-                    fill="#EF4444" 
+                  <Bar
+                    dataKey="amount"
+                    fill="#EF4444"
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
@@ -154,19 +166,19 @@ const ExpenseAnalytics = ({ expenses = [], className = "" }) => {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={categoryData}
+                    data={categoryData.filter(d => d.amount > 0)}
                     cx="50%"
                     cy="50%"
                     outerRadius={80}
                     dataKey="amount"
-                    label={({ category, percentage }) => `${percentage}%`}
+                    label={({ percentage }) => `${percentage}%`}
                     labelLine={false}
                   >
-                    {categoryData?.map((entry, index) => (
+                    {categoryData.filter(d => d.amount > 0)?.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={pieColors?.[index % pieColors?.length]} />
                     ))}
                   </Pie>
-                  <Tooltip 
+                  <Tooltip
                     formatter={(value, name) => [formatCurrency(value), 'Total']}
                     contentStyle={{
                       backgroundColor: 'var(--color-card)',
@@ -187,7 +199,7 @@ const ExpenseAnalytics = ({ expenses = [], className = "" }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {categoryData?.map((item, index) => (
               <div key={item?.category} className="flex items-center space-x-3 p-3 bg-background-alt rounded-lg dark:bg-dark-background-alt">
-                <div 
+                <div
                   className="w-4 h-4 rounded-full flex-shrink-0"
                   style={{ backgroundColor: pieColors?.[index % pieColors?.length] }}
                 />
