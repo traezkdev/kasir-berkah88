@@ -6,6 +6,7 @@ import StockReportSection from './StockReportSection';
 import SalesReportSection from './SalesReportSection';
 import ExpenseReportSection from './ExpenseReportSection';
 import EmployeeMealReportSection from './EmployeeMealReportSection';
+import ReconciliationReportSection from './ReconciliationReportSection';
 import CombinedAnalyticsSection from './CombinedAnalyticsSection';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
@@ -34,6 +35,7 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
     const [transactions, setTransactions] = useState([]);
     const [menuItems, setMenuItems] = useState([]);
     const [expenses, setExpenses] = useState([]);
+    const [reconciliations, setReconciliations] = useState([]);
     const [settings, setSettings] = useState(null);
     const [reportData, setReportData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -51,11 +53,12 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                 return;
             }
             try {
-                const [transRes, menuRes, expenseRes, settingsRes] = await Promise.all([
+                const [transRes, menuRes, expenseRes, settingsRes, reconciliationRes] = await Promise.all([
                     authFetch(`${apiUrl}/api/transactions/all`),
                     authFetch(`${apiUrl}/api/menu-items/all`),
                     authFetch(`${apiUrl}/api/expenses/all`),
-                    authFetch(`${apiUrl}/api/all-settings`)
+                    authFetch(`${apiUrl}/api/all-settings`),
+                    authFetch(`${apiUrl}/api/cash-reconciliation/history?limit=1000`)
                 ]);
 
                 const transData = await transRes.json();
@@ -74,6 +77,11 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                 }
                 if (settingsData.message === 'success') {
                     setSettings(settingsData.data);
+                }
+
+                const reconciliationData = await reconciliationRes.json();
+                if (reconciliationData.message === 'success' || reconciliationData.data) {
+                    setReconciliations(reconciliationData.data || []);
                 }
             } catch (error) {
                 console.error("Failed to fetch data:", error);
@@ -97,6 +105,7 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
 
             const filteredTransactions = transactions.filter(filterByDate);
             const filteredExpenses = expenses.filter(filterByDate);
+            const filteredReconciliations = reconciliations.filter(filterByDate);
 
             // Sales Report Data
             const totalRevenue = filteredTransactions.filter(t => t.payment_method !== 'employee_meal').reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
@@ -218,7 +227,8 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                 sales: { totalRevenue, totalTransactions, averageOrder, topItems, initialCapital: !isNaN(initialCapital) ? initialCapital : 0, workingCapital },
                 stock: { totalValue: totalValueSold, totalItems: totalItemsSold, lowStockItems: currentLowStockItems.length, currentStockValue, items: Array.from(itemsSoldMap.values()), lowStock: currentLowStockItems },
                 expenses: { summary: { totalExpenses, categories: expenseCategories, averageDaily: averageDailyExpenses }, items: filteredExpenses },
-                employeeMeals: { summary: { totalMeals: employeeMealsTransactions.length, totalItemsServed: totalItemsServedInEmployeeMeals, estimatedValue: estimatedValueEmployeeMeals }, items: employeeMealItems }
+                employeeMeals: { summary: { totalMeals: employeeMealsTransactions.length, totalItemsServed: totalItemsServedInEmployeeMeals, estimatedValue: estimatedValueEmployeeMeals }, items: employeeMealItems },
+                reconciliations: filteredReconciliations
             });
         };
 
@@ -254,11 +264,15 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
         if (!reportData) return;
         setIsExporting(true);
         try {
+            const startDateStr = formatInTimeZone(selectedDateRange.startDate, 'Asia/Jakarta', 'dd-MM-yyyy');
+            const endDateStr = formatInTimeZone(selectedDateRange.endDate, 'Asia/Jakarta', 'dd-MM-yyyy');
+            const filename = `Laporan_Bisnis_Gabungan_${startDateStr}_sd_${endDateStr}`;
+
             const preparedData = prepareCombinedDataForExport(reportData);
             if (format === 'excel') {
-                exportToExcel(preparedData, 'Laporan_Bisnis_Gabungan');
+                exportToExcel(preparedData, filename);
             } else if (format === 'pdf') {
-                exportToPdf(preparedData, 'Laporan_Bisnis_Gabungan');
+                exportToPdf(preparedData, filename, selectedDateRange);
             }
         } catch (error) {
             console.error('Error exporting combined data:', error);
@@ -309,10 +323,11 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                 </div>
             ) : reportData ? (
                 <div className="space-y-8 mt-6 bg-card p-4 rounded-lg shadow-md">
-                    <SalesReportSection data={reportData.sales} />
-                    <StockReportSection data={reportData.stock} />
-                    <ExpenseReportSection data={reportData.expenses} />
-                    <EmployeeMealReportSection data={reportData.employeeMeals} />
+                    <SalesReportSection data={reportData.sales} dateRange={selectedDateRange} />
+                    <StockReportSection data={reportData.stock} dateRange={selectedDateRange} />
+                    <ExpenseReportSection data={reportData.expenses} dateRange={selectedDateRange} />
+                    <EmployeeMealReportSection data={reportData.employeeMeals} dateRange={selectedDateRange} />
+                    <ReconciliationReportSection reconciliations={reportData.reconciliations} dateRange={selectedDateRange} />
                     <CombinedAnalyticsSection salesData={reportData.sales} stockData={reportData.stock} expensesData={reportData.expenses} onExportCombined={handleExportCombinedData} />
                     <div className="bg-card rounded-lg border border-border shadow-elevation-1 p-6 mt-6">
                         <p className="text-sm text-text-secondary mb-4 text-center dark:text-gray-400">Export laporan gabungan untuk analisis lebih lanjut.</p>

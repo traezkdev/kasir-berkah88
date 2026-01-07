@@ -3,10 +3,11 @@ import ReportCard from './ReportCard';
 import Icon from '../../../components/AppIcon';
 import Pagination from '../../../components/ui/Pagination';
 import { exportToExcel, exportToPdf, prepareSoldStockDataForExport } from '../../../utils/exportUtils';
+import { formatInTimeZone } from 'date-fns-tz';
 
 const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
 
-const StockReportSection = ({ data }) => {
+const StockReportSection = ({ data, dateRange }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -28,12 +29,18 @@ const StockReportSection = ({ data }) => {
 
   const handleExportPdfStock = () => {
     const formattedStockData = prepareSoldStockDataForExport(items);
-    exportToPdf(formattedStockData, 'Laporan_Stok_Terjual');
+    const startDateStr = dateRange ? formatInTimeZone(dateRange.startDate, 'Asia/Jakarta', 'dd-MM-yyyy') : 'all';
+    const endDateStr = dateRange ? formatInTimeZone(dateRange.endDate, 'Asia/Jakarta', 'dd-MM-yyyy') : 'all';
+    const filename = `Laporan_Stok_Terjual_${startDateStr}_sd_${endDateStr}`;
+    exportToPdf(formattedStockData, filename, dateRange);
   };
 
   const handleExportExcelStock = () => {
     const formattedStockData = prepareSoldStockDataForExport(items);
-    exportToExcel(formattedStockData, 'Laporan_Stok_Terjual');
+    const startDateStr = dateRange ? formatInTimeZone(dateRange.startDate, 'Asia/Jakarta', 'dd-MM-yyyy') : 'all';
+    const endDateStr = dateRange ? formatInTimeZone(dateRange.endDate, 'Asia/Jakarta', 'dd-MM-yyyy') : 'all';
+    const filename = `Laporan_Stok_Terjual_${startDateStr}_sd_${endDateStr}`;
+    exportToExcel(formattedStockData, filename);
   };
 
   const exportOptions = [

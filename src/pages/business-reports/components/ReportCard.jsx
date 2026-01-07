@@ -2,15 +2,15 @@ import React, { useState, useRef, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const ReportCard = ({ 
-  title, 
-  description, 
-  icon, 
+const ReportCard = ({
+  title,
+  description,
+  icon,
   iconColor = 'text-primary',
   iconBgColor = 'bg-primary/10 dark:bg-primary/20',
-  metrics = [], 
+  metrics = [],
   exportOptions = [], // New prop for multiple export options
-  children 
+  children
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -41,6 +41,35 @@ const ReportCard = ({
             </div>
           </div>
 
+          {exportOptions.length > 0 && (
+            <div className="relative" ref={dropdownRef}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                iconName="Download"
+                className="shrink-0"
+              >
+                Export
+              </Button>
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-border z-10 py-1">
+                  {exportOptions.map((option, index) => (
+                    <button
+                      key={index}
+                      className="block w-full text-left px-4 py-2 text-sm text-text-primary dark:text-gray-200 hover:bg-muted dark:hover:bg-gray-700 transition-colors"
+                      onClick={() => {
+                        option.onClick();
+                        setIsDropdownOpen(false);
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {metrics?.length > 0 && (
@@ -50,14 +79,13 @@ const ReportCard = ({
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-text-secondary dark:text-gray-400">{metric?.label}</span>
                   {metric?.trend && (
-                    <div className={`flex items-center space-x-1 text-xs ${
-                      metric?.trend === 'up' ? 'text-success' : 
-                      metric?.trend === 'down' ? 'text-destructive' : 'text-text-secondary'
-                    }`}>
-                      <Icon 
-                        name={metric?.trend === 'up' ? 'TrendingUp' : 
-                              metric?.trend === 'down' ? 'TrendingDown' : 'Minus'} 
-                        size={12} 
+                    <div className={`flex items-center space-x-1 text-xs ${metric?.trend === 'up' ? 'text-success' :
+                        metric?.trend === 'down' ? 'text-destructive' : 'text-text-secondary'
+                      }`}>
+                      <Icon
+                        name={metric?.trend === 'up' ? 'TrendingUp' :
+                          metric?.trend === 'down' ? 'TrendingDown' : 'Minus'}
+                        size={12}
                       />
                       <span>{metric?.change}</span>
                     </div>

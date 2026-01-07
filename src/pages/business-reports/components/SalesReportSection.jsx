@@ -4,10 +4,11 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Pagination from '../../../components/ui/Pagination';
 import { exportToExcel, exportToPdf, prepareCombinedDataForExport, prepareTopSellingItemsForExport } from '../../../utils/exportUtils';
+import { formatInTimeZone } from 'date-fns-tz';
 
 const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
 
-const SalesReportSection = ({ data }) => {
+const SalesReportSection = ({ data, dateRange }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -39,7 +40,10 @@ const SalesReportSection = ({ data }) => {
       expenses: { summary: {}, items: [] },
       stock: { totalValue: 0, totalItems: 0, lowStockItems: 0, lowStock: [] },
     });
-    exportToPdf(combinedData, 'Laporan_Penjualan');
+    const startDateStr = dateRange ? formatInTimeZone(dateRange.startDate, 'Asia/Jakarta', 'dd-MM-yyyy') : 'all';
+    const endDateStr = dateRange ? formatInTimeZone(dateRange.endDate, 'Asia/Jakarta', 'dd-MM-yyyy') : 'all';
+    const filename = `Laporan_Penjualan_${startDateStr}_sd_${endDateStr}`;
+    exportToPdf(combinedData, filename, dateRange);
   };
 
   const handleExportExcelSales = () => {
@@ -55,17 +59,26 @@ const SalesReportSection = ({ data }) => {
       expenses: { summary: {}, items: [] },
       stock: { totalValue: 0, totalItems: 0, lowStockItems: 0, lowStock: [] },
     });
-    exportToExcel(combinedData, 'Laporan_Penjualan');
+    const startDateStr = dateRange ? formatInTimeZone(dateRange.startDate, 'Asia/Jakarta', 'dd-MM-yyyy') : 'all';
+    const endDateStr = dateRange ? formatInTimeZone(dateRange.endDate, 'Asia/Jakarta', 'dd-MM-yyyy') : 'all';
+    const filename = `Laporan_Penjualan_${startDateStr}_sd_${endDateStr}`;
+    exportToExcel(combinedData, filename);
   };
 
   const handleExportPdfTopItems = () => {
     const formattedTopItems = prepareTopSellingItemsForExport(topItems);
-    exportToPdf(formattedTopItems, 'Menu_Terlaris');
+    const startDateStr = dateRange ? formatInTimeZone(dateRange.startDate, 'Asia/Jakarta', 'dd-MM-yyyy') : 'all';
+    const endDateStr = dateRange ? formatInTimeZone(dateRange.endDate, 'Asia/Jakarta', 'dd-MM-yyyy') : 'all';
+    const filename = `Menu_Terlaris_${startDateStr}_sd_${endDateStr}`;
+    exportToPdf(formattedTopItems, filename, dateRange);
   };
 
   const handleExportExcelTopItems = () => {
     const formattedTopItems = prepareTopSellingItemsForExport(topItems);
-    exportToExcel(formattedTopItems, 'Menu_Terlaris');
+    const startDateStr = dateRange ? formatInTimeZone(dateRange.startDate, 'Asia/Jakarta', 'dd-MM-yyyy') : 'all';
+    const endDateStr = dateRange ? formatInTimeZone(dateRange.endDate, 'Asia/Jakarta', 'dd-MM-yyyy') : 'all';
+    const filename = `Menu_Terlaris_${startDateStr}_sd_${endDateStr}`;
+    exportToExcel(formattedTopItems, filename);
   };
 
   const exportOptions = [

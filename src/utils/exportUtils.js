@@ -369,7 +369,7 @@ export const exportToExcel = (data, filename = 'data') => {
   XLSX.writeFile(wb, `${filename}.xlsx`);
 };
 
-export const exportToPdf = (data, filename = 'data') => {
+export const exportToPdf = (data, filename = 'data', dateRange = null) => {
   const doc = new jsPDF();
   const isCombinedData = data.length > 0 && data[0].hasOwnProperty('title') && data[0].hasOwnProperty('headers') && data[0].hasOwnProperty('rows');
 
@@ -377,9 +377,32 @@ export const exportToPdf = (data, filename = 'data') => {
     // Common PDF header
     doc.setFontSize(18);
     doc.text("Laporan Bisnis Gabungan", 14, 22);
+
     doc.setFontSize(11);
     doc.setTextColor(100);
-    doc.text(`Tanggal Export: ${new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}`, 14, 30);
+
+    let subtitleY = 30;
+    if (dateRange) {
+      const formatDate = (date) => {
+        if (!date) return '-';
+        if (typeof date === 'string') {
+          // check if it is yyyy-mm-dd
+          if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            const [y, m, d] = date.split('-');
+            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            return `${parseInt(d)} ${months[parseInt(m) - 1]} ${y}`;
+          }
+          return date;
+        }
+        return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+      };
+      const start = dateRange.startDate || dateRange.start || dateRange;
+      const end = dateRange.endDate || dateRange.end || dateRange;
+      doc.text(`Periode: ${formatDate(start)} s/d ${formatDate(end)}`, 14, subtitleY);
+      subtitleY += 7;
+    }
+
+    doc.text(`Tanggal Export: ${new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}`, 14, subtitleY);
 
     let finalY = 40;
     data.forEach(section => {
@@ -487,6 +510,27 @@ export const exportToPdf = (data, filename = 'data') => {
 
   doc.setFontSize(11);
   doc.setTextColor(100);
+
+  if (dateRange) {
+    const formatDate = (date) => {
+      if (!date) return '-';
+      if (typeof date === 'string') {
+        // check if it is yyyy-mm-dd
+        if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          const [y, m, d] = date.split('-');
+          const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+          return `${parseInt(d)} ${months[parseInt(m) - 1]} ${y}`;
+        }
+        return date;
+      }
+      return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    };
+    const start = dateRange.startDate || dateRange.start || dateRange;
+    const end = dateRange.endDate || dateRange.end || dateRange;
+    doc.text(`Periode: ${formatDate(start)} s/d ${formatDate(end)}`, 14, finalY);
+    finalY += 7;
+  }
+
   doc.text(`Tanggal Export: ${new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}`, 14, finalY);
   finalY += 10;
 
@@ -661,6 +705,30 @@ export const prepareCombinedDataForExport = (reportData) => {
     headers: ['Nama Menu', 'Stok', 'Harga'],
     rows: stock.lowStock.map(item => [item.name, item.stock.toString(), formatCurrency(item.price)]),
   });
+
+  // --- NEW: Reconciliation Summary ---
+  if (reportData.reconciliations && reportData.reconciliations.length > 0) {
+    sections.push({
+      title: 'Riwayat Rekonsiliasi Kas',
+      headers: ['Tanggal', 'User', 'Tunai (Act)', 'Transfer (Act)', 'Gojek (Act)', 'Total Selisih', 'Status'],
+      rows: reportData.reconciliations.map(item => {
+        const totalVariance = (parseFloat(item.variance_tunai) || 0) + (parseFloat(item.variance_transfer) || 0) + (parseFloat(item.variance_gojek) || 0);
+        let status = 'PAS';
+        if (totalVariance > 0) status = 'KURANG';
+        else if (totalVariance < 0) status = 'LEBIH';
+
+        return [
+          new Date(item.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+          item.reconciled_by || '-',
+          formatCurrency(item.actual_tunai || 0),
+          formatCurrency(item.actual_transfer || 0),
+          formatCurrency(item.actual_gojek || 0),
+          formatCurrency(Math.abs(totalVariance)),
+          status
+        ];
+      }),
+    });
+  }
 
   return sections;
 };
