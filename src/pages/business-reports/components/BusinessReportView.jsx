@@ -6,6 +6,8 @@ import StockReportSection from './StockReportSection';
 import SalesReportSection from './SalesReportSection';
 import ExpenseReportSection from './ExpenseReportSection';
 import EmployeeMealReportSection from './EmployeeMealReportSection';
+import ReconciliationReportSection from './ReconciliationReportSection';
+import RawMaterialReportSection from './RawMaterialReportSection';
 import CombinedAnalyticsSection from './CombinedAnalyticsSection';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
@@ -34,6 +36,9 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
     const [transactions, setTransactions] = useState([]);
     const [menuItems, setMenuItems] = useState([]);
     const [expenses, setExpenses] = useState([]);
+    const [reconciliations, setReconciliations] = useState([]);
+    const [rawMaterials, setRawMaterials] = useState([]);
+    const [units, setUnits] = useState([]);
     const [settings, setSettings] = useState(null);
     const [reportData, setReportData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -41,27 +46,52 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [userRole, setUserRole] = useState(null);
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const decodedToken = JSON.parse(atob(token.split('.')[1]));
+                setUserRole(decodedToken.role);
+            } catch (e) {
+                console.error("Error decoding token:", e);
+            }
+        }
+    }, []);
 
     useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true);
             const token = localStorage.getItem('token');
-            if (!token) {
-                setIsLoading(false);
-                return;
+            let decodedRole = userRole;
+            if (!decodedRole && token) {
+                try {
+                    const decodedToken = JSON.parse(atob(token.split('.')[1]));
+                    decodedRole = decodedToken.role;
+                } catch (e) { }
             }
+
+            const canAccessOwner = decodedRole === 'admin' || decodedRole === 'owner';
+
             try {
-                const [transRes, menuRes, expenseRes, settingsRes] = await Promise.all([
+                const [transRes, menuRes, expenseRes, settingsRes, reconciliationRes, rawMaterialsRes, unitsRes, lapakRes, ownerRes] = await Promise.all([
                     authFetch(`${apiUrl}/api/transactions/all`),
                     authFetch(`${apiUrl}/api/menu-items/all`),
                     authFetch(`${apiUrl}/api/expenses/all`),
-                    authFetch(`${apiUrl}/api/all-settings`)
+                    authFetch(`${apiUrl}/api/all-settings`),
+                    authFetch(`${apiUrl}/api/cash-reconciliation/history?limit=1000`),
+                    authFetch(`${apiUrl}/api/raw-materials`),
+                    authFetch(`${apiUrl}/api/units`),
+                    authFetch(`${apiUrl}/api/accounts/lapak_deposit`),
+                    canAccessOwner ? authFetch(`${apiUrl}/api/accounts/owner_deposit`) : Promise.resolve({ json: () => ({ message: 'not_authorized' }) })
                 ]);
 
                 const transData = await transRes.json();
                 const menuData = await menuRes.json();
                 const expenseData = await expenseRes.json();
                 const settingsData = await settingsRes.json();
+                const reconciliationData = await reconciliationRes.json();
 
                 if (transData.message === 'success') {
                     setTransactions(transData.data.map(t => ({ ...t, timestamp: new Date(t.timestamp) })));
@@ -75,6 +105,40 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                 if (settingsData.message === 'success') {
                     setSettings(settingsData.data);
                 }
+
+                if (reconciliationData.message === 'success' || reconciliationData.data) {
+                    setReconciliations(reconciliationData.data || []);
+                }
+
+                const rawMaterialsData = await rawMaterialsRes.json();
+                if (rawMaterialsData.message === 'success') {
+                    setRawMaterials(rawMaterialsData.data);
+                }
+
+                const unitsData = await unitsRes.json();
+                if (unitsData.message === 'success') {
+                    setUnits(unitsData.data);
+                }
+
+                // Temporary variables for account balances
+                let lapakBalance = 0;
+                let ownerBalance = 0;
+
+                const lapakData = await lapakRes.json();
+                if (lapakData.message === 'success') {
+                    lapakBalance = parseFloat(lapakData.data.account.balance || 0);
+                }
+
+                const ownerData = await ownerRes.json();
+                if (ownerData.message === 'success') {
+                    ownerBalance = parseFloat(ownerData.data.account.balance || 0);
+                }
+
+                // Store balances for processReportData
+                setReportData(prev => ({
+                    ...prev,
+                    balances: { lapakBalance, ownerBalance }
+                }));
             } catch (error) {
                 console.error("Failed to fetch data:", error);
             } finally {
@@ -97,6 +161,7 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
 
             const filteredTransactions = transactions.filter(filterByDate);
             const filteredExpenses = expenses.filter(filterByDate);
+            const filteredReconciliations = reconciliations.filter(filterByDate);
 
             // Sales Report Data
             const totalRevenue = filteredTransactions.filter(t => t.payment_method !== 'employee_meal').reduce((sum, t) => sum + parseFloat(t.total || 0), 0);
@@ -154,8 +219,13 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                 }
             });
 
-            const currentLowStockItems = menuItems.filter(i => i.stock > 0 && i.stock <= 5);
-            const currentStockValue = menuItems.reduce((sum, item) => sum + (Number(item?.stock || 0) * Number(item?.price || 0)), 0);
+            const currentLowStockItems = menuItems.filter(i => (Number(i.stock) || 0) <= 5);
+            const currentStockValue = menuItems.reduce((sum, item) => {
+                const stock = Number(item?.stock || 0);
+                const price = Number(item?.price || 0);
+                if (stock <= 0 || price <= 0) return sum;
+                return sum + (stock * price);
+            }, 0);
 
             // Expense Report Data
             const totalExpenses = filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
@@ -214,11 +284,66 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                 workingCapital = initialCapital + revenueSinceDate - expensesSinceDate;
             }
 
+            // Raw Materials Metrics
+            const isUnitCalculable = (unitName) => {
+                const unit = units.find(u => u.name.toLowerCase() === (unitName || '').toLowerCase());
+                return unit ? unit.is_calculable : true;
+            };
+
+            const totalMenuStockValueRaw = rawMaterials.reduce((sum, material) => {
+                const isCalculable = isUnitCalculable(material.unit);
+                const menuStock = parseFloat(material.menu_stock || 0);
+                const pricePerItem = parseFloat(material.price_per_item || 0);
+                if (menuStock <= 0 || pricePerItem <= 0) return sum;
+                return isCalculable ? sum + (menuStock * pricePerItem) : sum + pricePerItem;
+            }, 0);
+
+            const totalStockValueRaw = rawMaterials.reduce((sum, material) => {
+                const isCalculable = isUnitCalculable(material.unit);
+                const menuStock = parseFloat(material.menu_stock || 0);
+                const currentStock = parseFloat(material.current_stock || 0);
+                const pricePerItem = parseFloat(material.price_per_item || 0);
+                const rawStockPrice = parseFloat(material.raw_stock_price || 0);
+
+                let value = 0;
+                if (isCalculable) {
+                    value = (menuStock > 0 ? menuStock * pricePerItem : 0) + (currentStock > 0 ? currentStock * rawStockPrice : 0);
+                } else {
+                    value = (menuStock > 0 ? pricePerItem : 0) + (currentStock > 0 ? rawStockPrice : 0);
+                }
+                return sum + value;
+            }, 0);
+
+            const currentRawMaterialStockValueProcessed = rawMaterials.reduce((sum, material) => {
+                const isCalculable = isUnitCalculable(material.unit);
+                const currentStock = parseFloat(material.current_stock || 0);
+                const rawStockPrice = parseFloat(material.raw_stock_price || 0);
+                if (currentStock <= 0 || rawStockPrice <= 0) return sum;
+                return isCalculable ? sum + (currentStock * rawStockPrice) : sum + rawStockPrice;
+            }, 0);
+
+            const lowStockRawCount = rawMaterials.filter(material =>
+                (Number(material.current_stock) + Number(material.menu_stock)) < Number(material.stok_minimum)
+            ).length;
+
             setReportData({
                 sales: { totalRevenue, totalTransactions, averageOrder, topItems, initialCapital: !isNaN(initialCapital) ? initialCapital : 0, workingCapital },
                 stock: { totalValue: totalValueSold, totalItems: totalItemsSold, lowStockItems: currentLowStockItems.length, currentStockValue, items: Array.from(itemsSoldMap.values()), lowStock: currentLowStockItems },
                 expenses: { summary: { totalExpenses, categories: expenseCategories, averageDaily: averageDailyExpenses }, items: filteredExpenses },
-                employeeMeals: { summary: { totalMeals: employeeMealsTransactions.length, totalItemsServed: totalItemsServedInEmployeeMeals, estimatedValue: estimatedValueEmployeeMeals }, items: employeeMealItems }
+                employeeMeals: { summary: { totalMeals: employeeMealsTransactions.length, totalItemsServed: totalItemsServedInEmployeeMeals, estimatedValue: estimatedValueEmployeeMeals }, items: employeeMealItems },
+                reconciliations: filteredReconciliations,
+                balances: reportData?.balances || { lapakBalance: 0, ownerBalance: 0 },
+                allTime: {
+                    totalRevenue: transactions.filter(t => t.payment_method !== 'employee_meal').reduce((sum, t) => sum + parseFloat(t.total || 0), 0),
+                    totalExpenses: expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0)
+                },
+                rawMetrics: {
+                    totalMenuStockValue: totalMenuStockValueRaw,
+                    totalStockValue: totalStockValueRaw,
+                    lowStockRawCount,
+                    currentRawMaterialStockValue: currentRawMaterialStockValueProcessed,
+                    rawMaterials: rawMaterials // Include rawMaterials for the list
+                }
             });
         };
 
@@ -254,11 +379,15 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
         if (!reportData) return;
         setIsExporting(true);
         try {
-            const preparedData = prepareCombinedDataForExport(reportData);
+            const startDateStr = formatInTimeZone(selectedDateRange.startDate, 'Asia/Jakarta', 'dd-MM-yyyy');
+            const endDateStr = formatInTimeZone(selectedDateRange.endDate, 'Asia/Jakarta', 'dd-MM-yyyy');
+            const filename = `Laporan_Bisnis_Gabungan_${startDateStr}_sd_${endDateStr}`;
+
+            const preparedData = prepareCombinedDataForExport(reportData, units);
             if (format === 'excel') {
-                exportToExcel(preparedData, 'Laporan_Bisnis_Gabungan');
+                exportToExcel(preparedData, filename);
             } else if (format === 'pdf') {
-                exportToPdf(preparedData, 'Laporan_Bisnis_Gabungan');
+                exportToPdf(preparedData, filename, selectedDateRange);
             }
         } catch (error) {
             console.error('Error exporting combined data:', error);
@@ -309,11 +438,16 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                 </div>
             ) : reportData ? (
                 <div className="space-y-8 mt-6 bg-card p-4 rounded-lg shadow-md">
-                    <SalesReportSection data={reportData.sales} />
-                    <StockReportSection data={reportData.stock} />
-                    <ExpenseReportSection data={reportData.expenses} />
-                    <EmployeeMealReportSection data={reportData.employeeMeals} />
-                    <CombinedAnalyticsSection salesData={reportData.sales} stockData={reportData.stock} expensesData={reportData.expenses} onExportCombined={handleExportCombinedData} />
+                    <SalesReportSection data={reportData.sales} dateRange={selectedDateRange} />
+                    <StockReportSection data={reportData.stock} dateRange={selectedDateRange} />
+                    <RawMaterialReportSection data={reportData.rawMetrics} units={units} dateRange={selectedDateRange} />
+                    <ExpenseReportSection data={reportData.expenses} dateRange={selectedDateRange} />
+                    <EmployeeMealReportSection data={reportData.employeeMeals} dateRange={selectedDateRange} />
+                    <ReconciliationReportSection reconciliations={reportData.reconciliations} dateRange={selectedDateRange} />
+                    <CombinedAnalyticsSection
+                        reportData={reportData}
+                        onExportCombined={handleExportCombinedData}
+                    />
                     <div className="bg-card rounded-lg border border-border shadow-elevation-1 p-6 mt-6">
                         <p className="text-sm text-text-secondary mb-4 text-center dark:text-gray-400">Export laporan gabungan untuk analisis lebih lanjut.</p>
                         <div className="flex justify-center space-x-3">

@@ -369,7 +369,7 @@ export const exportToExcel = (data, filename = 'data') => {
   XLSX.writeFile(wb, `${filename}.xlsx`);
 };
 
-export const exportToPdf = (data, filename = 'data') => {
+export const exportToPdf = (data, filename = 'data', dateRange = null) => {
   const doc = new jsPDF();
   const isCombinedData = data.length > 0 && data[0].hasOwnProperty('title') && data[0].hasOwnProperty('headers') && data[0].hasOwnProperty('rows');
 
@@ -377,9 +377,32 @@ export const exportToPdf = (data, filename = 'data') => {
     // Common PDF header
     doc.setFontSize(18);
     doc.text("Laporan Bisnis Gabungan", 14, 22);
+
     doc.setFontSize(11);
     doc.setTextColor(100);
-    doc.text(`Tanggal Export: ${new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}`, 14, 30);
+
+    let subtitleY = 30;
+    if (dateRange) {
+      const formatDate = (date) => {
+        if (!date) return '-';
+        if (typeof date === 'string') {
+          // check if it is yyyy-mm-dd
+          if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            const [y, m, d] = date.split('-');
+            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            return `${parseInt(d)} ${months[parseInt(m) - 1]} ${y}`;
+          }
+          return date;
+        }
+        return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+      };
+      const start = dateRange.startDate || dateRange.start || dateRange;
+      const end = dateRange.endDate || dateRange.end || dateRange;
+      doc.text(`Periode: ${formatDate(start)} s/d ${formatDate(end)}`, 14, subtitleY);
+      subtitleY += 7;
+    }
+
+    doc.text(`Tanggal Export: ${new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}`, 14, subtitleY);
 
     let finalY = 40;
     data.forEach(section => {
@@ -487,6 +510,27 @@ export const exportToPdf = (data, filename = 'data') => {
 
   doc.setFontSize(11);
   doc.setTextColor(100);
+
+  if (dateRange) {
+    const formatDate = (date) => {
+      if (!date) return '-';
+      if (typeof date === 'string') {
+        // check if it is yyyy-mm-dd
+        if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          const [y, m, d] = date.split('-');
+          const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+          return `${parseInt(d)} ${months[parseInt(m) - 1]} ${y}`;
+        }
+        return date;
+      }
+      return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    };
+    const start = dateRange.startDate || dateRange.start || dateRange;
+    const end = dateRange.endDate || dateRange.end || dateRange;
+    doc.text(`Periode: ${formatDate(start)} s/d ${formatDate(end)}`, 14, finalY);
+    finalY += 7;
+  }
+
   doc.text(`Tanggal Export: ${new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}`, 14, finalY);
   finalY += 10;
 
@@ -583,23 +627,58 @@ export const prepareSoldStockDataForExport = (soldItems) => {
   }));
 };
 
-export const prepareCombinedDataForExport = (reportData) => {
+export const prepareCombinedDataForExport = (reportData, units = []) => {
 
-  const { sales, expenses, stock } = reportData;
+  const { sales = {}, expenses = {}, stock = {}, rawMetrics, balances = {}, allTime = {} } = reportData;
   const sections = [];
 
-  // --- NEW: Combined Analytics Section ---
-  const netProfit = sales.totalRevenue - expenses.summary.totalExpenses;
-  const capitalGrowth = sales.initialCapital > 0 ? (netProfit / sales.initialCapital) * 100 : 0;
+  // --- NEW: Audit & Financial Summary Section ---
+  const initialCap = parseFloat(sales.initialCapital || 0);
+  const totalRevAllTime = parseFloat(allTime.totalRevenue || 0);
+  const totalExpAllTime = parseFloat(allTime.totalExpenses || 0);
+  const netProfitAllTime = totalRevAllTime - totalExpAllTime;
+
+  const ownerBal = parseFloat(balances.ownerBalance || 0);
+  const lapakBal = parseFloat(balances.lapakBalance || 0);
+  const currentCash = ownerBal + lapakBal;
+
+  const expectedCash = initialCap + totalRevAllTime - totalExpAllTime;
+  const auditDiff = currentCash - expectedCash;
+  const stockVal = rawMetrics?.totalStockValue || 0;
+  const workingModal = initialCap + totalRevAllTime + stockVal - totalExpAllTime;
+  const equity = initialCap + netProfitAllTime;
 
   sections.push({
-    title: 'Analisis Gabungan',
+    title: 'Ringkasan Audit & Keuangan (Keseluruhan)',
     headers: ['Keterangan', 'Nilai'],
     rows: [
-      ['Modal Awal', formatCurrency(sales.initialCapital || 0)],
-      ['Modal Berjalan', formatCurrency(sales.workingCapital || 0)],
-      ['Laba Bersih (Periode Ini)', formatCurrency(netProfit || 0)],
-      ['Pertumbuhan Modal (dari Laba Bersih)', `${capitalGrowth.toFixed(1)}%`]
+      ['Modal Awal (Setoran)', formatCurrency(initialCap)],
+      ['Total Pendapatan (All Time)', formatCurrency(totalRevAllTime)],
+      ['Total Pengeluaran (All Time)', formatCurrency(totalExpAllTime)],
+      ['Laba Bersih Kumulatif', formatCurrency(netProfitAllTime)],
+      ['Saldo Kas Saat Ini (Actual)', formatCurrency(currentCash)],
+      ['Saldo Kas Seharusnya (System)', formatCurrency(expectedCash)],
+      ['Selisih Audit (Audit Variance)', `${formatCurrency(auditDiff)} ${auditDiff < 0 ? '(Kurang)' : auditDiff > 0 ? '(Lebih)' : '(Pas)'}`],
+      ['Total Nilai Stok Inventori', formatCurrency(stockVal)],
+      ['Modal Berjalan (Wealth)', formatCurrency(workingModal)],
+      ['Kekayaan Bisnis (Equity)', formatCurrency(equity)],
+    ],
+  });
+
+  // --- Combined Analytics Section (Current Period) ---
+  const totalRevPeriod = parseFloat(sales.totalRevenue || 0);
+  const totalExpPeriod = parseFloat(expenses.summary?.totalExpenses || 0);
+  const netProfitPeriod = totalRevPeriod - totalExpPeriod;
+  const capitalGrowth = initialCap > 0 ? (netProfitPeriod / initialCap) * 100 : 0;
+
+  sections.push({
+    title: 'Analisis Gabungan (Periode Terpilih)',
+    headers: ['Keterangan', 'Nilai'],
+    rows: [
+      ['Pendapatan Periode', formatCurrency(totalRevPeriod)],
+      ['Pengeluaran Periode', formatCurrency(totalExpPeriod)],
+      ['Laba Bersih Periode', formatCurrency(netProfitPeriod)],
+      ['Pertumbuhan Modal (dari Laba Periode)', `${capitalGrowth.toFixed(1)}%`]
     ],
   });
 
@@ -661,6 +740,61 @@ export const prepareCombinedDataForExport = (reportData) => {
     headers: ['Nama Menu', 'Stok', 'Harga'],
     rows: stock.lowStock.map(item => [item.name, item.stock.toString(), formatCurrency(item.price)]),
   });
+
+  // --- NEW: Raw Materials Summary ---
+  if (rawMetrics) {
+    sections.push({
+      title: 'Ringkasan Bahan Mentah',
+      headers: ['Keterangan', 'Nilai'],
+      rows: [
+        ['Total Nilai Stok Menu', formatCurrency(rawMetrics.totalMenuStockValue)],
+        ['Total Nilai Stok Mentah', formatCurrency(rawMetrics.currentRawMaterialStockValue)],
+        ['Total Nilai Stok Gabungan', formatCurrency(rawMetrics.totalStockValue)],
+        ['Bahan Stok Menipis', `${rawMetrics.lowStockRawCount} Jenis`],
+      ],
+    });
+
+    if (rawMetrics.rawMaterials && rawMetrics.rawMaterials.length > 0) {
+      const preparedRawMaterials = prepareRawMaterialStockDataForExport(rawMetrics.rawMaterials, units);
+      sections.push({
+        title: 'Detail Stok Bahan Mentah',
+        headers: ['Nama Bahan', 'Stok Mentah', 'Stok Menu', 'Total Stok', 'Satuan', 'Total Nilai', 'Status'],
+        rows: preparedRawMaterials.map(m => [
+          m['Nama Bahan'],
+          m['Stok Mentah'].toString(),
+          m['Stok Menu'].toString(),
+          m['Total Stok'].toString(),
+          m['Satuan'],
+          formatCurrency(m['Total Nilai']),
+          m['Status']
+        ]),
+      });
+    }
+  }
+
+  // --- NEW: Reconciliation Summary ---
+  if (reportData.reconciliations && reportData.reconciliations.length > 0) {
+    sections.push({
+      title: 'Riwayat Rekonsiliasi Kas',
+      headers: ['Tanggal', 'User', 'Tunai (Act)', 'Transfer (Act)', 'Gojek (Act)', 'Total Selisih', 'Status'],
+      rows: reportData.reconciliations.map(item => {
+        const totalVariance = (parseFloat(item.variance_tunai) || 0) + (parseFloat(item.variance_transfer) || 0) + (parseFloat(item.variance_gojek) || 0);
+        let status = 'PAS';
+        if (totalVariance > 0) status = 'KURANG';
+        else if (totalVariance < 0) status = 'LEBIH';
+
+        return [
+          new Date(item.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+          item.reconciled_by || '-',
+          formatCurrency(item.actual_tunai || 0),
+          formatCurrency(item.actual_transfer || 0),
+          formatCurrency(item.actual_gojek || 0),
+          formatCurrency(Math.abs(totalVariance)),
+          status
+        ];
+      }),
+    });
+  }
 
   return sections;
 };

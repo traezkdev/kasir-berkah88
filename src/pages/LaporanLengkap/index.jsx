@@ -21,6 +21,7 @@ const LaporanLengkap = () => {
     owner: 1,
     menu: 1,
     raw: 1,
+    reconciliations: 1,
   });
   const ITEMS_PER_PAGE = 10;
 
@@ -39,7 +40,19 @@ const LaporanLengkap = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      setLaporanData(data.data);
+
+      // Fetch reconciliations
+      const reconciliationsUrl = `/api/cash-reconciliation/history?limit=1000${startDate ? `&startDate=${startDate}` : ''}${endDate ? `&endDate=${endDate}` : ''}`;
+      const reconciliationsResponse = await authFetch(reconciliationsUrl);
+      const reconciliationsData = await reconciliationsResponse.json();
+
+
+
+      setLaporanData({
+        ...data.data,
+        reconciliations: reconciliationsData.data || []
+      });
+
       // Reset all current pages on new data fetch
       setPagination({
         transactions: 1,
@@ -48,6 +61,7 @@ const LaporanLengkap = () => {
         owner: 1,
         menu: 1,
         raw: 1,
+        reconciliations: 1,
       });
     } catch (err) {
       setError(err.message);
@@ -112,7 +126,29 @@ const LaporanLengkap = () => {
     const wsRawMaterialStock = XLSX.utils.json_to_sheet(laporanData.rawMaterialStock);
     XLSX.utils.book_append_sheet(wb, wsRawMaterialStock, "Stok Bahan Mentah");
 
-    XLSX.writeFile(wb, "Laporan_Lengkap.xlsx");
+    // Reconciliations
+    if (laporanData.reconciliations && laporanData.reconciliations.length > 0) {
+      const wsReconciliations = XLSX.utils.json_to_sheet(laporanData.reconciliations.map(r => ({
+        'Tanggal': new Date(r.date).toLocaleDateString('id-ID'),
+        'User': r.reconciled_by || 'System',
+        'Tunai Aktual': r.actual_tunai,
+        'Transfer Aktual': r.actual_transfer,
+        'Gojek Aktual': r.actual_gojek,
+        'Selisih Tunai': r.variance_tunai,
+        'Selisih Transfer': r.variance_transfer,
+        'Selisih Gojek': r.variance_gojek,
+        'Catatan': r.notes || '-'
+      })));
+      XLSX.utils.book_append_sheet(wb, wsReconciliations, "Rekonsiliasi");
+    }
+
+    const formatDate = (dateStr) => {
+      if (!dateStr) return 'all';
+      const [y, m, d] = dateStr.split('-');
+      return `${d}-${m}-${y}`;
+    };
+    const filename = `Laporan_Lengkap_${formatDate(startDate)}_sd_${formatDate(endDate)}`;
+    XLSX.writeFile(wb, `${filename}.xlsx`);
   };
 
   const handleExportPDF = () => {
@@ -172,7 +208,31 @@ const LaporanLengkap = () => {
       },
     ];
 
-    exportToPdf(sections, 'Laporan_Lengkap');
+    // Add reconciliations if available
+    if (laporanData.reconciliations && laporanData.reconciliations.length > 0) {
+      sections.push({
+        title: "Laporan Rekonsiliasi Kas",
+        headers: ['Tanggal', 'User', 'Tunai', 'Transfer', 'Gojek', 'Selisih Tunai', 'Selisih Transfer', 'Selisih Gojek'],
+        rows: laporanData.reconciliations.map(r => [
+          new Date(r.date).toLocaleDateString('id-ID'),
+          r.reconciled_by || 'System',
+          formatCurrency(r.actual_tunai),
+          formatCurrency(r.actual_transfer),
+          formatCurrency(r.actual_gojek),
+          formatCurrency(r.variance_tunai),
+          formatCurrency(r.variance_transfer),
+          formatCurrency(r.variance_gojek)
+        ]),
+      });
+    }
+
+    const formatDate = (dateStr) => {
+      if (!dateStr) return 'all';
+      const [y, m, d] = dateStr.split('-');
+      return `${d}-${m}-${y}`;
+    };
+    const filename = `Laporan_Lengkap_${formatDate(startDate)}_sd_${formatDate(endDate)}`;
+    exportToPdf(sections, filename, { startDate, endDate });
   };
 
   // Generic pagination logic
@@ -194,6 +254,7 @@ const LaporanLengkap = () => {
   const { paginated: paginatedOwner, totalPages: totalPagesOwner } = getPaginatedData(laporanData?.ownerAccountTransactions, pagination.owner);
   const { paginated: paginatedMenu, totalPages: totalPagesMenu } = getPaginatedData(laporanData?.menuStock, pagination.menu);
   const { paginated: paginatedRaw, totalPages: totalPagesRaw } = getPaginatedData(laporanData?.rawMaterialStock, pagination.raw);
+  const { paginated: paginatedReconciliations, totalPages: totalPagesReconciliations } = getPaginatedData(laporanData?.reconciliations, pagination.reconciliations);
 
   const PaginationControls = ({ section, currentPage, totalPages }) => {
     if (totalPages <= 1) return null;
@@ -395,6 +456,101 @@ const LaporanLengkap = () => {
               </div>
               <PaginationControls section="raw" currentPage={pagination.raw} totalPages={totalPagesRaw} />
             </section>
+          </div>
+
+          {/* Riwayat Rekonsiliasi Section */}
+          <div className="mt-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+              <div className="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-400">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                  <path d="M3 3v5h5"></path>
+                  <path d="M12 7v5l4 2"></path>
+                </svg>
+                <h2 className="text-lg font-semibold text-gray-900">Riwayat Rekonsiliasi</h2>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              {!laporanData?.reconciliations || laporanData.reconciliations.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  <p>Belum ada data rekonsiliasi kas.</p>
+                  <p className="text-sm mt-2">Silakan lakukan rekonsiliasi kas terlebih dahulu di halaman Rekonsiliasi Kas.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                      <tr>
+                        <th className="px-6 py-3">Tanggal</th>
+                        <th className="px-6 py-3">User</th>
+                        <th className="px-6 py-3">Tunai (Act)</th>
+                        <th className="px-6 py-3">Transfer (Act)</th>
+                        <th className="px-6 py-3">Gojek (Act)</th>
+                        <th className="px-6 py-3">Total Selisih</th>
+                        <th className="px-6 py-3">Status</th>
+                        <th className="px-6 py-3">Catatan</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {paginatedReconciliations?.map(item => {
+                        const totalVariance = (parseFloat(item.variance_tunai) || 0) + (parseFloat(item.variance_transfer) || 0) + (parseFloat(item.variance_gojek) || 0);
+                        const getStatus = (variance) => {
+                          if (variance === 0) return { label: 'PAS', color: 'text-green-600', bgColor: 'bg-green-50' };
+                          if (variance > 0) return { label: 'KURANG', color: 'text-red-600', bgColor: 'bg-red-50' };
+                          return { label: 'LEBIH', color: 'text-yellow-600', bgColor: 'bg-yellow-50' };
+                        };
+                        const status = getStatus(totalVariance);
+
+                        return (
+                          <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap text-gray-900 font-medium">
+                              {new Date(item.date).toLocaleDateString('id-ID', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric'
+                              })}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                              {item.reconciled_by || '-'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-gray-900">
+                              Rp {(item.actual_tunai || 0).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-gray-900">
+                              Rp {(item.actual_transfer || 0).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-gray-900">
+                              Rp {(item.actual_gojek || 0).toLocaleString()}
+                            </td>
+                            <td className={`px-6 py-4 whitespace-nowrap font-bold ${status.color}`}>
+                              Rp {Math.abs(totalVariance).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status.bgColor} ${status.color}`}>
+                                {status.label}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 max-w-xs">
+                              <div className="text-sm text-gray-900 truncate" title={item.notes || ''}>
+                                {item.notes ? (
+                                  <span className="italic">{item.notes}</span>
+                                ) : (
+                                  <span className="text-gray-500">-</span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+            {laporanData?.reconciliations && laporanData.reconciliations.length > 0 && (
+              <PaginationControls section="reconciliations" currentPage={pagination.reconciliations} totalPages={totalPagesReconciliations} />
+            )}
           </div>
         </div>
       )}
