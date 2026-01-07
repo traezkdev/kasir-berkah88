@@ -1823,8 +1823,6 @@ Stack: ${err.stack}
             console.error("Failed to write to error.log:", fsErr);
         }
 
-        console.error("DEBUG: Transaction Error Body:", req.body);
-        console.error("DEBUG: Transaction Error Message:", err.message);
         res.status(400).json({ "error": err.message, "stack": err.stack });
     }
 });
@@ -1833,7 +1831,6 @@ Stack: ${err.stack}
 app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res, next) => {
     try {
         const { total, ppn, isEmployeeMeal, payment_method, timestamp, manual_discount, catatan, items } = req.body;
-        console.log(`[UPDATE TRANSACTION] ID: ${req.params.id}`, req.body); // Debug log
         const { id } = req.params;
 
         const sql = `UPDATE transactions SET 

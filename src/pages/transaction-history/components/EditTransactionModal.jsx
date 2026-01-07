@@ -176,7 +176,6 @@ const EditTransactionModal = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Submitting transaction update with data:', formData);
     if (!formData.timestamp || !formData.total) {
       alert('Tanggal, waktu, dan total transaksi wajib diisi.');
       return;

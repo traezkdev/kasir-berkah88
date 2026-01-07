@@ -49,10 +49,8 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
     return null;
   }
 
-  const handleShare = async () => {
-    if (receiptRef.current === null) {
-      return;
-    }
+  const handleShareImage = async () => {
+    if (receiptRef.current === null) return;
 
     try {
       // Capture the receipt as a PNG image
@@ -76,7 +74,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: 'Struk Transaksi',
+          title: `Struk ${transaction.id}`,
           text: `Struk Transaksi ${transaction.id} - ${restaurantName}`,
         });
       } else {
@@ -85,85 +83,17 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
         link.download = `struk-${transaction.id}.png`;
         link.href = dataUrl;
         link.click();
+
+        // Inform user to share manually
+        alert('Browser Anda tidak mendukung berbagi file secara otomatis. Struk telah diunduh, silakan bagikan secara manual.');
       }
     } catch (error) {
       console.error('Error sharing receipt:', error);
-      // Optional: Add a toast notification here if available
     }
   };
 
   const handlePrint = () => {
     window.print();
-  };
-
-  const handleWhatsAppShare = () => {
-    const transactionDate = new Date(transaction.timestamp).toLocaleString("id-ID", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-    let message = `*${restaurantName.toUpperCase()}*\n`;
-    message += `${restaurantSlogan}\n`;
-    message += `--------------------------\n`;
-    message += `*ID Transaksi:* ${transaction.id}\n`;
-    message += `*Tanggal:* ${transactionDate}\n`;
-    message += `--------------------------\n`;
-    message += `*Detail Pesanan:*\n`;
-
-    transaction.items.forEach((item) => {
-      const pricePerUnit = Number(item.price) || 0;
-      const itemDiscount = Number(item.discount) || 0;
-
-      let effectivePricePerUnit;
-      if (item.basePrice) {
-        effectivePricePerUnit = pricePerUnit;
-      } else if (itemDiscount > 0) {
-        effectivePricePerUnit = pricePerUnit * (1 - itemDiscount);
-      } else {
-        effectivePricePerUnit = pricePerUnit;
-      }
-
-      const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
-      const totalItemPrice = (effectivePricePerUnit + optionAdjustment) * (Number(item.quantity) || 0);
-
-      message += `- ${item.name} x${item.quantity}: *Rp ${totalItemPrice.toLocaleString("id-ID")}*`;
-      if (item.options && item.options.length > 0) {
-        const optionsStr = item.options.map(o => o.name).join(', ');
-        message += `\n  _( ${optionsStr} )_`;
-      }
-      message += `\n`;
-    });
-
-    message += `--------------------------\n`;
-    message += `*Subtotal:* Rp ${Number(subtotalBeforeAllDiscounts).toLocaleString("id-ID")}\n`;
-
-    if (subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts > 0) {
-      message += `*Diskon Item:* -Rp ${(subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts).toLocaleString("id-ID")}\n`;
-    }
-
-    if (ppnAmount > 0) {
-      message += `*PPN:* Rp ${ppnAmount.toLocaleString("id-ID")}\n`;
-    }
-
-    if (manualDiscountAmount > 0) {
-      message += `*Diskon:* -Rp ${manualDiscountAmount.toLocaleString("id-ID")}\n`;
-    }
-
-    message += `*TOTAL: Rp ${Number(transaction.total).toLocaleString("id-ID")}*\n`;
-    message += `--------------------------\n`;
-    message += `*Metode Bayar:* ${transaction.payment_method === 'employee_meal' ? 'Makan Karyawan' : (transaction.payment_method === 'cash' ? 'Tunai' : transaction.payment_method)}\n`;
-
-    if (transaction.catatan) {
-      message += `*Catatan:* ${transaction.catatan}\n`;
-    }
-
-    message += `\nTerima kasih telah berbelanja!`;
-
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
   };
 
   const transactionDate = new Date(transaction.timestamp).toLocaleString("id-ID", {
@@ -447,7 +377,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
               </Button>
               <Button
                 variant="outline"
-                onClick={handleWhatsAppShare}
+                onClick={handleShareImage}
                 className="flex-1 sm:flex-none flex items-center justify-center gap-2 border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 text-xs sm:text-sm px-3 py-2"
               >
                 <svg size={16} viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
@@ -457,7 +387,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
               </Button>
               <Button
                 variant="outline"
-                onClick={handleShare}
+                onClick={handleShareImage}
                 className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-xs sm:text-sm px-3 py-2"
               >
                 <Share2 size={16} />
