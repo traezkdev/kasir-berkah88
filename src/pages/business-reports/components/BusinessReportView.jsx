@@ -46,24 +46,45 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [userRole, setUserRole] = useState(null);
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const decodedToken = JSON.parse(atob(token.split('.')[1]));
+                setUserRole(decodedToken.role);
+            } catch (e) {
+                console.error("Error decoding token:", e);
+            }
+        }
+    }, []);
 
     useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true);
             const token = localStorage.getItem('token');
-            if (!token) {
-                setIsLoading(false);
-                return;
+            let decodedRole = userRole;
+            if (!decodedRole && token) {
+                try {
+                    const decodedToken = JSON.parse(atob(token.split('.')[1]));
+                    decodedRole = decodedToken.role;
+                } catch (e) { }
             }
+
+            const canAccessOwner = decodedRole === 'admin' || decodedRole === 'owner';
+
             try {
-                const [transRes, menuRes, expenseRes, settingsRes, reconciliationRes, rawMaterialsRes, unitsRes] = await Promise.all([
+                const [transRes, menuRes, expenseRes, settingsRes, reconciliationRes, rawMaterialsRes, unitsRes, lapakRes, ownerRes] = await Promise.all([
                     authFetch(`${apiUrl}/api/transactions/all`),
                     authFetch(`${apiUrl}/api/menu-items/all`),
                     authFetch(`${apiUrl}/api/expenses/all`),
                     authFetch(`${apiUrl}/api/all-settings`),
                     authFetch(`${apiUrl}/api/cash-reconciliation/history?limit=1000`),
                     authFetch(`${apiUrl}/api/raw-materials`),
-                    authFetch(`${apiUrl}/api/units`)
+                    authFetch(`${apiUrl}/api/units`),
+                    authFetch(`${apiUrl}/api/accounts/lapak_deposit`),
+                    canAccessOwner ? authFetch(`${apiUrl}/api/accounts/owner_deposit`) : Promise.resolve({ json: () => ({ message: 'not_authorized' }) })
                 ]);
 
                 const transData = await transRes.json();
@@ -98,6 +119,26 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                 if (unitsData.message === 'success') {
                     setUnits(unitsData.data);
                 }
+
+                // Temporary variables for account balances
+                let lapakBalance = 0;
+                let ownerBalance = 0;
+
+                const lapakData = await lapakRes.json();
+                if (lapakData.message === 'success') {
+                    lapakBalance = parseFloat(lapakData.data.account.balance || 0);
+                }
+
+                const ownerData = await ownerRes.json();
+                if (ownerData.message === 'success') {
+                    ownerBalance = parseFloat(ownerData.data.account.balance || 0);
+                }
+
+                // Store balances for processReportData
+                setReportData(prev => ({
+                    ...prev,
+                    balances: { lapakBalance, ownerBalance }
+                }));
             } catch (error) {
                 console.error("Failed to fetch data:", error);
             } finally {
@@ -291,6 +332,11 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                 expenses: { summary: { totalExpenses, categories: expenseCategories, averageDaily: averageDailyExpenses }, items: filteredExpenses },
                 employeeMeals: { summary: { totalMeals: employeeMealsTransactions.length, totalItemsServed: totalItemsServedInEmployeeMeals, estimatedValue: estimatedValueEmployeeMeals }, items: employeeMealItems },
                 reconciliations: filteredReconciliations,
+                balances: reportData?.balances || { lapakBalance: 0, ownerBalance: 0 },
+                allTime: {
+                    totalRevenue: transactions.filter(t => t.payment_method !== 'employee_meal').reduce((sum, t) => sum + parseFloat(t.total || 0), 0),
+                    totalExpenses: expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0)
+                },
                 rawMetrics: {
                     totalMenuStockValue: totalMenuStockValueRaw,
                     totalStockValue: totalStockValueRaw,
@@ -398,7 +444,10 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                     <ExpenseReportSection data={reportData.expenses} dateRange={selectedDateRange} />
                     <EmployeeMealReportSection data={reportData.employeeMeals} dateRange={selectedDateRange} />
                     <ReconciliationReportSection reconciliations={reportData.reconciliations} dateRange={selectedDateRange} />
-                    <CombinedAnalyticsSection salesData={reportData.sales} stockData={reportData.stock} expensesData={reportData.expenses} onExportCombined={handleExportCombinedData} />
+                    <CombinedAnalyticsSection
+                        reportData={reportData}
+                        onExportCombined={handleExportCombinedData}
+                    />
                     <div className="bg-card rounded-lg border border-border shadow-elevation-1 p-6 mt-6">
                         <p className="text-sm text-text-secondary mb-4 text-center dark:text-gray-400">Export laporan gabungan untuk analisis lebih lanjut.</p>
                         <div className="flex justify-center space-x-3">

@@ -629,24 +629,56 @@ export const prepareSoldStockDataForExport = (soldItems) => {
 
 export const prepareCombinedDataForExport = (reportData, units = []) => {
 
-  const { sales = {}, expenses = {}, stock = {}, rawMetrics } = reportData;
+  const { sales = {}, expenses = {}, stock = {}, rawMetrics, balances = {}, allTime = {} } = reportData;
   const sections = [];
 
-  // --- NEW: Combined Analytics Section ---
-  const totalRev = parseFloat(sales.totalRevenue || 0);
-  const totalExp = parseFloat(expenses.summary?.totalExpenses || 0);
-  const netProfit = totalRev - totalExp;
+  // --- NEW: Audit & Financial Summary Section ---
   const initialCap = parseFloat(sales.initialCapital || 0);
-  const capitalGrowth = initialCap > 0 ? (netProfit / initialCap) * 100 : 0;
+  const totalRevAllTime = parseFloat(allTime.totalRevenue || 0);
+  const totalExpAllTime = parseFloat(allTime.totalExpenses || 0);
+  const netProfitAllTime = totalRevAllTime - totalExpAllTime;
+
+  const ownerBal = parseFloat(balances.ownerBalance || 0);
+  const lapakBal = parseFloat(balances.lapakBalance || 0);
+  const currentCash = ownerBal + lapakBal;
+
+  const expectedCash = initialCap + totalRevAllTime - totalExpAllTime;
+  const auditDiff = currentCash - expectedCash;
+  const stockVal = rawMetrics?.totalStockValue || 0;
+  const workingModal = initialCap + totalRevAllTime + stockVal - totalExpAllTime;
+  const equity = initialCap + netProfitAllTime;
 
   sections.push({
-    title: 'Analisis Gabungan',
+    title: 'Ringkasan Audit & Keuangan (Keseluruhan)',
     headers: ['Keterangan', 'Nilai'],
     rows: [
-      ['Modal Awal', formatCurrency(initialCap)],
-      ['Modal Berjalan', formatCurrency(parseFloat(sales.workingCapital || 0))],
-      ['Laba Bersih (Periode Ini)', formatCurrency(netProfit)],
-      ['Pertumbuhan Modal (dari Laba Bersih)', `${capitalGrowth.toFixed(1)}%`]
+      ['Modal Awal (Setoran)', formatCurrency(initialCap)],
+      ['Total Pendapatan (All Time)', formatCurrency(totalRevAllTime)],
+      ['Total Pengeluaran (All Time)', formatCurrency(totalExpAllTime)],
+      ['Laba Bersih Kumulatif', formatCurrency(netProfitAllTime)],
+      ['Saldo Kas Saat Ini (Actual)', formatCurrency(currentCash)],
+      ['Saldo Kas Seharusnya (System)', formatCurrency(expectedCash)],
+      ['Selisih Audit (Audit Variance)', `${formatCurrency(auditDiff)} ${auditDiff < 0 ? '(Kurang)' : auditDiff > 0 ? '(Lebih)' : '(Pas)'}`],
+      ['Total Nilai Stok Inventori', formatCurrency(stockVal)],
+      ['Modal Berjalan (Wealth)', formatCurrency(workingModal)],
+      ['Kekayaan Bisnis (Equity)', formatCurrency(equity)],
+    ],
+  });
+
+  // --- Combined Analytics Section (Current Period) ---
+  const totalRevPeriod = parseFloat(sales.totalRevenue || 0);
+  const totalExpPeriod = parseFloat(expenses.summary?.totalExpenses || 0);
+  const netProfitPeriod = totalRevPeriod - totalExpPeriod;
+  const capitalGrowth = initialCap > 0 ? (netProfitPeriod / initialCap) * 100 : 0;
+
+  sections.push({
+    title: 'Analisis Gabungan (Periode Terpilih)',
+    headers: ['Keterangan', 'Nilai'],
+    rows: [
+      ['Pendapatan Periode', formatCurrency(totalRevPeriod)],
+      ['Pengeluaran Periode', formatCurrency(totalExpPeriod)],
+      ['Laba Bersih Periode', formatCurrency(netProfitPeriod)],
+      ['Pertumbuhan Modal (dari Laba Periode)', `${capitalGrowth.toFixed(1)}%`]
     ],
   });
 

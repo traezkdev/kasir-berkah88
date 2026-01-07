@@ -4,58 +4,164 @@ import Icon from '../../../components/AppIcon';
 
 const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
 
-const CombinedAnalyticsSection = ({ salesData, stockData, expensesData, onExportCombined }) => {
-  if (!salesData || !stockData || !expensesData || !expensesData.summary) return null;
+const CombinedAnalyticsSection = ({ reportData, onExportCombined }) => {
+  if (!reportData || !reportData.sales || !reportData.expenses || !reportData.stock) return null;
 
-  const { totalRevenue, initialCapital } = salesData;
-  const totalExpenses = expensesData.summary.totalExpenses; // Get total expenses
+  const { sales, expenses, stock, rawMetrics, balances, allTime } = reportData;
+  const { totalRevenue, initialCapital, workingCapital } = sales;
+  const totalExpenses = expenses.summary.totalExpenses;
   const netProfit = totalRevenue - totalExpenses;
-  const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
-  const capitalGrowth = initialCapital > 0 ? (netProfit / initialCapital) * 100 : 0;
+
+  // All-time metrics for Audit
+  const totalRevenueAllTime = allTime?.totalRevenue || 0;
+  const totalExpensesAllTime = allTime?.totalExpenses || 0;
+  const netProfitAllTime = totalRevenueAllTime - totalExpensesAllTime;
+
+  // Actual Cash (Saldo Owner + Saldo Lapak)
+  const ownerBalance = balances?.ownerBalance || 0;
+  const lapakBalance = balances?.lapakBalance || 0;
+  const currentEndingCapital = ownerBalance + lapakBalance;
+
+  // Expected Cash (Modal Awal + Pendapatan All Time - Pengeluaran All Time)
+  const expectedEndingCapital = (initialCapital || 0) + totalRevenueAllTime - totalExpensesAllTime;
+  const auditDifference = currentEndingCapital - expectedEndingCapital;
+
+  // Modal Berjalan (Formula: Modal awal + total pendapatan + total stok - total pengeluaran)
+  const stockValue = rawMetrics?.totalStockValue || 0;
+  const workingModal = (initialCapital || 0) + totalRevenueAllTime + stockValue - totalExpensesAllTime;
+
+  // Equity
+  const equity = (initialCapital || 0) + netProfitAllTime;
 
   const analyticsMetrics = [
-    { label: 'Laba Bersih', value: formatCurrency(netProfit) },
-    { label: 'Margin Keuntungan', value: `${profitMargin.toFixed(1)}%` },
-    { label: 'Pertumbuhan Modal', value: `${capitalGrowth.toFixed(1)}%` },
+    { label: 'Laba Bersih (Periode)', value: formatCurrency(netProfit) },
+    { label: 'Selisih Audit', value: formatCurrency(auditDifference), color: auditDifference < 0 ? 'text-destructive' : 'text-success' },
+    { label: 'Kekayaan Bisnis', value: formatCurrency(equity) },
   ];
 
-  const cashFlowSummary = [
-    { type: 'Modal Awal', amount: formatCurrency(initialCapital || 0), icon: 'Landmark', color: 'text-info', bgColor: 'bg-info/10' },
-    { type: 'Pemasukan', amount: formatCurrency(totalRevenue), icon: 'TrendingUp', color: 'text-success', bgColor: 'bg-success/10' },
-    { type: 'Pengeluaran', amount: formatCurrency(totalExpenses), icon: 'TrendingDown', color: 'text-destructive', bgColor: 'bg-destructive/10' }, // Use totalExpenses
-    { type: 'Laba Bersih', amount: formatCurrency(netProfit), icon: 'DollarSign', color: 'text-primary', bgColor: 'bg-primary/10' }
+  const auditCards = [
+    {
+      title: 'Modal Awal',
+      value: formatCurrency(initialCapital || 0),
+      desc: 'Jumlah modal awal yang disetor',
+      icon: 'PiggyBank',
+      color: 'text-purple-500',
+      bgColor: 'bg-purple-500/10'
+    },
+    {
+      title: 'Modal Berjalan',
+      value: formatCurrency(workingModal),
+      desc: 'Modal awal + pendapatan + stok - pengeluaran',
+      icon: 'Wallet',
+      color: 'text-blue-500',
+      bgColor: 'bg-blue-500/10'
+    },
+    {
+      title: 'Modal Akhir Saat Ini',
+      value: formatCurrency(currentEndingCapital),
+      desc: 'Saldo owner + saldo lapak',
+      icon: 'TrendingUp',
+      color: 'text-emerald-500',
+      bgColor: 'bg-emerald-500/10'
+    },
+    {
+      title: 'Total Nilai Stok',
+      value: formatCurrency(stockValue),
+      desc: 'Modal yang berbentuk barang (Bahan & Menu)',
+      icon: 'Package',
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-600/10'
+    },
+    {
+      title: 'Saldo Owner',
+      value: formatCurrency(ownerBalance),
+      desc: 'Dana lapak yang ada di Owner',
+      icon: 'Wallet',
+      color: 'text-teal-500',
+      bgColor: 'bg-teal-500/10'
+    },
+    {
+      title: 'Kekayaan Bisnis (Equity)',
+      value: formatCurrency(equity),
+      desc: 'Modal Awal + Laba Bersih Keseluruhan',
+      icon: 'ShieldCheck',
+      color: 'text-orange-500',
+      bgColor: 'bg-orange-500/10'
+    },
+    {
+      title: 'Total Pendapatan (All Time)',
+      value: formatCurrency(totalRevenueAllTime),
+      desc: 'Seluruh pendapatan yang tercatat',
+      icon: 'TrendingUp',
+      color: 'text-indigo-500',
+      bgColor: 'bg-indigo-500/10'
+    },
+    {
+      title: 'Total Pengeluaran (All Time)',
+      value: formatCurrency(totalExpensesAllTime),
+      desc: 'Seluruh pengeluaran yang tercatat',
+      icon: 'TrendingDown',
+      color: 'text-rose-500',
+      bgColor: 'bg-rose-500/10'
+    },
+    {
+      title: 'Laba Bersih (All Time)',
+      value: formatCurrency(netProfitAllTime),
+      desc: 'Seluruh laba/rugi yang tercatat',
+      icon: 'BarChart3',
+      color: netProfitAllTime >= 0 ? 'text-emerald-600' : 'text-rose-600',
+      bgColor: netProfitAllTime >= 0 ? 'bg-emerald-600/10' : 'bg-rose-600/10'
+    },
+    {
+      title: 'Selisih Perhitungan (Audit)',
+      value: `${formatCurrency(auditDifference)} ${auditDifference < 0 ? '(Uang Kurang)' : auditDifference > 0 ? '(Uang Lebih)' : '(Pas)'}`,
+      desc: 'Modal Akhir - (Modal Awal + Pendapatan - Pengeluaran)',
+      icon: auditDifference === 0 ? 'CheckCircle' : 'AlertCircle',
+      color: auditDifference < 0 ? 'text-red-500' : auditDifference > 0 ? 'text-amber-500' : 'text-emerald-500',
+      bgColor: auditDifference < 0 ? 'bg-red-500/10' : auditDifference > 0 ? 'bg-amber-500/10' : 'bg-emerald-500/10',
+      highlight: true
+    }
   ];
 
   return (
     <ReportCard
-      title="Analisis Gabungan"
-      description="Ringkasan performa bisnis dan indikator kunci"
-      icon="BarChart3"
-      iconColor="text-accent"
-      iconBgColor="bg-accent/10"
+      title="Audit & Analisis Keuangan"
+      description="Pemantauan integritas data finansial dan kesehatan modal bisnis"
+      icon="ShieldCheck"
+      iconColor="text-primary"
+      iconBgColor="bg-primary/10"
       metrics={analyticsMetrics}
     >
-      <div className="space-y-6">
-        {/* Cash Flow Summary */}
-        <div>
-          <h4 className="text-sm font-medium text-text-primary mb-3 flex items-center">
-            <Icon name="Wallet" size={16} className="text-primary mr-2" />
-            Ringkasan Arus Kas (Berdasarkan Pemasukan)
-          </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            {cashFlowSummary?.map((item, index) => (
-              <div key={index} className={`p-4 rounded-lg ${item?.bgColor} border border-current/20`}>
-                <div className="flex items-center justify-between mb-2">
-                  <Icon name={item?.icon} size={20} className={item?.color} />
-                  <span className={`text-xs font-medium ${item?.color}`}>{item?.type}</span>
-                </div>
-                <p className={`text-xl font-mono font-semibold ${item?.color}`}>
-                  {item?.amount}
-                </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {auditCards.map((card, index) => (
+          <div
+            key={index}
+            className={`p-4 rounded-xl border transition-all hover:shadow-md ${card.highlight ? 'lg:col-span-2 border-current/30 shadow-sm' : 'border-border'
+              } ${card.bgColor}`}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className={`p-2 rounded-lg ${card.bgColor} ${card.color}`}>
+                <Icon name={card.icon} size={20} />
               </div>
-            ))}
+              {card.highlight && (
+                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full ${card.bgColor} ${card.color} border border-current/20`}>
+                  Audit Result
+                </span>
+              )}
+            </div>
+            <div>
+              <p className={`text-xl font-mono font-bold mb-1 break-words ${card.color}`}>
+                {card.value}
+              </p>
+              <p className="text-sm font-semibold text-text-primary mb-1">
+                {card.title}
+              </p>
+              <p className="text-xs text-text-secondary leading-relaxed">
+                {card.desc}
+              </p>
+            </div>
           </div>
-        </div>
+        ))}
       </div>
     </ReportCard>
   );
