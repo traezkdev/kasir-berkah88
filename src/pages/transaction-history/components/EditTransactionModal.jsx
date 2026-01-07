@@ -349,16 +349,24 @@ const EditTransactionModal = ({
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-sm font-medium text-foreground">Total Akhir</label>
-              <span className="text-lg font-bold text-primary">Rp {parseFloat(formData.total).toLocaleString()}</span>
+            <label className="text-sm font-medium text-foreground mb-1 block">Total Akhir</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span className="text-muted-foreground sm:text-sm">Rp</span>
+              </div>
+              <input
+                type="number"
+                name="total"
+                step="0.01"
+                value={formData.total}
+                onChange={handleChange}
+                className="block w-full pl-10 pr-3 py-2 border border-input rounded-md bg-background text-lg font-bold text-primary focus:ring-1 focus:ring-primary outline-none"
+                required
+              />
             </div>
-            <Input
-              name="total"
-              type="hidden"
-              value={formData.total}
-              required
-            />
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Dihitung otomatis berdasarkan item, tapi dapat disesuaikan manual.
+            </p>
           </div>
 
           <div>
