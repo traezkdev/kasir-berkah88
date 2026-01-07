@@ -4,6 +4,7 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Icon from '../../../components/AppIcon';
+import authFetch from '../../../utils/authFetch';
 
 const ExpenseHistoryTable = ({
   expenses = [],
@@ -25,17 +26,29 @@ const ExpenseHistoryTable = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
+  const [categories, setCategories] = useState([]);
+
+  React.useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await authFetch('/api/expense-categories');
+        const data = await response.json();
+        if (response.ok) {
+          setCategories(data.data || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch expense categories:", err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
   const categoryOptions = [
     { value: '', label: 'Semua Kategori' },
-    { value: 'supplies', label: 'Bahan Baku & Supplies' },
-    { value: 'utilities', label: 'Listrik & Air' },
-    { value: 'inventory', label: 'Pembelian Stok' },
-    { value: 'equipment', label: 'Peralatan' },
-    { value: 'maintenance', label: 'Perawatan & Perbaikan' },
-    { value: 'transport', label: 'Transportasi' },
-    { value: 'marketing', label: 'Promosi & Marketing' },
-    { value: 'operational', label: 'Operasional Lainnya' },
-    { value: 'other', label: 'Lain-lain' }
+    ...categories.map(cat => ({
+      value: cat.name,
+      label: cat.name
+    }))
   ];
 
   const categoryLabelMap = new Map(categoryOptions.map(opt => [opt.value, opt.label]));

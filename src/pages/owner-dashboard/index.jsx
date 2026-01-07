@@ -204,11 +204,11 @@ const OwnerDashboard = ({ headerTitle }) => {
             description: 'Dana lapak Di Owner'
         },
         {
-            title: 'Keuntungan Kotor (Equity)',
-            value: formatCurrency(dashboardData.allTimeNetProfit + dashboardData.totalCombinedStockValue),
-            icon: 'DollarSign',
+            title: 'Kekayaan Bisnis (Equity)',
+            value: formatCurrency((parseFloat(dashboardData.initialCapital) || 0) + (parseFloat(dashboardData.allTimeNetProfit) || 0)),
+            icon: 'ShieldCheck',
             color: 'accent',
-            description: 'Total pendapatan + total stok - total pengeluaran'
+            description: 'Modal Awal + Laba Bersih (Target Kekayaan)'
         },
         {
             title: 'Total Pendapatan (Semua Waktu)',
@@ -229,37 +229,39 @@ const OwnerDashboard = ({ headerTitle }) => {
             value: formatCurrency(dashboardData.allTimeNetProfit),
             icon: 'BarChart',
             color: 'accent',
-            description: 'Total seluruh laba/rugi yang tercatat'
+            description: 'Hasil bersih Pendapatan - Pengeluaran'
         },
         // Dynamic logic for 'Selisih Perhitungan'
         (() => {
-            const currentEndingCapital = (parseFloat(dashboardData.ownerBalance) || 0) + (parseFloat(dashboardData.lapakBalance) || 0);
-            const sumCapital = currentEndingCapital + (parseFloat(dashboardData.initialCapital) || 0);
-            const recordedProfit = parseFloat(dashboardData.allTimeNetProfit) || 0;
-            const diff = sumCapital - recordedProfit;
+            const currentPhysicalCash = (parseFloat(dashboardData.ownerBalance) || 0) + (parseFloat(dashboardData.lapakBalance) || 0);
+            const initialCapital = parseFloat(dashboardData.initialCapital) || 0;
+            const totalRevenue = parseFloat(dashboardData.allTimeRevenue) || 0;
+            const totalExpenses = parseFloat(dashboardData.allTimeExpenses) || 0;
+
+            // Rumus: Modal Akhir - (Modal Awal + Pendapatan - Pengeluaran)
+            const expectedCash = initialCapital + totalRevenue - totalExpenses;
+            const diff = currentPhysicalCash - expectedCash;
 
             let color = 'success';
             let icon = 'CheckCircle';
-            let valueText = 'Pas dengan data';
+            let valueText = 'Data Akurat (Pas)';
 
             if (diff > 100) {
-                // Surplus (Lebih)
-                color = 'info'; // Blue
+                color = 'info';
                 icon = 'TrendingUp';
-                valueText = `+ ${formatCurrency(diff)}`;
+                valueText = `+ ${formatCurrency(diff)} (Uang Lebih)`;
             } else if (diff < -100) {
-                // Deficit (Kurang)
-                color = 'destructive'; // Red
-                icon = 'TrendingDown';
-                valueText = formatCurrency(diff);
+                color = 'destructive';
+                icon = 'AlertCircle';
+                valueText = `${formatCurrency(diff)} (Uang Kurang)`;
             }
 
             return {
-                title: 'Selisih Perhitungan',
+                title: 'Selisih Perhitungan (Audit)',
                 value: valueText,
                 icon: icon,
                 color: color,
-                description: '(Modal Akhir + Modal Awal) - Laba Bersih'
+                description: 'Modal Akhir - (Modal Awal + Pendapatan - Pengeluaran)'
             };
         })()
     ];
