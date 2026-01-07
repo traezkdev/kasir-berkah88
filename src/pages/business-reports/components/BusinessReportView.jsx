@@ -437,7 +437,7 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                     <p className="text-text-secondary">Memuat data laporan...</p>
                 </div>
             ) : reportData ? (
-                <div className="space-y-8 mt-6 bg-card p-4 rounded-lg shadow-md">
+                <div className="space-y-8 mt-6">
                     <SalesReportSection data={reportData.sales} dateRange={selectedDateRange} />
                     <StockReportSection data={reportData.stock} dateRange={selectedDateRange} />
                     <RawMaterialReportSection data={reportData.rawMetrics} units={units} dateRange={selectedDateRange} />
