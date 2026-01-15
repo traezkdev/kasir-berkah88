@@ -4,6 +4,7 @@ import Button from "../../../components/ui/Button";
 import { X, Share2 } from "lucide-react";
 import Icon from "../../../components/AppIcon";
 import * as htmlToImage from 'html-to-image';
+import toast from 'react-hot-toast';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -15,6 +16,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
   const [restaurantUrl, setRestaurantUrl] = useState('www.berkah88.id');
   const [logoUrl, setLogoUrl] = useState('');
   const [receiptVersion, setReceiptVersion] = useState('1');
+  const [isPrinting, setIsPrinting] = useState(false);
 
   const fetchRestaurantSettings = async () => {
     try {
@@ -100,8 +102,36 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    setIsPrinting(true);
+    const loadingToast = toast.loading('Sedang mencetak...');
+
+    try {
+      const response = await fetch(`${apiUrl}/api/print-receipt`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ transaction }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success('Struk dicetak & laci terbuka!', { id: loadingToast });
+      } else {
+        // Fallback if printer is disabled or not set up
+        console.warn('Thermal print fallback:', result.error);
+        toast.dismiss(loadingToast);
+        window.print();
+      }
+    } catch (err) {
+      console.error('Print error:', err);
+      toast.error('Printer thermal tidak aktif. Menggunakan cetak biasa.', { id: loadingToast });
+      window.print();
+    } finally {
+      setIsPrinting(false);
+    }
   };
 
   const transactionDate = new Date(transaction.timestamp).toLocaleString("id-ID", {
@@ -613,9 +643,10 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
               </Button>
               <Button
                 onClick={handlePrint}
+                disabled={isPrinting}
                 className="flex-1 sm:flex-none text-xs sm:text-sm px-4 py-2"
               >
-                Cetak
+                {isPrinting ? 'Mencetak...' : 'Cetak'}
               </Button>
             </div>
           </div>
