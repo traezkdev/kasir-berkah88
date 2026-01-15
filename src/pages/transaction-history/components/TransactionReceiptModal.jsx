@@ -4,6 +4,7 @@ import Button from "../../../components/ui/Button";
 import { X, Share2 } from "lucide-react";
 import Icon from "../../../components/AppIcon";
 import * as htmlToImage from 'html-to-image';
+import toast from 'react-hot-toast';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -102,6 +103,48 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const copyAsText = () => {
+    let text = `${restaurantName.toUpperCase()}\n`;
+    text += `${restaurantSlogan}\n`;
+    text += `--------------------------------\n`;
+    text += `ID: ${transaction.id}\n`;
+    text += `Tgl: ${new Date(transaction.timestamp).toLocaleString("id-ID")}\n`;
+    text += `Ksr: ${transaction.cashier_name || 'SISTEM'}\n`;
+    text += `--------------------------------\n`;
+
+    transaction.items.forEach(item => {
+      text += `${item.name.substring(0, 20)}\n`;
+      const priceVal = Number(item.price) || 0;
+      const qtyVal = Number(item.quantity) || 0;
+      const qtyPrice = `${qtyVal} x ${priceVal.toLocaleString("id-ID")}`;
+      const subtotal = (priceVal * qtyVal).toLocaleString("id-ID");
+      const spaces = 32 - qtyPrice.length - subtotal.length;
+      text += `${qtyPrice}${" ".repeat(Math.max(1, spaces))}${subtotal}\n`;
+      if (item.options?.length > 0) {
+        item.options.forEach(opt => text += ` - ${opt.name}\n`);
+      }
+    });
+
+    text += `--------------------------------\n`;
+    const totalLabel = "TOTAL";
+    const totalVal = `Rp ${Number(transaction.total).toLocaleString("id-ID")}`;
+    text += `${totalLabel}${" ".repeat(32 - totalLabel.length - totalVal.length)}${totalVal}\n`;
+
+    const bayarLabel = "BAYAR";
+    const bayarVal = `Rp ${Number(transaction.cash_paid || 0).toLocaleString("id-ID")}`;
+    text += `${bayarLabel}${" ".repeat(32 - bayarLabel.length - bayarVal.length)}${bayarVal}\n`;
+
+    const kembaliLabel = "KEMBALI";
+    const kembaliVal = `Rp ${Number(transaction.change || 0).toLocaleString("id-ID")}`;
+    text += `${kembaliLabel}${" ".repeat(32 - kembaliLabel.length - kembaliVal.length)}${kembaliVal}\n`;
+
+    text += `--------------------------------\n`;
+    text += `     TERIMA KASIH      \n`;
+
+    navigator.clipboard.writeText(text);
+    toast.success('Format teks disalin! Silakan paste di aplikasi Printer.');
   };
 
   const transactionDate = new Date(transaction.timestamp).toLocaleString("id-ID", {
@@ -595,13 +638,11 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
               </Button>
               <Button
                 variant="outline"
-                onClick={handleShareImage}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 text-xs sm:text-sm px-3 py-2"
+                onClick={copyAsText}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 border-orange-500 text-orange-600 hover:bg-orange-50 text-xs sm:text-sm px-3 py-2"
               >
-                <svg size={16} viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.72.937 3.659 1.432 5.631 1.433h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                </svg>
-                WA
+                <Icon name="Copy" className="w-4 h-4" />
+                Salin Teks
               </Button>
               <Button
                 variant="outline"
@@ -645,49 +686,55 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
             position: absolute;
             left: 0;
             top: 0;
-            width: 100%; /* Adapts to printer paper width (58mm or 80mm) */
+            width: 380px !important;
             max-width: none;
             box-sizing: border-box;
             margin: 0;
-            padding: 4px; /* Minimal padding */
+            padding: 10px;
             border: none;
             box-shadow: none;
-            background-color: white;
-            color: black;
-            font-family: 'Courier New', Courier, monospace; /* Classic receipt font */
+            background-color: white !important;
+            color: black !important;
+            font-family: 'Courier New', Courier, monospace !important;
+          }
+          /* Remove ANY icons/SVGs from printing to avoid graphics mode */
+          svg, .app-icon, img.w-6, img.w-8 {
+            display: none !important;
           }
           #receipt-container h2, 
           #receipt-container p, 
           #receipt-container span, 
           #receipt-container div, 
-          #receipt-container h3 {
+          #receipt-container h3,
+          #receipt-container table {
             visibility: visible;
             color: black !important;
-            font-family: 'Courier New', Courier, monospace;
+            background: transparent !important;
+            font-family: 'Courier New', Courier, monospace !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
           #receipt-container h2 {
-            font-size: 14px !important;
+            font-size: 18px !important;
             font-weight: bold !important;
-            margin-bottom: 2px;
+            margin-bottom: 5px;
+            text-align: center;
           }
           #receipt-container p {
-            font-size: 10px !important;
-            margin-bottom: 4px;
+            font-size: 13px !important;
+            margin-bottom: 5px;
+            text-align: center;
           }
           #receipt-container .text-sm,
           #receipt-container span,
           #receipt-container div,
-          #receipt-container h3,
-          #receipt-container .text-lg {
-            font-size: 11px !important;
+          #receipt-container h3 {
+            font-size: 14px !important;
+            line-height: 1.2 !important;
           }
           /* Hide non-printable elements explicitly */
           .print\\:hidden {
             display: none !important;
-          }
-          /* Ensure good spacing for lists */
-          #receipt-container .space-y-2 > div {
-            margin-bottom: 2px !important;
           }
         }
       `}</style>

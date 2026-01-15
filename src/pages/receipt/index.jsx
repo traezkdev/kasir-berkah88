@@ -5,6 +5,7 @@ import Button from '../../components/ui/Button';
 import { Share2, ArrowLeft } from 'lucide-react';
 import Icon from '../../components/AppIcon';
 import * as htmlToImage from 'html-to-image';
+import toast from 'react-hot-toast';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -112,7 +113,7 @@ const ReceiptPage = () => {
   };
 
   const handleWhatsAppShare = () => {
-    const transactionDate = new Date(transaction.timestamp).toLocaleString("id-ID", {
+    const transactionDateStr = new Date(transaction.timestamp).toLocaleString("id-ID", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -124,7 +125,7 @@ const ReceiptPage = () => {
     message += `${restaurantSlogan}\n`;
     message += `--------------------------\n`;
     message += `*ID Transaksi:* ${transaction.id}\n`;
-    message += `*Tanggal:* ${transactionDate}\n`;
+    message += `*Tanggal:* ${transactionDateStr}\n`;
     message += `--------------------------\n`;
     message += `*Detail Pesanan:*\n`;
 
@@ -166,7 +167,49 @@ const ReceiptPage = () => {
     message += `\nTerima kasih telah berbelanja!`;
 
     const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+    window.open(`https://wa.me/?text=${encodedMessage}`, "_blank");
+  };
+
+  const copyAsText = () => {
+    let text = `${restaurantName.toUpperCase()}\n`;
+    text += `${restaurantSlogan}\n`;
+    text += `--------------------------------\n`;
+    text += `ID: ${transaction.id}\n`;
+    text += `Tgl: ${new Date(transaction.timestamp).toLocaleString("id-ID")}\n`;
+    text += `Ksr: ${transaction.cashier_name || 'SISTEM'}\n`;
+    text += `--------------------------------\n`;
+
+    transaction.items.forEach(item => {
+      text += `${item.name.substring(0, 20)}\n`;
+      const priceVal = Number(item.price) || 0;
+      const qtyVal = Number(item.quantity) || 0;
+      const qtyPrice = `${qtyVal} x ${priceVal.toLocaleString("id-ID")}`;
+      const subtotal = (priceVal * qtyVal).toLocaleString("id-ID");
+      const spaces = 32 - qtyPrice.length - subtotal.length;
+      text += `${qtyPrice}${" ".repeat(Math.max(1, spaces))}${subtotal}\n`;
+      if (item.options?.length > 0) {
+        item.options.forEach(opt => text += ` - ${opt.name}\n`);
+      }
+    });
+
+    text += `--------------------------------\n`;
+    const totalLabel = "TOTAL";
+    const totalVal = `Rp ${Number(transaction.total).toLocaleString("id-ID")}`;
+    text += `${totalLabel}${" ".repeat(32 - totalLabel.length - totalVal.length)}${totalVal}\n`;
+
+    const bayarLabel = "BAYAR";
+    const bayarVal = `Rp ${Number(transaction.cash_paid || 0).toLocaleString("id-ID")}`;
+    text += `${bayarLabel}${" ".repeat(32 - bayarLabel.length - bayarVal.length)}${bayarVal}\n`;
+
+    const kembaliLabel = "KEMBALI";
+    const kembaliVal = `Rp ${Number(transaction.change || 0).toLocaleString("id-ID")}`;
+    text += `${kembaliLabel}${" ".repeat(32 - kembaliLabel.length - kembaliVal.length)}${kembaliVal}\n`;
+
+    text += `--------------------------------\n`;
+    text += `     TERIMA KASIH      \n`;
+
+    navigator.clipboard.writeText(text);
+    toast.success('Format teks disalin! Silakan paste di aplikasi Printer.');
   };
 
   const transactionDate = new Date(transaction.timestamp).toLocaleString("id-ID", {
@@ -196,7 +239,6 @@ const ReceiptPage = () => {
     const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
     return sum + ((effectivePricePerUnit + optionAdjustment) * (Number(item.quantity) || 0));
   }, 0);
-
 
   return (
     <>
@@ -595,7 +637,7 @@ const ReceiptPage = () => {
                             <Icon name="MessageSquare" size={14} className="text-amber-600" />
                             <span className="text-[10px] font-black text-amber-800 uppercase tracking-widest">Catatan Konsumen</span>
                           </div>
-                          <p className="text-xs text-amber-900 italic font-medium leading-relaxed italic">
+                          <p className="text-xs text-amber-900 italic font-medium leading-relaxed">
                             "{transaction.catatan}"
                           </p>
                         </div>
@@ -635,7 +677,17 @@ const ReceiptPage = () => {
             </div>
           </div>
           <div className="p-6 bg-gray-50 dark:bg-gray-900 rounded-b-lg space-y-4 print:hidden border-t dark:border-gray-800">
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                onClick={copyAsText}
+                className="flex items-center justify-center gap-2 border-orange-500/50 text-orange-600 hover:bg-orange-50 py-3 px-2 group"
+              >
+                <div className="p-1 rounded-full bg-orange-100 group-hover:scale-110 transition-transform">
+                  <Icon name="Copy" className="w-4 h-4" />
+                </div>
+                <span className="text-[10px] font-bold uppercase">Salin Teks</span>
+              </Button>
               <Button
                 variant="outline"
                 onClick={handleWhatsAppShare}
@@ -702,66 +754,82 @@ const ReceiptPage = () => {
             position: absolute;
             left: 0;
             top: 0;
-            width: 100%; /* Adapts to printer paper width (58mm or 80mm) */
+            width: 380px !important; /* Fixed width for thermal drivers to treat as text */
             max-width: none;
             box-sizing: border-box;
             margin: 0;
-            padding: 4px; /* Minimal padding */
+            padding: 10px;
             border: none;
             box-shadow: none;
-            background-color: white;
-            color: black;
-            font-family: 'Courier New', Courier, monospace; /* Classic receipt font */
+            background-color: white !important;
+            color: black !important;
+            font-family: 'Courier New', Courier, monospace !important;
+          }
+          /* Remove ANY icons/SVGs from printing to avoid graphics mode */
+          svg, .app-icon, img.w-6, img.w-8 {
+            display: none !important;
+          }
+          /* Ensure logo stays if it's the main header logo */
+          #receipt-container img.w-24, #receipt-container img.w-32 {
+            display: block !important;
+            filter: grayscale(100%) contrast(200%);
+            margin: 0 auto 10px auto !important;
           }
           #receipt-container h2, 
           #receipt-container p, 
           #receipt-container span, 
           #receipt-container div, 
-          #receipt-container h3,
-          #receipt-container img {
+          #receipt-container h3 {
             visibility: visible;
             color: black !important;
-            font-family: 'Courier New', Courier, monospace;
+            background: transparent !important;
+            font-family: 'Courier New', Courier, monospace !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
           #receipt-container h2 {
-            font-size: 14px !important;
+            font-size: 18px !important;
             font-weight: bold !important;
-            margin-bottom: 2px;
+            margin-bottom: 5px;
             text-align: center;
           }
           #receipt-container p {
-            font-size: 10px !important;
-            margin-bottom: 4px;
+            font-size: 13px !important;
+            margin-bottom: 5px;
             text-align: center;
           }
           #receipt-container .text-sm,
           #receipt-container span,
           #receipt-container div,
           #receipt-container h3,
-          #receipt-container .text-lg {
-            font-size: 11px !important;
+          #receipt-container table {
+            font-size: 14px !important;
+            line-height: 1.2 !important;
           }
           /* Hide non-printable elements explicitly */
           .print\\:hidden {
             display: none !important;
           }
-          /* Ensure good spacing for lists */
-          #receipt-container .space-y-2 > div {
-            margin-bottom: 2px !important;
-          }
-          /* Version 2 specific print adjustments */
-          #receipt-container .bg-gray-900 {
+          /* Version 2 specific print adjustments - Full High Contrast */
+          #receipt-container .bg-gray-900,
+          #receipt-container .bg-emerald-500,
+          #receipt-container .bg-gray-100 {
             background-color: transparent !important;
             color: black !important;
             border: 1px solid black !important;
+            border-radius: 0 !important;
           }
-          #receipt-container .text-white {
+          #receipt-container .text-white, 
+          #receipt-container .text-emerald-500,
+          #receipt-container .text-gray-400 {
             color: black !important;
           }
-          #receipt-container .bg-emerald-500 {
-            background-color: transparent !important;
-            color: black !important;
-            border: 1px solid black !important;
+          /* Divider styling for print */
+          #receipt-container hr, 
+          #receipt-container .border-dashed {
+            border-color: black !important;
+            border-style: dashed !important;
+            border-width: 1px 0 0 0 !important;
           }
         }
       `}</style>
