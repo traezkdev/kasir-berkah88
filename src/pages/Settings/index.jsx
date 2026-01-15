@@ -104,6 +104,8 @@ const Settings = () => {
   const [isDataSyncModalOpen, setIsDataSyncModalOpen] = useState(false);
   const [ppnRate, setPpnRate] = useState('');
   const [newPpnRate, setNewPpnRate] = useState('');
+  const [receiptVersion, setReceiptVersion] = useState('1');
+  const [newReceiptVersion, setNewReceiptVersion] = useState('1');
 
   // --- Effects ---
   useEffect(() => {
@@ -172,6 +174,8 @@ const Settings = () => {
         setNewCashierDashboardTitle(data.data.cashier_dashboard_title || 'Dasbor Kasir');
         setPpnRate(data.data.ppn || '0.12');
         setNewPpnRate(data.data.ppn || '0.12');
+        setReceiptVersion(data.data.receipt_version || '1');
+        setNewReceiptVersion(data.data.receipt_version || '1');
 
         // Fetch current logo URL
         const logoResponse = await authFetch(`${apiUrl}/api/settings/logo`);
@@ -549,6 +553,7 @@ const Settings = () => {
                   <SettingsCard icon="Share2" title="Tampilan Media Sosial" description="Atur judul, deskripsi, dan gambar untuk berbagi di media sosial." onClick={() => setActiveModal('socialShare')} disabled={!isAdmin} />
                   <SettingsCard icon="Type" title="Judul Dasbor Kasir" description="Ubah judul yang ditampilkan di halaman dasbor kasir." onClick={() => setActiveModal('cashierDashboardTitle')} disabled={!isAdmin} />
                   <SettingsCard icon="Percent" title="Pengaturan PPN Global" description="Atur persentase pajak (PPN) default untuk semua transaksi." onClick={() => setActiveModal('ppnRate')} disabled={!isAdmin} />
+                  <SettingsCard icon="Receipt" title="Pengaturan Struk" description="Pilih tampilan struk transaksi yang Anda inginkan." onClick={() => setActiveModal('receiptVersion')} disabled={!isAdmin} />
                   <SettingsCard icon="ChartNoAxesColumnIncreasing" title="Laporan Transaksi Owner" description="Lihat laporan pendapatan dan pengeluaran bisnis owner." onClick={() => navigate('/admin-uang-bisnis')} />
                 </>
               )}
@@ -643,6 +648,47 @@ const Settings = () => {
             required
           />
           <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
+        </form>
+      </SettingsModal>
+
+      <SettingsModal title="Pengaturan Struk" isOpen={activeModal === 'receiptVersion'} onClose={handleModalClose}>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          handleUpdateSetting(e, '/api/settings/receipt_version', { value: newReceiptVersion }, 'Pengaturan struk berhasil diperbarui!');
+        }} className="space-y-6">
+          <p className="text-sm text-text-secondary mb-4">Pilih versi tampilan struk transaksi yang akan dicetak atau ditampilkan kepada pelanggan.</p>
+
+          <div className="grid grid-cols-1 gap-4">
+            <div
+              onClick={() => setNewReceiptVersion('1')}
+              className={`cursor-pointer p-4 border-2 rounded-xl transition-all duration-200 flex items-center gap-4 ${newReceiptVersion === '1' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
+            >
+              <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 border border-border shadow-sm flex items-center justify-center">
+                <AppIcon name="ReceiptText" className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-bold text-text-primary">Struk Versi 1 (Bawaan)</h4>
+                <p className="text-sm text-text-secondary">Tampilan klasik yang bersih dan informatif.</p>
+              </div>
+              {newReceiptVersion === '1' && <AppIcon name="Check" className="ml-auto text-primary w-6 h-6" />}
+            </div>
+
+            <div
+              onClick={() => setNewReceiptVersion('2')}
+              className={`cursor-pointer p-4 border-2 rounded-xl transition-all duration-200 flex items-center gap-4 ${newReceiptVersion === '2' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
+            >
+              <div className="w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 border border-border shadow-sm flex items-center justify-center">
+                <AppIcon name="FileText" className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div>
+                <h4 className="font-bold text-text-primary">Struk Versi 2 (Modern)</h4>
+                <p className="text-sm text-text-secondary">Desain modern dengan tata letak yang lebih dinamis.</p>
+              </div>
+              {newReceiptVersion === '2' && <AppIcon name="Check" className="ml-auto text-primary w-6 h-6" />}
+            </div>
+          </div>
+
+          <Button type="submit" className="w-full mt-4" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
         </form>
       </SettingsModal>
 
