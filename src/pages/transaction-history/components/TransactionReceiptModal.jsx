@@ -66,7 +66,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
       const dataUrl = await htmlToImage.toPng(receiptRef.current, {
         backgroundColor: '#ffffff',
         cacheBust: true,
-        pixelRatio: 2,
+        pixelRatio: 4, // Ultra HD Sharpness
         style: {
           transform: 'scale(1)',
           transformOrigin: 'top left',

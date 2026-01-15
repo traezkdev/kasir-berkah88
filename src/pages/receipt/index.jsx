@@ -76,7 +76,7 @@ const ReceiptPage = () => {
       const dataUrl = await htmlToImage.toPng(receiptRef.current, {
         backgroundColor: '#ffffff',
         cacheBust: true,
-        pixelRatio: 2,
+        pixelRatio: 4, // Higher ratio for ultra-sharp quality
         style: {
           transform: 'scale(1)',
           transformOrigin: 'top left',
