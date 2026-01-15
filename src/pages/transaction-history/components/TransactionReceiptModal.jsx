@@ -14,6 +14,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
   const [restaurantSlogan, setRestaurantSlogan] = useState('Aplikasi kasir modern cepat dan keren');
   const [restaurantUrl, setRestaurantUrl] = useState('www.berkah88.id');
   const [logoUrl, setLogoUrl] = useState('');
+  const [receiptVersion, setReceiptVersion] = useState('1');
 
   const fetchRestaurantSettings = async () => {
     try {
@@ -35,6 +36,13 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
           ? `${apiUrl}${logoData.data.logo_url}`
           : logoData.data.logo_url;
         setLogoUrl(fullUrl);
+      }
+
+      // Fetch receipt version
+      const versionRes = await fetch(`${apiUrl}/api/settings/receipt_version`);
+      const versionData = await versionRes.json();
+      if (versionRes.ok && versionData.data?.value) {
+        setReceiptVersion(versionData.data.value);
       }
     } catch (err) {
       console.error('Error fetching settings:', err);
@@ -142,228 +150,438 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
               ref={receiptRef}
               className="bg-white shadow-2xl h-fit rounded-lg w-full max-w-[520px]"
             >
-              <div className="p-8 relative overflow-hidden">
-                {/* Decorative cut effect at top */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-primary/20"></div>
-
-                {/* Header Section */}
-                <div className="text-center mb-8">
-                  <div className={`inline-flex items-center justify-center p-3 rounded-2xl mb-4 border transition-all ${logoUrl ? 'bg-transparent border-transparent' : 'bg-primary/5 border-primary/10'}`}>
-                    <div className={`w-16 h-16 rounded-xl flex items-center justify-center overflow-hidden transition-all ${logoUrl ? 'bg-transparent' : 'bg-primary text-white shadow-lg shadow-primary/20'
-                      }`}>
-                      {logoUrl ? (
-                        <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
-                      ) : (
-                        <span className="text-2xl font-black italic">{restaurantName.charAt(0)}</span>
-                      )}
-                    </div>
-                  </div>
-                  <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-tight uppercase font-mono">{restaurantName}</h2>
-                  <div className="flex items-center justify-center gap-2 mt-2">
-                    <span className="h-px w-4 bg-gray-200"></span>
-                    <p className="text-[10px] text-gray-400 font-bold tracking-[0.2em] uppercase">{restaurantSlogan}</p>
-                    <span className="h-px w-4 bg-gray-200"></span>
-                  </div>
-                </div>
-
-                {/* Info Grid */}
-                <div className="grid grid-cols-2 gap-y-4 gap-x-8 bg-gray-50/50 p-4 rounded-2xl border border-gray-100 mb-8">
-                  <div>
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Invoice ID</span>
-                    <span className="text-sm font-mono font-bold text-gray-900">#{transaction.id}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Tanggal</span>
-                    <span className="text-sm font-semibold text-gray-900">{transactionDate}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Metode Bayar</span>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase">
-                      {transaction.payment_method === 'employee_meal' ? 'Makan Karyawan' : (transaction.payment_method === 'cash' ? 'Tunai' : transaction.payment_method)}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Status</span>
-                    <span className="text-[10px] font-bold text-emerald-600 uppercase">Paid & Verified</span>
-                  </div>
-                </div>
-
-                {/* Items Selection */}
-                <div className="mb-8">
-                  <div className="flex items-center justify-between mb-4 px-1">
-                    <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
-                      Ringkasan Pesanan
-                    </h3>
-                    <span className="text-[10px] text-gray-400 font-bold uppercase">{transaction.items.length} Items</span>
-                  </div>
-
-                  <div className="space-y-4">
-                    {transaction.items.map((item, index) => {
-                      const pricePerUnit = Number(item.price) || 0;
-                      const itemDiscount = Number(item.discount) || 0;
-
-                      let effectivePricePerUnit;
-                      if (item.basePrice) {
-                        effectivePricePerUnit = pricePerUnit;
-                      } else if (itemDiscount > 0) {
-                        effectivePricePerUnit = pricePerUnit * (1 - itemDiscount);
-                      } else {
-                        effectivePricePerUnit = pricePerUnit;
-                      }
-
-                      const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
-                      const lineTotalAfterDiscount = (effectivePricePerUnit + optionAdjustment) * (Number(item.quantity) || 0);
-
-                      const originalBasePrice = Number(item.basePrice || item.price) || 0;
-                      const optionAdjustmentForOriginalPrice = Array.isArray(item.options) ? item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0) : 0;
-                      const originalPricePerUnitBeforeDiscount = originalBasePrice + optionAdjustmentForOriginalPrice;
-                      const lineTotalBeforeDiscount = originalPricePerUnitBeforeDiscount * (Number(item.quantity) || 0);
-
-                      return (
-                        <div key={index} className="flex justify-between items-start group">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-0.5">
-                              <span className="text-sm font-bold text-gray-900 leading-tight">{item.name}</span>
-                              <span className="text-[10px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded">x{item.quantity}</span>
-                            </div>
-
-                            {item.discount > 0 && (
-                              <span className="text-[9px] font-black text-red-500 uppercase tracking-wider block mb-1">
-                                SAVED {(item.discount * 100).toFixed(0)}%
-                              </span>
-                            )}
-
-                            {item.options && Array.isArray(item.options) && item.options.length > 0 && (
-                              <div className="flex flex-wrap gap-1">
-                                {item.options.map((opt, optIndex) => (
-                                  <span key={optIndex} className="text-[9px] text-gray-400 font-medium">
-                                    + {opt.name}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="text-right ml-4">
-                            {item.discount > 0 && (
-                              <span className="line-through text-gray-300 text-[10px] font-medium block h-3">
-                                Rp {lineTotalBeforeDiscount.toLocaleString("id-ID")}
-                              </span>
-                            )}
-                            <span className="text-sm font-mono font-bold text-gray-900 tabular-nums">
-                              Rp {lineTotalAfterDiscount.toLocaleString("id-ID")}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Total Calculations */}
-                <div className="bg-gray-50/80 rounded-2xl p-6 border border-gray-100 shadow-inner">
-                  <div className="space-y-3 mb-5">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400 font-bold uppercase tracking-wider">Subtotal</span>
-                      <span className="text-gray-900 font-bold font-mono">Rp {Number(subtotalBeforeAllDiscounts).toLocaleString("id-ID")}</span>
+              {receiptVersion === '2' ? (
+                // --- VERSION 2 (MODERN) ---
+                <div className="p-6 relative overflow-hidden bg-white">
+                  {/* Modern Header - Minimalist & Sleek */}
+                  <div className="flex flex-col items-center mb-6">
+                    <div className="relative mb-4">
+                      {!logoUrl && <div className="absolute -inset-3 bg-primary/5 rounded-full blur-xl"></div>}
+                      <div className={`relative flex items-center justify-center overflow-hidden transition-all ${logoUrl ? 'w-24 h-24 bg-transparent' : 'w-20 h-20 rounded-[1.5rem] border-2 border-primary/10 shadow-xl bg-primary text-white'}`}>
+                        {logoUrl ? (
+                          <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                        ) : (
+                          <span className="text-3xl font-black italic">{restaurantName.charAt(0)}</span>
+                        )}
+                      </div>
                     </div>
 
-                    {subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts > 0 && (
-                      <div className="flex justify-between text-xs text-red-500">
-                        <span className="font-bold uppercase tracking-wider">Item Savings</span>
-                        <span className="font-bold font-mono">-Rp {(subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts).toLocaleString("id-ID")}</span>
-                      </div>
-                    )}
+                    <h2 className="text-xl font-black text-gray-900 tracking-tight leading-none mb-1.5">{restaurantName}</h2>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">{restaurantSlogan}</p>
 
-                    {ppnAmount > 0 && (
-                      <div className="flex justify-between text-xs">
-                        <span className="text-gray-400 font-bold uppercase tracking-wider">Tax (PPN)</span>
-                        <span className="text-gray-900 font-bold font-mono">Rp {ppnAmount.toLocaleString("id-ID")}</span>
-                      </div>
-                    )}
-
-                    {manualDiscountAmount > 0 && (
-                      <div className="flex justify-between text-xs text-red-500">
-                        <span className="font-bold uppercase tracking-wider">Extra Discount</span>
-                        <span className="font-bold font-mono">-Rp {manualDiscountAmount.toLocaleString("id-ID")}</span>
-                      </div>
-                    )}
+                    {/* Modern Divider */}
+                    <div className="flex items-center gap-2 w-full mt-4 opacity-30">
+                      <div className="h-[1.5px] flex-1 bg-gradient-to-r from-transparent via-gray-400 to-gray-400"></div>
+                      <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
+                      <div className="h-[1.5px] flex-1 bg-gradient-to-l from-transparent via-gray-400 to-gray-400"></div>
+                    </div>
                   </div>
 
-                  <div className="h-px bg-gray-200 w-full mb-5 border-t border-dashed"></div>
+                  {/* High Tech Info Bar */}
+                  <div className="flex items-center justify-between mb-8 px-4 py-3 rounded-2xl bg-gray-50/80 border border-gray-100/50 backdrop-blur-sm shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-12 -mt-12 blur-2xl"></div>
 
-                  <div className="flex justify-between items-center bg-gray-900 text-white rounded-xl p-4 shadow-lg shadow-gray-200">
                     <div>
-                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 block mb-1">Grand Total</span>
-                      <span className="text-lg font-black font-mono tracking-tight">
-                        Rp {Number(transaction.total).toLocaleString("id-ID")}
+                      <span className="text-[9px] text-gray-400 font-black uppercase tracking-widest block mb-0.5">ID Referensi</span>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                        <span className="text-sm font-mono font-black text-gray-900 leading-none">#{transaction.id.slice(-6).toUpperCase()}</span>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-[9px] text-gray-400 font-black uppercase tracking-widest block mb-0.5">Dibuat Pada</span>
+                      <span className="text-xs font-bold text-gray-900">{transactionDate.split(',')[0]}</span>
+                      <span className="text-[9px] text-gray-400 font-bold block">{transactionDate.split(',')[1]}</span>
+                    </div>
+                  </div>
+
+                  {/* Modern Product List */}
+                  <div className="mb-8 px-1">
+                    <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-2">
+                      <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest flex items-center gap-1.5">
+                        <Icon name="ShoppingCart" size={14} className="text-primary" />
+                        Detail Pembelian
+                      </h3>
+                      <div className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-black uppercase tracking-tight">
+                        {transaction.items.length} ITEM
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {transaction.items.map((item, index) => {
+                        const pricePerUnit = Number(item.price) || 0;
+                        const itemDiscount = Number(item.discount) || 0;
+                        const effectivePricePerUnit = item.basePrice ? pricePerUnit : (itemDiscount > 0 ? pricePerUnit * (1 - itemDiscount) : pricePerUnit);
+                        const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0) : 0;
+                        const lineTotalAfterDiscount = (effectivePricePerUnit + optionAdjustment) * (Number(item.quantity) || 0);
+
+                        return (
+                          <div key={index} className="relative group pl-3">
+                            <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gray-100 group-hover:bg-primary/30 transition-colors rounded-full"></div>
+
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-0.5">
+                                  <span className="text-sm font-black text-gray-900 leading-tight">{item.name}</span>
+                                  <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50 rounded-md border border-gray-100 shadow-sm">
+                                    <span className="text-[9px] font-black text-gray-400">x</span>
+                                    <span className="text-[10px] font-black text-primary">{item.quantity}</span>
+                                  </div>
+                                </div>
+
+                                {item.options && Array.isArray(item.options) && item.options.length > 0 && (
+                                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                    {item.options.map((opt, optIdx) => (
+                                      <div key={optIdx} className="flex items-center gap-1 bg-indigo-50/50 text-indigo-600 px-1.5 py-0.5 rounded-md border border-indigo-100/50">
+                                        <div className="w-0.5 h-0.5 bg-indigo-400 rounded-full"></div>
+                                        <span className="text-[8px] font-bold uppercase tracking-tight">{opt.name}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="text-right ml-4 flex flex-col justify-center">
+                                <span className="text-[9px] text-gray-400 font-bold uppercase mb-0.5">Subtotal</span>
+                                <span className="text-sm font-mono font-black text-gray-900 tracking-tight tabular-nums">
+                                  {lineTotalAfterDiscount.toLocaleString("id-ID")}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Summary Glow Section */}
+                  <div className="relative mb-6">
+                    <div className="absolute inset-0 bg-primary/5 blur-2xl rounded-[2rem]"></div>
+                    <div className="relative bg-white/60 backdrop-blur-md rounded-[1.5rem] border border-gray-100/40 p-6 shadow-xl shadow-gray-100/20 overflow-hidden">
+                      {/* Decorative Pattern */}
+                      <div className="absolute top-0 right-0 p-3 opacity-5">
+                        <Icon name="Fingerprint" size={60} className="text-primary" />
+                      </div>
+
+                      <div className="space-y-3 mb-6">
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className="text-gray-400 font-black uppercase tracking-widest">Harga Dasar</span>
+                          <span className="text-gray-900 font-bold font-mono">Rp {Number(subtotalBeforeAllDiscounts).toLocaleString("id-ID")}</span>
+                        </div>
+
+                        {(subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts > 0 || manualDiscountAmount > 0) && (
+                          <div className="flex justify-between items-center text-[10px] text-rose-500 bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100/50">
+                            <span className="font-black uppercase tracking-widest flex items-center gap-1.5">
+                              <Icon name="Tag" size={10} /> Diskon
+                            </span>
+                            <span className="font-black font-mono">-Rp {(subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts + manualDiscountAmount).toLocaleString("id-ID")}</span>
+                          </div>
+                        )}
+
+                        {ppnAmount > 0 && (
+                          <div className="flex justify-between items-center text-[10px]">
+                            <span className="text-gray-400 font-black uppercase tracking-widest">Tax (PPN)</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[7px] font-black bg-gray-100 px-1 py-0.5 rounded text-gray-500">VAT</span>
+                              <span className="text-gray-900 font-bold font-mono">Rp {ppnAmount.toLocaleString("id-ID")}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="h-[1px] bg-gradient-to-r from-transparent via-gray-200 to-transparent w-full mb-6"></div>
+
+                      <div className="flex flex-col items-center">
+                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-300 mb-2">Total Tagihan</span>
+                        <div className="text-3xl font-black text-gray-900 tracking-tighter mb-1.5 flex items-start gap-1">
+                          <span className="text-sm mt-1 text-primary">Rp</span>
+                          <span>{Number(transaction.total).toLocaleString("id-ID")}</span>
+                        </div>
+
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-200 mt-1.5">
+                          <Icon name="Check" size={12} className="stroke-[4px]" />
+                          <span className="text-[9px] font-black uppercase tracking-widest">Pembayaran Berhasil</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Additional Payment Info (V2 Style) */}
+                  {(transaction.payment_method === 'Tunai' || transaction.payment_method === 'tunai' || transaction.payment_method === 'cash') && transaction.cash_paid > 0 && (
+                    <div className="flex gap-3 mb-8 px-2">
+                      <div className="flex-1 px-4 py-3 bg-gray-50 rounded-2xl border border-gray-100 flex flex-col items-center">
+                        <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">DIBAYAR</span>
+                        <span className="text-sm font-mono font-black text-gray-900">Rp {Number(transaction.cash_paid).toLocaleString("id-ID")}</span>
+                      </div>
+                      <div className="flex-1 px-4 py-3 bg-emerald-50 rounded-2xl border border-emerald-100 flex flex-col items-center shadow-sm shadow-emerald-100/50">
+                        <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest mb-1">KEMBALI</span>
+                        <span className="text-sm font-mono font-black text-emerald-700">Rp {Number(transaction.change).toLocaleString("id-ID")}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Payment Details Pill */}
+                  <div className="flex justify-center mb-8">
+                    <div className="inline-flex items-center gap-4 px-6 py-2.5 bg-gray-900 rounded-full shadow-2xl shadow-gray-900/40">
+                      <div className="flex flex-col items-center border-r border-gray-700 pr-4">
+                        <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mb-0.5">METODE</span>
+                        <span className="text-[9px] font-black text-white uppercase tracking-tight">
+                          {transaction.payment_method === 'employee_meal' ? 'MAKAN KARYAWAN' : (transaction.payment_method === 'cash' ? 'TUNAI' : transaction.payment_method.toUpperCase())}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col items-center">
+                        <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mb-0.5">KASIR</span>
+                        <span className="text-[9px] font-black text-white uppercase tracking-tight">{transaction.cashier_name || 'SISTEM'}</span>
+                      </div>
+
+                      <div className="flex flex-col items-center border-l border-gray-700 pl-4 text-emerald-400">
+                        <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mb-0.5">STATUS</span>
+                        <Icon name="ShieldCheck" size={12} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Aesthetic Footer */}
+                  <div className="text-center pt-6 border-t border-dashed border-gray-200 relative">
+                    {/* Modern Scallop Effect */}
+                    <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1 text-gray-200">
+                      <Icon name="Zap" size={10} className="fill-current" />
+                    </div>
+
+                    <h4 className="text-sm font-black text-gray-900 tracking-tighter uppercase mb-1.5">Terima Kasih</h4>
+                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.15em] mb-4">Sampai jumpa kembali!</p>
+
+
+                    <span className="text-[7px] font-black text-gray-300 uppercase tracking-[0.4em]">{restaurantUrl}</span>
+                  </div>
+                </div>
+              ) : (
+                // --- VERSION 1 (CLASSIC) ---
+                <div className="p-8 relative overflow-hidden">
+                  {/* Decorative cut effect at top */}
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-primary/20"></div>
+
+                  {/* Header Section */}
+                  <div className="text-center mb-8">
+                    <div className={`inline-flex items-center justify-center p-3 rounded-2xl mb-4 border transition-all ${logoUrl ? 'bg-transparent border-transparent' : 'bg-primary/5 border-primary/10'}`}>
+                      <div className={`w-16 h-16 rounded-xl flex items-center justify-center overflow-hidden transition-all ${logoUrl ? 'bg-transparent' : 'bg-primary text-white shadow-lg shadow-primary/20'
+                        }`}>
+                        {logoUrl ? (
+                          <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                        ) : (
+                          <span className="text-2xl font-black italic">{restaurantName.charAt(0)}</span>
+                        )}
+                      </div>
+                    </div>
+                    <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-tight uppercase font-mono">{restaurantName}</h2>
+                    <div className="flex items-center justify-center gap-2 mt-2">
+                      <span className="h-px w-4 bg-gray-200"></span>
+                      <p className="text-[10px] text-gray-400 font-bold tracking-[0.2em] uppercase">{restaurantSlogan}</p>
+                      <span className="h-px w-4 bg-gray-200"></span>
+                    </div>
+                  </div>
+
+                  {/* Info Grid */}
+                  <div className="grid grid-cols-2 gap-y-4 gap-x-8 bg-gray-50/50 p-4 rounded-2xl border border-gray-100 mb-8">
+                    <div>
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">ID Invoice</span>
+                      <span className="text-sm font-mono font-bold text-gray-900">#{transaction.id}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Tanggal</span>
+                      <span className="text-sm font-semibold text-gray-900">{transactionDate}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Metode Bayar</span>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase">
+                        {transaction.payment_method === 'employee_meal' ? 'Makan Karyawan' : (transaction.payment_method === 'cash' ? 'Tunai' : transaction.payment_method)}
                       </span>
                     </div>
-                    <div className="bg-primary/20 p-2 rounded-lg">
-                      <Icon name="CheckCircle2" size={24} className="text-primary" />
+                    <div className="text-right">
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Status</span>
+                      <span className="text-[10px] font-bold text-emerald-600 uppercase">Lunas & Terverifikasi</span>
                     </div>
                   </div>
-                </div>
 
-                {/* Additional Payment Info */}
-                {(transaction.payment_method === 'Tunai' || transaction.payment_method === 'tunai' || transaction.payment_method === 'cash') && transaction.cash_paid > 0 && (
-                  <div className="mt-6 flex justify-between gap-4 px-4">
-                    <div className="flex-1 text-center py-2 bg-gray-50 rounded-xl border border-gray-100">
-                      <span className="text-[8px] font-bold text-gray-400 uppercase block">Cash Paid</span>
-                      <span className="text-xs font-bold text-gray-900">Rp {Number(transaction.cash_paid).toLocaleString("id-ID")}</span>
+                  {/* Items Selection */}
+                  <div className="mb-8">
+                    <div className="flex items-center justify-between mb-4 px-1">
+                      <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                        Ringkasan Pesanan
+                      </h3>
+                      <span className="text-[10px] text-gray-400 font-bold uppercase">{transaction.items.length} Item</span>
                     </div>
-                    <div className="flex-1 text-center py-2 bg-emerald-50 rounded-xl border border-emerald-100">
-                      <span className="text-[8px] font-bold text-emerald-600 uppercase block">Change</span>
-                      <span className="text-xs font-extrabold text-emerald-700">Rp {Number(transaction.change).toLocaleString("id-ID")}</span>
+
+                    <div className="space-y-4">
+                      {transaction.items.map((item, index) => {
+                        const pricePerUnit = Number(item.price) || 0;
+                        const itemDiscount = Number(item.discount) || 0;
+
+                        let effectivePricePerUnit;
+                        if (item.basePrice) {
+                          effectivePricePerUnit = pricePerUnit;
+                        } else if (itemDiscount > 0) {
+                          effectivePricePerUnit = pricePerUnit * (1 - itemDiscount);
+                        } else {
+                          effectivePricePerUnit = pricePerUnit;
+                        }
+
+                        const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+                        const lineTotalAfterDiscount = (effectivePricePerUnit + optionAdjustment) * (Number(item.quantity) || 0);
+
+                        const originalBasePrice = Number(item.basePrice || item.price) || 0;
+                        const optionAdjustmentForOriginalPrice = Array.isArray(item.options) ? item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0) : 0;
+                        const originalPricePerUnitBeforeDiscount = originalBasePrice + optionAdjustmentForOriginalPrice;
+                        const lineTotalBeforeDiscount = originalPricePerUnitBeforeDiscount * (Number(item.quantity) || 0);
+
+                        return (
+                          <div key={index} className="flex justify-between items-start group">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <span className="text-sm font-bold text-gray-900 leading-tight">{item.name}</span>
+                                <span className="text-[10px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded">x{item.quantity}</span>
+                              </div>
+
+                              {item.discount > 0 && (
+                                <span className="text-[9px] font-black text-red-500 uppercase tracking-wider block mb-1">
+                                  HEMAT {(item.discount * 100).toFixed(0)}%
+                                </span>
+                              )}
+
+                              {item.options && Array.isArray(item.options) && item.options.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {item.options.map((opt, optIndex) => (
+                                    <span key={optIndex} className="text-[9px] text-gray-400 font-medium">
+                                      + {opt.name}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="text-right ml-4">
+                              {item.discount > 0 && (
+                                <span className="line-through text-gray-300 text-[10px] font-medium block h-3">
+                                  Rp {lineTotalBeforeDiscount.toLocaleString("id-ID")}
+                                </span>
+                              )}
+                              <span className="text-sm font-mono font-bold text-gray-900 tabular-nums">
+                                Rp {lineTotalAfterDiscount.toLocaleString("id-ID")}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                )}
 
-                {/* Notes Section */}
-                {transaction.catatan && (
-                  <div className="mt-8 relative pt-6">
-                    <div className="absolute top-0 left-0 right-0 h-px bg-gray-100"></div>
-                    <div className="bg-amber-50/50 rounded-2xl p-4 border border-amber-100/50 border-dashed">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Icon name="MessageSquare" size={14} className="text-amber-600" />
-                        <span className="text-[10px] font-black text-amber-800 uppercase tracking-widest">Customer Note</span>
+                  {/* Total Calculations */}
+                  <div className="bg-gray-50/80 rounded-2xl p-6 border border-gray-100 shadow-inner">
+                    <div className="space-y-3 mb-5">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-400 font-bold uppercase tracking-wider">Subtotal</span>
+                        <span className="text-gray-900 font-bold font-mono">Rp {Number(subtotalBeforeAllDiscounts).toLocaleString("id-ID")}</span>
                       </div>
-                      <p className="text-xs text-amber-900 italic font-medium leading-relaxed italic">
-                        "{transaction.catatan}"
+
+                      {subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts > 0 && (
+                        <div className="flex justify-between text-xs text-red-500">
+                          <span className="font-bold uppercase tracking-wider">Item Savings</span>
+                          <span className="font-bold font-mono">-Rp {(subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts).toLocaleString("id-ID")}</span>
+                        </div>
+                      )}
+
+                      {ppnAmount > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-gray-400 font-bold uppercase tracking-wider">Tax (PPN)</span>
+                          <span className="text-gray-900 font-bold font-mono">Rp {ppnAmount.toLocaleString("id-ID")}</span>
+                        </div>
+                      )}
+
+                      {manualDiscountAmount > 0 && (
+                        <div className="flex justify-between text-xs text-red-500">
+                          <span className="font-bold uppercase tracking-wider">Extra Discount</span>
+                          <span className="font-bold font-mono">-Rp {manualDiscountAmount.toLocaleString("id-ID")}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="h-px bg-gray-200 w-full mb-5 border-t border-dashed"></div>
+
+                    <div className="flex justify-between items-center bg-gray-900 text-white rounded-xl p-4 shadow-lg shadow-gray-200">
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 block mb-1">Grand Total</span>
+                        <span className="text-lg font-black font-mono tracking-tight">
+                          Rp {Number(transaction.total).toLocaleString("id-ID")}
+                        </span>
+                      </div>
+                      <div className="bg-primary/20 p-2 rounded-lg">
+                        <Icon name="CheckCircle2" size={24} className="text-primary" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Additional Payment Info */}
+                  {(transaction.payment_method === 'Tunai' || transaction.payment_method === 'tunai' || transaction.payment_method === 'cash') && transaction.cash_paid > 0 && (
+                    <div className="mt-6 flex justify-between gap-4 px-4">
+                      <div className="flex-1 text-center py-2 bg-gray-50 rounded-xl border border-gray-100">
+                        <span className="text-[8px] font-bold text-gray-400 uppercase block">Cash Paid</span>
+                        <span className="text-xs font-bold text-gray-900">Rp {Number(transaction.cash_paid).toLocaleString("id-ID")}</span>
+                      </div>
+                      <div className="flex-1 text-center py-2 bg-emerald-50 rounded-xl border border-emerald-100">
+                        <span className="text-[8px] font-bold text-emerald-600 uppercase block">Change</span>
+                        <span className="text-xs font-extrabold text-emerald-700">Rp {Number(transaction.change).toLocaleString("id-ID")}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Notes Section */}
+                  {transaction.catatan && (
+                    <div className="mt-8 relative pt-6">
+                      <div className="absolute top-0 left-0 right-0 h-px bg-gray-100"></div>
+                      <div className="bg-amber-50/50 rounded-2xl p-4 border border-amber-100/50 border-dashed">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Icon name="MessageSquare" size={14} className="text-amber-600" />
+                          <span className="text-[10px] font-black text-amber-800 uppercase tracking-widest">Customer Note</span>
+                        </div>
+                        <p className="text-xs text-amber-900 italic font-medium leading-relaxed italic">
+                          "{transaction.catatan}"
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Footer Section */}
+                  <div className="mt-12 text-center">
+                    <div className="mb-6 flex justify-center opacity-20">
+                      <div className="flex gap-1.5">
+                        {[...Array(12)].map((_, i) => (
+                          <div key={i} className="w-1 h-3 bg-gray-900 rounded-full transform -rotate-12"></div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="inline-block px-5 py-2 bg-primary/5 rounded-full border border-primary/10">
+                      <p className="text-[10px] text-primary font-black tracking-widest uppercase">
+                        Terima kasih telah berbelanja!
                       </p>
                     </div>
-                  </div>
-                )}
 
-                {/* Footer Section */}
-                <div className="mt-12 text-center">
-                  <div className="mb-6 flex justify-center opacity-20">
-                    <div className="flex gap-1.5">
-                      {[...Array(12)].map((_, i) => (
-                        <div key={i} className="w-1 h-3 bg-gray-900 rounded-full transform -rotate-12"></div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="inline-block px-5 py-2 bg-primary/5 rounded-full border border-primary/10">
-                    <p className="text-[10px] text-primary font-black tracking-widest uppercase">
-                      Terima kasih telah berbelanja!
+                    <p className="text-[9px] text-gray-300 font-bold mt-4 tracking-widest uppercase">
+                      {restaurantUrl}
                     </p>
                   </div>
 
-                  <p className="text-[9px] text-gray-300 font-bold mt-4 tracking-widest uppercase">
-                    {restaurantUrl}
-                  </p>
+                  {/* Decorative bottom effect */}
+                  <div className="absolute -bottom-2 left-0 right-0 flex justify-center gap-1">
+                    {[...Array(20)].map((_, i) => (
+                      <div key={i} className="w-4 h-4 rounded-full bg-gray-50 -mb-2 border border-transparent shadow-sm"></div>
+                    ))}
+                  </div>
                 </div>
-
-                {/* Decorative bottom effect */}
-                <div className="absolute -bottom-2 left-0 right-0 flex justify-center gap-1">
-                  {[...Array(20)].map((_, i) => (
-                    <div key={i} className="w-4 h-4 rounded-full bg-gray-50 -mb-2 border border-transparent shadow-sm"></div>
-                  ))}
-                </div>
-              </div>
+              )}
             </div>
           </div>
           <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-b-lg flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center print:hidden">

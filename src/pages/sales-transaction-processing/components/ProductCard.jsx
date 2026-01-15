@@ -57,20 +57,7 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl, i
         <p className="text-xs text-text-secondary mt-1">Stok: {item.stock}</p>
 
         <div className="mt-4">
-          {isOutOfStock ? ( // If out of stock
-            ignoreStock ? ( // If ignoring stock
-              <Button
-                size="sm"
-                className="w-full"
-                onClick={() => onIncrement(item)}
-                disabled={userRole === 'guest'} // Only disabled by role, not stock
-              >
-                Tambah
-              </Button>
-            ) : ( // Not ignoring stock
-              <Button className="w-full" disabled>Stok Habis</Button> // Show disabled "Stok Habis"
-            )
-          ) : quantityInCart > 0 ? ( // In stock, and already in cart
+          {quantityInCart > 0 ? ( // If already in cart, show quantity controls
             <div className="flex items-center justify-center">
               <Button
                 variant="outline" size="icon" className="rounded-r-none h-9 w-9"
@@ -85,17 +72,19 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl, i
               <Button
                 variant="outline" size="icon" className="rounded-l-none h-9 w-9"
                 onClick={() => onIncrement(item)}
-                disabled={(!canIncrement && !ignoreStock) || userRole === 'guest'} // Still respect stock limit if not ignoring
+                disabled={(!canIncrement && !ignoreStock) || userRole === 'guest'} // Respect stock limit if not ignoring
               >
                 <Plus size={16} />
               </Button>
             </div>
-          ) : ( // In stock, not in cart yet
+          ) : (isOutOfStock && !ignoreStock) ? ( // If out of stock and NOT ignoring
+            <Button className="w-full" disabled>Stok Habis</Button>
+          ) : ( // In stock, OR ignoring stock (and not in cart yet)
             <Button
               size="sm"
               className="w-full"
               onClick={() => onIncrement(item)}
-              disabled={userRole === 'guest'} // Stock is > 0, so only disabled by role
+              disabled={userRole === 'guest'}
             >
               Tambah
             </Button>
