@@ -96,19 +96,16 @@ const Settings = () => {
   const [userToDeleteUsername, setUserToDeleteUsername] = useState('');
   const [showDeleteLogoConfirmation, setShowDeleteLogoConfirmation] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
+  const [cashierDashboardTitle, setCashierDashboardTitle] = useState('');
   const [newCashierDashboardTitle, setNewCashierDashboardTitle] = useState('');
-  const [ppnRate, setPpnRate] = useState('0.12');
-  const [newPpnRate, setNewPpnRate] = useState('0.12');
-  const [receiptVersion, setReceiptVersion] = useState('1');
-  const [newReceiptVersion, setNewReceiptVersion] = useState('1');
-  const [printerActive, setPrinterActive] = useState('0');
-  const [newPrinterActive, setNewPrinterActive] = useState('0');
-  const [printerPort, setPrinterPort] = useState('COM1');
-  const [newPrinterPort, setNewPrinterPort] = useState('COM1');
   const navigate = useNavigate();
   const [isRestaurantSettingsModalOpen, setIsRestaurantSettingsModalOpen] = useState(false);
   const [restaurantSettings, setRestaurantSettings] = useState({ restaurant_name: 'Trz Kasir Apps', restaurant_slogan: 'Aplikasi kasir modern cepat dan keren' });
   const [isDataSyncModalOpen, setIsDataSyncModalOpen] = useState(false);
+  const [ppnRate, setPpnRate] = useState('');
+  const [newPpnRate, setNewPpnRate] = useState('');
+  const [receiptVersion, setReceiptVersion] = useState('1');
+  const [newReceiptVersion, setNewReceiptVersion] = useState('1');
 
   // --- Effects ---
   useEffect(() => {
@@ -179,10 +176,6 @@ const Settings = () => {
         setNewPpnRate(data.data.ppn || '0.12');
         setReceiptVersion(data.data.receipt_version || '1');
         setNewReceiptVersion(data.data.receipt_version || '1');
-        setPrinterActive(data.data.printer_active || '0');
-        setNewPrinterActive(data.data.printer_active || '0');
-        setPrinterPort(data.data.printer_port || 'COM1');
-        setNewPrinterPort(data.data.printer_port || 'COM1');
 
         // Fetch current logo URL
         const logoResponse = await authFetch(`${apiUrl}/api/settings/logo`);
@@ -561,7 +554,6 @@ const Settings = () => {
                   <SettingsCard icon="Type" title="Judul Dasbor Kasir" description="Ubah judul yang ditampilkan di halaman dasbor kasir." onClick={() => setActiveModal('cashierDashboardTitle')} disabled={!isAdmin} />
                   <SettingsCard icon="Percent" title="Pengaturan PPN Global" description="Atur persentase pajak (PPN) default untuk semua transaksi." onClick={() => setActiveModal('ppnRate')} disabled={!isAdmin} />
                   <SettingsCard icon="Receipt" title="Pengaturan Struk" description="Pilih tampilan struk transaksi yang Anda inginkan." onClick={() => setActiveModal('receiptVersion')} disabled={!isAdmin} />
-                  <SettingsCard icon="Printer" title="Printer Thermal" description="Atur koneksi printer Bluetooth (ESC/POS) dan laci kasir." onClick={() => setActiveModal('printerSettings')} disabled={!isAdmin} />
                   <SettingsCard icon="ChartNoAxesColumnIncreasing" title="Laporan Transaksi Owner" description="Lihat laporan pendapatan dan pengeluaran bisnis owner." onClick={() => navigate('/admin-uang-bisnis')} />
                 </>
               )}
@@ -697,49 +689,6 @@ const Settings = () => {
           </div>
 
           <Button type="submit" className="w-full mt-4" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
-        </form>
-      </SettingsModal>
-
-      <SettingsModal title="Pengaturan Printer Thermal" isOpen={activeModal === 'printerSettings'} onClose={handleModalClose}>
-        <form onSubmit={async (e) => {
-          e.preventDefault();
-          await handleUpdateSetting(e, '/api/settings', { printer_active: newPrinterActive, printer_port: newPrinterPort }, 'Pengaturan printer berhasil diperbarui!', 'POST');
-        }} className="space-y-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <div>
-                <h4 className="font-bold">Aktifkan Printer Thermal</h4>
-                <p className="text-xs text-text-secondary">Gunakan printer Blueprint Bluetooth via COM Port.</p>
-              </div>
-              <div
-                onClick={() => setNewPrinterActive(newPrinterActive === '1' ? '0' : '1')}
-                className={`w-14 h-7 rounded-full p-1 cursor-pointer transition-colors duration-200 ${newPrinterActive === '1' ? 'bg-primary' : 'bg-gray-300'}`}
-              >
-                <div className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200 ${newPrinterActive === '1' ? 'translate-x-7' : 'translate-x-0'}`}></div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Port Printer (Default Bluetooth Windows biasanya COM1-COM9)</label>
-              <select
-                value={newPrinterPort}
-                onChange={(e) => setNewPrinterPort(e.target.value)}
-                className="w-full p-3 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none"
-              >
-                {[...Array(20)].map((_, i) => (
-                  <option key={i} value={`COM${i + 1}`}>COM{i + 1}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800 flex gap-3">
-              <AppIcon name="Info" className="w-5 h-5 text-blue-500 shrink-0" />
-              <div className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
-                Pastikan Printer Blueprint sudah di-pairing ke laptop ini. Cek di <b>Control Panel &gt; Devices &amp; Printers &gt; Properties &gt; Services</b> untuk melihat nomor COM port.
-              </div>
-            </div>
-          </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
         </form>
       </SettingsModal>
 

@@ -2,10 +2,9 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Button from '../../components/ui/Button';
-import { Share2, ArrowLeft, Printer } from 'lucide-react';
+import { Share2, ArrowLeft } from 'lucide-react';
 import Icon from '../../components/AppIcon';
 import * as htmlToImage from 'html-to-image';
-import toast from 'react-hot-toast';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -20,7 +19,6 @@ const ReceiptPage = () => {
   const [restaurantUrl, setRestaurantUrl] = useState('www.berkah88.id');
   const [logoUrl, setLogoUrl] = useState('');
   const [receiptVersion, setReceiptVersion] = useState('1');
-  const [isPrinting, setIsPrinting] = useState(false);
 
   const fetchRestaurantSettings = async () => {
     try {
@@ -109,36 +107,8 @@ const ReceiptPage = () => {
     }
   };
 
-  const handlePrint = async () => {
-    setIsPrinting(true);
-    const loadingToast = toast.loading('Sedang mencetak...');
-
-    try {
-      const response = await fetch(`${apiUrl}/api/print-receipt`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ transaction }),
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        toast.success('Struk dicetak & laci terbuka!', { id: loadingToast });
-      } else {
-        // Fallback if printer is disabled or not set up
-        console.warn('Thermal print fallback:', result.error);
-        toast.dismiss(loadingToast);
-        window.print();
-      }
-    } catch (err) {
-      console.error('Print error:', err);
-      toast.error('Printer thermal tidak aktif. Menggunakan cetak biasa.', { id: loadingToast });
-      window.print();
-    } finally {
-      setIsPrinting(false);
-    }
+  const handlePrint = () => {
+    window.print();
   };
 
   const handleWhatsAppShare = () => {
@@ -690,8 +660,7 @@ const ReceiptPage = () => {
               </Button>
               <Button
                 onClick={handlePrint}
-                disabled={isPrinting}
-                className="flex flex-col items-center justify-center gap-1 bg-primary hover:bg-primary/90 text-primary-foreground h-auto py-3 px-2 shadow-lg shadow-primary/20 group disabled:opacity-70 transition-all"
+                className="flex flex-col items-center justify-center gap-1 bg-primary hover:bg-primary/90 text-primary-foreground h-auto py-3 px-2 shadow-lg shadow-primary/20 group"
               >
                 <div className="p-2 rounded-full bg-white/20 group-hover:scale-110 transition-transform">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
