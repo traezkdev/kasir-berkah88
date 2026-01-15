@@ -5,7 +5,6 @@ import Button from '../../components/ui/Button';
 import { Share2, ArrowLeft } from 'lucide-react';
 import Icon from '../../components/AppIcon';
 import * as htmlToImage from 'html-to-image';
-import toast from 'react-hot-toast';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
