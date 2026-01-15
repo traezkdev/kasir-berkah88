@@ -10,6 +10,9 @@ import { useTheme } from '../../contexts/ThemeContext';
 import Button from '../../components/ui/Button'; // Added import for Button
 import { savePendingTransaction } from '../../utils/offlinePersistence';
 
+import toast from 'react-hot-toast';
+import Icon from '../../components/AppIcon';
+
 const apiUrl = import.meta.env.VITE_API_URL;
 
 // Helper function to create a unique ID for a cart item based on its options
@@ -31,6 +34,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
   const [paymentMethod, setPaymentMethod] = useState('tunai');
   const [userRole, setUserRole] = useState(null);
   const [ignoreStock, setIgnoreStock] = useState(false);
+  const cartSectionRef = React.useRef(null);
 
 
   // State for the options modal
@@ -120,9 +124,10 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       if (existingItem) {
         // Increment quantity if item with same options exists
         if (!ignoreStock && existingItem.quantity + 1 > item.stock) {
-          console.warn(`Not enough stock for ${item.name}`);
+          toast.error(`Stok ${item.name} tidak mencukupi`);
           return prevCart;
         }
+
         return prevCart.map(cartItem =>
           cartItem.cartItemId === cartItemId
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
@@ -138,6 +143,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
           basePrice: parseFloat(item.price),
           finalPrice,
         };
+
         return [...prevCart, newCartItem];
       }
     });
@@ -163,7 +169,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
         return prevCart.filter(item => item.cartItemId !== cartItemId);
       } else {
         return prevCart.map(item =>
-          item.cartItemId === cartItemId ? { ...item, quantity: item.quantity - 1 } : item
+          item.cartItemId === cartItemId ? { ...item, quantity: existingItem.quantity - 1 } : item
         );
       }
     });
@@ -272,6 +278,13 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
     }
   };
 
+  const scrollToCart = () => {
+    cartSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const totalCartPrice = cart.reduce((sum, item) => sum + (item.finalPrice * item.quantity), 0);
+
   return (
     <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
       {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} />}
@@ -288,7 +301,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
             <Button
               onClick={() => navigate('/transaksi-sederhana')}
               variant="outline"
-              className="w-full md:w-auto" // Make button full width on mobile, auto on desktop
+              className="w-full md:w-auto" // Make button full width on mobile, his auto on desktop
             >
               Mode Transaksi Sederhana
             </Button>
@@ -307,7 +320,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
                 handleToggleIgnoreStock={handleToggleIgnoreStock}
               />
             </div>
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1" ref={cartSectionRef}>
               <OrderSummary
                 cart={cart}
                 menuItems={menuItems}
@@ -328,6 +341,41 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
           </div>
         </div>
       </div>
+
+      {/* Mobile Bottom Cart Bar */}
+      {cart.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.1)] p-4 md:hidden animate-in fade-in slide-in-from-bottom-full duration-300">
+          <div className="flex items-center justify-between gap-4 max-w-lg mx-auto">
+            {/* Clear Cart Button */}
+            <Button
+              variant="destructive"
+              size="icon"
+              onClick={handleClearCart}
+              className="rounded-full h-12 w-12 flex-shrink-0 shadow-sm"
+            >
+              <Icon name="Trash2" size={20} />
+            </Button>
+
+            {/* Price & Items Info */}
+            <div className="flex-grow">
+              <p className="text-xs text-text-secondary font-medium">{totalCartItems} Item Dipilih</p>
+              <p className="text-xl font-black text-indigo-600 dark:text-indigo-400">
+                Rp {totalCartPrice.toLocaleString('id-ID')}
+              </p>
+            </div>
+
+            {/* Action Button */}
+            <button
+              onClick={scrollToCart}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-indigo-200 dark:shadow-none active:scale-95 transition-all"
+            >
+              <Icon name="ShoppingCart" size={18} />
+              <span>Bayar</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       <OptionSelectionModal
         isOpen={isOptionsModalOpen}
         onClose={() => setIsOptionsModalOpen(false)}
