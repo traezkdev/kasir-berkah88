@@ -95,37 +95,56 @@ const BulkActions = ({
   ];
 
   return (
-    <div className="my-6 bg-gradient-to-br from-green-400 to-blue-500 text-white rounded-lg overflow-hidden border-b border-border p-4 lg:p-6 bulk-actions-container">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="text-sm text-white">
-          Menampilkan {transactionCount} transaksi
+    <div className="my-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-3xl shadow-lg shadow-blue-500/20 p-5 lg:p-6 bulk-actions-container relative overflow-hidden">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+
+        {/* Information Section */}
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm text-white shadow-inner">
+            <Icon name="List" size={24} />
+          </div>
+          <div>
+            <p className="text-sm text-blue-100 font-medium">Total Data</p>
+            <h3 className="text-xl font-bold text-white">
+              {transactionCount} <span className="text-sm font-normal text-blue-100">Transaksi</span>
+            </h3>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3">
-          {['admin', 'kasir'].includes(userRole) && (
+        {/* Actions Section */}
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full lg:w-auto">
+
+          {/* Main Actions Group */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {['admin', 'kasir'].includes(userRole) && (
+              <Button
+                className="bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-sm"
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/cash-reconciliation')}
+                iconName="Calculator"
+                iconPosition="left"
+              >
+                Rekonsiliasi
+              </Button>
+            )}
+
             <Button
-              variant="secondary"
+              className="bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-sm"
+              variant="outline"
               size="sm"
-              onClick={() => navigate('/cash-reconciliation')}
-              iconName="Calculator"
+              onClick={onOpenRecapPopup}
+              iconName="BookCopy"
               iconPosition="left"
             >
-              Rekonsiliasi Kas
+              Rekap Harian
             </Button>
-          )}
+          </div>
 
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onOpenRecapPopup}
-            iconName="BookCopy"
-            iconPosition="left"
-          >
-            Rekap Harian
-          </Button>
+          <div className="h-8 w-px bg-white/20 hidden sm:block mx-1"></div>
 
-          {/* Export Actions */}
-          <div className="flex items-center space-x-2">
+          {/* Export Actions Group */}
+          <div className="flex items-center gap-2">
             {exportOptionsButtons?.map((option, index) => (
               <Button
                 key={index}
@@ -133,39 +152,45 @@ const BulkActions = ({
                 size="sm"
                 onClick={() => handleExportClick(option.type)}
                 iconName={option.icon}
-                iconPosition="left"
                 loading={isExporting}
                 disabled={transactionCount === 0}
+                className="bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-sm"
+                title={option.label}
               >
-                {option.label}
+                <span className="iconPosition-left">{option.label.replace('Export ', '')}</span>
               </Button>
             ))}
           </div>
 
-          {userRole === 'admin' && (
-            <Link to="/transaction-trash">
-              <Button
-                variant="secondary"
-                size="sm"
-                iconName="Trash"
-                iconPosition="left"
-              >
-                Tong Sampah
-              </Button>
-            </Link>
-          )}
+          <div className="h-8 w-px bg-white/20 hidden sm:block mx-1"></div>
 
-          {/* Clear All Button */}
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={openClearConfirm}
-            iconName="Trash2"
-            iconPosition="left"
-            disabled={transactionCount === 0 || userRole === 'guest'}
-          >
-            Hapus Semua
-          </Button>
+          {/* Destructive Actions Group */}
+          <div className="flex items-center gap-2">
+            {userRole === 'admin' && (
+              <Link to="/transaction-trash">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white/70 hover:text-white hover:bg-white/10"
+                  iconName="Trash"
+                  iconPosition="left"
+                >
+                  Tong Sampah
+                </Button>
+              </Link>
+            )}
+
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={openClearConfirm}
+              iconName="Trash2"
+              disabled={transactionCount === 0 || userRole === 'guest'}
+              className="shadow-lg shadow-red-900/20 bg-red-400 hover:bg-red-500 border-none text-white"
+            >
+              Hapus Semua
+            </Button>
+          </div>
         </div>
       </div>
       {/* Clear All Confirmation Modal */}
