@@ -11,7 +11,7 @@ const apiUrl = import.meta.env.VITE_API_URL;
 
 const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = "Kasir Berkah 88", rightContent, hideMobileHeader = false }) => {
   const { setTheme } = useTheme();
-  const { appMode } = useAppSettings();
+  const { appMode, headerTitle: settingsHeaderTitle } = useAppSettings();
   const isNativePlatform = Capacitor.isNativePlatform();
   const navigate = useNavigate(); // Declare navigate here
 
@@ -139,7 +139,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
                 {logoUrl && <img src={logoUrl} alt="Logo" className="w-8 h-8 rounded-lg" onError={(e) => { e.target.style.display = 'none'; }} />}
               </div>
               <h1 className="text-base lg:text-xl font-black lg:font-semibold uppercase tracking-tight lg:normal-case truncate max-w-[150px] lg:max-w-none">
-                {headerTitle}
+                {settingsHeaderTitle || headerTitle}
               </h1>
             </Link>
           </div>
@@ -170,9 +170,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
             {/* Icons Group */}
             <div className="flex items-center gap-2">
               {rightContent}
-              <div className="hidden lg:block">
-                <DarkModeToggle />
-              </div>
+
 
               {/* Profile/Settings Quick Access for Mobile */}
               <div
