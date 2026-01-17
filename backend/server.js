@@ -4150,6 +4150,69 @@ app.post("/api/database/restore", authenticateToken, authorizeRoles('admin', 'ow
     }
 });
 
+
+// --- Employee Credits Endpoints ---
+
+// Get all credits
+app.get("/api/credits", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const sql = "SELECT * FROM employee_credits ORDER BY credit_date DESC";
+        const [rows] = await db.query(sql);
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Add new credit
+app.post("/api/credits", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { employee_name, amount, description, credit_date, due_date } = req.body;
+        if (!employee_name || !amount || !credit_date) {
+            return res.status(400).json({ error: "Nama karyawan, jumlah, dan tanggal wajib diisi" });
+        }
+
+        const sql = "INSERT INTO employee_credits (employee_name, amount, description, credit_date, due_date, status) VALUES (?, ?, ?, ?, ?, 'unpaid')";
+        const [result] = await db.query(sql, [employee_name, amount, description, credit_date, due_date || null]);
+
+        res.status(201).json({ message: "Data kasbon berhasil ditambahkan", data: { id: result.insertId, ...req.body, status: 'unpaid' } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update credit (e.g. mark as paid, edit details)
+app.put("/api/credits/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { employee_name, amount, description, credit_date, due_date, status } = req.body;
+
+        const sql = "UPDATE employee_credits SET employee_name = ?, amount = ?, description = ?, credit_date = ?, due_date = ?, status = ? WHERE id = ?";
+        const [result] = await db.query(sql, [employee_name, amount, description, credit_date, due_date || null, status, id]);
+
+        if (result.affectedRows === 0) return res.status(404).json({ error: "Data tidak ditemukan" });
+
+        res.json({ message: "Data kasbon berhasil diperbarui" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete credit
+app.delete("/api/credits/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const sql = "DELETE FROM employee_credits WHERE id = ?";
+        const [result] = await db.query(sql, [id]);
+
+        if (result.affectedRows === 0) return res.status(404).json({ error: "Data tidak ditemukan" });
+
+        res.json({ message: "Data kasbon berhasil dihapus" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Public API to get all menu items for guest users (no authentication required)
 app.get("/api/guest/menu-items", async (req, res) => {
     try {

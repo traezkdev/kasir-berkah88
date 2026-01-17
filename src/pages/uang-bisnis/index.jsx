@@ -251,9 +251,9 @@ const UangBisnis = ({ headerTitle }) => {
     return (
         <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
             {theme === 'default' && <OwnerNavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || 'Uang Bisnis'} />}
-            <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'pt-20 lg:pt-16' : ''}`}>
+            <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'pt-24 lg:pt-16' : ''}`}>
                 <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
-                    <div className="mb-8 lg:mb-10">
+                    <div className="mb-8 mt-6 lg:mb-10 lg:mt-0">
                         <div className="mb-4 hidden md:block">
                             <BreadcrumbNavigation paths={[{ name: 'Beranda Owner', path: '/owner-dashboard' }, { name: 'Uang Bisnis', path: '/uang-bisnis' }]} className="mb-4" />
                         </div>
