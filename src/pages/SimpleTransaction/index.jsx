@@ -411,16 +411,16 @@ export default function SimpleTransaction() { // Renamed component
   };
 
   return (
-    <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50' : 'bg-transparent'}`}>
+    <div className={`w-full ${theme === 'default' ? 'h-screen overflow-hidden bg-gray-50' : 'h-full bg-transparent'} flex flex-col`}>
       {theme === 'default' && (
         <NavigationHeader
           headerTitle={dashboardTitle}
         />
       )}
 
-      <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8 flex flex-col md:flex-row h-full overflow-hidden`}>
+      <main className={`${theme === 'default' ? 'pt-20 lg:pt-16 pb-24 lg:pb-0' : 'lg:pb-0'} flex flex-col md:flex-row flex-1 overflow-hidden`}>
         {/* Menu Items Section */}
-        <div className={`w-full ${theme === 'admin' ? 'md:flex-1 p-1 md:p-4' : 'md:w-2/3 p-4'} overflow-y-auto md:border-r dark:md:border-gray-700 pb-24 md:pb-16 h-full`}>
+        <div className={`w-full ${theme === 'admin' ? 'md:flex-1 p-1 md:p-4' : 'md:w-2/3 p-4'} overflow-y-auto md:border-r dark:md:border-gray-700 pb-24 md:pb-0`}>
           <Input
             type="text"
             placeholder="Cari menu..."
@@ -515,7 +515,7 @@ export default function SimpleTransaction() { // Renamed component
         </div>
 
         {/* Transaction Cart Section */}
-        <div className={`fixed inset-0 z-50 bg-gray-50 dark:bg-gray-800 flex-col ${showMobileCart ? 'flex' : 'hidden'} md:relative md:flex ${theme === 'admin' ? 'md:w-[350px] lg:w-[380px] border-l dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xl' : 'md:w-1/2 lg:w-1/3 p-4'} h-full transition-all duration-300`}>
+        <div className={`fixed inset-0 z-50 bg-gray-50 dark:bg-gray-800 flex-col ${showMobileCart ? 'flex' : 'hidden'} md:sticky md:top-0 md:flex ${theme === 'admin' ? 'md:w-[350px] lg:w-[380px] border-l dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xl' : 'md:w-1/2 lg:w-1/3 p-4'} transition-all duration-300`}>
           <div className={`flex justify-between items-center mb-4 ${theme === 'admin' ? 'p-6 pb-0' : ''}`}>
             <h2 className="text-xl font-bold flex items-center"><FiShoppingCart className="mr-2" />Keranjang</h2>
             <div className="flex items-center space-x-2"> {/* New wrapper div */}

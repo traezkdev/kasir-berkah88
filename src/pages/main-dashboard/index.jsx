@@ -543,6 +543,13 @@ const MainDashboard = ({ headerTitle }) => {
       color: 'primary'
     },
     {
+      title: 'Semua Layanan',
+      description: 'Lihat seluruh fitur website',
+      icon: 'LayoutGrid',
+      route: '/all-features',
+      color: 'info'
+    },
+    {
       title: 'AI Assistant',
       description: 'Chat dengan BerkahBot',
       icon: 'Bot',
@@ -921,7 +928,7 @@ const MainDashboard = ({ headerTitle }) => {
       </div>
 
       {/* --- DESKTOP VIEW (lg:block hidden) --- */}
-      <div className="hidden lg:block lg:pt-16">
+      <div className={`hidden lg:block ${theme === 'default' ? 'lg:pt-16' : ''}`}>
         <DashboardMetricsBar metrics={dashboardData.dashboardMetrics} />
         <main className="pb-20 lg:pb-8">
           <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
@@ -1007,12 +1014,7 @@ const MainDashboard = ({ headerTitle }) => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-8">
                 <section>
-                  <div className="flex items-center justify-between mb-4 px-1">
-                    <h2 className="text-xl font-black text-text-primary uppercase tracking-tighter">Transaksi Terakhir</h2>
-                    <Button variant="ghost" className="text-primary p-0 h-auto" onClick={handleViewAllTransactions}>
-                      Lihat Semua
-                    </Button>
-                  </div>
+
                   <RecentTransactionsList
                     transactions={dashboardData.recentTransactions}
                     onViewAll={handleViewAllTransactions}
