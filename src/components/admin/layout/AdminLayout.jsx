@@ -14,8 +14,12 @@ const AdminLayout = () => {
   const [userRole, setUserRole] = useState(null); // Add userRole state
 
   // List of paths that should not have default padding
-  const fullWidthPaths = ['/transaksi'];
+  const fullWidthPaths = ['/transaksi', '/transaksi-sederhana'];
   const isFullWidth = fullWidthPaths.includes(location.pathname);
+
+  // List of paths that should not have internal scroll in the main layout
+  const noScrollPaths = ['/transaksi-sederhana'];
+  const isNoScroll = noScrollPaths.includes(location.pathname);
 
   useEffect(() => {
     document.body.classList.add('admin-no-scroll');
@@ -56,7 +60,7 @@ const AdminLayout = () => {
         ) : (
           <Header toggleSidebar={toggleSidebar} />
         )}
-        <main className={`flex-1 overflow-x-hidden overflow-y-auto bg-background ${isFullWidth ? '' : 'p-4 sm:p-6'}`}>
+        <main className={`flex-1 overflow-x-hidden ${isNoScroll ? 'overflow-y-hidden' : 'overflow-y-auto'} bg-background ${isFullWidth ? '' : 'p-4 sm:p-6'}`}>
           <Outlet />
         </main>
       </div>

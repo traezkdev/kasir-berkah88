@@ -292,8 +292,8 @@ const AnalisisData = () => {
                 )
             )}
 
-            <div className={`${theme === 'default' ? 'pt-16' : ''}`}>
-                <main className="p-4 md:p-6 space-y-8 max-w-[1600px] mx-auto w-full pb-32 md:pb-8">
+            <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>
+                <div className="p-4 md:p-6 space-y-8 max-w-[1600px] mx-auto w-full">
 
                     {/* --- Filter Section --- */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-end bg-card p-4 rounded-xl shadow-sm border border-border gap-4 md:gap-0">
@@ -605,8 +605,8 @@ const AnalisisData = () => {
                             </Card>
                         </>
                     )}
-                </main>
-            </div>
+                </div>
+            </main>
         </div>
     );
 };

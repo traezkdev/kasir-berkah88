@@ -269,7 +269,9 @@ const AdminUangBisnis = ({ headerTitle }) => { // Changed component name
             <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'pt-16' : ''}`}>
                 <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
                     <div className={`mb-6 ${theme === 'default' ? 'mt-4' : ''}`}>
-                        <BreadcrumbNavigation className="mb-4" />
+                        <div className="mb-4 hidden md:block">
+                            <BreadcrumbNavigation />
+                        </div>
                         <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
                             Riwayat Transaksi Owner
                         </h1>

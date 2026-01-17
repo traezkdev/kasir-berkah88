@@ -41,7 +41,7 @@ const MenuManagement = ({ headerTitle }) => {
       setNotification(null);
     }, 3000); // Hide after 3 seconds
   };
-  
+
   const showError = (message) => {
     showNotification(message, 'error');
   };
@@ -71,7 +71,7 @@ const MenuManagement = ({ headerTitle }) => {
       page: page,
       limit: itemsPerPage,
     });
-    
+
     // Only add category filter if it's one of the specific categories for the backend
     if (['makanan', 'minuman', 'lainnya'].includes(filter)) {
       params.append('category', filter);
@@ -117,7 +117,7 @@ const MenuManagement = ({ headerTitle }) => {
     }
   }, []);
 
-  
+
 
   const handleAddItem = async (itemData) => {
     const newId = `M-${Date.now()}`;
@@ -179,10 +179,10 @@ const MenuManagement = ({ headerTitle }) => {
       category: updatedData.category,
       hpp: parseFloat(updatedData.hpp || 0),
       discount: parseFloat(updatedData.discount || 0),
-            is_featured: updatedData.is_featured ? 1 : 0, // Ensure 0 or 1
-            options: updatedData.options || [], // Include options
-          };
-          let body;
+      is_featured: updatedData.is_featured ? 1 : 0, // Ensure 0 or 1
+      options: updatedData.options || [], // Include options
+    };
+    let body;
     let headers = {};
 
     if (updatedData.image) {
@@ -236,13 +236,13 @@ const MenuManagement = ({ headerTitle }) => {
 
   const handleBulkDelete = async (ids) => {
     try {
-      const deletePromises = ids.map(id => 
+      const deletePromises = ids.map(id =>
         authFetch(`${apiUrl}/api/menu-items/${id}`, {
           method: 'DELETE',
         })
       );
       const responses = await Promise.all(deletePromises);
-      
+
       const successfulDeletes = responses.every(res => res.ok);
 
       if (successfulDeletes) {
@@ -312,14 +312,14 @@ Powered by Kasir Berkah 88`;
     showNotification('Membuka WhatsApp untuk membagikan stok...', 'success');
   };
 
-  
+
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   const handleEditMenuItem = (item) => {
     setEditingMenuItem(item);
   };
-  
+
   const handleOpenRecipeModal = (item) => {
     setSelectedMenuItemForRecipe(item);
     setRecipeModalOpen(true);
@@ -352,19 +352,19 @@ Powered by Kasir Berkah 88`;
         },
         body: JSON.stringify({ itemIds }),
       })
-      .then(response => response.json())
-      .then(result => {
-        if (result.message === 'success') {
-          showNotification('Urutan menu berhasil diperbarui!', 'success');
-        } else {
-          console.error('Failed to reorder items:', result.error);
-          showNotification(`Gagal memperbarui urutan menu: ${result.error}`, 'error');
-        }
-      })
-      .catch(error => {
-        console.error('Error reordering items:', error);
-        showNotification(`Error memperbarui urutan menu: ${error.message}`, 'error');
-      });
+        .then(response => response.json())
+        .then(result => {
+          if (result.message === 'success') {
+            showNotification('Urutan menu berhasil diperbarui!', 'success');
+          } else {
+            console.error('Failed to reorder items:', result.error);
+            showNotification(`Gagal memperbarui urutan menu: ${result.error}`, 'error');
+          }
+        })
+        .catch(error => {
+          console.error('Error reordering items:', error);
+          showNotification(`Error memperbarui urutan menu: ${error.message}`, 'error');
+        });
 
       return newItems;
     });
@@ -392,9 +392,9 @@ Powered by Kasir Berkah 88`;
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
+        {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} />}
         <div className={`${theme === 'default' ? 'pt-16' : ''}`}>
-          
+
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
               <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
@@ -407,37 +407,39 @@ Powered by Kasir Berkah 88`;
   }
 
   return (
-    <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50 lg:bg-background' : ''}`}>
       <Helmet>
         <title>Menu Management - Kasir Berkah 88</title>
         <meta name="description" content="Kelola menu dan inventori warung dengan mudah. Tambah, edit, dan hapus menu dengan tracking stok otomatis." />
       </Helmet>
 
 
-      {theme === 'default' && <NavigationHeader onToggleSidebar={() => {}} headerTitle={headerTitle} />}
+      {theme === 'default' && (
+        <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} />
+      )}
+
       {notification && (
-        <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg z-[1002] ${
-          notification.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-        }`}>
+        <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg z-[1002] ${notification.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+          }`}>
           {notification.message}
         </div>
       )}
-      
-      <div className={`${theme === 'default' ? 'pt-16' : ''}`}>
-        
-        
-        <main className={theme === 'default' ? "container mx-auto px-4 lg:px-6 py-6 pb-20 lg:pb-6" : ""}>
+
+      <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 pt-8 space-y-6 lg:space-y-8" : "space-y-6"}>
           {/* Breadcrumb */}
-          <div className="mb-6">
+          <div className="mb-6 hidden md:block">
             <BreadcrumbNavigation />
           </div>
 
           {/* Page Header */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-text-primary mb-2">Kelola Menu</h1>
-            <p className="text-text-secondary">
-              Tambah, edit, dan kelola menu warung Anda dengan mudah. 
-              Pantau stok dan harga secara real-time.
+          <div className="mb-8 lg:mb-6">
+            <h1 className="text-3xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case">
+              Kelola Menu
+            </h1>
+            <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>
+            <p className="text-xs lg:text-sm text-text-secondary mt-2 font-bold uppercase tracking-widest opacity-60">
+              Tambah, edit, dan kelola menu warung Anda dengan mudah.
             </p>
           </div>
 
@@ -480,32 +482,36 @@ Powered by Kasir Berkah 88`;
               currentPage={currentPage}
             />
           </div>
-        </main>
+        </div>
+      </main>
 
-        {/* Quick Action Panel */}
-        
-      </div>
+      {/* Quick Action Panel */}
 
-      {editingMenuItem && (
-        <EditMenuItemModal
-          isOpen={!!editingMenuItem}
-          onClose={() => setEditingMenuItem(null)}
-          menuItem={editingMenuItem}
-          onSave={handleUpdateItem}
-          userRole={userRole}
-        />
-      )}
-      
-      {selectedMenuItemForRecipe && (
-        <RecipeManagementModal
-          isOpen={isRecipeModalOpen}
-          onClose={handleCloseRecipeModal}
-          menuItem={selectedMenuItemForRecipe}
-          showMessage={showNotification}
-          showError={showError}
-        />
-      )}
-    </div>
+
+      {
+        editingMenuItem && (
+          <EditMenuItemModal
+            isOpen={!!editingMenuItem}
+            onClose={() => setEditingMenuItem(null)}
+            menuItem={editingMenuItem}
+            onSave={handleUpdateItem}
+            userRole={userRole}
+          />
+        )
+      }
+
+      {
+        selectedMenuItemForRecipe && (
+          <RecipeManagementModal
+            isOpen={isRecipeModalOpen}
+            onClose={handleCloseRecipeModal}
+            menuItem={selectedMenuItemForRecipe}
+            showMessage={showNotification}
+            showError={showError}
+          />
+        )
+      }
+    </div >
   );
 };
 

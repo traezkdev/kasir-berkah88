@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   FaTachometerAlt, FaUser, FaSignOutAlt, FaAngleDoubleLeft, FaAngleDoubleRight,
-  FaWallet, FaChartBar, FaBoxOpen, FaExclamationTriangle, FaUserCircle
+  FaWallet, FaChartBar, FaBoxOpen, FaExclamationTriangle, FaUserCircle, FaClipboardList, FaBars
 } from 'react-icons/fa';
 import authFetch from '../../../utils/authFetch';
 
@@ -127,6 +127,18 @@ const OwnerSidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
           >
             Dashboard
           </MenuItem>
+          <MenuItem
+            to="/all-features"
+            icon={FaBars}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
+            Semua Layanan
+          </MenuItem>
 
           {/* Bisnis */}
           {!isCollapsed && <div className={groupTitleClasses}>Bisnis</div>}
@@ -166,6 +178,18 @@ const OwnerSidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
             activeLinkClasses={activeLinkClasses}
           >
             Laporan Lengkap
+          </MenuItem>
+          <MenuItem
+            to="/auditor"
+            icon={FaClipboardList}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
+            Sistem Audit
           </MenuItem>
 
           {/* Stok */}

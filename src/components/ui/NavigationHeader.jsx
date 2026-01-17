@@ -9,9 +9,9 @@ import DarkModeToggle from './DarkModeToggle';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = "Kasir Berkah 88", rightContent }) => {
+const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = "Kasir Berkah 88", rightContent, hideMobileHeader = false }) => {
   const { setTheme } = useTheme();
-  const { appMode } = useAppSettings();
+  const { appMode, headerTitle: settingsHeaderTitle } = useAppSettings();
   const isNativePlatform = Capacitor.isNativePlatform();
   const navigate = useNavigate(); // Declare navigate here
 
@@ -65,16 +65,16 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
   }, [location.pathname]); // Re-run when path changes (e.g., after login/logout)
 
   const allNavigationItems = [
-    { label: 'Dashboard', path: '/main-dashboard', icon: 'LayoutDashboard', roles: ['admin', 'user'] },
+    { label: 'Dashboard', path: userRole === 'owner' ? '/owner-dashboard' : '/main-dashboard', icon: 'LayoutDashboard', roles: ['admin', 'user', 'owner'] },
     { label: 'Dashboard Kasir', path: '/cashier-dashboard', icon: 'ScanBarcode', roles: ['kasir'] },
-    { label: 'Penjualan', path: appMode === 'simple' ? '/transaksi-sederhana' : '/transaksi', icon: 'ShoppingCart', roles: ['admin', 'user', 'kasir'] },
-    { label: 'Menu', path: '/menu-management', icon: 'UtensilsCrossed', roles: ['admin', 'user'] },
-    { label: 'Pengeluaran', path: '/expense-tracking', icon: 'Receipt', roles: ['admin', 'user'] },
-    { label: 'Transaksi', path: '/transaction-history', icon: 'ListOrdered', roles: ['admin', 'user', 'kasir'] },
+    { label: 'Penjualan', path: appMode === 'simple' ? '/transaksi-sederhana' : '/transaksi', icon: 'ShoppingCart', roles: ['admin', 'user', 'kasir', 'owner'] },
+    { label: 'Menu', path: '/menu-management', icon: 'UtensilsCrossed', roles: ['admin', 'user', 'owner'] },
+    { label: 'Pengeluaran', path: '/expense-tracking', icon: 'Receipt', roles: ['admin', 'user', 'owner'] },
+    { label: 'Transaksi', path: '/transaction-history', icon: 'ListOrdered', roles: ['admin', 'user', 'kasir', 'owner'] },
 
-    { label: 'Catatan', path: '/notes', icon: 'Notebook', roles: ['admin', 'user'] },
-    { label: 'Profil', path: '/profile', icon: 'User', roles: ['admin', 'user', 'kasir'] },
-    { label: 'Pengaturan', path: '/settings', icon: 'Settings', roles: ['admin'] },
+    { label: 'Catatan', path: '/notes', icon: 'Notebook', roles: ['admin', 'user', 'owner'] },
+    { label: 'Profil', path: '/profile', icon: 'User', roles: ['admin', 'user', 'kasir', 'owner'] },
+    { label: 'Pengaturan', path: '/settings', icon: 'Settings', roles: ['admin', 'owner'] },
 
 
   ];
@@ -118,22 +118,39 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
+  const isMainPage = location.pathname === '/' || location.pathname === '/main-dashboard';
+
   return (
     <>
-      <header className={`fixed top-0 left-0 right-0 z-30 bg-card border-b border-border shadow-elevation-1 navigation-header-root ${isNativePlatform ? 'pt-8' : ''}`}>
-        <div className="flex items-center justify-between h-16 px-4 lg:px-6">
-          {/* Logo Section */}
-          <div className="flex items-center space-x-4">
+      <header className={`${hideMobileHeader ? 'hidden lg:block lg:fixed lg:top-0 lg:left-0 lg:right-0' : 'fixed top-0 left-0 right-0'} z-50 lg:bg-card lg:border-b lg:border-border lg:shadow-elevation-1 lg:text-text-primary bg-[#118eea] lg:bg-card text-white lg:text-text-primary rounded-none transition-all duration-300 ${isNativePlatform ? 'pt-10' : 'pt-2'} pb-2 lg:pt-0 lg:pb-0 navigation-header-root`}>
+        <div className="flex items-center justify-between h-14 lg:h-16 px-5 lg:px-6">
+          {/* Left Section: Back Button or Logo */}
+          <div className="flex items-center gap-3">
+            {!isMainPage && (
+              <button
+                onClick={() => navigate(-1)}
+                className="lg:hidden w-8 h-8 rounded-full flex items-center justify-center bg-white/10 active:scale-90 transition-transform"
+              >
+                <Icon name="ChevronLeft" size={20} className="text-white" />
+              </button>
+            )}
             <Link to="/" className="flex items-center space-x-3">
-              {logoUrl && <img src={logoUrl} alt="Logo" className="w-8 h-8 rounded-lg" onError={(e) => { e.target.style.display = 'none'; }} />}
-              <div>
-                <h1 className="text-xl font-semibold text-text-primary">{headerTitle}</h1>
+              <div className="hidden lg:block">
+                {logoUrl && <img src={logoUrl} alt="Logo" className="w-8 h-8 rounded-lg" onError={(e) => { e.target.style.display = 'none'; }} />}
               </div>
+              <h1 className="text-base lg:text-xl font-black lg:font-semibold uppercase tracking-tight lg:normal-case truncate max-w-[150px] lg:max-w-none">
+                {settingsHeaderTitle || headerTitle}
+              </h1>
             </Link>
           </div>
 
-          {/* Right-aligned group for Desktop */}
-          <div className="flex items-center space-x-2">
+          {/* Center Section: Search or empty for mobile */}
+          <div className="hidden lg:flex flex-1 max-w-md mx-8">
+            {/* Placeholder for future search bar */}
+          </div>
+
+          {/* Right Section */}
+          <div className="flex items-center space-x-3">
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center space-x-1">
               {navigationItems?.map((item) => (
@@ -141,7 +158,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
                   key={item?.path}
                   to={item?.path}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${isActiveRoute(item?.path)
-                    ? 'bg-primary text-primary-foreground' : 'text-text-secondary hover:text-text-primary hover:bg-muted'
+                    ? 'bg-primary text-primary-foreground font-bold' : 'text-text-secondary hover:text-text-primary hover:bg-muted'
                     }`}
                 >
                   <Icon name={item?.icon} size={18} />
@@ -150,83 +167,100 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
               ))}
             </nav>
 
-            {/* DarkModeToggle and Mobile Menu Button */}
-            <div className="flex items-center space-x-2">
-              {rightContent} {/* Render additional right-aligned content here */}
-              <div className="lg:hidden">
-                <DarkModeToggle />
-              </div>
-              {/* Logout button for desktop */}
+            {/* Icons Group */}
+            <div className="flex items-center gap-2">
+              {rightContent}
 
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleMobileMenu}
-                className="lg:hidden"
+
+              {/* Profile/Settings Quick Access for Mobile */}
+              <div
+                className="lg:hidden w-8 h-8 rounded-full bg-white/20 flex items-center justify-center active:scale-90 transition-transform"
+                onClick={() => navigate('/chatbot')}
               >
-                <Icon name={isMobileMenuOpen ? "X" : "Menu"} size={20} />
-              </Button>
+                <Icon name="Bot" size={18} className="text-white" />
+              </div>
+
+              <div
+                className="lg:hidden w-8 h-8 rounded-full bg-white/20 flex items-center justify-center active:scale-90 transition-transform"
+                onClick={toggleMobileMenu}
+              >
+                <Icon name={isMobileMenuOpen ? "X" : "Menu"} size={18} className="text-white" />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Mobile Navigation Menu */}
+        {/* Mobile Navigation Menu (Overlay) */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden bg-card border-t border-border shadow-elevation-2">
-            <nav className="px-4 py-2 space-y-1">
+          <div className="lg:hidden absolute top-full left-0 right-0 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300 rounded-none mx-4 mt-2 overflow-hidden">
+            <nav className="p-4 grid grid-cols-3 gap-4">
               {navigationItems?.map((item) => (
                 <Link
                   key={item?.path}
                   to={item?.path}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex items-center space-x-3 px-3 py-3 rounded-md text-sm font-medium transition-colors duration-200 ${isActiveRoute(item?.path)
-                    ? 'bg-primary text-primary-foreground' : 'text-text-secondary hover:text-text-primary hover:bg-muted'
+                  className={`flex flex-col items-center gap-2 p-3 rounded-2xl transition-all ${isActiveRoute(item?.path)
+                    ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'
                     }`}
                 >
-                  <Icon name={item?.icon} size={20} />
-                  <span>{item?.label}</span>
+                  <div className={`p-2 rounded-xl ${isActiveRoute(item?.path) ? 'bg-blue-600/10' : 'bg-gray-100 dark:bg-slate-800'}`}>
+                    <Icon name={item?.icon} size={20} />
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-tighter">{item?.label}</span>
                 </Link>
               ))}
             </nav>
-            <div className="p-4">
+            <div className="p-4 bg-gray-50 dark:bg-slate-800/50 flex justify-between items-center">
               <button
                 onClick={() => {
                   setTheme('admin');
                   setIsMobileMenuOpen(false);
                 }}
-                className="flex items-center space-x-3 px-3 py-3 rounded-md text-sm font-medium transition-colors duration-200 text-text-secondary hover:text-text-primary hover:bg-muted w-full"
+                className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2"
               >
-                <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 576 512" className="h-5 w-5" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M528 0H48C21.5 0 0 21.5 0 48v320c0 26.5 21.5 48 48 48h192l-16 48h-72c-13.3 0-24 10.7-24 24s10.7 24 24 24h272c13.3 0 24-10.7 24-24s-10.7-24-24-24h-72l-16-48h192c26.5 0 48-21.5 48-48V48c0-26.5-21.5-48-48-48zm-16 352H64V64h448v288z"></path>
-                </svg>
-                <span>Beralih ke tema admin</span>
+                <Icon name="Monitor" size={14} /> Tema Admin
               </button>
-              {/* Logout button for mobile */}
-
+              <button
+                onClick={handleLogout}
+                className="text-[10px] font-black text-rose-500 uppercase tracking-widest flex items-center gap-2"
+              >
+                <Icon name="LogOut" size={14} /> Keluar
+              </button>
             </div>
           </div>
         )}
       </header>
-      {/* Mobile Bottom Navigation */}
+
+      {/* Mobile Bottom Navigation (DANA Style) */}
       {location.pathname !== '/chatbot' && (
-        <div className="fixed bottom-0 left-0 right-0 z-30 bg-card border-t border-border shadow-elevation-2 lg:hidden">
-          <nav className="flex items-center justify-around py-2">
-            {navigationItems?.slice(0, 5)?.map((item) => (
-              <Link
-                key={item?.path}
-                to={item?.path}
-                className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-md transition-colors duration-200 min-h-44 ${isActiveRoute(item?.path)
-                  ? 'text-primary' : 'text-text-secondary hover:text-text-primary'
-                  }`}
-              >
-                <Icon
-                  name={item?.icon}
-                  size={20}
-                  color={isActiveRoute(item?.path) ? 'var(--color-primary)' : 'currentColor'}
-                />
-                <span className="text-xs font-medium">{item?.label}</span>
-              </Link>
-            ))}
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 lg:hidden safe-area-bottom shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+          <nav className="flex items-center justify-around h-16 px-2">
+            {navigationItems?.slice(0, 5)?.map((item) => {
+              const active = isActiveRoute(item?.path);
+              return (
+                <Link
+                  key={item?.path}
+                  to={item?.path}
+                  className={`flex flex-col items-center justify-center flex-1 min-w-0 transition-all duration-300 relative ${active ? 'text-blue-600 scale-110' : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                >
+                  <div className={`p-1.5 rounded-xl transition-colors duration-300 ${active ? 'bg-blue-600/10' : ''}`}>
+                    <Icon
+                      name={item?.icon}
+                      size={20}
+                      className={active ? 'text-blue-600' : 'text-gray-400'}
+                    />
+                  </div>
+                  <span className={`text-[10px] font-bold mt-1 truncate w-full text-center transition-all duration-300 ${active ? 'opacity-100' : 'opacity-70'}`}>
+                    {item.label === 'Dashboard' ? 'Beranda' : (item.label.split(' ')[0])}
+                  </span>
+
+                  {active && (
+                    <span className="absolute -bottom-1 w-1 h-1 bg-blue-600 rounded-full shadow-[0_0_8px_rgba(37,99,235,0.8)]"></span>
+                  )}
+                </Link>
+              );
+            })}
           </nav>
         </div>
       )}

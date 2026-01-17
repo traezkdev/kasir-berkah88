@@ -120,6 +120,18 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
           >
             Dashboard
           </MenuItem>
+          <MenuItem
+            to="/all-features"
+            icon={FaBars}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
+            Semua Layanan
+          </MenuItem>
 
           {/* Mode Simple: Hanya menu penting */}
           {appMode === 'simple' ? (
@@ -369,6 +381,18 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
                 activeLinkClasses={activeLinkClasses}
               >
                 Rekonsiliasi Kas
+              </MenuItem>
+              <MenuItem
+                to="/auditor"
+                icon={FaClipboardList}
+                onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+                isCollapsed={isCollapsed}
+                handleMouseEnter={handleMouseEnter}
+                handleMouseLeave={handleMouseLeave}
+                navLinkClasses={navLinkClasses}
+                activeLinkClasses={activeLinkClasses}
+              >
+                Sistem Audit
               </MenuItem>
 
               {/* Grup Riwayat & Laporan */}

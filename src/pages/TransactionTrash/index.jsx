@@ -121,7 +121,9 @@ const TransactionTrash = ({ headerTitle }) => {
       <main className={`${theme === 'default' ? 'pt-16' : ''} pb-20 lg:pb-8`}>
         <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" : ""}>
           <div className="mb-6">
-            <BreadcrumbNavigation customPath={breadcrumbPath} />
+            <div className="hidden md:block">
+              <BreadcrumbNavigation customPath={breadcrumbPath} />
+            </div>
             <h1 className="text-2xl lg:text-3xl font-semibold text-text-primary mt-2">
               Sampah Transaksi
             </h1>

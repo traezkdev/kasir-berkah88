@@ -304,7 +304,9 @@ const CashReconciliation = ({ headerTitle, isModal = false }) => {
 
                     {!isModal && (
                         <div className="mb-6">
-                            <BreadcrumbNavigation customPath={breadcrumbPath} />
+                            <div className="hidden md:block">
+                                <BreadcrumbNavigation customPath={breadcrumbPath} />
+                            </div>
                             <h1 className="text-2xl lg:text-3xl font-semibold text-text-primary mt-2">
                                 Rekonsiliasi Kas Harian
                             </h1>

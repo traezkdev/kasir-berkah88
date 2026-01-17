@@ -290,7 +290,9 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} />}
       <div className={`${theme === 'default' ? 'pt-16' : ''}`}>
         <div className={`w-full ${theme === 'default' ? 'max-w-7xl mx-auto px-4 space-y-6 py-4' : 'px-4 lg:px-6 space-y-4 py-2'} pb-20`}>
-          <BreadcrumbNavigation />
+          <div className="hidden md:block">
+            <BreadcrumbNavigation />
+          </div>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">Transaksi Penjualan</h1>

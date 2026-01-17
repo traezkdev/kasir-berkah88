@@ -163,7 +163,7 @@
     // Hide widget on /chatbot page
     // Hide widget on specific pages
     function updateWidgetVisibility() {
-        const hiddenPaths = ['/chatbot', '/', '/berkah88', '/guest-checkout', '/transaksi', '/transaksi-manual', '/transaksi-sederhana'];
+        const hiddenPaths = ['/chatbot', '/', '/berkah88', '/guest-checkout', '/transaksi', '/transaksi-manual', '/transaksi-sederhana', '/calculator'];
         if (hiddenPaths.includes(window.location.pathname)) {
             container.style.display = 'none';
         } else {
