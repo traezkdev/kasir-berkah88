@@ -122,7 +122,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
 
   return (
     <>
-      <header className={`${hideMobileHeader ? 'hidden lg:block lg:fixed lg:top-0 lg:left-0 lg:right-0' : 'fixed top-0 left-0 right-0'} z-50 lg:bg-card lg:border-b lg:border-border lg:shadow-elevation-1 lg:text-text-primary bg-[#118eea] lg:bg-card text-white lg:text-text-primary rounded-b-[2.5rem] lg:rounded-none transition-all duration-300 ${isNativePlatform ? 'pt-10' : 'pt-2'} pb-2 lg:pt-0 lg:pb-0 navigation-header-root`}>
+      <header className={`${hideMobileHeader ? 'hidden lg:block lg:fixed lg:top-0 lg:left-0 lg:right-0' : 'fixed top-0 left-0 right-0'} z-50 lg:bg-card lg:border-b lg:border-border lg:shadow-elevation-1 lg:text-text-primary bg-[#118eea] lg:bg-card text-white lg:text-text-primary rounded-none transition-all duration-300 ${isNativePlatform ? 'pt-10' : 'pt-2'} pb-2 lg:pt-0 lg:pb-0 navigation-header-root`}>
         <div className="flex items-center justify-between h-14 lg:h-16 px-5 lg:px-6">
           {/* Left Section: Back Button or Logo */}
           <div className="flex items-center gap-3">
@@ -192,7 +192,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
 
         {/* Mobile Navigation Menu (Overlay) */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden absolute top-full left-0 right-0 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300 rounded-b-[2rem] mx-4 mt-2 overflow-hidden">
+          <div className="lg:hidden absolute top-full left-0 right-0 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300 rounded-none mx-4 mt-2 overflow-hidden">
             <nav className="p-4 grid grid-cols-3 gap-4">
               {navigationItems?.map((item) => (
                 <Link

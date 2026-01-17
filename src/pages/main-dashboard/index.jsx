@@ -741,7 +741,7 @@ const MainDashboard = ({ headerTitle }) => {
       {/* --- MOBILE DANA-STYLE UI (lg:hidden) --- */}
       <div className="lg:hidden flex flex-col pb-24">
         {/* Dana Blue Header */}
-        <header className="bg-[#118eea] text-white px-5 pt-8 pb-16 rounded-b-[2.5rem] shadow-xl relative z-20 overflow-hidden">
+        <header className="bg-[#118eea] text-white px-5 pt-8 pb-16 shadow-xl relative z-20 overflow-hidden">
           {/* Decorative Elements */}
           <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-10 -mt-20 blur-3xl"></div>
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-400/10 rounded-full -ml-10 -mb-10 blur-2xl"></div>
@@ -767,8 +767,8 @@ const MainDashboard = ({ headerTitle }) => {
               <div className="p-2 active:bg-white/10 rounded-full transition-colors" onClick={() => navigate('/chatbot')}>
                 <Icon name="Bot" size={24} />
               </div>
-              <div className="p-2 active:bg-white/10 rounded-full transition-colors" onClick={() => navigate('/settings')}>
-                <Icon name="Settings" size={24} />
+              <div className="p-2 active:bg-white/10 rounded-full transition-colors" onClick={() => navigate('/all-features')}>
+                <Icon name="Menu" size={24} />
               </div>
             </div>
           </div>

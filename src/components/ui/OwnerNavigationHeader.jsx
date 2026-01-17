@@ -9,7 +9,7 @@ import authFetch from '../../utils/authFetch';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-const OwnerNavigationHeader = ({ onToggleSidebar, headerTitle = "Kasir Berkah 88" }) => {
+const OwnerNavigationHeader = ({ onToggleSidebar, headerTitle = "Kasir Berkah 88", hideMobileHeader = false }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -71,7 +71,7 @@ const OwnerNavigationHeader = ({ onToggleSidebar, headerTitle = "Kasir Berkah 88
 
   return (
     <>
-      <header className={`fixed top-0 left-0 right-0 z-30 lg:bg-card lg:border-b lg:border-border lg:shadow-elevation-1 lg:text-text-primary dana-blue-bg dana-header-rounded transition-all duration-300 ${isNativePlatform ? 'pt-10' : 'pt-2'} pb-2 lg:pt-0 lg:pb-0 navigation-header-root`}>
+      <header className={`${hideMobileHeader ? 'hidden lg:block lg:fixed lg:top-0 lg:left-0 lg:right-0' : 'fixed top-0 left-0 right-0'} z-30 lg:bg-card lg:border-b lg:border-border lg:shadow-elevation-1 lg:text-text-primary dana-blue-bg transition-all duration-300 ${isNativePlatform ? 'pt-10' : 'pt-2'} pb-2 lg:pt-0 lg:pb-0 navigation-header-root`}>
         <div className="max-w-7xl mx-auto px-4 lg:px-6">
           <div className="flex justify-between items-center h-14 lg:h-16">
             <div className="flex items-center space-x-3 lg:space-x-4">
@@ -141,7 +141,7 @@ const OwnerNavigationHeader = ({ onToggleSidebar, headerTitle = "Kasir Berkah 88
       </header>
 
       {/* Mobile Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 bg-card/80 backdrop-blur-lg border-t border-border shadow-[0_-4px_12px_rgba(0,0,0,0.05)] lg:hidden safe-area-bottom">
+      <div className="fixed bottom-0 left-0 right-0 z-30 bg-card border-t border-border shadow-[0_-4px_12px_rgba(0,0,0,0.1)] lg:hidden safe-area-bottom">
         <nav className="flex items-center justify-around h-16 px-2">
           {navigationItems.map((item) => {
             const active = isActiveRoute(item.path);
@@ -152,14 +152,14 @@ const OwnerNavigationHeader = ({ onToggleSidebar, headerTitle = "Kasir Berkah 88
                 className={`flex flex-col items-center justify-center flex-1 min-w-0 transition-all duration-300 relative ${active ? 'text-primary scale-110' : 'text-text-secondary hover:text-text-primary'
                   }`}
               >
-                <div className={`p-1.5 rounded-xl transition-colors duration-300 ${active ? 'bg-primary/10' : ''}`}>
+                <div className={`p-1.5 rounded-xl transition-colors duration-300 ${active ? 'bg-primary/30' : ''}`}>
                   <Icon
                     name={item.icon}
                     size={20}
                     color={active ? 'var(--color-primary)' : 'currentColor'}
                   />
                 </div>
-                <span className={`text-[10px] font-bold mt-1 truncate w-full text-center transition-all duration-300 ${active ? 'opacity-100' : 'opacity-80'}`}>
+                <span className={`text-[10px] font-bold mt-1 truncate w-full text-center transition-all duration-300 ${active ? 'opacity-100' : 'opacity-100'}`}>
                   {item.label}
                 </span>
                 {active && (

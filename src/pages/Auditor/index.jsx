@@ -340,6 +340,60 @@ export default function AuditorPage() {
                     </div>
                 </section>
 
+                {/* Panduan Investigasi Selisih */}
+                <section className={`mb-12 p-8 rounded-[2.5rem] border-2 transition-all duration-500 ${Math.abs(data.metrics.cashDifference) > 100
+                    ? 'bg-indigo-50 border-indigo-100 shadow-xl shadow-indigo-900/5'
+                    : 'bg-gray-50 border-gray-100 opacity-60'
+                    }`}>
+                    <div className="flex items-center gap-4 mb-8">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm ${Math.abs(data.metrics.cashDifference) > 100 ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                            <Icon name="ListChecks" size={24} />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">Panduan Investigasi Selisih</h3>
+                            <p className="text-sm text-gray-500 font-medium">Langkah-langkah untuk menemukan penyebab ketidakcocokan data.</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-black">1</div>
+                                <h4 className="text-xs font-black text-indigo-600 uppercase tracking-widest">Arus Kas Fisik</h4>
+                            </div>
+                            <ul className="text-xs text-gray-600 font-medium space-y-3 list-none">
+                                <li className="flex gap-2"><div className="w-1 h-1 rounded-full bg-gray-300 mt-1.5 shrink-0"></div> Pastikan saldo di laci kasir benar-benar sesuai dengan angka "Saldo Lapak".</li>
+                                <li className="flex gap-2"><div className="w-1 h-1 rounded-full bg-gray-300 mt-1.5 shrink-0"></div> Periksa apakah ada uang yang diambil Owner namun belum dicatat di sistem.</li>
+                                <li className="flex gap-2"><div className="w-1 h-1 rounded-full bg-gray-300 mt-1.5 shrink-0"></div> Verifikasi "Modal Awal" di Pengaturan sudah sesuai dengan kenyataan.</li>
+                            </ul>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-black">2</div>
+                                <h4 className="text-xs font-black text-indigo-600 uppercase tracking-widest">Pencatatan Transaksi</h4>
+                            </div>
+                            <ul className="text-xs text-gray-600 font-medium space-y-3 list-none">
+                                <li className="flex gap-2"><div className="w-1 h-1 rounded-full bg-gray-300 mt-1.5 shrink-0"></div> Cek "Riwayat Transaksi", pastikan tidak ada pesanan manual yang lupa diinput.</li>
+                                <li className="flex gap-2"><div className="w-1 h-1 rounded-full bg-gray-300 mt-1.5 shrink-0"></div> Periksa kemungkinan kesalahan input nominal atau metode pembayaran (Tunai vs QRIS).</li>
+                                <li className="flex gap-2"><div className="w-1 h-1 rounded-full bg-gray-300 mt-1.5 shrink-0"></div> Cari transaksi yang dibatalkan atau diedit tanpa persetujuan.</li>
+                            </ul>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-black">3</div>
+                                <h4 className="text-xs font-black text-indigo-600 uppercase tracking-widest">Pengeluaran & Belanja</h4>
+                            </div>
+                            <ul className="text-xs text-gray-600 font-medium space-y-3 list-none">
+                                <li className="flex gap-2"><div className="w-1 h-1 rounded-full bg-gray-300 mt-1.5 shrink-0"></div> Kumpulkan bon belanja hari ini, pastikan semua sudah masuk di "Catat Pengeluaran".</li>
+                                <li className="flex gap-2"><div className="w-1 h-1 rounded-full bg-gray-300 mt-1.5 shrink-0"></div> Cek pengeluaran kecil (parkir, tips, bensin) yang sering terlupa dicatat.</li>
+                                <li className="flex gap-2"><div className="w-1 h-1 rounded-full bg-gray-300 mt-1.5 shrink-0"></div> Pastikan Dana Lapak tidak tercampur dengan uang pribadi karyawan.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
                 {/* Detailed Metrics Reference */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-50">
