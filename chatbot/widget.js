@@ -1,7 +1,7 @@
 (function () {
     // Configuration
     const API_URL = 'https://chat.inviteshare.my.id/chat';
-    const PRIMARY_COLOR = '#4F46E5'; // Indigo-600
+    const PRIMARY_COLOR = '#128EEA'; // Requested Color
 
     // Inject Styles
     const style = document.createElement('style');
