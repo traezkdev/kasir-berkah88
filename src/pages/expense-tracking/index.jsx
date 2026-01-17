@@ -427,14 +427,14 @@ const ExpenseTracking = ({ headerTitle }) => {
         </div>
       )}
       <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>
-        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 pt-8 space-y-6 lg:space-y-8" : "space-y-6 lg:space-y-8"}>
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 pt-2 space-y-6 lg:space-y-8" : "space-y-6 lg:space-y-8"}>
           <div className="mb-8 lg:mb-6">
             <div className="mb-4 hidden md:block">
               <BreadcrumbNavigation />
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h1 className="text-3xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case">
+                <h1 className="text-2xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case">
                   Tracking Pengeluaran
                 </h1>
                 <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>

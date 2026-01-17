@@ -399,16 +399,17 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
     return (
         <div className={theme === 'default' && !isOwner ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
             {/* Header Section */}
-            <div className="mb-6 mt-4">
+            <div className="mb-8 lg:mb-6">
                 <div className="mb-4 hidden md:block">
                     <BreadcrumbNavigation />
                 </div>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl lg:text-3xl font-bold text-text-primary mb-2">
+                        <h1 className="text-2xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case">
                             {headerTitle || "Laporan Bisnis"}
                         </h1>
-                        <p className="text-text-secondary">
+                        <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>
+                        <p className="text-xs lg:text-sm text-text-secondary mt-2 font-bold uppercase tracking-widest opacity-60">
                             Analisis komprehensif performa bisnis Anda.
                         </p>
                     </div>
