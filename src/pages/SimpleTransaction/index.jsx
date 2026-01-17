@@ -4,7 +4,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select'; // Import Select component
 import { useNavigate } from 'react-router-dom';
-import { FiPlus, FiMinus, FiTrash2, FiDollarSign, FiShoppingCart, FiXCircle, FiCheck, FiList, FiLogOut } from 'react-icons/fi';
+import { FiPlus, FiMinus, FiTrash2, FiDollarSign, FiShoppingCart, FiXCircle, FiCheck, FiList, FiLogOut, FiSearch } from 'react-icons/fi';
 import { toast } from 'react-hot-toast'; // Corrected import
 import DarkModeToggle from '../../components/ui/DarkModeToggle';
 import ConfirmationModal from '../../components/ui/ConfirmationModal';
@@ -435,37 +435,68 @@ export default function SimpleTransaction() { // Renamed component
         />
       )}
 
-      <main className={`${theme === 'default' ? 'pt-20 lg:pt-16 pb-24 lg:pb-0' : 'lg:pb-0'} flex flex-col md:flex-row flex-1 overflow-hidden`}>
+      <main className={`${theme === 'default' ? 'pt-20 lg:pt-16 lg:pb-0' : 'lg:pb-0'} flex flex-col md:flex-row flex-1 overflow-hidden`}>
         {/* Menu Items Section */}
-        <div className={`w-full ${theme === 'admin' ? 'md:flex-1 p-1 md:p-4' : 'md:w-2/3 p-4'} overflow-y-auto md:border-r dark:md:border-gray-700 pb-24 md:pb-0`}>
-          <Input
-            type="text"
-            placeholder="Cari menu..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="mb-4"
-          />
-          <div className="flex space-x-2 mb-4 overflow-x-auto pb-2">
-            <Button onClick={() => setFilterKategori('semua')} variant={filterKategori === 'semua' ? 'default' : 'outline'} className="flex-shrink-0">Semua</Button>
+        <div className={`w-full ${theme === 'admin' ? 'md:flex-1 p-1 md:p-4' : 'md:w-2/3 p-4'} overflow-y-auto md:border-r dark:md:border-gray-700 pb-20 md:pb-0 scrollbar-hide`}>
+          {/* Modern Search Bar */}
+          <div className="relative mb-4 group">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-secondary group-focus-within:text-primary transition-colors">
+              <FiSearch className="h-5 w-5" />
+            </div>
+            <input
+              type="text"
+              placeholder="Cari menu lezat..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-800 border border-border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all shadow-sm"
+            />
+          </div>
+
+          {/* Modern Category Pills */}
+          <div className="flex space-x-2 mb-6 overflow-x-auto pb-2 scrollbar-hide no-scrollbar -mx-1 px-1">
+            <button
+              onClick={() => setFilterKategori('semua')}
+              className={`px-5 py-2 rounded-full text-sm font-semibold transition-all flex-shrink-0 whitespace-nowrap
+                ${filterKategori === 'semua'
+                  ? 'bg-primary text-white scale-105'
+                  : 'bg-white dark:bg-gray-800 text-text-secondary border border-border hover:border-primary/50'
+                }`}
+            >
+              Semua
+            </button>
             {kategoriOptions.map(kategori => (
-              <Button
+              <button
                 key={kategori}
                 onClick={() => setFilterKategori(kategori)}
-                variant={filterKategori === kategori ? 'default' : 'outline'}
-                className="flex-shrink-0 capitalize"
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all flex-shrink-0 capitalize whitespace-nowrap
+                  ${filterKategori === kategori
+                    ? 'bg-primary text-white scale-105'
+                    : 'bg-white dark:bg-gray-800 text-text-secondary border border-border hover:border-primary/50'
+                  }`}
               >
                 {kategori}
-              </Button>
+              </button>
             ))}
           </div>
-          <div className="flex justify-end mb-4">
-            <Button
+
+          <div className="flex items-center justify-between mt-2 mb-6 bg-white dark:bg-gray-800 p-3 rounded-2xl shadow-sm border border-border/50">
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase font-black text-text-secondary tracking-widest opacity-60">Status Stok</span>
+              <h2 className="text-sm font-bold text-text-primary capitalize">
+                {filterKategori === 'semua' ? 'Semua Menu' : filterKategori}
+              </h2>
+            </div>
+            <button
               onClick={handleToggleIgnoreStock}
-              variant={ignoreStock ? "destructive" : "outline"}
-              className="w-full md:w-auto"
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all
+                ${ignoreStock
+                  ? 'bg-red-500 text-white shadow-lg shadow-red-200 dark:shadow-red-900/20'
+                  : 'bg-gray-100 dark:bg-gray-700 text-text-secondary hover:bg-gray-200'
+                }`}
             >
+              <span className={`h-2 w-2 rounded-full animate-pulse ${ignoreStock ? 'bg-white' : 'bg-red-500'}`}></span>
               Abaikan Stok: {ignoreStock ? "Ya" : "Tidak"}
-            </Button>
+            </button>
           </div>
           {isLoading && <p>Memuat menu...</p>}
           {error && <p className="text-red-500">Error: {error}</p>}
@@ -478,51 +509,75 @@ export default function SimpleTransaction() { // Renamed component
               return (
                 <div
                   key={item.id}
-                  className={`${theme === 'admin' ? 'bg-white shadow-sm' : 'bg-white shadow-sm'} dark:bg-gray-800 rounded-xl p-4 transition-all duration-200 relative flex flex-col h-full
-                                      ${isOutOfStock && !ignoreStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-md hover:-translate-y-0.5'}
-                                      ${isInCart ? 'ring-2 ring-primary ring-inset' : 'border border-transparent'}`
+                  className={`group bg-white dark:bg-gray-800 rounded-2xl p-3 transition-all duration-300 relative flex flex-col h-full shadow-sm
+                              ${isOutOfStock && !ignoreStock ? 'opacity-60 grayscale' : 'cursor-pointer hover:shadow-xl hover:-translate-y-1 active:scale-95'}
+                              ${isInCart ? 'ring-2 ring-primary bg-primary/5 dark:bg-primary/10' : 'border border-transparent'}`
                   } onClick={() => (currentAvailableStock > 0 || ignoreStock) && handleItemClick(item)}
                 >
-                  {isOutOfStock && (
-                    <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-md z-10 shadow-sm">STOK HABIS</div>
-                  )}
-                  {!isOutOfStock && currentAvailableStock > 0 && (
-                    <div className="absolute top-2 right-2 bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-md z-10 shadow-sm">TERSEDIA</div>
-                  )}
+                  {/* Stock Badge */}
+                  <div className="absolute top-2 right-2 z-10 flex flex-col gap-1 items-end">
+                    {isOutOfStock ? (
+                      <span className="bg-red-500/90 backdrop-blur-sm text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm uppercase tracking-tighter">Habis</span>
+                    ) : (
+                      item.stock < 5 && (
+                        <span className="bg-orange-500/90 backdrop-blur-sm text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm uppercase tracking-tighter">Sisa {item.stock}</span>
+                      )
+                    )}
+                  </div>
 
-                  <div className={`relative aspect-square overflow-hidden rounded-lg mb-3 ${theme === 'admin' ? 'bg-gray-50' : 'bg-gray-100'} dark:bg-gray-700`}>
+                  {/* Image Container */}
+                  <div className="relative aspect-[4/3] overflow-hidden rounded-xl mb-3 bg-gray-50 dark:bg-gray-700">
                     <img
                       src={item.image_url ? `${apiUrl}${item.image_url}` : '/assets/images/no_image.png'}
                       alt={item.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
+
+                    {/* Discount Badge */}
                     {item.discount > 0 && (
-                      <div className="absolute bottom-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm">
+                      <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-lg">
                         -{item.discount * 100}%
+                      </div>
+                    )}
+
+                    {/* Quick Add Overlay */}
+                    {!isOutOfStock && (
+                      <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-colors flex items-center justify-center">
+                        <div className="bg-white/90 dark:bg-gray-800/90 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 scale-50 group-hover:scale-100 transition-all duration-300">
+                          <FiPlus className="text-primary w-5 h-5" />
+                        </div>
                       </div>
                     )}
                   </div>
 
-                  <div className="flex flex-col flex-1">
-                    <h3 className="font-bold text-base text-text-primary leading-tight mb-1 line-clamp-2">
+                  {/* Item Details */}
+                  <div className="flex flex-col flex-1 px-1">
+                    <h3 className="font-bold text-sm text-text-primary leading-tight mb-1 line-clamp-2 min-h-[2.5rem]">
                       {item.name}
                     </h3>
 
-                    <div className="mt-auto">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="font-bold text-primary truncate">
-                          Rp{parseFloat(item.price).toLocaleString('id-ID')}
-                        </p>
+                    <div className="mt-auto pt-2 border-t border-border/50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col">
+                          {item.discount > 0 && (
+                            <span className="text-[10px] text-text-secondary line-through opacity-50">
+                              Rp{parseFloat(item.price).toLocaleString('id-ID')}
+                            </span>
+                          )}
+                          <p className="font-black text-primary text-sm whitespace-nowrap">
+                            Rp{item.discount > 0
+                              ? (parseFloat(item.price) * (1 - item.discount)).toLocaleString('id-ID')
+                              : parseFloat(item.price).toLocaleString('id-ID')
+                            }
+                          </p>
+                        </div>
+
                         {isInCart && (
-                          <span className="bg-primary/10 text-primary text-xs font-bold px-2 py-1 rounded-md">
-                            {itemInCart.quantity}x
-                          </span>
+                          <div className="bg-primary text-white text-[10px] font-black h-6 w-6 flex items-center justify-center rounded-full shadow-md shadow-primary/30 animate-in zoom-in">
+                            {itemInCart.quantity}
+                          </div>
                         )}
                       </div>
-                      <p className="text-[11px] text-text-secondary mt-1 flex items-center gap-1">
-                        <span className={`w-1.5 h-1.5 rounded-full ${item.stock > 5 ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                        Stok: {item.stock}
-                      </p>
                     </div>
                   </div>
                 </div>
