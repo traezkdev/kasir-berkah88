@@ -26,14 +26,24 @@ const RestaurantSettingsModal = ({ isOpen, onClose, onSave, initialSettings }) =
   }, [isOpen, initialSettings]);
 
   const handleSave = async () => {
+    // Validate required fields
+    if (!restaurantName || !restaurantName.trim()) {
+      setError('Nama Restoran wajib diisi.');
+      return;
+    }
+    if (!restaurantSlogan || !restaurantSlogan.trim()) {
+      setError('Slogan Restoran wajib diisi.');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
       await onSave({
-        restaurant_name: restaurantName,
-        restaurant_slogan: restaurantSlogan,
-        restaurant_url: restaurantUrl,
-        owner_phone: ownerPhone,
+        restaurant_name: restaurantName.trim(),
+        restaurant_slogan: restaurantSlogan.trim(),
+        restaurant_url: restaurantUrl.trim() || 'www.berkah88.id',
+        owner_phone: ownerPhone.trim() || null,
         show_stock_alert: showStockAlert ? 1 : 0
       });
       onClose();

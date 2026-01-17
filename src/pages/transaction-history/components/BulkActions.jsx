@@ -95,7 +95,7 @@ const BulkActions = ({
   ];
 
   return (
-    <div className="my-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-3xl shadow-lg shadow-blue-500/20 p-5 lg:p-6 bulk-actions-container relative overflow-hidden">
+    <div className="my-6 text-white rounded-3xl shadow-lg shadow-blue-500/20 p-5 lg:p-6 bulk-actions-container relative overflow-hidden" style={{ backgroundColor: '#118EEA' }}>
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
 
         {/* Information Section */}
