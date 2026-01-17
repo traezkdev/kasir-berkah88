@@ -29,6 +29,14 @@ const AllFeatures = () => {
             category: 'Penjualan'
         },
         {
+            title: 'Konfirmasi Pesanan',
+            description: 'Verifikasi dan proses pesanan yang masuk dari pelanggan',
+            icon: 'CheckCircle',
+            route: '/order-confirmation',
+            color: 'primary',
+            category: 'Penjualan'
+        },
+        {
             title: 'Riwayat Transaksi',
             description: 'Pantau dan cari semua data penjualan yang sudah selesai',
             icon: 'History',
@@ -48,9 +56,17 @@ const AllFeatures = () => {
         },
         {
             title: 'Stok Bahan',
-            description: 'Manajemen persediaan bahan baku secara mendalam',
+            description: 'Manajemen persediaan bahan baku dan stok awal produksi',
             icon: 'Package',
             route: '/raw-material-stock',
+            color: 'warning',
+            category: 'Produk'
+        },
+        {
+            title: 'Riwayat Stok',
+            description: 'Catatan log perubahan stok masuk dan keluar bahan baku',
+            icon: 'ClipboardList',
+            route: '/raw-material-stock/history',
             color: 'warning',
             category: 'Produk'
         },
@@ -78,6 +94,22 @@ const AllFeatures = () => {
             icon: 'Receipt',
             route: '/expense-tracking',
             color: 'destructive',
+            category: 'Keuangan'
+        },
+        {
+            title: 'Setoran Lapak',
+            description: 'Kelola dana setoran dan saldo operasional lapak',
+            icon: 'Banknote',
+            route: '/lapak-deposit',
+            color: 'success',
+            category: 'Keuangan'
+        },
+        {
+            title: 'Modal Awal',
+            description: 'Atur saldo awal yang disetor untuk modal operasional',
+            icon: 'PiggyBank',
+            route: '/settings?modal=initialCapital',
+            color: 'success',
             category: 'Keuangan'
         },
         {
@@ -139,6 +171,14 @@ const AllFeatures = () => {
             category: 'Admin'
         },
         {
+            title: 'Kalkulator Cepat',
+            description: 'Alat bantu hitung angka secara instan',
+            icon: 'Calculator',
+            route: '/calculator',
+            color: 'secondary',
+            category: 'Admin'
+        },
+        {
             title: 'Catatan',
             description: 'Buku catatan internal untuk memo atau pengingat',
             icon: 'StickyNote',
@@ -164,6 +204,14 @@ const AllFeatures = () => {
         },
 
         // Pengaturan
+        {
+            title: 'Profil Saya',
+            description: 'Atur biodata, foto profil, dan keamanan akun',
+            icon: 'User',
+            route: '/profile',
+            color: 'slate',
+            category: 'Sistem'
+        },
         {
             title: 'Pengaturan',
             description: 'Konfigurasi nama toko, logo, pajak, dan lainnya',

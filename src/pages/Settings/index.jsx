@@ -5,7 +5,7 @@ import Input from '../../components/ui/Input';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import ConfirmationModal from '../../components/ui/ConfirmationModal';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import AppIcon from '../../components/AppIcon';
 import RestaurantSettingsModal from './components/RestaurantSettingsModal';
 import DataSyncModal from './DataSyncModal';
@@ -133,6 +133,15 @@ const Settings = () => {
       document.title = websiteTitle;
     }
   }, [websiteTitle]);
+
+  const location = useLocation();
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const modalToOpen = params.get('modal');
+    if (modalToOpen) {
+      setActiveModal(modalToOpen);
+    }
+  }, [location]);
 
   // --- Handlers ---
   const clearMessages = () => { setMessage(''); setError(''); };
@@ -573,6 +582,7 @@ const Settings = () => {
             <SettingsCard icon="Database" title="Manajemen Database" description="Backup dan restore data aplikasi" onClick={() => navigate('/settings/database')} disabled={!isAdmin} />
 
             {/* Advanced & Social */}
+            <SettingsCard icon="PiggyBank" title="Modal Awal" description="Atur saldo awal kas operasional" onClick={() => setActiveModal('initialCapital')} disabled={!isAdmin} />
             <SettingsCard icon="Share2" title="Media Sosial" description="Atur link berbagi ke media sosial" onClick={() => setActiveModal('socialShare')} disabled={!isAdmin} />
             <SettingsCard icon="RefreshCw" title="Sinkronisasi Data" description="Sinkronkan data lokal ke cloud" onClick={() => setActiveModal('dataSync')} disabled={!isAdmin} />
             <SettingsCard icon="Trash2" title="Bersihkan Data" description="Hapus semua riwayat (Hati-hati!)" onClick={() => setActiveModal('clearAllData')} disabled={!isAdmin} />
