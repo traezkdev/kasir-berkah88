@@ -994,6 +994,20 @@ const MainDashboard = ({ headerTitle }) => {
             </div>
 
             {/* Metrics Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12 animate-in fade-in slide-in-from-top-4 duration-300">
+              {detailedMetrics.map((metric, index) => (
+                <MetricsCard
+                  key={index}
+                  title={metric.title}
+                  value={metric.value}
+                  icon={metric.icon}
+                  color={metric.color}
+                  description={metric.description}
+                  trend={metric.trend}
+                  change={metric.change}
+                />
+              ))}
+            </div>
             {/* Quick Actions Section */}
             <section className="mb-8">
               <div className="flex items-center justify-between mb-6 px-1">
