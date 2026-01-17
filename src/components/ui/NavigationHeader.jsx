@@ -233,8 +233,8 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
 
       {/* Mobile Bottom Navigation (DANA Style) */}
       {location.pathname !== '/chatbot' && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-gray-100 dark:border-slate-800 lg:hidden px-4 pb-2 pt-2 transition-all duration-300">
-          <nav className="flex items-center justify-around bg-gray-50/50 dark:bg-slate-800/40 rounded-[2rem] py-1.5 px-1 shadow-inner border border-white/5">
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 lg:hidden px-4 pb-2 pt-2 transition-all duration-300">
+          <nav className="flex items-center justify-around bg-gray-50 dark:bg-slate-800 rounded-[2rem] py-1.5 px-1 shadow-inner border border-white/5">
             {navigationItems?.slice(0, 5)?.map((item) => (
               <Link
                 key={item?.path}

@@ -44,6 +44,8 @@ export default function SimpleTransaction() { // Renamed component
   // State for the options modal
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
   const [selectedItemForOptions, setSelectedItemForOptions] = useState(null);
+  const [manualTotal, setManualTotal] = useState(null);
+  const [isEditingTotal, setIsEditingTotal] = useState(false);
   const { theme } = useTheme(); // Added theme hook
 
   const handleToggleIgnoreStock = async () => {
@@ -85,6 +87,8 @@ export default function SimpleTransaction() { // Renamed component
   const handleResetKeranjang = () => {
     setCart([]);
     setCashPaid(0);
+    setManualTotal(null);
+    setIsEditingTotal(false);
     toast.success('Keranjang berhasil dikosongkan!');
   };
 
@@ -282,8 +286,9 @@ export default function SimpleTransaction() { // Renamed component
   }, [subtotal, ppnRate]);
 
   const totalAmount = useMemo(() => {
+    if (manualTotal !== null) return manualTotal;
     return subtotal + taxAmount;
-  }, [subtotal, taxAmount]);
+  }, [subtotal, taxAmount, manualTotal]);
 
   const change = useMemo(() => {
     return cashPaid >= totalAmount ? cashPaid - totalAmount : 0;
@@ -294,10 +299,12 @@ export default function SimpleTransaction() { // Renamed component
   };
 
   const parseNumber = (str) => {
+    if (!str) return 0;
     // Remove all non-digit characters except for a comma (for decimal)
     // Then replace comma with a dot for parseFloat
-    const cleanedStr = str.replace(/[^,\d]/g, '').replace(/,/g, '.');
-    return parseFloat(cleanedStr);
+    const cleanedStr = str.toString().replace(/[^,\d]/g, '').replace(/,/g, '.');
+    const parsed = parseFloat(cleanedStr);
+    return isNaN(parsed) ? 0 : parsed;
   };
 
   const handleCashPaidChange = (e) => {
@@ -308,7 +315,17 @@ export default function SimpleTransaction() { // Renamed component
       return;
     }
     const parsedValue = parseNumber(value);
-    setCashPaid(isNaN(parsedValue) ? 0 : parsedValue);
+    setCashPaid(parsedValue);
+  };
+
+  const handleManualTotalChange = (e) => {
+    const value = e.target.value;
+    if (value === '' || value === 'Rp') {
+      setManualTotal(null);
+      return;
+    }
+    const parsedValue = parseNumber(value);
+    setManualTotal(parsedValue);
   };
 
   const processTransaction = async () => {
@@ -597,9 +614,51 @@ export default function SimpleTransaction() { // Renamed component
               <span>PPN ({ppnRate * 100}%):</span>
               <span>Rp{taxAmount.toLocaleString('id-ID')}</span>
             </div>
-            <div className="flex justify-between text-xl font-bold border-t dark:border-gray-700 pt-2">
+            <div className="flex justify-between items-center text-xl font-bold border-t dark:border-gray-700 pt-2">
               <span>Total:</span>
-              <span>Rp{totalAmount.toLocaleString('id-ID')}</span>
+              {isEditingTotal ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    className="w-32 bg-white dark:bg-gray-800 border-2 border-primary rounded-md px-2 py-1 text-right text-lg focus:outline-none"
+                    value={`Rp${formatNumber(manualTotal ?? totalAmount)}`}
+                    onChange={handleManualTotalChange}
+                    onBlur={() => {
+                      if (manualTotal === (subtotal + taxAmount)) setManualTotal(null);
+                      setIsEditingTotal(false);
+                    }}
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') setIsEditingTotal(false);
+                      if (e.key === 'Escape') {
+                        setManualTotal(null);
+                        setIsEditingTotal(false);
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      setManualTotal(null);
+                      setIsEditingTotal(false);
+                    }}
+                    className="text-red-500 hover:text-red-600"
+                    title="Reset ke Otomatis"
+                  >
+                    <FiXCircle />
+                  </button>
+                </div>
+              ) : (
+                <div
+                  className="group relative cursor-pointer flex items-center gap-2"
+                  onClick={() => setIsEditingTotal(true)}
+                  title="Klik untuk ubah total"
+                >
+                  <span className={`${manualTotal !== null ? 'text-blue-600 dark:text-blue-400' : ''}`}>
+                    Rp{formatNumber(totalAmount)}
+                  </span>
+                  <FiPlus className="text-xs opacity-0 group-hover:opacity-50" />
+                </div>
+              )}
             </div>
 
             <Select

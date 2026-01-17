@@ -100,7 +100,7 @@ const BreadcrumbNavigation = ({ customPath = null, className = "" }) => {
   }
 
   return (
-    <nav className={`flex items-center space-x-2 text-xs md:text-sm ${paddingClass} ${className}`} aria-label="Breadcrumb">
+    <nav className={`hidden md:flex items-center space-x-2 text-xs md:text-sm ${paddingClass} ${className}`} aria-label="Breadcrumb">
       {breadcrumbs?.map((crumb, index) => (
         <React.Fragment key={crumb?.path}>
           {index > 0 && (

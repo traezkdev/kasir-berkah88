@@ -749,7 +749,10 @@ const MainDashboard = ({ headerTitle }) => {
           {/* Top Bar */}
           <div className="flex justify-between items-center mb-10 relative z-10">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-inner">
+              <div
+                className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-inner cursor-pointer active:scale-95 transition-transform"
+                onClick={() => navigate('/profile')}
+              >
                 <Icon name="User" size={24} className="text-white" />
               </div>
               <div>
@@ -778,7 +781,7 @@ const MainDashboard = ({ headerTitle }) => {
               </div>
               <span className="text-[11px] font-black uppercase tracking-tight text-white/90">Pindai</span>
             </div>
-            <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate('/uang-bisnis')}>
+            <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate('/admin-uang-bisnis')}>
               <div className="w-full aspect-square bg-white/20 rounded-[1.25rem] border border-white/20 flex items-center justify-center backdrop-blur-md shadow-lg group-active:scale-95 transition-transform duration-200">
                 <Icon name="Wallet" size={32} />
               </div>
@@ -805,7 +808,7 @@ const MainDashboard = ({ headerTitle }) => {
             <div className="flex justify-between items-start mb-8">
               <div>
                 <p className="text-[10px] font-black text-gray-300 tracking-[0.3em] uppercase mb-2">Total Kas Lapak</p>
-                <div className="flex items-center gap-3" onClick={() => navigate('/uang-bisnis')}>
+                <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/admin-uang-bisnis')}>
                   <h3 className="text-3xl font-black text-gray-900 tracking-tighter">
                     {formatCurrency(dashboardData.metrics?.lapakBalance || 0)}
                   </h3>
