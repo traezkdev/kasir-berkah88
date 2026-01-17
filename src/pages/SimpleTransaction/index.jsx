@@ -722,6 +722,7 @@ export default function SimpleTransaction() { // Renamed component
               value={paymentMethod}
               onChange={setPaymentMethod}
               className="mt-4 mb-2"
+              position="top"
             />
 
             {paymentMethod === 'tunai' && (
