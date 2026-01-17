@@ -118,14 +118,14 @@ const CalculatorPage = () => {
         <div className={`fixed inset-0 overflow-hidden min-h-screen ${theme === 'default' ? 'bg-gray-50' : 'bg-transparent'} lg:pb-12 lg:relative lg:overflow-visible`}>
             {theme === 'default' && <NavigationHeader headerTitle="Kalkulator Kasir" />}
 
-            <main className={`max-w-7xl mx-auto flex flex-col h-full lg:h-auto ${theme === 'default' ? 'px-4 lg:px-6 pt-20 lg:pt-24' : 'p-0'}`}>
+            <main className={`max-w-7xl mx-auto flex flex-col h-full lg:h-auto ${theme === 'default' ? 'lg:px-6 pt-20 lg:pt-24' : 'p-0'}`}>
                 {/* Desktop Breadcrumb */}
                 <div className="hidden lg:block mb-8">
                     <BreadcrumbNavigation customPath={[{ label: 'Alat', path: '/all-features' }, { label: 'Kalkulator', path: '/calculator', isActive: true }]} />
                 </div>
 
                 {/* Calculator Container */}
-                <div className="flex-1 lg:flex-none flex flex-col lg:flex-row items-stretch justify-center gap-0 lg:gap-8 pb-20 lg:pb-0 min-h-0 overflow-hidden lg:max-w-6xl lg:mx-auto w-full px-4 lg:px-0">
+                <div className="flex-1 lg:flex-none flex flex-col lg:flex-row items-stretch justify-center gap-0 lg:gap-8 pb-20 lg:pb-0 min-h-0 overflow-hidden lg:max-w-6xl lg:mx-auto w-full lg:px-0">
 
                     {/* Display Section */}
                     <div className="w-full lg:w-1/2 flex flex-col flex-none min-h-0">
@@ -135,7 +135,7 @@ const CalculatorPage = () => {
                             <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-500/5 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl"></div>
 
                             {/* Scroll Area inside Display */}
-                            <div ref={displayRef} className="overflow-y-auto h-full pr-1 custom-scrollbar relative z-10 flex flex-col">
+                            <div ref={displayRef} className="overflow-y-auto lg:overflow-hidden h-full pr-1 custom-scrollbar relative z-10 flex flex-col">
                                 <div className="mt-auto">
                                     {/* History */}
                                     <div className="mb-4 lg:mb-10 space-y-2 opacity-40">
