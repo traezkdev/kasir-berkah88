@@ -793,11 +793,11 @@ const MainDashboard = ({ headerTitle }) => {
               </div>
               <span className="text-[11px] font-black uppercase tracking-tight text-white/90">Laporan</span>
             </div>
-            <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate('/menu-management')}>
+            <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate('/auditor')}>
               <div className="w-full aspect-square bg-white/20 rounded-[1.25rem] border border-white/20 flex items-center justify-center backdrop-blur-md shadow-lg group-active:scale-95 transition-transform duration-200">
-                <Icon name="Layers" size={32} />
+                <Icon name="SearchCheck" size={32} />
               </div>
-              <span className="text-[11px] font-black uppercase tracking-tight text-white/90">Menu</span>
+              <span className="text-[11px] font-black uppercase tracking-tight text-white/90">Audit</span>
             </div>
           </div>
         </header>

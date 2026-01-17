@@ -153,6 +153,14 @@ const AllFeatures = () => {
             category: 'Keuangan'
         },
         {
+            title: 'Sistem Audit',
+            description: 'Monitor integritas data dan deteksi anomali keuangan sistem',
+            icon: 'SearchCheck',
+            route: '/auditor',
+            color: 'secondary',
+            category: 'Keuangan'
+        },
+        {
             title: 'Dashboard V2',
             description: 'Visualisasi data statistik dengan antarmuka modern',
             icon: 'LayoutDashboard',

@@ -42,6 +42,7 @@ import CashReconciliation from './pages/cash-reconciliation';
 import ChatbotPage from './pages/chatbot';
 import LandingPage from './pages/landing-page';
 import BerkahLandingPage from './pages/berkah88';
+import AuditorPage from './pages/Auditor';
 import AllFeatures from './pages/AllFeatures';
 
 import TransactionTrash from './pages/TransactionTrash';
@@ -205,6 +206,7 @@ const AppRoutes = () => {
         }
       >
         <Route path="/analisis-data" element={<AnalisisData />} />
+        <Route path="/auditor" element={<AuditorPage />} />
       </Route>
 
 
