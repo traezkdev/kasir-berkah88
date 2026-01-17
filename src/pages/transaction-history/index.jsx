@@ -802,7 +802,7 @@ const TransactionHistory = ({ headerTitle }) => {
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-              <h1 className="text-2xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case">
+              <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
                 Riwayat Transaksi
               </h1>
             </div>

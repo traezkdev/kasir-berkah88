@@ -434,7 +434,7 @@ Powered by Kasir Berkah 88`;
 
           {/* Page Header */}
           <div className="mb-8 lg:mb-6">
-            <h1 className="text-2xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case">
+            <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
               Kelola Menu
             </h1>
             <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>

@@ -434,7 +434,7 @@ const ExpenseTracking = ({ headerTitle }) => {
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h1 className="text-2xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case">
+                <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
                   Tracking Pengeluaran
                 </h1>
                 <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>

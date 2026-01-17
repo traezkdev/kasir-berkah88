@@ -41,7 +41,7 @@ const MetricsCard = ({ title, value, icon, color = 'primary', trend = null, desc
           <p className="text-[10px] font-black text-white/70 uppercase tracking-[0.2em] mb-1">
             {title}
           </p>
-          <p className="text-2xl lg:text-3xl font-mono font-black text-white tracking-tighter leading-none mb-2 transition-all group-hover:scale-105 origin-left">
+          <p className="text-xl lg:text-2xl font-mono font-black text-white tracking-tighter leading-none mb-2 transition-all group-hover:scale-105 origin-left">
             {value}
           </p>
           {description && (

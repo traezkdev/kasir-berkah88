@@ -272,7 +272,7 @@ const AdminUangBisnis = ({ headerTitle }) => { // Changed component name
                         <div className="mb-4 hidden md:block">
                             <BreadcrumbNavigation />
                         </div>
-                        <h1 className="text-2xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case">
+                        <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
                             Riwayat Transaksi Owner
                         </h1>
                         <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>

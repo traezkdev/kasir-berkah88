@@ -891,7 +891,7 @@ const MainDashboard = ({ headerTitle }) => {
             </div>
 
             {/* Balance Row */}
-            <div className="flex items-center gap-3 cursor-pointer group mb-8" onClick={() => navigate('/admin-uang-bisnis')}>
+            <div className="flex items-center gap-3 cursor-pointer group mb-8" onClick={() => navigate('/lapak-deposit')}>
               <h3 className="text-[2.5rem] font-black text-gray-900 dark:text-white tracking-tighter leading-none">
                 {formatCurrency(dashboardData.metrics?.lapakBalance || 0)}
               </h3>
@@ -988,14 +988,58 @@ const MainDashboard = ({ headerTitle }) => {
 
         {/* Promo / Banner dana style */}
         <section className="mt-10 px-5 mb-8">
-          <div className="bg-gradient-to-br from-indigo-600 via-blue-600 to-blue-500 rounded-[2.5rem] p-7 shadow-2xl shadow-blue-500/30 relative overflow-hidden group border border-white/10">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-20 -mt-20 group-hover:scale-110 transition-transform duration-500 blur-xl"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-400/20 rounded-full -ml-10 -mb-10 blur-xl"></div>
-            <div className="relative z-10">
-              <h4 className="text-white font-black text-lg mb-2 uppercase italic tracking-tighter leading-none">Upgrade Performa</h4>
-              <p className="text-blue-100 text-[11px] leading-relaxed max-w-[75%] font-medium">Buka fitur premium Laporan Lengkap untuk memaksimalkan keuntungan warung Anda.</p>
-              <div className="mt-6 bg-white text-blue-600 inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-transform" onClick={() => navigate('/laporan')}>
-                Buka Sekarang <Icon name="ArrowRight" size={14} />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Stok Menu Card */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-5 shadow-lg shadow-blue-500/20 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
+              <div className="flex items-center gap-3 mb-3 relative z-10">
+                <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl border border-white/20">
+                  <Icon name="BookUser" className="text-white" size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-sm">Stok Menu</h3>
+                  <p className="text-[10px] text-blue-100 font-medium">Data stok tersedia</p>
+                </div>
+              </div>
+              <div className="mt-2 pt-2 border-t border-white/10 relative z-10">
+                <p className="text-[10px] text-blue-200 font-medium mb-0.5">Terakhir diperbarui</p>
+                <p className="text-xs font-bold text-white">14 Januari 2026 pukul 16.45</p>
+              </div>
+            </div>
+
+            {/* Bahan Baku Card */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-5 shadow-lg shadow-blue-500/20 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
+              <div className="flex items-center gap-3 mb-3 relative z-10">
+                <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl border border-white/20">
+                  <Icon name="Package" className="text-white" size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-sm">Bahan Baku</h3>
+                  <p className="text-[10px] text-blue-100 font-medium">Stok mentah aman</p>
+                </div>
+              </div>
+              <div className="mt-2 pt-2 border-t border-white/10 relative z-10">
+                <p className="text-[10px] text-blue-200 font-medium mb-0.5">Terakhir diperbarui</p>
+                <p className="text-xs font-bold text-white">14 Januari 2026 pukul 16.45</p>
+              </div>
+            </div>
+
+            {/* Uang Lapak Card */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-5 shadow-lg shadow-blue-500/20 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
+              <div className="flex items-center gap-3 mb-3 relative z-10">
+                <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl border border-white/20">
+                  <Icon name="Wallet" className="text-white" size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-sm">Uang Lapak</h3>
+                  <p className="text-[10px] text-blue-100 font-medium">Saldo kas tercatat</p>
+                </div>
+              </div>
+              <div className="mt-2 pt-2 border-t border-white/10 relative z-10">
+                <p className="text-[10px] text-blue-200 font-medium mb-0.5">Terakhir diperbarui</p>
+                <p className="text-xs font-bold text-white">14 Januari 2026 pukul 16.45</p>
               </div>
             </div>
           </div>
@@ -1020,7 +1064,7 @@ const MainDashboard = ({ headerTitle }) => {
               <BreadcrumbNavigation />
               <div className="flex items-center justify-between mt-4 flex-wrap gap-y-4">
                 <div>
-                  <h1 className="text-2xl lg:text-3xl font-bold text-text-primary uppercase tracking-tighter">
+                  <h1 className="text-xl lg:text-2xl font-bold text-text-primary uppercase tracking-tighter">
                     Dashboard
                   </h1>
                 </div>

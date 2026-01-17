@@ -666,6 +666,24 @@ const setupDatabase = async () => {
       console.log('Default categories inserted.');
     }
 
+    const createEmployeeCreditsTable = `
+      CREATE TABLE IF NOT EXISTS employee_credits (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        employee_id INT NULL,
+        employee_name VARCHAR(255) NOT NULL,
+        amount DECIMAL(10, 2) NOT NULL,
+        description TEXT,
+        credit_date DATE NOT NULL,
+        status ENUM('unpaid', 'paid', 'partial') DEFAULT 'unpaid',
+        due_date DATE NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE SET NULL
+      );
+    `;
+    await connection.query(createEmployeeCreditsTable);
+    console.log('employee_credits table is ready.');
+
     const createExpenseCategoriesTable = `
       CREATE TABLE IF NOT EXISTS expense_categories (
         id INT AUTO_INCREMENT PRIMARY KEY,

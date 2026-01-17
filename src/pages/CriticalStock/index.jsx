@@ -91,7 +91,7 @@ const CriticalStockPage = () => {
   return (
     <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
       {theme === 'default' && <OwnerNavigationHeader headerTitle="Stok Kritis" />}
-      <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'pt-16' : ''}`}>
+      <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'pt-20' : ''}`}>
         <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
           <div className="mb-6 mt-4">
             <div className="hidden md:block">
@@ -100,6 +100,7 @@ const CriticalStockPage = () => {
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
               <div>
                 <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">Stok Kritis</h1>
+                <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>
                 <p className="text-text-secondary mt-1">Daftar bahan baku yang perlu segera dibeli.</p>
               </div>
               <div className="flex flex-wrap items-center gap-2 mt-4 sm:mt-0">

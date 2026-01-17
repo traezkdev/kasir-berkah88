@@ -271,8 +271,8 @@ const AllFeatures = () => {
                 <NavigationHeader onToggleSidebar={() => { }} headerTitle="Semua Fitur" />
             )}
 
-            <main className={`${theme === 'default' ? 'pt-24 lg:pt-20' : ''} pb-24 lg:pb-12`}>
-                <div className="max-w-7xl mx-auto px-4 lg:px-8">
+            <main className={`${theme === 'default' ? 'pt-24 lg:pt-20' : ''} pb-24 lg:pb-12 h-full`}>
+                <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-8" : "w-full p-4 lg:p-6"}>
 
                     {/* Header Section */}
                     <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
@@ -326,7 +326,7 @@ const AllFeatures = () => {
                                                 </div>
 
                                                 <div className="relative z-10">
-                                                    <h3 className="text-base font-black text-gray-900 group-hover:text-blue-600 transition-colors">{feature.title}</h3>
+                                                    <h3 className="text-lg font-black text-gray-900 group-hover:text-blue-600 transition-colors">{feature.title}</h3>
                                                     <p className="text-xs text-gray-500 font-medium mt-1 leading-relaxed opacity-80">{feature.description}</p>
                                                 </div>
 
