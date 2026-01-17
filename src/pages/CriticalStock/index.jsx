@@ -94,7 +94,9 @@ const CriticalStockPage = () => {
       <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'pt-16' : ''}`}>
         <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
           <div className="mb-6 mt-4">
-            <BreadcrumbNavigation paths={[{ name: 'Beranda Owner', path: '/owner-dashboard' }, { name: 'Stok Bahan Mentah Owner', path: '/owner-raw-material-stock' }, { name: 'Stok Kritis', path: '/critical-stock' }]} className="mb-4" />
+            <div className="hidden md:block">
+              <BreadcrumbNavigation paths={[{ name: 'Beranda Owner', path: '/owner-dashboard' }, { name: 'Stok Bahan Mentah Owner', path: '/owner-raw-material-stock' }, { name: 'Stok Kritis', path: '/critical-stock' }]} className="mb-4" />
+            </div>
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
               <div>
                 <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">Stok Kritis</h1>

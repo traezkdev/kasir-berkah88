@@ -69,156 +69,138 @@ const TransactionFilters = ({
 
   return (
     <div className="transaction-filters-root">
-
       {/* Search and Filter Controls */}
-      <div className="px-4 lg:px-6 py-4 transition-all duration-300 filter-section-container">
-        <div className="flex flex-col sm:flex-row gap-4">
+      <div className="px-4 lg:px-0 py-4 filter-section-container">
+        <div className="flex flex-col lg:flex-row gap-4">
           {/* Search Input */}
           <div className="flex-1">
-            <div className="relative">
+            <div className="dana-card flex items-center px-4 py-2 border-none shadow-md shadow-gray-200/50 bg-white group focus-within:ring-2 focus-within:ring-blue-500/20 transition-all duration-300">
               <Icon
                 name="Search"
                 size={20}
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-secondary"
+                className="text-gray-400 group-focus-within:text-blue-600 transition-colors"
               />
-              <Input
+              <input
                 type="text"
-                placeholder="Cari transaksi berdasarkan nama item atau jumlah..."
+                placeholder="Cari transaksi..."
                 value={searchTerm}
                 onChange={handleSearchChange}
-                className="pl-10"
-                autoComplete="off" // Add this
+                className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-bold text-gray-900 placeholder:text-gray-300 placeholder:font-medium ml-3 h-10"
+                autoComplete="off"
               />
+              {searchTerm && (
+                <button onClick={() => { setSearchTerm(''); onSearch(''); }} className="p-1 hover:bg-gray-100 rounded-full transition-colors">
+                  <Icon name="X" size={16} className="text-gray-400" />
+                </button>
+              )}
             </div>
           </div>
 
           {/* Filter Toggle Button */}
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
+          <div className="flex items-center gap-3">
+            <button
               onClick={() => setIsFilterOpen(!isFilterOpen)}
-              iconName="Filter"
-              iconPosition="left"
-              className="relative"
+              className={`dana-card flex items-center justify-center gap-2 h-14 px-6 border-none shadow-md shadow-gray-200/50 transition-all duration-300 active:scale-95 ${isFilterOpen ? 'bg-blue-600 text-white' : 'bg-white text-gray-900 font-black tracking-tighter uppercase'}`}
             >
-              Filter
+              <Icon name="Filter" size={18} className={isFilterOpen ? 'text-white' : 'text-blue-600'} />
+              <span className="text-sm">Filter</span>
               {getActiveFilterCount() > 0 && (
-                <span className="absolute -top-2 -right-2 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className={`flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] rounded-full font-black ${isFilterOpen ? 'bg-white text-blue-600' : 'bg-blue-600 text-white'}`}>
                   {getActiveFilterCount()}
                 </span>
               )}
-            </Button>
+            </button>
 
             {getActiveFilterCount() > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
                 onClick={clearAllFilters}
-                iconName="X"
-                className="text-text-secondary"
-              />
+                className="dana-card h-14 w-14 flex items-center justify-center border-none shadow-md shadow-red-100/50 bg-red-50 text-red-600 transition-all duration-300 active:scale-95"
+              >
+                <Icon name="RotateCcw" size={18} />
+              </button>
             )}
           </div>
         </div>
 
-        {/* Expanded Filter Options */}
+        {/* Expanded Filters Panel */}
         {isFilterOpen && (
-          <div className="mt-4 p-4 bg-muted/30 rounded-lg border border-border">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Date Range */}
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  Tanggal Mulai
-                </label>
-                <Input
-                  type="date"
-                  value={dateRange?.startDate}
-                  onChange={(e) => handleDateRangeChange('startDate', e?.target?.value)}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  Tanggal Akhir
-                </label>
-                <Input
-                  type="date"
-                  value={dateRange?.endDate}
-                  onChange={(e) => handleDateRangeChange('endDate', e?.target?.value)}
-                />
-              </div>
-
-              {/* Payment Method Filter */}
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  Metode Pembayaran
-                </label>
-                <select
-                  value={activeFilters?.paymentMethod}
-                  onChange={(e) => handleFilterChange('paymentMethod', e?.target?.value)}
-                  className="w-full px-3 py-2 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
-                >
-                  <option value="all">Semua</option>
-                  <option value="tunai">Tunai</option>
-                  <option value="Gojek">Gojek</option>
-                  <option value="Transfer">Transfer</option>
-                  <option value="Makan Karyawan">Makan Karyawan</option>
-                </select>
-              </div>
-
-              {/* Amount Range Filter */}
-              <div className="md:col-span-2 lg:col-span-1">
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  Rentang Jumlah
-                </label>
-                <select
-                  value={activeFilters?.amountRange}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    handleFilterChange('amountRange', value);
-
-                    // Reset custom inputs if not custom
-                    if (value !== 'custom') {
-                      handleFilterChange('minAmount', '');
-                      handleFilterChange('maxAmount', '');
-                    }
-                  }}
-                  className="w-full px-3 py-2 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
-                >
-                  <option value="all">Semua Jumlah</option>
-                  <option value="0-50000">Rp 0 - Rp 50.000</option>
-                  <option value="50000-100000">Rp 50.000 - Rp 100.000</option>
-                  <option value="100000-200000">Rp 100.000 - Rp 200.000</option>
-                  <option value="200000+">Rp 200.000+</option>
-                  <option value="custom">Custom (Atur Sendiri)</option>
-                </select>
-
-                {/* Custom Amount Inputs */}
-                {activeFilters?.amountRange === 'custom' && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <div className="relative flex-1">
-                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-text-secondary">Rp</span>
-                      <input
-                        type="number"
-                        placeholder="Min"
-                        value={activeFilters?.minAmount || ''}
-                        onChange={(e) => handleFilterChange('minAmount', e.target.value)}
-                        className="w-full pl-7 pr-2 py-1.5 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
-                      />
-                    </div>
-                    <span className="text-text-secondary">-</span>
-                    <div className="relative flex-1">
-                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-text-secondary">Rp</span>
-                      <input
-                        type="number"
-                        placeholder="Max"
-                        value={activeFilters?.maxAmount || ''}
-                        onChange={(e) => handleFilterChange('maxAmount', e.target.value)}
-                        className="w-full pl-7 pr-2 py-1.5 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
-                      />
-                    </div>
+          <div className="mt-6 dana-card p-6 border-none shadow-xl shadow-gray-200 bg-white animate-in slide-in-from-top-4 fade-in duration-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {/* Date Range Group */}
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">Rentang Tanggal</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest ml-1">Dari</p>
+                    <input
+                      type="date"
+                      value={dateRange?.startDate}
+                      onChange={(e) => handleDateRangeChange('startDate', e?.target?.value)}
+                      className="w-full bg-gray-50 border-none rounded-xl text-xs font-bold text-gray-900 focus:ring-2 focus:ring-blue-500/20 px-3 h-10"
+                    />
                   </div>
-                )}
+                  <div className="space-y-1.5">
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest ml-1">Sampai</p>
+                    <input
+                      type="date"
+                      value={dateRange?.endDate}
+                      onChange={(e) => handleDateRangeChange('endDate', e?.target?.value)}
+                      className="w-full bg-gray-50 border-none rounded-xl text-xs font-bold text-gray-900 focus:ring-2 focus:ring-blue-500/20 px-3 h-10"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Method Group */}
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">Metode Pembayaran</h4>
+                <div className="flex flex-wrap gap-2">
+                  {['all', 'cash', 'transfer', 'qris', 'kredit', 'toko(lapak)'].map((method) => (
+                    <button
+                      key={method}
+                      onClick={() => handleFilterChange('paymentMethod', method)}
+                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-200 ${activeFilters?.paymentMethod === method ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                    >
+                      {method === 'all' ? 'Semua' : method}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Amount Range Group */}
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">Rentang Nominal</h4>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: 'Semua', value: 'all' },
+                    { label: '< 50rb', value: '0-50000' },
+                    { label: '50rb - 200rb', value: '50000-200000' },
+                    { label: '> 200rb', value: '200000-max' }
+                  ].map((range) => (
+                    <button
+                      key={range?.value}
+                      onClick={() => handleFilterChange('amountRange', range?.value)}
+                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-200 ${activeFilters?.amountRange === range?.value ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                    >
+                      {range?.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Summary Stats in Filter */}
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">Statistik Filter</h4>
+                <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100/50">
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="text-[9px] font-bold text-blue-600/60 uppercase tracking-widest">Total Transaksi</p>
+                    <p className="text-xs font-black text-blue-600">{totalTransactions}</p>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <p className="text-[9px] font-bold text-blue-600/60 uppercase tracking-widest">Total Pendapatan</p>
+                    <p className="text-xs font-black text-blue-600">{formatCurrency(totalRevenue)}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

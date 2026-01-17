@@ -411,29 +411,14 @@ export default function SimpleTransaction() { // Renamed component
   };
 
   return (
-    <div className={`flex flex-col ${theme === 'admin' ? 'h-full bg-gray-50' : 'h-screen bg-gray-100'} dark:bg-gray-900 text-gray-900 dark:text-white no-select overflow-x-hidden transition-all duration-300`}>
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50' : 'bg-transparent'}`}>
       {theme === 'default' && (
         <NavigationHeader
           headerTitle={dashboardTitle}
-          rightContent={
-            <>
-              <button
-                className="md:hidden relative p-2 rounded-full bg-blue-500 text-white"
-                onClick={() => setShowMobileCart(true)}
-              >
-                <FiShoppingCart className="h-6 w-6" />
-                {cart.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {cart.length}
-                  </span>
-                )}
-              </button>
-              {/* Riwayat Transaksi button removed */}            </>
-          }
         />
       )}
 
-      <div className={`flex flex-1 flex-col md:flex-row overflow-hidden ${theme === 'default' ? 'pt-16' : ''}`}>
+      <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8 flex flex-col md:flex-row h-full overflow-hidden`}>
         {/* Menu Items Section */}
         <div className={`w-full ${theme === 'admin' ? 'md:flex-1 p-1 md:p-4' : 'md:w-2/3 p-4'} overflow-y-auto md:border-r dark:md:border-gray-700 pb-24 md:pb-16 h-full`}>
           <Input
@@ -681,49 +666,52 @@ export default function SimpleTransaction() { // Renamed component
             </Button>
           </div>
         </div>
-      </div>
+      </main>
 
-      {
-        showLogoutConfirm && (
-          <ConfirmationModal
-            isOpen={showLogoutConfirm}
-            onClose={() => setShowLogoutConfirm(false)}
-            onConfirm={handleLogout}
-            title="Konfirmasi Logout"
-            message="Apakah Anda yakin ingin keluar dari akun ini?"
-            confirmText="Logout"
-            cancelText="Batal"
-          />
-        )
-      }
-      {
-        cart.length > 0 && !showMobileCart && (
-          <div className="md:hidden fixed bottom-0 left-0 right-0 z-1000 bg-card border-t border-border shadow-[0_-2px_10px_rgba(0,0,0,0.1)] p-3">
-            <div className="flex justify-between items-center max-w-7xl mx-auto">
-              <div className="flex items-center space-x-2">
-                <Button onClick={handleResetKeranjang} className="text-destructive rounded-full">
-                  <FiTrash2 className="text-white" />
-                </Button>
-                <div>
-                  <p className="font-bold text-sm">{cart.length} item</p>
-                  <p className="text-lg font-bold text-primary">
-                    Rp{totalAmount.toLocaleString('id-ID')}
-                  </p>
-                </div>
+      {showLogoutConfirm && (
+        <ConfirmationModal
+          isOpen={showLogoutConfirm}
+          onClose={() => setShowLogoutConfirm(false)}
+          onConfirm={handleLogout}
+          title="Konfirmasi Logout"
+          message="Apakah Anda yakin ingin keluar dari akun ini?"
+          confirmText="Logout"
+          cancelText="Batal"
+        />
+      )}
+
+      {cart.length > 0 && !showMobileCart && (
+        <div className="md:hidden fixed bottom-20 left-4 right-4 z-40">
+          <button
+            onClick={() => setShowMobileCart(true)}
+            className="w-full bg-primary text-primary-foreground p-4 rounded-2xl shadow-2xl flex justify-between items-center"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <FiShoppingCart size={24} />
+                <span className="absolute -top-2 -right-2 bg-white text-primary text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center border-2 border-primary">
+                  {cart.length}
+                </span>
               </div>
-              <Button onClick={() => setShowMobileCart(true)} className="bg-success text-success-foreground hover:bg-success/90">
-                <FiShoppingCart className="mr-2 text-white" />
-                Proses Transaksi
-              </Button>          </div>
-          </div>
-        )
-      }
+              <div className="text-left">
+                <p className="text-[10px] opacity-80 font-medium">Lihat Keranjang</p>
+                <p className="font-bold">Rp{totalAmount.toLocaleString('id-ID')}</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-bold uppercase tracking-widest">Bayar</span>
+              <FiCheck size={24} />
+            </div>
+          </button>
+        </div>
+      )}
+
       <OptionSelectionModal
         isOpen={isOptionsModalOpen}
         onClose={() => setIsOptionsModalOpen(false)}
         item={selectedItemForOptions}
         onAddToCartWithOptions={addItemToCart}
       />
-    </div >
+    </div>
   );
 }

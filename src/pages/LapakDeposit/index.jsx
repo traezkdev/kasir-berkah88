@@ -269,10 +269,12 @@ const LapakDeposit = ({ headerTitle }) => {
     return (
         <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
             {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} />}
-            <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'pt-16' : ''}`}>
-                <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
+            <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>
+                <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 py-4 md:py-6" : ""}>
                     <div className="mb-6 mt-4">
-                        <BreadcrumbNavigation />
+                        <div className="hidden md:block">
+                            <BreadcrumbNavigation />
+                        </div>
                         <div className="flex items-center space-x-3 mt-4">
                             {logoUrl && <img src={logoUrl} alt="Logo" className="w-10 h-10 rounded-lg" onError={(e) => { e.target.style.display = 'none'; }} />}
                             <div>

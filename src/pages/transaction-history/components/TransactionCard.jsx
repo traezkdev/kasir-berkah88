@@ -63,55 +63,59 @@ const TransactionCard = ({ transaction, onDelete, onEdit, isMobile = false, user
 
   if (isMobile) {
     return (
-      <div className="bg-card rounded-lg border border-border shadow-elevation-1 p-4 mb-3">
-        <div className="flex items-start justify-between mb-3" onClick={() => onRowClick(transaction)}>
+      <div
+        className="dana-card p-6 mb-4 active:scale-[0.98] transition-all duration-200 border-none shadow-lg shadow-gray-200/50"
+        onClick={() => onRowClick(transaction)}
+      >
+        <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <div className="flex items-center space-x-2 mb-1">
-              <span className="text-sm font-medium text-text-primary">
-                #{transaction?.id}
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg uppercase tracking-widest">
+                #{transaction?.id.slice(-6).toUpperCase()}
               </span>
               {paymentBadge}
             </div>
-            <p className="text-xs text-text-secondary">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">
               {formatDateTime(transaction?.timestamp)}
             </p>
-            <p className="text-xs text-text-secondary">
-              Kasir: {transaction.cashier_name ? transaction.cashier_name : 'System'}
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight mt-0.5">
+              Kasir: <span className="text-gray-900">{transaction.cashier_name ? transaction.cashier_name : 'System'}</span>
             </p>
           </div>
           <div className="text-right">
-            <p className="text-lg font-mono font-semibold text-text-primary">
+            <p className="text-xl font-black text-gray-900 tracking-tighter">
               {formatCurrency(transaction?.total)}
             </p>
-            <p className="text-xs text-text-secondary">
-              {getTotalItems()} item
+            <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">
+              Success
             </p>
           </div>
         </div>
+
+        <div className="h-[1px] bg-gray-50 w-full mb-4"></div>
+
         <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onRowClick(transaction)}
-          >
-            Lihat Struk
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+              <Icon name="Receipt" size={16} />
+            </div>
+            <span className="text-[11px] font-black text-blue-600 uppercase tracking-tighter">Detail Struk</span>
+          </div>
+
           {userRole !== 'guest' && (
             <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
                 onClick={(e) => { e.stopPropagation(); onEdit(transaction); }}
-                iconName="Pencil"
-                className="text-primary hover:text-primary"
-              />
-              <Button
-                variant="ghost"
-                size="sm"
+                className="w-10 h-10 rounded-2xl bg-gray-50 text-blue-500 flex items-center justify-center active:scale-90 transition-transform"
+              >
+                <Icon name="Pencil" size={18} />
+              </button>
+              <button
                 onClick={(e) => { e.stopPropagation(); onOpenDeleteConfirm(transaction.id); }}
-                iconName="Trash2"
-                className="text-destructive hover:text-destructive"
-              />
+                className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center active:scale-90 transition-transform"
+              >
+                <Icon name="Trash2" size={18} />
+              </button>
             </div>
           )}
         </div>

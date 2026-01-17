@@ -99,13 +99,13 @@ const Hpp = ({ headerTitle }) => {
       console.error('Save HPP Error:', error);
     }
   };
-  
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(amount);
   }
 
@@ -116,9 +116,11 @@ const Hpp = ({ headerTitle }) => {
       )}
       <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'pt-16' : ''}`}>
         <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
-          <BreadcrumbNavigation className="mb-4" />
+          <div className="mb-4 hidden md:block">
+            <BreadcrumbNavigation />
+          </div>
           <h1 className="text-2xl font-bold mb-4 text-text-primary">Kalkulator HPP (Harga Pokok Penjualan)</h1>
-          
+
           {isLoading ? (
             <div className="text-center py-10">
               <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -185,7 +187,7 @@ const Hpp = ({ headerTitle }) => {
                         <Button onClick={() => handleEdit(item.id)} variant="secondary" size="sm">Edit HPP</Button>
                       )}
                     </div>
-                    
+
                     <div className="space-y-3 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Harga Jual:</span>

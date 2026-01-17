@@ -94,7 +94,9 @@ const MainCriticalStockPage = () => {
       {theme === 'default' && <NavigationHeader />}
       <div className={`${theme === 'default' ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 mt-16" : "p-4 sm:p-6"}`}>
         {/* Breadcrumb Navigation */}
-        <BreadcrumbNavigation className="mb-4" />
+        <div className="mb-4 hidden md:block">
+          <BreadcrumbNavigation />
+        </div>
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6">
           <h1 className="text-2xl font-bold mb-4 sm:mb-0">Daftar Pembelian Stok (Stok Kritis)</h1>
           <div className="flex flex-wrap items-center gap-2"> {/* New div for buttons */}

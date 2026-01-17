@@ -101,7 +101,9 @@ const DatabaseManagement = () => {
             {theme === 'default' && <NavigationHeader title="Manajemen Database" />}
             <main className={`flex-grow ${theme === 'default' ? 'pt-16' : ''}`}>
                 <div className={theme === 'default' ? "max-w-4xl mx-auto px-4 lg:px-8 py-8 pb-24 lg:pb-8" : "w-full p-4 lg:p-8"}>
-                    <BreadcrumbNavigation paths={breadcrumbs} />
+                    <div className="hidden md:block">
+                        <BreadcrumbNavigation paths={breadcrumbs} />
+                    </div>
 
                     <header className="mt-6 mb-10">
                         <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-text-primary flex items-center gap-3">

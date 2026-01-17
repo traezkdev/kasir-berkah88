@@ -42,6 +42,7 @@ import CashReconciliation from './pages/cash-reconciliation';
 import ChatbotPage from './pages/chatbot';
 import LandingPage from './pages/landing-page';
 import BerkahLandingPage from './pages/berkah88';
+import AllFeatures from './pages/AllFeatures';
 
 import TransactionTrash from './pages/TransactionTrash';
 import DatabaseManagement from './pages/Settings/DatabaseManagement';
@@ -168,6 +169,7 @@ const AppRoutes = () => {
         <Route path="/credits" element={<Credits />} />
         <Route path="/transaksi-sederhana" element={<SimpleTransactionPage />} />
         <Route path="/chatbot" element={<ChatbotPage />} />
+        <Route path="/all-features" element={<AllFeatures />} />
       </Route>
 
 

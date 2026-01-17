@@ -785,26 +785,32 @@ const TransactionHistory = ({ headerTitle }) => {
 
   return (
 
-    <div className="min-h-screen">
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50 lg:bg-background' : ''}`}>
 
-      {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} />}
+      {theme === 'default' && (
+        <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} />
+      )}
 
-      <main className={`${theme === 'default' ? 'pt-16' : ''} pb-20 lg:pb-8`}>
+      <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>
 
-        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 py-6" : ""}>
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 pt-8 space-y-6 lg:space-y-8" : "space-y-6"}>
 
-          <div className="mb-6">
+          <div className="mb-8 lg:mb-6">
 
-            <BreadcrumbNavigation customPath={breadcrumbPath} />
+            <div className="mb-4 hidden md:block">
+              <BreadcrumbNavigation customPath={breadcrumbPath} />
+            </div>
 
-            <h1 className="text-2xl lg:text-3xl font-semibold text-text-primary mt-2">
-              Riwayat Transaksi
-            </h1>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <h1 className="text-3xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case">
+                Riwayat Transaksi
+              </h1>
+            </div>
 
-            <p className="text-text-secondary mt-1">
+            <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>
 
+            <p className="text-xs lg:text-sm text-text-secondary mt-2 font-bold uppercase tracking-widest opacity-60">
               Kelola dan pantau semua transaksi penjualan Anda
-
             </p>
 
           </div>

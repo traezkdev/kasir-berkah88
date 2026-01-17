@@ -106,63 +106,69 @@ const NotesPage = () => {
   };
 
   return (
-    <div className={theme === 'default' ? "container mx-auto p-4 pb-32 pt-24" : ""}>
-      {theme === 'default' && <NavigationHeader title="Catatan Saya" />}
-      <BreadcrumbNavigation className="mb-4" />
-      
-      <div className="flex justify-between items-center mb-6 gap-4">
-        <div className="relative flex-grow">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-          <Input
-            type="text"
-            placeholder="Cari catatan..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-full"
-          />
-        </div>
-        <Button onClick={() => handleOpenFormModal()} className="flex items-center gap-2">
-          <Plus size={18} />
-          Tambah Catatan
-        </Button>
-      </div>
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
+      {theme === 'default' && <NavigationHeader headerTitle="Catatan Saya" />}
+      <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 pt-8 space-y-6 lg:space-y-8" : "space-y-6"}>
+          <div className="mb-4 hidden md:block">
+            <BreadcrumbNavigation />
+          </div>
 
-      {loading && <p className="text-center">Memuat...</p>}
-      {error && <p className="text-center text-red-500">{error}</p>}
-      
-      {!loading && !error && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filteredNotes.length > 0 ? (
-            filteredNotes.map(note => (
-              <NoteCard 
-                key={note.id} 
-                note={note} 
-                currentUserId={currentUserId}
-                onView={() => handleOpenViewModal(note)} // Pass the handler
-                onEdit={() => handleOpenFormModal(note)} 
-                onDelete={() => handleDeleteNote(note.id)}
+          <div className="flex justify-between items-center mb-6 gap-4">
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+              <Input
+                type="text"
+                placeholder="Cari catatan..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-full"
               />
-            ))
-          ) : (
-            <p className="text-center col-span-full">Tidak ada catatan ditemukan.</p>
+            </div>
+            <Button onClick={() => handleOpenFormModal()} className="flex items-center gap-2">
+              <Plus size={18} />
+              Tambah Catatan
+            </Button>
+          </div>
+
+          {loading && <p className="text-center">Memuat...</p>}
+          {error && <p className="text-center text-red-500">{error}</p>}
+
+          {!loading && !error && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {filteredNotes.length > 0 ? (
+                filteredNotes.map(note => (
+                  <NoteCard
+                    key={note.id}
+                    note={note}
+                    currentUserId={currentUserId}
+                    onView={() => handleOpenViewModal(note)} // Pass the handler
+                    onEdit={() => handleOpenFormModal(note)}
+                    onDelete={() => handleDeleteNote(note.id)}
+                  />
+                ))
+              ) : (
+                <p className="text-center col-span-full">Tidak ada catatan ditemukan.</p>
+              )}
+            </div>
+          )}
+
+          {isFormModalOpen && (
+            <NoteFormModal
+              note={selectedNote}
+              onClose={handleCloseFormModal}
+              onSave={handleSaveNote}
+            />
+          )}
+
+          {isViewModalOpen && (
+            <ViewNoteModal
+              note={noteToView}
+              onClose={handleCloseViewModal}
+            />
           )}
         </div>
-      )}
-
-      {isFormModalOpen && (
-        <NoteFormModal
-          note={selectedNote}
-          onClose={handleCloseFormModal}
-          onSave={handleSaveNote}
-        />
-      )}
-
-      {isViewModalOpen && (
-        <ViewNoteModal
-          note={noteToView}
-          onClose={handleCloseViewModal}
-        />
-      )}
+      </main>
     </div>
   );
 };

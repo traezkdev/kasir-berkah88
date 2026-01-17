@@ -726,9 +726,202 @@ const MainDashboard = ({ headerTitle }) => {
   ];
 
   return (
-    <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
-      {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} />}
-      <div className={`${theme === 'default' ? 'pt-16' : ''}`}>
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50' : 'bg-transparent'}`}>
+      {theme === 'default' && (
+        <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} hideMobileHeader={true} />
+      )}
+
+      {/* --- MOBILE DANA-STYLE UI (lg:hidden) --- */}
+      <div className="lg:hidden flex flex-col pb-24">
+        {/* Dana Blue Header */}
+        <header className="bg-[#118eea] text-white px-5 pt-8 pb-16 rounded-b-[2.5rem] shadow-xl relative z-20 overflow-hidden">
+          {/* Decorative Elements */}
+          <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-10 -mt-20 blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-400/10 rounded-full -ml-10 -mb-10 blur-2xl"></div>
+
+          {/* Top Bar */}
+          <div className="flex justify-between items-center mb-10 relative z-10">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-inner">
+                <Icon name="User" size={24} className="text-white" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-blue-100 uppercase tracking-widest leading-none mb-1.5 opacity-80">Kasir Berkah 88</p>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-black tracking-tight">{dashboardData.settings?.restaurant_name || 'Beranda'}</h2>
+                  <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]"></div>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-1">
+              <div className="p-2 active:bg-white/10 rounded-full transition-colors" onClick={() => navigate('/chatbot')}>
+                <Icon name="Bot" size={24} />
+              </div>
+              <div className="p-2 active:bg-white/10 rounded-full transition-colors" onClick={() => navigate('/settings')}>
+                <Icon name="Settings" size={24} />
+              </div>
+            </div>
+          </div>
+
+          {/* Main Action Grid (Icon + Label) */}
+          <div className="grid grid-cols-4 gap-4 relative z-10">
+            <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate(appMode === 'simple' ? '/transaksi-sederhana' : '/transaksi')}>
+              <div className="w-full aspect-square bg-white/20 rounded-[1.25rem] border border-white/20 flex items-center justify-center backdrop-blur-md shadow-lg group-active:scale-95 transition-transform duration-200">
+                <Icon name="QrCode" size={32} />
+              </div>
+              <span className="text-[11px] font-black uppercase tracking-tight text-white/90">Pindai</span>
+            </div>
+            <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate('/uang-bisnis')}>
+              <div className="w-full aspect-square bg-white/20 rounded-[1.25rem] border border-white/20 flex items-center justify-center backdrop-blur-md shadow-lg group-active:scale-95 transition-transform duration-200">
+                <Icon name="Wallet" size={32} />
+              </div>
+              <span className="text-[11px] font-black uppercase tracking-tight text-white/90">Saldo</span>
+            </div>
+            <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate('/laporan')}>
+              <div className="w-full aspect-square bg-white/20 rounded-[1.25rem] border border-white/20 flex items-center justify-center backdrop-blur-md shadow-lg group-active:scale-95 transition-transform duration-200">
+                <Icon name="FileText" size={32} />
+              </div>
+              <span className="text-[11px] font-black uppercase tracking-tight text-white/90">Laporan</span>
+            </div>
+            <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate('/menu-management')}>
+              <div className="w-full aspect-square bg-white/20 rounded-[1.25rem] border border-white/20 flex items-center justify-center backdrop-blur-md shadow-lg group-active:scale-95 transition-transform duration-200">
+                <Icon name="Layers" size={32} />
+              </div>
+              <span className="text-[11px] font-black uppercase tracking-tight text-white/90">Menu</span>
+            </div>
+          </div>
+        </header>
+
+        {/* Floating Balance Card */}
+        <section className="px-5 -mt-8 relative z-20">
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl shadow-blue-900/10 border border-blue-50/50">
+            <div className="flex justify-between items-start mb-8">
+              <div>
+                <p className="text-[10px] font-black text-gray-300 tracking-[0.3em] uppercase mb-2">Total Kas Lapak</p>
+                <div className="flex items-center gap-3" onClick={() => navigate('/uang-bisnis')}>
+                  <h3 className="text-3xl font-black text-gray-900 tracking-tighter">
+                    {formatCurrency(dashboardData.metrics?.lapakBalance || 0)}
+                  </h3>
+                  <div className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center">
+                    <Icon name="ChevronRight" size={14} className="text-blue-500" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                Terpantau
+              </div>
+            </div>
+
+            <div className="h-[1px] bg-gray-50 w-full mb-8"></div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Omzet {periodLabel}</span>
+                <span className="text-base font-black text-gray-900 tracking-tight">{formatCurrency(dashboardData.metrics?.totalRevenue || 0)}</span>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Keluar {periodLabel}</span>
+                <span className="text-base font-black text-rose-500 tracking-tight">-{formatCurrency(dashboardData.metrics?.totalExpenses || 0)}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Services Grid (Dana Look) */}
+        <section className="mt-10 px-5">
+          <div className="flex items-center justify-between mb-5 px-1">
+            <h3 className="text-sm font-extrabold text-gray-900 tracking-tighter uppercase">Layanan Kasir</h3>
+            <span className="text-[11px] font-bold text-[#118eea] cursor-pointer" onClick={() => navigate('/all-features')}>
+              Lihat Semua
+            </span>
+          </div>
+
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-gray-200/50 grid grid-cols-4 gap-y-10">
+            {quickActions.slice(0, 8).map((action, idx) => (
+              <div
+                key={idx}
+                className="flex flex-col items-center gap-3 group"
+                onClick={() => navigate(action.route)}
+              >
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 group-active:scale-90 ${action.color === 'primary' ? 'bg-blue-50 text-blue-600 shadow-blue-100' :
+                  action.color === 'success' ? 'bg-emerald-50 text-emerald-600 shadow-emerald-100' :
+                    action.color === 'destructive' ? 'bg-rose-50 text-rose-600 shadow-rose-100' :
+                      'bg-amber-50 text-amber-600 shadow-amber-100'
+                  } shadow-xl shadow-current/10 border border-current/5`}>
+                  <Icon name={action.icon} size={24} />
+                </div>
+                <span className="text-[10px] font-bold text-gray-500 text-center leading-tight">
+                  {action.title.split(' ').length > 1 ? action.title.split(' ')[0] : action.title}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Recent Activity Feed */}
+        <section className="mt-10 px-5">
+          <div className="flex items-center justify-between mb-5 px-1">
+            <h3 className="text-sm font-extrabold text-gray-900 tracking-tighter uppercase">Aktivitas Terkini</h3>
+            <span className="text-[11px] font-bold text-[#118eea]" onClick={handleViewAllTransactions}>Tampilkan Semua</span>
+          </div>
+
+          <div className="space-y-4">
+            {dashboardData.recentTransactions.length > 0 ? (
+              dashboardData.recentTransactions.slice(0, 5).map((tx, idx) => (
+                <div
+                  key={idx}
+                  className="bg-white p-5 rounded-[2rem] flex items-center gap-5 shadow-sm border border-gray-100 active:bg-gray-50 transition-all duration-200"
+                  onClick={() => navigate('/transaction-history', { state: { openTransaction: tx.id } })}
+                >
+                  <div className={`w-14 h-14 rounded-full flex items-center justify-center ${tx.payment_method === 'cash' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
+                    } border border-current/5`}>
+                    <Icon name={tx.payment_method === 'cash' ? 'Banknote' : 'CreditCard'} size={24} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-black text-gray-900 leading-none mb-1.5">Pesanan #{tx.id.slice(-6).toUpperCase()}</p>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                      {new Date(tx.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} • {tx.payment_method}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-base font-black text-emerald-500 tracking-tighter">+{formatCurrency(tx.total)}</p>
+                    <p className="text-[9px] font-black text-emerald-300 uppercase tracking-widest">Success</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="bg-white rounded-[2rem] py-12 text-center border-2 border-dashed border-gray-100">
+                <Icon name="Inbox" size={40} className="mx-auto text-gray-200 mb-3" />
+                <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Belum ada aktivitas</p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Promo / Banner dana style */}
+        <section className="mt-10 px-5 mb-8">
+          <div className="bg-gradient-to-br from-indigo-600 via-blue-600 to-blue-500 rounded-[2.5rem] p-7 shadow-2xl shadow-blue-500/30 relative overflow-hidden group border border-white/10">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-20 -mt-20 group-hover:scale-110 transition-transform duration-500 blur-xl"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-400/20 rounded-full -ml-10 -mb-10 blur-xl"></div>
+            <div className="relative z-10">
+              <h4 className="text-white font-black text-lg mb-2 uppercase italic tracking-tighter leading-none">Upgrade Performa</h4>
+              <p className="text-blue-100 text-[11px] leading-relaxed max-w-[75%] font-medium">Buka fitur premium Laporan Lengkap untuk memaksimalkan keuntungan warung Anda.</p>
+              <div className="mt-6 bg-white text-blue-600 inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-transform" onClick={() => navigate('/laporan')}>
+                Buka Sekarang <Icon name="ArrowRight" size={14} />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Footer Credit Mobile */}
+        <div className="text-center opacity-30 px-5 mb-10">
+          <p className="text-[9px] font-black uppercase tracking-[0.4em]">Website App ini di buat oleh M Alfin Firdaus</p>
+        </div>
+      </div>
+
+      {/* --- DESKTOP VIEW (lg:block hidden) --- */}
+      <div className="hidden lg:block lg:pt-16">
         <DashboardMetricsBar metrics={dashboardData.dashboardMetrics} />
         <main className="pb-20 lg:pb-8">
           <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
@@ -740,12 +933,9 @@ const MainDashboard = ({ headerTitle }) => {
               <BreadcrumbNavigation />
               <div className="flex items-center justify-between mt-4 flex-wrap gap-y-4">
                 <div>
-                  <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
+                  <h1 className="text-2xl lg:text-3xl font-bold text-text-primary uppercase tracking-tighter">
                     Dashboard
                   </h1>
-                  {/* <p className="text-text-secondary mt-1">
-                    Selamat datang! Kelola warung Anda dengan mudah
-                  </p> */}
                 </div>
                 <div className="flex items-center gap-4 flex-wrap">
                   {/* New Filter Section */}
@@ -769,7 +959,7 @@ const MainDashboard = ({ headerTitle }) => {
                           onChange={(e) => setCustomDateRange({ ...customDateRange, start: e.target.value })}
                           className="bg-card border-border text-text-primary text-sm rounded-md focus:ring-primary focus:border-primary p-2"
                         />
-                        <span className="text-text-secondary">to</span>
+                        <span className="text-text-secondary px-1 text-xs">ke</span>
                         <input
                           type="date"
                           value={customDateRange.end}
@@ -779,7 +969,6 @@ const MainDashboard = ({ headerTitle }) => {
                       </>
                     )}
                   </div>
-                  {/* End New Filter Section */}
                   <div className="hidden lg:block">
                     <Button
                       variant="primary"
@@ -794,174 +983,56 @@ const MainDashboard = ({ headerTitle }) => {
               </div>
             </div>
 
-
             {/* Metrics Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-              {(appMode === 'simple' ? simpleMetrics : mainMetrics).map((metric, index) => (
-                <MetricsCard
-                  key={index}
-                  title={metric.title}
-                  value={metric.value}
-                  icon={metric.icon}
-                  color={metric.color}
-                  description={metric.description}
-                />
-              ))}
-            </div>
-
-            {/* Toggle Details Button - Hanya untuk mode lengkap */}
-            {appMode !== 'simple' && (
-              <div className="flex justify-center mb-6">
-                <Button
-                  variant="ghost"
-                  onClick={() => setShowDetails(!showDetails)}
-                  className="flex items-center gap-2 text-text-secondary hover:text-primary transition-colors"
-                >
-                  <span>{showDetails ? 'Sembunyikan Detail Lengkap' : 'Tampilkan Data Detail Lengkap'}</span>
-                  <Icon name={showDetails ? 'ChevronUp' : 'ChevronDown'} size={16} />
-                </Button>
+            {/* Quick Actions Section */}
+            <section className="mb-8">
+              <div className="flex items-center justify-between mb-6 px-1">
+                <h2 className="text-xl font-black text-text-primary uppercase tracking-tighter">Aksi Cepat</h2>
               </div>
-            )}
-
-            {/* Detailed Metrics (Collapsible) - Hanya untuk mode lengkap */}
-            {appMode !== 'simple' && showDetails && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 animate-in fade-in slide-in-from-top-4 duration-300">
-                {detailedMetrics.map((metric, index) => (
-                  <MetricsCard
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {quickActions.map((action, index) => (
+                  <QuickActionCard
                     key={index}
-                    title={metric.title}
-                    value={metric.value}
-                    icon={metric.icon}
-                    color={metric.color}
-                    description={metric.description}
+                    title={action.title}
+                    description={action.description}
+                    icon={action.icon}
+                    route={action.route}
+                    color={action.color}
                   />
                 ))}
               </div>
-            )}
+            </section>
 
+            {/* Split Grid: Recent Trans (Left) & Business Summary (Right) */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 space-y-8">
+                <section>
+                  <div className="flex items-center justify-between mb-4 px-1">
+                    <h2 className="text-xl font-black text-text-primary uppercase tracking-tighter">Transaksi Terakhir</h2>
+                    <Button variant="ghost" className="text-primary p-0 h-auto" onClick={handleViewAllTransactions}>
+                      Lihat Semua
+                    </Button>
+                  </div>
+                  <RecentTransactionsList
+                    transactions={dashboardData.recentTransactions}
+                    onViewAll={handleViewAllTransactions}
+                  />
+                </section>
+              </div>
 
-            {/* Quick Actions */}
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold text-text-primary mb-4">
-                Aksi Cepat
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {quickActions
-                  .filter(action => {
-                    // Filter berdasarkan mode
-                    if (appMode === 'simple') {
-                      // Mode sederhana: hanya tampilkan fitur penting
-                      const simpleActions = ['Proses Penjualan', 'Kelola Menu', 'Catat Pengeluaran', 'Lihat Laporan', 'Statistik V2'];
-                      return simpleActions.includes(action.title);
-                    }
-                    // Mode lengkap: tampilkan semua
-                    return true;
-                  })
-                  .map((action, index) => {
-                    // Ubah route untuk mode sederhana
-                    let route = action.route;
-                    if (appMode === 'simple' && action.title === 'Proses Penjualan') {
-                      route = '/transaksi-sederhana';
-                    }
-
-                    return (
-                      <QuickActionCard
-                        key={index}
-                        title={action.title}
-                        description={action.description}
-                        icon={action.icon}
-                        route={route}
-                        color={action.color}
-                      />
-                    );
-                  })}
+              <div className="space-y-8">
+                <BusinessSummaryCard data={dashboardData} todayStats={dashboardData.todayStats} />
               </div>
             </div>
 
-            {/* Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Recent Transactions */}
-              <div className="lg:col-span-2">
-                <RecentTransactionsList
-                  transactions={dashboardData.recentTransactions}
-                  onViewAll={handleViewAllTransactions}
-                />
-              </div>
-
-              {/* Business Summary */}
-              <div className="lg:col-span-1">
-                <BusinessSummaryCard
-                  todayStats={dashboardData.todayStats}
-                />
-              </div>
-            </div>
-
-            {/* Data Sync Status Section */}
-            {appMode === 'full' && (
-              <div className="mt-8">
-                <h2 className="text-xl font-semibold text-text-primary mb-4">
-                  Status Sinkronisasi Data
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Status Card: Menu Stock */}
-                  <div className="bg-card border border-border rounded-lg p-4 text-center">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <div className="p-2 bg-primary/10 rounded-md">
-                        <Icon name="BookUser" size={20} className="text-primary" />
-                      </div>
-                      <h3 className="font-semibold text-text-primary">Stok Menu</h3>
-                    </div>
-                    <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
-                    <p className="text-sm font-medium text-text-primary">
-                      {dashboardData.timestamps?.menuStock
-                        ? new Date(dashboardData.timestamps.menuStock).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                        : 'Belum pernah'}
-                    </p>
-                  </div>
-
-                  {/* Status Card: Raw Materials */}
-                  <div className="bg-card border border-border rounded-lg p-4 text-center">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <div className="p-2 bg-success/10 rounded-md">
-                        <Icon name="Package" size={20} className="text-success" />
-                      </div>
-                      <h3 className="font-semibold text-text-primary">Bahan Baku</h3>
-                    </div>
-                    <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
-                    <p className="text-sm font-medium text-text-primary">
-                      {dashboardData.timestamps?.rawMaterials
-                        ? new Date(dashboardData.timestamps.rawMaterials).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                        : 'Belum pernah'}
-                    </p>
-                  </div>
-
-                  {/* Status Card: Lapak Funds */}
-                  <div className="bg-card border border-border rounded-lg p-4 text-center">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <div className="p-2 bg-accent/10 rounded-md">
-                        <Icon name="Wallet" size={20} className="text-accent" />
-                      </div>
-                      <h3 className="font-semibold text-text-primary">Uang Lapak</h3>
-                    </div>
-                    <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
-                    <p className="text-sm font-medium text-text-primary">
-                      {dashboardData.timestamps?.lapakFunds
-                        ? new Date(dashboardData.timestamps.lapakFunds).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                        : 'Belum pernah'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="mt-8 flex flex-col justify-center items-center">
-              {/* <DarkModeToggle /> */}
-              <p className="mt-2 text-sm text-text-secondary">Website App ini di buat oleh M Alfin Firdaus</p>
+            <div className="mt-8 flex flex-col justify-center items-center opacity-30">
+              <p className="mt-2 text-[10px] font-black uppercase tracking-[0.5em]">Di buat oleh M Alfin Firdaus</p>
             </div>
           </div>
         </main>
-
       </div>
     </div>
   );
-}; export default MainDashboard;
+};
+
+export default MainDashboard;

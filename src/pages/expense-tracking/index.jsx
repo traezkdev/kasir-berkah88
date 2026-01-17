@@ -416,58 +416,61 @@ const ExpenseTracking = ({ headerTitle }) => {
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
-    <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
-      {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} />}
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50 lg:bg-background' : ''}`}>
+      {theme === 'default' && (
+        <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} />
+      )}
       {notification && (
         <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg z-[1002] ${notification.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
           }`}>
           {notification.message}
         </div>
       )}
-      <div className={`${theme === 'default' ? 'pt-20' : ''}`}>
-        <main className="pb-20 lg:pb-8">
-          <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 space-y-6" : "space-y-6"}>
-            <div className="mb-6">
-              <BreadcrumbNavigation className="mb-4" />
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h1 className="text-2xl lg:text-3xl font-bold text-text-primary mb-2">
-                    Tracking Pengeluaran
-                  </h1>
-                  <p className="text-text-secondary">
-                    Kelola dan pantau pengeluaran bisnis untuk analisis keuangan yang akurat
-                  </p>
-                </div>
+      <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 pt-8 space-y-6 lg:space-y-8" : "space-y-6 lg:space-y-8"}>
+          <div className="mb-8 lg:mb-6">
+            <div className="mb-4 hidden md:block">
+              <BreadcrumbNavigation />
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h1 className="text-3xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case">
+                  Tracking Pengeluaran
+                </h1>
+                <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>
+                <p className="text-xs lg:text-sm text-text-secondary mt-2 font-bold uppercase tracking-widest opacity-60">
+                  Kelola dan pantau pengeluaran bisnis Anda
+                </p>
               </div>
             </div>
-            <ExpenseSummaryCard {...summaryMetrics} />
-            <ExpenseEntryForm onAddExpense={handleAddExpense} isLoading={isLoading} userRole={userRole} />
-            {allExpenses?.length > 0 && <ExpenseAnalytics expenses={allExpenses} />}
-            <ExpenseHistoryTable
-              expenses={allExpenses} // Use allExpenses for proper filtering
-              onDeleteExpense={handleDeleteExpense}
-              onBulkDelete={handleBulkDelete}
-              onExportData={handleExportData}
-              onEditExpense={handleOpenEditModal} // Pass the handler
-              isLoading={isLoading}
-              userRole={userRole}
-              dateFilter={dateFilter}
-              onDateFilterChange={setDateFilter}
-              onFilteredCountChange={setFilteredCount}
-              currentPage={currentPage}
-              itemsPerPage={itemsPerPage}
-            />
-            <div className="flex justify-center mt-4">
-              <Pagination
-                itemsPerPage={itemsPerPage}
-                totalItems={filteredCount > 0 ? filteredCount : (pagination?.totalItems || 0)}
-                paginate={paginate}
-                currentPage={currentPage}
-              />
-            </div>
           </div>
-        </main>
-      </div>
+          <ExpenseSummaryCard {...summaryMetrics} />
+          <ExpenseEntryForm onAddExpense={handleAddExpense} isLoading={isLoading} userRole={userRole} />
+          {allExpenses?.length > 0 && <ExpenseAnalytics expenses={allExpenses} />}
+          <ExpenseHistoryTable
+            expenses={allExpenses} // Use allExpenses for proper filtering
+            onDeleteExpense={handleDeleteExpense}
+            onBulkDelete={handleBulkDelete}
+            onExportData={handleExportData}
+            onEditExpense={handleOpenEditModal} // Pass the handler
+            isLoading={isLoading}
+            userRole={userRole}
+            dateFilter={dateFilter}
+            onDateFilterChange={setDateFilter}
+            onFilteredCountChange={setFilteredCount}
+            currentPage={currentPage}
+            itemsPerPage={itemsPerPage}
+          />
+          <div className="flex justify-center mt-4">
+            <Pagination
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredCount > 0 ? filteredCount : (pagination?.totalItems || 0)}
+              paginate={paginate}
+              currentPage={currentPage}
+            />
+          </div>
+        </div>
+      </main>
       <EditExpenseModal
         isOpen={isEditModalOpen}
         onClose={handleCloseEditModal}
@@ -477,71 +480,73 @@ const ExpenseTracking = ({ headerTitle }) => {
       />
 
       {/* Bulk Delete Confirmation Modal */}
-      {showBulkDeleteConfirmModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1002] p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-elevation-3 max-w-md w-full">
-            <div className="p-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 bg-destructive/10 rounded-lg">
-                  <Icon name="AlertTriangle" size={24} className="text-destructive" />
+      {
+        showBulkDeleteConfirmModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1002] p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-elevation-3 max-w-md w-full">
+              <div className="p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="p-2 bg-destructive/10 rounded-lg">
+                    <Icon name="AlertTriangle" size={24} className="text-destructive" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-text-primary dark:text-white">Konfirmasi Hapus Pengeluaran</h3>
                 </div>
-                <h3 className="text-lg font-semibold text-text-primary dark:text-white">Konfirmasi Hapus Pengeluaran</h3>
-              </div>
 
-              <div className="mb-6">
-                <p className="text-text-secondary dark:text-gray-300 mb-3">
-                  Apakah Anda yakin ingin menghapus semua pengeluaran? Tindakan ini tidak dapat dibatalkan.
-                </p>
-                <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3 mb-4">
-                  <p className="text-sm text-destructive font-medium">
-                    ⚠️ Peringatan: Tindakan ini tidak dapat dibatalkan!
+                <div className="mb-6">
+                  <p className="text-text-secondary dark:text-gray-300 mb-3">
+                    Apakah Anda yakin ingin menghapus semua pengeluaran? Tindakan ini tidak dapat dibatalkan.
                   </p>
-                  <p className="text-sm text-destructive mt-1">
-                    Semua data pengeluaran akan hilang secara permanen.
-                  </p>
+                  <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3 mb-4">
+                    <p className="text-sm text-destructive font-medium">
+                      ⚠️ Peringatan: Tindakan ini tidak dapat dibatalkan!
+                    </p>
+                    <p className="text-sm text-destructive mt-1">
+                      Semua data pengeluaran akan hilang secara permanen.
+                    </p>
+                  </div>
+
+                  {/* Password Input */}
+                  <div>
+                    <label htmlFor="password-confirm" className="text-sm font-medium text-text-primary dark:text-gray-300">
+                      Masukkan kata sandi untuk konfirmasi:
+                    </label>
+                    <Input
+                      id="password-confirm"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Kata sandi"
+                      className="mt-2"
+                      autoComplete="new-password"
+                    />
+                    {passwordError && (
+                      <p className="text-sm text-destructive mt-2">{passwordError}</p>
+                    )}
+                  </div>
                 </div>
 
-                {/* Password Input */}
-                <div>
-                  <label htmlFor="password-confirm" className="text-sm font-medium text-text-primary dark:text-gray-300">
-                    Masukkan kata sandi untuk konfirmasi:
-                  </label>
-                  <Input
-                    id="password-confirm"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Kata sandi"
-                    className="mt-2"
-                    autoComplete="new-password"
-                  />
-                  {passwordError && (
-                    <p className="text-sm text-destructive mt-2">{passwordError}</p>
-                  )}
+                <div className="flex space-x-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowBulkDeleteConfirmModal(false)}
+                    className="flex-1"
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleConfirmBulkDelete}
+                    className="flex-1"
+                  >
+                    Ya, Hapus Semua
+                  </Button>
                 </div>
-              </div>
-
-              <div className="flex space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowBulkDeleteConfirmModal(false)}
-                  className="flex-1"
-                >
-                  Batal
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={handleConfirmBulkDelete}
-                  className="flex-1"
-                >
-                  Ya, Hapus Semua
-                </Button>
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 };
 

@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import { FiArrowLeft } from 'react-icons/fi';
 import DarkModeToggle from '../../components/ui/DarkModeToggle';
 import { jwtDecode } from 'jwt-decode';
-import Icon from '../../components/AppIcon'; // Import Icon for the delete confirmation modal
-import Button from '../../components/ui/Button'; // Import Button for the delete confirmation modal
+import Icon from '../../components/AppIcon';
+import Button from '../../components/ui/Button';
+import { useTheme } from '../../contexts/ThemeContext';
+import NavigationHeader from '../../components/ui/NavigationHeader';
 
 
 import TransactionFilters from '../transaction-history/components/TransactionFilters';
@@ -27,7 +29,8 @@ import * as XLSX from 'xlsx';
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const CashierTransactionHistory = ({ headerTitle }) => {
-  const exportContentRef = useRef(null); // Add this line
+  const { theme } = useTheme();
+  const exportContentRef = useRef(null);
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,7 +47,7 @@ const CashierTransactionHistory = ({ headerTitle }) => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
-  
+
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
 
@@ -53,9 +56,9 @@ const CashierTransactionHistory = ({ headerTitle }) => {
   const [chartFilterType, setChartFilterType] = useState('daily'); // New state for chart filter
   const [currentDailyDate, setCurrentDailyDate] = useState(new Date()); // State for current date in daily view
 
-    // State for delete confirmation modal
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-    const [transactionToDeleteId, setTransactionToDeleteId] = useState(null);
+  // State for delete confirmation modal
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [transactionToDeleteId, setTransactionToDeleteId] = useState(null);
 
   const navigate = useNavigate(); // Initialize useNavigate
 
@@ -69,7 +72,7 @@ const CashierTransactionHistory = ({ headerTitle }) => {
     };
   }, []);
 
-  
+
   const handleTransactionClick = (transaction) => {
     setSelectedTransaction(transaction);
     setIsReceiptModalOpen(true);
@@ -154,7 +157,7 @@ const CashierTransactionHistory = ({ headerTitle }) => {
     }
   }, []);
 
-  
+
 
   // Filter transactions based on search, filters, and date range
   const applyFilters = useMemo(() => {
@@ -162,10 +165,10 @@ const CashierTransactionHistory = ({ headerTitle }) => {
 
     // Search filter
     if (searchTerm) {
-      filtered = filtered?.filter(transaction => 
-        transaction?.items?.some(item => 
+      filtered = filtered?.filter(transaction =>
+        transaction?.items?.some(item =>
           item?.name?.toLowerCase()?.includes(searchTerm?.toLowerCase())
-        ) || 
+        ) ||
         transaction?.total?.toString()?.includes(searchTerm) ||
         transaction?.id?.toLowerCase()?.includes(searchTerm?.toLowerCase())
       );
@@ -278,15 +281,15 @@ const CashierTransactionHistory = ({ headerTitle }) => {
     });
   };
 
-    const handleOpenDeleteConfirm = (transactionId) => {
-        setTransactionToDeleteId(transactionId);
-        setShowDeleteConfirm(true);
-    };
+  const handleOpenDeleteConfirm = (transactionId) => {
+    setTransactionToDeleteId(transactionId);
+    setShowDeleteConfirm(true);
+  };
 
-    const handleCloseDeleteConfirm = () => {
-        setTransactionToDeleteId(null);
-        setShowDeleteConfirm(false);
-    };
+  const handleCloseDeleteConfirm = () => {
+    setTransactionToDeleteId(null);
+    setShowDeleteConfirm(false);
+  };
 
   const handleDeleteTransaction = async () => { // Modified to use transactionToDeleteId
     if (!transactionToDeleteId) return;
@@ -325,11 +328,11 @@ const CashierTransactionHistory = ({ headerTitle }) => {
 
   const handleExportTransactions = async (format) => {
     setIsExporting(true);
-    
+
     try {
       // Simulate export process
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       const dataToExport = prepareTransactionDataForExport(filteredTransactions);
 
       const totalRevenue = filteredTransactions?.filter(t => !t?.isEmployeeMeal)?.reduce((sum, t) => sum + parseFloat(t?.total || 0), 0);
@@ -471,7 +474,7 @@ const CashierTransactionHistory = ({ headerTitle }) => {
 
         doc.save(`riwayat-transaksi-${new Date()?.toISOString()?.split('T')?.[0]}.pdf`);
       }
-      
+
       console.log(`Exported ${filteredTransactions?.length} transactions as ${format}`);
     } catch (error) {
 
@@ -498,26 +501,32 @@ const CashierTransactionHistory = ({ headerTitle }) => {
 
 
   return (
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50' : 'bg-background'}`}>
+      {theme === 'default' && (
+        <NavigationHeader
+          headerTitle={headerTitle || "Riwayat Transaksi"}
+        />
+      )}
+      {theme !== 'default' && (
+        <header className="sticky top-0 z-10 bg-white dark:bg-gray-800 shadow px-4 py-3 flex justify-between items-center">
+          <h1 className="text-xl font-bold md:text-2xl">Riwayat Transaksi Kasir</h1>
+          <div className="flex items-center space-x-4">
+            <button
+              className="p-2 md:px-4 md:py-2 rounded-full md:rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center"
+              onClick={() => navigate('/cashier-dashboard')}
+              title="Kembali ke Dashboard Kasir"
+            >
+              <FiArrowLeft className="h-6 w-6 md:hidden" />
+              <span className="hidden md:block">Kembali ke Dashboard</span>
+            </button>
+            <DarkModeToggle />
+          </div>
+        </header>
+      )}
 
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 bg-white dark:bg-gray-800 shadow px-4 py-3 flex justify-between items-center">
-        <h1 className="text-xl font-bold md:text-2xl">Riwayat Transaksi Kasir</h1>
-        <div className="flex items-center space-x-4">
-          <button
-            className="p-2 md:px-4 md:py-2 rounded-full md:rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center"
-            onClick={() => navigate('/cashier-dashboard')}
-            title="Kembali ke Dashboard Kasir"
-          >
-            <FiArrowLeft className="h-6 w-6 md:hidden" />
-            <span className="hidden md:block">Kembali ke Dashboard</span>
-          </button>
-          <DarkModeToggle />
-        </div>
-      </header>
+      <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>
 
-      <main className="pb-20 lg:pb-8">
-
-        <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6">
+        <div className="max-w-7xl mx-auto px-4 lg:px-6 py-4 md:py-6">
 
 
 
@@ -549,7 +558,7 @@ const CashierTransactionHistory = ({ headerTitle }) => {
 
 
 
-                        <TransactionTable
+            <TransactionTable
 
 
 
@@ -557,7 +566,7 @@ const CashierTransactionHistory = ({ headerTitle }) => {
 
 
 
-                          transactions={currentItems}
+              transactions={currentItems}
 
 
 
@@ -565,7 +574,7 @@ const CashierTransactionHistory = ({ headerTitle }) => {
 
 
 
-                          onEditTransaction={handleEditTransaction}
+              onEditTransaction={handleEditTransaction}
 
 
 
@@ -573,7 +582,7 @@ const CashierTransactionHistory = ({ headerTitle }) => {
 
 
 
-                          onRowClick={handleTransactionClick}
+              onRowClick={handleTransactionClick}
 
 
 
@@ -581,7 +590,7 @@ const CashierTransactionHistory = ({ headerTitle }) => {
 
 
 
-                          isMobile={isMobile}
+              isMobile={isMobile}
 
 
 
@@ -589,7 +598,7 @@ const CashierTransactionHistory = ({ headerTitle }) => {
 
 
 
-                          userRole={userRole}
+              userRole={userRole}
 
 
 
@@ -597,7 +606,7 @@ const CashierTransactionHistory = ({ headerTitle }) => {
 
 
 
-                          onOpenDeleteConfirm={handleOpenDeleteConfirm} // Pass the new handler
+              onOpenDeleteConfirm={handleOpenDeleteConfirm} // Pass the new handler
 
 
 
@@ -605,7 +614,7 @@ const CashierTransactionHistory = ({ headerTitle }) => {
 
 
 
-                        />
+            />
 
             <Pagination
               itemsPerPage={itemsPerPage}
@@ -620,7 +629,7 @@ const CashierTransactionHistory = ({ headerTitle }) => {
 
       </main>
 
-      
+
       <TransactionReceiptModal
         isOpen={isReceiptModalOpen}
         onClose={handleCloseReceiptModal}
@@ -634,41 +643,41 @@ const CashierTransactionHistory = ({ headerTitle }) => {
         onUpdateTransaction={handleUpdateTransaction}
       />
 
-        {/* Delete Confirmation Modal */}
-        {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
-            <div className="bg-card rounded-lg p-6 max-w-sm w-full">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 bg-destructive/10 rounded-full">
-                  <Icon name="AlertTriangle" size={20} className="text-destructive" />
-                </div>
-                <h3 className="text-lg font-semibold text-text-primary">
-                  Hapus Transaksi
-                </h3>
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
+          <div className="bg-card rounded-lg p-6 max-w-sm w-full">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="p-2 bg-destructive/10 rounded-full">
+                <Icon name="AlertTriangle" size={20} className="text-destructive" />
               </div>
-              <p className="text-text-secondary mb-6">
-                Apakah Anda yakin ingin menghapus transaksi #{transactionToDeleteId}? 
-                Tindakan ini akan memindahkan transaksi ke tong sampah.
-              </p>
-              <div className="flex space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={handleCloseDeleteConfirm}
-                  className="flex-1"
-                >
-                  Batal
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={handleDeleteTransaction}
-                  className="flex-1"
-                >
-                  Hapus
-                </Button>
-              </div>
+              <h3 className="text-lg font-semibold text-text-primary">
+                Hapus Transaksi
+              </h3>
+            </div>
+            <p className="text-text-secondary mb-6">
+              Apakah Anda yakin ingin menghapus transaksi #{transactionToDeleteId}?
+              Tindakan ini akan memindahkan transaksi ke tong sampah.
+            </p>
+            <div className="flex space-x-3">
+              <Button
+                variant="outline"
+                onClick={handleCloseDeleteConfirm}
+                className="flex-1"
+              >
+                Batal
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteTransaction}
+                className="flex-1"
+              >
+                Hapus
+              </Button>
             </div>
           </div>
-        )}
+        </div>
+      )}
     </div>
 
   );

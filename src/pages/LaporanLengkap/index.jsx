@@ -5,7 +5,9 @@ import * as XLSX from 'xlsx';
 import { exportToPdf } from '../../utils/exportUtils'; // Correctly import the utility
 import { useTheme } from '../../contexts/ThemeContext';
 
-const LaporanLengkap = () => {
+import NavigationHeader from '../../components/ui/NavigationHeader';
+
+const LaporanLengkap = ({ headerTitle }) => {
   const { theme } = useTheme();
   const [laporanData, setLaporanData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -280,280 +282,296 @@ const LaporanLengkap = () => {
   };
 
   return (
-    <div className={theme === 'default' ? "p-4 md:p-6" : ""}>
-      <h1 className="text-2xl md:text-3xl font-bold mb-4">Laporan Lengkap</h1>
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50 lg:bg-background' : ''}`}>
+      {theme === 'default' && (
+        <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || "Laporan Lengkap"} />
+      )}
 
-      <div className="mb-6 p-4 bg-white rounded-lg shadow-md flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2">
-          <label htmlFor="startDate" className="text-sm font-medium">Dari:</label>
-          <input type="date" id="startDate" value={startDate} onChange={e => setStartDate(e.target.value)} className="input input-bordered input-sm" />
-        </div>
-        <div className="flex items-center gap-2">
-          <label htmlFor="endDate" className="text-sm font-medium">Sampai:</label>
-          <input type="date" id="endDate" value={endDate} onChange={e => setEndDate(e.target.value)} className="input input-bordered input-sm" />
-        </div>
-        <button onClick={handleFilter} className="btn btn-primary btn-sm">Filter</button>
-        <div className="flex-grow"></div>
-        <div className="flex items-center gap-2">
-          <button onClick={handleExportExcel} className="btn btn-success btn-sm" disabled={!laporanData || loading}>Export Excel</button>
-          <button onClick={handleExportPDF} className="btn btn-error btn-sm" disabled={!laporanData || loading}>Export PDF</button>
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <RingLoader color="#4A90E2" size={80} />
-        </div>
-      ) : error ? (
-        <div className="p-4 text-red-500 bg-red-100 rounded-md">Error: {error}</div>
-      ) : (
-        <div className="space-y-8">
-          <section>
-            <h2 className="text-xl font-semibold mb-3">Transaksi</h2>
-            <div className="overflow-x-auto bg-white rounded-lg shadow">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metode Pembayaran</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {paginatedTransactions?.map(item => (
-                    <tr key={item.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">{item.id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">{new Date(item.timestamp).toLocaleString()}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">Rp {item.total.toLocaleString()}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">{item.payment_method}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <PaginationControls section="transactions" currentPage={pagination.transactions} totalPages={totalPagesTransactions} />
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold mb-3">Pengeluaran</h2>
-            <div className="overflow-x-auto bg-white rounded-lg shadow">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {paginatedExpenses?.map(item => (
-                    <tr key={item.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">{item.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">Rp {item.amount.toLocaleString()}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">{new Date(item.date).toLocaleDateString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <PaginationControls section="expenses" currentPage={pagination.expenses} totalPages={totalPagesExpenses} />
-          </section>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <section>
-              <h2 className="text-xl font-semibold mb-3">Uang Lapak</h2>
-              <div className="overflow-x-auto bg-white rounded-lg shadow">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deskripsi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedLapak?.map(item => (
-                      <tr key={item.id}>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${item.type === 'deposit' ? 'text-green-600' : 'text-red-600'}`}>{item.type}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">Rp {item.amount.toLocaleString()}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">{item.description}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <PaginationControls section="lapak" currentPage={pagination.lapak} totalPages={totalPagesLapak} />
-            </section>
-            <section>
-              <h2 className="text-xl font-semibold mb-3">Uang Owner</h2>
-              <div className="overflow-x-auto bg-white rounded-lg shadow">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deskripsi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedOwner?.map(item => (
-                      <tr key={item.id}>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${item.type === 'deposit' ? 'text-green-600' : 'text-red-600'}`}>{item.type}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">Rp {item.amount.toLocaleString()}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">{item.description}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <PaginationControls section="owner" currentPage={pagination.owner} totalPages={totalPagesOwner} />
-            </section>
+      <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 pt-8 lg:py-6" : ""}>
+          <div className="mb-8 lg:mb-6">
+            <h1 className="text-3xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case">
+              Laporan Lengkap
+            </h1>
+            <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>
+            <p className="text-xs lg:text-sm text-text-secondary mt-2 font-bold uppercase tracking-widest opacity-60">
+              Analisis mendalam data penjualan dan operasional
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <section>
-              <h2 className="text-xl font-semibold mb-3">Stok Menu</h2>
-              <div className="overflow-x-auto bg-white rounded-lg shadow">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Menu</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stok Tersisa</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedMenu?.map(item => (
-                      <tr key={item.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">{item.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">{item.stock}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <PaginationControls section="menu" currentPage={pagination.menu} totalPages={totalPagesMenu} />
-            </section>
-            <section>
-              <h2 className="text-xl font-semibold mb-3">Stok Bahan Mentah</h2>
-              <div className="overflow-x-auto bg-white rounded-lg shadow">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Bahan</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stok Tersisa</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedRaw?.map(item => (
-                      <tr key={item.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">{item.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">{item.current_stock} {item.unit}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <PaginationControls section="raw" currentPage={pagination.raw} totalPages={totalPagesRaw} />
-            </section>
+          <div className="mb-6 p-4 bg-white rounded-lg shadow-md flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <label htmlFor="startDate" className="text-sm font-medium">Dari:</label>
+              <input type="date" id="startDate" value={startDate} onChange={e => setStartDate(e.target.value)} className="input input-bordered input-sm" />
+            </div>
+            <div className="flex items-center gap-2">
+              <label htmlFor="endDate" className="text-sm font-medium">Sampai:</label>
+              <input type="date" id="endDate" value={endDate} onChange={e => setEndDate(e.target.value)} className="input input-bordered input-sm" />
+            </div>
+            <button onClick={handleFilter} className="btn btn-primary btn-sm">Filter</button>
+            <div className="flex-grow"></div>
+            <div className="flex items-center gap-2">
+              <button onClick={handleExportExcel} className="btn btn-success btn-sm" disabled={!laporanData || loading}>Export Excel</button>
+              <button onClick={handleExportPDF} className="btn btn-error btn-sm" disabled={!laporanData || loading}>Export PDF</button>
+            </div>
           </div>
 
-          {/* Riwayat Rekonsiliasi Section */}
-          <div className="mt-8">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-              <div className="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-400">
-                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                  <path d="M3 3v5h5"></path>
-                  <path d="M12 7v5l4 2"></path>
-                </svg>
-                <h2 className="text-lg font-semibold text-gray-900">Riwayat Rekonsiliasi</h2>
-              </div>
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <RingLoader color="#4A90E2" size={80} />
             </div>
-
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              {!laporanData?.reconciliations || laporanData.reconciliations.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
-                  <p>Belum ada data rekonsiliasi kas.</p>
-                  <p className="text-sm mt-2">Silakan lakukan rekonsiliasi kas terlebih dahulu di halaman Rekonsiliasi Kas.</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left">
-                    <thead className="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+          ) : error ? (
+            <div className="p-4 text-red-500 bg-red-100 rounded-md">Error: {error}</div>
+          ) : (
+            <div className="space-y-8">
+              <section>
+                <h2 className="text-xl font-semibold mb-3">Transaksi</h2>
+                <div className="overflow-x-auto bg-white rounded-lg shadow">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3">Tanggal</th>
-                        <th className="px-6 py-3">User</th>
-                        <th className="px-6 py-3">Tunai (Act)</th>
-                        <th className="px-6 py-3">Transfer (Act)</th>
-                        <th className="px-6 py-3">Gojek (Act)</th>
-                        <th className="px-6 py-3">Total Selisih</th>
-                        <th className="px-6 py-3">Status</th>
-                        <th className="px-6 py-3">Catatan</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metode Pembayaran</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {paginatedReconciliations?.map(item => {
-                        const totalVariance = (parseFloat(item.variance_tunai) || 0) + (parseFloat(item.variance_transfer) || 0) + (parseFloat(item.variance_gojek) || 0);
-                        const getStatus = (variance) => {
-                          if (variance === 0) return { label: 'PAS', color: 'text-green-600', bgColor: 'bg-green-50' };
-                          if (variance > 0) return { label: 'KURANG', color: 'text-red-600', bgColor: 'bg-red-50' };
-                          return { label: 'LEBIH', color: 'text-yellow-600', bgColor: 'bg-yellow-50' };
-                        };
-                        const status = getStatus(totalVariance);
-
-                        return (
-                          <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-6 py-4 whitespace-nowrap text-gray-900 font-medium">
-                              {new Date(item.date).toLocaleDateString('id-ID', {
-                                day: 'numeric',
-                                month: 'long',
-                                year: 'numeric'
-                              })}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                              {item.reconciled_by || '-'}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-gray-900">
-                              Rp {(item.actual_tunai || 0).toLocaleString()}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-gray-900">
-                              Rp {(item.actual_transfer || 0).toLocaleString()}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-gray-900">
-                              Rp {(item.actual_gojek || 0).toLocaleString()}
-                            </td>
-                            <td className={`px-6 py-4 whitespace-nowrap font-bold ${status.color}`}>
-                              Rp {Math.abs(totalVariance).toLocaleString()}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status.bgColor} ${status.color}`}>
-                                {status.label}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 max-w-xs">
-                              <div className="text-sm text-gray-900 truncate" title={item.notes || ''}>
-                                {item.notes ? (
-                                  <span className="italic">{item.notes}</span>
-                                ) : (
-                                  <span className="text-gray-500">-</span>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {paginatedTransactions?.map(item => (
+                        <tr key={item.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">{item.id}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">{new Date(item.timestamp).toLocaleString()}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">Rp {item.total.toLocaleString()}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">{item.payment_method}</td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
-              )}
+                <PaginationControls section="transactions" currentPage={pagination.transactions} totalPages={totalPagesTransactions} />
+              </section>
+
+              <section>
+                <h2 className="text-xl font-semibold mb-3">Pengeluaran</h2>
+                <div className="overflow-x-auto bg-white rounded-lg shadow">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {paginatedExpenses?.map(item => (
+                        <tr key={item.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">{item.name}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">Rp {item.amount.toLocaleString()}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">{new Date(item.date).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <PaginationControls section="expenses" currentPage={pagination.expenses} totalPages={totalPagesExpenses} />
+              </section>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <section>
+                  <h2 className="text-xl font-semibold mb-3">Uang Lapak</h2>
+                  <div className="overflow-x-auto bg-white rounded-lg shadow">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deskripsi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedLapak?.map(item => (
+                          <tr key={item.id}>
+                            <td className={`px-6 py-4 whitespace-nowrap text-sm ${item.type === 'deposit' ? 'text-green-600' : 'text-red-600'}`}>{item.type}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">Rp {item.amount.toLocaleString()}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">{item.description}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <PaginationControls section="lapak" currentPage={pagination.lapak} totalPages={totalPagesLapak} />
+                </section>
+                <section>
+                  <h2 className="text-xl font-semibold mb-3">Uang Owner</h2>
+                  <div className="overflow-x-auto bg-white rounded-lg shadow">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deskripsi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedOwner?.map(item => (
+                          <tr key={item.id}>
+                            <td className={`px-6 py-4 whitespace-nowrap text-sm ${item.type === 'deposit' ? 'text-green-600' : 'text-red-600'}`}>{item.type}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">Rp {item.amount.toLocaleString()}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">{item.description}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <PaginationControls section="owner" currentPage={pagination.owner} totalPages={totalPagesOwner} />
+                </section>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <section>
+                  <h2 className="text-xl font-semibold mb-3">Stok Menu</h2>
+                  <div className="overflow-x-auto bg-white rounded-lg shadow">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Menu</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stok Tersisa</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedMenu?.map(item => (
+                          <tr key={item.id}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">{item.name}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">{item.stock}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <PaginationControls section="menu" currentPage={pagination.menu} totalPages={totalPagesMenu} />
+                </section>
+                <section>
+                  <h2 className="text-xl font-semibold mb-3">Stok Bahan Mentah</h2>
+                  <div className="overflow-x-auto bg-white rounded-lg shadow">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Bahan</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stok Tersisa</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedRaw?.map(item => (
+                          <tr key={item.id}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">{item.name}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">{item.current_stock} {item.unit}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <PaginationControls section="raw" currentPage={pagination.raw} totalPages={totalPagesRaw} />
+                </section>
+              </div>
+
+              {/* Riwayat Rekonsiliasi Section */}
+              <div className="mt-8">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+                  <div className="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-400">
+                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                      <path d="M3 3v5h5"></path>
+                      <path d="M12 7v5l4 2"></path>
+                    </svg>
+                    <h2 className="text-lg font-semibold text-gray-900">Riwayat Rekonsiliasi</h2>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                  {!laporanData?.reconciliations || laporanData.reconciliations.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500">
+                      <p>Belum ada data rekonsiliasi kas.</p>
+                      <p className="text-sm mt-2">Silakan lakukan rekonsiliasi kas terlebih dahulu di halaman Rekonsiliasi Kas.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm text-left">
+                        <thead className="bg-gray-50 text-gray-500 uppercase text-xs font-medium">
+                          <tr>
+                            <th className="px-6 py-3">Tanggal</th>
+                            <th className="px-6 py-3">User</th>
+                            <th className="px-6 py-3">Tunai (Act)</th>
+                            <th className="px-6 py-3">Transfer (Act)</th>
+                            <th className="px-6 py-3">Gojek (Act)</th>
+                            <th className="px-6 py-3">Total Selisih</th>
+                            <th className="px-6 py-3">Status</th>
+                            <th className="px-6 py-3">Catatan</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {paginatedReconciliations?.map(item => {
+                            const totalVariance = (parseFloat(item.variance_tunai) || 0) + (parseFloat(item.variance_transfer) || 0) + (parseFloat(item.variance_gojek) || 0);
+                            const getStatus = (variance) => {
+                              if (variance === 0) return { label: 'PAS', color: 'text-green-600', bgColor: 'bg-green-50' };
+                              if (variance > 0) return { label: 'KURANG', color: 'text-red-600', bgColor: 'bg-red-50' };
+                              return { label: 'LEBIH', color: 'text-yellow-600', bgColor: 'bg-yellow-50' };
+                            };
+                            const status = getStatus(totalVariance);
+
+                            return (
+                              <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                                <td className="px-6 py-4 whitespace-nowrap text-gray-900 font-medium">
+                                  {new Date(item.date).toLocaleDateString('id-ID', {
+                                    day: 'numeric',
+                                    month: 'long',
+                                    year: 'numeric'
+                                  })}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                                  {item.reconciled_by || '-'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-gray-900">
+                                  Rp {(item.actual_tunai || 0).toLocaleString()}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-gray-900">
+                                  Rp {(item.actual_transfer || 0).toLocaleString()}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-gray-900">
+                                  Rp {(item.actual_gojek || 0).toLocaleString()}
+                                </td>
+                                <td className={`px-6 py-4 whitespace-nowrap font-bold ${status.color}`}>
+                                  Rp {Math.abs(totalVariance).toLocaleString()}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status.bgColor} ${status.color}`}>
+                                    {status.label}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 max-w-xs">
+                                  <div className="text-sm text-gray-900 truncate" title={item.notes || ''}>
+                                    {item.notes ? (
+                                      <span className="italic">{item.notes}</span>
+                                    ) : (
+                                      <span className="text-gray-500">-</span>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+                {laporanData?.reconciliations && laporanData.reconciliations.length > 0 && (
+                  <PaginationControls section="reconciliations" currentPage={pagination.reconciliations} totalPages={totalPagesReconciliations} />
+                )}
+              </div>
             </div>
-            {laporanData?.reconciliations && laporanData.reconciliations.length > 0 && (
-              <PaginationControls section="reconciliations" currentPage={pagination.reconciliations} totalPages={totalPagesReconciliations} />
-            )}
-          </div>
+          )}
         </div>
-      )}
+      </main>
     </div>
   );
 };

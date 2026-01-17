@@ -16,7 +16,9 @@ const Credits = ({ headerTitle }) => {
   return (
     <div className={`flex flex-col ${isDefaultTheme ? 'h-screen bg-background' : 'h-full bg-transparent'}`}>
       {isDefaultTheme && <NavigationHeader title="Credits" headerTitle={headerTitle} />}
-      <BreadcrumbNavigation paths={breadcrumbs} />
+      <div className="hidden md:block">
+        <BreadcrumbNavigation paths={breadcrumbs} />
+      </div>
       <div className={`flex-grow ${isDefaultTheme ? 'pt-20' : 'pt-0'} px-6 pb-20 overflow-auto`}>
         <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg dark:shadow-none p-8 space-y-8 text-center">
           <h2 className="text-2xl font-bold text-text-primary dark:text-white">Credits</h2>

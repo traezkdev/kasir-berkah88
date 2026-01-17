@@ -13,6 +13,8 @@ import ExpenseCategorySettings from './ExpenseCategorySettings';
 
 import SocialShareSettings from './SocialShareSettings';
 import CategorySettings from './CategorySettings';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useAppSettings } from '../../contexts/AppSettingsContext';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -39,25 +41,26 @@ const SettingsModal = ({ title, isOpen, onClose, children, size = 'lg' }) => {
   );
 };
 
-// Reusable Card Component
-const SettingsCard = ({ icon, title, description, onClick, disabled = false }) => (
-  <div
-    onClick={!disabled ? onClick : undefined}
-    className={`bg-card p-6 rounded-xl shadow-lg border border-border transition-all duration-300 ease-in-out ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-primary/20 hover:scale-[1.02] hover:border-primary/50'}`}>
-    <div className="flex items-center gap-4 mb-3">
-      <AppIcon name={icon} className="w-8 h-8 text-primary" />
-      <h3 className="text-lg font-bold text-text-primary">{title}</h3>
-    </div>
-    <p className="text-sm text-text-secondary">{description}</p>
-  </div>
-);
-
-import { useTheme } from '../../contexts/ThemeContext';
-import { useAppSettings } from '../../contexts/AppSettingsContext';
-
 const Settings = () => {
   const { theme, toggleTheme, appStyle, setAppStyle } = useTheme();
   const { appMode, toggleAppMode } = useAppSettings();
+
+  // Reusable Card Component (Updated for DANA Style)
+  const SettingsCard = ({ icon, title, description, onClick, disabled = false }) => (
+    <div
+      onClick={!disabled ? onClick : undefined}
+      className={`dana-card p-6 active:scale-[0.98] transition-all duration-200 border-none shadow-lg shadow-gray-200/50 ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+      <div className="flex items-center gap-4 mb-3">
+        <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
+          <AppIcon name={icon} size={24} />
+        </div>
+        <div>
+          <h3 className="text-base font-black text-gray-900 tracking-tighter uppercase">{title}</h3>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{description}</p>
+        </div>
+      </div>
+    </div>
+  );
   // --- States ---
   const [websiteTitle, setWebsiteTitle] = useState('');
   const [newWebsiteTitle, setNewWebsiteTitle] = useState('');
@@ -526,103 +529,59 @@ const Settings = () => {
   const isAdmin = userRole === 'admin';
 
   return (
-    <div className="flex flex-col h-screen">
-      {theme === 'default' && <NavigationHeader title="Pengaturan" headerTitle={newHeaderTitle} />}
-      <main className={`flex-grow ${theme === 'default' ? 'pt-16' : ''}`}>
-        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-8 py-8" : ""}>
-          <BreadcrumbNavigation paths={breadcrumbs} />
-          <header className="mt-6 mb-8">
-            <h1 className="text-2xl lg:text-4xl font-bold tracking-tight text-text-primary flex items-center gap-3">
-              <AppIcon name="Settings" className="w-10 h-10" /> Pengaturan Aplikasi
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50 lg:bg-background' : ''}`}>
+      {theme === 'default' && (
+        <NavigationHeader
+          onToggleSidebar={() => { }}
+          headerTitle={websiteTitle || 'Kasir Berkah 88'}
+        />
+      )}
+
+      <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 pt-8 space-y-6 lg:space-y-8" : "space-y-6"}>
+          {/* Breadcrumb */}
+          <div className="mb-6 hidden md:block">
+            <BreadcrumbNavigation paths={breadcrumbs} />
+          </div>
+
+          <div className="mb-8 lg:mb-10">
+            <h1 className="text-3xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case">
+              Pengaturan Sistem
             </h1>
-            <p className="mt-2 text-lg text-text-secondary">Kelola preferensi umum, tampilan, dan fungsionalitas aplikasi Anda di sini.</p>
-          </header>
-
-          <div className="mb-12">
-            <h2 className="text-2xl font-semibold text-text-primary mb-6 border-b border-border pb-3">Pengaturan Umum</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <SettingsCard icon="Type" title="Judul Situs Web" description="Ubah judul di tab browser dan hasil pencarian." onClick={() => setActiveModal('websiteTitle')} disabled={!isAdmin} />
-              <SettingsCard icon="Heading" title="Judul Header Web" description="Sesuaikan teks judul di header utama aplikasi." onClick={() => setActiveModal('headerTitle')} disabled={!isAdmin} />
-              <SettingsCard icon="Image" title="Ganti Logo Header" description="Unggah logo baru yang tampil di header." onClick={() => setActiveModal('logo')} disabled={!isAdmin} />
-
-              {appMode === 'full' && (
-                <>
-                  <SettingsCard icon="DollarSign" title="Modal Awal" description="Atur jumlah modal awal untuk perhitungan bisnis." onClick={() => setActiveModal('initialCapital')} disabled={!isAdmin} />
-                  <SettingsCard icon="FileText" title="Deskripsi Web" description="Kelola deskripsi meta untuk optimasi SEO." onClick={() => setActiveModal('webDescription')} disabled={!isAdmin} />
-                  <SettingsCard icon="ToggleRight" title="Pendaftaran Pengguna" description="Izinkan atau blokir pengguna baru untuk mendaftar." onClick={() => setActiveModal('registration')} disabled={!isAdmin} />
-                  <SettingsCard icon="Share2" title="Tampilan Media Sosial" description="Atur judul, deskripsi, dan gambar untuk berbagi di media sosial." onClick={() => setActiveModal('socialShare')} disabled={!isAdmin} />
-                  <SettingsCard icon="Type" title="Judul Dasbor Kasir" description="Ubah judul yang ditampilkan di halaman dasbor kasir." onClick={() => setActiveModal('cashierDashboardTitle')} disabled={!isAdmin} />
-                  <SettingsCard icon="Percent" title="Pengaturan PPN Global" description="Atur persentase pajak (PPN) default untuk semua transaksi." onClick={() => setActiveModal('ppnRate')} disabled={!isAdmin} />
-                  <SettingsCard icon="Receipt" title="Pengaturan Struk" description="Pilih tampilan struk transaksi yang Anda inginkan." onClick={() => setActiveModal('receiptVersion')} disabled={!isAdmin} />
-                  <SettingsCard icon="ChartNoAxesColumnIncreasing" title="Laporan Transaksi Owner" description="Lihat laporan pendapatan dan pengeluaran bisnis owner." onClick={() => navigate('/admin-uang-bisnis')} />
-                </>
-              )}
-              <SettingsCard
-                icon="Store"
-                title="Pengaturan Restoran"
-                description="Ubah nama dan slogan restoran Anda."
-                onClick={() => setIsRestaurantSettingsModalOpen(true)}
-                disabled={!isAdmin}
-              />
-              <SettingsCard icon="Layout" title={`Beralih ke Tema ${theme === 'default' ? 'Admin' : 'Bawaan'}`} description={`Tema saat ini: ${theme === 'default' ? 'Bawaan' : 'Admin'}. Klik untuk mengganti.`} onClick={toggleTheme} />
-              <SettingsCard
-                icon="Layers"
-                title="Mode Aplikasi"
-                description={`Mode saat ini: ${appMode === 'simple' ? 'Sederhana' : 'Lengkap'}. ${appMode === 'simple' ? 'Klik untuk beralih ke mode Lengkap dengan semua fitur.' : 'Klik untuk beralih ke mode Sederhana yang lebih mudah.'}`}
-                onClick={() => setActiveModal('appMode')}
-              />
-              <SettingsCard icon="List" title="Kelola Kategori Menu" description="Tambah, ubah, atau hapus kategori untuk item menu." onClick={() => setActiveModal('categoryManagement')} disabled={!isAdmin} />
-              <SettingsCard icon="CreditCard" title="Kelola Kategori Pengeluaran" description="Tambah, ubah, atau hapus kategori untuk pengeluaran." onClick={() => setActiveModal('expenseCategoryManagement')} disabled={!isAdmin} />
-
-              {appMode === 'full' && (
-                <>
-                  <SettingsCard icon="Wallet" title="Pengeluaran Lapak" description="Kelola uang masuk dan keluar untuk operasional lapak." onClick={() => navigate('/lapak-deposit')} disabled={!isAdmin && userRole !== 'user' && userRole !== 'kasir' && userRole !== 'owner'} />
-                  <SettingsCard icon="ClipboardCheck" title="Konfirmasi Pesanan" description="Akses halaman konfirmasi pesanan." onClick={() => navigate('/order-confirmation')} disabled={!isAdmin && userRole !== 'user' && userRole !== 'kasir'} />
-                  <SettingsCard icon="Package" title="Stok Bahan Baku" description="Kelola persediaan bahan baku produk Anda." onClick={() => navigate('/raw-material-stock')} disabled={!isAdmin} />
-                  <SettingsCard icon="Calculator" title="Rekonsiliasi Kas" description="Cocokkan uang fisik dengan transaksi tercatat." onClick={() => navigate('/cash-reconciliation')} disabled={!isAdmin && userRole !== 'kasir'} />
-                </>
-              )}
-
-
-
-            </div>
+            <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>
+            <p className="text-xs lg:text-sm text-text-secondary mt-2 font-bold uppercase tracking-widest opacity-60">
+              Konfigurasi toko, pengguna, dan preferensi aplikasi Anda
+            </p>
           </div>
 
-          <div className="mb-12">
-            <h2 className="text-2xl font-semibold text-text-primary mb-6 border-b border-border pb-3">Preferensi Tampilan</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <SettingsCard
-                icon="Palette"
-                title="Gaya Aplikasi"
-                description={`Gaya saat ini: ${appStyle === 'clean' ? 'Option 1 (Clean White)' : 'Option 2 (Elegant Colorful)'}. Klik untuk mengganti.`}
-                onClick={() => setActiveModal('appStyleSelection')}
-              />
-            </div>
+          {/* Settings Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Store Configuration Section */}
+            <SettingsCard icon="Store" title="Identitas Toko" description="Nama, logo, dan deskripsi website" onClick={() => setActiveModal('restaurantSettings')} disabled={!isAdmin} />
+            <SettingsCard icon="Layout" title="Tampilan & Tema" description="Ubah tema warna dan gaya aplikasi" onClick={() => setActiveModal('appStyleSelection')} disabled={!isAdmin} />
+            <SettingsCard icon="Zap" title="Mode Aplikasi" description="Beralih mode Sederhana/Lengkap" onClick={() => setActiveModal('appMode')} disabled={!isAdmin} />
+
+            {/* General Settings */}
+            <SettingsCard icon="FileText" title="PPN & Struk" description="Atur rate PPN dan versi struk" onClick={() => setActiveModal('receiptVersion')} disabled={!isAdmin} />
+            <SettingsCard icon="LayoutList" title="Kategori Menu" description="Kelola kategori produk makanan/minuman" onClick={() => setActiveModal('categoryManagement')} disabled={!isAdmin} />
+            <SettingsCard icon="Wallet" title="Kategori Biaya" description="Kelola kategori pengeluaran operasional" onClick={() => setActiveModal('expenseCategoryManagement')} disabled={!isAdmin} />
+
+            {/* Security & Data */}
+            <SettingsCard icon="Users" title="Manajemen Pengguna" description="Kelola akun admin dan kasir" onClick={() => setActiveModal('userManagement')} disabled={!isAdmin} />
+            <SettingsCard icon="Contact" title="Data Karyawan" description="Kelola profil dan jabatan karyawan" onClick={() => setActiveModal('employeeManagement')} disabled={!isAdmin} />
+            <SettingsCard icon="Lock" title="Sandi Master" description="Otoritas tindakan konfirmasi data" onClick={() => setActiveModal('masterPassword')} disabled={!isAdmin} />
+            <SettingsCard icon="Database" title="Manajemen Database" description="Backup dan restore data aplikasi" onClick={() => navigate('/settings/database')} disabled={!isAdmin} />
+
+            {/* Advanced & Social */}
+            <SettingsCard icon="Share2" title="Media Sosial" description="Atur link berbagi ke media sosial" onClick={() => setActiveModal('socialShare')} disabled={!isAdmin} />
+            <SettingsCard icon="RefreshCw" title="Sinkronisasi Data" description="Sinkronkan data lokal ke cloud" onClick={() => setActiveModal('dataSync')} disabled={!isAdmin} />
+            <SettingsCard icon="Trash2" title="Bersihkan Data" description="Hapus semua riwayat (Hati-hati!)" onClick={() => setActiveModal('clearAllData')} disabled={!isAdmin} />
           </div>
-
-          {isAdmin && (
-            <div className="mb-12">
-              <h2 className="text-2xl font-semibold text-text-primary mb-6 border-b border-border pb-3">Manajemen & Keamanan</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <SettingsCard icon="Users" title="Kelola Pengguna" description="Lihat, ubah peran, dan hapus akun pengguna." onClick={() => setActiveModal('userManagement')} />
-                <SettingsCard icon="Contact" title="Manajemen Karyawan" description="Tambah, ubah, dan hapus data karyawan." onClick={() => setActiveModal('employeeManagement')} />
-                <SettingsCard icon="ShieldAlert" title="Kata Sandi Master" description="Ubah kata sandi master untuk tindakan sensitif." onClick={() => setActiveModal('masterPassword')} />
-
-                <SettingsCard icon="Database" title="Manajemen Database" description="Cadangkan (backup) atau kembalikan (restore) data database Anda." onClick={() => navigate('/settings/database')} />
-                <SettingsCard icon="Trash2" title="Hapus Semua Data" description="Hapus semua transaksi, pengeluaran, uang bisnis, riwayat stok, dan reset stok." onClick={() => setActiveModal('clearAllData')} />
-                {appMode === 'full' && (
-                  <SettingsCard icon="RefreshCw" title="Sinkronisasi Data" description="Kelola pembaruan data menu, stok, dan kas." onClick={() => setIsDataSyncModalOpen(true)} />
-                )}
-              </div>
-            </div>
-          )}
-
-
         </div>
       </main>
 
       {/* --- ALL MODALS --- */}
-      <DataSyncModal isOpen={isDataSyncModalOpen} onClose={() => setIsDataSyncModalOpen(false)} />
+      <DataSyncModal isOpen={activeModal === 'dataSync'} onClose={handleModalClose} />
 
       <SettingsModal title="Ubah Judul Dasbor Kasir" isOpen={activeModal === 'cashierDashboardTitle'} onClose={handleModalClose}>
         <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/cashier_dashboard_title', { value: newCashierDashboardTitle }, 'Judul dasbor kasir berhasil diperbarui!')} className="space-y-4">
@@ -633,7 +592,6 @@ const Settings = () => {
 
       <SettingsModal title="Atur PPN Global" isOpen={activeModal === 'ppnRate'} onClose={handleModalClose}>
         <form onSubmit={(e) => {
-          // Use POST /api/settings which accepts an object
           e.preventDefault();
           handleUpdateSetting(e, '/api/settings', { ppn: newPpnRate }, 'PPN Global berhasil diperbarui!', 'POST');
         }} className="space-y-4">
@@ -657,13 +615,9 @@ const Settings = () => {
           handleUpdateSetting(e, '/api/settings/receipt_version', { value: newReceiptVersion }, 'Pengaturan struk berhasil diperbarui!');
         }} className="space-y-6">
           <p className="text-sm text-text-secondary mb-4">Pilih versi tampilan struk transaksi yang akan dicetak atau ditampilkan kepada pelanggan.</p>
-
           <div className="grid grid-cols-1 gap-4">
-            <div
-              onClick={() => setNewReceiptVersion('1')}
-              className={`cursor-pointer p-4 border-2 rounded-xl transition-all duration-200 flex items-center gap-4 ${newReceiptVersion === '1' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
-            >
-              <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 border border-border shadow-sm flex items-center justify-center">
+            <div onClick={() => setNewReceiptVersion('1')} className={`cursor-pointer p-4 border-2 rounded-xl transition-all duration-200 flex items-center gap-4 ${newReceiptVersion === '1' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}>
+              <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                 <AppIcon name="ReceiptText" className="w-6 h-6 text-primary" />
               </div>
               <div>
@@ -672,12 +626,8 @@ const Settings = () => {
               </div>
               {newReceiptVersion === '1' && <AppIcon name="Check" className="ml-auto text-primary w-6 h-6" />}
             </div>
-
-            <div
-              onClick={() => setNewReceiptVersion('2')}
-              className={`cursor-pointer p-4 border-2 rounded-xl transition-all duration-200 flex items-center gap-4 ${newReceiptVersion === '2' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
-            >
-              <div className="w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 border border-border shadow-sm flex items-center justify-center">
+            <div onClick={() => setNewReceiptVersion('2')} className={`cursor-pointer p-4 border-2 rounded-xl transition-all duration-200 flex items-center gap-4 ${newReceiptVersion === '2' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}>
+              <div className="w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
                 <AppIcon name="FileText" className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div>
@@ -687,7 +637,6 @@ const Settings = () => {
               {newReceiptVersion === '2' && <AppIcon name="Check" className="ml-auto text-primary w-6 h-6" />}
             </div>
           </div>
-
           <Button type="submit" className="w-full mt-4" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
         </form>
       </SettingsModal>
@@ -782,19 +731,8 @@ const Settings = () => {
       <SettingsModal title="Buat Pengguna Admin Baru" isOpen={activeModal === 'createAdminUser'} onClose={handleModalClose}>
         <form onSubmit={handleCreateAdminUser} className="space-y-4">
           <Input label="Nama Pengguna" name="adminUsername" type="text" value={adminUsername} onChange={(e) => setAdminUsername(e.target.value)} required />
-          <Input
-            label="Kata Sandi"
-            name="adminPassword"
-            type={showAdminPassword ? "text" : "password"}
-            value={adminPassword}
-            onChange={(e) => setAdminPassword(e.target.value)}
-            required
-            rightIcon={
-              <span className="cursor-pointer" onClick={() => setShowAdminPassword(!showAdminPassword)}>
-                <AppIcon name={showAdminPassword ? "EyeOff" : "Eye"} className="h-5 w-5 text-gray-400" />
-              </span>
-            }
-          />
+          <Input label="Kata Sandi" name="adminPassword" type={showAdminPassword ? "text" : "password"} value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} required
+            rightIcon={<span className="cursor-pointer" onClick={() => setShowAdminPassword(!showAdminPassword)}><AppIcon name={showAdminPassword ? "EyeOff" : "Eye"} className="h-5 w-5 text-gray-400" /></span>} />
           <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Membuat...' : 'Buat Admin'}</Button>
         </form>
       </SettingsModal>
@@ -802,23 +740,16 @@ const Settings = () => {
       <SettingsModal title="Manajemen Karyawan" isOpen={activeModal === 'employeeManagement'} onClose={handleModalClose} size="3xl">
         <div className="space-y-4">
           <Button onClick={() => openEmployeeForm(null)} className="w-full md:w-auto"><AppIcon name="Plus" className="w-4 h-4 mr-2" />Tambah Karyawan</Button>
-          {message && <p className="text-sm text-center text-green-500 mt-2">{message}</p>}
-          {error && <p className="text-sm text-center text-red-500 mt-2">{error}</p>}
           <div className="overflow-x-auto border border-border rounded-lg">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-100 dark:bg-gray-800 text-left text-text-secondary"><tr>
-                <th className="px-2 py-1 min-w-max">Nama</th><th className="px-2 py-1 min-w-max">Posisi</th><th className="p-3">Kontak</th><th className="p-3">Aksi</th>
-              </tr></thead>
+              <thead className="bg-gray-100 dark:bg-gray-800 text-left text-text-secondary"><tr><th className="px-2 py-1">Nama</th><th className="px-2 py-1">Posisi</th><th className="p-3">Kontak</th><th className="p-3">Aksi</th></tr></thead>
               <tbody>
                 {employees.map(emp => (
                   <tr key={emp.id} className="border-t border-border">
-                    <td className="px-2 py-1 flex items-center gap-3 min-w-max"><img src={emp.avatar ? `${apiUrl}${emp.avatar}` : '/assets/images/no_image.png'} className="w-10 h-10 rounded-full object-cover" />{emp.name}</td>
-                    <td className="px-2 py-1 min-w-max">{emp.position}</td>
+                    <td className="px-2 py-1 flex items-center gap-3"><img src={emp.avatar ? `${apiUrl}${emp.avatar}` : '/assets/images/no_image.png'} className="w-10 h-10 rounded-full object-cover" />{emp.name}</td>
+                    <td className="px-2 py-1">{emp.position}</td>
                     <td className="p-3">{emp.phone}<br />{emp.email}</td>
-                    <td className="p-3"><div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => openEmployeeForm(emp)}>Edit</Button>
-                      <Button variant="destructive" size="sm" onClick={() => confirmDeleteEmployee(emp.id)}>Hapus</Button>
-                    </div></td>
+                    <td className="p-3"><div className="flex gap-2"><Button variant="outline" size="sm" onClick={() => openEmployeeForm(emp)}>Edit</Button><Button variant="destructive" size="sm" onClick={() => confirmDeleteEmployee(emp.id)}>Hapus</Button></div></td>
                   </tr>
                 ))}
               </tbody>
@@ -834,7 +765,6 @@ const Settings = () => {
           <Input label="Telepon" name="phone" defaultValue={editingEmployee?.phone} />
           <Input label="Email" name="email" type="email" defaultValue={editingEmployee?.email} />
           <Input label="Avatar" name="avatar" type="file" accept="image/*" />
-          {editingEmployee?.avatar && !editingEmployee?.avatar.startsWith('blob:') && <img src={`${apiUrl}${editingEmployee.avatar}`} className="w-20 h-20 rounded-full object-cover mt-2" />}
           <div className="flex justify-end gap-4 pt-4">
             <Button type="button" variant="outline" onClick={() => setActiveModal('employeeManagement')}>Batal</Button>
             <Button type="submit" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan'}</Button>
@@ -844,253 +774,70 @@ const Settings = () => {
 
       <SettingsModal title="Ubah Kata Sandi Master" isOpen={activeModal === 'masterPassword'} onClose={handleModalClose}>
         <form onSubmit={handleChangeMasterPassword} className="space-y-4">
-          <p className="text-sm text-text-secondary">Kata sandi ini digunakan untuk mengotorisasi tindakan berbahaya seperti menghapus semua data.</p>
-          <Input
-            label="Kata Sandi Master Saat Ini"
-            name="currentMasterPassword"
-            type={showCurrentMasterPassword ? "text" : "password"}
-            value={currentMasterPassword}
-            onChange={(e) => setCurrentMasterPassword(e.target.value)}
-            required
-            rightIcon={
-              <span className="cursor-pointer" onClick={() => setShowCurrentMasterPassword(!showCurrentMasterPassword)}>
-                <AppIcon name={showCurrentMasterPassword ? "EyeOff" : "Eye"} className="h-5 w-5 text-gray-400" />
-              </span>
-            }
-          />
-          <Input
-            label="Kata Sandi Master Baru"
-            name="newMasterPassword"
-            type={showNewMasterPassword ? "text" : "password"}
-            value={newMasterPassword}
-            onChange={(e) => setNewMasterPassword(e.target.value)}
-            required
-            rightIcon={
-              <span className="cursor-pointer" onClick={() => setShowNewMasterPassword(!showNewMasterPassword)}>
-                <AppIcon name={showNewMasterPassword ? "EyeOff" : "Eye"} className="h-5 w-5 text-gray-400" />
-              </span>
-            }
-          />
-          <Input
-            label="Konfirmasi Kata Sandi Master Baru"
-            name="confirmNewMasterPassword"
-            type={showConfirmNewMasterPassword ? "text" : "password"}
-            value={confirmNewMasterPassword}
-            onChange={(e) => setConfirmNewMasterPassword(e.target.value)}
-            required
-            rightIcon={
-              <span className="cursor-pointer" onClick={() => setShowConfirmNewMasterPassword(!showConfirmNewMasterPassword)}>
-                <AppIcon name={showConfirmNewMasterPassword ? "EyeOff" : "Eye"} className="h-5 w-5 text-gray-400" />
-              </span>
-            }
-          />
+          <p className="text-sm text-text-secondary">Digunakan untuk otorisasi penghapusan data masal.</p>
+          <Input label="Sandi Master Saat Ini" name="currentMasterPassword" type={showCurrentMasterPassword ? "text" : "password"} value={currentMasterPassword} onChange={(e) => setCurrentMasterPassword(e.target.value)} required
+            rightIcon={<span className="cursor-pointer" onClick={() => setShowCurrentMasterPassword(!showCurrentMasterPassword)}><AppIcon name={showCurrentMasterPassword ? "EyeOff" : "Eye"} className="h-5 w-5 text-gray-400" /></span>} />
+          <Input label="Sandi Master Baru" name="newMasterPassword" type={showNewMasterPassword ? "text" : "password"} value={newMasterPassword} onChange={(e) => setNewMasterPassword(e.target.value)} required
+            rightIcon={<span className="cursor-pointer" onClick={() => setShowNewMasterPassword(!showNewMasterPassword)}><AppIcon name={showNewMasterPassword ? "EyeOff" : "Eye"} className="h-5 w-5 text-gray-400" /></span>} />
+          <Input label="Konfirmasi Sandi Baru" name="confirmNewMasterPassword" type={showConfirmNewMasterPassword ? "text" : "password"} value={confirmNewMasterPassword} onChange={(e) => setConfirmNewMasterPassword(e.target.value)} required
+            rightIcon={<span className="cursor-pointer" onClick={() => setShowConfirmNewMasterPassword(!showConfirmNewMasterPassword)}><AppIcon name={showConfirmNewMasterPassword ? "EyeOff" : "Eye"} className="h-5 w-5 text-gray-400" /></span>} />
           <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Memperbarui...' : 'Perbarui Kata Sandi'}</Button>
         </form>
       </SettingsModal>
 
-
-
-      <SettingsModal title="Hapus Semua Data" isOpen={activeModal === 'clearAllData'} onClose={handleModalClose}>
+      <SettingsModal title="Bersihkan Semua Data" isOpen={activeModal === 'clearAllData'} onClose={handleModalClose}>
         <form onSubmit={handleClearAllData} className="space-y-4">
-          <p className="text-sm text-text-secondary">Tindakan ini akan menghapus semua transaksi, pengeluaran, riwayat stok, uang bisnis, dan mengatur ulang stok menjadi nol. Ini tidak dapat dibatalkan.</p>
-          <Input
-            label="Kata Sandi Master"
-            name="masterPasswordForClear"
-            type={showMasterPasswordForClear ? "text" : "password"}
-            value={masterPasswordForClear}
-            onChange={(e) => setMasterPasswordForClear(e.target.value)}
-            required
-            rightIcon={
-              <span className="cursor-pointer" onClick={() => setShowMasterPasswordForClear(!showMasterPasswordForClear)}>
-                <AppIcon name={showMasterPasswordForClear ? "EyeOff" : "Eye"} className="h-5 w-5 text-gray-400" />
-              </span>
-            }
-          />
+          <p className="text-sm text-text-secondary">Tindakan permanen! Menghapus semua transaksi dan riwayat bisnis.</p>
+          <Input label="Kata Sandi Master" name="masterPasswordForClear" type={showMasterPasswordForClear ? "text" : "password"} value={masterPasswordForClear} onChange={(e) => setMasterPasswordForClear(e.target.value)} required
+            rightIcon={<span className="cursor-pointer" onClick={() => setShowMasterPasswordForClear(!showMasterPasswordForClear)}><AppIcon name={showMasterPasswordForClear ? "EyeOff" : "Eye"} className="h-5 w-5 text-gray-400" /></span>} />
           <Button type="submit" variant="destructive" className="w-full" disabled={isLoading}>{isLoading ? 'Menghapus...' : 'Hapus Semua Data'}</Button>
         </form>
       </SettingsModal>
 
-
-
-      <SettingsModal title="Pengaturan Tampilan Media Sosial" isOpen={activeModal === 'socialShare'} onClose={handleModalClose}>
+      <SettingsModal title="Media Sosial" isOpen={activeModal === 'socialShare'} onClose={handleModalClose}>
         <SocialShareSettings onClose={handleModalClose} />
       </SettingsModal>
 
-      <SettingsModal title="Kelola Kategori Menu" isOpen={activeModal === 'categoryManagement'} onClose={handleModalClose}>
+      <SettingsModal title="Kategori Menu" isOpen={activeModal === 'categoryManagement'} onClose={handleModalClose}>
         <CategorySettings onClose={handleModalClose} />
       </SettingsModal>
 
-      <SettingsModal title="Kelola Kategori Pengeluaran" isOpen={activeModal === 'expenseCategoryManagement'} onClose={handleModalClose}>
+      <SettingsModal title="Kategori Pengeluaran" isOpen={activeModal === 'expenseCategoryManagement'} onClose={handleModalClose}>
         <ExpenseCategorySettings onClose={handleModalClose} />
       </SettingsModal>
 
-      <RestaurantSettingsModal
-        isOpen={isRestaurantSettingsModalOpen}
-        onClose={() => setIsRestaurantSettingsModalOpen(false)}
-        onSave={handleSaveRestaurantSettings}
-        initialSettings={restaurantSettings}
-      />
+      <RestaurantSettingsModal isOpen={activeModal === 'restaurantSettings'} onClose={handleModalClose} onSave={handleSaveRestaurantSettings} />
 
-      <ConfirmationModal
-        isOpen={showDeleteUserConfirmation}
-        onClose={() => setShowDeleteUserConfirmation(false)}
-        onConfirm={handleDeleteUser}
-        title="Konfirmasi Penghapusan Pengguna"
-        message={`Apakah Anda yakin ingin menghapus pengguna "${userToDeleteUsername}"? Tindakan ini tidak dapat dibatalkan.`}
-        confirmText="Ya, Hapus Pengguna"
-        cancelText="Batal"
-      />
-
-      <ConfirmationModal
-        isOpen={showDeleteEmployeeConfirmation}
-        onClose={() => setShowDeleteEmployeeConfirmation(false)}
-        onConfirm={handleDeleteEmployee}
-        title="Konfirmasi Penghapusan Karyawan"
-        message="Apakah Anda yakin ingin menghapus karyawan ini? Tindakan ini tidak dapat dibatalkan."
-        confirmText="Ya, Hapus Karyawan"
-        cancelText="Batal"
-      />
-
-      <ConfirmationModal
-        isOpen={showDeleteLogoConfirmation}
-        onClose={() => setShowDeleteLogoConfirmation(false)}
-        onConfirm={handleDeleteLogo}
-        title="Konfirmasi Penghapusan Logo"
-        message="Apakah Anda yakin ingin menghapus logo? Ini akan membuat header tanpa gambar. Tindakan ini tidak dapat dibatalkan."
-        confirmText="Ya, Hapus Logo"
-        cancelText="Batal"
-      />
-
-      {/* Modal App Style Selection */}
+      {/* Modal App Mode selection */}
       <SettingsModal title="Pilih Gaya Aplikasi" isOpen={activeModal === 'appStyleSelection'} onClose={handleModalClose}>
         <div className="space-y-4">
-          <div
-            onClick={() => { setAppStyle('clean'); handleModalClose(); }}
-            className={`cursor-pointer p-4 border-2 rounded-xl transition-all duration-200 flex items-center gap-4 ${appStyle === 'clean' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
-          >
-            <div className="w-12 h-12 rounded-lg bg-white border border-border shadow-sm flex items-center justify-center">
-              <div className="w-6 h-6 bg-primary rounded-sm opacity-20"></div>
-            </div>
-            <div>
-              <h4 className="font-bold text-text-primary">Option 1: Clean White</h4>
-              <p className="text-sm text-text-secondary">Tampilan bersih, minimalis, dan profesional dengan latar belakang putih.</p>
-            </div>
-            {appStyle === 'clean' && <AppIcon name="Check" className="ml-auto text-primary w-6 h-6" />}
+          <div onClick={() => { setAppStyle('clean'); handleModalClose(); }}
+            className={`cursor-pointer p-4 border-2 rounded-xl flex items-center gap-4 ${appStyle === 'clean' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+            <h4 className="font-bold flex-1">Clean White</h4>
+            {appStyle === 'clean' && <AppIcon name="Check" className="text-primary" />}
           </div>
-
-          <div
-            onClick={() => { setAppStyle('elegant'); handleModalClose(); }}
-            className={`cursor-pointer p-4 border-2 rounded-xl transition-all duration-200 flex items-center gap-4 ${appStyle === 'elegant' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
-          >
-            <div className="w-12 h-12 rounded-lg bg-indigo-950 border border-white/10 shadow-lg flex items-center justify-center overflow-hidden relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-600/30 to-blue-600/30"></div>
-              <div className="w-6 h-6 bg-purple-500 rounded-sm shadow-lg z-10"></div>
-            </div>
-            <div>
-              <h4 className="font-bold text-text-primary">Option 2: Elegant Colorful</h4>
-              <p className="text-sm text-text-secondary">Tampilan mewah dengan latar belakang gradien dan efek kaca yang elegan.</p>
-            </div>
-            {appStyle === 'elegant' && <AppIcon name="Check" className="ml-auto text-primary w-6 h-6" />}
+          <div onClick={() => { setAppStyle('elegant'); handleModalClose(); }}
+            className={`cursor-pointer p-4 border-2 rounded-xl flex items-center gap-4 ${appStyle === 'elegant' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+            <h4 className="font-bold flex-1">Elegant Colorful</h4>
+            {appStyle === 'elegant' && <AppIcon name="Check" className="text-primary" />}
           </div>
-
-          <Button variant="outline" className="w-full mt-4" onClick={handleModalClose}>Batal</Button>
         </div>
       </SettingsModal>
 
-      {/* Modal App Mode */}
       <SettingsModal title="Mode Aplikasi" isOpen={activeModal === 'appMode'} onClose={handleModalClose}>
-        <div className="space-y-6">
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
-              <AppIcon name="Info" className="w-5 h-5" />
-              Mode Saat Ini: {appMode === 'simple' ? 'Sederhana' : 'Lengkap'}
-            </h4>
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              {appMode === 'simple'
-                ? 'Anda sedang menggunakan mode Sederhana dengan fitur-fitur penting saja.'
-                : 'Anda sedang menggunakan mode Lengkap dengan semua fitur tersedia.'}
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <div className="border border-border rounded-lg p-4">
-              <h5 className="font-semibold text-text-primary mb-2 flex items-center gap-2">
-                <AppIcon name="Zap" className="w-5 h-5 text-green-600" />
-                Mode Sederhana
-              </h5>
-              <p className="text-sm text-text-secondary mb-3">
-                Cocok untuk warung kecil yang ingin fokus pada fitur utama tanpa kompleksitas.
-              </p>
-              <ul className="text-sm text-text-secondary space-y-1 ml-4 list-disc">
-                <li>Dashboard ringkasan</li>
-                <li>Proses Transaksi</li>
-                <li>Manajemen Menu</li>
-                <li>Pengeluaran</li>
-                <li>Laporan Bisnis (Harian & Bulanan)</li>
-                <li>Profil & Pengaturan</li>
-              </ul>
-            </div>
-
-            <div className="border border-border rounded-lg p-4">
-              <h5 className="font-semibold text-text-primary mb-2 flex items-center gap-2">
-                <AppIcon name="Layers" className="w-5 h-5 text-purple-600" />
-                Mode Lengkap
-              </h5>
-              <p className="text-sm text-text-secondary mb-3">
-                Untuk bisnis yang membutuhkan kontrol penuh dengan semua fitur advanced.
-              </p>
-              <ul className="text-sm text-text-secondary space-y-1 ml-4 list-disc">
-                <li>Semua fitur Mode Sederhana</li>
-                <li>Manajemen Menu & Stok Bahan Mentah</li>
-                <li>Lapak Deposit & Uang Bisnis</li>
-                <li>Rekonsiliasi Kas</li>
-                <li>Riwayat & Sampah Transaksi</li>
-                <li>HPP, Kalkulator, AI Assistant</li>
-                <li>Karyawan, Kredit/Piutang, Catatan</li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-            <p className="text-sm text-yellow-800 dark:text-yellow-200 flex items-start gap-2">
-              <AppIcon name="AlertTriangle" className="w-5 h-5 flex-shrink-0 mt-0.5" />
-              <span>
-                <strong>Catatan:</strong> Data Anda tetap aman dan tersinkronisasi.
-                Anda dapat beralih mode kapan saja tanpa kehilangan data.
-              </span>
-            </p>
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={handleModalClose}
-            >
-              Batal
-            </Button>
-            <Button
-              className="flex-1"
-              onClick={async () => {
-                const newMode = appMode === 'simple' ? 'full' : 'simple';
-                const result = await toggleAppMode(newMode);
-                if (result.success) {
-                  setMessage(result.message);
-                  handleModalClose();
-                  setTimeout(() => {
-                    window.location.reload(); // Reload untuk apply perubahan sidebar
-                  }, 1000);
-                } else {
-                  setError(result.message);
-                }
-              }}
-              disabled={isLoading}
-            >
-              {isLoading ? 'Mengubah...' : `Beralih ke Mode ${appMode === 'simple' ? 'Lengkap' : 'Sederhana'}`}
-            </Button>
-          </div>
+        <div className="space-y-4">
+          <div className="bg-blue-50 p-4 rounded-lg"><p className="text-sm font-bold text-blue-900">Mode: {appMode === 'simple' ? 'Sederhana' : 'Lengkap'}</p></div>
+          <Button className="w-full" onClick={async () => {
+            const newMode = appMode === 'simple' ? 'full' : 'simple';
+            const result = await toggleAppMode(newMode);
+            if (result.success) { window.location.reload(); }
+          }}>{`Beralih ke Mode ${appMode === 'simple' ? 'Lengkap' : 'Sederhana'}`}</Button>
         </div>
       </SettingsModal>
+
+      <ConfirmationModal isOpen={showDeleteUserConfirmation} onClose={() => setShowDeleteUserConfirmation(false)} onConfirm={handleDeleteUser} title="Hapus Pengguna" message={`Hapus "${userToDeleteUsername}"?`} />
+      <ConfirmationModal isOpen={showDeleteEmployeeConfirmation} onClose={() => setShowDeleteEmployeeConfirmation(false)} onConfirm={handleDeleteEmployee} title="Hapus Karyawan" message="Hapus karyawan ini?" />
+      <ConfirmationModal isOpen={showDeleteLogoConfirmation} onClose={() => setShowDeleteLogoConfirmation(false)} onConfirm={handleDeleteLogo} title="Hapus Logo" message="Hapus logo header?" />
 
       {message && <div className="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{message}</div>}
       {error && <div className="fixed bottom-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{error}</div>}

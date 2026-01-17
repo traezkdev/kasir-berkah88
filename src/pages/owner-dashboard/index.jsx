@@ -314,8 +314,8 @@ const OwnerDashboard = ({ headerTitle }) => {
     return (
         <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
             {theme === 'default' && <OwnerNavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || 'Dashboard Owner'} />}
-            <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'pt-16' : ''}`}>
-                <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
+            <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>
+                <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 pb-8" : ""}>
                     {/* Stock Alert Banner */}
                     <StockAlertBanner isOwner={true} />
 
