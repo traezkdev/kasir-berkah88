@@ -793,7 +793,7 @@ const TransactionHistory = ({ headerTitle }) => {
 
       <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>
 
-        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 pt-8 space-y-6 lg:space-y-8" : "space-y-6"}>
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 pt-2 space-y-6 lg:space-y-8" : "space-y-6"}>
 
           <div className="mb-8 lg:mb-6">
 
@@ -802,7 +802,7 @@ const TransactionHistory = ({ headerTitle }) => {
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-              <h1 className="text-3xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case">
+              <h1 className="text-2xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case">
                 Riwayat Transaksi
               </h1>
             </div>

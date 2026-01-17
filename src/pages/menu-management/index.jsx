@@ -425,8 +425,8 @@ Powered by Kasir Berkah 88`;
         </div>
       )}
 
-      <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>
-        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 pt-8 space-y-6 lg:space-y-8" : "space-y-6"}>
+      <main className={`${theme === 'default' ? 'pt-18 lg:pt-16' : ''} pb-24 lg:pb-8`}>
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 pt-2 space-y-6 lg:space-y-8" : "space-y-6"}>
           {/* Breadcrumb */}
           <div className="mb-6 hidden md:block">
             <BreadcrumbNavigation />
@@ -434,7 +434,7 @@ Powered by Kasir Berkah 88`;
 
           {/* Page Header */}
           <div className="mb-8 lg:mb-6">
-            <h1 className="text-3xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case">
+            <h1 className="text-2xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case">
               Kelola Menu
             </h1>
             <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>

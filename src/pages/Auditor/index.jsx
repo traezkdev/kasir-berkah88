@@ -216,12 +216,19 @@ export default function AuditorPage() {
                 )
             )}
 
-            <main className={`max-w-7xl mx-auto ${theme === 'default' ? 'px-4 lg:px-6 pt-28 lg:pt-24 pb-12' : 'p-0'}`}>
-                <BreadcrumbNavigation customPath={[{ label: 'Audit', path: '/auditor', isActive: true }]} />
+            <main className={`max-w-7xl mx-auto ${theme === 'default' ? 'px-4 lg:px-6 pt-20 lg:pt-16 pb-12' : 'p-0'}`}>
+                <div className="pt-2">
+                    <BreadcrumbNavigation customPath={[{ label: 'Audit', path: '/auditor', isActive: true }]} />
+                </div>
 
-                <header className="mb-8 mt-4">
-                    <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase mb-2">Pusat Audit Data</h1>
-                    <p className="text-gray-500 font-medium">Laporan transparansi keuangan dan validasi akurasi sistem.</p>
+                <header className="mb-8 lg:mb-6">
+                    <h1 className="text-2xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case">
+                        Pusat Audit Data
+                    </h1>
+                    <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>
+                    <p className="text-xs lg:text-sm text-text-secondary mt-2 font-bold uppercase tracking-widest opacity-60">
+                        Laporan transparansi keuangan dan validasi akurasi sistem.
+                    </p>
                 </header>
 
                 {/* Audit Status Bar */}

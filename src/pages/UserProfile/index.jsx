@@ -219,17 +219,20 @@ const UserProfile = ({ headerTitle }) => {
           />
         )
       )}
-      <main className={`flex-grow ${theme === 'default' ? 'pt-16' : ''}`}>
+      <main className={`flex-grow ${theme === 'default' ? 'pt-20 lg:pt-16' : ''}`}>
         <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-8 py-8" : ""}>
           <div className="hidden md:block">
             <BreadcrumbNavigation paths={breadcrumbs} />
           </div>
-          <header className="mt-6 mb-8">
-            <h1 className="text-2xl lg:text-4xl font-bold tracking-tight text-text-primary flex items-center gap-3">
-              <AppIcon name="UserCircle" className="w-10 h-10" />
+          <header className="mb-8 lg:mb-6">
+            <h1 className="text-2xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case flex items-center gap-3">
+              <AppIcon name="UserCircle" className="w-8 h-8 lg:w-10 lg:h-10 text-primary" />
               Profil Pengguna
             </h1>
-            <p className="mt-2 text-lg text-text-secondary">Kelola informasi akun, nama pengguna, dan kata sandi Anda.</p>
+            <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>
+            <p className="text-xs lg:text-sm text-text-secondary mt-2 font-bold uppercase tracking-widest opacity-60">
+              Kelola informasi akun, nama pengguna, dan kata sandi Anda.
+            </p>
           </header>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-24">

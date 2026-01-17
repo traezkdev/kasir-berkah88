@@ -122,7 +122,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
 
   return (
     <>
-      <header className={`${hideMobileHeader ? 'hidden lg:block lg:fixed lg:top-0 lg:left-0 lg:right-0' : 'fixed top-0 left-0 right-0'} z-50 lg:bg-card lg:border-b lg:border-border lg:shadow-elevation-1 lg:text-text-primary bg-[#118eea] lg:bg-card text-white lg:text-text-primary rounded-none transition-all duration-300 ${isNativePlatform ? 'pt-10' : 'pt-2'} pb-2 lg:pt-0 lg:pb-0 navigation-header-root`}>
+      <header className={`${hideMobileHeader ? 'hidden lg:block lg:fixed lg:top-0 lg:left-0 lg:right-0' : 'fixed top-0 left-0 right-0'} z-50 lg:bg-card lg:border-b lg:border-border lg:shadow-elevation-1 lg:text-text-primary bg-[#118eea] dark:bg-slate-900 border-b border-transparent dark:border-slate-800 text-white rounded-none transition-all duration-300 ${isNativePlatform ? 'pt-10' : 'pt-2'} pb-2 lg:pt-0 lg:pb-0 navigation-header-root`}>
         <div className="flex items-center justify-between h-14 lg:h-16 px-5 lg:px-6">
           {/* Left Section: Back Button or Logo */}
           <div className="flex items-center gap-3">
@@ -173,19 +173,19 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
 
 
               {/* Profile/Settings Quick Access for Mobile */}
-              <div
-                className="lg:hidden w-8 h-8 rounded-full bg-white/20 flex items-center justify-center active:scale-90 transition-transform"
+              <button
+                className="lg:hidden p-2 flex items-center justify-center active:scale-90 transition-transform"
                 onClick={() => navigate('/chatbot')}
               >
-                <Icon name="Bot" size={18} className="text-white" />
-              </div>
+                <Icon name="Bot" size={24} className="text-white" />
+              </button>
 
-              <div
-                className="lg:hidden w-8 h-8 rounded-full bg-white/20 flex items-center justify-center active:scale-90 transition-transform"
+              <button
+                className="lg:hidden p-2 flex items-center justify-center active:scale-90 transition-transform"
                 onClick={toggleMobileMenu}
               >
-                <Icon name={isMobileMenuOpen ? "X" : "Menu"} size={18} className="text-white" />
-              </div>
+                <Icon name={isMobileMenuOpen ? "X" : "Menu"} size={24} className="text-white" />
+              </button>
             </div>
           </div>
         </div>
@@ -231,32 +231,37 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
         )}
       </header>
 
-      {/* Mobile Bottom Navigation (DANA Style) */}
+      {/* Premium Expanding Bottom Navigation (Modern & Grounded) */}
       {location.pathname !== '/chatbot' && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 lg:hidden safe-area-bottom shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
-          <nav className="flex items-center justify-around h-16 px-2">
+        <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white dark:bg-[#0f172a] border-t border-gray-100 dark:border-slate-800 safe-area-bottom shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+          <nav className="flex items-center justify-between h-18 px-4 py-2">
             {navigationItems?.slice(0, 5)?.map((item) => {
               const active = isActiveRoute(item?.path);
               return (
                 <Link
                   key={item?.path}
                   to={item?.path}
-                  className={`flex flex-col items-center justify-center flex-1 min-w-0 transition-all duration-300 relative ${active ? 'text-blue-600 scale-110' : 'text-gray-400 hover:text-gray-600'
-                    }`}
+                  className={`flex items-center justify-center transition-all duration-500 ease-in-out h-12 rounded-2xl relative group active:scale-90
+                      ${active
+                      ? 'flex-[2.5] bg-blue-600 dark:bg-white text-white dark:text-slate-900 px-4 shadow-lg shadow-blue-500/30 dark:shadow-white/10 hover:brightness-110'
+                      : 'flex-1 text-gray-400 dark:text-slate-500 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
                 >
-                  <div className={`p-1.5 rounded-xl transition-colors duration-300 ${active ? 'bg-blue-600/10' : ''}`}>
+                  <div className="flex items-center gap-2 relative z-10">
                     <Icon
                       name={item?.icon}
-                      size={20}
-                      className={active ? 'text-blue-600' : 'text-gray-400'}
+                      size={24}
+                      className={`transition-colors duration-300 ${active ? 'text-white dark:text-slate-900' : 'text-gray-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`}
                     />
+                    {active && (
+                      <span className="text-[10px] font-black uppercase tracking-wider whitespace-nowrap animate-in fade-in slide-in-from-left-2 duration-500">
+                        {item.label === 'Dashboard' ? 'Home' : item.label.split(' ')[0]}
+                      </span>
+                    )}
                   </div>
-                  <span className={`text-[10px] font-bold mt-1 truncate w-full text-center transition-all duration-300 ${active ? 'opacity-100' : 'opacity-70'}`}>
-                    {item.label === 'Dashboard' ? 'Beranda' : (item.label.split(' ')[0])}
-                  </span>
 
+                  {/* Adaptive Glassy Overlay */}
                   {active && (
-                    <span className="absolute -bottom-1 w-1 h-1 bg-blue-600 rounded-full shadow-[0_0_8px_rgba(37,99,235,0.8)]"></span>
+                    <div className="absolute inset-0 rounded-2xl bg-white/10 dark:bg-black/5 transition-opacity group-hover:opacity-20" />
                   )}
                 </Link>
               );
