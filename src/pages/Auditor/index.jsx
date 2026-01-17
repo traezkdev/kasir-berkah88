@@ -2,20 +2,37 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
+import { useAppSettings } from '../../contexts/AppSettingsContext';
 import MetricsCard from '../main-dashboard/components/MetricsCard';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import authFetch from '../../utils/authFetch';
 import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from 'react-hot-toast';
+import { jwtDecode } from 'jwt-decode';
+import OwnerNavigationHeader from '../../components/ui/OwnerNavigationHeader';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 export default function AuditorPage() {
     const { theme } = useTheme();
+    const { toggleSidebar } = useAppSettings();
     const navigate = useNavigate();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [userRole, setUserRole] = useState(null);
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const decoded = jwtDecode(token);
+                setUserRole(decoded.role);
+            } catch (e) {
+                console.error("Failed to decode token", e);
+            }
+        }
+    }, []);
 
     const fetchData = async () => {
         setLoading(true);
@@ -185,7 +202,19 @@ export default function AuditorPage() {
 
     return (
         <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50' : 'bg-transparent'} pb-20`}>
-            {theme === 'default' && <NavigationHeader headerTitle="Sistem Audit" />}
+            {theme === 'default' && (
+                userRole === 'owner' ? (
+                    <OwnerNavigationHeader
+                        onToggleSidebar={toggleSidebar}
+                        headerTitle="Sistem Audit"
+                    />
+                ) : (
+                    <NavigationHeader
+                        onToggleSidebar={toggleSidebar}
+                        headerTitle="Sistem Audit"
+                    />
+                )
+            )}
 
             <main className={`max-w-7xl mx-auto ${theme === 'default' ? 'px-4 lg:px-6 pt-28 lg:pt-24 pb-12' : 'p-0'}`}>
                 <BreadcrumbNavigation customPath={[{ label: 'Audit', path: '/auditor', isActive: true }]} />

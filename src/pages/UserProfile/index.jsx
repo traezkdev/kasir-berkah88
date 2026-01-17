@@ -5,6 +5,8 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
+import { useAppSettings } from '../../contexts/AppSettingsContext';
+import OwnerNavigationHeader from '../../components/ui/OwnerNavigationHeader';
 import AppIcon from '../../components/AppIcon';
 import ConfirmationModal from '../../components/ui/ConfirmationModal';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -50,6 +52,7 @@ const ProfileCard = ({ icon, title, description, onClick, isDestructive = false 
 
 const UserProfile = ({ headerTitle }) => {
   const { theme } = useTheme();
+  const { toggleSidebar } = useAppSettings();
   // --- States ---
   const [user, setUser] = useState({ id: '', username: '', role: '', avatar_url: null });
   const [newUsername, setNewUsername] = useState('');
@@ -203,7 +206,19 @@ const UserProfile = ({ headerTitle }) => {
 
   return (
     <div className="flex flex-col h-screen">
-      {theme === 'default' && <NavigationHeader title="Profil Pengguna" headerTitle={headerTitle} />}
+      {theme === 'default' && (
+        user.role === 'owner' ? (
+          <OwnerNavigationHeader
+            onToggleSidebar={toggleSidebar}
+            headerTitle={headerTitle || "Profil Pengguna"}
+          />
+        ) : (
+          <NavigationHeader
+            onToggleSidebar={toggleSidebar}
+            headerTitle={headerTitle || "Profil Pengguna"}
+          />
+        )
+      )}
       <main className={`flex-grow ${theme === 'default' ? 'pt-16' : ''}`}>
         <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-8 py-8" : ""}>
           <div className="hidden md:block">

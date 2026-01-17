@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 import OwnerNavigationHeader from '../../components/ui/OwnerNavigationHeader';
 import MetricsCard from '../main-dashboard/components/MetricsCard';
@@ -9,13 +9,38 @@ import authFetch from '../../utils/authFetch';
 import Icon from '../../components/AppIcon';
 import StockAlertBanner from '../../components/StockAlertBanner';
 import OwnerMotivationalModal from '../../components/ui/OwnerMotivationalModal';
+import { useDarkMode } from '../../contexts/DarkModeContext';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const OwnerDashboard = ({ headerTitle }) => {
     const { theme } = useTheme();
+    const { isDarkMode, toggleDarkMode } = useDarkMode();
     const navigate = useNavigate();
+    const location = useLocation();
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [dashboardData, setDashboardData] = useState(null);
+
+    const navigationItems = [
+        { label: 'Beranda', path: '/owner-dashboard', icon: 'LayoutDashboard' },
+        { label: 'Uang Bisnis', path: '/uang-bisnis', icon: 'Wallet' },
+        { label: 'Analisis', path: '/analisis-data', icon: 'BarChart' },
+        { label: 'Stok', path: '/owner-raw-material-stock', icon: 'Package' },
+        { label: 'Kritis', path: '/critical-stock', icon: 'AlertTriangle' },
+        { label: 'Profil', path: '/owner-profile', icon: 'User' },
+    ];
+
+    const isActiveRoute = (path) => {
+        if (path === '/owner-dashboard') {
+            return location.pathname === '/owner-dashboard' || location.pathname === '/';
+        }
+        return location.pathname.startsWith(path);
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        navigate('/login');
+    };
 
     const formatCurrency = (amount) => {
         const value = parseFloat(amount);
@@ -312,7 +337,7 @@ const OwnerDashboard = ({ headerTitle }) => {
     ];
 
     return (
-        <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50' : 'bg-transparent'}`}>
+        <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50 dark:bg-slate-950' : 'bg-transparent'}`}>
             {theme === 'default' && (
                 <OwnerNavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || 'Dashboard Owner'} hideMobileHeader={true} />
             )}
@@ -320,22 +345,24 @@ const OwnerDashboard = ({ headerTitle }) => {
             {/* --- MOBILE OWNER DANA-STYLE UI (lg:hidden) --- */}
             <div className="lg:hidden flex flex-col pb-24">
                 {/* Dana Blue Header */}
-                <header className="bg-[#118eea] text-white px-5 pt-8 pb-16 shadow-xl relative z-20 overflow-hidden">
+                <header className={`bg-[#118eea] dark:bg-slate-900 text-white px-5 pt-8 pb-16 shadow-xl relative transition-all duration-300 ${isMobileMenuOpen ? 'z-50' : 'z-20'}`}>
                     {/* Decorative Elements */}
-                    <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-10 -mt-20 blur-3xl"></div>
-                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-400/10 rounded-full -ml-10 -mb-10 blur-2xl"></div>
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                        <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-10 -mt-20 blur-3xl"></div>
+                        <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-400/10 rounded-full -ml-10 -mb-10 blur-2xl"></div>
+                    </div>
 
                     {/* Top Bar */}
                     <div className="flex justify-between items-center mb-10 relative z-10">
                         <div className="flex items-center gap-4">
                             <div
-                                className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center shadow-inner cursor-pointer active:scale-95 transition-transform"
+                                className="w-12 h-12 rounded-2xl bg-white/20 dark:bg-slate-800/40 backdrop-blur-md border border-white/30 dark:border-slate-700/50 flex items-center justify-center shadow-inner cursor-pointer active:scale-95 transition-transform"
                                 onClick={() => navigate('/owner-profile')}
                             >
                                 <Icon name="User" size={24} className="text-white" />
                             </div>
                             <div>
-                                <p className="text-[10px] font-black text-blue-100 uppercase tracking-widest leading-none mb-1.5 opacity-80">Kasir Berkah 88</p>
+                                <p className="text-[10px] font-black text-blue-100 dark:text-blue-200/60 uppercase tracking-widest leading-none mb-1.5 opacity-80">Kasir Berkah 88</p>
                                 <div className="flex items-center gap-2">
                                     <h2 className="text-lg font-black tracking-tight">Owner Dashboard</h2>
                                     <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]"></div>
@@ -343,51 +370,98 @@ const OwnerDashboard = ({ headerTitle }) => {
                             </div>
                         </div>
                         <div className="flex gap-1">
-                            <div className="p-2 active:bg-white/10 rounded-full transition-colors" onClick={() => navigate('/chatbot')}>
-                                <Icon name="Bot" size={24} />
+                            <div className="p-2 active:bg-white/10 rounded-full transition-colors" onClick={toggleDarkMode}>
+                                <Icon name={isDarkMode ? "Sun" : "Moon"} size={24} />
                             </div>
-                            <div className="p-2 active:bg-white/10 rounded-full transition-colors" onClick={() => navigate('/settings')}>
-                                <Icon name="Settings" size={24} />
+                            <div className="p-2 active:bg-white/10 rounded-full transition-colors" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+                                <Icon name={isMobileMenuOpen ? "X" : "Menu"} size={24} />
                             </div>
                         </div>
                     </div>
 
+                    {/* Mobile Navigation Menu (Overlay) */}
+                    {isMobileMenuOpen && (
+                        <>
+                            {/* Backdrop Blur Overlay */}
+                            <div
+                                className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-40 lg:hidden animate-in fade-in duration-300"
+                                onClick={() => setIsMobileMenuOpen(false)}
+                            ></div>
+                            <div className="lg:hidden absolute top-full left-0 right-0 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300 rounded-none mx-4 mt-2 overflow-hidden z-50">
+                                <nav className="p-4 grid grid-cols-3 gap-4">
+                                    {navigationItems.map((item) => (
+                                        <Link
+                                            key={item.path}
+                                            to={item.path}
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                            className={`flex flex-col items-center gap-2 p-3 rounded-2xl transition-all ${isActiveRoute(item.path)
+                                                ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            <div className={`p-2 rounded-xl ${isActiveRoute(item.path) ? 'bg-blue-600/10' : 'bg-gray-100 dark:bg-slate-800'}`}>
+                                                <Icon name={item.icon} size={20} />
+                                            </div>
+                                            <span className="text-[10px] font-bold uppercase tracking-tighter">{item.label}</span>
+                                        </Link>
+                                    ))}
+                                </nav>
+                                <div className="p-4 bg-gray-50 dark:bg-slate-800/50 flex justify-between items-center">
+                                    <button
+                                        onClick={() => {
+                                            navigate('/all-features');
+                                            setIsMobileMenuOpen(false);
+                                        }}
+                                        className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2"
+                                    >
+                                        <Icon name="LayoutGrid" size={14} /> Semua Fitur
+                                    </button>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="text-[10px] font-black text-rose-500 uppercase tracking-widest flex items-center gap-2"
+                                    >
+                                        <Icon name="LogOut" size={14} /> Keluar
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
                     {/* Main Action Grid (Icon + Label) */}
                     <div className="grid grid-cols-4 gap-4 relative z-10">
                         <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate('/uang-bisnis')}>
-                            <div className="w-full aspect-square bg-white/20 rounded-[1.25rem] border border-white/20 flex items-center justify-center backdrop-blur-md shadow-lg group-active:scale-95 transition-transform duration-200">
+                            <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center backdrop-blur-md shadow-lg group-active:scale-95 transition-transform duration-200">
                                 <Icon name="Wallet" size={32} />
                             </div>
-                            <span className="text-[11px] font-black uppercase tracking-tight text-white/90">Saldo</span>
+                            <span className="text-[11px] font-black uppercase tracking-tight text-white/90 dark:text-gray-300">Saldo</span>
                         </div>
                         <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate('/owner/business-reports')}>
-                            <div className="w-full aspect-square bg-white/20 rounded-[1.25rem] border border-white/20 flex items-center justify-center backdrop-blur-md shadow-lg group-active:scale-95 transition-transform duration-200">
+                            <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center backdrop-blur-md shadow-lg group-active:scale-95 transition-transform duration-200">
                                 <Icon name="BarChart3" size={32} />
                             </div>
-                            <span className="text-[11px] font-black uppercase tracking-tight text-white/90">Laporan</span>
+                            <span className="text-[11px] font-black uppercase tracking-tight text-white/90 dark:text-gray-300">Laporan</span>
                         </div>
                         <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate('/owner-raw-material-stock')}>
-                            <div className="w-full aspect-square bg-white/20 rounded-[1.25rem] border border-white/20 flex items-center justify-center backdrop-blur-md shadow-lg group-active:scale-95 transition-transform duration-200">
+                            <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center backdrop-blur-md shadow-lg group-active:scale-95 transition-transform duration-200">
                                 <Icon name="Archive" size={32} />
                             </div>
-                            <span className="text-[11px] font-black uppercase tracking-tight text-white/90">Bahan</span>
+                            <span className="text-[11px] font-black uppercase tracking-tight text-white/90 dark:text-gray-300">Bahan</span>
                         </div>
                         <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate('/auditor')}>
-                            <div className="w-full aspect-square bg-white/20 rounded-[1.25rem] border border-white/20 flex items-center justify-center backdrop-blur-md shadow-lg group-active:scale-95 transition-transform duration-200">
+                            <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center backdrop-blur-md shadow-lg group-active:scale-95 transition-transform duration-200">
                                 <Icon name="SearchCheck" size={32} />
                             </div>
-                            <span className="text-[11px] font-black uppercase tracking-tight text-white/90">Audit</span>
+                            <span className="text-[11px] font-black uppercase tracking-tight text-white/90 dark:text-gray-300">Audit</span>
                         </div>
                     </div>
                 </header>
 
                 {/* Floating Balance Card */}
                 <section className="px-5 -mt-10 relative z-30">
-                    <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl shadow-blue-900/10 border border-blue-50/50">
+                    <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] p-8 shadow-2xl shadow-blue-900/10 dark:shadow-none border border-blue-50/50 dark:border-slate-700">
                         {/* Header Row: Label & Status */}
                         <div className="flex justify-between items-center mb-4">
-                            <p className="text-[10px] font-black text-gray-400 tracking-[0.25em] uppercase">KAS GABUNGAN (OWNER + LAPAK)</p>
-                            <div className="bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-sm shadow-emerald-100/50">
+                            <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 tracking-[0.25em] uppercase">KAS GABUNGAN (OWNER + LAPAK)</p>
+                            <div className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-sm shadow-emerald-100/50 dark:shadow-none">
                                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
                                 Terpantau
                             </div>
@@ -395,67 +469,65 @@ const OwnerDashboard = ({ headerTitle }) => {
 
                         {/* Balance Row */}
                         <div className="flex items-center gap-3 cursor-pointer group mb-8" onClick={() => navigate('/uang-bisnis')}>
-                            <h3 className="text-[2.5rem] font-black text-gray-900 tracking-tighter leading-none">
+                            <h3 className="text-[2.5rem] font-black text-gray-900 dark:text-white tracking-tighter leading-none">
                                 {formatCurrency((parseFloat(dashboardData.ownerBalance) || 0) + (parseFloat(dashboardData.lapakBalance) || 0))}
                             </h3>
-                            <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center group-active:translate-x-1 transition-transform border border-blue-100/30">
+                            <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center group-active:translate-x-1 transition-transform border border-blue-100/30 dark:border-blue-700/30">
                                 <Icon name="ChevronRight" size={16} className="text-blue-500" />
                             </div>
                         </div>
 
-                        <div className="h-[1px] bg-gray-50 w-full mb-8"></div>
+                        <div className="h-[1px] bg-gray-50 dark:bg-slate-700 w-full mb-8"></div>
 
                         <div className="grid grid-cols-2 gap-6">
                             <div className="flex flex-col">
-                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Omzet Bulan Ini</span>
-                                <span className="text-base font-black text-gray-900 tracking-tight">{formatCurrency(dashboardData.monthlyRevenue || 0)}</span>
+                                <span className="text-[9px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Omzet Bulan Ini</span>
+                                <span className="text-base font-black text-gray-900 dark:text-white tracking-tight">{formatCurrency(dashboardData.monthlyRevenue || 0)}</span>
                             </div>
                             <div className="flex flex-col items-end">
-                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Keluar Bulan Ini</span>
+                                <span className="text-[9px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Keluar Bulan Ini</span>
                                 <span className="text-base font-black text-rose-500 tracking-tight">-{formatCurrency(dashboardData.monthlyExpenses || 0)}</span>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                {/* Service Grid Section */}
                 <section className="mt-10 px-5">
                     <div className="flex items-center justify-between mb-5 px-1">
-                        <h3 className="text-sm font-extrabold text-gray-900 tracking-tighter uppercase">Layanan Owner</h3>
+                        <h3 className="text-sm font-extrabold text-gray-900 dark:text-white tracking-tighter uppercase">Layanan Owner</h3>
                     </div>
 
-                    <div className="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-gray-200/50 grid grid-cols-4 gap-y-10">
+                    <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] p-8 shadow-xl shadow-gray-200/50 dark:shadow-none grid grid-cols-4 gap-y-10 border border-transparent dark:border-slate-700">
                         {ownerFeatures.map((feature, idx) => (
                             <div key={idx} className="flex flex-col items-center gap-3 active:scale-95 transition-transform" onClick={() => navigate(feature.path)}>
-                                <div className={`w-12 h-12 rounded-2xl bg-${feature.color}/10 flex items-center justify-center`}>
+                                <div className={`w-12 h-12 rounded-2xl bg-${feature.color}/10 dark:bg-${feature.color}/20 flex items-center justify-center`}>
                                     <Icon name={feature.icon} size={24} className={`text-${feature.color}`} />
                                 </div>
-                                <span className="text-[10px] font-bold text-gray-600 text-center leading-tight">{feature.title}</span>
+                                <span className="text-[10px] font-bold text-gray-600 dark:text-slate-400 text-center leading-tight">{feature.title}</span>
                             </div>
                         ))}
                     </div>
                 </section>
 
-                {/* Sync Status Section */}
                 <section className="mt-10 px-5">
-                    <h3 className="text-sm font-extrabold text-gray-900 tracking-tighter uppercase mb-5 px-1">Pembaruan Sistem</h3>
+                    <h3 className="text-sm font-extrabold text-gray-900 dark:text-white tracking-tighter uppercase mb-5 px-1">Pembaruan Sistem</h3>
                     <div className="space-y-3">
-                        <div className="bg-white p-5 rounded-[2rem] shadow-md border border-gray-50 flex items-center gap-4">
-                            <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center">
+                        <div className="bg-white dark:bg-slate-800 p-5 rounded-[2rem] shadow-md dark:shadow-none border border-gray-50 dark:border-slate-700 flex items-center gap-4">
+                            <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl flex items-center justify-center">
                                 <Icon name="BookUser" size={24} className="text-indigo-500" />
                             </div>
                             <div>
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Stok Menu</p>
-                                <p className="text-xs font-bold text-gray-900">{dashboardData.timestamps?.menuStock ? new Date(dashboardData.timestamps.menuStock).toLocaleString('id-ID') : 'Belum pernah'}</p>
+                                <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Stok Menu</p>
+                                <p className="text-xs font-bold text-gray-900 dark:text-white">{dashboardData.timestamps?.menuStock ? new Date(dashboardData.timestamps.menuStock).toLocaleString('id-ID') : 'Belum pernah'}</p>
                             </div>
                         </div>
-                        <div className="bg-white p-5 rounded-[2rem] shadow-md border border-gray-50 flex items-center gap-4">
-                            <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center">
+                        <div className="bg-white dark:bg-slate-800 p-5 rounded-[2rem] shadow-md dark:shadow-none border border-gray-50 dark:border-slate-700 flex items-center gap-4">
+                            <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center">
                                 <Icon name="Package" size={24} className="text-emerald-500" />
                             </div>
                             <div>
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Bahan Baku</p>
-                                <p className="text-xs font-bold text-gray-900">{dashboardData.timestamps?.rawMaterials ? new Date(dashboardData.timestamps.rawMaterials).toLocaleString('id-ID') : 'Belum pernah'}</p>
+                                <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Bahan Baku</p>
+                                <p className="text-xs font-bold text-gray-900 dark:text-white">{dashboardData.timestamps?.rawMaterials ? new Date(dashboardData.timestamps.rawMaterials).toLocaleString('id-ID') : 'Belum pernah'}</p>
                             </div>
                         </div>
                     </div>

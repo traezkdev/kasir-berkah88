@@ -6,10 +6,15 @@ import { exportToPdf } from '../../utils/exportUtils'; // Correctly import the u
 import { useTheme } from '../../contexts/ThemeContext';
 
 import NavigationHeader from '../../components/ui/NavigationHeader';
+import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { jwtDecode } from 'jwt-decode';
+import OwnerNavigationHeader from '../../components/ui/OwnerNavigationHeader';
 
 const LaporanLengkap = ({ headerTitle }) => {
   const { theme } = useTheme();
+  const { toggleSidebar } = useAppSettings();
   const [laporanData, setLaporanData] = useState(null);
+  const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [startDate, setStartDate] = useState('');
@@ -74,6 +79,16 @@ const LaporanLengkap = ({ headerTitle }) => {
 
   useEffect(() => {
     fetchLaporan();
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        setUserRole(decoded.role);
+      } catch (e) {
+        console.error("Failed to decode token", e);
+      }
+    }
   }, [fetchLaporan]);
 
   const handleFilter = () => {
@@ -284,7 +299,17 @@ const LaporanLengkap = ({ headerTitle }) => {
   return (
     <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50 lg:bg-background' : ''}`}>
       {theme === 'default' && (
-        <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || "Laporan Lengkap"} />
+        userRole === 'owner' ? (
+          <OwnerNavigationHeader
+            onToggleSidebar={toggleSidebar}
+            headerTitle={headerTitle || "Laporan Lengkap"}
+          />
+        ) : (
+          <NavigationHeader
+            onToggleSidebar={toggleSidebar}
+            headerTitle={headerTitle || "Laporan Lengkap"}
+          />
+        )
       )}
 
       <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>

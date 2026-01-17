@@ -4,6 +4,8 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
+import { jwtDecode } from 'jwt-decode';
+import OwnerNavigationHeader from '../../components/ui/OwnerNavigationHeader';
 import ConfirmationModal from '../../components/ui/ConfirmationModal';
 import { useNavigate, useLocation } from 'react-router-dom';
 import AppIcon from '../../components/AppIcon';
@@ -43,7 +45,7 @@ const SettingsModal = ({ title, isOpen, onClose, children, size = 'lg' }) => {
 
 const Settings = () => {
   const { theme, toggleTheme, appStyle, setAppStyle } = useTheme();
-  const { appMode, toggleAppMode } = useAppSettings();
+  const { appMode, toggleAppMode, toggleSidebar } = useAppSettings();
 
   // Reusable Card Component (Updated for DANA Style)
   const SettingsCard = ({ icon, title, description, onClick, disabled = false }) => (
@@ -140,6 +142,16 @@ const Settings = () => {
     const modalToOpen = params.get('modal');
     if (modalToOpen) {
       setActiveModal(modalToOpen);
+    }
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        setUserRole(decoded.role);
+      } catch (e) {
+        console.error("Failed to decode token", e);
+      }
     }
   }, [location]);
 
@@ -540,10 +552,17 @@ const Settings = () => {
   return (
     <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50 lg:bg-background' : ''}`}>
       {theme === 'default' && (
-        <NavigationHeader
-          onToggleSidebar={() => { }}
-          headerTitle={websiteTitle || 'Kasir Berkah 88'}
-        />
+        userRole === 'owner' ? (
+          <OwnerNavigationHeader
+            onToggleSidebar={toggleSidebar}
+            headerTitle={websiteTitle || 'Kasir Berkah 88'}
+          />
+        ) : (
+          <NavigationHeader
+            onToggleSidebar={toggleSidebar}
+            headerTitle={websiteTitle || 'Kasir Berkah 88'}
+          />
+        )
       )}
 
       <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>

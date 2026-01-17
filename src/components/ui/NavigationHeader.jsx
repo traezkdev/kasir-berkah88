@@ -65,16 +65,16 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
   }, [location.pathname]); // Re-run when path changes (e.g., after login/logout)
 
   const allNavigationItems = [
-    { label: 'Dashboard', path: '/main-dashboard', icon: 'LayoutDashboard', roles: ['admin', 'user'] },
+    { label: 'Dashboard', path: userRole === 'owner' ? '/owner-dashboard' : '/main-dashboard', icon: 'LayoutDashboard', roles: ['admin', 'user', 'owner'] },
     { label: 'Dashboard Kasir', path: '/cashier-dashboard', icon: 'ScanBarcode', roles: ['kasir'] },
-    { label: 'Penjualan', path: appMode === 'simple' ? '/transaksi-sederhana' : '/transaksi', icon: 'ShoppingCart', roles: ['admin', 'user', 'kasir'] },
-    { label: 'Menu', path: '/menu-management', icon: 'UtensilsCrossed', roles: ['admin', 'user'] },
-    { label: 'Pengeluaran', path: '/expense-tracking', icon: 'Receipt', roles: ['admin', 'user'] },
-    { label: 'Transaksi', path: '/transaction-history', icon: 'ListOrdered', roles: ['admin', 'user', 'kasir'] },
+    { label: 'Penjualan', path: appMode === 'simple' ? '/transaksi-sederhana' : '/transaksi', icon: 'ShoppingCart', roles: ['admin', 'user', 'kasir', 'owner'] },
+    { label: 'Menu', path: '/menu-management', icon: 'UtensilsCrossed', roles: ['admin', 'user', 'owner'] },
+    { label: 'Pengeluaran', path: '/expense-tracking', icon: 'Receipt', roles: ['admin', 'user', 'owner'] },
+    { label: 'Transaksi', path: '/transaction-history', icon: 'ListOrdered', roles: ['admin', 'user', 'kasir', 'owner'] },
 
-    { label: 'Catatan', path: '/notes', icon: 'Notebook', roles: ['admin', 'user'] },
-    { label: 'Profil', path: '/profile', icon: 'User', roles: ['admin', 'user', 'kasir'] },
-    { label: 'Pengaturan', path: '/settings', icon: 'Settings', roles: ['admin'] },
+    { label: 'Catatan', path: '/notes', icon: 'Notebook', roles: ['admin', 'user', 'owner'] },
+    { label: 'Profil', path: '/profile', icon: 'User', roles: ['admin', 'user', 'kasir', 'owner'] },
+    { label: 'Pengaturan', path: '/settings', icon: 'Settings', roles: ['admin', 'owner'] },
 
 
   ];
@@ -233,32 +233,34 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
 
       {/* Mobile Bottom Navigation (DANA Style) */}
       {location.pathname !== '/chatbot' && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 lg:hidden px-4 pb-2 pt-2 transition-all duration-300">
-          <nav className="flex items-center justify-around bg-gray-50 dark:bg-slate-800 rounded-[2rem] py-1.5 px-1 shadow-inner border border-white/5">
-            {navigationItems?.slice(0, 5)?.map((item) => (
-              <Link
-                key={item?.path}
-                to={item?.path}
-                className={`flex flex-col items-center py-1.5 px-2 rounded-[1.5rem] transition-all duration-300 relative group ${isActiveRoute(item?.path)
-                  ? 'text-blue-600 scale-105' : 'text-gray-400'
-                  }`}
-              >
-                <div className={`mb-0.5 transition-transform group-active:scale-90 ${isActiveRoute(item?.path) ? 'animate-bounce-subtle' : ''}`}>
-                  <Icon
-                    name={item?.icon}
-                    size={20}
-                    className={isActiveRoute(item?.path) ? 'text-blue-600' : 'text-gray-400'}
-                  />
-                </div>
-                <span className={`text-[8px] font-black uppercase tracking-tighter transition-opacity ${isActiveRoute(item?.path) ? 'opacity-100' : 'opacity-60'}`}>
-                  {item.label === 'Dashboard' ? 'Home' : (item.label.split(' ')[0])}
-                </span>
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 lg:hidden safe-area-bottom shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+          <nav className="flex items-center justify-around h-16 px-2">
+            {navigationItems?.slice(0, 5)?.map((item) => {
+              const active = isActiveRoute(item?.path);
+              return (
+                <Link
+                  key={item?.path}
+                  to={item?.path}
+                  className={`flex flex-col items-center justify-center flex-1 min-w-0 transition-all duration-300 relative ${active ? 'text-blue-600 scale-110' : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                >
+                  <div className={`p-1.5 rounded-xl transition-colors duration-300 ${active ? 'bg-blue-600/10' : ''}`}>
+                    <Icon
+                      name={item?.icon}
+                      size={20}
+                      className={active ? 'text-blue-600' : 'text-gray-400'}
+                    />
+                  </div>
+                  <span className={`text-[10px] font-bold mt-1 truncate w-full text-center transition-all duration-300 ${active ? 'opacity-100' : 'opacity-70'}`}>
+                    {item.label === 'Dashboard' ? 'Beranda' : (item.label.split(' ')[0])}
+                  </span>
 
-                {isActiveRoute(item?.path) && (
-                  <div className="absolute -bottom-1 w-1 h-1 bg-blue-600 rounded-full shadow-[0_0_8px_rgba(37,99,235,0.8)]"></div>
-                )}
-              </Link>
-            ))}
+                  {active && (
+                    <span className="absolute -bottom-1 w-1 h-1 bg-blue-600 rounded-full shadow-[0_0_8px_rgba(37,99,235,0.8)]"></span>
+                  )}
+                </Link>
+              );
+            })}
           </nav>
         </div>
       )}

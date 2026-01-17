@@ -14,13 +14,18 @@ import ConfirmationModal from '../../components/ui/ConfirmationModal'; // Import
 import { useToast } from '../../components/ui/ToastNotification';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
+import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { jwtDecode } from 'jwt-decode';
+import OwnerNavigationHeader from '../../components/ui/OwnerNavigationHeader';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const LapakDeposit = ({ headerTitle }) => {
     const { theme } = useTheme();
+    const { toggleSidebar } = useAppSettings();
     const navigate = useNavigate();
     const [lapakAccount, setLapakAccount] = useState(null);
+    const [userRole, setUserRole] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isFilteringLoading, setIsFilteringLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -105,7 +110,21 @@ const LapakDeposit = ({ headerTitle }) => {
                 console.error('Failed to fetch logo:', error);
             }
         };
+
+        const fetchRole = () => {
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    const decoded = jwtDecode(token);
+                    setUserRole(decoded.role);
+                } catch (e) {
+                    console.error("Failed to decode token", e);
+                }
+            }
+        };
+
         fetchLogo();
+        fetchRole();
     }, []);
 
     const handleFilterChange = (name, value) => {
@@ -268,7 +287,19 @@ const LapakDeposit = ({ headerTitle }) => {
 
     return (
         <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
-            {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} />}
+            {theme === 'default' && (
+                userRole === 'owner' ? (
+                    <OwnerNavigationHeader
+                        onToggleSidebar={toggleSidebar}
+                        headerTitle={headerTitle || 'Pengeluaran Lapak'}
+                    />
+                ) : (
+                    <NavigationHeader
+                        onToggleSidebar={toggleSidebar}
+                        headerTitle={headerTitle || 'Pengeluaran Lapak'}
+                    />
+                )
+            )}
             <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>
                 <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 py-4 md:py-6" : ""}>
                     <div className="mb-6 mt-4">
