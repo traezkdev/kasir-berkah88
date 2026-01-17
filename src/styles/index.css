@@ -54,6 +54,11 @@
     --color-text-primary: 210 40% 98%;
     --color-text-secondary: 215 20.2% 65.1%;
   }
+
+  html,
+  body {
+    overscroll-behavior: none;
+  }
 }
 
 /* Option 2: Elegant Colorful Style - Clean Body with Colored Framework */
