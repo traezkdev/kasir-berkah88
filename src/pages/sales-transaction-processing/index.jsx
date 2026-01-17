@@ -288,14 +288,14 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
   return (
     <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
       {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} />}
-      <div className={`${theme === 'default' ? 'pt-20' : ''}`}>
+      <div className={`${theme === 'default' ? 'pt-16 lg:pt-20' : ''}`}>
         <div className={`w-full ${theme === 'default' ? 'max-w-7xl mx-auto px-4 space-y-6 pt-2' : 'px-4 lg:px-6 space-y-4 py-2'} pb-20`}>
           <div className="hidden md:block">
             <BreadcrumbNavigation />
           </div>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case">
+              <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
                 Transaksi Penjualan
               </h1>
               <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>

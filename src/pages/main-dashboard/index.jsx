@@ -891,7 +891,7 @@ const MainDashboard = ({ headerTitle }) => {
             </div>
 
             {/* Balance Row */}
-            <div className="flex items-center gap-3 cursor-pointer group mb-8" onClick={() => navigate('/admin-uang-bisnis')}>
+            <div className="flex items-center gap-3 cursor-pointer group mb-8" onClick={() => navigate('/lapak-deposit')}>
               <h3 className="text-[2.5rem] font-black text-gray-900 dark:text-white tracking-tighter leading-none">
                 {formatCurrency(dashboardData.metrics?.lapakBalance || 0)}
               </h3>
@@ -1020,7 +1020,7 @@ const MainDashboard = ({ headerTitle }) => {
               <BreadcrumbNavigation />
               <div className="flex items-center justify-between mt-4 flex-wrap gap-y-4">
                 <div>
-                  <h1 className="text-2xl lg:text-3xl font-bold text-text-primary uppercase tracking-tighter">
+                  <h1 className="text-xl lg:text-2xl font-bold text-text-primary uppercase tracking-tighter">
                     Dashboard
                   </h1>
                 </div>

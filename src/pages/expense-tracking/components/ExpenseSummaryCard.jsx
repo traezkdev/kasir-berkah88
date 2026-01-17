@@ -86,8 +86,8 @@ const ExpenseSummaryCard = ({
   ];
 
   return (
-    <div className={`bg-white dark:bg-slate-800 shadow-xl border border-gray-100 dark:border-slate-700 rounded-xl overflow-hidden ${className}`}>
-      <div className="p-5 lg:p-6">
+    <div className={`${className}`}>
+      <div className="">
         <div className="flex items-center space-x-3 mb-8">
           <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-2xl">
             <Icon name="BarChart3" size={24} className="text-blue-600" />

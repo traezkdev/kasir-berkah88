@@ -138,7 +138,7 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
               <div className="hidden lg:block">
                 {logoUrl && <img src={logoUrl} alt="Logo" className="w-8 h-8 rounded-lg" onError={(e) => { e.target.style.display = 'none'; }} />}
               </div>
-              <h1 className="text-base lg:text-xl font-black lg:font-semibold uppercase tracking-tight lg:normal-case truncate max-w-[150px] lg:max-w-none">
+              <h1 className="text-xl lg:text-2xl font-black lg:font-semibold uppercase tracking-tight lg:normal-case truncate max-w-[200px] lg:max-w-none">
                 {settingsHeaderTitle || headerTitle}
               </h1>
             </Link>

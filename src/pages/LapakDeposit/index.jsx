@@ -306,11 +306,9 @@ const LapakDeposit = ({ headerTitle }) => {
                         <div className="hidden md:block">
                             <BreadcrumbNavigation />
                         </div>
-                        <div className="flex items-center space-x-3 mt-4">
-                            {logoUrl && <img src={logoUrl} alt="Logo" className="w-10 h-10 rounded-lg" onError={(e) => { e.target.style.display = 'none'; }} />}
-                            <div>
-                                <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">Pengeluaran Lapak</h1>
-                            </div>
+                        <div className="mt-4">
+                            <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">Pengeluaran Lapak</h1>
+                            <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>
                         </div>
                         <p className="text-text-secondary mt-1">
                             Kelola uang masuk dan keluar untuk operasional lapak di sini.
