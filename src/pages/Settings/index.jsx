@@ -51,14 +51,15 @@ const Settings = () => {
   const SettingsCard = ({ icon, title, description, onClick, disabled = false }) => (
     <div
       onClick={!disabled ? onClick : undefined}
-      className={`dana-card p-6 active:scale-[0.98] transition-all duration-200 border-none shadow-lg shadow-gray-200/50 ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+      className={`dana-card p-6 h-full relative group active:scale-[0.98] transition-all duration-200 border-none shadow-lg shadow-gray-200/50 dark:shadow-none bg-card ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-xl hover:z-10'}`}
+    >
       <div className="flex items-center gap-4 mb-3">
-        <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
+        <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
           <AppIcon name={icon} size={24} />
         </div>
-        <div>
-          <h3 className="text-base font-black text-gray-900 tracking-tighter uppercase">{title}</h3>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{description}</p>
+        <div className="flex-1">
+          <h3 className="text-base font-black text-text-primary tracking-tighter uppercase">{title}</h3>
+          <p className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mt-0.5 leading-relaxed">{description}</p>
         </div>
       </div>
     </div>
@@ -111,6 +112,8 @@ const Settings = () => {
   const [newPpnRate, setNewPpnRate] = useState('');
   const [receiptVersion, setReceiptVersion] = useState('1');
   const [newReceiptVersion, setNewReceiptVersion] = useState('1');
+  const [authUiVersion, setAuthUiVersion] = useState('1');
+  const [newAuthUiVersion, setNewAuthUiVersion] = useState('1');
 
   // --- Effects ---
   useEffect(() => {
@@ -200,6 +203,8 @@ const Settings = () => {
         setNewPpnRate(data.data.ppn || '0.12');
         setReceiptVersion(data.data.receipt_version || '1');
         setNewReceiptVersion(data.data.receipt_version || '1');
+        setAuthUiVersion(data.data.auth_ui_version || '1');
+        setNewAuthUiVersion(data.data.auth_ui_version || '1');
 
         // Fetch current logo URL
         const logoResponse = await authFetch(`${apiUrl}/api/settings/logo`);
@@ -583,7 +588,7 @@ const Settings = () => {
           </div>
 
           {/* Settings Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
             {/* Store Configuration Section */}
             <SettingsCard icon="Store" title="Identitas Toko" description="Nama, logo, dan deskripsi website" onClick={() => setActiveModal('restaurantSettings')} disabled={!isAdmin} />
             <SettingsCard icon="Layout" title="Tampilan & Tema" description="Ubah tema warna dan gaya aplikasi" onClick={() => setActiveModal('appStyleSelection')} disabled={!isAdmin} />
@@ -598,6 +603,7 @@ const Settings = () => {
             <SettingsCard icon="Users" title="Manajemen Pengguna" description="Kelola akun admin dan kasir" onClick={() => setActiveModal('userManagement')} disabled={!isAdmin} />
             <SettingsCard icon="Contact" title="Data Karyawan" description="Kelola profil dan jabatan karyawan" onClick={() => setActiveModal('employeeManagement')} disabled={!isAdmin} />
             <SettingsCard icon="Lock" title="Sandi Master" description="Otoritas tindakan konfirmasi data" onClick={() => setActiveModal('masterPassword')} disabled={!isAdmin} />
+            <SettingsCard icon="Monitor" title="UI Login & Daftar" description="Pilih tampilan halaman autentikasi" onClick={() => setActiveModal('authUiSelection')} disabled={!isAdmin} />
             <SettingsCard icon="Database" title="Manajemen Database" description="Backup dan restore data aplikasi" onClick={() => navigate('/settings/database')} disabled={!isAdmin} />
 
             {/* Advanced & Social */}
@@ -668,6 +674,110 @@ const Settings = () => {
           </div>
           <Button type="submit" className="w-full mt-4" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
         </form>
+      </SettingsModal>
+
+      <SettingsModal title="Tampilan Login & Daftar" isOpen={activeModal === 'authUiSelection'} onClose={handleModalClose}>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          handleUpdateSetting(e, '/api/settings/auth_ui_version', { value: newAuthUiVersion }, 'Tampilan autentikasi berhasil diperbarui!');
+        }} className="space-y-6">
+          <p className="text-sm text-text-secondary mb-4">Pilih gaya desain untuk halaman Login dan Register aplikasi Anda.</p>
+          <div className="grid grid-cols-1 gap-4">
+            {/* UI Version 1 Card */}
+            <div
+              onClick={() => setNewAuthUiVersion('1')}
+              className={`cursor-pointer p-5 border-2 rounded-2xl transition-all duration-300 flex items-center gap-5 ${newAuthUiVersion === '1' ? 'border-blue-600 bg-blue-50/50 shadow-md' : 'border-border hover:border-blue-300'}`}
+            >
+              <div className="w-14 h-14 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center border border-border shadow-sm">
+                <AppIcon name="Layout" className="w-7 h-7 text-gray-500" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-black text-gray-900 tracking-tighter uppercase">UI Versi 1 (Klasik)</h4>
+                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mt-1">Sederhana & Ringan</p>
+              </div>
+              {newAuthUiVersion === '1' && <AppIcon name="CheckCircle" className="text-blue-600 w-6 h-6" />}
+            </div>
+
+            {/* UI Version 2 Card */}
+            <div
+              onClick={() => setNewAuthUiVersion('2')}
+              className={`cursor-pointer p-5 border-2 rounded-2xl transition-all duration-300 flex items-center gap-5 ${newAuthUiVersion === '2' ? 'border-blue-600 bg-blue-50/50 shadow-md' : 'border-border hover:border-blue-300'}`}
+            >
+              <div className="w-14 h-14 rounded-xl bg-[#0052CC] flex items-center justify-center shadow-lg shadow-blue-200">
+                <AppIcon name="Zap" className="w-7 h-7 text-white" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-black text-gray-900 tracking-tighter uppercase">UI Versi 2 (Modern)</h4>
+                <p className="text-[11px] font-bold text-blue-500 uppercase tracking-widest mt-1">Vibrant, Biru, & WOW</p>
+              </div>
+              {newAuthUiVersion === '2' && <AppIcon name="CheckCircle" className="text-blue-600 w-6 h-6" />}
+            </div>
+          </div>
+          <Button type="submit" className="w-full mt-6 py-4 rounded-2xl font-black uppercase tracking-widest" disabled={isLoading}>
+            {isLoading ? 'Menyimpan...' : 'Gunakan Tampilan Terpilih'}
+          </Button>
+        </form>
+      </SettingsModal>
+
+      <SettingsModal title="Tampilan & Tema" isOpen={activeModal === 'appStyleSelection'} onClose={handleModalClose}>
+        <div className="space-y-6">
+          <div>
+            <h4 className="text-sm font-bold text-text-secondary uppercase tracking-widest mb-4">Pilih Gaya Aplikasi</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div
+                onClick={() => setAppStyle('clean')}
+                className={`cursor-pointer p-4 border-2 rounded-xl transition-all duration-200 ${appStyle === 'clean' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'}`}
+              >
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center mx-auto mb-3">
+                    <AppIcon name="Layout" className={`w-6 h-6 ${appStyle === 'clean' ? 'text-primary' : 'text-text-secondary'}`} />
+                  </div>
+                  <span className={`text-sm font-black uppercase tracking-tighter ${appStyle === 'clean' ? 'text-primary' : 'text-text-primary'}`}>Gaya Clean</span>
+                </div>
+              </div>
+              <div
+                onClick={() => setAppStyle('elegant')}
+                className={`cursor-pointer p-4 border-2 rounded-xl transition-all duration-200 ${appStyle === 'elegant' ? 'border-indigo-600 bg-indigo-50/50' : 'border-border hover:border-indigo-300'}`}
+              >
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center mx-auto mb-3">
+                    <AppIcon name="Sparkles" className={`w-6 h-6 ${appStyle === 'elegant' ? 'text-indigo-600' : 'text-text-secondary'}`} />
+                  </div>
+                  <span className={`text-sm font-black uppercase tracking-tighter ${appStyle === 'elegant' ? 'text-indigo-600' : 'text-text-primary'}`}>Gaya Elegant</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-border">
+            <h4 className="text-sm font-bold text-text-secondary uppercase tracking-widest mb-4">Pilih Tema Panel</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div
+                onClick={() => theme !== 'default' && toggleTheme()}
+                className={`cursor-pointer p-4 border-2 rounded-xl transition-all duration-200 ${theme === 'default' ? 'border-blue-600 bg-blue-50/50' : 'border-border hover:border-blue-300'}`}
+              >
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-blue-200">
+                    <AppIcon name="Monitor" className="w-6 h-6 text-white" />
+                  </div>
+                  <span className={`text-sm font-black uppercase tracking-tighter ${theme === 'default' ? 'text-blue-600' : 'text-text-primary'}`}>Tema Default</span>
+                </div>
+              </div>
+              <div
+                onClick={() => theme !== 'admin' && toggleTheme()}
+                className={`cursor-pointer p-4 border-2 rounded-xl transition-all duration-200 ${theme === 'admin' ? 'border-gray-900 bg-gray-50' : 'border-border hover:border-gray-300'}`}
+              >
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-gray-400">
+                    <AppIcon name="Shield" className="w-6 h-6 text-white" />
+                  </div>
+                  <span className={`text-sm font-black uppercase tracking-tighter ${theme === 'admin' ? 'text-gray-900' : 'text-text-primary'}`}>Tema Admin</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <Button onClick={handleModalClose} className="w-full mt-4 py-4 rounded-2xl font-black uppercase tracking-widest">Selesai</Button>
+        </div>
       </SettingsModal>
 
       <SettingsModal title="Ubah Judul Situs Web" isOpen={activeModal === 'websiteTitle'} onClose={handleModalClose}>
@@ -836,22 +946,6 @@ const Settings = () => {
       </SettingsModal>
 
       <RestaurantSettingsModal isOpen={activeModal === 'restaurantSettings'} onClose={handleModalClose} onSave={handleSaveRestaurantSettings} />
-
-      {/* Modal App Mode selection */}
-      <SettingsModal title="Pilih Gaya Aplikasi" isOpen={activeModal === 'appStyleSelection'} onClose={handleModalClose}>
-        <div className="space-y-4">
-          <div onClick={() => { setAppStyle('clean'); handleModalClose(); }}
-            className={`cursor-pointer p-4 border-2 rounded-xl flex items-center gap-4 ${appStyle === 'clean' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-            <h4 className="font-bold flex-1">Clean White</h4>
-            {appStyle === 'clean' && <AppIcon name="Check" className="text-primary" />}
-          </div>
-          <div onClick={() => { setAppStyle('elegant'); handleModalClose(); }}
-            className={`cursor-pointer p-4 border-2 rounded-xl flex items-center gap-4 ${appStyle === 'elegant' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-            <h4 className="font-bold flex-1">Elegant Colorful</h4>
-            {appStyle === 'elegant' && <AppIcon name="Check" className="text-primary" />}
-          </div>
-        </div>
-      </SettingsModal>
 
       <SettingsModal title="Mode Aplikasi" isOpen={activeModal === 'appMode'} onClose={handleModalClose}>
         <div className="space-y-4">

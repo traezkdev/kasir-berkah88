@@ -9,6 +9,7 @@ export const AppSettingsProvider = ({ children }) => {
   const [headerTitle, setHeaderTitle] = useState('Berkah 88'); // Default value
   const [logoUrl, setLogoUrl] = useState('');
   const [appMode, setAppMode] = useState('full'); // Default: full mode
+  const [authUiVersion, setAuthUiVersion] = useState('1'); // Default: UI 1
   const [isLoadingMode, setIsLoadingMode] = useState(true);
   const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -60,6 +61,19 @@ export const AppSettingsProvider = ({ children }) => {
       }
     };
 
+    const fetchPublicSettings = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/api/settings`);
+        const data = await response.json();
+        if (response.ok && data.data) {
+          if (data.data.auth_ui_version) setAuthUiVersion(data.data.auth_ui_version);
+        }
+      } catch (error) {
+        console.error('Error fetching public settings:', error);
+      }
+    };
+
+    fetchPublicSettings();
     fetchSettings();
   }, [apiUrl]);
 
@@ -90,8 +104,10 @@ export const AppSettingsProvider = ({ children }) => {
     headerTitle,
     logoUrl,
     appMode,
+    authUiVersion,
     isLoadingMode,
     toggleAppMode,
+    setAuthUiVersion,
   };
 
   return (
