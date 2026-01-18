@@ -187,7 +187,8 @@ const setupDatabase = async () => {
       INSERT INTO settings (\`key\`, \`value\`) VALUES
       ('ignore_stock_simple_transaction', '0'),
       ('ppn', '0.12'),
-      ('receipt_version', '1')
+      ('receipt_version', '1'),
+      ('auth_ui_version', '1')
       ON DUPLICATE KEY UPDATE \`value\` = \`value\`;
     `;
     await connection.query(ensureIgnoreStockSimpleTransactionSetting);

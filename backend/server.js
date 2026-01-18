@@ -3263,7 +3263,7 @@ app.post("/api/login", async (req, res) => {
 // Get public settings
 app.get("/api/settings", async (req, res) => {
     try {
-        const publicSettingsKeys = ['website_title', 'header_title', 'favicon_url', 'registration_enabled', 'web_description', 'cover_image_url'];
+        const publicSettingsKeys = ['website_title', 'header_title', 'favicon_url', 'registration_enabled', 'web_description', 'cover_image_url', 'auth_ui_version'];
         const sql = "SELECT `key`, `value` FROM settings WHERE `key` IN (?)";
         const [rows] = await db.query(sql, [publicSettingsKeys]);
         const settings = {};

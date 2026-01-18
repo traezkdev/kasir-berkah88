@@ -111,6 +111,8 @@ const Settings = () => {
   const [newPpnRate, setNewPpnRate] = useState('');
   const [receiptVersion, setReceiptVersion] = useState('1');
   const [newReceiptVersion, setNewReceiptVersion] = useState('1');
+  const [authUiVersion, setAuthUiVersion] = useState('1');
+  const [newAuthUiVersion, setNewAuthUiVersion] = useState('1');
 
   // --- Effects ---
   useEffect(() => {
@@ -200,6 +202,8 @@ const Settings = () => {
         setNewPpnRate(data.data.ppn || '0.12');
         setReceiptVersion(data.data.receipt_version || '1');
         setNewReceiptVersion(data.data.receipt_version || '1');
+        setAuthUiVersion(data.data.auth_ui_version || '1');
+        setNewAuthUiVersion(data.data.auth_ui_version || '1');
 
         // Fetch current logo URL
         const logoResponse = await authFetch(`${apiUrl}/api/settings/logo`);
@@ -598,6 +602,7 @@ const Settings = () => {
             <SettingsCard icon="Users" title="Manajemen Pengguna" description="Kelola akun admin dan kasir" onClick={() => setActiveModal('userManagement')} disabled={!isAdmin} />
             <SettingsCard icon="Contact" title="Data Karyawan" description="Kelola profil dan jabatan karyawan" onClick={() => setActiveModal('employeeManagement')} disabled={!isAdmin} />
             <SettingsCard icon="Lock" title="Sandi Master" description="Otoritas tindakan konfirmasi data" onClick={() => setActiveModal('masterPassword')} disabled={!isAdmin} />
+            <SettingsCard icon="Monitor" title="UI Login & Daftar" description="Pilih tampilan halaman autentikasi" onClick={() => setActiveModal('authUiSelection')} disabled={!isAdmin} />
             <SettingsCard icon="Database" title="Manajemen Database" description="Backup dan restore data aplikasi" onClick={() => navigate('/settings/database')} disabled={!isAdmin} />
 
             {/* Advanced & Social */}
@@ -667,6 +672,49 @@ const Settings = () => {
             </div>
           </div>
           <Button type="submit" className="w-full mt-4" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
+        </form>
+      </SettingsModal>
+
+      <SettingsModal title="Tampilan Login & Daftar" isOpen={activeModal === 'authUiSelection'} onClose={handleModalClose}>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          handleUpdateSetting(e, '/api/settings/auth_ui_version', { value: newAuthUiVersion }, 'Tampilan autentikasi berhasil diperbarui!');
+        }} className="space-y-6">
+          <p className="text-sm text-text-secondary mb-4">Pilih gaya desain untuk halaman Login dan Register aplikasi Anda.</p>
+          <div className="grid grid-cols-1 gap-4">
+            {/* UI Version 1 Card */}
+            <div
+              onClick={() => setNewAuthUiVersion('1')}
+              className={`cursor-pointer p-5 border-2 rounded-2xl transition-all duration-300 flex items-center gap-5 ${newAuthUiVersion === '1' ? 'border-blue-600 bg-blue-50/50 shadow-md' : 'border-border hover:border-blue-300'}`}
+            >
+              <div className="w-14 h-14 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center border border-border shadow-sm">
+                <AppIcon name="Layout" className="w-7 h-7 text-gray-500" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-black text-gray-900 tracking-tighter uppercase">UI Versi 1 (Klasik)</h4>
+                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mt-1">Sederhana & Ringan</p>
+              </div>
+              {newAuthUiVersion === '1' && <AppIcon name="CheckCircle" className="text-blue-600 w-6 h-6" />}
+            </div>
+
+            {/* UI Version 2 Card */}
+            <div
+              onClick={() => setNewAuthUiVersion('2')}
+              className={`cursor-pointer p-5 border-2 rounded-2xl transition-all duration-300 flex items-center gap-5 ${newAuthUiVersion === '2' ? 'border-blue-600 bg-blue-50/50 shadow-md' : 'border-border hover:border-blue-300'}`}
+            >
+              <div className="w-14 h-14 rounded-xl bg-[#0052CC] flex items-center justify-center shadow-lg shadow-blue-200">
+                <AppIcon name="Zap" className="w-7 h-7 text-white" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-black text-gray-900 tracking-tighter uppercase">UI Versi 2 (Modern)</h4>
+                <p className="text-[11px] font-bold text-blue-500 uppercase tracking-widest mt-1">Vibrant, Biru, & WOW</p>
+              </div>
+              {newAuthUiVersion === '2' && <AppIcon name="CheckCircle" className="text-blue-600 w-6 h-6" />}
+            </div>
+          </div>
+          <Button type="submit" className="w-full mt-6 py-4 rounded-2xl font-black uppercase tracking-widest" disabled={isLoading}>
+            {isLoading ? 'Menyimpan...' : 'Gunakan Tampilan Terpilih'}
+          </Button>
         </form>
       </SettingsModal>
 
