@@ -6,6 +6,7 @@ import { FiUser, FiLock, FiLogIn, FiArrowRight, FiCheckCircle, FiAlertCircle } f
 import { jwtDecode } from 'jwt-decode';
 import AppIcon from '../../components/AppIcon';
 import DarkModeToggle from '../../components/ui/DarkModeToggle';
+import { useAppSettings } from '../../contexts/AppSettingsContext';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -18,6 +19,7 @@ const LoginV2 = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
     const navigate = useNavigate();
+    const { logoUrl } = useAppSettings();
 
     useEffect(() => {
         setIsLoaded(true);
@@ -82,7 +84,7 @@ const LoginV2 = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#0052CC] dark:bg-[#003d99] relative overflow-hidden font-sans transition-colors duration-500">
+        <div className="min-h-screen flex items-center justify-center bg-[#138FEA] dark:bg-[#0d6aad] relative overflow-hidden font-sans transition-colors duration-500">
             {/* Dark Mode Toggle Position */}
             <div className="absolute top-6 right-6 z-50">
                 <DarkModeToggle />
@@ -98,7 +100,7 @@ const LoginV2 = () => {
                         y: [0, -50, 0]
                     }}
                     transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                    className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-blue-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-20"
+                    className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-blue-300 rounded-full mix-blend-multiply filter blur-[80px] opacity-20"
                 />
                 <motion.div
                     animate={{
@@ -108,7 +110,7 @@ const LoginV2 = () => {
                         y: [0, 70, 0]
                     }}
                     transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-                    className="absolute -bottom-[10%] -right-[10%] w-[50%] h-[50%] bg-blue-300 rounded-full mix-blend-multiply filter blur-[100px] opacity-20"
+                    className="absolute -bottom-[10%] -right-[10%] w-[50%] h-[50%] bg-blue-200 rounded-full mix-blend-multiply filter blur-[100px] opacity-20"
                 />
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
             </div>
@@ -121,12 +123,16 @@ const LoginV2 = () => {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.8, delay: 0.2 }}
                     >
-                        <div className="w-20 h-20 bg-white dark:bg-blue-500 rounded-3xl flex items-center justify-center mb-10 shadow-lg shadow-blue-900/20">
-                            <AppIcon name="Store" size={48} className="text-[#0052CC] dark:text-white" />
+                        <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mb-10 overflow-hidden ${logoUrl ? '' : 'bg-white dark:bg-[#138FEA] shadow-lg shadow-blue-900/20'}`}>
+                            {logoUrl ? (
+                                <img src={logoUrl} alt="Store Logo" className="w-full h-full object-contain" />
+                            ) : (
+                                <AppIcon name="Store" size={48} className="text-[#138FEA] dark:text-white" />
+                            )}
                         </div>
                         <h1 className="text-5xl font-black tracking-tighter leading-tight mb-6">
                             Kasir Berkah 88 <br />
-                            <span className="text-blue-200 dark:text-blue-300">System V2</span>
+                            <span className="text-blue-100 dark:text-blue-200">System V2</span>
                         </h1>
                         <p className="text-xl text-blue-100/80 dark:text-blue-100/60 font-medium mb-12 max-w-sm">
                             Solusi manajemen kasir modern, cepat, dan terpercaya untuk bisnis Anda.
@@ -145,7 +151,7 @@ const LoginV2 = () => {
                                     transition={{ delay: 0.4 + (idx * 0.1) }}
                                     className="flex items-center gap-4 group"
                                 >
-                                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center group-hover:bg-white group-hover:text-[#0052CC] dark:group-hover:bg-blue-500 dark:group-hover:text-white transition-all duration-300">
+                                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center group-hover:bg-white group-hover:text-[#138FEA] dark:group-hover:bg-[#138FEA] dark:group-hover:text-white transition-all duration-300">
                                         <AppIcon name={feature.icon} size={20} />
                                     </div>
                                     <span className="text-lg font-semibold">{feature.text}</span>
@@ -163,8 +169,12 @@ const LoginV2 = () => {
                         transition={{ duration: 0.6 }}
                     >
                         <div className="mb-10 block lg:hidden">
-                            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mb-6">
-                                <AppIcon name="Store" size={32} className="text-[#0052CC]" />
+                            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 overflow-hidden ${logoUrl ? '' : 'bg-blue-50 dark:bg-blue-900/30'}`}>
+                                {logoUrl ? (
+                                    <img src={logoUrl} alt="Store Logo" className="w-full h-full object-contain" />
+                                ) : (
+                                    <AppIcon name="Store" size={32} className="text-[#138FEA]" />
+                                )}
                             </div>
                         </div>
 
@@ -178,7 +188,7 @@ const LoginV2 = () => {
                                 <label className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Nama Pengguna</label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <FiUser className="text-gray-400 group-focus-within:text-[#0052CC] transition-colors" />
+                                        <FiUser className="text-gray-400 group-focus-within:text-[#138FEA] transition-colors" />
                                     </div>
                                     <input
                                         type="text"
@@ -187,7 +197,7 @@ const LoginV2 = () => {
                                         onChange={handleInputChange}
                                         placeholder="Username Anda"
                                         required
-                                        className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-gray-900 dark:text-white font-bold focus:outline-none focus:border-[#0052CC] focus:bg-white dark:focus:bg-gray-900 transition-all duration-300"
+                                        className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-gray-900 dark:text-white font-bold focus:outline-none focus:border-[#138FEA] focus:bg-white dark:focus:bg-gray-900 transition-all duration-300"
                                     />
                                 </div>
                             </div>
@@ -196,7 +206,7 @@ const LoginV2 = () => {
                                 <label className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Kata Sandi</label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <FiLock className="text-gray-400 group-focus-within:text-[#0052CC] transition-colors" />
+                                        <FiLock className="text-gray-400 group-focus-within:text-[#138FEA] transition-colors" />
                                     </div>
                                     <input
                                         type="password"
@@ -205,7 +215,7 @@ const LoginV2 = () => {
                                         onChange={handleInputChange}
                                         placeholder="••••••••"
                                         required
-                                        className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-gray-900 dark:text-white font-bold focus:outline-none focus:border-[#0052CC] focus:bg-white dark:focus:bg-gray-900 transition-all duration-300"
+                                        className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-gray-900 dark:text-white font-bold focus:outline-none focus:border-[#138FEA] focus:bg-white dark:focus:bg-gray-900 transition-all duration-300"
                                     />
                                 </div>
                             </div>
@@ -227,7 +237,7 @@ const LoginV2 = () => {
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="w-full bg-[#0052CC] hover:bg-blue-700 text-white font-black py-4 rounded-2xl shadow-xl shadow-blue-200 dark:shadow-none transform active:scale-95 transition-all duration-200 flex items-center justify-center gap-3 group overflow-hidden relative"
+                                className="w-full bg-[#138FEA] hover:bg-blue-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-blue-200 dark:shadow-none transform active:scale-95 transition-all duration-200 flex items-center justify-center gap-3 group overflow-hidden relative"
                             >
                                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                                 {isLoading ? (
@@ -245,7 +255,7 @@ const LoginV2 = () => {
                         <div className="mt-12 text-center">
                             <p className="text-gray-500 dark:text-gray-400 font-medium">
                                 Belum memiliki akun? {' '}
-                                <Link to="/register" className="text-[#0052CC] dark:text-blue-400 font-black hover:underline underline-offset-4">
+                                <Link to="/register" className="text-[#138FEA] dark:text-blue-400 font-black hover:underline underline-offset-4">
                                     DAFTAR DISINI
                                 </Link>
                             </p>

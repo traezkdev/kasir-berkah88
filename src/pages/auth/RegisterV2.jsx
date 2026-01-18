@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiUser, FiLock, FiUserPlus, FiArrowRight, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import AppIcon from '../../components/AppIcon';
 import DarkModeToggle from '../../components/ui/DarkModeToggle';
+import { useAppSettings } from '../../contexts/AppSettingsContext';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -19,6 +20,7 @@ const RegisterV2 = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [registrationEnabled, setRegistrationEnabled] = useState(true);
     const navigate = useNavigate();
+    const { logoUrl } = useAppSettings();
 
     useEffect(() => {
         const fetchRegistrationSetting = async () => {
@@ -79,7 +81,7 @@ const RegisterV2 = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#0052CC] dark:bg-[#003d99] relative overflow-hidden font-sans transition-colors duration-500">
+        <div className="min-h-screen flex items-center justify-center bg-[#138FEA] dark:bg-[#0d6aad] relative overflow-hidden font-sans transition-colors duration-500">
             {/* Dark Mode Toggle Position */}
             <div className="absolute top-6 right-6 z-50">
                 <DarkModeToggle />
@@ -89,12 +91,12 @@ const RegisterV2 = () => {
                 <motion.div
                     animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }}
                     transition={{ duration: 20, repeat: Infinity }}
-                    className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-blue-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-20"
+                    className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-blue-300 rounded-full mix-blend-multiply filter blur-[80px] opacity-20"
                 />
                 <motion.div
                     animate={{ scale: [1, 1.3, 1], rotate: [0, -90, 0] }}
                     transition={{ duration: 25, repeat: Infinity }}
-                    className="absolute -bottom-[10%] -right-[10%] w-[50%] h-[50%] bg-blue-300 rounded-full mix-blend-multiply filter blur-[100px] opacity-20"
+                    className="absolute -bottom-[10%] -right-[10%] w-[50%] h-[50%] bg-blue-200 rounded-full mix-blend-multiply filter blur-[100px] opacity-20"
                 />
             </div>
 
@@ -102,12 +104,16 @@ const RegisterV2 = () => {
                 {/* Left Side: Info */}
                 <div className="hidden lg:flex flex-col justify-center p-16 text-white bg-gradient-to-br from-white/10 to-transparent">
                     <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }}>
-                        <div className="w-20 h-20 bg-white dark:bg-blue-500 rounded-3xl flex items-center justify-center mb-10 shadow-lg shadow-blue-900/20">
-                            <AppIcon name="UserPlus" size={48} className="text-[#0052CC] dark:text-white" />
+                        <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mb-10 overflow-hidden ${logoUrl ? '' : 'bg-white dark:bg-[#138FEA] shadow-lg shadow-blue-900/20'}`}>
+                            {logoUrl ? (
+                                <img src={logoUrl} alt="Store Logo" className="w-full h-full object-contain" />
+                            ) : (
+                                <AppIcon name="UserPlus" size={48} className="text-[#138FEA] dark:text-white" />
+                            )}
                         </div>
                         <h1 className="text-5xl font-black tracking-tighter leading-tight mb-6">
                             Bergabunglah Bersama <br />
-                            <span className="text-blue-200 dark:text-blue-300">Berkah 88</span>
+                            <span className="text-blue-100 dark:text-blue-200">Berkah 88</span>
                         </h1>
                         <p className="text-xl text-blue-100/80 dark:text-blue-100/60 font-medium mb-12 max-w-sm">
                             Buat akun Anda sekarang dan rasakan kemudahan mengelola transaksi bisnis dalam satu genggaman.
@@ -124,6 +130,16 @@ const RegisterV2 = () => {
                 {/* Right Side: Form */}
                 <div className="flex flex-col justify-center p-8 md:p-16 bg-white dark:bg-gray-950 transition-colors duration-500">
                     <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
+                        <div className="mb-10 block lg:hidden">
+                            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 overflow-hidden ${logoUrl ? '' : 'bg-blue-50 dark:bg-blue-900/30'}`}>
+                                {logoUrl ? (
+                                    <img src={logoUrl} alt="Store Logo" className="w-full h-full object-contain" />
+                                ) : (
+                                    <AppIcon name="Store" size={32} className="text-[#138FEA]" />
+                                )}
+                            </div>
+                        </div>
+
                         <div className="mb-10">
                             <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter uppercase mb-2">Buat Akun</h2>
                             <p className="text-gray-500 dark:text-gray-400 font-medium">Lengkapi formulir di bawah untuk mendaftar</p>
@@ -135,7 +151,7 @@ const RegisterV2 = () => {
                                     <label className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Username</label>
                                     <div className="relative group">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                            <FiUser className="text-gray-400 group-focus-within:text-[#0052CC]" />
+                                            <FiUser className="text-gray-400 group-focus-within:text-[#138FEA]" />
                                         </div>
                                         <input
                                             type="text"
@@ -144,7 +160,7 @@ const RegisterV2 = () => {
                                             onChange={handleInputChange}
                                             placeholder="Username Baru"
                                             required
-                                            className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-gray-900 dark:text-white font-bold focus:outline-none focus:border-[#0052CC] transition-all"
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-gray-900 dark:text-white font-bold focus:outline-none focus:border-[#138FEA] transition-all"
                                         />
                                     </div>
                                 </div>
@@ -153,7 +169,7 @@ const RegisterV2 = () => {
                                     <label className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Kata Sandi</label>
                                     <div className="relative group">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                            <FiLock className="text-gray-400 group-focus-within:text-[#0052CC]" />
+                                            <FiLock className="text-gray-400 group-focus-within:text-[#138FEA]" />
                                         </div>
                                         <input
                                             type="password"
@@ -162,7 +178,7 @@ const RegisterV2 = () => {
                                             onChange={handleInputChange}
                                             placeholder="Min. 6 Karakter"
                                             required
-                                            className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-gray-900 dark:text-white font-bold focus:outline-none focus:border-[#0052CC] transition-all"
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-gray-900 dark:text-white font-bold focus:outline-none focus:border-[#138FEA] transition-all"
                                         />
                                     </div>
                                 </div>
@@ -171,7 +187,7 @@ const RegisterV2 = () => {
                                     <label className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Konfirmasi Sandi</label>
                                     <div className="relative group">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                            <FiLock className="text-gray-400 group-focus-within:text-[#0052CC]" />
+                                            <FiLock className="text-gray-400 group-focus-within:text-[#138FEA]" />
                                         </div>
                                         <input
                                             type="password"
@@ -180,7 +196,7 @@ const RegisterV2 = () => {
                                             onChange={handleInputChange}
                                             placeholder="Ulangi Kata Sandi"
                                             required
-                                            className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-gray-900 dark:text-white font-bold focus:outline-none focus:border-[#0052CC] transition-all"
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-gray-900 dark:text-white font-bold focus:outline-none focus:border-[#138FEA] transition-all"
                                         />
                                     </div>
                                 </div>
@@ -203,7 +219,7 @@ const RegisterV2 = () => {
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="w-full bg-[#0052CC] hover:bg-blue-700 text-white font-black py-4 rounded-2xl shadow-xl shadow-blue-100 dark:shadow-none transform active:scale-95 transition-all flex items-center justify-center gap-3"
+                                    className="w-full bg-[#138FEA] hover:bg-blue-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-blue-100 dark:shadow-none transform active:scale-95 transition-all flex items-center justify-center gap-3"
                                 >
                                     {isLoading ? (
                                         <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -223,7 +239,7 @@ const RegisterV2 = () => {
                         <div className="mt-10 text-center">
                             <p className="text-gray-500 dark:text-gray-400 font-medium">
                                 Sudah memiliki akun? {' '}
-                                <Link to="/login" className="text-[#0052CC] dark:text-blue-400 font-black hover:underline underline-offset-4">
+                                <Link to="/login" className="text-[#138FEA] dark:text-blue-400 font-black hover:underline underline-offset-4">
                                     MASUK DISINI
                                 </Link>
                             </p>
