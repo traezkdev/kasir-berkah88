@@ -492,6 +492,11 @@ const OwnerDashboard = ({ headerTitle }) => {
                     </div>
                 </section>
 
+                {/* Stock Alert Banner (Mobile) */}
+                <section className="px-1 mt-2">
+                    <StockAlertBanner />
+                </section>
+
                 <section className="mt-10 px-5">
                     <div className="flex items-center justify-between mb-5 px-1">
                         <h3 className="text-sm font-extrabold text-gray-900 dark:text-white tracking-tighter uppercase">Layanan Owner</h3>
@@ -509,25 +514,72 @@ const OwnerDashboard = ({ headerTitle }) => {
                     </div>
                 </section>
 
-                <section className="mt-10 px-5">
+                <section className="mt-10 px-5 mb-8">
                     <h3 className="text-sm font-extrabold text-gray-900 dark:text-white tracking-tighter uppercase mb-5 px-1">Pembaruan Sistem</h3>
-                    <div className="space-y-3">
-                        <div className="bg-white dark:bg-slate-800 p-5 rounded-[2rem] shadow-md dark:shadow-none border border-gray-50 dark:border-slate-700 flex items-center gap-4">
-                            <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl flex items-center justify-center">
-                                <Icon name="BookUser" size={24} className="text-indigo-500" />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Stok Menu Card */}
+                        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-5 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
+                            <div className="flex items-center gap-3 mb-3 relative z-10">
+                                <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl border border-white/20">
+                                    <Icon name="BookUser" className="text-white" size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-white text-sm">Stok Menu</h3>
+                                    <p className="text-[10px] text-blue-100 font-medium">Data porsi tersedia</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Stok Menu</p>
-                                <p className="text-xs font-bold text-gray-900 dark:text-white">{dashboardData.timestamps?.menuStock ? new Date(dashboardData.timestamps.menuStock).toLocaleString('id-ID') : 'Belum pernah'}</p>
+                            <div className="mt-2 pt-2 border-t border-white/10 relative z-10">
+                                <p className="text-[10px] text-blue-200 font-medium mb-0.5">Terakhir diperbarui</p>
+                                <p className="text-xs font-bold text-white">
+                                    {dashboardData.timestamps?.menuStock
+                                        ? new Date(dashboardData.timestamps.menuStock).toLocaleString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                                        : 'Belum pernah'}
+                                </p>
                             </div>
                         </div>
-                        <div className="bg-white dark:bg-slate-800 p-5 rounded-[2rem] shadow-md dark:shadow-none border border-gray-50 dark:border-slate-700 flex items-center gap-4">
-                            <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center">
-                                <Icon name="Package" size={24} className="text-emerald-500" />
+
+                        {/* Bahan Baku Card */}
+                        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-5 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
+                            <div className="flex items-center gap-3 mb-3 relative z-10">
+                                <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl border border-white/20">
+                                    <Icon name="Package" className="text-white" size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-white text-sm">Bahan Baku</h3>
+                                    <p className="text-[10px] text-blue-100 font-medium">Stok mentah terpantau</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Bahan Baku</p>
-                                <p className="text-xs font-bold text-gray-900 dark:text-white">{dashboardData.timestamps?.rawMaterials ? new Date(dashboardData.timestamps.rawMaterials).toLocaleString('id-ID') : 'Belum pernah'}</p>
+                            <div className="mt-2 pt-2 border-t border-white/10 relative z-10">
+                                <p className="text-[10px] text-blue-200 font-medium mb-0.5">Terakhir diperbarui</p>
+                                <p className="text-xs font-bold text-white">
+                                    {dashboardData.timestamps?.rawMaterials
+                                        ? new Date(dashboardData.timestamps.rawMaterials).toLocaleString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                                        : 'Belum pernah'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Uang Lapak Card */}
+                        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-5 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
+                            <div className="flex items-center gap-3 mb-3 relative z-10">
+                                <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl border border-white/20">
+                                    <Icon name="Wallet" className="text-white" size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-white text-sm">Uang Lapak</h3>
+                                    <p className="text-[10px] text-blue-100 font-medium">Dana kas tercatat</p>
+                                </div>
+                            </div>
+                            <div className="mt-2 pt-2 border-t border-white/10 relative z-10">
+                                <p className="text-[10px] text-blue-200 font-medium mb-0.5">Terakhir diperbarui</p>
+                                <p className="text-xs font-bold text-white">
+                                    {dashboardData.timestamps?.lapakFunds
+                                        ? new Date(dashboardData.timestamps.lapakFunds).toLocaleString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                                        : 'Belum pernah'}
+                                </p>
                             </div>
                         </div>
                     </div>
