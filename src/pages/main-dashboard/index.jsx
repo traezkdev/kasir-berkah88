@@ -768,7 +768,7 @@ const MainDashboard = ({ headerTitle }) => {
       {/* --- MOBILE DANA-STYLE UI (lg:hidden) --- */}
       <div className="lg:hidden flex flex-col pb-24">
         {/* Dana Blue Header */}
-        <header className={`bg-[#118eea] dark:bg-slate-900 text-white px-5 pt-8 pb-16 shadow-xl relative transition-all duration-300 ${isMobileMenuOpen ? 'z-50' : 'z-20'}`}>
+        <header className={`bg-[#118eea] dark:bg-slate-900 text-white px-5 pt-8 pb-16 relative transition-all duration-300 ${isMobileMenuOpen ? 'z-50' : 'z-20'}`}>
           {/* Decorative Elements */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-10 -mt-20 blur-3xl"></div>
@@ -852,25 +852,25 @@ const MainDashboard = ({ headerTitle }) => {
           {/* Main Action Grid (Icon + Label) */}
           <div className="grid grid-cols-4 gap-4 relative z-10">
             <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate(appMode === 'simple' ? '/transaksi-sederhana' : '/transaksi')}>
-              <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center backdrop-blur-md shadow-lg group-active:scale-95 transition-transform duration-200">
+              <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center backdrop-blur-md group-active:scale-95 transition-transform duration-200">
                 <Icon name="QrCode" size={32} />
               </div>
               <span className="text-[11px] font-black uppercase tracking-tight text-white/90 dark:text-gray-300">Pindai</span>
             </div>
             <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate('/admin-uang-bisnis')}>
-              <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center backdrop-blur-md shadow-lg group-active:scale-95 transition-transform duration-200">
+              <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center backdrop-blur-md group-active:scale-95 transition-transform duration-200">
                 <Icon name="Wallet" size={32} />
               </div>
               <span className="text-[11px] font-black uppercase tracking-tight text-white/90 dark:text-gray-300">Saldo</span>
             </div>
             <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate('/laporan')}>
-              <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center backdrop-blur-md shadow-lg group-active:scale-95 transition-transform duration-200">
+              <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center backdrop-blur-md group-active:scale-95 transition-transform duration-200">
                 <Icon name="FileText" size={32} />
               </div>
               <span className="text-[11px] font-black uppercase tracking-tight text-white/90 dark:text-gray-300">Laporan</span>
             </div>
             <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate('/auditor')}>
-              <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center backdrop-blur-md shadow-lg group-active:scale-95 transition-transform duration-200">
+              <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center backdrop-blur-md group-active:scale-95 transition-transform duration-200">
                 <Icon name="SearchCheck" size={32} />
               </div>
               <span className="text-[11px] font-black uppercase tracking-tight text-white/90 dark:text-gray-300">Audit</span>
@@ -880,11 +880,11 @@ const MainDashboard = ({ headerTitle }) => {
 
         {/* Floating Balance Card */}
         <section className="px-5 -mt-8 relative z-20">
-          <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] p-8 shadow-2xl shadow-blue-900/10 dark:shadow-none border border-blue-50/50 dark:border-slate-700">
-            {/* Header Row: Label & Status */}
+          <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] p-8 border border-blue-50/50 dark:border-slate-700">
+            {/* ... content ... */}
             <div className="flex justify-between items-center mb-4">
               <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 tracking-[0.25em] uppercase">Total Kas Lapak</p>
-              <div className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-sm shadow-emerald-100/50 dark:shadow-none">
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 border border-emerald-100/50 dark:border-emerald-800/30">
                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
                 Terpantau
               </div>
@@ -915,6 +915,11 @@ const MainDashboard = ({ headerTitle }) => {
           </div>
         </section>
 
+        {/* Stock Alert Banner (Mobile) */}
+        <section className="px-1 mt-2">
+          <StockAlertBanner />
+        </section>
+
         {/* Services Grid (Dana Look) */}
         <section className="mt-10 px-5">
           <div className="flex items-center justify-between mb-5 px-1">
@@ -924,7 +929,7 @@ const MainDashboard = ({ headerTitle }) => {
             </span>
           </div>
 
-          <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] p-8 shadow-xl shadow-gray-200/50 dark:shadow-none grid grid-cols-4 gap-y-10 border border-transparent dark:border-slate-700">
+          <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] p-8 grid grid-cols-4 gap-y-10 border border-gray-50 dark:border-slate-700">
             {quickActions.slice(0, 8).map((action, idx) => (
               <div
                 key={idx}
@@ -958,7 +963,7 @@ const MainDashboard = ({ headerTitle }) => {
               dashboardData.recentTransactions.slice(0, 5).map((tx, idx) => (
                 <div
                   key={idx}
-                  className="bg-white dark:bg-slate-800 p-5 rounded-[2rem] flex items-center gap-5 shadow-sm border border-gray-100 dark:border-slate-700 active:bg-gray-50 dark:active:bg-slate-700 transition-all duration-200"
+                  className="bg-white dark:bg-slate-800 p-5 rounded-[2rem] flex items-center gap-5 border border-gray-100 dark:border-slate-700 active:bg-gray-50 dark:active:bg-slate-700 transition-all duration-200"
                   onClick={() => navigate('/transaction-history', { state: { openTransaction: tx.id } })}
                 >
                   <div className={`w-14 h-14 rounded-full flex items-center justify-center ${tx.payment_method === 'cash' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
@@ -990,7 +995,7 @@ const MainDashboard = ({ headerTitle }) => {
         <section className="mt-10 px-5 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Stok Menu Card */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-5 shadow-lg shadow-blue-500/20 relative overflow-hidden group">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-5 relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
               <div className="flex items-center gap-3 mb-3 relative z-10">
                 <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl border border-white/20">
@@ -1003,12 +1008,16 @@ const MainDashboard = ({ headerTitle }) => {
               </div>
               <div className="mt-2 pt-2 border-t border-white/10 relative z-10">
                 <p className="text-[10px] text-blue-200 font-medium mb-0.5">Terakhir diperbarui</p>
-                <p className="text-xs font-bold text-white">14 Januari 2026 pukul 16.45</p>
+                <p className="text-xs font-bold text-white">
+                  {dashboardData.timestamps?.menuStock
+                    ? new Date(dashboardData.timestamps.menuStock).toLocaleString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                    : 'Belum pernah'}
+                </p>
               </div>
             </div>
 
             {/* Bahan Baku Card */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-5 shadow-lg shadow-blue-500/20 relative overflow-hidden group">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-5 relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
               <div className="flex items-center gap-3 mb-3 relative z-10">
                 <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl border border-white/20">
@@ -1021,12 +1030,16 @@ const MainDashboard = ({ headerTitle }) => {
               </div>
               <div className="mt-2 pt-2 border-t border-white/10 relative z-10">
                 <p className="text-[10px] text-blue-200 font-medium mb-0.5">Terakhir diperbarui</p>
-                <p className="text-xs font-bold text-white">14 Januari 2026 pukul 16.45</p>
+                <p className="text-xs font-bold text-white">
+                  {dashboardData.timestamps?.rawMaterials
+                    ? new Date(dashboardData.timestamps.rawMaterials).toLocaleString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                    : 'Belum pernah'}
+                </p>
               </div>
             </div>
 
             {/* Uang Lapak Card */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-5 shadow-lg shadow-blue-500/20 relative overflow-hidden group">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-5 relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
               <div className="flex items-center gap-3 mb-3 relative z-10">
                 <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl border border-white/20">
@@ -1039,7 +1052,11 @@ const MainDashboard = ({ headerTitle }) => {
               </div>
               <div className="mt-2 pt-2 border-t border-white/10 relative z-10">
                 <p className="text-[10px] text-blue-200 font-medium mb-0.5">Terakhir diperbarui</p>
-                <p className="text-xs font-bold text-white">14 Januari 2026 pukul 16.45</p>
+                <p className="text-xs font-bold text-white">
+                  {dashboardData.timestamps?.lapakFunds
+                    ? new Date(dashboardData.timestamps.lapakFunds).toLocaleString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                    : 'Belum pernah'}
+                </p>
               </div>
             </div>
           </div>

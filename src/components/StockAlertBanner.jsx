@@ -13,9 +13,21 @@ const StockAlertBanner = ({ isOwner = false }) => {
     const [isVisible, setIsVisible] = useState(false);
     const [settings, setSettings] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [userRole, setUserRole] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const encodedPayload = token.split('.')[1];
+                const decodedPayload = JSON.parse(atob(encodedPayload));
+                setUserRole(decodedPayload.role);
+            } catch (e) {
+                console.error("Error decoding token in StockAlertBanner:", e);
+            }
+        }
+
         const fetchAlertData = async () => {
             try {
                 // Fetch settings first to see if alert is enabled
@@ -100,9 +112,10 @@ const StockAlertBanner = ({ isOwner = false }) => {
     if (!isVisible || isLoading || appMode === 'simple') return null;
 
     return (
-        <div className="my-6 animate-in fade-in slide-in-from-top duration-500 px-1">
-            <div className="bg-gradient-to-r from-red-600 to-red-500 rounded-xl shadow-lg border border-red-400/30 overflow-hidden">
-                <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="my-6 animate-in fade-in slide-in-from-top duration-500 px-1 sm:px-0">
+            {/* Desktop UI */}
+            <div className="hidden sm:block bg-gradient-to-r from-red-600 to-red-500 rounded-xl border border-red-400/30 overflow-hidden">
+                <div className="p-5 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4 text-white">
                         <div className="p-3 bg-white/20 rounded-full animate-pulse">
                             <Icon name="AlertTriangle" size={24} />
@@ -114,14 +127,22 @@ const StockAlertBanner = ({ isOwner = false }) => {
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="flex items-center gap-2">
                         <Button
                             variant="primary"
-                            className="flex-1 sm:flex-initial bg-white text-red-600 hover:bg-white/90 border-none font-bold"
-                            onClick={isOwner ? () => navigate('/critical-stock') : handleWhatsAppShare}
+                            className="bg-white text-red-600 hover:bg-white/90 border-none font-bold"
+                            onClick={() => {
+                                if (userRole === 'owner') {
+                                    navigate('/critical-stock');
+                                } else if (userRole === 'admin') {
+                                    navigate('/main-critical-stock');
+                                } else {
+                                    handleWhatsAppShare();
+                                }
+                            }}
                         >
                             <div className="flex items-center gap-2">
-                                {isOwner ? (
+                                {userRole === 'owner' || userRole === 'admin' ? (
                                     <>
                                         <Icon name="Eye" size={18} />
                                         Lihat Detail
@@ -138,11 +159,69 @@ const StockAlertBanner = ({ isOwner = false }) => {
                         </Button>
                         <Button
                             variant="outline"
-                            className="bg-transparent text-white border-white/50 hover:bg-white/10"
+                            className="bg-transparent text-white border-white/50 hover:bg-white/10 p-2 h-auto rounded-lg"
                             onClick={() => setIsVisible(false)}
                             title="Tutup"
                         >
                             <Icon name="X" size={18} />
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Mobile UI (Modern Card Style) */}
+            <div className="block sm:hidden relative px-4 mx-1">
+                <div className="relative bg-white dark:bg-slate-800 rounded-[2rem] p-5 border border-red-100 dark:border-red-900/30 overflow-hidden">
+                    {/* Decorative Background */}
+                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] dark:opacity-[0.05]">
+                        <Icon name="AlertTriangle" size={120} className="text-red-600" />
+                    </div>
+
+                    <div className="flex items-start gap-4 mb-4 relative z-10">
+                        <div className="flex-shrink-0 w-12 h-12 bg-red-500 rounded-2xl flex items-center justify-center animate-pulse">
+                            <Icon name="AlertTriangle" size={24} className="text-white" />
+                        </div>
+                        <div className="flex-1 pt-1">
+                            <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight mb-1">Stok Kritis!</h3>
+                            <p className="text-xs text-gray-500 dark:text-slate-400 font-medium leading-relaxed">
+                                Ada <span className="text-red-500 font-black">{criticalCount} item</span> bahan baku yang perlu segera dibeli.
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => setIsVisible(false)}
+                            className="p-1.5 bg-gray-50 dark:bg-slate-700 rounded-full text-gray-400"
+                        >
+                            <Icon name="X" size={14} />
+                        </button>
+                    </div>
+
+                    <div className="flex gap-2 relative z-10">
+                        <Button
+                            variant="primary"
+                            className="flex-1 bg-red-600 hover:bg-red-700 text-white border-none h-11 rounded-2xl font-black text-[10px] uppercase tracking-widest"
+                            onClick={() => {
+                                if (userRole === 'owner') {
+                                    navigate('/critical-stock');
+                                } else if (userRole === 'admin') {
+                                    navigate('/main-critical-stock');
+                                } else {
+                                    handleWhatsAppShare();
+                                }
+                            }}
+                        >
+                            <div className="flex items-center justify-center gap-2">
+                                {userRole === 'owner' || userRole === 'admin' ? (
+                                    <>
+                                        <Icon name="Eye" size={16} />
+                                        Lihat Item
+                                    </>
+                                ) : (
+                                    <>
+                                        <Icon name="MessageCircle" size={16} />
+                                        Lapor Owner
+                                    </>
+                                )}
+                            </div>
                         </Button>
                     </div>
                 </div>
