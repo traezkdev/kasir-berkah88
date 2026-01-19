@@ -229,6 +229,14 @@ const AllFeatures = () => {
             category: 'Sistem'
         },
         {
+            title: 'Log Aktivitas',
+            description: 'Pantau semua aktivitas pengguna dan perubahan data sistem',
+            icon: 'Activity',
+            route: '/all-logs',
+            color: 'slate',
+            category: 'Sistem'
+        },
+        {
             title: 'Database & Backup',
             description: 'Amankan data Anda dengan fitur backup berkala',
             icon: 'Database',

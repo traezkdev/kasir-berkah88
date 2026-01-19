@@ -48,6 +48,7 @@ import AllFeatures from './pages/AllFeatures';
 import TransactionTrash from './pages/TransactionTrash';
 import DatabaseManagement from './pages/Settings/DatabaseManagement';
 import DashboardV2 from './pages/dashboard-v2';
+import AllLogs from './pages/all-logs';
 
 // ProtectedRoute component
 const ProtectedRoute = ({ children, allowedRoles, redirectPathForForbiddenRoles }) => {
@@ -209,6 +210,15 @@ const AppRoutes = () => {
         <Route path="/auditor" element={<AuditorPage />} />
       </Route>
 
+      <Route
+        element={
+          <ProtectedRoute allowedRoles={['admin', 'owner']}>
+            <DynamicLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/all-logs" element={<AllLogs />} />
+      </Route>
 
       {/* Catch all other routes */}
       <Route path="*" element={<NotFound />} />

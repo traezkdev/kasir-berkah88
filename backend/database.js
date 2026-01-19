@@ -1109,6 +1109,22 @@ const setupDatabase = async () => {
     // --- End Automatic Deletion ---
 
 
+    // Create activity_logs table
+    const createActivityLogsTable = `
+      CREATE TABLE IF NOT EXISTS activity_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NULL,
+        action VARCHAR(255) NOT NULL,
+        target_type VARCHAR(100),
+        target_id VARCHAR(255),
+        details TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+      );
+    `;
+    await connection.query(createActivityLogsTable);
+    console.log('activity_logs table is ready.');
+
     connection.release();
 
   } catch (error) {

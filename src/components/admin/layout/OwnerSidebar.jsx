@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   FaTachometerAlt, FaUser, FaSignOutAlt, FaAngleDoubleLeft, FaAngleDoubleRight,
-  FaWallet, FaChartBar, FaBoxOpen, FaExclamationTriangle, FaUserCircle, FaClipboardList, FaBars
+  FaWallet, FaChartBar, FaBoxOpen, FaExclamationTriangle, FaUserCircle, FaClipboardList, FaBars, FaHistory
 } from 'react-icons/fa';
 import authFetch from '../../../utils/authFetch';
 
@@ -190,6 +190,18 @@ const OwnerSidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
             activeLinkClasses={activeLinkClasses}
           >
             Sistem Audit
+          </MenuItem>
+          <MenuItem
+            to="/all-logs"
+            icon={FaHistory}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+            isCollapsed={isCollapsed}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            navLinkClasses={navLinkClasses}
+            activeLinkClasses={activeLinkClasses}
+          >
+            Semua Log
           </MenuItem>
 
           {/* Stok */}
