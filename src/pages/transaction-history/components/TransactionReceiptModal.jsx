@@ -447,6 +447,23 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
                       </div>
                     </div>
                   </div>
+                  {/* Customer Notes (Modern Style) */}
+                  {transaction.catatan && (
+                    <div className="mb-8 px-2">
+                      <div className="relative p-4 bg-amber-50/40 rounded-2xl border border-amber-100/50 group overflow-hidden">
+                        <div className="absolute top-0 right-0 -mt-2 -mr-2 w-12 h-12 bg-amber-200/20 rounded-full blur-xl group-hover:bg-amber-200/30 transition-colors"></div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Icon name="MessageSquare" size={14} className="text-amber-500" />
+                          <span className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Catatan Pesanan</span>
+                        </div>
+                        <p className="text-xs text-amber-900 italic font-medium leading-relaxed pl-5 relative">
+                          <span className="absolute left-0 top-0 text-amber-300 text-lg leading-none">"</span>
+                          {transaction.catatan}
+                          <span className="text-amber-300 text-lg leading-none ml-0.5">"</span>
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Aesthetic Footer */}
                   <div className="text-center pt-6 border-t border-dashed border-gray-200 relative">
@@ -457,7 +474,6 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
 
                     <h4 className="text-sm font-black text-gray-900 tracking-tighter uppercase mb-1.5">Terima Kasih</h4>
                     <p className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.15em] mb-4">Sampai jumpa kembali!</p>
-
 
                     <span className="text-[7px] font-black text-gray-300 uppercase tracking-[0.4em]">{restaurantUrl}</span>
                   </div>
@@ -649,7 +665,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
                       <div className="bg-amber-50/50 rounded-2xl p-4 border border-amber-100/50 border-dashed">
                         <div className="flex items-center gap-2 mb-2">
                           <Icon name="MessageSquare" size={14} className="text-amber-600" />
-                          <span className="text-[10px] font-black text-amber-800 uppercase tracking-widest">Customer Note</span>
+                          <span className="text-[10px] font-black text-amber-800 uppercase tracking-widest">Catatan Pesanan</span>
                         </div>
                         <p className="text-xs text-amber-900 italic font-medium leading-relaxed italic">
                           "{transaction.catatan}"
