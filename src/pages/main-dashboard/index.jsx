@@ -8,6 +8,7 @@ import MetricsCard from './components/MetricsCard';
 import QuickActionCard from './components/QuickActionCard';
 import RecentTransactionsList from './components/RecentTransactionsList';
 import BusinessSummaryCard from './components/BusinessSummaryCard';
+import DesktopDashboardLayout from './components/DesktopDashboardLayout';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 // import DarkModeToggle from '../../components/ui/DarkModeToggle';
@@ -428,6 +429,29 @@ const MainDashboard = ({ headerTitle }) => {
         return [];
       }
     }).reduce((sum, i) => sum + (i.quantity || 0), 0);
+
+    // Calculate Best Selling Item (Today)
+    const itemCounts = {};
+    todayTransactions.forEach(t => {
+      try {
+        const items = typeof t.items === 'string' ? JSON.parse(t.items) : t.items;
+        if (Array.isArray(items)) {
+          items.forEach(item => {
+            const name = item.name || 'Unknown';
+            itemCounts[name] = (itemCounts[name] || 0) + (item.quantity || 0);
+          });
+        }
+      } catch (e) { }
+    });
+
+    let bestSellerName = '-';
+    let bestSellerCount = 0;
+    Object.entries(itemCounts).forEach(([name, count]) => {
+      if (count > bestSellerCount) {
+        bestSellerCount = count;
+        bestSellerName = name;
+      }
+    });
     const lowStockItems = menuItems.filter(item => item.stock <= 5 && item.stock > 0).length;
     const recentTransactions = paginatedTransactions.slice(0, 6); // Use paginated for recent list
 
@@ -459,6 +483,7 @@ const MainDashboard = ({ headerTitle }) => {
         transactions: todayTransactions.length,
         itemsSold: itemsSoldToday,
         averageOrder: averageOrderToday,
+        bestSeller: { name: bestSellerName, count: bestSellerCount },
         peakHour: (() => {
           if (todayTransactions.length === 0) return 'N/A';
           const hourCounts = Array(24).fill(0);
@@ -471,6 +496,8 @@ const MainDashboard = ({ headerTitle }) => {
         })()
       },
       recentTransactions,
+      transactions: allTransactions,
+      expenses: expenses, // Pass full expenses history for charts
       dashboardMetrics: {
         todaySales: { value: formatCurrency(todaySales), change: salesChangeFormatted, trend: salesTrend },
         todayExpenses: { value: formatCurrency(todayExpenses) },
@@ -1104,118 +1131,21 @@ const MainDashboard = ({ headerTitle }) => {
       </div>
 
       {/* --- DESKTOP VIEW (lg:block hidden) --- */}
+      {/* --- DESKTOP VIEW (lg:block hidden) --- */}
       <div className={`hidden lg:block ${theme === 'default' ? 'lg:pt-16' : ''}`}>
-        <DashboardMetricsBar metrics={dashboardData.dashboardMetrics} />
         <main className="pb-20 lg:pb-8">
-          <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
+          <div className={theme === 'default' ? "max-w-[98%] mx-auto px-4 lg:px-6" : ""}>
             {/* Stock Alert Banner */}
             <StockAlertBanner />
 
             {/* Header Section */}
-            <div className="mb-6">
+            <div className="mb-2 ">
               <BreadcrumbNavigation />
-              <div className="flex items-center justify-between mt-4 flex-wrap gap-y-4">
-                <div>
-                  <h1 className="text-xl lg:text-2xl font-bold text-text-primary uppercase tracking-tighter">
-                    Dashboard
-                  </h1>
-                </div>
-                <div className="flex items-center gap-4 flex-wrap">
-                  {/* New Filter Section */}
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={filterType}
-                      onChange={(e) => setFilterType(e.target.value)}
-                      className="bg-card border-border text-text-primary text-sm rounded-md focus:ring-primary focus:border-primary p-2"
-                    >
-                      <option value="this_week">Minggu Ini</option>
-                      <option value="monthly">Bulan Ini</option>
-                      <option value="yearly">Tahun Ini</option>
-                      <option value="all_time">Semua Waktu</option>
-                      <option value="custom">Kustom</option>
-                    </select>
-                    {filterType === 'custom' && (
-                      <>
-                        <input
-                          type="date"
-                          value={customDateRange.start}
-                          onChange={(e) => setCustomDateRange({ ...customDateRange, start: e.target.value })}
-                          className="bg-card border-border text-text-primary text-sm rounded-md focus:ring-primary focus:border-primary p-2"
-                        />
-                        <span className="text-text-secondary px-1 text-xs">ke</span>
-                        <input
-                          type="date"
-                          value={customDateRange.end}
-                          onChange={(e) => setCustomDateRange({ ...customDateRange, end: e.target.value })}
-                          className="bg-card border-border text-text-primary text-sm rounded-md focus:ring-primary focus:border-primary p-2"
-                        />
-                      </>
-                    )}
-                  </div>
-                  <div className="hidden lg:block">
-                    <Button
-                      variant="primary"
-                      iconName="Plus"
-                      iconPosition="left"
-                      onClick={() => navigate(appMode === 'simple' ? '/transaksi-sederhana' : '/transaksi')}
-                    >
-                      Transaksi Baru
-                    </Button>
-                  </div>
-                </div>
-              </div>
+
             </div>
 
-            {/* Metrics Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12 animate-in fade-in slide-in-from-top-4 duration-300">
-              {detailedMetrics.map((metric, index) => (
-                <MetricsCard
-                  key={index}
-                  title={metric.title}
-                  value={metric.value}
-                  icon={metric.icon}
-                  color={metric.color}
-                  description={metric.description}
-                  trend={metric.trend}
-                  change={metric.change}
-                />
-              ))}
-            </div>
-            {/* Quick Actions Section */}
-            <section className="mb-8">
-              <div className="flex items-center justify-between mb-6 px-1">
-                <h2 className="text-xl font-black text-text-primary uppercase tracking-tighter">Aksi Cepat</h2>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {quickActions.map((action, index) => (
-                  <QuickActionCard
-                    key={index}
-                    title={action.title}
-                    description={action.description}
-                    icon={action.icon}
-                    route={action.route}
-                    color={action.color}
-                  />
-                ))}
-              </div>
-            </section>
-
-            {/* Split Grid: Recent Trans (Left) & Business Summary (Right) */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2 space-y-8">
-                <section>
-
-                  <RecentTransactionsList
-                    transactions={dashboardData.recentTransactions}
-                    onViewAll={handleViewAllTransactions}
-                  />
-                </section>
-              </div>
-
-              <div className="space-y-8">
-                <BusinessSummaryCard data={dashboardData} todayStats={dashboardData.todayStats} />
-              </div>
-            </div>
+            {/* New Desktop Layout */}
+            <DesktopDashboardLayout dashboardData={dashboardData} theme={theme} />
 
             <div className="mt-8 flex flex-col justify-center items-center opacity-30">
               <p className="mt-2 text-[10px] font-black uppercase tracking-[0.5em]">Di buat oleh M Alfin Firdaus</p>
