@@ -186,6 +186,18 @@ const authorizeAccountAccess = (accountType) => {
     };
 };
 
+// --- LOGGING HELPER ---
+const logActivity = async (userId, action, targetType = null, targetId = null, details = null) => {
+    try {
+        const sql = 'INSERT INTO activity_logs (user_id, action, target_type, target_id, details) VALUES (?, ?, ?, ?, ?)';
+        const params = [userId, action, targetType, targetId, details ? (typeof details === 'object' ? JSON.stringify(details) : details) : null];
+        await db.query(sql, params);
+    } catch (err) {
+        console.error('FAILED TO LOG ACTIVITY:', err.message);
+        // We don't want to crash the request if logging fails, but we should know about it.
+    }
+};
+
 // API Endpoints
 
 // --- Raw Materials Endpoints ---
@@ -741,7 +753,7 @@ app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin'), 
 
         const menuItemSql = 'INSERT INTO menu_items (id, name, price, stock, category, image_url, hpp, discount, is_featured) VALUES (?,?,?,?,?,?,?,?,?)';
         const menuItemParams = [id, name, price, stock, category, image_url, hpp, discount, final_is_featured];
-        await connection.query(menuItemSql, menuItemParams);
+        const [rows] = await connection.query(menuItemSql, menuItemParams); // Need result for consistency, although ID is manually provided in this app logic usually
 
         if (options && Array.isArray(options) && options.length > 0) {
             const optionSql = 'INSERT INTO menu_item_options (menu_item_id, name, price_adjustment) VALUES ?';
@@ -751,10 +763,13 @@ app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin'), 
 
         await connection.commit();
 
+        await logActivity(req.user.userId, 'Tambah Menu', 'menu_item', id, `Menu baru: ${name}`);
+
         res.status(201).json({
             "message": "success",
             "data": { ...itemData, image_url },
         });
+
 
     } catch (err) {
         if (connection) {
@@ -878,6 +893,8 @@ app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'
 
         await connection.commit();
 
+        await logActivity(req.user.userId, 'Edit Menu', 'menu_item', id, `Menu ID ${id} diperbarui`);
+
         res.json({
             "message": "success",
             "data": { id, ...itemData },
@@ -900,6 +917,9 @@ app.delete("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'adm
     try {
         const sql = 'DELETE FROM menu_items WHERE id = ?';
         const [result] = await db.query(sql, [req.params.id]);
+
+        await logActivity(req.user.userId, 'Hapus Menu', 'menu_item', req.params.id, `Menu ID ${req.params.id} dihapus`);
+
         res.json({ "message": "deleted", changes: result.affectedRows });
     } catch (err) {
         res.status(400).json({ "error": err.message });
@@ -931,6 +951,9 @@ app.post("/api/categories", authenticateToken, authorizeRoles('user', 'admin'), 
         }
         const sql = 'INSERT INTO categories (name) VALUES (?)';
         const [result] = await db.query(sql, [name]);
+
+        await logActivity(req.user.userId, 'Tambah Kategori', 'category', result.insertId, `Kategori baru: ${name}`);
+
         res.status(201).json({
             "message": "success",
             "data": { id: result.insertId, name },
@@ -1809,6 +1832,8 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
 
         await connection.commit();
 
+        await logActivity(finalUserId, 'Membuat Transaksi', 'transaction', newTransactionId, `Transaksi baru ${newTransactionId} senilai Rp ${parseFloat(finalTotal).toLocaleString('id-ID')}`);
+
         res.json({
             "message": "success",
             "data": {
@@ -1880,6 +1905,9 @@ app.delete("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'a
     try {
         const sql = 'UPDATE transactions SET deleted_at = ? WHERE id = ?';
         const [result] = await db.query(sql, [new Date(), req.params.id]);
+
+        await logActivity(req.user.userId, 'Menghapus Transaksi', 'transaction', req.params.id, `Transaksi ${req.params.id} dipindahkan ke sampah`);
+
         res.json({ "message": "deleted", changes: result.affectedRows });
     } catch (err) {
         res.status(400).json({ "error": err.message });
@@ -2105,6 +2133,9 @@ app.post("/api/expenses", authenticateToken, authorizeRoles('user', 'admin'), as
         const sql = 'INSERT INTO expenses (name, amount, category, date, notes, user_id) VALUES (?,?,?,?,?,?)';
         const params = [name, amount, category, date, notes, req.user.userId];
         const [result] = await db.query(sql, params);
+
+        await logActivity(req.user.userId, 'Tambah Pengeluaran', 'expense', result.insertId, `Pengeluaran baru: ${name} sebesar Rp ${parseFloat(amount).toLocaleString('id-ID')}`);
+
         res.json({
             "message": "success",
             "data": { id: result.insertId, ...req.body },
@@ -2178,6 +2209,9 @@ app.delete("/api/expenses/:id", authenticateToken, authorizeRoles('user', 'admin
         if (result.affectedRows === 0) {
             return res.status(404).json({ "error": "Expense not found" });
         }
+
+        await logActivity(req.user.userId, 'Hapus Pengeluaran', 'expense', req.params.id, `Pengeluaran ID ${req.params.id} dihapus`);
+
         res.json({ "message": "deleted", changes: result.affectedRows });
     } catch (err) {
         res.status(400).json({ "error": err.message });
@@ -2597,6 +2631,9 @@ app.post("/api/notes", authenticateToken, async (req, res) => {
         }
         const sql = 'INSERT INTO notes (user_id, title, content) VALUES (?, ?, ?)';
         const [result] = await db.query(sql, [req.user.userId, title, content]);
+
+        await logActivity(req.user.userId, 'Tambah Catatan', 'note', result.insertId, `Catatan baru: ${title}`);
+
         res.status(201).json({
             message: "Note created successfully",
             data: { id: result.insertId, title, content, user_id: req.user.userId }
@@ -2667,6 +2704,7 @@ app.delete("/api/notes/:id", authenticateToken, async (req, res) => {
         const [result] = await db.query(sql, [id]);
 
         if (result.affectedRows > 0) {
+            await logActivity(req.user.userId, 'Hapus Catatan', 'note', id, `Catatan ID ${id} dihapus`);
             res.json({ message: "Note deleted successfully" });
         } else {
             // This case should ideally not be reached due to the checks above
@@ -3269,9 +3307,80 @@ app.post("/api/login", async (req, res) => {
 
         const token = jwt.sign({ userId: user.id, username: user.username, role: user.role }, ACTUAL_JWT_SECRET, { expiresIn: '7d' });
 
+        await logActivity(user.id, 'Masuk Sistem', 'user', user.id, `User ${user.username} berhasil login`);
+
         res.json({ message: "Login successful", token });
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// --- Activity Logs Endpoints ---
+app.get("/api/activity-logs", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 20;
+        const { action, userId, targetType, startDate, endDate } = req.query;
+        const offset = (page - 1) * limit;
+
+        let whereClauses = [];
+        let queryParams = [];
+
+        if (action) {
+            whereClauses.push('al.action LIKE ?');
+            queryParams.push(`%${action}%`);
+        }
+        if (userId) {
+            whereClauses.push('al.user_id = ?');
+            queryParams.push(userId);
+        }
+        if (targetType) {
+            whereClauses.push('al.target_type = ?');
+            queryParams.push(targetType);
+        }
+        if (startDate) {
+            whereClauses.push('al.created_at >= ?');
+            queryParams.push(startDate);
+        }
+        if (endDate) {
+            whereClauses.push('al.created_at <= ?');
+            queryParams.push(`${endDate} 23:59:59`);
+        }
+
+        const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+        // Query total count
+        const countSql = `SELECT COUNT(*) as total FROM activity_logs al ${whereSql}`;
+        const [countRows] = await db.query(countSql, queryParams);
+        const totalItems = countRows[0].total;
+        const totalPages = Math.ceil(totalItems / limit);
+
+        // Query logs
+        const logsSql = `
+            SELECT 
+                al.*, 
+                u.username,
+                u.role
+            FROM activity_logs al
+            LEFT JOIN users u ON al.user_id = u.id
+            ${whereSql}
+            ORDER BY al.created_at DESC
+            LIMIT ? OFFSET ?
+        `;
+        const [rows] = await db.query(logsSql, [...queryParams, limit, offset]);
+
+        res.json({
+            message: "success",
+            data: rows,
+            pagination: {
+                currentPage: page,
+                totalPages: totalPages,
+                totalItems: totalItems,
+                limit: limit
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -3323,6 +3432,8 @@ app.post("/api/settings", authenticateToken, authorizeRoles('admin'), async (req
         });
 
         await Promise.all(promises);
+
+        await logActivity(req.user.userId, 'Update Pengaturan', 'settings', 'all', `Admin memperbarui pengaturan sistem`);
 
         res.json({ message: "Settings updated successfully", data: settings });
 
@@ -3550,6 +3661,8 @@ app.delete("/api/admin/data/all", authenticateToken, authorizeRoles('admin'), as
         await connection.query('SET FOREIGN_KEY_CHECKS = 1');
 
         await connection.commit();
+
+        await logActivity(req.user.userId, 'RESET SEMUA DATA', 'system', 'all', 'Admin melakukan reset total seluruh data transaksi, pengeluaran, dan stok.');
 
         res.json({ message: "Semua transaksi, pengeluaran, uang bisnis, riwayat stok berhasil dihapus, dan stok telah direset." });
     } catch (err) {

@@ -1059,6 +1059,41 @@ const MainDashboard = ({ headerTitle }) => {
                 </p>
               </div>
             </div>
+
+            {/* Activity Logs Card */}
+            <div
+              onClick={() => navigate('/all-logs')}
+              className="bg-gradient-to-r from-violet-600 to-purple-600 rounded-3xl p-5 relative overflow-hidden group mt-4 cursor-pointer active:scale-[0.98] transition-all shadow-lg hover:shadow-xl"
+            >
+              <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
+              <div className="absolute bottom-0 left-0 w-20 h-20 bg-black/10 rounded-full -ml-4 -mb-4 blur-lg"></div>
+
+              <div className="flex items-center gap-3 mb-3 relative z-10">
+                <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl border border-white/20 text-white">
+                  <Icon name="History" size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-sm">Log Aktivitas</h3>
+                  <p className="text-[10px] text-purple-100 font-medium">Pantau histori sistem</p>
+                </div>
+              </div>
+
+              <div className="mt-2 pt-2 border-t border-white/10 relative z-10 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] text-purple-200 font-medium mb-0.5">Status Sistem</p>
+                  <div className="flex items-center gap-1.5">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <p className="text-xs font-bold text-white">Aktif Memantau</p>
+                  </div>
+                </div>
+                <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-md">
+                  <Icon name="ArrowRight" className="text-white" size={14} />
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
