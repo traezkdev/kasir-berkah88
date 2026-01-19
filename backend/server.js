@@ -94,13 +94,30 @@ app.use('/public/uploads', express.static(path.join(__dirname, 'public/uploads')
 // Multer storage configuration
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'public/uploads/'); // Files will be stored in public/uploads/
+        cb(null, 'public/uploads/');
     },
     filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + file.originalname);
+        cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '_'));
     }
 });
-const upload = multer({ storage: storage });
+
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB Limit
+    },
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png|webp|gif|svg|ico/;
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = allowedTypes.test(file.mimetype);
+
+        if (mimetype && extname) {
+            return cb(null, true);
+        } else {
+            cb(new Error('Hanya file gambar (jpg, png, webp, gif, svg, ico) yang diizinkan!'));
+        }
+    }
+});
 
 const PORT = 4000;
 app.listen(PORT, () => {
@@ -1696,134 +1713,124 @@ app.get("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
 
 // Create a new transaction
 app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res, next) => {
+    let connection;
     try {
         const { items, total: frontendTotal, ppn: frontendPpn, ignoreStock, cashPaid, change, isEmployeeMeal, payment_method, manual_discount, catatan } = req.body;
-        const errors = [];
-        if (!items) {
-            errors.push("No items specified");
-        }
-        if (errors.length) {
-            res.status(400).json({ "error": errors.join(",") });
-            return;
+
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ "error": "No items specified" });
         }
 
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
         if (!ignoreStock) {
-            // --- STOCK VALIDATION BEFORE TRANSACTION ---
+            // --- STOCK VALIDATION BEFORE TRANSACTION (WITH LOCK) ---
             for (const cartItem of items) {
-                const [rows] = await db.query('SELECT stock FROM menu_items WHERE id = ?', [cartItem.id]);
+                const [rows] = await connection.query('SELECT stock FROM menu_items WHERE id = ? FOR UPDATE', [cartItem.id]);
                 if (rows.length === 0) {
+                    await connection.rollback();
                     return res.status(400).json({ "error": `Item with ID ${cartItem.id} not found.` });
                 }
                 const currentStock = rows[0].stock;
                 if (cartItem.quantity > currentStock) {
+                    await connection.rollback();
                     return res.status(400).json({ "error": `Insufficient stock for item ${cartItem.id}. Available: ${currentStock}, Requested: ${cartItem.quantity}` });
                 }
             }
-            // --- END STOCK VALIDATION --
         }
 
-        // --- Generate New Transaction ID ---
+        // --- Generate New Transaction ID (INSIDE TRANSACTION) ---
         let newTransactionId;
-        const [lastTransaction] = await db.query("SELECT id FROM transactions WHERE id LIKE 'TRZ%' ORDER BY id DESC LIMIT 1");
+        const [lastTransactionRows] = await connection.query("SELECT id FROM transactions WHERE id LIKE 'TRZ%' ORDER BY id DESC LIMIT 1 FOR UPDATE");
 
-        if (lastTransaction && lastTransaction.length > 0) {
-            const lastId = lastTransaction[0].id;
+        if (lastTransactionRows && lastTransactionRows.length > 0) {
+            const lastId = lastTransactionRows[0].id;
             const lastNumber = parseInt(lastId.substring(3), 10);
             if (!isNaN(lastNumber)) {
-                const newNumber = lastNumber + 1;
-                newTransactionId = 'TRZ' + newNumber.toString().padStart(3, '0');
+                newTransactionId = 'TRZ' + (lastNumber + 1).toString().padStart(3, '0');
             } else {
                 newTransactionId = 'TRZ001';
             }
         } else {
             newTransactionId = 'TRZ001';
         }
-        // --- End Generate New Transaction ID ---
 
-        // Backend calculation for reference or fallback
         let calculatedSubtotal = 0;
-        const itemsWithDiscount = (items || []).map(item => {
+        const itemsWithDetails = items.map(item => {
             const price = parseFloat(item.price) || 0;
             const quantity = parseInt(item.quantity) || 0;
             calculatedSubtotal += price * quantity;
             return { ...item, price: price, quantity: quantity };
         });
 
-        const [ppnSetting] = await db.query("SELECT value FROM settings WHERE `key` = ?", ['ppn']);
+        const [ppnSetting] = await connection.query("SELECT value FROM settings WHERE `key` = ?", ['ppn']);
         const ppnRate = ppnSetting.length > 0 ? parseFloat(ppnSetting[0].value) : 0.12;
         const calculatedPpn = calculatedSubtotal * ppnRate;
         const calculatedTotal = calculatedSubtotal + calculatedPpn;
 
-        // Use frontend's total if provided and valid, otherwise use backend's calculation
         const finalTotal = (frontendTotal !== undefined && frontendTotal !== null && !isNaN(parseFloat(frontendTotal)))
             ? parseFloat(frontendTotal)
             : calculatedTotal;
 
-        // The stored PPN should reflect the calculated amount based on items, even if total is overridden.
-        const finalPpnAmount = (isNaN(calculatedPpn) || calculatedPpn === null) ? 0 : calculatedPpn;
+        const finalPpnAmount = isNaN(calculatedPpn) ? 0 : calculatedPpn;
 
+        const timestamp = new Date();
+        const serializedItems = JSON.stringify(itemsWithDetails);
+        const finalIsEmployeeMeal = isEmployeeMeal ? 1 : 0;
+        const finalIgnoreStock = ignoreStock ? 1 : 0;
+        const finalPaymentMethod = payment_method || 'tunai';
+        const finalUserId = req.user ? req.user.userId : null;
 
-        const data = {
-            id: newTransactionId,
-            timestamp: new Date(),
-            items: JSON.stringify(itemsWithDiscount),
-            total: parseFloat(finalTotal || 0).toFixed(2),
-            ppn: parseFloat(finalPpnAmount || 0).toFixed(2),
-            isEmployeeMeal: isEmployeeMeal ? 1 : 0,
-            payment_method: payment_method || 'tunai',
-            ignore_stock: ignoreStock ? 1 : 0,
-            cash_paid: parseFloat(cashPaid || 0).toFixed(2),
-            change: parseFloat(change || 0).toFixed(2),
-            user_id: req.user ? req.user.userId : null,
-            manual_discount: parseFloat(manual_discount || 0).toFixed(2),
-            catatan: catatan || null
-        };
         const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock, cash_paid, `change`, user_id, manual_discount, catatan) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)';
+        const params = [
+            newTransactionId,
+            timestamp,
+            serializedItems,
+            finalTotal.toFixed(2),
+            finalPpnAmount.toFixed(2),
+            finalIsEmployeeMeal,
+            finalPaymentMethod,
+            finalIgnoreStock,
+            parseFloat(cashPaid || 0).toFixed(2),
+            parseFloat(change || 0).toFixed(2),
+            finalUserId,
+            parseFloat(manual_discount || 0).toFixed(2),
+            catatan || null
+        ];
 
-        const params = [data.id, data.timestamp, data.items, data.total, data.ppn, data.isEmployeeMeal, data.payment_method, data.ignore_stock, data.cash_paid, data.change, data.user_id, data.manual_discount, data.catatan];
-        const [result] = await db.query(sql, params);
+        await connection.query(sql, params);
 
         if (!ignoreStock) {
-            // --- STOCK REDUCTION LOGIC --- 
-            for (const item of itemsWithDiscount) {
-                const updateStockSql = 'UPDATE menu_items SET stock = stock - ? WHERE id = ?';
-                await db.query(updateStockSql, [item.quantity, item.id]);
+            for (const item of itemsWithDetails) {
+                await connection.query('UPDATE menu_items SET stock = stock - ? WHERE id = ?', [item.quantity, item.id]);
             }
         }
 
-        const [rows] = await db.query('SELECT * FROM transactions WHERE id = ?', [data.id]);
-        if (rows.length > 0) {
-            const newTransaction = {
-                ...rows[0],
-                items: JSON.parse(rows[0].items || '[]') // Ensure items is an array
-            };
-            res.json({
-                "message": "success",
-                "data": newTransaction,
-                "id": data.id
-            });
-        } else {
-            // This case should ideally not be reached
-            res.status(404).json({ "error": "Failed to retrieve the newly created transaction." });
-        }
-    } catch (err) {
-        const errorLog = `
---- TRANSACTION ERROR ---
-Time: ${new Date().toISOString()}
-Body: ${JSON.stringify(req.body, null, 2)}
-Error: ${err.message}
-Stack: ${err.stack}
--------------------------
-`;
-        try {
-            const fs = require('fs');
-            const path = require('path');
-            fs.appendFileSync(path.join(__dirname, 'error.log'), errorLog);
-        } catch (fsErr) {
-            console.error("Failed to write to error.log:", fsErr);
-        }
+        await connection.commit();
 
-        res.status(400).json({ "error": err.message, "stack": err.stack });
+        res.json({
+            "message": "success",
+            "data": {
+                id: newTransactionId,
+                timestamp,
+                items: itemsWithDetails,
+                total: finalTotal,
+                payment_method: finalPaymentMethod
+            },
+            "id": newTransactionId
+        });
+
+    } catch (err) {
+        if (connection) await connection.rollback();
+        console.error("Transaction Error:", err);
+        const errorLog = `\n--- TRANSACTION ERROR ---\nTime: ${new Date().toISOString()}\nError: ${err.message}\nStack: ${err.stack}\n-------------------------\n`;
+        try {
+            fs.appendFileSync(path.join(__dirname, 'error.log'), errorLog);
+        } catch (e) { }
+        res.status(400).json({ "error": err.message });
+    } finally {
+        if (connection) connection.release();
     }
 });
 
@@ -2987,7 +2994,18 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
 
             };
 
-            await connection.query('INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, order_id) VALUES (?,?,?,?,?,?,?,?)', Object.values(transactionData));
+            const transactionParams = [
+                transactionData.id,
+                transactionData.timestamp,
+                transactionData.items,
+                transactionData.total,
+                transactionData.ppn,
+                transactionData.isEmployeeMeal,
+                transactionData.payment_method,
+                transactionData.order_id
+            ];
+
+            await connection.query('INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, order_id) VALUES (?,?,?,?,?,?,?,?)', transactionParams);
 
 
 
