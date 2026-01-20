@@ -1,10 +1,13 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import Icon from '../../../components/AppIcon';
-import { format } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, eachWeekOfInterval, startOfMonth, endOfMonth } from 'date-fns';
 import { id } from 'date-fns/locale';
 
 const DesktopDashboardLayout = ({ dashboardData, theme }) => {
+    // State for chart filter
+    const [chartFilter, setChartFilter] = useState('monthly'); // 'daily', 'weekly', 'monthly'
+
     // Helper for currency
     const formatCurrency = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
 
@@ -30,44 +33,111 @@ const DesktopDashboardLayout = ({ dashboardData, theme }) => {
         return parseFloat(clean) || 0;
     };
 
-    // 2. Prepare Chart Data (Monthly Income vs Expense)
+    // Function to get filtered chart data based on selected period
+    const getFilteredChartData = (filterType) => {
+        if (!dashboardData?.transactions && !dashboardData?.expenses) return [];
+
+        const now = new Date();
+        const transactions = dashboardData?.transactions || [];
+        const expenses = dashboardData?.expenses || [];
+
+        if (filterType === 'daily') {
+            // Show last 7 days
+            const days = [];
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(now);
+                date.setDate(date.getDate() - i);
+                days.push(date);
+            }
+
+            return days.map(day => {
+                const dayStr = format(day, 'dd MMM', { locale: id });
+                const dayStart = new Date(day.setHours(0, 0, 0, 0));
+                const dayEnd = new Date(day.setHours(23, 59, 59, 999));
+
+                const dayIncome = transactions
+                    .filter(t => {
+                        const tDate = new Date(t.timestamp);
+                        return tDate >= dayStart && tDate <= dayEnd && t.payment_method !== 'employee_meal';
+                    })
+                    .reduce((sum, t) => sum + parseValue(t.total), 0);
+
+                const dayExpense = expenses
+                    .filter(e => {
+                        const eDate = new Date(e.date);
+                        return eDate >= dayStart && eDate <= dayEnd;
+                    })
+                    .reduce((sum, e) => sum + parseValue(e.amount), 0);
+
+                return { name: dayStr, income: dayIncome, expense: dayExpense };
+            });
+        } else if (filterType === 'weekly') {
+            // Show last 4 weeks
+            const weeks = [];
+            for (let i = 3; i >= 0; i--) {
+                const date = new Date(now);
+                date.setDate(date.getDate() - (i * 7));
+                const weekStart = startOfWeek(date, { locale: id });
+                const weekEnd = endOfWeek(date, { locale: id });
+                weeks.push({ start: weekStart, end: weekEnd });
+            }
+
+            return weeks.map((week, idx) => {
+                const weekLabel = `Minggu ${idx + 1}`;
+
+                const weekIncome = transactions
+                    .filter(t => {
+                        const tDate = new Date(t.timestamp);
+                        return tDate >= week.start && tDate <= week.end && t.payment_method !== 'employee_meal';
+                    })
+                    .reduce((sum, t) => sum + parseValue(t.total), 0);
+
+                const weekExpense = expenses
+                    .filter(e => {
+                        const eDate = new Date(e.date);
+                        return eDate >= week.start && eDate <= week.end;
+                    })
+                    .reduce((sum, e) => sum + parseValue(e.amount), 0);
+
+                return { name: weekLabel, income: weekIncome, expense: weekExpense };
+            });
+        } else {
+            // Monthly - show last 6 months
+            const months = [];
+            for (let i = 5; i >= 0; i--) {
+                const date = new Date(now);
+                date.setMonth(date.getMonth() - i);
+                months.push(date);
+            }
+
+            return months.map(month => {
+                const monthStr = format(month, 'MMM', { locale: id });
+                const monthStart = startOfMonth(month);
+                const monthEnd = endOfMonth(month);
+
+                const monthIncome = transactions
+                    .filter(t => {
+                        const tDate = new Date(t.timestamp);
+                        return tDate >= monthStart && tDate <= monthEnd && t.payment_method !== 'employee_meal';
+                    })
+                    .reduce((sum, t) => sum + parseValue(t.total), 0);
+
+                const monthExpense = expenses
+                    .filter(e => {
+                        const eDate = new Date(e.date);
+                        return eDate >= monthStart && eDate <= monthEnd;
+                    })
+                    .reduce((sum, e) => sum + parseValue(e.amount), 0);
+
+                return { name: monthStr, income: monthIncome, expense: monthExpense };
+            });
+        }
+    };
+
+    // 2. Prepare Chart Data based on filter
     const chartData = useMemo(() => {
-        if (dashboardData?.monthlyStats && dashboardData.monthlyStats.length > 0) {
-            return dashboardData.monthlyStats.map(stat => ({
-                name: stat.month,
-                income: parseValue(stat.income),
-                expense: parseValue(stat.expense)
-            }));
-        }
-
-        // Fallback: Aggregate from transactions if monthlyStats is missing
-        // Fallback: Aggregate from transactions and expenses
-        if (dashboardData?.transactions || dashboardData?.expenses) {
-            const monthlyMap = {};
-
-            if (dashboardData?.transactions) {
-                dashboardData.transactions.forEach(curr => {
-                    const date = new Date(curr.timestamp);
-                    const month = format(date, 'MMM', { locale: id });
-                    if (!monthlyMap[month]) monthlyMap[month] = { name: month, income: 0, expense: 0 };
-                    monthlyMap[month].income += parseValue(curr.total);
-                });
-            }
-
-            if (dashboardData?.expenses) {
-                dashboardData.expenses.forEach(curr => {
-                    const date = new Date(curr.date);
-                    const month = format(date, 'MMM', { locale: id });
-                    if (!monthlyMap[month]) monthlyMap[month] = { name: month, income: 0, expense: 0 };
-                    monthlyMap[month].expense += parseValue(curr.amount);
-                });
-            }
-
-            return Object.values(monthlyMap);
-        }
-
-        return [];
-    }, [dashboardData]);
+        return getFilteredChartData(chartFilter);
+    }, [dashboardData, chartFilter]);
 
     // 3. Prepare Donut Data (Payment Methods)
     const paymentMethodsData = useMemo(() => {
@@ -255,7 +325,33 @@ const DesktopDashboardLayout = ({ dashboardData, theme }) => {
                     <div className="p-6 border-b border-border flex justify-between items-center">
                         <h5 className="font-bold text-lg">Analisis Keuangan</h5>
                         <div className="flex gap-2">
-                            <span className="w-2 h-2 rounded-full bg-blue-600 inline-block"></span>
+                            <button
+                                onClick={() => setChartFilter('daily')}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${chartFilter === 'daily'
+                                    ? 'bg-blue-600 text-white shadow-sm'
+                                    : 'bg-muted text-text-secondary hover:bg-muted/80'
+                                    }`}
+                            >
+                                Harian
+                            </button>
+                            <button
+                                onClick={() => setChartFilter('weekly')}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${chartFilter === 'weekly'
+                                    ? 'bg-blue-600 text-white shadow-sm'
+                                    : 'bg-muted text-text-secondary hover:bg-muted/80'
+                                    }`}
+                            >
+                                Mingguan
+                            </button>
+                            <button
+                                onClick={() => setChartFilter('monthly')}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${chartFilter === 'monthly'
+                                    ? 'bg-blue-600 text-white shadow-sm'
+                                    : 'bg-muted text-text-secondary hover:bg-muted/80'
+                                    }`}
+                            >
+                                Bulanan
+                            </button>
                         </div>
                     </div>
                     <div className="p-6 h-[400px]">
@@ -347,16 +443,16 @@ const DesktopDashboardLayout = ({ dashboardData, theme }) => {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                                    <Icon name="Star" size={20} className="text-purple-600" />
+                                    <Icon name="TrendingUp" size={20} className="text-purple-600" />
                                 </div>
                                 <div>
-                                    <h6 className="font-bold text-sm">Rating</h6>
-                                    <span className="text-xs text-text-secondary">Rata-rata</span>
+                                    <h6 className="font-bold text-sm">Rata-rata Transaksi</h6>
+                                    <span className="text-xs text-text-secondary">Hari Ini</span>
                                 </div>
                             </div>
                             <div className="text-right">
-                                <div className="font-bold">4.8</div>
-                                <span className="text-xs text-text-secondary">dari 5</span>
+                                <div className="font-bold">{formatCurrency(dashboardData?.todayStats?.averageOrder || 0)}</div>
+                                <span className="text-xs text-text-secondary">per order</span>
                             </div>
                         </div>
                     </div>
