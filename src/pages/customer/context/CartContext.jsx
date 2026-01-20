@@ -8,7 +8,18 @@ export const CartProvider = ({ children }) => {
     const [cart, setCart] = useState(() => {
         try {
             const saved = localStorage.getItem('customer_cart');
-            return saved ? JSON.parse(saved) : [];
+            const parsed = saved ? JSON.parse(saved) : [];
+            // Migration: Ensure all items have cartId
+            return parsed.map(item => {
+                if (!item.cartId) {
+                    return {
+                        ...item,
+                        cartId: `${item.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        selectedOptions: item.selectedOptions || []
+                    };
+                }
+                return item;
+            });
         } catch (e) {
             return [];
         }
@@ -18,24 +29,40 @@ export const CartProvider = ({ children }) => {
         localStorage.setItem('customer_cart', JSON.stringify(cart));
     }, [cart]);
 
-    const addToCart = (item, quantity = 1) => {
+    const addToCart = (item, quantity = 1, selectedOptions = []) => {
         setCart(prev => {
-            const existing = prev.find(i => i.id === item.id);
-            if (existing) {
-                return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + quantity } : i);
+            // Sort options to ensure uniqueness key is consistent
+            const sortedOptions = [...selectedOptions].sort((a, b) => a.id - b.id);
+            const optionsKey = JSON.stringify(sortedOptions);
+
+            const existingIndex = prev.findIndex(i =>
+                i.id === item.id &&
+                JSON.stringify(i.selectedOptions || []) === optionsKey
+            );
+
+            if (existingIndex > -1) {
+                const newCart = [...prev];
+                newCart[existingIndex].quantity += quantity;
+                return newCart;
             }
-            return [...prev, { ...item, quantity }];
+
+            return [...prev, {
+                ...item,
+                quantity,
+                selectedOptions: sortedOptions,
+                cartId: `${item.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+            }];
         });
     };
 
-    const removeFromCart = (itemId) => {
-        setCart(prev => prev.filter(i => i.id !== itemId));
+    const removeFromCart = (cartId) => {
+        setCart(prev => prev.filter(i => i.cartId !== cartId));
     };
 
-    const updateQuantity = (itemId, delta) => {
+    const updateQuantity = (cartId, delta) => {
         setCart(prev => {
             return prev.map(item => {
-                if (item.id === itemId) {
+                if (item.cartId === cartId) {
                     const newQty = Math.max(0, item.quantity + delta);
                     return { ...item, quantity: newQty };
                 }
@@ -46,12 +73,35 @@ export const CartProvider = ({ children }) => {
 
     const clearCart = () => setCart([]);
 
-    const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    const cartTotal = cart.reduce((acc, item) => {
+        const optionsTotal = (item.selectedOptions || []).reduce((sum, opt) => sum + (parseFloat(opt.price_adjustment) || 0), 0);
+        return acc + ((item.price + optionsTotal) * item.quantity);
+    }, 0);
+
     const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
+    // Get total quantity for a menu item ID (across all variants)
     const getItemQuantity = (itemId) => {
-        const item = cart.find(i => i.id === itemId);
+        return cart.filter(i => i.id === itemId).reduce((acc, i) => acc + i.quantity, 0);
+    };
+
+    // Get quantity for a specific variant
+    const getVariantQuantity = (itemId, selectedOptions = []) => {
+        const optionsKey = JSON.stringify([...selectedOptions].sort((a, b) => a.id - b.id));
+        const item = cart.find(i =>
+            i.id === itemId &&
+            JSON.stringify(i.selectedOptions || []) === optionsKey
+        );
         return item ? item.quantity : 0;
+    };
+
+    const getCartId = (itemId, selectedOptions = []) => {
+        const optionsKey = JSON.stringify([...selectedOptions].sort((a, b) => a.id - b.id));
+        const item = cart.find(i =>
+            i.id === itemId &&
+            JSON.stringify(i.selectedOptions || []) === optionsKey
+        );
+        return item ? item.cartId : null;
     };
 
     return (
@@ -63,7 +113,9 @@ export const CartProvider = ({ children }) => {
             clearCart,
             cartTotal,
             cartCount,
-            getItemQuantity
+            getItemQuantity,
+            getVariantQuantity,
+            getCartId
         }}>
             {children}
         </CartContext.Provider>

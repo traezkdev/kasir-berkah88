@@ -131,6 +131,7 @@ const MenuManagement = ({ headerTitle }) => {
       discount: parseFloat(itemData.discount || 0),
       is_featured: itemData.is_featured ? 1 : 0, // Ensure 0 or 1
       options: itemData.options || [], // Include options
+      description: itemData.description,
     };
 
     let body;
@@ -181,6 +182,7 @@ const MenuManagement = ({ headerTitle }) => {
       discount: parseFloat(updatedData.discount || 0),
       is_featured: updatedData.is_featured ? 1 : 0, // Ensure 0 or 1
       options: updatedData.options || [], // Include options
+      description: updatedData.description,
     };
     let body;
     let headers = {};

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import Icon from '../../../components/AppIcon';
@@ -10,6 +10,30 @@ const CustomerCart = () => {
     const { cart, updateQuantity, removeFromCart, cartTotal, clearCart } = useCart();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('tunai');
+    const [userData, setUserData] = useState({ username: 'Pelanggan', address: '', phone: '' });
+
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
+    useEffect(() => {
+        fetchProfile();
+    }, []);
+
+    const fetchProfile = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        try {
+            const response = await fetch(`${API_URL}/api/user/profile`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await response.json();
+            if (result.message === 'success') {
+                setUserData(result.data);
+            }
+        } catch (error) {
+            console.error("Error fetching profile:", error);
+        }
+    };
 
     const formatCurrency = (val) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
@@ -20,24 +44,20 @@ const CustomerCart = () => {
         setIsSubmitting(true);
 
         try {
-            // Prepare payload for API
             const payload = {
+                customer_name: userData.username,
+                customer_address: userData.address || '-',
                 items: cart.map(item => ({
                     id: item.id,
                     name: item.name,
                     price: item.price,
-                    quantity: item.quantity
+                    quantity: item.quantity,
+                    options: item.selectedOptions || []
                 })),
-                total: cartTotal,
-                payment_method: paymentMethod,
-                cashPaid: cartTotal, // Assuming exact payment for self-order/digital
-                change: 0,
-                // Additional flags if needed
-                ignoreStock: false,
-                isEmployeeMeal: false
+                payment_method: paymentMethod
             };
 
-            const res = await authFetch(`${import.meta.env.VITE_API_URL}/api/transactions`, {
+            const res = await authFetch(`${API_URL}/api/orders`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -48,14 +68,9 @@ const CustomerCart = () => {
                 throw new Error(err.error || 'Gagal membuat pesanan');
             }
 
-            const data = await res.json();
-
-            // Success
-            toast.success('Pesanan berhasil dibuat!');
+            toast.success('Pesanan berhasil dibuat! Menunggu konfirmasi.');
             clearCart();
-            // Redirect to success page or Dashboard
-            // For now back to dashboard with success state maybe?
-            navigate('/customer/dashboard');
+            navigate('/customer/order-confirmation');
 
         } catch (error) {
             console.error("Checkout Error:", error);
@@ -84,7 +99,7 @@ const CustomerCart = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-32">
+        <div className="min-h-screen bg-gray-50 pb-48 font-sans">
             {/* Header Fixed */}
             <div className="bg-white p-4 shadow-sm fixed top-0 left-0 right-0 w-full max-w-md mx-auto z-30 flex items-center gap-3">
                 <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-full">
@@ -97,38 +112,53 @@ const CustomerCart = () => {
 
             {/* Cart Items */}
             <div className="p-4 space-y-4">
-                {cart.map((item) => (
-                    <div key={item.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex gap-4">
-                        <div className="w-20 h-20 bg-gray-100 rounded-lg shrink-0 overflow-hidden">
-                            {item.image_url ? (
-                                <img src={`${import.meta.env.VITE_API_URL}${item.image_url}`} alt={item.name} className="w-full h-full object-cover" />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                    <Icon name="Image" className="w-6 h-6" />
-                                </div>
-                            )}
-                        </div>
-                        <div className="flex-1 flex flex-col justify-between">
-                            <div className="flex justify-between items-start">
-                                <h4 className="font-bold text-gray-800 text-sm line-clamp-1">{item.name}</h4>
-                                <button onClick={() => removeFromCart(item.id)} className="text-gray-400 hover:text-red-500 p-1">
-                                    <Icon name="Trash2" className="w-4 h-4" />
-                                </button>
-                            </div>
-                            <p className="text-sm font-semibold text-green-600">{formatCurrency(item.price)}</p>
+                {cart.map((item) => {
+                    const optionsTotal = (item.selectedOptions || []).reduce((sum, opt) => sum + (parseFloat(opt.price_adjustment) || 0), 0);
+                    const unitPrice = item.price + optionsTotal;
 
-                            <div className="flex justify-end items-center gap-3">
-                                <button onClick={() => updateQuantity(item.id, -1)} className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 active:bg-gray-100">
-                                    <Icon name="Minus" className="w-3 h-3" />
-                                </button>
-                                <span className="font-bold text-sm min-w-[20px] text-center">{item.quantity}</span>
-                                <button onClick={() => updateQuantity(item.id, 1)} className="w-7 h-7 rounded-full bg-green-600 text-white flex items-center justify-center active:scale-95 transition-transform">
-                                    <Icon name="Plus" className="w-3 h-3" />
-                                </button>
+                    // Fallback for key and ID if migration hasn't run yet (though it should have)
+                    const uniqueId = item.cartId || item.id;
+
+                    return (
+                        <div key={uniqueId} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex gap-4">
+                            <div className="w-20 h-20 bg-gray-100 rounded-lg shrink-0 overflow-hidden">
+                                {item.image_url ? (
+                                    <img src={`${import.meta.env.VITE_API_URL}${item.image_url}`} alt={item.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                        <Icon name="Image" className="w-6 h-6" />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex-1 flex flex-col justify-between">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h4 className="font-bold text-gray-800 text-sm line-clamp-1">{item.name}</h4>
+                                        {item.selectedOptions && item.selectedOptions.length > 0 && (
+                                            <p className="text-xs text-gray-500 mt-0.5">
+                                                +{item.selectedOptions.map(o => o.name).join(', ')}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <button onClick={() => removeFromCart(uniqueId)} className="text-gray-400 hover:text-red-500 p-1">
+                                        <Icon name="Trash2" className="w-4 h-4" />
+                                    </button>
+                                </div>
+                                <p className="text-sm font-semibold text-green-600">{formatCurrency(unitPrice)}</p>
+
+                                <div className="flex justify-end items-center gap-3">
+                                    <button onClick={() => updateQuantity(uniqueId, -1)} className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 active:bg-gray-100">
+                                        <Icon name="Minus" className="w-3 h-3" />
+                                    </button>
+                                    <span className="font-bold text-sm min-w-[20px] text-center">{item.quantity}</span>
+                                    <button onClick={() => updateQuantity(uniqueId, 1)} className="w-7 h-7 rounded-full bg-green-600 text-white flex items-center justify-center active:scale-95 transition-transform">
+                                        <Icon name="Plus" className="w-3 h-3" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             {/* Payment Summary */}
@@ -173,19 +203,19 @@ const CustomerCart = () => {
                 </div>
             </div>
 
-            {/* Bottom Bar Fixed */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] max-w-md mx-auto z-50">
+            {/* Bottom Bar Fixed - Moved up to avoid nav bar overlap */}
+            <div className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-100 p-4 shadow-[0_-8px_20px_rgba(0,0,0,0.1)] max-w-md mx-auto z-[60]">
                 <div className="flex gap-4 items-center">
                     <div className="flex-1">
-                        <p className="text-xs text-gray-500">Total Pembayaran</p>
-                        <p className="font-bold text-lg text-gray-900">{formatCurrency(cartTotal)}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Total Pembayaran</p>
+                        <p className="font-extrabold text-xl text-green-600 leading-none">{formatCurrency(cartTotal)}</p>
                     </div>
                     <button
                         onClick={handleCheckout}
                         disabled={isSubmitting}
-                        className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-green-200 disabled:opacity-70 disabled:cursor-not-allowed transition-all active:scale-95 flex items-center gap-2"
+                        className="bg-green-600 hover:bg-green-700 text-white px-8 py-3.5 rounded-2xl font-black shadow-lg shadow-green-200 disabled:opacity-70 disabled:cursor-not-allowed transition-all active:scale-95 flex items-center gap-2"
                     >
-                        {isSubmitting ? 'Memproses...' : 'Pesan Sekarang'}
+                        {isSubmitting ? 'Memproses...' : 'Checkout Sekarang'}
                         {!isSubmitting && <Icon name="ArrowRight" className="w-5 h-5" />}
                     </button>
                 </div>

@@ -224,6 +224,7 @@ const MainDashboard = ({ headerTitle }) => {
     { label: 'Dashboard', path: '/main-dashboard', icon: 'LayoutDashboard' },
     { label: 'Penjualan', path: appMode === 'simple' ? '/transaksi-sederhana' : '/transaksi', icon: 'ShoppingCart' },
     { label: 'Menu', path: '/menu-management', icon: 'UtensilsCrossed' },
+    { label: 'Penjual', path: '/seller/dashboard', icon: 'Store' },
     { label: 'Pengeluaran', path: '/expense-tracking', icon: 'Receipt' },
     { label: 'Transaksi', path: '/transaction-history', icon: 'ListOrdered' },
     { label: 'Catatan', path: '/notes', icon: 'Notebook' },

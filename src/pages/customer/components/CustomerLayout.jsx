@@ -16,7 +16,7 @@ const CustomerLayout = () => {
     return (
         <div className="min-h-screen bg-gray-50 font-sans">
             {/* Main Content Area */}
-            <main className="max-w-md mx-auto min-h-screen relative overflow-x-hidden pb-20">
+            <main className="w-full max-w-md lg:max-w-7xl mx-auto min-h-screen relative overflow-x-hidden pb-20">
                 <Outlet />
             </main>
 

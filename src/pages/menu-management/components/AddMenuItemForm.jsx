@@ -17,6 +17,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
     discount: '',
     is_featured: false,
     options: [], // Add options to initial state
+    description: '',
   });
   const [categories, setCategories] = useState([]);
 
@@ -57,6 +58,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
         discount: '',
         is_featured: false,
         options: [],
+        description: '',
       });
     }
   }, [initialData, categories]);
@@ -110,6 +112,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
           category: 'makanan',
           image: null,
           options: [],
+          description: '',
         });
       }
     } catch (error) {
@@ -214,6 +217,17 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               <p className="text-sm text-muted-foreground mt-1">Gambar saat ini: <a href={formData.image_url ? `${import.meta.env.VITE_API_URL}${formData.image_url}` : '#'} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Lihat Gambar</a></p>
             )}
           </div>
+          <div className="md:col-span-2">
+            <label htmlFor="description" className="block text-sm font-medium text-foreground mb-1">Deskripsi Menu (Opsional)</label>
+            <textarea
+              id="description"
+              name="description"
+              placeholder="Jelaskan detail menu ini..."
+              value={formData?.description ?? ''}
+              onChange={handleChange}
+              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            />
+          </div>
         </div>
 
         {/* --- Menu Options/Toppings --- */}
@@ -266,7 +280,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
             <Button
               type="button"
               variant="outline"
-              onClick={() => setFormData({ name: '', price: '', stock: '', category: 'makanan', image: null, discount: '', is_featured: false, options: [] })}
+              onClick={() => setFormData({ name: '', price: '', stock: '', category: 'makanan', image: null, discount: '', is_featured: false, options: [], description: '' })}
               iconName="RotateCcw"
               iconPosition="left"
               className="sm:w-auto"

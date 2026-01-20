@@ -24,7 +24,8 @@ const SellerMenuManagement = () => {
         hpp: '',
         discount: 0,
         is_featured: false,
-        options: []
+        options: [],
+        description: ''
     });
     const [imageFile, setImageFile] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
@@ -67,7 +68,8 @@ const SellerMenuManagement = () => {
                 hpp: item.hpp || '',
                 discount: item.discount || 0,
                 is_featured: item.is_featured === 1 || item.is_featured === true,
-                options: item.options || []
+                options: item.options || [],
+                description: item.description || ''
             });
             setImagePreview(item.image_url ? `${import.meta.env.VITE_API_URL}${item.image_url}` : null);
         } else {
@@ -80,7 +82,8 @@ const SellerMenuManagement = () => {
                 hpp: '',
                 discount: 0,
                 is_featured: false,
-                options: []
+                options: [],
+                description: ''
             });
             setImagePreview(null);
         }
@@ -135,6 +138,25 @@ const SellerMenuManagement = () => {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const handleOptionChange = (index, e) => {
+        const { name, value } = e.target;
+        const newOptions = [...formData.options];
+        newOptions[index][name] = value;
+        setFormData(prev => ({ ...prev, options: newOptions }));
+    };
+
+    const addOption = () => {
+        setFormData(prev => ({
+            ...prev,
+            options: [...prev.options, { name: '', price_adjustment: '' }],
+        }));
+    };
+
+    const removeOption = (index) => {
+        const newOptions = formData.options.filter((_, i) => i !== index);
+        setFormData(prev => ({ ...prev, options: newOptions }));
     };
 
     const handleDelete = async (id) => {
@@ -268,6 +290,11 @@ const SellerMenuManagement = () => {
                                             <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest block truncate">{item.category}</span>
                                             <h3 className="font-black text-gray-800 text-lg leading-tight truncate">{item.name}</h3>
                                             <p className="text-blue-600 font-black text-xl mt-1 tracking-tight truncate">{formatCurrency(item.price)}</p>
+                                            {item.description && (
+                                                <p className="text-[10px] text-gray-400 font-medium mt-1 line-clamp-2 leading-tight">
+                                                    {item.description}
+                                                </p>
+                                            )}
                                         </div>
                                         <div className="flex items-center gap-2 mt-2">
                                             <div className={`w-2 h-2 rounded-full ${item.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`} />
@@ -402,6 +429,16 @@ const SellerMenuManagement = () => {
                                         </select>
                                     </div>
 
+                                    <div>
+                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2 mb-2 block">Deskripsi Menu (Opsional)</label>
+                                        <textarea
+                                            value={formData.description}
+                                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                            className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-blue-500 outline-none text-gray-800 font-bold transition-all min-h-[100px] resize-none"
+                                            placeholder="Jelaskan keunikan menu ini, misalnya: 'Kopi susu dengan gula aren asli dari petani lokal...'"
+                                        />
+                                    </div>
+
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2 mb-2 block">Modal (HPP)</label>
@@ -422,6 +459,65 @@ const SellerMenuManagement = () => {
                                                 className="w-full px-6 py-4 rounded-2xl bg-gray-50/50 border-none focus:ring-2 focus:ring-blue-500 outline-none text-gray-800 font-bold transition-all"
                                                 placeholder="0"
                                             />
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-4 border-t border-gray-50">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2">Opsi / Topping Menu</h3>
+                                            <button
+                                                type="button"
+                                                onClick={addOption}
+                                                className="px-4 py-2 rounded-xl bg-blue-50 text-blue-600 text-[10px] font-bold hover:bg-blue-100 transition-all flex items-center gap-2"
+                                            >
+                                                <Icon name="Plus" size={14} />
+                                                TAMBAH OPSI
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            {formData.options.map((option, index) => (
+                                                <div key={index} className="group relative bg-gray-50/50 p-4 rounded-2xl border border-transparent hover:border-blue-100 transition-all">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Nama Opsi</label>
+                                                            <input
+                                                                type="text"
+                                                                name="name"
+                                                                placeholder="e.g., Dada, Paha, Ekstra Keju"
+                                                                value={option.name}
+                                                                onChange={(e) => handleOptionChange(index, e)}
+                                                                className="w-full bg-white px-4 py-2 rounded-xl border-none focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold"
+                                                            />
+                                                        </div>
+                                                        <div className="relative">
+                                                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Harga Tambahan (Rp)</label>
+                                                            <input
+                                                                type="number"
+                                                                name="price_adjustment"
+                                                                placeholder="0"
+                                                                value={option.price_adjustment}
+                                                                onChange={(e) => handleOptionChange(index, e)}
+                                                                className="w-full bg-white px-4 py-2 rounded-xl border-none focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removeOption(index)}
+                                                                className="absolute -top-1 -right-1 w-6 h-6 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                                                            >
+                                                                <Icon name="X" size={12} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+
+                                            {formData.options.length === 0 && (
+                                                <div className="py-8 border-2 border-dashed border-gray-100 rounded-2xl flex flex-col items-center justify-center text-gray-300">
+                                                    <Icon name="PlusCircle" size={24} />
+                                                    <p className="text-[10px] font-bold mt-2 uppercase tracking-widest">Belum ada opsi</p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -461,10 +557,10 @@ const SellerMenuManagement = () => {
                                 {!isSaving && <Icon name="Check" size={20} />}
                             </button>
                         </div>
-                    </div>
-                </div>
+                    </div >
+                </div >
             )}
-        </div>
+        </div >
     );
 };
 

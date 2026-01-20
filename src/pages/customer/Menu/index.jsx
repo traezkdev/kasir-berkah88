@@ -8,12 +8,13 @@ const CustomerMenu = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const { id } = useParams();
-    const { addToCart, updateQuantity, getItemQuantity, cartTotal, cartCount } = useCart();
+    const { addToCart, updateQuantity, getItemQuantity, getVariantQuantity, getCartId, cartTotal, cartCount } = useCart();
 
     const [menus, setMenus] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedItem, setSelectedItem] = useState(null);
+    const [selectedOptions, setSelectedOptions] = useState([]);
 
     // Filters
     const [searchTerm, setSearchTerm] = useState('');
@@ -27,7 +28,10 @@ const CustomerMenu = () => {
         // Find item if ID param exists and menus are loaded
         if (id && menus.length > 0) {
             const item = menus.find(m => m.id == id);
-            if (item) setSelectedItem(item);
+            if (item) {
+                setSelectedItem(item);
+                setSelectedOptions([]);
+            }
         } else if (!id) {
             setSelectedItem(null);
         }
@@ -96,11 +100,23 @@ const CustomerMenu = () => {
 
     const handleCloseDetail = () => {
         setSelectedItem(null);
+        setSelectedOptions([]);
         navigate('/customer/menu');
     };
 
+    const toggleOption = (option) => {
+        // Legacy toggle, keeping just in case or removing if sure. 
+        // User requested single select required.
+        // Updated UI uses setSelectedOptions directly.
+        // Removing this function.
+    };
+
+    // Check validity
+    const isOptionValid = !selectedItem?.options?.length || selectedOptions.length > 0;
+
     return (
         <div className="bg-gray-50 min-h-screen pb-32">
+            {/* ... (Header code unchanged) ... */}
             {/* Fixed Header Container */}
             <div className="fixed top-0 left-0 right-0 z-30 w-full max-w-md mx-auto bg-white shadow-sm">
                 {/* Search Header */}
@@ -233,36 +249,85 @@ const CustomerMenu = () => {
                                 {selectedItem.description || 'Menu lezat yang disiapkan spesial untuk Anda. Rasakan kenikmatan di setiap gigitan.'}
                             </p>
 
-                            {/* Additional Info / Options Placeholder */}
-                            <div className="space-y-3">
-                                <div className="flex justify-between py-3 border-b border-gray-100">
-                                    <span className="text-gray-600 text-sm">Kategori</span>
-                                    <span className="font-medium text-gray-900 text-sm capitalize">{categories.find(c => c.id == selectedItem.category)?.name || selectedItem.category || '-'}</span>
+                            {/* Options / Toppings */}
+                            {selectedItem.options && selectedItem.options.length > 0 && (
+                                <div className="mt-6 mb-4">
+                                    <h3 className="font-bold text-gray-800 text-sm mb-3">Pilihan (Wajib Pilih Satu)</h3>
+                                    <div className="space-y-3">
+                                        {selectedItem.options.map((opt) => {
+                                            const isSelected = selectedOptions.some(o => o.id === opt.id);
+                                            return (
+                                                <div
+                                                    key={opt.id}
+                                                    onClick={() => setSelectedOptions([opt])}
+                                                    className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${isSelected ? 'border-green-500 bg-green-50' : 'border-gray-100 bg-white hover:border-green-200'}`}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${isSelected ? 'border-green-600 bg-green-600' : 'border-gray-300'}`}>
+                                                            {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
+                                                        </div>
+                                                        <span className={`text-sm font-medium ${isSelected ? 'text-gray-900' : 'text-gray-600'}`}>{opt.name}</span>
+                                                    </div>
+                                                    <span className="text-sm font-bold text-gray-700">
+                                                        +{formatCurrency(opt.price_adjustment)}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-                                <div className="flex justify-between py-3 border-b border-gray-100">
-                                    <span className="text-gray-600 text-sm">Stok Tersedia</span>
-                                    <span className="font-medium text-gray-900 text-sm">{selectedItem.stock} Porsi</span>
+                            )}
+
+                            {/* Additional Info */}
+                            <div className="space-y-3 mt-4 pt-4 border-t border-gray-100">
+                                <div className="flex justify-between py-2 text-sm">
+                                    <span className="text-gray-500">Kategori</span>
+                                    <span className="font-medium text-gray-900 capitalize">{categories.find(c => c.id == selectedItem.category)?.name || selectedItem.category || '-'}</span>
+                                </div>
+                                <div className="flex justify-between py-2 text-sm border-t border-gray-50">
+                                    <span className="text-gray-500">Stok Tersedia</span>
+                                    <span className="font-medium text-gray-900">{selectedItem.stock} Porsi</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Bottom Action Footer */}
-                        <div className="p-4 border-t border-gray-100 bg-white">
-                            {getItemQuantity(selectedItem.id) === 0 ? (
+                        <div className="p-4 border-t border-gray-100 bg-white pb-8 sm:pb-4">
+                            {getVariantQuantity(selectedItem.id, selectedOptions) === 0 ? (
                                 <button
-                                    onClick={() => { addToCart(selectedItem); handleCloseDetail(); }}
-                                    className="w-full bg-green-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-green-200 hover:bg-green-700 active:scale-95 transition-all"
+                                    onClick={() => {
+                                        addToCart(selectedItem, 1, selectedOptions);
+                                        handleCloseDetail();
+                                    }}
+                                    disabled={selectedItem.options && selectedItem.options.length > 0 && selectedOptions.length === 0}
+                                    className={`w-full font-bold py-3.5 rounded-xl shadow-lg transition-all flex justify-between px-6 ${selectedItem.options && selectedItem.options.length > 0 && selectedOptions.length === 0
+                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'
+                                            : 'bg-green-600 text-white shadow-green-200 hover:bg-green-700 active:scale-95'
+                                        }`}
                                 >
-                                    Tambah ke Keranjang - {formatCurrency(selectedItem.price)}
+                                    <span>Tambah ke Keranjang</span>
+                                    <span>{formatCurrency(selectedItem.price + selectedOptions.reduce((acc, opt) => acc + (parseFloat(opt.price_adjustment) || 0), 0))}</span>
                                 </button>
                             ) : (
                                 <div className="flex items-center justify-between gap-4">
                                     <div className="flex items-center gap-4 bg-gray-100 rounded-xl p-1">
-                                        <button onClick={() => updateQuantity(selectedItem.id, -1)} className="w-10 h-10 bg-white rounded-lg shadow-sm flex items-center justify-center text-gray-700 active:scale-95 transition-transform">
+                                        <button
+                                            onClick={() => {
+                                                const cartId = getCartId(selectedItem.id, selectedOptions);
+                                                if (cartId) updateQuantity(cartId, -1);
+                                            }}
+                                            className="w-10 h-10 bg-white rounded-lg shadow-sm flex items-center justify-center text-gray-700 active:scale-95 transition-transform"
+                                        >
                                             <Icon name="Minus" className="w-4 h-4" />
                                         </button>
-                                        <span className="font-bold text-lg min-w-[20px] text-center">{getItemQuantity(selectedItem.id)}</span>
-                                        <button onClick={() => updateQuantity(selectedItem.id, 1)} className="w-10 h-10 bg-green-600 text-white rounded-lg shadow-green-200 flex items-center justify-center active:scale-95 transition-transform">
+                                        <span className="font-bold text-lg min-w-[20px] text-center">{getVariantQuantity(selectedItem.id, selectedOptions)}</span>
+                                        <button
+                                            onClick={() => {
+                                                const cartId = getCartId(selectedItem.id, selectedOptions);
+                                                if (cartId) updateQuantity(cartId, 1);
+                                            }}
+                                            className="w-10 h-10 bg-green-600 text-white rounded-lg shadow-green-200 flex items-center justify-center active:scale-95 transition-transform"
+                                        >
                                             <Icon name="Plus" className="w-4 h-4" />
                                         </button>
                                     </div>

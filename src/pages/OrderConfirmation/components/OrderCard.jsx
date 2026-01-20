@@ -74,7 +74,11 @@ const OrderCard = ({ order, onAccept, onReject, onDelete }) => {
             ))}
           </div>
         )}
-        <div className="flex justify-between items-center text-md font-bold mt-3 pt-3 border-t">
+        <div className="flex justify-between items-center text-sm font-medium mt-3 pt-3 border-t text-text-secondary">
+          <span>Metode Pembayaran</span>
+          <span className="text-text-primary capitalize">{order.payment_method || 'Tunai'}</span>
+        </div>
+        <div className="flex justify-between items-center text-md font-bold mt-2">
           <span>Total</span>
           <span>{formatCurrency(order.total)}</span>
         </div>

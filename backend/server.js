@@ -747,18 +747,19 @@ app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', '
         await connection.beginTransaction();
 
         let itemData;
-        if (req.file) {
+        // Handle both JSON and FormData formats
+        if (req.body.data) {
             itemData = JSON.parse(req.body.data);
         } else {
             itemData = req.body;
         }
 
-        const { id, name, price, stock, category, hpp, discount, is_featured, options } = itemData;
+        const { id, name, price, stock, category, hpp, discount, is_featured, options, description } = itemData;
         const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
         const final_is_featured = is_featured ? 1 : 0;
 
-        const menuItemSql = 'INSERT INTO menu_items (id, name, price, stock, category, image_url, hpp, discount, is_featured) VALUES (?,?,?,?,?,?,?,?,?)';
-        const menuItemParams = [id, name, price, stock, category, image_url, hpp, discount, final_is_featured];
+        const menuItemSql = 'INSERT INTO menu_items (id, name, price, stock, category, image_url, hpp, discount, is_featured, description) VALUES (?,?,?,?,?,?,?,?,?,?)';
+        const menuItemParams = [id, name, price, stock, category, image_url, hpp, discount, final_is_featured, description || null];
         const [rows] = await connection.query(menuItemSql, menuItemParams); // Need result for consistency, although ID is manually provided in this app logic usually
 
         if (options && Array.isArray(options) && options.length > 0) {
@@ -835,12 +836,15 @@ app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'
         let itemData;
         let new_image_url = null;
 
-        // Handle multipart/form-data (with image) vs application/json (no image)
-        if (req.file) {
+        // Handle both JSON and FormData formats
+        if (req.body.data) {
             itemData = JSON.parse(req.body.data);
-            new_image_url = `/public/uploads/${req.file.filename}`;
         } else {
             itemData = req.body;
+        }
+
+        if (req.file) {
+            new_image_url = `/public/uploads/${req.file.filename}`;
         }
 
         // Dynamically build the update query
@@ -848,7 +852,7 @@ app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'
         const params = [];
 
         // List of allowed fields to update
-        const allowedFields = ['name', 'price', 'stock', 'category', 'hpp', 'discount', 'is_featured'];
+        const allowedFields = ['name', 'price', 'stock', 'category', 'hpp', 'discount', 'is_featured', 'description'];
 
         allowedFields.forEach(field => {
             if (itemData[field] !== undefined) {
@@ -1055,25 +1059,40 @@ app.get("/api/banners/all", authenticateToken, authorizeRoles('admin', 'penjual'
 app.post("/api/banners", authenticateToken, authorizeRoles('admin', 'penjual'), upload.single('image'), async (req, res) => {
     try {
         let bannerData;
-        if (req.file) {
-            bannerData = JSON.parse(req.body.data);
+
+        // Selalu prioritaskan field 'data' jika ada, karena Frontend mengirim FormData dengan JSON string di dalamnya
+        if (req.body.data) {
+            try {
+                bannerData = typeof req.body.data === 'string' ? JSON.parse(req.body.data) : req.body.data;
+            } catch (err) {
+                console.error("Gagal parse req.body.data:", err);
+                bannerData = req.body;
+            }
         } else {
             bannerData = req.body;
         }
 
-        const { title, subtitle, color_class, icon_name, link_url } = bannerData;
-        const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
+        const { title, subtitle, color_class, icon_name, link_url, is_active } = bannerData;
 
-        const sql = 'INSERT INTO banners (title, subtitle, image_url, color_class, icon_name, link_url) VALUES (?,?,?,?,?,?)';
-        const [result] = await db.query(sql, [title, subtitle, image_url, color_class, icon_name, link_url]);
+        // Validasi field wajib
+        if (!title) {
+            return res.status(400).json({ "error": "Judul banner (title) wajib diisi" });
+        }
+
+        const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
+        const final_is_active = is_active !== undefined ? (is_active ? 1 : 0) : 1;
+
+        const sql = 'INSERT INTO banners (title, subtitle, image_url, color_class, icon_name, link_url, is_active) VALUES (?,?,?,?,?,?,?)';
+        const [result] = await db.query(sql, [title, subtitle || '', image_url, color_class, icon_name, link_url || '', final_is_active]);
 
         await logActivity(req.user.userId, 'Tambah Banner', 'banner', result.insertId, `Banner baru: ${title}`);
 
         res.status(201).json({
             "message": "success",
-            "data": { id: result.insertId, ...bannerData, image_url }
+            "data": { id: result.insertId, ...bannerData, image_url, is_active: final_is_active }
         });
     } catch (err) {
+        console.error("Error adding banner:", err);
         res.status(400).json({ "error": err.message });
     }
 });
@@ -2816,10 +2835,24 @@ app.delete("/api/notes/:id", authenticateToken, async (req, res) => {
 
 // --- Order Endpoints ---
 
-// Create a new pending order (public)
-app.post("/api/orders", async (req, res) => {
+// Create a new pending order (authenticated or public)
+app.post("/api/orders", (req, res, next) => {
+    // Optional authentication: if token exists, verify it, but don't fail if it doesn't
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token) {
+        jwt.verify(token, ACTUAL_JWT_SECRET, (err, user) => {
+            if (!err) {
+                req.user = { userId: user.userId, username: user.username, role: user.role.trim() };
+            }
+            next();
+        });
+    } else {
+        next();
+    }
+}, async (req, res) => {
     try {
-        const { customer_name, customer_address, items } = req.body; // 'total' will be calculated on backend
+        const { customer_name, customer_address, items, payment_method } = req.body; // 'total' will be calculated on backend
         if (!customer_name || !items || items.length === 0) {
             return res.status(400).json({ error: "Missing required fields: customer_name, items" });
         }
@@ -2834,48 +2867,109 @@ app.post("/api/orders", async (req, res) => {
             }
             const menuItem = menuItemRows[0];
             const itemPrice = parseFloat(menuItem.price);
-            const itemDiscount = parseFloat(menuItem.discount || 0); // Ensure discount is a number, default to 0
+            const itemDiscount = parseFloat(menuItem.discount || 0);
 
-            const discountedPrice = itemPrice * (1 - itemDiscount);
-            const itemSubtotal = discountedPrice * item.quantity;
+            const discountedPrice = itemPrice - (itemPrice * (itemDiscount / 100)); // Fix: Discount is usually percentage here? Let's check previous logic. previous was price * (1 - discount). If discount is 0.1 (10%), it works. If discount is 10 (10%), it fails.
+            // Looking at previous code: `const discountedPrice = itemPrice * (1 - itemDiscount);`
+            // If discount is stored as decimal (0.1), that's correct.
+            // Let's assume stored as decimal for now based on previous code.
+
+            // Re-read previous code: `const discountedPrice = itemPrice * (1 - itemDiscount);`
+            // But wait, in `SellerMenuManagement`, I saw input placeholder "0" for discount (%).
+            // If user enters 10, it saves 10.
+            // If DB stores 10, then `1 - 10` = -9. That's wrong.
+            // Let's assume discount is 0-1 range OR fix it here.
+            // Safe bet: if discount > 1, treat as percentage (divide by 100). If <= 1, treat as decimal?
+            // Existing logic was `itemPrice * (1 - itemDiscount)`.
+            // Let's stick to existing logic for now to minimalize regressions, assuming it's correct.
+            // BUT wait, look at my previous read of `SellerMenuManagement`:
+            // 455:                                             <input ... placeholder="0" ... /> (Label says Diskon (%))
+            // If I enter 10, it saves 10. `hpp` and `discount` were added recently.
+            // If I save 10, logic `itemPrice * (1 - 10)` is definitely wrong.
+            // I should fix this logic to be safer: `const effectiveDiscount = itemDiscount > 1 ? itemDiscount / 100 : itemDiscount;`
+
+            let effectiveDiscount = itemDiscount;
+            if (itemDiscount > 1) {
+                effectiveDiscount = itemDiscount / 100;
+            }
+
+            const priceAfterDiscount = itemPrice * (1 - effectiveDiscount);
+
+            // Handle Options
+            let optionsTotal = 0;
+            let validOptions = [];
+            if (item.options && Array.isArray(item.options) && item.options.length > 0) {
+                const optionIds = item.options.map(o => o.id);
+                if (optionIds.length > 0) {
+                    // Verify options belong to this menu item and get real prices
+                    const [optRows] = await db.query('SELECT id, name, price_adjustment FROM menu_item_options WHERE id IN (?) AND menu_item_id = ?', [optionIds, item.id]);
+
+                    // We use the prices from DB, ignoring what frontend sent
+                    optionsTotal = optRows.reduce((sum, opt) => sum + parseFloat(opt.price_adjustment), 0);
+                    validOptions = optRows;
+                }
+            }
+
+            const itemSubtotal = (priceAfterDiscount + optionsTotal) * item.quantity;
             calculatedTotal += itemSubtotal;
 
             orderItemsWithDetails.push({
                 id: menuItem.id,
                 name: menuItem.name,
-                price: itemPrice, // Store original price
-                discount: itemDiscount, // Store discount applied
+                price: itemPrice,
+                discount: itemDiscount,
                 quantity: item.quantity,
-                subtotal: itemSubtotal // Store subtotal after discount
+                options: validOptions,
+                subtotal: itemSubtotal
             });
         }
 
-        const sql = 'INSERT INTO orders (customer_name, customer_address, items, total, status) VALUES (?, ?, ?, ?, ?)';
-        const params = [customer_name, customer_address, JSON.stringify(orderItemsWithDetails), calculatedTotal, 'pending'];
+        const userId = req.user ? req.user.userId : null;
+        const paymentMethodValue = payment_method || 'Tunai';
+        const sql = 'INSERT INTO orders (user_id, customer_name, customer_address, items, total, status, payment_method) VALUES (?, ?, ?, ?, ?, ?, ?)';
+        const params = [userId, customer_name, customer_address, JSON.stringify(orderItemsWithDetails), calculatedTotal, 'pending', paymentMethodValue];
         const [result] = await db.query(sql, params);
 
         res.status(201).json({
             message: "Order created successfully and is pending verification.",
-            data: { id: result.insertId, customer_name, customer_address, items: orderItemsWithDetails, total: calculatedTotal, status: 'pending' }
+            data: {
+                id: result.insertId,
+                user_id: userId,
+                customer_name,
+                customer_address,
+                items: orderItemsWithDetails,
+                total: calculatedTotal,
+                status: 'pending',
+                payment_method: paymentMethodValue
+            }
         });
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
     }
 });
-// Get all orders with pagination and status filtering
-app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user'), async (req, res) => {
+// Get orders (Admin/User: all, Pelanggan: their own)
+app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user', 'pelanggan', 'penjual', 'kasir'), async (req, res) => {
     try {
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 20;
         const status = req.query.status;
         const offset = (page - 1) * limit;
 
-        let whereClause = '';
+        const isManagement = ['admin', 'user'].includes(req.user.role);
+        let whereClauses = [];
         let queryParams = [];
+
+        if (!isManagement) {
+            whereClauses.push('user_id = ?');
+            queryParams.push(req.user.userId);
+        }
+
         if (status) {
-            whereClause = 'WHERE status = ?';
+            whereClauses.push('status = ?');
             queryParams.push(status);
         }
+
+        const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
         // Query to get total count
         const countSql = `SELECT COUNT(*) as totalItems FROM orders ${whereClause}`;
@@ -2905,7 +2999,7 @@ app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user'), async
 
 // Update an order's status (admin only)
 
-app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'user', 'kasir'), async (req, res) => {
+app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'user', 'kasir', 'penjual'), async (req, res) => {
 
     const { status } = req.body;
 
@@ -2950,34 +3044,29 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
         // Handle 'accepted' status: the complex transaction
 
         if (status === 'accepted') {
+            const { ignoreStock } = req.body;
 
             // 1. Get the order and lock the row to prevent concurrent modifications
-
             const [orderRows] = await connection.query('SELECT * FROM orders WHERE id = ? AND status = \'pending\' FOR UPDATE', [id]);
 
             if (orderRows.length === 0) {
-
                 await connection.rollback();
-
                 return res.status(404).json({ error: "Order not found or not in pending state." });
-
             }
 
             const order = orderRows[0];
-
             const items = JSON.parse(order.items); // Items are stored as JSON string in the DB
 
-
-
             // 2. Stock Validation
+            if (!ignoreStock) {
 
 
 
-            const missingItemIds = [];
+                const missingItemIds = [];
 
 
 
-            const insufficientStockItems = [];
+                const insufficientStockItems = [];
 
 
 
@@ -2985,27 +3074,31 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
 
 
 
-            for (const item of items) {
+                for (const item of items) {
 
 
 
-                const [menuItemRows] = await connection.query('SELECT name, stock FROM menu_items WHERE id = ?', [item.id]);
+                    const [menuItemRows] = await connection.query('SELECT name, stock FROM menu_items WHERE id = ?', [item.id]);
 
 
 
-                if (menuItemRows.length === 0) {
+                    if (menuItemRows.length === 0) {
 
 
 
-                    missingItemIds.push(item.id);
+                        missingItemIds.push(item.id);
 
 
 
-                } else if (menuItemRows[0].stock < item.quantity) {
+                    } else if (menuItemRows[0].stock < item.quantity) {
 
 
 
-                    insufficientStockItems.push(`${menuItemRows[0].name} (Tersedia: ${menuItemRows[0].stock}, Diminta: ${item.quantity})`);
+                        insufficientStockItems.push(`${menuItemRows[0].name} (Tersedia: ${menuItemRows[0].stock}, Diminta: ${item.quantity})`);
+
+
+
+                    }
 
 
 
@@ -3013,61 +3106,52 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
 
 
 
+
+
+
+
+                if (missingItemIds.length > 0 || insufficientStockItems.length > 0) {
+
+
+
+                    await connection.rollback();
+
+
+
+                    let errorMessage = "Pesanan tidak dapat diterima karena masalah stok:\n";
+
+
+
+                    if (missingItemIds.length > 0) {
+
+
+
+                        errorMessage += `- Item menu tidak ditemukan: ${missingItemIds.join(', ')}.\n`;
+
+
+
+                    }
+
+
+
+                    if (insufficientStockItems.length > 0) {
+
+
+
+                        errorMessage += `- Stok tidak mencukupi untuk: ${insufficientStockItems.join('; ')}.\n`;
+
+
+
+                    }
+
+
+
+                    return res.status(400).json({ error: errorMessage.trim() });
+
+
+
+                }
             }
-
-
-
-
-
-
-
-            if (missingItemIds.length > 0 || insufficientStockItems.length > 0) {
-
-
-
-                await connection.rollback();
-
-
-
-                let errorMessage = "Pesanan tidak dapat diterima karena masalah stok:\n";
-
-
-
-                if (missingItemIds.length > 0) {
-
-
-
-                    errorMessage += `- Item menu tidak ditemukan: ${missingItemIds.join(', ')}.\n`;
-
-
-
-                }
-
-
-
-                if (insufficientStockItems.length > 0) {
-
-
-
-                    errorMessage += `- Stok tidak mencukupi untuk: ${insufficientStockItems.join('; ')}.\n`;
-
-
-
-                }
-
-
-
-                return res.status(400).json({ error: errorMessage.trim() });
-
-
-
-            }
-
-
-
-
-
-
 
             // 3. Stock Reduction
 
@@ -3802,7 +3886,7 @@ app.delete("/api/admin/users/:id", authenticateToken, authorizeRoles('admin'), a
 // Get User Profile
 app.get("/api/user/profile", authenticateToken, async (req, res) => {
     try {
-        const sql = 'SELECT id, username, role, avatar_url FROM users WHERE id = ?';
+        const sql = 'SELECT id, username, role, avatar_url, phone, address FROM users WHERE id = ?';
         const [rows] = await db.query(sql, [req.user.userId]);
         if (rows.length > 0) {
             res.json({ message: "success", data: rows[0] });
@@ -3814,8 +3898,25 @@ app.get("/api/user/profile", authenticateToken, async (req, res) => {
     }
 });
 
+// Update Profile Info (Phone & Address)
+app.put("/api/user/profile", authenticateToken, async (req, res) => {
+    try {
+        const { phone, address } = req.body;
+        const sql = 'UPDATE users SET phone = ?, address = ? WHERE id = ?';
+        const [result] = await db.query(sql, [phone || null, address || null, req.user.userId]);
+
+        if (result.affectedRows > 0) {
+            res.json({ message: "Profile updated successfully" });
+        } else {
+            res.status(404).json({ error: "User not found or nothing changed" });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
 // Update Username
-app.put("/api/user/profile/username", authenticateToken, authorizeRoles('user', 'admin'), async (req, res) => {
+app.put("/api/user/profile/username", authenticateToken, authorizeRoles('user', 'admin', 'pelanggan'), async (req, res) => {
     try {
         const { username } = req.body;
         if (!username) {
@@ -3843,7 +3944,7 @@ app.put("/api/user/profile/username", authenticateToken, authorizeRoles('user', 
 });
 
 // Change Password
-app.put("/api/user/profile/password", authenticateToken, authorizeRoles('user', 'admin'), async (req, res) => {
+app.put("/api/user/profile/password", authenticateToken, authorizeRoles('user', 'admin', 'pelanggan'), async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;
         if (!currentPassword || !newPassword) {
@@ -3879,7 +3980,7 @@ app.put("/api/user/profile/password", authenticateToken, authorizeRoles('user', 
 });
 
 // Upload User Avatar
-app.post("/api/user/profile/avatar", authenticateToken, upload.single('avatar'), async (req, res) => {
+app.post("/api/user/profile/avatar", authenticateToken, authorizeRoles('user', 'admin', 'pelanggan'), upload.single('avatar'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: "No avatar file uploaded." });
@@ -3899,7 +4000,7 @@ app.post("/api/user/profile/avatar", authenticateToken, upload.single('avatar'),
 });
 
 // Get User App Mode
-app.get("/api/user/app-mode", authenticateToken, async (req, res) => {
+app.get("/api/user/app-mode", authenticateToken, authorizeRoles('user', 'admin', 'pelanggan'), async (req, res) => {
     try {
         const sql = 'SELECT app_mode FROM users WHERE id = ?';
         const [rows] = await db.query(sql, [req.user.userId]);

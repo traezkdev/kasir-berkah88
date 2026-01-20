@@ -87,6 +87,11 @@ const MenuItemsTable = ({
             <p className="text-[10px] font-bold text-blue-600 bg-blue-50 w-fit px-2 py-0.5 rounded-lg uppercase tracking-widest mt-1">
               {item?.category}
             </p>
+            {item?.description && (
+              <p className="text-[10px] text-gray-500 mt-2 line-clamp-2 leading-snug">
+                {item.description}
+              </p>
+            )}
 
             <div className="flex items-center gap-4 mt-3">
               <div>
@@ -223,6 +228,11 @@ const MenuItemsTable = ({
               </td><td className="p-4"><img src={item?.image_url ? `${apiUrl}${item.image_url}` : '/assets/images/no_image.png'} alt={item?.name} className="w-16 h-16 object-cover rounded-md" onError={(e) => { e.target.onerror = null; e.target.src = '/assets/images/no_image.png' }} /></td><td className="p-4">
                   <div className="flex flex-col">
                     <span className="font-medium text-foreground">{item?.name}</span>
+                    {item?.description && (
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-1 italic">
+                        {item.description}
+                      </p>
+                    )}
                     {/* Display options for desktop view */}
                     {item.options && item.options.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1">

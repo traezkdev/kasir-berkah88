@@ -1,11 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
+import { jwtDecode } from 'jwt-decode';
 
 const SellerLayout = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const currentPath = location.pathname;
+    const [userRole, setUserRole] = useState(null);
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const decodedToken = jwtDecode(token);
+                setUserRole(decodedToken.role);
+            } catch (e) {
+                console.error("Error decoding token in SellerLayout:", e);
+            }
+        }
+    }, []);
 
     const menuItems = [
         { name: 'Dashboard', path: '/seller/dashboard', icon: 'LayoutDashboard', label: 'Dashboard' },
@@ -35,6 +49,15 @@ const SellerLayout = () => {
                     </div>
 
                     <nav className="space-y-2">
+                        {userRole === 'admin' && (
+                            <Link
+                                to="/main-dashboard"
+                                className="flex items-center gap-4 px-5 py-4 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all duration-300 mb-6 group border border-indigo-100"
+                            >
+                                <Icon name="ArrowLeft" className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                                <span className="font-black tracking-tight">Kembali ke Admin</span>
+                            </Link>
+                        )}
                         {menuItems.map((item) => {
                             const isActive = currentPath === item.path;
                             return (
@@ -107,6 +130,21 @@ const SellerLayout = () => {
                             </Link>
                         );
                     })}
+
+                    {/* Tambahan Menu Admin untuk Mobile */}
+                    {userRole === 'admin' && (
+                        <Link
+                            to="/main-dashboard"
+                            className="flex flex-col items-center justify-center flex-1 text-indigo-600 transition-all active:scale-95 translate-y-[-2px]"
+                        >
+                            <div className="relative px-6 py-1.5 rounded-2xl bg-indigo-50 border border-indigo-100 shadow-sm">
+                                <Icon name="ArrowLeft" className="w-6 h-6" />
+                            </div>
+                            <span className="text-[10px] font-black mt-1 uppercase tracking-tighter">
+                                Admin
+                            </span>
+                        </Link>
+                    )}
                 </div>
             </nav>
         </div>

@@ -84,7 +84,7 @@ const CustomerDashboard = () => {
             </div>
 
             {/* Header Section with Gradient */}
-            <header className="bg-gradient-to-r from-green-600 to-emerald-600 p-6 rounded-b-[2rem] text-white shadow-lg sticky top-0 z-30">
+            <header className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 pt-6 pb-0 rounded-b-[2rem] text-white shadow-lg sticky top-0 z-30">
                 <div className="flex justify-between items-center mb-4">
                     <div>
                         <p className="text-green-100 text-sm font-medium">Selamat Pagi,</p>
@@ -101,8 +101,29 @@ const CustomerDashboard = () => {
                     <span className="text-gray-400 text-sm font-medium">Mau makan apa hari ini?</span>
                 </div>
 
+                {/* Quick Shortcut Chips */}
+                <div className="mt-4 flex gap-2 overflow-x-auto hide-scrollbar whitespace-nowrap pb-1">
+                    {[
+                        { label: 'Sedang Promo', icon: 'Zap', color: 'bg-amber-400' },
+                        { label: 'Paling Laris', icon: 'TrendingUp', color: 'bg-rose-500' },
+                        { label: 'Paket Hemat', icon: 'Package', color: 'bg-sky-500' },
+                        { label: 'Terbaru', icon: 'Sparkles', color: 'bg-indigo-500' }
+                    ].map((chip, idx) => (
+                        <div
+                            key={idx}
+                            onClick={() => navigate(`/customer/menu?filter=${chip.label.toLowerCase().replace(' ', '_')}`)}
+                            className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-full cursor-pointer active:scale-95 transition-all"
+                        >
+                            <div className={`${chip.color} p-1 rounded-full`}>
+                                <Icon name={chip.icon} className="w-2.5 h-2.5 text-white" />
+                            </div>
+                            <span className="text-[10px] font-bold text-white tracking-tight">{chip.label}</span>
+                        </div>
+                    ))}
+                </div>
+
                 {/* Saldo / Points Card (Fake) */}
-                <div className="mt-6 bg-white rounded-xl p-4 shadow-lg text-gray-800 flex justify-between items-center transform translate-y-14">
+                <div className="mt-1 bg-white rounded-xl p-4 shadow-lg text-gray-800 flex justify-between items-center transform translate-y-1/2">
                     <div className="flex flex-col">
                         <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">BerkahPay</span>
                         <span className="text-lg font-bold text-gray-900">Rp 0</span>
@@ -125,9 +146,8 @@ const CustomerDashboard = () => {
             </header>
 
 
-
             {/* Banners Carousel */}
-            <section className="mt-14 px-4 overflow-x-auto hide-scrollbar flex gap-4 pb-4 snap-x">
+            <section className="mt-20 px-4 overflow-x-auto hide-scrollbar flex gap-4 pb-4 snap-x">
                 {banners.map((banner) => (
                     <div key={banner.id} className={`${banner.color_class} min-w-[280px] h-36 rounded-2xl p-4 text-white flex flex-col justify-between shadow-md snap-center hover:scale-[1.02] transition-transform cursor-pointer relative overflow-hidden`}>
                         <div className="z-10 relative">

@@ -24,6 +24,7 @@ const EditMenuItemModal = ({
         discount: menuItem.discount ? menuItem.discount.toString() : '0.00',
         is_featured: !!menuItem.is_featured,
         options: menuItem.options || [], // Initialize options
+        description: menuItem.description || '',
       });
     } else {
       setFormData(null); // Clear form data when modal is closed
@@ -43,7 +44,7 @@ const EditMenuItemModal = ({
     }
     setFormData(newFormData);
   };
-  
+
   // This function will be called by the child form on any change
   const handleFullFormChange = (updatedFormData) => {
     setFormData(updatedFormData);
@@ -60,6 +61,7 @@ const EditMenuItemModal = ({
       discount: parseFloat(finalFormData.discount || '0.00'),
       is_featured: finalFormData.is_featured,
       options: finalFormData.options || [], // Include options in the save payload
+      description: finalFormData.description,
     };
     await onSave(menuItem.id, dataToSave);
     onClose();
@@ -82,7 +84,7 @@ const EditMenuItemModal = ({
           // The form now manages its own state, so direct change handlers are less critical
           // However, if you need to react to changes in the modal, you can use onFormChange
           onFormChange={(field) => {
-              setFormData(prev => ({...prev, [field.name]: field.value}))
+            setFormData(prev => ({ ...prev, [field.name]: field.value }))
           }}
         />
       </div>

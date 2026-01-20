@@ -535,6 +535,46 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
                 Catatan
               </MenuItem>
 
+              {/* Grup Fitur Penjual */}
+              {!isCollapsed && <div className={groupTitleClasses}>Fitur Penjual</div>}
+              {isCollapsed && <div className="h-px bg-gray-200 dark:bg-gray-700 mx-4 my-2"></div>}
+              <MenuItem
+                to="/seller/dashboard"
+                icon={FaTachometerAlt}
+                onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+                isCollapsed={isCollapsed}
+                handleMouseEnter={handleMouseEnter}
+                handleMouseLeave={handleMouseLeave}
+                navLinkClasses={navLinkClasses}
+                activeLinkClasses={activeLinkClasses}
+              >
+                Dashboard Penjual
+              </MenuItem>
+              <MenuItem
+                to="/seller/banners"
+                icon={FaFileAlt}
+                onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+                isCollapsed={isCollapsed}
+                handleMouseEnter={handleMouseEnter}
+                handleMouseLeave={handleMouseLeave}
+                navLinkClasses={navLinkClasses}
+                activeLinkClasses={activeLinkClasses}
+              >
+                Kelola Banner
+              </MenuItem>
+              <MenuItem
+                to="/seller/menu-management"
+                icon={FaBoxOpen}
+                onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+                isCollapsed={isCollapsed}
+                handleMouseEnter={handleMouseEnter}
+                handleMouseLeave={handleMouseLeave}
+                navLinkClasses={navLinkClasses}
+                activeLinkClasses={activeLinkClasses}
+              >
+                Katalog Penjual
+              </MenuItem>
+
               {/* Grup Akun */}
               {!isCollapsed && <div className={groupTitleClasses}>Sistem</div>}
               {isCollapsed && <div className="h-px bg-gray-200 dark:bg-gray-700 mx-4 my-2"></div>}

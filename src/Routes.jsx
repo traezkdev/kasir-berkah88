@@ -54,6 +54,7 @@ import CustomerDashboard from './pages/customer/Dashboard';
 import CustomerMenu from './pages/customer/Menu';
 import CustomerCart from './pages/customer/Cart';
 import CustomerProfile from './pages/customer/Profile';
+import CustomerOrderConfirmation from './pages/customer/OrderConfirmation';
 import { CartProvider } from './pages/customer/context/CartContext';
 import SellerLayout from './pages/customer/components/SellerLayout';
 import SellerDashboard from './pages/customer/Dashboard/SellerDashboard';
@@ -256,6 +257,7 @@ const AppRoutes = () => {
         <Route path="/customer/menu/:id" element={<CustomerMenu />} />
         <Route path="/customer/cart" element={<CustomerCart />} />
         <Route path="/customer/profile" element={<CustomerProfile />} />
+        <Route path="/customer/order-confirmation" element={<CustomerOrderConfirmation />} />
 
       </Route>
 
