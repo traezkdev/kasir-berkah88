@@ -4,9 +4,123 @@ import Icon from '../../../components/AppIcon';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, eachWeekOfInterval, startOfMonth, endOfMonth } from 'date-fns';
 import { id } from 'date-fns/locale';
 
+// Target Form Component
+const TargetForm = ({ targets, onSave, onCancel, formatCurrency }) => {
+    const [formData, setFormData] = useState(targets);
+
+    const handleChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: parseFloat(value) || 0 }));
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave(formData);
+    };
+
+    const inputFields = [
+        {
+            id: 'dailyRevenue',
+            label: 'Target Pendapatan Harian',
+            icon: 'DollarSign',
+            color: 'blue',
+            type: 'currency',
+            placeholder: 'Masukkan target pendapatan',
+            description: 'Target pendapatan yang ingin dicapai per hari'
+        },
+        {
+            id: 'dailyTransactions',
+            label: 'Target Transaksi Harian',
+            icon: 'CheckCircle',
+            color: 'emerald',
+            type: 'number',
+            placeholder: 'Masukkan jumlah transaksi',
+            description: 'Jumlah transaksi yang ingin dicapai per hari'
+        },
+        {
+            id: 'dailyExpenses',
+            label: 'Limit Pengeluaran Harian',
+            icon: 'TrendingDown',
+            color: 'orange',
+            type: 'currency',
+            placeholder: 'Masukkan limit pengeluaran',
+            description: 'Batas maksimal pengeluaran per hari'
+        },
+        {
+            id: 'profitMargin',
+            label: 'Target Margin Laba (%)',
+            icon: 'Wallet',
+            color: 'purple',
+            type: 'percentage',
+            placeholder: 'Masukkan persentase margin',
+            description: 'Persentase margin laba yang diharapkan'
+        }
+    ];
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-6">
+            {inputFields.map((field) => (
+                <div key={field.id} className="space-y-2">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-text-primary">
+                        <div className={`p-1.5 bg-${field.color}-100 dark:bg-${field.color}-900/20 rounded-lg`}>
+                            <Icon name={field.icon} size={16} className={`text-${field.color}-600`} />
+                        </div>
+                        {field.label}
+                    </label>
+                    <input
+                        type="number"
+                        value={formData[field.id]}
+                        onChange={(e) => handleChange(field.id, e.target.value)}
+                        placeholder={field.placeholder}
+                        className="w-full px-4 py-3 bg-muted border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-text-primary placeholder:text-text-secondary"
+                        min="0"
+                        step={field.type === 'currency' ? '1000' : '1'}
+                    />
+                    <p className="text-xs text-text-secondary">{field.description}</p>
+                    {field.type === 'currency' && (
+                        <p className="text-xs font-medium text-primary">
+                            Preview: {formatCurrency(formData[field.id])}
+                        </p>
+                    )}
+                    {field.type === 'percentage' && (
+                        <p className="text-xs font-medium text-primary">
+                            Preview: {formData[field.id]}%
+                        </p>
+                    )}
+                </div>
+            ))}
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4 border-t border-border">
+                <button
+                    type="button"
+                    onClick={onCancel}
+                    className="flex-1 px-4 py-3 bg-muted hover:bg-muted/80 text-text-primary font-medium rounded-lg transition-colors"
+                >
+                    Batal
+                </button>
+                <button
+                    type="submit"
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg transition-all shadow-lg hover:shadow-xl"
+                >
+                    Simpan Target
+                </button>
+            </div>
+        </form>
+    );
+};
+
 const DesktopDashboardLayout = ({ dashboardData, theme }) => {
     // State for chart filter
     const [chartFilter, setChartFilter] = useState('monthly'); // 'daily', 'weekly', 'monthly'
+
+    // State for target settings modal
+    const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
+    const [targets, setTargets] = useState({
+        dailyRevenue: 1000000, // Default Rp 1.000.000
+        dailyTransactions: 50,  // Default 50 transaksi
+        dailyExpenses: 500000,  // Default Rp 500.000
+        profitMargin: 30        // Default 30%
+    });
 
     // Helper for currency
     const formatCurrency = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
@@ -203,18 +317,47 @@ const DesktopDashboardLayout = ({ dashboardData, theme }) => {
         return isNaN(num) ? 0 : Math.abs(num);
     };
 
+    // Calculate progress based on targets
+    const calculateProgress = (current, target) => {
+        if (!target || target === 0) return 0;
+        const progress = (current / target) * 100;
+        return Math.min(progress, 100); // Cap at 100%
+    };
+
+    // Handle save targets
+    const handleSaveTargets = (newTargets) => {
+        setTargets(newTargets);
+        setIsTargetModalOpen(false);
+        // TODO: Save to localStorage or API
+        localStorage.setItem('dashboardTargets', JSON.stringify(newTargets));
+    };
+
+    // Load targets from localStorage on mount
+    React.useEffect(() => {
+        const savedTargets = localStorage.getItem('dashboardTargets');
+        if (savedTargets) {
+            setTargets(JSON.parse(savedTargets));
+        }
+    }, []);
+
     const incomeMetric = metrics.todaySales || { value: '0', change: '0%', trend: 'neutral' };
     const transactionMetric = metrics.totalTransactions || { value: '0', change: '0%', trend: 'neutral' };
     // Use todayExpenses instead of totalExpenses
     const expenseMetric = metrics.todayExpenses || { value: 'Rp 0', change: '0%', trend: 'neutral' };
     const profitMetric = calculateProfit();
 
+    // Calculate actual progress values
+    const revenueProgress = calculateProgress(parseValue(incomeMetric.value), targets.dailyRevenue);
+    const transactionProgress = calculateProgress(parseInt(transactionMetric.value), targets.dailyTransactions);
+    const expenseProgress = calculateProgress(parseValue(expenseMetric.value), targets.dailyExpenses);
+    const profitProgress = calculateProgress(parseValue(profitMetric.value), (targets.dailyRevenue * targets.profitMargin) / 100);
+
     return (
         <div className="space-y-6">
             {/* Top Row: 4 Metric Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                 {/* Card 1: Income */}
-                <div className="bg-card text-card-foreground rounded-xl border border-border shadow-sm p-6 relative overflow-hidden">
+                <div className="bg-card text-card-foreground rounded-xl border border-border shadow-sm p-6 relative overflow-hidden group">
                     <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-lg bg-blue-100/50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
@@ -227,20 +370,30 @@ const DesktopDashboardLayout = ({ dashboardData, theme }) => {
                                 <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Pendapatan</h3>
                             </div>
                         </div>
+                        <button
+                            onClick={() => setIsTargetModalOpen(true)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-muted rounded-lg"
+                            title="Atur Target"
+                        >
+                            <Icon name="Settings" size={16} className="text-text-secondary" />
+                        </button>
                     </div>
                     <div>
                         <div className="flex justify-between items-center text-xs mb-1">
                             <span className="text-text-secondary">Target Harian</span>
-                            <span className="font-bold text-blue-600">{getProgress(incomeMetric).toFixed(0)}%</span>
+                            <span className="font-bold text-blue-600">{revenueProgress.toFixed(0)}%</span>
                         </div>
                         <div className="h-1.5 w-full bg-blue-100 dark:bg-blue-900/20 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-600" style={{ width: `${getProgress(incomeMetric)}%` }}></div>
+                            <div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${revenueProgress}%` }}></div>
+                        </div>
+                        <div className="mt-1 text-xs text-text-secondary">
+                            Target: {formatCurrency(targets.dailyRevenue)}
                         </div>
                     </div>
                 </div>
 
                 {/* Card 2: Transactions (Success) */}
-                <div className="bg-card text-card-foreground rounded-xl border border-border shadow-sm p-6 relative overflow-hidden">
+                <div className="bg-card text-card-foreground rounded-xl border border-border shadow-sm p-6 relative overflow-hidden group">
                     <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-lg bg-emerald-100/50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
@@ -253,20 +406,30 @@ const DesktopDashboardLayout = ({ dashboardData, theme }) => {
                                 <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Transaksi Sukses</h3>
                             </div>
                         </div>
+                        <button
+                            onClick={() => setIsTargetModalOpen(true)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-muted rounded-lg"
+                            title="Atur Target"
+                        >
+                            <Icon name="Settings" size={16} className="text-text-secondary" />
+                        </button>
                     </div>
                     <div>
                         <div className="flex justify-between items-center text-xs mb-1">
                             <span className="text-text-secondary">Target</span>
-                            <span className="font-bold text-emerald-600">{getProgress(transactionMetric).toFixed(0)}%</span>
+                            <span className="font-bold text-emerald-600">{transactionProgress.toFixed(0)}%</span>
                         </div>
                         <div className="h-1.5 w-full bg-emerald-100 dark:bg-emerald-900/20 rounded-full overflow-hidden">
-                            <div className="h-full bg-emerald-500" style={{ width: `${getProgress(transactionMetric)}%` }}></div>
+                            <div className="h-full bg-emerald-500 transition-all duration-300" style={{ width: `${transactionProgress}%` }}></div>
+                        </div>
+                        <div className="mt-1 text-xs text-text-secondary">
+                            Target: {targets.dailyTransactions} transaksi
                         </div>
                     </div>
                 </div>
 
                 {/* Card 3: Expenses (Warning) */}
-                <div className="bg-card text-card-foreground rounded-xl border border-border shadow-sm p-6 relative overflow-hidden">
+                <div className="bg-card text-card-foreground rounded-xl border border-border shadow-sm p-6 relative overflow-hidden group">
                     <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-lg bg-orange-100/50 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
@@ -279,20 +442,30 @@ const DesktopDashboardLayout = ({ dashboardData, theme }) => {
                                 <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Pengeluaran</h3>
                             </div>
                         </div>
+                        <button
+                            onClick={() => setIsTargetModalOpen(true)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-muted rounded-lg"
+                            title="Atur Target"
+                        >
+                            <Icon name="Settings" size={16} className="text-text-secondary" />
+                        </button>
                     </div>
                     <div>
                         <div className="flex justify-between items-center text-xs mb-1">
                             <span className="text-text-secondary">Limit</span>
-                            <span className="font-bold text-orange-600">{getProgress(expenseMetric).toFixed(0)}%</span>
+                            <span className="font-bold text-orange-600">{expenseProgress.toFixed(0)}%</span>
                         </div>
                         <div className="h-1.5 w-full bg-orange-100 dark:bg-orange-900/20 rounded-full overflow-hidden">
-                            <div className="h-full bg-orange-500" style={{ width: `${getProgress(expenseMetric)}%` }}></div>
+                            <div className="h-full bg-orange-500 transition-all duration-300" style={{ width: `${expenseProgress}%` }}></div>
+                        </div>
+                        <div className="mt-1 text-xs text-text-secondary">
+                            Limit: {formatCurrency(targets.dailyExpenses)}
                         </div>
                     </div>
                 </div>
 
                 {/* Card 4: Net Profit (Danger/Red in user template, but let's use Purple/Primary for profit) */}
-                <div className="bg-card text-card-foreground rounded-xl border border-border shadow-sm p-6 relative overflow-hidden">
+                <div className="bg-card text-card-foreground rounded-xl border border-border shadow-sm p-6 relative overflow-hidden group">
                     <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-lg bg-purple-100/50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
@@ -305,14 +478,24 @@ const DesktopDashboardLayout = ({ dashboardData, theme }) => {
                                 <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Laba Bersih</h3>
                             </div>
                         </div>
+                        <button
+                            onClick={() => setIsTargetModalOpen(true)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-muted rounded-lg"
+                            title="Atur Target"
+                        >
+                            <Icon name="Settings" size={16} className="text-text-secondary" />
+                        </button>
                     </div>
                     <div>
                         <div className="flex justify-between items-center text-xs mb-1">
                             <span className="text-text-secondary">Margin</span>
-                            <span className="font-bold text-purple-600">{getProgress(profitMetric).toFixed(0)}%</span>
+                            <span className="font-bold text-purple-600">{profitProgress.toFixed(0)}%</span>
                         </div>
                         <div className="h-1.5 w-full bg-purple-100 dark:bg-purple-900/20 rounded-full overflow-hidden">
-                            <div className="h-full bg-purple-500" style={{ width: `${getProgress(profitMetric)}%` }}></div>
+                            <div className="h-full bg-purple-500 transition-all duration-300" style={{ width: `${profitProgress}%` }}></div>
+                        </div>
+                        <div className="mt-1 text-xs text-text-secondary">
+                            Target Margin: {targets.profitMargin}%
                         </div>
                     </div>
                 </div>
@@ -561,6 +744,51 @@ const DesktopDashboardLayout = ({ dashboardData, theme }) => {
                     </div>
                 </div>
             </div>
+
+            {/* Target Settings Modal */}
+            {isTargetModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => setIsTargetModalOpen(false)}
+                    ></div>
+
+                    {/* Modal Content */}
+                    <div className="relative bg-card text-card-foreground rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                                        <Icon name="Target" size={24} />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-bold">Pengaturan Target</h2>
+                                        <p className="text-blue-100 text-sm">Atur target harian untuk dashboard Anda</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setIsTargetModalOpen(false)}
+                                    className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                                >
+                                    <Icon name="X" size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Form Content */}
+                        <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+                            <TargetForm
+                                targets={targets}
+                                onSave={handleSaveTargets}
+                                onCancel={() => setIsTargetModalOpen(false)}
+                                formatCurrency={formatCurrency}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
