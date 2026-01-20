@@ -591,7 +591,7 @@ app.delete("/api/menu-recipes/:id", authenticateToken, authorizeRoles('admin', '
 // --- Menu Items Endpoints ---
 
 // Get all menu items with pagination and category filtering
-app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir'), async (req, res) => {
+app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'pelanggan', 'penjual'), async (req, res) => {
     try {
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 20;
@@ -660,7 +660,7 @@ app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'g
 });
 
 // Get all menu items without pagination
-app.get("/api/menu-items/all", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'owner'), async (req, res) => {
+app.get("/api/menu-items/all", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'owner', 'penjual'), async (req, res) => {
     try {
         const sql = `
             SELECT 
@@ -740,7 +740,7 @@ app.get("/api/public/menu-items", async (req, res) => {
 });
 
 // Add a new menu item
-app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin'), upload.single('image'), async (req, res, next) => {
+app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'penjual'), upload.single('image'), async (req, res, next) => {
     let connection;
     try {
         connection = await db.getConnection();
@@ -791,7 +791,7 @@ app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin'), 
 });
 
 // Endpoint untuk memperbarui urutan item menu
-app.put('/api/menu-items/reorder', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+app.put('/api/menu-items/reorder', authenticateToken, authorizeRoles('admin', 'penjual'), async (req, res) => {
     const { itemIds } = req.body; // itemIds adalah array ID dalam urutan baru
 
     if (!Array.isArray(itemIds)) {
@@ -825,7 +825,7 @@ app.put('/api/menu-items/reorder', authenticateToken, authorizeRoles('admin'), a
 });
 
 // Update a menu item
-app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'), upload.single('image'), async (req, res, next) => {
+app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin', 'penjual'), upload.single('image'), async (req, res, next) => {
     let connection;
     try {
         const { id } = req.params;
@@ -919,7 +919,7 @@ app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'
 });
 
 // Delete a menu item
-app.delete("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
+app.delete("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin', 'penjual'), async (req, res, next) => {
     try {
         const sql = 'DELETE FROM menu_items WHERE id = ?';
         const [result] = await db.query(sql, [req.params.id]);
@@ -933,9 +933,7 @@ app.delete("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'adm
 });
 
 // --- Categories Endpoints ---
-
-// Get all categories
-app.get("/api/categories", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir'), async (req, res) => {
+app.get("/api/categories", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'pelanggan', 'penjual'), async (req, res) => {
     try {
         const sql = "SELECT * FROM categories ORDER BY name ASC";
         const [rows] = await db.query(sql);
@@ -949,7 +947,7 @@ app.get("/api/categories", authenticateToken, authorizeRoles('user', 'admin', 'g
 });
 
 // Add a new category
-app.post("/api/categories", authenticateToken, authorizeRoles('user', 'admin'), async (req, res) => {
+app.post("/api/categories", authenticateToken, authorizeRoles('user', 'admin', 'penjual'), async (req, res) => {
     try {
         const { name } = req.body;
         if (!name) {
@@ -973,7 +971,7 @@ app.post("/api/categories", authenticateToken, authorizeRoles('user', 'admin'), 
 });
 
 // Update a category
-app.put("/api/categories/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res) => {
+app.put("/api/categories/:id", authenticateToken, authorizeRoles('user', 'admin', 'penjual'), async (req, res) => {
     try {
         const { name } = req.body;
         const { id } = req.params;
@@ -998,7 +996,7 @@ app.put("/api/categories/:id", authenticateToken, authorizeRoles('user', 'admin'
 });
 
 // Delete a category
-app.delete("/api/categories/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res) => {
+app.delete("/api/categories/:id", authenticateToken, authorizeRoles('user', 'admin', 'penjual'), async (req, res) => {
     let connection;
     try {
         const { id } = req.params;
@@ -1026,6 +1024,100 @@ app.delete("/api/categories/:id", authenticateToken, authorizeRoles('user', 'adm
         res.status(400).json({ "error": err.message });
     } finally {
         if (connection) connection.release();
+    }
+});
+
+// --- Banners Endpoints ---
+
+// Get all active banners
+app.get("/api/banners", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'pelanggan', 'penjual'), async (req, res) => {
+    try {
+        const sql = "SELECT * FROM banners WHERE is_active = TRUE ORDER BY created_at DESC";
+        const [rows] = await db.query(sql);
+        res.json({ "message": "success", "data": rows });
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
+// Get all banners (for management)
+app.get("/api/banners/all", authenticateToken, authorizeRoles('admin', 'penjual'), async (req, res) => {
+    try {
+        const sql = "SELECT * FROM banners ORDER BY created_at DESC";
+        const [rows] = await db.query(sql);
+        res.json({ "message": "success", "data": rows });
+    } catch (err) {
+        res.status(500).json({ "error": err.message });
+    }
+});
+
+// Add a new banner
+app.post("/api/banners", authenticateToken, authorizeRoles('admin', 'penjual'), upload.single('image'), async (req, res) => {
+    try {
+        let bannerData;
+        if (req.file) {
+            bannerData = JSON.parse(req.body.data);
+        } else {
+            bannerData = req.body;
+        }
+
+        const { title, subtitle, color_class, icon_name, link_url } = bannerData;
+        const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
+
+        const sql = 'INSERT INTO banners (title, subtitle, image_url, color_class, icon_name, link_url) VALUES (?,?,?,?,?,?)';
+        const [result] = await db.query(sql, [title, subtitle, image_url, color_class, icon_name, link_url]);
+
+        await logActivity(req.user.userId, 'Tambah Banner', 'banner', result.insertId, `Banner baru: ${title}`);
+
+        res.status(201).json({
+            "message": "success",
+            "data": { id: result.insertId, ...bannerData, image_url }
+        });
+    } catch (err) {
+        res.status(400).json({ "error": err.message });
+    }
+});
+
+// Update a banner
+app.put("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penjual'), upload.single('image'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        let bannerData;
+        if (req.file) {
+            bannerData = JSON.parse(req.body.data);
+        } else {
+            bannerData = req.body;
+        }
+
+        const { title, subtitle, color_class, icon_name, link_url, is_active } = bannerData;
+        let sql = 'UPDATE banners SET title = ?, subtitle = ?, color_class = ?, icon_name = ?, link_url = ?, is_active = ?';
+        let params = [title, subtitle, color_class, icon_name, link_url, is_active];
+
+        if (req.file) {
+            const image_url = `/public/uploads/${req.file.filename}`;
+            sql += ', image_url = ?';
+            params.push(image_url);
+        }
+
+        sql += ' WHERE id = ?';
+        params.push(id);
+
+        await db.query(sql, params);
+        res.json({ "message": "success" });
+    } catch (err) {
+        res.status(400).json({ "error": err.message });
+    }
+});
+
+// Delete a banner
+app.delete("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penjual'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const sql = 'DELETE FROM banners WHERE id = ?';
+        await db.query(sql, [id]);
+        res.json({ "message": "success" });
+    } catch (err) {
+        res.status(400).json({ "error": err.message });
     }
 });
 
@@ -1741,7 +1833,7 @@ app.get("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
 
 
 // Create a new transaction
-app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res, next) => {
+app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'pelanggan'), async (req, res, next) => {
     let connection;
     try {
         const { items, total: frontendTotal, ppn: frontendPpn, ignoreStock, cashPaid, change, isEmployeeMeal, payment_method, manual_discount, catatan } = req.body;

@@ -49,6 +49,20 @@ import TransactionTrash from './pages/TransactionTrash';
 import DatabaseManagement from './pages/Settings/DatabaseManagement';
 import DashboardV2 from './pages/dashboard-v2';
 import AllLogs from './pages/all-logs';
+import CustomerLayout from './pages/customer/components/CustomerLayout';
+import CustomerDashboard from './pages/customer/Dashboard';
+import CustomerMenu from './pages/customer/Menu';
+import CustomerCart from './pages/customer/Cart';
+import CustomerProfile from './pages/customer/Profile';
+import { CartProvider } from './pages/customer/context/CartContext';
+import SellerLayout from './pages/customer/components/SellerLayout';
+import SellerDashboard from './pages/customer/Dashboard/SellerDashboard';
+import SellerBanners from './pages/customer/Dashboard/SellerBanners';
+import SellerMenuManagement from './pages/customer/Dashboard/SellerMenuManagement';
+
+// ... (existing imports)
+
+// ...
 
 // ProtectedRoute component
 const ProtectedRoute = ({ children, allowedRoles, redirectPathForForbiddenRoles }) => {
@@ -70,6 +84,13 @@ const ProtectedRoute = ({ children, allowedRoles, redirectPathForForbiddenRoles 
     }
 
     if (allowedRoles && !allowedRoles.includes(userRole)) {
+      // Smart redirect based on role
+      if (userRole === 'kasir') return <Navigate to="/cashier-dashboard" replace />;
+      if (userRole === 'owner') return <Navigate to="/owner-dashboard" replace />;
+      if (userRole === 'pelanggan') return <Navigate to="/customer/dashboard" replace />;
+      if (userRole === 'penjual') return <Navigate to="/seller/dashboard" replace />;
+      if (userRole === 'admin' || userRole === 'user') return <Navigate to="/main-dashboard" replace />;
+
       if (redirectPathForForbiddenRoles) {
         return <Navigate to={redirectPathForForbiddenRoles} replace />;
       }
@@ -134,7 +155,6 @@ const AppRoutes = () => {
         <Route path="/laporan-lengkap" element={<LaporanLengkap headerTitle="Laporan Lengkap" />} />
       </Route>
 
-      {/* Admin Dashboard Routes */}
       <Route
         element={
           <ProtectedRoute allowedRoles={['admin', 'user']} redirectPathForForbiddenRoles="/cashier-dashboard">
@@ -218,6 +238,39 @@ const AppRoutes = () => {
         }
       >
         <Route path="/all-logs" element={<AllLogs />} />
+      </Route>
+
+      {/* Customer Routes */}
+      <Route
+        element={
+          <ProtectedRoute allowedRoles={['pelanggan', 'user']}>
+            <CartProvider>
+              <CustomerLayout />
+            </CartProvider>
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/customer" element={<Navigate to="/customer/dashboard" replace />} />
+        <Route path="/customer/dashboard" element={<CustomerDashboard />} />
+        <Route path="/customer/menu" element={<CustomerMenu />} />
+        <Route path="/customer/menu/:id" element={<CustomerMenu />} />
+        <Route path="/customer/cart" element={<CustomerCart />} />
+        <Route path="/customer/profile" element={<CustomerProfile />} />
+
+      </Route>
+
+      {/* Seller Dashboard Routes */}
+      <Route
+        element={
+          <ProtectedRoute allowedRoles={['penjual', 'admin']}>
+            <SellerLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/seller" element={<Navigate to="/seller/dashboard" replace />} />
+        <Route path="/seller/dashboard" element={<SellerDashboard />} />
+        <Route path="/seller/banners" element={<SellerBanners />} />
+        <Route path="/seller/menu-management" element={<SellerMenuManagement />} />
       </Route>
 
       {/* Catch all other routes */}

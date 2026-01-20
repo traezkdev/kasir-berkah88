@@ -93,7 +93,7 @@ const setupDatabase = async () => {
         id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(255) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
-        role ENUM('admin', 'user', 'kasir', 'guest', 'owner') DEFAULT 'user'
+        role ENUM('admin', 'user', 'kasir', 'guest', 'owner', 'pelanggan', 'penjual') DEFAULT 'user'
       );
     `;
 
@@ -109,27 +109,46 @@ const setupDatabase = async () => {
       );
     `;
 
-    const createOrdersTable = `
-      CREATE TABLE IF NOT EXISTS orders (
+    const createBannersTable = `
+      CREATE TABLE IF NOT EXISTS banners (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        customer_name VARCHAR(255) NOT NULL,
-        customer_address TEXT,
-        items JSON NOT NULL,
-        total DECIMAL(10, 2) NOT NULL,
-        status VARCHAR(50) NOT NULL DEFAULT 'pending', -- pending, accepted, rejected
+        title VARCHAR(255) NOT NULL,
+        subtitle VARCHAR(255),
+        image_url VARCHAR(255),
+        color_class VARCHAR(50) DEFAULT 'bg-green-600',
+        icon_name VARCHAR(50) DEFAULT 'Percent',
+        link_url VARCHAR(255),
+        is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `;
 
+    await connection.query(createNotesTable);
+    console.log('notes table is ready.');
+    await connection.query(createBannersTable);
+    console.log('banners table is ready.');
+
+    const createOrdersTable = `
+      CREATE TABLE IF NOT EXISTS orders(
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      customer_name VARCHAR(255) NOT NULL,
+      customer_address TEXT,
+      items JSON NOT NULL,
+      total DECIMAL(10, 2) NOT NULL,
+      status VARCHAR(50) NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    `;
+
     const createEmployeesTable = `
-      CREATE TABLE IF NOT EXISTS employees (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        position VARCHAR(255) NOT NULL,
-        avatar VARCHAR(255),
-        phone VARCHAR(255),
-        email VARCHAR(255)
-      );
+      CREATE TABLE IF NOT EXISTS employees(
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      position VARCHAR(255) NOT NULL,
+      avatar VARCHAR(255),
+      phone VARCHAR(255),
+      email VARCHAR(255)
+    );
     `;
 
     // Add role column if it doesn't exist and set default for existing users
@@ -169,7 +188,7 @@ const setupDatabase = async () => {
 
 
     const insertDefaultSettings = `
-      INSERT IGNORE INTO settings (\`key\`, \`value\`) VALUES
+      INSERT IGNORE INTO settings(\`key\`, \`value\`) VALUES
       ('cashier_dashboard_title', 'Dasbor Kasir');
     `;
     await connection.query(insertDefaultSettings);
@@ -740,10 +759,10 @@ const setupDatabase = async () => {
     } else {
       // If the column exists, modify it to the new ENUM type
       const alterRoleToEnum = `
-        ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'user', 'kasir', 'guest', 'owner') DEFAULT 'user';
+        ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'user', 'kasir', 'guest', 'owner', 'pelanggan', 'penjual') DEFAULT 'user';
       `;
       await connection.query(alterRoleToEnum);
-      console.log('Modified role column to ENUM type.');
+      console.log('Modified role column to ENUM type including penjual.');
     }
 
     // Check and add avatar_url column to users if it doesn't exist

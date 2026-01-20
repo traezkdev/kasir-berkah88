@@ -605,6 +605,7 @@ const Settings = () => {
             <SettingsCard icon="Lock" title="Sandi Master" description="Otoritas tindakan konfirmasi data" onClick={() => setActiveModal('masterPassword')} disabled={!isAdmin} />
             <SettingsCard icon="Monitor" title="UI Login & Daftar" description="Pilih tampilan halaman autentikasi" onClick={() => setActiveModal('authUiSelection')} disabled={!isAdmin} />
             <SettingsCard icon="Database" title="Manajemen Database" description="Backup dan restore data aplikasi" onClick={() => navigate('/settings/database')} disabled={!isAdmin} />
+            <SettingsCard icon="UserPlus" title="Registrasi User" description="Izinkan pendaftaran pengguna baru" onClick={() => setActiveModal('registration')} disabled={!isAdmin} />
 
             {/* Advanced & Social */}
             <SettingsCard icon="PiggyBank" title="Modal Awal" description="Atur saldo awal kas operasional" onClick={() => setActiveModal('initialCapital')} disabled={!isAdmin} />
@@ -854,6 +855,8 @@ const Settings = () => {
                         <option value="user">Pengguna</option>
                         <option value="kasir">Kasir</option>
                         <option value="admin">Admin</option>
+                        <option value="owner">Owner</option>
+                        <option value="pelanggan">Pelanggan</option>
                       </select>
                     </td>
                     <td className="p-3">

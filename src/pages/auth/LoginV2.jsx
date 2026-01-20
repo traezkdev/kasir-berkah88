@@ -32,6 +32,10 @@ const LoginV2 = () => {
                     navigate('/cashier-dashboard');
                 } else if (userRole === 'owner') {
                     navigate('/owner-dashboard');
+                } else if (userRole === 'pelanggan') {
+                    navigate('/customer/dashboard');
+                } else if (userRole === 'penjual') {
+                    navigate('/seller/dashboard');
                 } else {
                     navigate('/main-dashboard');
                 }
@@ -69,6 +73,10 @@ const LoginV2 = () => {
                     navigate('/cashier-dashboard');
                 } else if (userRole === 'owner') {
                     navigate('/owner-dashboard');
+                } else if (userRole === 'pelanggan') {
+                    navigate('/customer/dashboard');
+                } else if (userRole === 'penjual') {
+                    navigate('/seller/dashboard');
                 } else {
                     navigate('/main-dashboard');
                 }
