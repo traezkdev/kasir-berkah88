@@ -79,6 +79,7 @@ const AllLogs = () => {
 
             <div className={`${theme === 'admin' ? 'w-full px-4 mt-6' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-24 md:mt-4'}`}>
                 <BreadcrumbNavigation
+                    title="Log Aktivitas Sistem"
                     items={[
                         { label: 'Dashboard', href: theme === 'admin' ? '/main-dashboard' : '/owner-dashboard' },
                         { label: 'Semua Log', href: '/all-logs' }
@@ -86,82 +87,129 @@ const AllLogs = () => {
                 />
 
                 {/* Filters Panel */}
-                <div className={`mt-6 p-4 rounded-2xl ${theme === 'admin' ? 'bg-white shadow-sm border border-gray-100' : 'bg-card border border-border shadow-sm'}`}>
-                    <div className="flex items-center gap-2 mb-4 text-primary">
-                        <Icon name="Filter" className="w-5 h-5" />
-                        <h3 className="font-semibold text-lg">Filter Log</h3>
+                {/* Filters Panel with Enhanced UI */}
+                <div className={`mt-6 p-6 rounded-2xl border transition-all duration-300 ${theme === 'admin'
+                    ? 'bg-white shadow-sm border-gray-200'
+                    : 'bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg'
+                    }`}>
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className={`p-2 rounded-lg ${theme === 'admin' ? 'bg-indigo-50 text-indigo-600' : 'bg-primary/20 text-primary'}`}>
+                            <Icon name="Filter" className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h3 className={`font-bold text-lg ${theme === 'admin' ? 'text-gray-900' : 'text-text-primary'}`}>Filter Log Aktivitas</h3>
+                            <p className="text-xs text-muted-foreground mt-0.5">Saring data log berdasarkan kriteria tertentu</p>
+                        </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                            <label className="block text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Aksi / Kegiatan</label>
-                            <input
-                                type="text"
-                                name="action"
-                                value={filters.action}
-                                onChange={handleFilterChange}
-                                placeholder="Cari aksi..."
-                                className={`w-full px-4 py-2 rounded-xl text-sm border focus:ring-2 focus:ring-primary/20 ${theme === 'admin'
-                                    ? 'bg-gray-50 border-gray-200 focus:border-primary'
-                                    : 'bg-muted/50 border-border focus:border-primary text-foreground'
-                                    }`}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Tipe Objek</label>
-                            <select
-                                name="targetType"
-                                value={filters.targetType}
-                                onChange={handleFilterChange}
-                                className={`w-full px-4 py-2 rounded-xl text-sm border focus:ring-2 focus:ring-primary/20 ${theme === 'admin'
-                                    ? 'bg-gray-50 border-gray-200 focus:border-primary'
-                                    : 'bg-muted/50 border-border focus:border-primary text-foreground'
-                                    }`}
-                            >
-                                <option value="">Semua Tipe</option>
-                                <option value="transaction">Transaksi</option>
-                                <option value="expense">Pengeluaran</option>
-                                <option value="note">Catatan</option>
-                                <option value="user">User</option>
-                                <option value="system">Sistem</option>
-                                <option value="order">Pesanan</option>
-                                <option value="menu_item">Menu</option>
-                                <option value="raw_material">Bahan Baku</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Dari Tanggal</label>
-                            <input
-                                type="date"
-                                name="startDate"
-                                value={filters.startDate}
-                                onChange={handleFilterChange}
-                                className={`w-full px-4 py-2 rounded-xl text-sm border focus:ring-2 focus:ring-primary/20 ${theme === 'admin'
-                                    ? 'bg-gray-50 border-gray-200 focus:border-primary'
-                                    : 'bg-muted/50 border-border focus:border-primary text-foreground'
-                                    }`}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Sampai Tanggal</label>
-                            <div className="flex gap-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {/* Search Action */}
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">
+                                Pencarian Aksi
+                            </label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Icon name="Search" className={`w-4 h-4 ${theme === 'admin' ? 'text-gray-400 group-focus-within:text-indigo-500' : 'text-muted-foreground group-focus-within:text-primary'}`} />
+                                </div>
                                 <input
-                                    type="date"
-                                    name="endDate"
-                                    value={filters.endDate}
+                                    type="text"
+                                    name="action"
+                                    value={filters.action}
                                     onChange={handleFilterChange}
-                                    className={`w-full flex-grow px-4 py-2 rounded-xl text-sm border focus:ring-2 focus:ring-primary/20 ${theme === 'admin'
-                                        ? 'bg-gray-50 border-gray-200 focus:border-primary'
-                                        : 'bg-muted/50 border-border focus:border-primary text-foreground'
+                                    placeholder="Cari aksi (cth: login)..."
+                                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl text-sm border transition-all duration-200 focus:ring-2 focus:ring-offset-0 ${theme === 'admin'
+                                        ? 'bg-gray-50 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500/20'
+                                        : 'bg-background/50 border-border focus:border-primary focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/50'
                                         }`}
                                 />
+                            </div>
+                        </div>
+
+                        {/* Target Type Select */}
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">
+                                Tipe Objek
+                            </label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Icon name="Layers" className={`w-4 h-4 ${theme === 'admin' ? 'text-gray-400 group-focus-within:text-indigo-500' : 'text-muted-foreground group-focus-within:text-primary'}`} />
+                                </div>
+                                <select
+                                    name="targetType"
+                                    value={filters.targetType}
+                                    onChange={handleFilterChange}
+                                    className={`w-full pl-10 pr-10 py-2.5 rounded-xl text-sm border appearance-none transition-all duration-200 focus:ring-2 focus:ring-offset-0 ${theme === 'admin'
+                                        ? 'bg-gray-50 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500/20'
+                                        : 'bg-background/50 border-border focus:border-primary focus:ring-primary/20 text-foreground'
+                                        }`}
+                                >
+                                    <option value="">Semua Tipe</option>
+                                    <option value="transaction">Transaksi</option>
+                                    <option value="expense">Pengeluaran</option>
+                                    <option value="note">Catatan</option>
+                                    <option value="user">User</option>
+                                    <option value="system">Sistem</option>
+                                    <option value="order">Pesanan</option>
+                                    <option value="menu_item">Menu</option>
+                                    <option value="raw_material">Bahan Baku</option>
+                                </select>
+                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <Icon name="ChevronDown" className="w-4 h-4 text-muted-foreground" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Start Date */}
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">
+                                Dari Tanggal
+                            </label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Icon name="Calendar" className={`w-4 h-4 ${theme === 'admin' ? 'text-gray-400 group-focus-within:text-indigo-500' : 'text-muted-foreground group-focus-within:text-primary'}`} />
+                                </div>
+                                <input
+                                    type="date"
+                                    name="startDate"
+                                    value={filters.startDate}
+                                    onChange={handleFilterChange}
+                                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl text-sm border transition-all duration-200 focus:ring-2 focus:ring-offset-0 ${theme === 'admin'
+                                        ? 'bg-gray-50 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500/20'
+                                        : 'bg-background/50 border-border focus:border-primary focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/50'
+                                        }`}
+                                />
+                            </div>
+                        </div>
+
+                        {/* End Date & Reset */}
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">
+                                Sampai Tanggal
+                            </label>
+                            <div className="flex gap-2">
+                                <div className="relative group flex-grow">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Icon name="Calendar" className={`w-4 h-4 ${theme === 'admin' ? 'text-gray-400 group-focus-within:text-indigo-500' : 'text-muted-foreground group-focus-within:text-primary'}`} />
+                                    </div>
+                                    <input
+                                        type="date"
+                                        name="endDate"
+                                        value={filters.endDate}
+                                        onChange={handleFilterChange}
+                                        className={`w-full pl-10 pr-4 py-2.5 rounded-xl text-sm border transition-all duration-200 focus:ring-2 focus:ring-offset-0 ${theme === 'admin'
+                                            ? 'bg-gray-50 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500/20'
+                                            : 'bg-background/50 border-border focus:border-primary focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/50'
+                                            }`}
+                                    />
+                                </div>
                                 <button
                                     onClick={clearFilters}
-                                    className="p-2 rounded-xl border border-destructive/20 text-destructive hover:bg-destructive/10 transition-colors"
-                                    title="Hapus Filter"
+                                    className={`px-3 rounded-xl border transition-all duration-200 flex items-center justify-center hover:scale-105 active:scale-95 ${theme === 'admin'
+                                        ? 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
+                                        : 'border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20'
+                                        }`}
+                                    title="Reset Filter"
                                 >
                                     <Icon name="RotateCcw" className="w-5 h-5" />
                                 </button>
