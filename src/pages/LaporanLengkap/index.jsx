@@ -4,6 +4,8 @@ import { RingLoader } from 'react-spinners';
 import * as XLSX from 'xlsx';
 import { exportToPdf } from '../../utils/exportUtils'; // Correctly import the utility
 import { useTheme } from '../../contexts/ThemeContext';
+import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import Icon from '../../components/AppIcon';
 
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
@@ -349,6 +351,289 @@ const LaporanLengkap = ({ headerTitle }) => {
             <div className="p-4 text-red-500 bg-red-100 rounded-md">Error: {error}</div>
           ) : (
             <div className="space-y-8">
+              {/* Statistics Overview Section */}
+              <section className="mb-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg">
+                    <Icon name="BarChart3" className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-text-primary">Ringkasan Statistik</h2>
+                    <p className="text-sm text-text-secondary">Visualisasi data periode yang dipilih</p>
+                  </div>
+                </div>
+
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                  {/* Total Transaksi */}
+                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
+                        <Icon name="ShoppingCart" className="w-6 h-6" />
+                      </div>
+                      <div className="text-right">
+                        <p className="text-blue-100 text-xs font-medium uppercase tracking-wider">Total Transaksi</p>
+                        <h3 className="text-3xl font-bold mt-1">{laporanData?.transactions?.length || 0}</h3>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-blue-100 text-sm">
+                      <Icon name="TrendingUp" className="w-4 h-4" />
+                      <span>Semua metode pembayaran</span>
+                    </div>
+                  </div>
+
+                  {/* Total Pendapatan */}
+                  <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
+                        <Icon name="DollarSign" className="w-6 h-6" />
+                      </div>
+                      <div className="text-right">
+                        <p className="text-emerald-100 text-xs font-medium uppercase tracking-wider">Total Pendapatan</p>
+                        <h3 className="text-2xl font-bold mt-1">
+                          Rp {(laporanData?.transactions?.reduce((sum, t) => sum + parseFloat(t.total || 0), 0) || 0).toLocaleString()}
+                        </h3>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-emerald-100 text-sm">
+                      <Icon name="ArrowUpRight" className="w-4 h-4" />
+                      <span>Dari penjualan</span>
+                    </div>
+                  </div>
+
+                  {/* Total Pengeluaran */}
+                  <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
+                        <Icon name="Receipt" className="w-6 h-6" />
+                      </div>
+                      <div className="text-right">
+                        <p className="text-orange-100 text-xs font-medium uppercase tracking-wider">Total Pengeluaran</p>
+                        <h3 className="text-2xl font-bold mt-1">
+                          Rp {(laporanData?.expenses?.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0) || 0).toLocaleString()}
+                        </h3>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-orange-100 text-sm">
+                      <Icon name="ArrowDownRight" className="w-4 h-4" />
+                      <span>Operasional & lainnya</span>
+                    </div>
+                  </div>
+
+                  {/* Laba Bersih */}
+                  <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
+                        <Icon name="Wallet" className="w-6 h-6" />
+                      </div>
+                      <div className="text-right">
+                        <p className="text-purple-100 text-xs font-medium uppercase tracking-wider">Laba Bersih</p>
+                        <h3 className="text-2xl font-bold mt-1">
+                          Rp {((laporanData?.transactions?.reduce((sum, t) => sum + parseFloat(t.total || 0), 0) || 0) - (laporanData?.expenses?.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0) || 0)).toLocaleString()}
+                        </h3>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-purple-100 text-sm">
+                      <Icon name="TrendingUp" className="w-4 h-4" />
+                      <span>Pendapatan - Pengeluaran</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Charts Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                  {/* Payment Methods Distribution */}
+                  <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Icon name="PieChart" className="w-5 h-5 text-blue-600" />
+                      <h3 className="text-lg font-bold text-gray-900">Distribusi Metode Pembayaran</h3>
+                    </div>
+                    <div className="h-80">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={(() => {
+                              const paymentMethods = {};
+                              laporanData?.transactions?.forEach(t => {
+                                const method = t.payment_method || 'tunai';
+                                paymentMethods[method] = (paymentMethods[method] || 0) + 1;
+                              });
+                              const colors = {
+                                'tunai': '#3b82f6',
+                                'qris': '#10b981',
+                                'transfer': '#8b5cf6',
+                                'bon': '#f59e0b',
+                                'employee_meal': '#ef4444'
+                              };
+                              return Object.entries(paymentMethods).map(([name, value]) => ({
+                                name: name.charAt(0).toUpperCase() + name.slice(1),
+                                value,
+                                color: colors[name] || '#6b7280'
+                              }));
+                            })()}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                            outerRadius={100}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {(() => {
+                              const paymentMethods = {};
+                              laporanData?.transactions?.forEach(t => {
+                                const method = t.payment_method || 'tunai';
+                                paymentMethods[method] = (paymentMethods[method] || 0) + 1;
+                              });
+                              const colors = {
+                                'tunai': '#3b82f6',
+                                'qris': '#10b981',
+                                'transfer': '#8b5cf6',
+                                'bon': '#f59e0b',
+                                'employee_meal': '#ef4444'
+                              };
+                              return Object.entries(paymentMethods).map(([name], index) => (
+                                <Cell key={`cell-${index}`} fill={colors[name] || '#6b7280'} />
+                              ));
+                            })()}
+                          </Pie>
+                          <Tooltip formatter={(value) => [`${value} transaksi`, 'Jumlah']} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Top 5 Menu Items */}
+                  <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Icon name="TrendingUp" className="w-5 h-5 text-emerald-600" />
+                      <h3 className="text-lg font-bold text-gray-900">Top 5 Menu Terlaris</h3>
+                    </div>
+                    <div className="h-80">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={(() => {
+                            const menuSales = {};
+                            laporanData?.transactions?.forEach(t => {
+                              try {
+                                const items = typeof t.items === 'string' ? JSON.parse(t.items) : t.items;
+                                if (Array.isArray(items)) {
+                                  items.forEach(item => {
+                                    const name = item.name || 'Unknown';
+                                    menuSales[name] = (menuSales[name] || 0) + (item.quantity || 0);
+                                  });
+                                }
+                              } catch (e) { }
+                            });
+                            return Object.entries(menuSales)
+                              .sort((a, b) => b[1] - a[1])
+                              .slice(0, 5)
+                              .map(([name, quantity]) => ({ name, quantity }));
+                          })()}
+                          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                          <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                          <YAxis />
+                          <Tooltip formatter={(value) => [`${value} porsi`, 'Terjual']} />
+                          <Bar dataKey="quantity" fill="#10b981" radius={[8, 8, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Stats Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Stock Status */}
+                  <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Icon name="Package" className="w-5 h-5 text-purple-600" />
+                      <h3 className="text-lg font-bold text-gray-900">Status Stok</h3>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-blue-100 rounded-lg">
+                            <Icon name="UtensilsCrossed" className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600">Total Menu</p>
+                            <p className="text-2xl font-bold text-gray-900">{laporanData?.menuStock?.length || 0}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500">Stok Rendah</p>
+                          <p className="text-lg font-bold text-orange-600">
+                            {laporanData?.menuStock?.filter(m => m.stock <= 5).length || 0}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-emerald-100 rounded-lg">
+                            <Icon name="Leaf" className="w-5 h-5 text-emerald-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600">Bahan Mentah</p>
+                            <p className="text-2xl font-bold text-gray-900">{laporanData?.rawMaterialStock?.length || 0}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500">Perlu Restock</p>
+                          <p className="text-lg font-bold text-orange-600">
+                            {laporanData?.rawMaterialStock?.filter(r => parseFloat(r.current_stock) <= 10).length || 0}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Account Summary */}
+                  <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Icon name="Wallet" className="w-5 h-5 text-indigo-600" />
+                      <h3 className="text-lg font-bold text-gray-900">Ringkasan Akun</h3>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 bg-indigo-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-indigo-100 rounded-lg">
+                            <Icon name="Store" className="w-5 h-5 text-indigo-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600">Transaksi Lapak</p>
+                            <p className="text-2xl font-bold text-gray-900">{laporanData?.lapakAccountTransactions?.length || 0}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500">Total Mutasi</p>
+                          <p className="text-sm font-bold text-gray-700">
+                            Rp {(laporanData?.lapakAccountTransactions?.reduce((sum, t) => sum + Math.abs(parseFloat(t.amount || 0)), 0) || 0).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-purple-100 rounded-lg">
+                            <Icon name="User" className="w-5 h-5 text-purple-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600">Transaksi Owner</p>
+                            <p className="text-2xl font-bold text-gray-900">{laporanData?.ownerAccountTransactions?.length || 0}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500">Total Mutasi</p>
+                          <p className="text-sm font-bold text-gray-700">
+                            Rp {(laporanData?.ownerAccountTransactions?.reduce((sum, t) => sum + Math.abs(parseFloat(t.amount || 0)), 0) || 0).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
               <section>
                 <h2 className="text-xl font-semibold mb-3">Transaksi</h2>
                 <div className="overflow-x-auto bg-white rounded-lg shadow">

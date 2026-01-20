@@ -27,7 +27,8 @@ const {
 const app = express();
 
 // Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, 'uploads');
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -104,9 +105,14 @@ const storage = multer.diskStorage({
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB Limit
+        fileSize: 10 * 1024 * 1024 // Increased to 10MB Limit for large JSON
     },
     fileFilter: (req, file, cb) => {
+        // Special case for database restore endpoint
+        if (req.path === '/api/database/restore' || file.mimetype === 'application/json' || file.originalname.endsWith('.json')) {
+            return cb(null, true);
+        }
+
         const allowedTypes = /jpeg|jpg|png|webp|gif|svg|ico/;
         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = allowedTypes.test(file.mimetype);
@@ -114,7 +120,7 @@ const upload = multer({
         if (mimetype && extname) {
             return cb(null, true);
         } else {
-            cb(new Error('Hanya file gambar (jpg, png, webp, gif, svg, ico) yang diizinkan!'));
+            cb(new Error('Hanya file gambar (jpg, png, webp, gif, svg, ico) dan file JSON yang diizinkan!'));
         }
     }
 });
