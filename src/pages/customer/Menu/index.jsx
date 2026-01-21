@@ -3,12 +3,14 @@ import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import authFetch from '../../../utils/authFetch';
 import { useCart } from '../context/CartContext';
+import { useAppSettings } from '../../../contexts/AppSettingsContext';
 
 const CustomerMenu = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const { id } = useParams();
     const { addToCart, updateQuantity, getItemQuantity, getVariantQuantity, getCartId, cartTotal, cartCount } = useCart();
+    const { isOpen } = useAppSettings();
 
     const [menus, setMenus] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -164,6 +166,20 @@ const CustomerMenu = () => {
             {/* Spacer for Fixed Header */}
             <div className="h-32"></div>
 
+            {!isOpen && (
+                <div className="px-4 mt-2">
+                    <div className="bg-red-500/90 backdrop-blur-md text-white p-3 rounded-2xl flex items-center gap-3 shadow-lg border border-red-400/50 animate-pulse">
+                        <div className="bg-white/20 p-2 rounded-xl">
+                            <Icon name="XCircle" className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold">Toko Sedang Tutup</p>
+                            <p className="text-[10px] opacity-90 font-medium">Maaf, saat ini kami tidak menerima pesanan.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Menu List */}
             <div className="p-4 space-y-4">
                 {loading ? (
@@ -185,7 +201,11 @@ const CustomerMenu = () => {
                     menus.map(menu => {
                         const qty = getItemQuantity(menu.id);
                         return (
-                            <div key={menu.id} onClick={() => navigate(`/customer/menu/${menu.id}`)} className="flex gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm cursor-pointer">
+                            <div
+                                key={menu.id}
+                                onClick={() => isOpen && navigate(`/customer/menu/${menu.id}`)}
+                                className={`flex gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm transition-all ${!isOpen ? 'opacity-75 grayscale-[0.5] cursor-not-allowed' : 'hover:shadow-md cursor-pointer'}`}
+                            >
                                 <div className="w-24 h-24 bg-gray-100 rounded-lg shrink-0 overflow-hidden relative">
                                     {menu.image_url ? (
                                         <img src={`${import.meta.env.VITE_API_URL}${menu.image_url}`} alt={menu.name} className="w-full h-full object-cover" />
@@ -209,8 +229,9 @@ const CustomerMenu = () => {
                                         )}
                                         {qty === 0 && (
                                             <button
+                                                disabled={!isOpen}
                                                 onClick={(e) => { e.stopPropagation(); addToCart(menu); }}
-                                                className="bg-green-50 text-green-600 border border-green-200 px-3 py-1.5 rounded-full text-xs font-bold hover:bg-green-100 transition-colors"
+                                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${!isOpen ? 'bg-gray-100 text-gray-400 border-gray-200' : 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'}`}
                                             >
                                                 Tambah
                                             </button>
@@ -301,8 +322,8 @@ const CustomerMenu = () => {
                                     }}
                                     disabled={selectedItem.options && selectedItem.options.length > 0 && selectedOptions.length === 0}
                                     className={`w-full font-bold py-3.5 rounded-xl shadow-lg transition-all flex justify-between px-6 ${selectedItem.options && selectedItem.options.length > 0 && selectedOptions.length === 0
-                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'
-                                            : 'bg-green-600 text-white shadow-green-200 hover:bg-green-700 active:scale-95'
+                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'
+                                        : 'bg-green-600 text-white shadow-green-200 hover:bg-green-700 active:scale-95'
                                         }`}
                                 >
                                     <span>Tambah ke Keranjang</span>

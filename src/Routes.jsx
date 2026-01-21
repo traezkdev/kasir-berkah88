@@ -60,6 +60,8 @@ import SellerLayout from './pages/customer/components/SellerLayout';
 import SellerDashboard from './pages/customer/Dashboard/SellerDashboard';
 import SellerBanners from './pages/customer/Dashboard/SellerBanners';
 import SellerMenuManagement from './pages/customer/Dashboard/SellerMenuManagement';
+import SellerTransactionHistory from './pages/customer/Dashboard/SellerTransactionHistory';
+import SellerReceipt from './pages/customer/Dashboard/SellerReceipt';
 
 // ... (existing imports)
 
@@ -217,7 +219,7 @@ const AppRoutes = () => {
       >
         <Route path="/lapak-deposit" element={<LapakDeposit />} />
       </Route>
-      <Route path="/receipt" element={<ProtectedRoute allowedRoles={['admin', 'kasir', 'user']}><ReceiptPage /></ProtectedRoute>} />
+      <Route path="/receipt" element={<ProtectedRoute allowedRoles={['admin', 'kasir', 'user', 'penjual', 'owner']}><ReceiptPage /></ProtectedRoute>} />
 
       {/* Shared Admin/Owner Routes */}
       <Route
@@ -273,6 +275,8 @@ const AppRoutes = () => {
         <Route path="/seller/dashboard" element={<SellerDashboard />} />
         <Route path="/seller/banners" element={<SellerBanners />} />
         <Route path="/seller/menu-management" element={<SellerMenuManagement />} />
+        <Route path="/seller/transaction-history" element={<SellerTransactionHistory />} />
+        <Route path="/seller/receipt" element={<SellerReceipt />} />
       </Route>
 
       {/* Catch all other routes */}

@@ -5,6 +5,7 @@ import authFetch from '../../../utils/authFetch';
 import SellerOrderCard from './components/SellerOrderCard';
 import ConfirmationModal from '../../../components/ui/ConfirmationModal';
 import { toast } from 'react-hot-toast';
+import { useAppSettings } from '../../../contexts/AppSettingsContext';
 
 const SellerDashboard = () => {
     const navigate = useNavigate();
@@ -14,12 +15,24 @@ const SellerDashboard = () => {
         totalItems: 0,
         categories: 0
     });
+    const { isOpen, updateShopStatus } = useAppSettings();
     const [featuredMenus, setFeaturedMenus] = useState([]);
     const [pendingOrders, setPendingOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [userName, setUserName] = useState('Penjual');
     const [scrolled, setScrolled] = useState(false);
     const [modalState, setModalState] = useState({ isOpen: false, orderId: null, action: null, title: '', message: '', isDestructive: false });
+
+    const toggleShopStatus = async () => {
+        const newStatus = !isOpen;
+        const success = await updateShopStatus(newStatus);
+
+        if (success) {
+            toast.success(`Toko berhasil ${newStatus ? 'dibuka' : 'ditutup'}`);
+        } else {
+            toast.error('Gagal mengubah status toko');
+        }
+    };
 
     const fetchOrders = async () => {
         try {
@@ -108,7 +121,16 @@ const SellerDashboard = () => {
 
         fetchAllData();
         fetchOrders();
-        return () => window.removeEventListener('scroll', handleScroll);
+
+        // Polling for real-time updates (every 5 seconds)
+        const intervalId = setInterval(() => {
+            fetchOrders();
+        }, 5000);
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            clearInterval(intervalId);
+        };
     }, []);
 
     const formatCurrency = (val) => {
@@ -129,6 +151,16 @@ const SellerDashboard = () => {
                         <p className="text-gray-500 font-medium">Ringkasan aktivitas tokomu hari ini.</p>
                     </div>
                     <div className="relative z-10 flex gap-4">
+                        <button
+                            onClick={toggleShopStatus}
+                            className={`px-6 py-3 font-bold rounded-xl shadow-lg transition-all flex items-center gap-2 ${isOpen
+                                ? 'bg-red-50 text-red-600 border border-red-100 hover:bg-red-100'
+                                : 'bg-green-50 text-green-600 border border-green-100 hover:bg-green-100'
+                                }`}
+                        >
+                            <Icon name={isOpen ? "XCircle" : "PlayCircle"} size={18} />
+                            {isOpen ? "Tutup Toko" : "Buka Toko"}
+                        </button>
                         <button onClick={() => navigate('/seller/menu-management')} className="px-6 py-3 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl shadow-sm hover:bg-gray-50 transition-all flex items-center gap-2">
                             <Icon name="PlusCircle" size={18} /> Tambah Menu
                         </button>
@@ -251,13 +283,25 @@ const SellerDashboard = () => {
                             <p className="text-blue-100/80 font-medium mt-1">Siap untuk kelola tokomu hari ini?</p>
                         </div>
 
-                        <button
-                            onClick={() => window.open('/customer/dashboard', '_blank')}
-                            className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-5 py-2.5 rounded-2xl font-bold flex items-center gap-2 transition-all self-start md:self-center"
-                        >
-                            <Icon name="Eye" size={18} />
-                            Pratinjau Toko
-                        </button>
+                        <div className="flex gap-2 self-start md:self-center">
+                            <button
+                                onClick={toggleShopStatus}
+                                className={`backdrop-blur-md border px-4 py-2.5 rounded-2xl font-bold flex items-center gap-2 transition-all ${isOpen
+                                    ? 'bg-red-500/20 border-red-500/30 text-white hover:bg-red-500/30'
+                                    : 'bg-green-500/20 border-green-500/30 text-white hover:bg-green-500/30'
+                                    }`}
+                            >
+                                <Icon name={isOpen ? "XCircle" : "PlayCircle"} size={18} />
+                                {isOpen ? "Tutup" : "Buka"}
+                            </button>
+                            <button
+                                onClick={() => window.open('/customer/dashboard', '_blank')}
+                                className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-5 py-2.5 rounded-2xl font-bold flex items-center gap-2 transition-all"
+                            >
+                                <Icon name="Eye" size={18} />
+                                Pratinjau
+                            </button>
+                        </div>
                     </div>
 
                     {/* Main Stats Card (Floating) - Added z-20 to stay on top */}
@@ -265,8 +309,10 @@ const SellerDashboard = () => {
                         <div className="flex flex-col">
                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Status Toko</span>
                             <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                <span className="text-lg font-black text-gray-800 tracking-tight">Online & Aktif</span>
+                                <div className={`w-2 h-2 rounded-full ${isOpen ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                                <span className={`text-lg font-black tracking-tight ${isOpen ? 'text-gray-800' : 'text-red-500'}`}>
+                                    {isOpen ? 'Online & Aktif' : 'Tutup / Istirahat'}
+                                </span>
                             </div>
                         </div>
                         <div className="h-10 w-[1px] bg-gray-100 mx-2"></div>
@@ -295,7 +341,7 @@ const SellerDashboard = () => {
                                 { label: 'Kelola Banner', icon: 'Image', color: 'bg-blue-50 text-blue-600', path: '/seller/banners' },
                                 { label: 'Tambah Menu', icon: 'PlusCircle', color: 'bg-green-50 text-green-600', path: '/seller/menu-management' },
                                 { label: 'Kategori', icon: 'LayoutGrid', color: 'bg-indigo-50 text-indigo-600', path: '/seller/menu-management' },
-                                { label: 'Statistik', icon: 'BarChart3', color: 'bg-purple-50 text-purple-600', path: '/dashboard-v2' }
+                                { label: 'Riwayat', icon: 'History', color: 'bg-purple-50 text-purple-600', path: '/seller/transaction-history' }
                             ].map((action, i) => (
                                 <button
                                     key={i}

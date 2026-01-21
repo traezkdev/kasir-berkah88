@@ -5,18 +5,26 @@ const ThemeContext = createContext();
 export const useTheme = () => useContext(ThemeContext);
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(() => {
+  const [storedTheme, setStoredTheme] = useState(() => {
     const savedTheme = localStorage.getItem('app-theme');
     return savedTheme === 'admin' ? 'admin' : 'default';
   });
+
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   const [appStyle, setAppStyle] = useState(() => {
     return localStorage.getItem('app-style') || 'clean';
   });
 
   useEffect(() => {
-    localStorage.setItem('app-theme', theme);
-  }, [theme]);
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('app-theme', storedTheme);
+  }, [storedTheme]);
 
   useEffect(() => {
     localStorage.setItem('app-style', appStyle);
@@ -28,15 +36,20 @@ export const ThemeProvider = ({ children }) => {
   }, [appStyle]);
 
   const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'default' ? 'admin' : 'default');
+    setStoredTheme(prevTheme => prevTheme === 'default' ? 'admin' : 'default');
   };
+
+  // Determine effective theme: always 'default' on mobile
+  const isMobile = windowWidth < 1024;
+  const theme = isMobile ? 'default' : storedTheme;
 
   const value = {
     theme,
     toggleTheme,
-    setTheme,
+    setTheme: setStoredTheme,
     appStyle,
     setAppStyle,
+    isMobile,
   };
 
   return (

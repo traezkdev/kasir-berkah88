@@ -90,7 +90,12 @@ app.use((err, req, res, next) => {
     next();
 });
 
-app.use('/public/uploads', express.static(path.join(__dirname, 'public/uploads')));
+app.use('/public/uploads', express.static(path.join(__dirname, 'public/uploads'), {
+    setHeaders: (res) => {
+        res.set('Access-Control-Allow-Origin', '*');
+        res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    }
+}));
 
 // Multer storage configuration
 const storage = multer.diskStorage({
@@ -1102,15 +1107,24 @@ app.put("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penjual'
     try {
         const { id } = req.params;
         let bannerData;
-        if (req.file) {
-            bannerData = JSON.parse(req.body.data);
+
+        // Use same logic as POST for data parsing
+        if (req.body.data) {
+            try {
+                bannerData = typeof req.body.data === 'string' ? JSON.parse(req.body.data) : req.body.data;
+            } catch (err) {
+                console.error("Gagal parse req.body.data in PUT:", err);
+                bannerData = req.body;
+            }
         } else {
             bannerData = req.body;
         }
 
         const { title, subtitle, color_class, icon_name, link_url, is_active } = bannerData;
+        const final_is_active = is_active !== undefined ? (is_active ? 1 : 0) : 1;
+
         let sql = 'UPDATE banners SET title = ?, subtitle = ?, color_class = ?, icon_name = ?, link_url = ?, is_active = ?';
-        let params = [title, subtitle, color_class, icon_name, link_url, is_active];
+        let params = [title, subtitle || '', color_class, icon_name, link_url || '', final_is_active];
 
         if (req.file) {
             const image_url = `/public/uploads/${req.file.filename}`;
@@ -1122,8 +1136,12 @@ app.put("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penjual'
         params.push(id);
 
         await db.query(sql, params);
-        res.json({ "message": "success" });
+        res.json({
+            "message": "success",
+            "data": { id, ...bannerData, is_active: final_is_active }
+        });
     } catch (err) {
+        console.error("Error updating banner:", err);
         res.status(400).json({ "error": err.message });
     }
 });
@@ -1512,7 +1530,7 @@ app.put('/api/settings/ppn', authenticateToken, authorizeRoles('admin'), async (
 // Get restaurant settings (public)
 app.get('/api/restaurant-settings', async (req, res) => {
     try {
-        const sql = "SELECT restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert FROM app_settings ORDER BY id LIMIT 1";
+        const sql = "SELECT restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open FROM app_settings ORDER BY id LIMIT 1";
         const [rows] = await db.query(sql);
         if (rows.length > 0) {
             res.json({
@@ -1528,7 +1546,8 @@ app.get('/api/restaurant-settings', async (req, res) => {
                     restaurant_slogan: 'Aplikasi kasir modern cepat dan keren',
                     restaurant_url: 'www.berkah88.id',
                     owner_phone: null,
-                    show_stock_alert: 1
+                    show_stock_alert: 1,
+                    is_open: 1
                 }
             });
         }
@@ -1540,26 +1559,50 @@ app.get('/api/restaurant-settings', async (req, res) => {
 // Update restaurant settings (admin only)
 app.put('/api/restaurant-settings', authenticateToken, authorizeRoles('admin'), async (req, res) => {
     try {
-        const { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert } = req.body;
+        const { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open } = req.body;
         if (!restaurant_name || !restaurant_slogan) {
             return res.status(400).json({ "error": "Restaurant name and slogan are required." });
         }
 
-        const sql = `UPDATE app_settings SET restaurant_name = ?, restaurant_slogan = ?, restaurant_url = ?, owner_phone = ?, show_stock_alert = ? WHERE id = (SELECT id FROM (SELECT id FROM app_settings ORDER BY id LIMIT 1) as t)`;
-        const params = [restaurant_name, restaurant_slogan, restaurant_url || 'www.berkah88.id', owner_phone || null, show_stock_alert !== undefined ? show_stock_alert : 1];
+        const sql = `UPDATE app_settings SET restaurant_name = ?, restaurant_slogan = ?, restaurant_url = ?, owner_phone = ?, show_stock_alert = ?, is_open = ? WHERE id = (SELECT id FROM (SELECT id FROM app_settings ORDER BY id LIMIT 1) as t)`;
+        const params = [
+            restaurant_name,
+            restaurant_slogan,
+            restaurant_url || 'www.berkah88.id',
+            owner_phone || null,
+            show_stock_alert !== undefined ? show_stock_alert : 1,
+            is_open !== undefined ? is_open : 1
+        ];
         const [result] = await db.query(sql, params);
 
         if (result.affectedRows === 0) {
             // If no rows were affected, it might mean no settings exist yet. Insert them.
-            const insertSql = 'INSERT INTO app_settings (restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, og_title) VALUES (?, ?, ?, ?, ?, ?)';
+            const insertSql = 'INSERT INTO app_settings (restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, og_title) VALUES (?, ?, ?, ?, ?, ?, ?)';
             await db.query(insertSql, [...params, 'Kasir Berkah 88']);
-            res.json({ message: "Restaurant settings inserted successfully!", data: { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert } });
+            res.json({ message: "Restaurant settings inserted successfully!", data: { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open } });
         } else {
-            res.json({ message: "Restaurant settings updated successfully!", data: { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert } });
+            res.json({ message: "Restaurant settings updated successfully!", data: { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open } });
         }
 
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// Toggle Shop Open/Close status (admin or penjual)
+app.patch('/api/restaurant-settings/status', authenticateToken, authorizeRoles('admin', 'penjual'), async (req, res) => {
+    try {
+        const { is_open } = req.body;
+        if (is_open === undefined) {
+            return res.status(400).json({ error: "is_open status is required" });
+        }
+
+        const sql = `UPDATE app_settings SET is_open = ? WHERE id = (SELECT id FROM (SELECT id FROM app_settings ORDER BY id LIMIT 1) as t)`;
+        await db.query(sql, [is_open ? 1 : 0]);
+
+        res.json({ message: `Shop successfully ${is_open ? 'opened' : 'closed'}`, data: { is_open } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -1615,7 +1658,7 @@ app.post('/api/app-settings', authenticateToken, authorizeRoles('admin'), upload
 // --- Transaction Endpoints ---
 
 // Get all transactions with pagination
-app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'owner'), async (req, res, next) => {
+app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'owner', 'penjual'), async (req, res, next) => {
     try {
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 20;
@@ -1701,7 +1744,7 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
 });
 
 // Get all transactions without pagination (for all-time metrics)
-app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'owner'), async (req, res, next) => {
+app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'owner', 'penjual'), async (req, res, next) => {
     try {
         const { startDate, endDate, paymentMethod } = req.query; // Extract startDate and endDate and paymentMethod
 
@@ -1773,7 +1816,7 @@ app.get("/api/transactions/all", authenticateToken, authorizeRoles('user', 'admi
 });
 
 // Get daily transaction recap
-app.get("/api/transactions/daily-recap", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'owner'), async (req, res) => {
+app.get("/api/transactions/daily-recap", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'owner', 'penjual'), async (req, res) => {
     try {
         const { date } = req.query;
         if (!date) {
@@ -2955,7 +2998,7 @@ app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user', 'pelan
         const status = req.query.status;
         const offset = (page - 1) * limit;
 
-        const isManagement = ['admin', 'user'].includes(req.user.role);
+        const isManagement = ['admin', 'user', 'kasir', 'penjual', 'owner'].includes(req.user.role);
         let whereClauses = [];
         let queryParams = [];
 
@@ -3586,7 +3629,7 @@ app.get("/api/settings", async (req, res) => {
 });
 
 // Get all settings (protected)
-app.get("/api/all-settings", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'owner', 'kasir'), async (req, res) => {
+app.get("/api/all-settings", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'owner', 'kasir', 'penjual', 'pelanggan'), async (req, res) => {
     try {
         const sql = "SELECT `key`, `value` FROM settings";
         const [rows] = await db.query(sql);
@@ -3916,7 +3959,7 @@ app.put("/api/user/profile", authenticateToken, async (req, res) => {
 });
 
 // Update Username
-app.put("/api/user/profile/username", authenticateToken, authorizeRoles('user', 'admin', 'pelanggan'), async (req, res) => {
+app.put("/api/user/profile/username", authenticateToken, authorizeRoles('user', 'admin', 'pelanggan', 'kasir', 'penjual', 'owner'), async (req, res) => {
     try {
         const { username } = req.body;
         if (!username) {
@@ -3944,7 +3987,7 @@ app.put("/api/user/profile/username", authenticateToken, authorizeRoles('user', 
 });
 
 // Change Password
-app.put("/api/user/profile/password", authenticateToken, authorizeRoles('user', 'admin', 'pelanggan'), async (req, res) => {
+app.put("/api/user/profile/password", authenticateToken, authorizeRoles('user', 'admin', 'pelanggan', 'kasir', 'penjual', 'owner'), async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;
         if (!currentPassword || !newPassword) {
@@ -3980,7 +4023,7 @@ app.put("/api/user/profile/password", authenticateToken, authorizeRoles('user', 
 });
 
 // Upload User Avatar
-app.post("/api/user/profile/avatar", authenticateToken, authorizeRoles('user', 'admin', 'pelanggan'), upload.single('avatar'), async (req, res) => {
+app.post("/api/user/profile/avatar", authenticateToken, authorizeRoles('user', 'admin', 'pelanggan', 'kasir', 'penjual', 'owner'), upload.single('avatar'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: "No avatar file uploaded." });
@@ -4000,7 +4043,7 @@ app.post("/api/user/profile/avatar", authenticateToken, authorizeRoles('user', '
 });
 
 // Get User App Mode
-app.get("/api/user/app-mode", authenticateToken, authorizeRoles('user', 'admin', 'pelanggan'), async (req, res) => {
+app.get("/api/user/app-mode", authenticateToken, authorizeRoles('user', 'admin', 'pelanggan', 'kasir', 'penjual', 'owner'), async (req, res) => {
     try {
         const sql = 'SELECT app_mode FROM users WHERE id = ?';
         const [rows] = await db.query(sql, [req.user.userId]);

@@ -1155,6 +1155,20 @@ const setupDatabase = async () => {
       console.log('Added restaurant_url column to app_settings table.');
     }
 
+    // Check and add is_open column to app_settings if it doesn't exist
+    const checkIsOpenColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'app_settings' AND COLUMN_NAME = 'is_open';
+    `;
+    const addIsOpenColumn = `
+      ALTER TABLE app_settings ADD COLUMN is_open TINYINT(1) DEFAULT 1;
+    `;
+    const [isOpenRows] = await connection.query(checkIsOpenColumn);
+    if (isOpenRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addIsOpenColumn);
+      console.log('Added is_open column to app_settings table.');
+    }
+
     // --- Optimasi: Tambahkan Indeks untuk Peningkatan Performa ---
     const addIndexIfNotExists = async (connection, tableName, indexName, columns) => {
       const checkIndexQuery = `

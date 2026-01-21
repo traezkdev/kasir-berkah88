@@ -25,6 +25,7 @@ const SellerLayout = () => {
         { name: 'Dashboard', path: '/seller/dashboard', icon: 'LayoutDashboard', label: 'Dashboard' },
         { name: 'Banner', path: '/seller/banners', icon: 'Image', label: 'Banners' },
         { name: 'Menu', path: '/seller/menu-management', icon: 'Utensils', label: 'Katalog' },
+        { name: 'Riwayat', path: '/seller/transaction-history', icon: 'History', label: 'Transaksi' },
     ];
 
     const handleLogout = () => {
@@ -101,55 +102,56 @@ const SellerLayout = () => {
             </main>
 
             {/* Bottom Navigation Mobile (Native App Style) */}
-            <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-gray-100 z-50 px-6 pb-safe">
-                <div className="flex justify-around items-center h-20">
-                    {menuItems.map((item) => {
-                        const isActive = currentPath === item.path;
-                        return (
+            {currentPath !== '/seller/receipt' && (
+                <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-gray-100 z-50 px-6 pb-safe">
+                    <div className="flex justify-around items-center h-20">
+                        {menuItems.map((item) => {
+                            const isActive = currentPath === item.path;
+                            return (
+                                <Link
+                                    key={item.path}
+                                    to={item.path}
+                                    className={`flex flex-col items-center justify-center flex-1 transition-all duration-300 ${isActive ? 'text-blue-600' : 'text-gray-400'
+                                        }`}
+                                >
+                                    <div className={`relative px-6 py-1.5 rounded-2xl transition-all duration-500 ${isActive ? 'bg-blue-50 scale-110' : ''
+                                        }`}>
+                                        <Icon
+                                            name={item.icon}
+                                            className={`w-6 h-6 transition-all duration-300 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'
+                                                }`}
+                                        />
+                                        {isActive && (
+                                            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full animate-pulse"></div>
+                                        )}
+                                    </div>
+                                    <span className={`text-[10px] font-black mt-1 uppercase tracking-tighter transition-all duration-300 ${isActive ? 'opacity-100 translate-y-0' : 'opacity-40 translate-y-0.5'
+                                        }`}>
+                                        {item.label}
+                                    </span>
+                                </Link>
+                            );
+                        })}
+
+                        {/* Tambahan Menu Admin untuk Mobile */}
+                        {userRole === 'admin' && (
                             <Link
-                                key={item.path}
-                                to={item.path}
-                                className={`flex flex-col items-center justify-center flex-1 transition-all duration-300 ${isActive ? 'text-blue-600' : 'text-gray-400'
-                                    }`}
+                                to="/main-dashboard"
+                                className="flex flex-col items-center justify-center flex-1 text-indigo-600 transition-all active:scale-95 translate-y-[-2px]"
                             >
-                                <div className={`relative px-6 py-1.5 rounded-2xl transition-all duration-500 ${isActive ? 'bg-blue-50 scale-110' : ''
-                                    }`}>
-                                    <Icon
-                                        name={item.icon}
-                                        className={`w-6 h-6 transition-all duration-300 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'
-                                            }`}
-                                    />
-                                    {isActive && (
-                                        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full animate-pulse"></div>
-                                    )}
+                                <div className="relative px-6 py-1.5 rounded-2xl bg-indigo-50 border border-indigo-100 shadow-sm">
+                                    <Icon name="ArrowLeft" className="w-6 h-6" />
                                 </div>
-                                <span className={`text-[10px] font-black mt-1 uppercase tracking-tighter transition-all duration-300 ${isActive ? 'opacity-100 translate-y-0' : 'opacity-40 translate-y-0.5'
-                                    }`}>
-                                    {item.label}
+                                <span className="text-[10px] font-black mt-1 uppercase tracking-tighter">
+                                    Admin
                                 </span>
                             </Link>
-                        );
-                    })}
-
-                    {/* Tambahan Menu Admin untuk Mobile */}
-                    {userRole === 'admin' && (
-                        <Link
-                            to="/main-dashboard"
-                            className="flex flex-col items-center justify-center flex-1 text-indigo-600 transition-all active:scale-95 translate-y-[-2px]"
-                        >
-                            <div className="relative px-6 py-1.5 rounded-2xl bg-indigo-50 border border-indigo-100 shadow-sm">
-                                <Icon name="ArrowLeft" className="w-6 h-6" />
-                            </div>
-                            <span className="text-[10px] font-black mt-1 uppercase tracking-tighter">
-                                Admin
-                            </span>
-                        </Link>
-                    )}
-                </div>
-            </nav>
+                        )}
+                    </div>
+                </nav>
+            )}
         </div>
     );
 };
 
 export default SellerLayout;
-

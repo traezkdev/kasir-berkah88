@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import authFetch from '../../../utils/authFetch';
+import { useAppSettings } from '../../../contexts/AppSettingsContext';
 
 const CustomerDashboard = () => {
     const navigate = useNavigate();
@@ -9,6 +10,7 @@ const CustomerDashboard = () => {
     const [categories, setCategories] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [userName, setUserName] = useState('Pelanggan');
+    const { isOpen } = useAppSettings();
 
     const [banners, setBanners] = useState([]);
 
@@ -46,7 +48,6 @@ const CustomerDashboard = () => {
                 const menuRes = await authFetch(`${import.meta.env.VITE_API_URL}/api/menu-items?limit=6`);
                 const menuData = await menuRes.json();
                 if (menuData.data) setMenus(menuData.data);
-
             } catch (error) {
                 console.error("Error fetching dashboard data:", error);
             } finally {
@@ -94,6 +95,20 @@ const CustomerDashboard = () => {
                         <Icon name="Bell" className="w-5 h-5 text-white" />
                     </Link>
                 </div>
+
+                {!isOpen && (
+                    <div className="bg-red-500/90 backdrop-blur-md text-white p-3 rounded-2xl mb-4 flex items-center justify-between shadow-lg border border-red-400/50 animate-pulse">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-white/20 p-2 rounded-xl">
+                                <Icon name="XCircle" className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold">Maaf, Toko Sedang Tutup</p>
+                                <p className="text-[10px] opacity-90 font-medium">Kamu tetap bisa melihat menu, tapi belum bisa pesan.</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Search Bar */}
                 <div onClick={() => navigate('/customer/menu')} className="bg-white rounded-full py-3 px-5 flex items-center gap-3 shadow-md cursor-pointer hover:scale-[1.02] transition-transform">
@@ -200,7 +215,11 @@ const CustomerDashboard = () => {
                 ) : (
                     <div className="grid grid-cols-2 gap-4">
                         {menus.map((menu) => (
-                            <div key={menu.id} onClick={() => navigate(`/customer/menu/${menu.id}`)} className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col h-full">
+                            <div
+                                key={menu.id}
+                                onClick={() => isOpen && navigate(`/customer/menu/${menu.id}`)}
+                                className={`bg-white p-3 rounded-2xl border border-gray-100 shadow-sm transition-all flex flex-col h-full ${!isOpen ? 'opacity-75 grayscale-[0.5] cursor-not-allowed' : 'hover:shadow-md cursor-pointer'}`}
+                            >
                                 <div className="aspect-square bg-gray-100 rounded-xl mb-3 overflow-hidden relative">
                                     {menu.image_url ? (
                                         <img src={`${import.meta.env.VITE_API_URL}${menu.image_url}`} alt={menu.name} className="w-full h-full object-cover" />
@@ -210,7 +229,10 @@ const CustomerDashboard = () => {
                                         </div>
                                     )}
                                     {/* Add Button Overlay */}
-                                    <button className="absolute bottom-2 right-2 bg-white rounded-full p-2 shadow-sm border border-gray-100 active:scale-95 transition-transform">
+                                    <button
+                                        disabled={!isOpen}
+                                        className={`absolute bottom-2 right-2 bg-white rounded-full p-2 shadow-sm border border-gray-100 transition-transform ${!isOpen ? 'opacity-50' : 'active:scale-95'}`}
+                                    >
                                         <Icon name="Plus" className="w-4 h-4 text-green-600" />
                                     </button>
                                 </div>

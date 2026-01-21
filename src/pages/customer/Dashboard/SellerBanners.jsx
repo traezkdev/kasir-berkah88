@@ -61,10 +61,10 @@ const SellerBanners = () => {
         if (banner) {
             setEditingBanner(banner);
             setFormData({
-                title: banner.title,
-                subtitle: banner.subtitle,
-                color_class: banner.color_class,
-                icon_name: banner.icon_name,
+                title: banner.title || '',
+                subtitle: banner.subtitle || '',
+                color_class: banner.color_class || 'bg-indigo-600',
+                icon_name: banner.icon_name || 'Percent',
                 link_url: banner.link_url || '',
                 is_active: banner.is_active === 1 || banner.is_active === true
             });
@@ -356,35 +356,40 @@ const SellerBanners = () => {
                                         <span className="font-bold text-gray-800">Status Aktifkan</span>
                                         <span className="text-[10px] text-gray-400 font-medium">Tampilkan langsung ke pelanggan</span>
                                     </div>
-                                    <label className="relative inline-flex items-center cursor-pointer">
+                                    <div className="relative inline-flex items-center cursor-pointer">
                                         <input
+                                            id="banner-status-toggle"
                                             type="checkbox"
-                                            checked={formData.is_active}
+                                            checked={!!formData.is_active}
                                             onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                                             className="sr-only peer"
                                         />
-                                        <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
-                                    </label>
+                                        <label
+                                            htmlFor="banner-status-toggle"
+                                            className="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600 transition-colors cursor-pointer"
+                                        ></label>
+                                    </div>
+                                </div>
+
+                                {/* Modal Footer - Moved inside form or handled via form id */}
+                                <div className="pt-6 mt-6 border-t border-gray-100 flex gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsModalOpen(false)}
+                                        className="flex-1 py-4 px-6 rounded-2xl bg-gray-50 text-gray-500 font-bold hover:bg-gray-100 transition-all"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isSaving}
+                                        className="flex-[2] py-4 px-6 rounded-2xl bg-blue-600 text-white font-black shadow-xl shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                    >
+                                        {isSaving ? 'Memproses...' : (editingBanner ? 'Simpan Update' : 'Terbitkan Sekarang')}
+                                        {!isSaving && <Icon name="Check" size={20} />}
+                                    </button>
                                 </div>
                             </form>
-                        </div>
-
-                        {/* Modal Footer */}
-                        <div className="px-8 py-6 bg-white border-t border-gray-50 flex gap-4">
-                            <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="flex-1 py-4 px-6 rounded-2xl bg-gray-50 text-gray-500 font-bold hover:bg-gray-100 transition-all"
-                            >
-                                Batal
-                            </button>
-                            <button
-                                onClick={handleSubmit}
-                                disabled={isSaving}
-                                className="flex-[2] py-4 px-6 rounded-2xl bg-blue-600 text-white font-black shadow-xl shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                            >
-                                {isSaving ? 'Memproses...' : (editingBanner ? 'Simpan Update' : 'Terbitkan Sekarang')}
-                                {!isSaving && <Icon name="Check" size={20} />}
-                            </button>
                         </div>
                     </div>
                 </div>

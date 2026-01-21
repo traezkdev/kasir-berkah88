@@ -11,6 +11,7 @@ export const AppSettingsProvider = ({ children }) => {
   const [appMode, setAppMode] = useState('full'); // Default: full mode
   const [authUiVersion, setAuthUiVersion] = useState('1'); // Default: UI 1
   const [isLoadingMode, setIsLoadingMode] = useState(true);
+  const [isOpen, setIsOpen] = useState(true);
   const apiUrl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
@@ -68,6 +69,13 @@ export const AppSettingsProvider = ({ children }) => {
         if (response.ok && data.data) {
           if (data.data.auth_ui_version) setAuthUiVersion(data.data.auth_ui_version);
         }
+
+        // Fetch Restaurant Settings (Public)
+        const res2 = await fetch(`${apiUrl}/api/restaurant-settings`);
+        const data2 = await res2.json();
+        if (res2.ok && data2.data) {
+          setIsOpen(!!data2.data.is_open);
+        }
       } catch (error) {
         console.error('Error fetching public settings:', error);
       }
@@ -108,6 +116,25 @@ export const AppSettingsProvider = ({ children }) => {
     isLoadingMode,
     toggleAppMode,
     setAuthUiVersion,
+    isOpen,
+    setIsOpen,
+    updateShopStatus: async (newStatus) => {
+      try {
+        const response = await authFetch(`${apiUrl}/api/restaurant-settings/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_open: newStatus }),
+        });
+        if (response.ok) {
+          setIsOpen(newStatus);
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error('Error updating shop status:', error);
+        return false;
+      }
+    }
   };
 
   return (
