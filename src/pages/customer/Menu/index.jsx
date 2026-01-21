@@ -230,7 +230,7 @@ const CustomerMenu = () => {
                                         {qty === 0 && (
                                             <button
                                                 disabled={!isOpen}
-                                                onClick={(e) => { e.stopPropagation(); addToCart(menu); }}
+                                                onClick={(e) => { e.stopPropagation(); navigate(`/customer/menu/${menu.id}`); }}
                                                 className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${!isOpen ? 'bg-gray-100 text-gray-400 border-gray-200' : 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100'}`}
                                             >
                                                 Tambah
@@ -318,7 +318,6 @@ const CustomerMenu = () => {
                                 <button
                                     onClick={() => {
                                         addToCart(selectedItem, 1, selectedOptions);
-                                        handleCloseDetail();
                                     }}
                                     disabled={selectedItem.options && selectedItem.options.length > 0 && selectedOptions.length === 0}
                                     className={`w-full font-bold py-3.5 rounded-xl shadow-lg transition-all flex justify-between px-6 ${selectedItem.options && selectedItem.options.length > 0 && selectedOptions.length === 0
