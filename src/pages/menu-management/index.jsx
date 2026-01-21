@@ -466,7 +466,7 @@ Powered by Kasir Berkah 88`;
 
         {/* Mobile Header Banner (lg:hidden) */}
         {theme === 'default' && (
-          <div className="lg:hidden bg-gradient-to-br from-[#118eea] to-[#0d70ba] dark:from-slate-900 dark:to-slate-800 pt-20 pb-20 px-6 relative overflow-hidden">
+          <div className="lg:hidden bg-gradient-to-br from-[#118eea] to-[#0d70ba] dark:from-slate-900 dark:to-slate-800 pt-20 pb-14 px-6 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/10 rounded-full -ml-24 -mb-24 blur-2xl"></div>
 
@@ -576,7 +576,7 @@ Powered by Kasir Berkah 88`;
           </div>
 
           {/* Floating Action Button for Mobile */}
-          <div className="lg:hidden fixed bottom-6 right-6 z-50">
+          <div className="lg:hidden fixed bottom-24 right-6 z-50">
             <button
               onClick={() => setIsAddModalOpen(true)}
               className="w-14 h-14 bg-[#118eea] text-white rounded-full shadow-2xl flex items-center justify-center active:scale-90 transition-transform"
