@@ -207,189 +207,205 @@ const EditTransactionModal = ({
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50">
-      <div className="bg-card rounded-lg shadow-xl p-6 w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-4">
+    <div className="fixed inset-0 z-[9999] flex items-end lg:items-center justify-center sm:p-4 p-0">
+      <div
+        className="fixed inset-0 bg-black bg-opacity-60 transition-opacity backdrop-blur-sm"
+        onClick={onClose}
+      ></div>
+      <div
+        className="relative w-full lg:max-w-xl bg-card lg:rounded-lg shadow-xl overflow-hidden
+             lg:mx-auto lg:h-auto lg:max-h-[90vh]
+             fixed lg:relative bottom-0 left-0 right-0 h-[92vh] lg:h-auto
+             rounded-none animate-in slide-in-from-bottom-full lg:zoom-in-95 duration-300 flex flex-col "
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-center px-6 py-4 border-b border-border">
           <h2 className="text-xl font-semibold text-foreground">Edit Transaksi #{transaction?.id}</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <Icon name="X" size={20} />
           </Button>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Item Management Section */}
-          <div className="border-t border-border pt-4 mt-6">
-            <h3 className="text-md font-semibold mb-3 flex items-center gap-2">
-              <Icon name="List" size={18} />
-              Daftar Menu / Item
-            </h3>
 
-            {/* Existing Items List */}
-            <div className="space-y-2 mb-4 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
-              {formData.items.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">Tidak ada item dalam transaksi ini.</p>
-              ) : (
-                formData.items.map((item, index) => (
-                  <div key={`${item.id}-${index}`} className="flex items-center justify-between gap-3 bg-muted/30 p-2 rounded-md border border-border/50">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{item.name}</p>
-                      <p className="text-xs text-muted-foreground">Rp {parseFloat(item.price).toLocaleString()}</p>
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pt-0 ">
+          <form id="edit-transaction-form" onSubmit={handleSubmit} className="space-y-4">
+            {/* Item Management Section */}
+            <div className="pt-4">
+              <h3 className="text-md font-semibold mb-3 flex items-center gap-2">
+                <Icon name="List" size={18} />
+                Daftar Menu / Item
+              </h3>
+
+              {/* Existing Items List */}
+              <div className="space-y-2 mb-4 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                {formData.items.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">Tidak ada item dalam transaksi ini.</p>
+                ) : (
+                  formData.items.map((item, index) => (
+                    <div key={`${item.id}-${index}`} className="flex items-center justify-between gap-3 bg-muted/30 p-2 rounded-md border border-border/50">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">Rp {parseFloat(item.price).toLocaleString()}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) => handleItemQtyChange(index, e.target.value)}
+                          className="w-16 h-8 text-center text-sm border border-input rounded-md bg-background focus:ring-1 focus:ring-primary outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveItem(index)}
+                          className="p-1.5 text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                        >
+                          <Icon name="Trash2" size={16} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) => handleItemQtyChange(index, e.target.value)}
-                        className="w-16 h-8 text-center text-sm border border-input rounded-md bg-background focus:ring-1 focus:ring-primary outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveItem(index)}
-                        className="p-1.5 text-destructive hover:bg-destructive/10 rounded-md transition-colors"
-                      >
-                        <Icon name="Trash2" size={16} />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
+                  ))
+                )}
+              </div>
+
+              {/* Add New Item */}
+              <div className="flex items-end gap-2 p-3 bg-muted/20 rounded-lg border border-dashed border-border">
+                <div className="flex-1 min-w-0">
+                  <Select
+                    label="Tambah Menu"
+                    placeholder="Pilih menu..."
+                    searchable
+                    value={selectedMenuItemId}
+                    onChange={(val) => setSelectedMenuItemId(val)}
+                    options={menuItems.map(m => ({
+                      value: m.id,
+                      label: `${m.name} - Rp ${parseFloat(m.price).toLocaleString()}`,
+                      description: `Stok: ${m.stock}`
+                    }))}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={handleAddItem}
+                  className="h-10 mb-0.5"
+                  disabled={!selectedMenuItemId}
+                >
+                  <Icon name="Plus" size={18} />
+                </Button>
+              </div>
             </div>
 
-            {/* Add New Item */}
-            <div className="flex items-end gap-2 p-3 bg-muted/20 rounded-lg border border-dashed border-border">
-              <div className="flex-1 min-w-0">
-                <Select
-                  label="Tambah Menu"
-                  placeholder="Pilih menu..."
-                  searchable
-                  value={selectedMenuItemId}
-                  onChange={(val) => setSelectedMenuItemId(val)}
-                  options={menuItems.map(m => ({
-                    value: m.id,
-                    label: `${m.name} - Rp ${parseFloat(m.price).toLocaleString()}`,
-                    description: `Stok: ${m.stock}`
-                  }))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-border pt-4">
+              <div>
+                <Input
+                  label="Tanggal & Waktu"
+                  type="datetime-local"
+                  name="timestamp"
+                  value={formData.timestamp}
+                  onChange={handleChange}
+                  required
                 />
               </div>
-              <Button
-                type="button"
-                variant="primary"
-                onClick={handleAddItem}
-                className="h-10 mb-0.5"
-                disabled={!selectedMenuItemId}
-              >
-                <Icon name="Plus" size={18} />
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-border pt-4">
-            <div>
-              <Input
-                label="Tanggal & Waktu"
-                type="datetime-local"
-                name="timestamp"
-                value={formData.timestamp}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div>
-              <Select
-                label="Metode"
-                name="payment_method"
-                value={formData.payment_method}
-                onChange={(value) => handleSelectChange('payment_method', value)}
-                options={paymentMethodOptions}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Input
-                label="Subtotal (Items)"
-                value={(formData.items.reduce((sum, item) => sum + (parseFloat(item.price) * parseInt(item.quantity)), 0)).toFixed(2)}
-                disabled
-                className="bg-muted/50"
-              />
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-sm font-medium text-foreground">PPN</label>
-                <button
-                  type="button"
-                  onClick={handleRecalculatePpn}
-                  className="text-[10px] text-primary hover:underline"
-                >
-                  Reset PPN ({ppnRate * 100}%)
-                </button>
+              <div>
+                <Select
+                  label="Metode"
+                  name="payment_method"
+                  value={formData.payment_method}
+                  onChange={(value) => handleSelectChange('payment_method', value)}
+                  options={paymentMethodOptions}
+                  required
+                />
               </div>
-              <Input
-                type="number"
-                name="ppn"
-                value={formData.ppn}
-                onChange={handleChange}
-                required
-                step="0.01"
-              />
             </div>
-            <div>
-              <Input
-                label="Diskon"
-                type="number"
-                name="manual_discount"
-                value={formData.manual_discount}
-                onChange={handleChange}
-                step="1"
-              />
-            </div>
-          </div>
 
-          <div>
-            <label className="text-sm font-medium text-foreground mb-1 block">Total Akhir</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span className="text-muted-foreground sm:text-sm">Rp</span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Input
+                  label="Subtotal (Items)"
+                  value={(formData.items.reduce((sum, item) => sum + (parseFloat(item.price) * parseInt(item.quantity)), 0)).toFixed(2)}
+                  disabled
+                  className="bg-muted/50"
+                />
               </div>
-              <input
-                type="number"
-                name="total"
-                step="0.01"
-                value={formData.total}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-sm font-medium text-foreground">PPN</label>
+                  <button
+                    type="button"
+                    onClick={handleRecalculatePpn}
+                    className="text-[10px] text-primary hover:underline"
+                  >
+                    Reset PPN ({ppnRate * 100}%)
+                  </button>
+                </div>
+                <Input
+                  type="number"
+                  name="ppn"
+                  value={formData.ppn}
+                  onChange={handleChange}
+                  required
+                  step="0.01"
+                />
+              </div>
+              <div>
+                <Input
+                  label="Diskon"
+                  type="number"
+                  name="manual_discount"
+                  value={formData.manual_discount}
+                  onChange={handleChange}
+                  step="1"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1 block">Total Akhir</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-muted-foreground sm:text-sm">Rp</span>
+                </div>
+                <input
+                  type="number"
+                  name="total"
+                  step="0.01"
+                  value={formData.total}
+                  onChange={handleChange}
+                  className="block w-full pl-10 pr-3 py-2 border border-input rounded-md bg-background text-lg font-bold text-primary focus:ring-1 focus:ring-primary outline-none"
+                  required
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Dihitung otomatis berdasarkan item, tapi dapat disesuaikan manual.
+              </p>
+            </div>
+
+            <div className="border-t border-border pt-4">
+              <label className="block text-sm font-medium mb-1 text-foreground">Catatan</label>
+              <textarea
+                name="catatan"
+                value={formData.catatan}
                 onChange={handleChange}
-                className="block w-full pl-10 pr-3 py-2 border border-input rounded-md bg-background text-lg font-bold text-primary focus:ring-1 focus:ring-primary outline-none"
-                required
+                className="w-full border border-border rounded-md px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm h-16 resize-none"
+                placeholder="Tambahkan catatan..."
               />
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1">
-              Dihitung otomatis berdasarkan item, tapi dapat disesuaikan manual.
-            </p>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1 text-foreground">Catatan</label>
-            <textarea
-              name="catatan"
-              value={formData.catatan}
-              onChange={handleChange}
-              className="w-full border border-border rounded-md px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm h-16 resize-none"
-              placeholder="Tambahkan catatan..."
-            />
-          </div>
+          </form>
+        </div>
 
-          <div className="flex justify-end space-x-2 pt-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+        <div className="p-4 border-t border-border bg-card">
+          <div className="flex gap-3">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               Batal
             </Button>
-            <Button type="submit" loading={isLoading}>
+            <Button type="submit" loading={isLoading} form="edit-transaction-form" className="flex-1">
               Simpan Perubahan
             </Button>
           </div>
-        </form>
+        </div>
       </div>
-    </div>
+    </div >
   );
 };
 
