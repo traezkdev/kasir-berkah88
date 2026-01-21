@@ -64,66 +64,53 @@ const MenuItemsTable = ({
     const stockStatus = getStockStatus(item?.stock);
 
     return (
-      <div className="dana-card p-5 mb-4 active:scale-[0.98] transition-all duration-200 border-none shadow-lg shadow-gray-200/50">
-        <div className="flex items-start gap-4 mb-4">
-          <div className="relative group">
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-[2.5rem] mb-4 border border-gray-100 dark:border-slate-700 shadow-sm active:scale-[0.98] transition-all duration-200">
+        <div className="flex items-start gap-5 mb-5">
+          <div className="relative">
             <img
               src={item?.image_url ? `${apiUrl}${item.image_url}` : '/assets/images/no_image.png'}
               alt={item?.name}
-              className="w-20 h-20 object-cover rounded-[1.5rem] shadow-md border-2 border-white/50"
+              className="w-24 h-24 object-cover rounded-[2rem] shadow-inner border border-gray-50 dark:border-slate-700"
               onError={(e) => { e.target.onerror = null; e.target.src = '/assets/images/no_image.png' }}
             />
             {!!item?.is_featured && (
-              <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-                <Icon name="Star" size={14} className="text-white fill-white" />
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center border-4 border-white dark:border-slate-800 shadow-md">
+                <Icon name="Star" size={12} className="text-white fill-current" />
               </div>
             )}
           </div>
 
-          <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-black text-gray-900 tracking-tighter truncate uppercase">
-              {item?.name}
-            </h3>
-            <p className="text-[10px] font-bold text-blue-600 bg-blue-50 w-fit px-2 py-0.5 rounded-lg uppercase tracking-widest mt-1">
-              {item?.category}
-            </p>
-            {item?.description && (
-              <p className="text-[10px] text-gray-500 mt-2 line-clamp-2 leading-snug">
-                {item.description}
-              </p>
-            )}
+          <div className="flex-1 min-w-0 pt-1">
+            <div className="flex flex-col gap-1 mb-2">
+              <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">{item?.category}</span>
+              <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tighter leading-tight truncate">
+                {item?.name}
+              </h3>
+            </div>
 
-            <div className="flex items-center gap-4 mt-3">
+            <div className="flex items-center gap-4">
               <div>
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Stok</p>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-black text-gray-900">{item?.stock}</span>
-                  <span className={`w-2 h-2 rounded-full ${stockStatus?.bg.replace('/10', '')}`}></span>
-                </div>
-              </div>
-
-              <div>
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Harga</p>
-                <p className="text-sm font-black text-gray-900 tracking-tighter">
+                <p className="text-[9px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1">Harga</p>
+                <p className="text-sm font-black text-gray-900 dark:text-white tracking-tight">
                   {formatCurrency(item?.price)}
                 </p>
+              </div>
+              <div className="h-6 w-[1px] bg-gray-100 dark:bg-slate-700"></div>
+              <div>
+                <p className="text-[9px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1">Stok</p>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-black text-gray-900 dark:text-white">{item?.stock}</span>
+                  <div className={`w-2 h-2 rounded-full animate-pulse ${item?.stock === 0 ? 'bg-rose-500' : item?.stock <= 5 ? 'bg-amber-500' : 'bg-emerald-500'
+                    }`}></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="h-[1px] bg-gray-50 w-full mb-4"></div>
-
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest ${stockStatus?.color} ${stockStatus?.bg}`}>
-              {stockStatus?.label}
-            </div>
-            {item?.discount > 0 && (
-              <div className="px-3 py-1 rounded-xl text-[10px] font-black bg-emerald-50 text-emerald-600 uppercase tracking-widest">
-                Diskon {(item?.discount * 100).toFixed(0)}%
-              </div>
-            )}
+        <div className="flex items-center justify-between pt-4 border-t border-gray-50 dark:border-slate-700">
+          <div className={`px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] ${stockStatus?.color} ${stockStatus?.bg}`}>
+            {stockStatus?.label}
           </div>
 
           <div className="flex items-center gap-2">
@@ -131,15 +118,15 @@ const MenuItemsTable = ({
               <>
                 <button
                   onClick={() => onEditItem(item)}
-                  className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center active:scale-90 transition-transform"
+                  className="w-12 h-12 rounded-[1.25rem] bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center active:scale-90 transition-all border border-blue-100 dark:border-blue-800/30"
                 >
-                  <Icon name="Pencil" size={18} />
+                  <Icon name="Pencil" size={20} />
                 </button>
                 <button
                   onClick={() => setShowDeleteConfirm(item?.id)}
-                  className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center active:scale-90 transition-transform"
+                  className="w-12 h-12 rounded-[1.25rem] bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 flex items-center justify-center active:scale-90 transition-all border border-rose-100 dark:border-rose-800/30"
                 >
-                  <Icon name="Trash2" size={18} />
+                  <Icon name="Trash2" size={20} />
                 </button>
               </>
             )}
@@ -170,22 +157,26 @@ const MenuItemsTable = ({
   }
 
   return (
-    <div className="bg-card rounded-lg shadow-elevation-1 border border-border">
-      {/* Header */}
-      <div className="p-6 border-b border-border">
+    <div className="lg:bg-card lg:rounded-lg lg:shadow-sm lg:border lg:border-border overflow-hidden">
+      {/* Header - Desktop Only */}
+      <div className="hidden lg:block p-6 border-b border-border">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
           <div>
             <p className="text-sm text-muted-foreground">
               {menuItems?.length} item menu tersedia
             </p>
           </div>
-
-          <div className="flex flex-col sm:flex-row gap-3">
-          </div>
         </div>
       </div>
+
+      {/* Mobile Item Count - Minimalist */}
+      <div className="block lg:hidden mb-4">
+        <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em]">
+          Daftar Menu ({menuItems?.length})
+        </p>
+      </div>
       {/* Mobile View */}
-      <div className="block lg:hidden p-4 space-y-4">
+      <div className="block lg:hidden py-4 space-y-4">
         {menuItems?.map(item => (
           <MobileCard
             key={item?.id}
@@ -199,91 +190,151 @@ const MenuItemsTable = ({
       {/* Desktop Table View */}
       <div className="hidden lg:block overflow-x-auto">
         <table className="w-full table-fixed">
-          <thead className="bg-muted"><tr><th className="text-left p-4 w-20">Urutan</th><th className="text-left p-4 font-medium text-foreground">Gambar</th><th className="text-left p-4 font-medium text-foreground">Nama Menu</th><th className="text-left p-4 font-medium text-foreground">Kategori</th><th className="text-left p-4 font-medium text-foreground w-20">Stok</th><th className="text-left p-4 font-medium text-foreground">Harga</th><th className="text-left p-4 font-medium text-foreground">Diskon</th><th className="text-left py-4 font-medium text-foreground">Unggulan</th><th className="text-left p-4 font-medium text-foreground">Status</th><th className="text-left p-4 font-medium text-foreground">Terakhir Diperbarui</th><th className="text-center p-4 font-medium text-foreground w-40">Aksi</th></tr></thead>
-          <tbody className="divide-y divide-border">
+          <thead className="bg-gray-50 dark:bg-slate-900/50">
+            <tr>
+              <th className="text-left p-4 w-20 text-[10px] font-black text-gray-400 uppercase tracking-widest">Urutan</th>
+              <th className="text-left p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Gambar</th>
+              <th className="text-left p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Nama Menu</th>
+              <th className="text-left p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Kategori</th>
+              <th className="text-left p-4 w-20 text-[10px] font-black text-gray-400 uppercase tracking-widest">Stok</th>
+              <th className="text-left p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Harga</th>
+              <th className="text-left p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Diskon</th>
+              <th className="text-left py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Unggulan</th>
+              <th className="text-left p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+              <th className="text-left p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Update</th>
+              <th className="text-center p-4 w-40 text-[10px] font-black text-gray-400 uppercase tracking-widest">Aksi</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50 dark:divide-slate-700">
             {menuItems?.map(item => {
               const stockStatus = getStockStatus(item?.stock);
 
-              return (<tr key={item?.id} className="hover:bg-muted/50 transition-colors duration-200"><td className="p-4">
-                <div className="flex flex-col items-center space-y-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onMoveItem(item?.id, 'up')}
-                    disabled={menuItems.indexOf(item) === 0}
-                    className="h-6 w-6"
-                  >
-                    <Icon name="ChevronUp" size={16} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onMoveItem(item?.id, 'down')}
-                    disabled={menuItems.indexOf(item) === menuItems.length - 1}
-                    className="h-6 w-6"
-                  >
-                    <Icon name="ChevronDown" size={16} />
-                  </Button>
-                </div>
-              </td><td className="p-4"><img src={item?.image_url ? `${apiUrl}${item.image_url}` : '/assets/images/no_image.png'} alt={item?.name} className="w-16 h-16 object-cover rounded-md" onError={(e) => { e.target.onerror = null; e.target.src = '/assets/images/no_image.png' }} /></td><td className="p-4">
-                  <div className="flex flex-col">
-                    <span className="font-medium text-foreground">{item?.name}</span>
-                    {item?.description && (
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-1 italic">
-                        {item.description}
-                      </p>
+              return (
+                <tr key={item?.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-700/30 transition-colors duration-200">
+                  <td className="p-4">
+                    <div className="flex flex-col items-center space-y-1">
+                      <button
+                        onClick={() => onMoveItem(item?.id, 'up')}
+                        disabled={menuItems.indexOf(item) === 0}
+                        className="p-1 rounded-md hover:bg-white dark:hover:bg-slate-700 text-gray-400 hover:text-blue-500 disabled:opacity-30 transition-all"
+                      >
+                        <Icon name="ChevronUp" size={18} />
+                      </button>
+                      <button
+                        onClick={() => onMoveItem(item?.id, 'down')}
+                        disabled={menuItems.indexOf(item) === menuItems.length - 1}
+                        className="p-1 rounded-md hover:bg-white dark:hover:bg-slate-700 text-gray-400 hover:text-blue-500 disabled:opacity-30 transition-all"
+                      >
+                        <Icon name="ChevronDown" size={18} />
+                      </button>
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <img
+                      src={item?.image_url ? `${apiUrl}${item.image_url}` : '/assets/images/no_image.png'}
+                      alt={item?.name}
+                      className="w-12 h-12 object-cover rounded-xl shadow-sm border border-gray-100 dark:border-slate-700"
+                      onError={(e) => { e.target.onerror = null; e.target.src = '/assets/images/no_image.png' }}
+                    />
+                  </td>
+                  <td className="p-4">
+                    <div className="flex flex-col">
+                      <span className="font-bold text-gray-900 dark:text-white tracking-tight">{item?.name}</span>
+                      {item?.description && (
+                        <p className="text-[10px] text-gray-400 mt-1 line-clamp-1 italic">
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <span className="text-xs font-black text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg uppercase tracking-widest">
+                      {item?.category}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <span className="font-bold text-gray-900 dark:text-white">{item?.stock}</span>
+                  </td>
+                  <td className="p-4">
+                    <span className="font-bold text-gray-900 dark:text-white tracking-tight">{formatCurrency(item?.price)}</span>
+                  </td>
+                  <td className="p-4">
+                    {item?.discount > 0 ? (
+                      <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">
+                        {(item?.discount * 100).toFixed(0)}%
+                      </span>
+                    ) : (
+                      <span className="text-gray-300">-</span>
                     )}
-                    {/* Display options for desktop view */}
-                    {item.options && item.options.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {item.options.map(opt => (
-                          <span key={opt.id || opt.name} className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded-full">
-                            {opt.name} (+{formatCurrency(opt.price_adjustment)})
-                          </span>
-                        ))}
+                  </td>
+                  <td className="p-4">
+                    {item?.is_featured ? (
+                      <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
+                        <Icon name="Star" size={16} className="text-amber-500 fill-current" />
                       </div>
-                    )}
-                  </div>
-                </td><td className="p-4"><span className="font-medium text-foreground">{item?.category}</span></td><td className="p-4"><span className="font-mono font-medium">{item?.stock}</span></td><td className="p-4"><span className="font-mono font-medium">{formatCurrency(item?.price)}</span></td><td className="p-4 text-center"> {/* New data cell */}{item?.discount > 0 ? (<span className="font-mono font-medium text-success">{`${(item?.discount * 100).toFixed(0)}%`}</span>) : (<span className="text-muted-foreground">-</span>)}</td><td className="p-4">{item?.is_featured ? <Icon name="Star" size={18} className="text-yellow-500" title="Menu Unggulan" /> : '-'}</td><td className="p-4"><span className={`px-3 py-1 rounded-full text-sm font-medium ${stockStatus?.color} ${stockStatus?.bg}`}>{stockStatus?.label}</span></td><td className="p-4 text-sm text-muted-foreground">{item.updatedAt ? (!isNaN(new Date(item.updatedAt)) ? new Date(item.updatedAt).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : `Invalid Date: ${item.updatedAt}`) : '-'}</td><td className="p-4"><div className="flex items-center justify-center space-x-1">{userRole !== 'guest' && (<Button variant="ghost" size="xs" onClick={() => onEditItem(item)} iconName="Edit" />)}{userRole !== 'guest' && (<Button variant="destructive" size="xs" onClick={() => setShowDeleteConfirm(item?.id)} iconName="Trash2" />)}</div></td></tr>);
+                    ) : '-'}
+                  </td>
+                  <td className="p-4">
+                    <div className={`inline-flex px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest ${stockStatus?.color} ${stockStatus?.bg}`}>
+                      {stockStatus?.label}
+                    </div>
+                  </td>
+                  <td className="p-4 text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
+                    {item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : '-'}
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center justify-center gap-2">
+                      {userRole !== 'guest' && (
+                        <>
+                          <button
+                            onClick={() => onEditItem(item)}
+                            className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 dark:text-blue-400 transition-colors"
+                          >
+                            <Icon name="Pencil" size={18} />
+                          </button>
+                          <button
+                            onClick={() => setShowDeleteConfirm(item?.id)}
+                            className="p-2 rounded-lg hover:bg-rose-50 text-rose-600 dark:text-rose-400 transition-colors"
+                          >
+                            <Icon name="Trash2" size={18} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
             })}
           </tbody>
         </table>
       </div>
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
-          <div className="bg-card rounded-lg shadow-elevation-3 max-w-md w-full p-6">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-12 h-12 bg-error/10 rounded-full flex items-center justify-center">
-                <Icon name="AlertTriangle" size={24} className="text-error" />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center z-[1000] p-6 animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-2xl max-w-sm w-full p-8 animate-in zoom-in-95 duration-300">
+            <div className="flex flex-col items-center text-center mb-8">
+              <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 rounded-[2rem] flex items-center justify-center mb-4 border border-rose-100 dark:border-rose-900/30">
+                <Icon name="Trash2" size={32} className="text-rose-500" />
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground">Konfirmasi Hapus</h3>
-                <p className="text-sm text-muted-foreground">Tindakan ini tidak dapat dibatalkan</p>
-              </div>
+              <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight mb-2">Hapus Menu?</h3>
+              <p className="text-sm font-medium text-gray-400 dark:text-slate-500">
+                Menu "{menuItems?.find(item => item?.id === showDeleteConfirm)?.name}" akan dihapus permanen.
+              </p>
             </div>
 
-            <p className="text-muted-foreground mb-6">
-              Apakah Anda yakin ingin menghapus menu "{menuItems?.find(item => item?.id === showDeleteConfirm)?.name}"?
-            </p>
-
-            <div className="flex space-x-3">
-              <Button
-                variant="destructive"
+            <div className="flex flex-col gap-3">
+              <button
                 onClick={() => handleDelete(showDeleteConfirm)}
-                iconName="Trash2"
-                iconPosition="left"
-                className="flex-1"
+                className="w-full py-4 bg-rose-500 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-rose-200 dark:shadow-none active:scale-95 transition-all"
               >
-                Ya, Hapus
-              </Button>
-              <Button
-                variant="outline"
+                Ya, Hapus Sekarang
+              </button>
+              <button
                 onClick={() => setShowDeleteConfirm(null)}
-                className="flex-1"
+                className="w-full py-4 bg-gray-50 dark:bg-slate-700 text-gray-500 dark:text-gray-300 rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all"
               >
-                Batal
-              </Button>
+                Batalkan
+              </button>
             </div>
           </div>
         </div>

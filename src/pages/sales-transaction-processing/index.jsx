@@ -340,6 +340,11 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
           <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
           <div className="absolute bottom-[-20%] left-[-5%] w-48 h-48 bg-blue-400/20 rounded-full blur-2xl"></div>
 
+          {/* Decorative Background Icon */}
+          <div className="absolute -right-12 -top-12 text-white/20 -rotate-12 pointer-events-none">
+            <Icon name="ShoppingCart" size={200} />
+          </div>
+
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-inner">

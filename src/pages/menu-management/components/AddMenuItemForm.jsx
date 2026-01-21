@@ -123,16 +123,17 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
   };
 
   return (
-    <div className="bg-card rounded-lg shadow-elevation-1 border border-border p-6 mb-6">
-      <div className="flex items-center space-x-3 mb-6">
-        <div className="p-2 bg-primary/10 rounded-lg">
-          <Icon name={isEditing ? "Edit" : "Plus"} size={20} className="text-primary" />
+    <div className="space-y-6">
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400">
+          <Icon name={isEditing ? "SquarePen" : "PlusCircle"} size={24} />
         </div>
         <div>
-          <h2 className="text-xl font-semibold text-foreground">{isEditing ? "Edit Menu Item" : "Tambah Menu Baru"}</h2>
-          <p className="text-sm text-muted-foreground">{isEditing ? "Perbarui detail item menu" : "Tambahkan item menu dengan stok dan harga"}</p>
+          <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight leading-none mb-2">{isEditing ? "Edit Menu Item" : "Tambah Menu Baru"}</h2>
+          <p className="text-[11px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">{isEditing ? "Perbarui detail item menu" : "Tambahkan item menu dengan stok dan harga"}</p>
         </div>
       </div>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -146,6 +147,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               required
             />
           </div>
+
           <div>
             <Select
               label="Kategori"
@@ -156,6 +158,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               options={categories.map(cat => ({ value: cat.name.toLowerCase(), label: cat.name }))}
             />
           </div>
+
           <div>
             <Input
               label="Stok"
@@ -168,6 +171,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               required
             />
           </div>
+
           <div>
             <Input
               label="Harga (Rp)"
@@ -179,6 +183,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               required
             />
           </div>
+
           <div>
             <Input
               label="Diskon (0.00 - 1.00)"
@@ -192,17 +197,23 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               step="0.01"
             />
           </div>
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="is_featured"
-              name="is_featured"
-              checked={!!formData?.is_featured}
-              onChange={handleChange}
-              className="mr-2 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-            />
-            <label htmlFor="is_featured" className="text-sm font-medium text-foreground">Menu Unggulan</label>
+
+          <div className="flex items-center group cursor-pointer lg:col-span-2 py-2">
+            <div className="relative flex items-center">
+              <input
+                type="checkbox"
+                id="is_featured"
+                name="is_featured"
+                checked={!!formData?.is_featured}
+                onChange={handleChange}
+                className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded-lg focus:ring-blue-500/20 transition-all cursor-pointer"
+              />
+            </div>
+            <label htmlFor="is_featured" className="ml-3 text-sm font-black text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+              Jadikan Menu Unggulan
+            </label>
           </div>
+
           <div className="md:col-span-2">
             <label htmlFor="image" className="block text-sm font-medium text-foreground">Gambar Produk</label>
             <Input
@@ -217,6 +228,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
               <p className="text-sm text-muted-foreground mt-1">Gambar saat ini: <a href={formData.image_url ? `${import.meta.env.VITE_API_URL}${formData.image_url}` : '#'} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Lihat Gambar</a></p>
             )}
           </div>
+
           <div className="md:col-span-2">
             <label htmlFor="description" className="block text-sm font-medium text-foreground mb-1">Deskripsi Menu (Opsional)</label>
             <textarea
@@ -230,64 +242,71 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
           </div>
         </div>
 
-        {/* --- Menu Options/Toppings --- */}
-        <div className="md:col-span-2 pt-4">
-          <h3 className="text-sm font-medium text-foreground mb-2">Opsi / Topping Menu</h3>
+        <div className="md:col-span-2 pt-6 border-t border-gray-50 dark:border-slate-700 mt-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-[11px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest">Opsi / Topping Menu</h3>
+            <button
+              type="button"
+              onClick={addOption}
+              className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all"
+            >
+              + Tambah Opsi
+            </button>
+          </div>
+
           <div className="space-y-3">
             {formData.options.map((option, index) => (
-              <div key={index} className="flex flex-wrap items-start gap-2 gap-y-2 p-2 border border-border rounded-md">
-                <Input
-                  type="text"
-                  name="name"
-                  placeholder="Nama Opsi (e.g., Dada, Paha)"
-                  value={option.name}
-                  onChange={(e) => handleOptionChange(index, e)}
-                  className="w-full sm:flex-1"
-                />
-                <Input
-                  type="number"
-                  name="price_adjustment"
-                  placeholder="Penyesuaian Harga (Rp)"
-                  value={option.price_adjustment}
-                  onChange={(e) => handleOptionChange(index, e)}
-                  className="w-full sm:flex-1"
-                />
-                <Button type="button" variant="destructive" size="sm" onClick={() => removeOption(index)} className="w-full sm:w-auto">
-                  Hapus
-                </Button>
+              <div key={index} className="flex flex-wrap items-center gap-3 p-4 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-700">
+                <div className="flex-1 min-w-[150px]">
+                  <Input
+                    type="text"
+                    name="name"
+                    placeholder="Nama Opsi (e.g., Dada, Paha)"
+                    value={option.name}
+                    onChange={(e) => handleOptionChange(index, e)}
+                  />
+                </div>
+                <div className="flex-1 min-w-[150px]">
+                  <Input
+                    type="number"
+                    name="price_adjustment"
+                    placeholder="Harga Tambahan (Rp)"
+                    value={option.price_adjustment}
+                    onChange={(e) => handleOptionChange(index, e)}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeOption(index)}
+                  className="w-10 h-10 flex items-center justify-center bg-rose-50 text-rose-500 rounded-xl active:scale-90 transition-all"
+                >
+                  <Icon name="Trash2" size={18} />
+                </button>
               </div>
             ))}
+
+            {formData.options.length === 0 && (
+              <div className="py-8 text-center bg-gray-50/50 dark:bg-slate-900/30 rounded-2xl border-2 border-dashed border-gray-100 dark:border-slate-700">
+                <Icon name="CirclePlus" size={24} className="mx-auto text-gray-300 mb-2" />
+                <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em]">Belum ada opsi topping</p>
+              </div>
+            )}
           </div>
-          <Button type="button" variant="outline" size="sm" onClick={addOption} className="mt-3">
-            <Icon name="Plus" className="mr-2" />
-            Tambah Opsi
-          </Button>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 pt-4">
-          <Button
+        <div className="flex flex-col sm:flex-row gap-4 pt-8">
+          <button
             type="submit"
-            variant="default"
-            loading={isSubmitting}
-            iconName={isEditing ? "Save" : "Plus"}
-            iconPosition="left"
-            className="sm:w-auto"
-            disabled={userRole === 'guest'}
+            disabled={userRole === 'guest' || isSubmitting}
+            className="flex-1 py-4 bg-[#118eea] text-white rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-lg shadow-blue-200 dark:shadow-none active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? (isEditing ? 'Menyimpan...' : 'Menambahkan...') : (isEditing ? 'Simpan Perubahan' : 'Tambah Menu')}
-          </Button>
-          {!isEditing && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setFormData({ name: '', price: '', stock: '', category: 'makanan', image: null, discount: '', is_featured: false, options: [], description: '' })}
-              iconName="RotateCcw"
-              iconPosition="left"
-              className="sm:w-auto"
-            >
-              Reset Form
-            </Button>
-          )}
+            {isSubmitting ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Icon name={isEditing ? "Save" : "Plus"} size={20} />
+            )}
+            {isSubmitting ? (isEditing ? 'Menyimpan...' : 'Memproses...') : (isEditing ? 'Simpan Perubahan' : 'Tambahkan Ke Menu')}
+          </button>
         </div>
       </form>
     </div>
