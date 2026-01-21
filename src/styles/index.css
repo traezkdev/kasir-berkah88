@@ -633,3 +633,20 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* --- DASHBOARD HINTS --- */
+@keyframes bounce-left {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  50% {
+    transform: translateX(-15px);
+  }
+}
+
+.animate-scroll-hint {
+  animation: bounce-left 1.2s ease-in-out 1;
+}

@@ -16,20 +16,6 @@ export default function ThemeProvider({ children, defaultTheme = 'system', stora
     }
 
     root.classList.add(theme);
-
-    // Update the theme-color meta tag for mobile browsers
-    let themeColorMetaTag = document.querySelector('meta[name="theme-color"]');
-    if (!themeColorMetaTag) {
-      themeColorMetaTag = document.createElement('meta');
-      themeColorMetaTag.setAttribute('name', 'theme-color');
-      document.head.appendChild(themeColorMetaTag);
-    }
-
-    if (theme === 'dark') {
-      themeColorMetaTag.setAttribute('content', '#0F172A'); // Dark color for dark mode
-    } else {
-      themeColorMetaTag.setAttribute('content', '#ffffff'); // Light color for light mode
-    }
   }, [theme]);
 
   const value = {

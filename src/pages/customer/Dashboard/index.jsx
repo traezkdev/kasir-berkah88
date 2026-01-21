@@ -117,7 +117,7 @@ const CustomerDashboard = () => {
                 </div>
 
                 {/* Quick Shortcut Chips */}
-                <div className="mt-4 flex gap-2 overflow-x-auto hide-scrollbar whitespace-nowrap pb-1">
+                <div className="mt-4 flex gap-2 overflow-x-auto no-scrollbar whitespace-nowrap pb-1 animate-scroll-hint">
                     {[
                         { label: 'Sedang Promo', icon: 'Zap', color: 'bg-amber-400' },
                         { label: 'Paling Laris', icon: 'TrendingUp', color: 'bg-rose-500' },
@@ -180,44 +180,55 @@ const CustomerDashboard = () => {
 
 
             {/* Banners Carousel */}
-            <section className="mt-8 px-4 overflow-x-auto hide-scrollbar flex gap-4 pb-4 snap-x">
-                {banners.map((banner) => (
-                    <div key={banner.id} className={`${banner.color_class} min-w-[280px] h-36 rounded-2xl p-4 text-white flex flex-col justify-between shadow-md snap-center hover:scale-[1.02] transition-transform cursor-pointer relative overflow-hidden`}>
-                        <div className="z-10 relative">
-                            <h3 className="font-bold text-xl">{banner.title}</h3>
-                            <p className="text-sm opacity-90">{banner.subtitle}</p>
-                        </div>
-                        <div className="self-end bg-white/20 p-2 rounded-full z-10">
-                            <Icon name="ArrowRight" className="w-5 h-5" />
-                        </div>
-                        {/* Decorative Icon */}
-                        <Icon name={banner.icon_name} className="absolute -bottom-4 -right-4 w-32 h-32 text-white/10 rotate-12" />
+            <section className="mt-8 px-4">
+                <div className="flex justify-between items-center mb-4 px-1">
+                    <h3 className="font-extrabold text-xs text-gray-400 uppercase tracking-[0.2em]">Promo Spesial</h3>
+                    <div className="flex items-center gap-1 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                        <span>Geser</span>
+                        <Icon name="ChevronRight" size={10} />
                     </div>
-                ))}
+                </div>
+                <div className="overflow-x-auto no-scrollbar flex gap-4 pb-4 snap-x animate-scroll-hint scroll-smooth" id="banner-scroll">
+                    {banners.map((banner) => (
+                        <div key={banner.id} className={`${banner.color_class} min-w-[90%] h-40 rounded-3xl p-6 text-white flex flex-col justify-between shadow-xl snap-center active:scale-95 transition-all cursor-pointer relative overflow-hidden`}>
+                            <div className="z-10 relative">
+                                <h3 className="font-black text-2xl tracking-tighter leading-tight mb-1">{banner.title}</h3>
+                                <p className="text-xs font-bold opacity-80">{banner.subtitle}</p>
+                            </div>
+                            <div className="flex items-center gap-2 z-10">
+                                <div className="bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-white/20">Ambil Promo</div>
+                            </div>
+                            {/* Decorative Icon */}
+                            <Icon name={banner.icon_name} size={120} className="absolute -bottom-6 -right-6 text-white/10 rotate-12" />
+                        </div>
+                    ))}
+                </div>
             </section>
 
             {/* Categories */}
-            <section className="mt-2 px-4">
-                <div className="flex justify-between items-end mb-4">
-                    <h3 className="font-bold text-lg text-gray-800">Kategori</h3>
-                    <Link to="/customer/menu" className="text-sm text-green-600 font-semibold">Lihat Semua</Link>
+            <section className="mt-4 px-4 font-black">
+                <div className="flex justify-between items-center mb-5 px-1">
+                    <h3 className="text-xs text-gray-400 uppercase tracking-[0.2em]">Kategori</h3>
+                    <div className="flex items-center gap-1 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                        <span>Geser</span>
+                        <Icon name="ChevronRight" size={10} />
+                    </div>
                 </div>
-                <div className="flex gap-6 overflow-x-auto hide-scrollbar pb-2">
+                <div className="flex gap-6 overflow-x-auto no-scrollbar pb-2 animate-scroll-hint">
                     {/* All Category */}
-                    <Link to="/customer/menu" className="flex flex-col items-center gap-2 min-w-[64px] cursor-pointer group">
-                        <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center border border-green-100 group-hover:bg-green-100 transition-colors">
-                            <Icon name="LayoutGrid" className="w-6 h-6 text-green-600" />
+                    <Link to="/customer/menu" className="flex flex-col items-center gap-3 min-w-[75px] cursor-pointer group">
+                        <div className="w-16 h-16 bg-green-50 dark:bg-green-900/20 rounded-[1.8rem] flex items-center justify-center border border-green-100 dark:border-green-800/30 group-hover:bg-green-100 transition-all shadow-sm group-active:scale-95">
+                            <Icon name="LayoutGrid" size={28} className="text-green-600" />
                         </div>
-                        <span className="text-xs font-medium text-gray-600 text-center truncate w-full">Semua</span>
+                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest text-center truncate w-full">Semua</span>
                     </Link>
                     {/* Dynamic Categories */}
                     {categories.map((cat) => (
-                        <Link to={`/customer/menu?category=${cat.id}`} key={cat.id} className="flex flex-col items-center gap-2 min-w-[64px] cursor-pointer group">
-                            <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100 group-hover:bg-gray-100 transition-colors">
-                                <Icon name="Coffee" className="w-6 h-6 text-gray-500" />
-                                {/* Ideally category has icon, fallback to Coffee */}
+                        <Link to={`/customer/menu?category=${cat.id}`} key={cat.id} className="flex flex-col items-center gap-3 min-w-[75px] cursor-pointer group">
+                            <div className="w-16 h-16 bg-gray-50 dark:bg-slate-800 rounded-[1.8rem] flex items-center justify-center border border-gray-100 dark:border-slate-700 group-hover:bg-gray-100 transition-all shadow-sm group-active:scale-95">
+                                <Icon name="Coffee" size={28} className="text-gray-500" />
                             </div>
-                            <span className="text-xs font-medium text-gray-600 text-center truncate w-full">{cat.name}</span>
+                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest text-center truncate w-full">{cat.name}</span>
                         </Link>
                     ))}
                 </div>

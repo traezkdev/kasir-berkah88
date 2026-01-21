@@ -16,18 +16,11 @@ export const DarkModeProvider = ({ children }) => {
 
   useEffect(() => {
     localStorage.setItem('dark-mode', JSON.stringify(isDarkMode));
-    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
 
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
-      if (metaThemeColor) {
-        metaThemeColor.setAttribute('content', '#050A14');
-      }
     } else {
       document.documentElement.classList.remove('dark');
-      if (metaThemeColor) {
-        metaThemeColor.setAttribute('content', '#138FEA');
-      }
     }
   }, [isDarkMode]);
 
