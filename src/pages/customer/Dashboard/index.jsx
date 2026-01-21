@@ -85,7 +85,7 @@ const CustomerDashboard = () => {
             </div>
 
             {/* Header Section with Gradient */}
-            <header className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 pt-6 pb-0 rounded-b-[2rem] text-white shadow-lg sticky top-0 z-30">
+            <header className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 pt-6 pb-28 rounded-b-[2rem] text-white shadow-lg sticky top-0 z-30">
                 <div className="flex justify-between items-center mb-4">
                     <div>
                         <p className="text-green-100 text-sm font-medium">Selamat Pagi,</p>
@@ -136,33 +136,51 @@ const CustomerDashboard = () => {
                         </div>
                     ))}
                 </div>
+            </header>
 
-                {/* Saldo / Points Card (Fake) */}
-                <div className="mt-1 bg-white rounded-xl p-4 shadow-lg text-gray-800 flex justify-between items-center transform translate-y-1/2">
+            {/* Integrated Action Card (Floated Half-In Half-Out) */}
+            <div className="mx-6 -mt-24 relative z-40 bg-white rounded-[2rem] shadow-xl text-gray-800 overflow-hidden border border-white">
+                {/* Saldo Section */}
+                <div className="p-5 flex justify-between items-center border-b border-gray-50">
                     <div className="flex flex-col">
-                        <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">BerkahPay</span>
-                        <span className="text-lg font-bold text-gray-900">Rp 0</span>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.15em] mb-0.5">BerkahPay</span>
+                        <span className="text-xl font-black text-gray-900 tracking-tight">Rp 0</span>
                     </div>
                     <div className="flex gap-4">
-                        <div className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-80">
-                            <div className="bg-green-100 p-2 rounded-lg text-green-600">
+                        <div className="flex flex-col items-center gap-1 cursor-pointer group">
+                            <div className="bg-green-50 p-2 rounded-xl text-green-600 border border-green-100 group-active:scale-90 transition-transform">
                                 <Icon name="PlusCircle" className="w-5 h-5" />
                             </div>
-                            <span className="text-[10px] font-bold text-gray-600">Top Up</span>
+                            <span className="text-[9px] font-black text-gray-500 uppercase">Top Up</span>
                         </div>
-                        <div className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-80">
-                            <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
+                        <div className="flex flex-col items-center gap-1 cursor-pointer group">
+                            <div className="bg-blue-50 p-2 rounded-xl text-blue-600 border border-blue-100 group-active:scale-90 transition-transform">
                                 <Icon name="History" className="w-5 h-5" />
                             </div>
-                            <span className="text-[10px] font-bold text-gray-600">Riwayat</span>
+                            <span className="text-[9px] font-black text-gray-500 uppercase">Riwayat</span>
                         </div>
                     </div>
                 </div>
-            </header>
+
+                {/* Status Pesanan Section (The one user liked) */}
+                <div
+                    onClick={() => navigate('/customer/order-confirmation')}
+                    className="flex items-center gap-4 p-5 cursor-pointer active:bg-gray-50 transition-all duration-200 group"
+                >
+                    <div className="p-3 rounded-2xl group-active:scale-90 transition-transform bg-orange-50 text-orange-500">
+                        <Icon name="ShoppingBag" className="w-6 h-6" />
+                    </div>
+                    <div className="flex-1">
+                        <span className="block font-extrabold text-gray-800 tracking-tight">Status Pesanan</span>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none">Lacak pesanan aktif Anda</span>
+                    </div>
+                    <Icon name="ChevronRight" className="w-4 h-4 text-gray-300" />
+                </div>
+            </div>
 
 
             {/* Banners Carousel */}
-            <section className="mt-20 px-4 overflow-x-auto hide-scrollbar flex gap-4 pb-4 snap-x">
+            <section className="mt-8 px-4 overflow-x-auto hide-scrollbar flex gap-4 pb-4 snap-x">
                 {banners.map((banner) => (
                     <div key={banner.id} className={`${banner.color_class} min-w-[280px] h-36 rounded-2xl p-4 text-white flex flex-col justify-between shadow-md snap-center hover:scale-[1.02] transition-transform cursor-pointer relative overflow-hidden`}>
                         <div className="z-10 relative">
