@@ -298,7 +298,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
   const totalCartPrice = cart.reduce((sum, item) => sum + (item.finalPrice * item.quantity), 0);
 
   return (
-    <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'} overflow-x-hidden`}>
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
       {/* Desktop Navigation Header */}
       <div className="hidden lg:block">
         {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} />}

@@ -19,7 +19,7 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl, i
 
   return (
     <div className={cn(
-      "bg-white rounded-[2rem] shadow-sm overflow-hidden border border-gray-100 transition-all duration-300 active:scale-95 group",
+      "bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 transition-all duration-300 active:scale-95 group",
       "lg:bg-card lg:rounded-lg lg:shadow-md lg:border-transparent lg:dark:border-gray-700 lg:hover:scale-105"
     )}>
       <div className="relative">
@@ -65,7 +65,7 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl, i
 
         <div className="mt-4">
           {quantityInCart > 0 ? (
-            <div className="flex items-center justify-between bg-gray-50 rounded-2xl p-1 border border-gray-100">
+            <div className="flex items-center justify-between bg-gray-50 rounded-xl p-1 border border-gray-100">
               <button
                 onClick={() => lastItemVariationInCart && onDecrement(lastItemVariationInCart.cartItemId)}
                 className="w-8 h-8 flex items-center justify-center bg-white rounded-xl shadow-sm text-gray-600 active:bg-gray-100 transition-colors"
@@ -85,10 +85,10 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl, i
               </button>
             </div>
           ) : (isOutOfStock && !ignoreStock) ? (
-            <button className="w-full py-2.5 bg-gray-100 text-gray-400 rounded-2xl font-bold text-xs cursor-not-allowed" disabled>Stok Habis</button>
+            <button className="w-full py-2.5 bg-gray-100 text-gray-400 rounded-xl font-bold text-xs cursor-not-allowed" disabled>Stok Habis</button>
           ) : (
             <button
-              className="w-full py-2.5 bg-[#118EEA] text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg shadow-blue-100 active:scale-95 transition-all"
+              className="w-full py-2.5 bg-[#118EEA] text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-lg shadow-blue-100 active:scale-95 transition-all"
               onClick={() => onIncrement(item)}
               disabled={userRole === 'guest'}
             >
