@@ -22,7 +22,8 @@ const OrderSummary = ({
   setPaymentMethod,
   userRole,
   ignoreStock,
-  setIgnoreStock
+  setIgnoreStock,
+  isMobilePopup // New prop
 
 }) => {
   const { theme } = useTheme();
@@ -179,8 +180,8 @@ const OrderSummary = ({
   const disablePaymentButton = isLoading || !isCartValid();
 
   return (
-    <div className={`bg-card rounded-lg shadow-lg p-6 lg:sticky ${theme === 'admin' ? 'lg:top-4' : 'lg:top-16'}`}>
-      <h2 className="text-xl font-bold text-foreground mb-4">Ringkasan Pesanan</h2>
+    <div className={isMobilePopup ? "pb-24" : `bg-card rounded-lg shadow-lg p-6 lg:sticky ${theme === 'admin' ? 'lg:top-4' : 'lg:top-16'}`}>
+      {!isMobilePopup && <h2 className="text-xl font-bold text-foreground mb-4">Ringkasan Pesanan</h2>}
 
       {cart.length === 0 ? (
         <p className="text-muted-foreground text-center py-8">Keranjang belanja kosong</p>
@@ -362,7 +363,9 @@ const OrderSummary = ({
             </div>
           </div>
 
-          <div className="flex gap-2 mt-4">
+          <div className={isMobilePopup
+            ? "fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 p-6 border-t border-gray-100 dark:border-slate-800 z-[200] shadow-[0_-15px_30px_rgba(0,0,0,0.08)] flex gap-2"
+            : "flex gap-2 mt-4"}>
             <Button variant="outline" onClick={onClearCart} className="w-full">Kosongkan</Button>
             <Button
               onClick={() => onProcessPayment({

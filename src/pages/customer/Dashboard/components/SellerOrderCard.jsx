@@ -82,22 +82,24 @@ const SellerOrderCard = ({ order, onAccept, onReject }) => {
                 )}
 
                 {/* Actions */}
-                <div className="flex gap-3 mt-2">
-                    <button
-                        onClick={onReject}
-                        className="bg-red-50 hover:bg-red-100 text-red-600 p-3 rounded-2xl transition-all active:scale-90"
-                        title="Tolak Pesanan"
-                    >
-                        <Icon name="X" size={20} strokeWidth={3} />
-                    </button>
-                    <button
-                        onClick={onAccept}
-                        className="flex-1 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white py-3.5 rounded-2xl font-black shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 transition-all active:scale-95 group"
-                    >
-                        Terima Sekarang
-                        <Icon name="ArrowRight" size={18} className="group-hover:translate-x-1 transition-transform" />
-                    </button>
-                </div>
+                {(onAccept && onReject) && (
+                    <div className="flex gap-3 mt-2">
+                        <button
+                            onClick={onReject}
+                            className="bg-red-50 hover:bg-red-100 text-red-600 p-3 rounded-2xl transition-all active:scale-90"
+                            title="Tolak Pesanan"
+                        >
+                            <Icon name="X" size={20} strokeWidth={3} />
+                        </button>
+                        <button
+                            onClick={onAccept}
+                            className="flex-1 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white py-3.5 rounded-2xl font-black shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 transition-all active:scale-95 group"
+                        >
+                            Terima Sekarang
+                            <Icon name="ArrowRight" size={18} className="group-hover:translate-x-1 transition-transform" />
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

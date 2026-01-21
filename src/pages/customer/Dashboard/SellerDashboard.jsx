@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import authFetch from '../../../utils/authFetch';
+import { jwtDecode } from 'jwt-decode';
 import SellerOrderCard from './components/SellerOrderCard';
 import ConfirmationModal from '../../../components/ui/ConfirmationModal';
 import { toast } from 'react-hot-toast';
@@ -21,6 +22,7 @@ const SellerDashboard = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [userName, setUserName] = useState('Penjual');
     const [scrolled, setScrolled] = useState(false);
+    const [userRole, setUserRole] = useState(null);
     const [modalState, setModalState] = useState({ isOpen: false, orderId: null, action: null, title: '', message: '', isDestructive: false });
 
     const toggleShopStatus = async () => {
@@ -86,6 +88,16 @@ const SellerDashboard = () => {
 
         const fetchAllData = async () => {
             try {
+                const token = localStorage.getItem('token');
+                if (token) {
+                    try {
+                        const decodedToken = jwtDecode(token);
+                        setUserRole(decodedToken.role);
+                    } catch (e) {
+                        console.error("Error decoding token:", e);
+                    }
+                }
+
                 const storedName = localStorage.getItem('username');
                 if (storedName) setUserName(storedName);
 
@@ -254,7 +266,16 @@ const SellerDashboard = () => {
                         <span className={`font-bold transition-colors ${scrolled ? 'text-gray-800' : 'text-white text-xl'}`}>
                             {scrolled ? 'Seller Center' : ''}
                         </span>
-                        <div className="flex gap-3">
+                        <div className="flex gap-2">
+                            {userRole === 'admin' && (
+                                <button
+                                    onClick={() => navigate('/main-dashboard')}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all ${scrolled ? 'bg-indigo-50 text-indigo-600' : 'bg-white/20 text-white'}`}
+                                >
+                                    <Icon name="ArrowLeft" size={14} />
+                                    Admin
+                                </button>
+                            )}
                             <button className={`p-2 rounded-full ${scrolled ? 'bg-gray-100 text-gray-600' : 'bg-white/20 text-white'}`}>
                                 <Icon name="Bell" size={20} />
                             </button>

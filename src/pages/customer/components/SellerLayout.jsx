@@ -23,6 +23,7 @@ const SellerLayout = () => {
 
     const menuItems = [
         { name: 'Dashboard', path: '/seller/dashboard', icon: 'LayoutDashboard', label: 'Dashboard' },
+        { name: 'Pesanan', path: '/seller/orders', icon: 'ShoppingBag', label: 'Pesanan' },
         { name: 'Banner', path: '/seller/banners', icon: 'Image', label: 'Banners' },
         { name: 'Menu', path: '/seller/menu-management', icon: 'Utensils', label: 'Katalog' },
         { name: 'Riwayat', path: '/seller/transaction-history', icon: 'History', label: 'Transaksi' },
@@ -133,20 +134,6 @@ const SellerLayout = () => {
                             );
                         })}
 
-                        {/* Tambahan Menu Admin untuk Mobile */}
-                        {userRole === 'admin' && (
-                            <Link
-                                to="/main-dashboard"
-                                className="flex flex-col items-center justify-center flex-1 text-indigo-600 transition-all active:scale-95 translate-y-[-2px]"
-                            >
-                                <div className="relative px-6 py-1.5 rounded-2xl bg-indigo-50 border border-indigo-100 shadow-sm">
-                                    <Icon name="ArrowLeft" className="w-6 h-6" />
-                                </div>
-                                <span className="text-[10px] font-black mt-1 uppercase tracking-tighter">
-                                    Admin
-                                </span>
-                            </Link>
-                        )}
                     </div>
                 </nav>
             )}

@@ -5,7 +5,7 @@ import SalesForm from './components/SalesForm';
 import OrderSummary from './components/OrderSummary';
 import OptionSelectionModal from './components/OptionSelectionModal'; // Import the new modal
 import authFetch from '../../utils/authFetch';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 import Button from '../../components/ui/Button'; // Added import for Button
 import { savePendingTransaction } from '../../utils/offlinePersistence';
@@ -26,6 +26,7 @@ const getCartItemId = (item, options) => {
 
 const SalesTransactionProcessing = ({ headerTitle }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { theme } = useTheme();
   const [cart, setCart] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
@@ -34,12 +35,15 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
   const [paymentMethod, setPaymentMethod] = useState('tunai');
   const [userRole, setUserRole] = useState(null);
   const [ignoreStock, setIgnoreStock] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const cartSectionRef = React.useRef(null);
+  const [userName, setUserName] = useState('');
 
 
   // State for the options modal
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
   const [selectedItemForOptions, setSelectedItemForOptions] = useState(null);
+  const [isMobileSummaryOpen, setIsMobileSummaryOpen] = useState(false);
 
   const fetchMenuItems = async () => {
     const token = localStorage.getItem('token');
@@ -67,6 +71,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       try {
         const decodedToken = JSON.parse(atob(token.split('.')[1]));
         setUserRole(decodedToken.role);
+        setUserName(decodedToken.username || decodedToken.name || 'Kasir');
       } catch (e) {
         console.error("Error decoding token in SalesTransactionProcessing:", e);
         setUserRole(null);
@@ -74,6 +79,9 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
     } else {
       setUserRole(null);
     }
+
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
 
     const fetchIgnoreStockSetting = async () => {
       try {
@@ -87,6 +95,8 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       }
     };
     fetchIgnoreStockSetting();
+
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const handleToggleIgnoreStock = async () => {
@@ -258,6 +268,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
         setIsEmployeeMeal(false);
         fetchMenuItems();
         navigate('/receipt', { state: { transaction: result.data } });
+        return true; // Success
       } else {
         console.error('Failed to save transaction:', result.error);
         alert('Gagal menyimpan transaksi: ' + (result.error || 'Unknown error'));
@@ -276,6 +287,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
     } finally {
       setIsLoading(false);
     }
+    return false; // Default to false if not successful
   };
 
   const scrollToCart = () => {
@@ -286,14 +298,56 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
   const totalCartPrice = cart.reduce((sum, item) => sum + (item.finalPrice * item.quantity), 0);
 
   return (
-    <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
-      {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} />}
-      <div className={`${theme === 'default' ? 'pt-16 lg:pt-20' : ''}`}>
-        <div className={`w-full ${theme === 'default' ? 'max-w-7xl mx-auto px-4 space-y-6 pt-2' : 'px-4 lg:px-6 space-y-4 py-2'} pb-20`}>
-          <div className="hidden md:block">
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'} overflow-x-hidden`}>
+      {/* Desktop Navigation Header */}
+      <div className="hidden lg:block">
+        {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} />}
+      </div>
+
+      {/* Mobile Floating Header (Native App Feel) */}
+      <div className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden ${scrolled ? 'bg-white/80 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}>
+        <div className="px-6 flex items-center justify-between">
+          <button onClick={() => navigate(-1)} className={`p-2 rounded-2xl transition-all ${scrolled ? 'bg-gray-100 text-gray-800' : 'bg-white/20 text-white backdrop-blur-md'}`}>
+            <Icon name="ChevronLeft" size={24} />
+          </button>
+          <div className={`text-center transition-all duration-300 ${scrolled ? 'opacity-100' : 'opacity-0'}`}>
+            <h2 className="font-black text-gray-800 tracking-tight">Transaksi</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <button className={`p-2 rounded-2xl transition-all ${scrolled ? 'bg-gray-100 text-gray-800' : 'bg-white/20 text-white backdrop-blur-md'}`}>
+              <Icon name="Bell" size={20} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className={`${theme === 'default' ? 'pt-0 lg:pt-20' : ''}`}>
+        {/* Mobile Header Banner */}
+        <div className="lg:hidden bg-gradient-to-br from-[#118EEA] via-[#118EEA] to-[#0A74BD] pt-20 pb-14 px-6 shadow-xl relative overflow-hidden">
+          <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-[-20%] left-[-5%] w-48 h-48 bg-blue-400/20 rounded-full blur-2xl"></div>
+
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-inner">
+                <Icon name="User" className="text-white" size={24} />
+              </div>
+              <div>
+                <p className="text-blue-100 text-xs font-bold uppercase tracking-widest opacity-80">Selamat Bekerja,</p>
+                <p className="text-white font-black text-lg">{userName}</p>
+              </div>
+            </div>
+            <h1 className="text-3xl font-black text-white tracking-tight leading-tight">
+              Ayo Mulai<br />Transaksi Baru!
+            </h1>
+          </div>
+        </div>
+
+        <div className={`w-full ${theme === 'default' ? 'max-w-7xl mx-auto px-4 space-y-6 lg:pt-2' : 'px-4 lg:px-6 space-y-4 py-2'} ${cart.length > 0 ? 'pb-44' : 'pb-24'} lg:pb-20 -mt-10 lg:mt-0 relative z-20`}>
+          <div className="hidden lg:block">
             <BreadcrumbNavigation />
           </div>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="hidden lg:flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
                 Transaksi Penjualan
@@ -312,6 +366,30 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
             </Button>
           </div>
 
+          {/* Quick Actions Mobile (Pas di Layar) */}
+          <div className="lg:hidden flex gap-3 pb-4">
+            <button
+              onClick={() => navigate('/transaksi-sederhana')}
+              className="flex-1 bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-2 active:scale-95 transition-all outline-none"
+            >
+              <div className="bg-blue-50 p-2 rounded-xl text-[#118EEA]">
+                <Icon name="Zap" size={18} />
+              </div>
+              <span className="font-black text-[11px] text-gray-800 leading-tight text-left">Mode<br />Sederhana</span>
+            </button>
+            <button
+              onClick={handleToggleIgnoreStock}
+              className={`flex-1 p-3 rounded-2xl shadow-sm border flex items-center gap-2 active:scale-95 transition-all outline-none ${ignoreStock ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'}`}
+            >
+              <div className={`${ignoreStock ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-600'} p-2 rounded-xl`}>
+                <Icon name="Package" size={18} />
+              </div>
+              <span className={`font-black text-[11px] leading-tight text-left ${ignoreStock ? 'text-red-700' : 'text-gray-800'}`}>
+                {ignoreStock ? <>Abaikan<br />Stok Aktif</> : <>Cek<br />Stok</>}
+              </span>
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <SalesForm
@@ -325,7 +403,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
                 handleToggleIgnoreStock={handleToggleIgnoreStock}
               />
             </div>
-            <div className="lg:col-span-1" ref={cartSectionRef}>
+            <div className="hidden lg:block lg:col-span-1" ref={cartSectionRef}>
               <OrderSummary
                 cart={cart}
                 menuItems={menuItems}
@@ -340,43 +418,130 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
                 setPaymentMethod={setPaymentMethod}
                 userRole={userRole}
                 ignoreStock={ignoreStock}
-
               />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Mobile Bottom Cart Bar */}
+      {/* Mobile Bottom Cart Bar (Premium Native Look) */}
       {cart.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.1)] p-4 md:hidden animate-in fade-in slide-in-from-bottom-full duration-300">
-          <div className="flex items-center justify-between gap-4 max-w-lg mx-auto">
-            {/* Clear Cart Button */}
-            <Button
-              variant="destructive"
-              size="icon"
-              onClick={handleClearCart}
-              className="rounded-full h-12 w-12 flex-shrink-0 shadow-sm"
-            >
-              <Icon name="Trash2" size={20} />
-            </Button>
-
-            {/* Price & Items Info */}
-            <div className="flex-grow">
-              <p className="text-xs text-text-secondary font-medium">{totalCartItems} Item Dipilih</p>
-              <p className="text-xl font-black text-indigo-600 dark:text-indigo-400">
-                Rp {totalCartPrice.toLocaleString('id-ID')}
-              </p>
+        <div className="fixed bottom-24 left-6 right-6 z-[100] md:hidden">
+          <div
+            onClick={() => setIsMobileSummaryOpen(true)}
+            className="bg-[#118EEA] p-2.5 px-3.5 rounded-3xl shadow-2xl shadow-blue-200 dark:shadow-none border border-white/20 flex items-center justify-between gap-3 active:scale-95 transition-all cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="bg-white/20 backdrop-blur-md p-2.5 rounded-xl">
+                  <Icon name="ShoppingCart" className="text-white" size={20} />
+                </div>
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-black w-[22px] h-[22px] flex items-center justify-center rounded-full border-2 border-[#118EEA]">
+                  {totalCartItems}
+                </span>
+              </div>
+              <div>
+                <p className="text-blue-100 text-[9px] font-bold uppercase tracking-wider mb-0">Total Bayar</p>
+                <p className="text-white font-black text-base leading-tight">
+                  Rp {totalCartPrice.toLocaleString('id-ID')}
+                </p>
+              </div>
             </div>
 
-            {/* Action Button */}
-            <button
-              onClick={scrollToCart}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-indigo-200 dark:shadow-none active:scale-95 transition-all"
-            >
-              <Icon name="ShoppingCart" size={18} />
-              <span>Bayar</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => { e.stopPropagation(); handleClearCart(); }}
+                className="bg-white/10 hover:bg-white/20 p-2.5 rounded-xl text-white transition-colors"
+              >
+                <Icon name="Trash2" size={18} />
+              </button>
+              <div className="h-8 w-px bg-white/20 mx-0.5"></div>
+              <div className="bg-white text-[#118EEA] px-5 py-2 rounded-xl font-black text-xs uppercase tracking-tight">
+                Bayar
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Bottom Navigation (Exact Design) */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-100 z-[100] lg:hidden">
+        <nav className="flex items-center justify-between h-18 px-4 py-2">
+          {[
+            { path: '/main-dashboard', icon: 'LayoutDashboard', label: 'Home' },
+            { path: '/transaksi', icon: 'ShoppingCart', label: 'Jual' },
+            { path: '/menu-management', icon: 'Utensils', label: 'Menu' },
+            { path: '/expense-tracking', icon: 'Receipt', label: 'Beban' },
+            { path: '/transaction-history', icon: 'List', label: 'Riwayat' },
+          ].map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center justify-center transition-all duration-500 ease-in-out h-12 rounded-2xl relative group active:scale-90 ${isActive
+                  ? 'flex-[2.5] bg-blue-600 dark:bg-white text-white dark:text-slate-900 px-4 shadow-lg shadow-blue-500/30 dark:shadow-white/10 hover:brightness-110'
+                  : 'flex-1 text-gray-400 dark:text-slate-500 hover:bg-gray-50 dark:hover:bg-slate-800'
+                  }`}
+              >
+                <div className="flex items-center gap-2 relative z-10 transition-all duration-300">
+                  <Icon
+                    name={item.icon}
+                    size={22}
+                    className={`transition-colors duration-300 ${isActive ? 'text-white dark:text-slate-900' : 'text-gray-400 dark:text-slate-500 group-hover:text-[#118EEA] dark:group-hover:text-blue-400'}`}
+                  />
+                  {isActive && (
+                    <span className="text-[10px] font-black uppercase tracking-wider whitespace-nowrap">
+                      {item.label}
+                    </span>
+                  )}
+                </div>
+                {isActive && (
+                  <div className="absolute inset-0 rounded-2xl bg-white/10 dark:bg-black/5 transition-opacity group-hover:opacity-20" />
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+      {/* Mobile Order Summary Popup (Bottom Sheet) */}
+      {isMobileSummaryOpen && (
+        <div className="fixed inset-0 z-[150] lg:hidden">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setIsMobileSummaryOpen(false)}
+          ></div>
+          <div className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
+            <div className="sticky top-0 right-0 p-4 flex justify-between items-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 border-b border-gray-100 dark:border-slate-800">
+              <h3 className="font-black text-lg text-gray-800 dark:text-white ml-2">Ringkasan Pesanan</h3>
+              <button
+                onClick={() => setIsMobileSummaryOpen(false)}
+                className="p-2 bg-gray-100 dark:bg-slate-800 rounded-md text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <Icon name="X" size={20} />
+              </button>
+            </div>
+            <div className="p-6">
+              <OrderSummary
+                cart={cart}
+                menuItems={menuItems}
+                onUpdateQuantity={handleUpdateQuantity}
+                onRemoveFromCart={handleRemoveFromCart}
+                onClearCart={handleClearCart}
+                onProcessPayment={async (paymentData) => {
+                  const success = await handleProcessPayment(paymentData);
+                  if (success) setIsMobileSummaryOpen(false);
+                }}
+                isLoading={isLoading}
+                isEmployeeMeal={isEmployeeMeal}
+                setIsEmployeeMeal={setIsEmployeeMeal}
+                paymentMethod={paymentMethod}
+                setPaymentMethod={setPaymentMethod}
+                userRole={userRole}
+                ignoreStock={ignoreStock}
+                isMobilePopup={true}
+              />
+            </div>
           </div>
         </div>
       )}

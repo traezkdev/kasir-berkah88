@@ -52,8 +52,32 @@ const CustomerOrderConfirmation = () => {
                 return { label: 'Diterima', icon: 'CheckCircle', color: 'text-green-600', bg: 'bg-green-50' };
             case 'rejected':
                 return { label: 'Ditolak', icon: 'XCircle', color: 'text-red-600', bg: 'bg-red-50' };
+            case 'cancelled':
+                return { label: 'Dibatalkan', icon: 'Slash', color: 'text-gray-400', bg: 'bg-gray-50' };
             default:
                 return { label: status, icon: 'Info', color: 'text-gray-500', bg: 'bg-gray-50' };
+        }
+    };
+
+    const handleCancelOrder = async (orderId) => {
+        if (!window.confirm("Apakah Anda yakin ingin membatalkan pesanan ini?")) return;
+
+        try {
+            const response = await authFetch(`${API_URL}/api/orders/${orderId}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'cancelled' })
+            });
+
+            if (response.ok) {
+                fetchOrders(1);
+            } else {
+                const error = await response.json();
+                alert(error.error || "Gagal membatalkan pesanan");
+            }
+        } catch (error) {
+            console.error("Error cancelling order:", error);
+            alert("Terjadi kesalahan koneksi saat membatalkan pesanan");
         }
     };
 
@@ -134,12 +158,22 @@ const CustomerOrderConfirmation = () => {
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Pembayaran</p>
                                         <p className="text-lg font-black text-green-600">{formatCurrency(order.total)}</p>
                                     </div>
-                                    <button
-                                        className="bg-gray-50 text-gray-400 p-3 rounded-xl active:scale-90 transition-all ml-4"
-                                        onClick={() => fetchOrders()}
-                                    >
-                                        <Icon name="RefreshCw" className="w-4 h-4" />
-                                    </button>
+                                    <div className="flex gap-2 ml-4">
+                                        {order.status === 'pending' && (
+                                            <button
+                                                className="bg-red-50 text-red-500 font-extrabold px-4 py-2 rounded-xl active:scale-95 transition-all text-xs uppercase tracking-wider border border-red-100"
+                                                onClick={() => handleCancelOrder(order.id)}
+                                            >
+                                                Batalkan
+                                            </button>
+                                        )}
+                                        <button
+                                            className="bg-gray-50 text-gray-400 p-3 rounded-xl active:scale-90 transition-all"
+                                            onClick={() => fetchOrders(1)}
+                                        >
+                                            <Icon name="RefreshCw" className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         );

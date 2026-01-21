@@ -3,6 +3,7 @@ import Input from '../../../components/ui/Input';
 import ProductCard from './ProductCard';
 import Button from '../../../components/ui/Button';
 import authFetch from '../../../utils/authFetch';
+import Icon from '../../../components/AppIcon';
 
 const SalesForm = ({ menuItems, onIncrementItem, onDecrementItem, cart, userRole, apiUrl, ignoreStock, handleToggleIgnoreStock }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,41 +40,49 @@ const SalesForm = ({ menuItems, onIncrementItem, onDecrementItem, cart, userRole
 
   return (
     <div className="">
-      <Input
-        type="text"
-        placeholder="Cari menu..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full mb-6"
-      />
+      <div className="relative mb-6">
+        <Icon name="Search" className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+        <Input
+          type="text"
+          placeholder="Cari menu favorit..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-14 pr-6 py-4 bg-white border-transparent shadow-sm rounded-3xl focus:ring-2 focus:ring-indigo-500 transition-all"
+        />
+      </div>
 
-      <div className="flex flex-wrap gap-2 mb-6">
-        <Button
-          variant={selectedCategory === 'all' ? 'default' : 'outline'}
-          size="sm"
+      <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2">
+        <button
           onClick={() => setSelectedCategory('all')}
+          className={`flex-shrink-0 px-6 py-2.5 rounded-2xl font-black text-sm transition-all duration-300 ${selectedCategory === 'all'
+            ? 'bg-[#118EEA] text-white shadow-lg shadow-blue-100 scale-105'
+            : 'bg-white text-gray-400 border border-gray-100'
+            }`}
         >
           Semua
-        </Button>
+        </button>
         {categories.map(cat => (
-          <Button
+          <button
             key={cat.id}
-            variant={selectedCategory === cat.name.toLowerCase() ? 'default' : 'outline'}
-            size="sm"
             onClick={() => setSelectedCategory(cat.name.toLowerCase())}
+            className={`flex-shrink-0 px-6 py-2.5 rounded-2xl font-black text-sm transition-all duration-300 ${selectedCategory === cat.name.toLowerCase()
+              ? 'bg-[#118EEA] text-white shadow-lg shadow-blue-100 scale-105'
+              : 'bg-white text-gray-400 border border-gray-100'
+              }`}
           >
             {cat.name}
-          </Button>
+          </button>
         ))}
-        <div className="flex items-center ml-auto w-full sm:w-auto">
-          <Button
-            onClick={handleToggleIgnoreStock}
-            variant={ignoreStock ? "destructive" : "outline"}
-            className="w-full"
-          >
-            Abaikan Stok: {ignoreStock ? "Ya" : "Tidak"}
-          </Button>
-        </div>
+      </div>
+
+      <div className="hidden lg:flex items-center ml-auto w-full sm:w-auto mb-6">
+        <Button
+          onClick={handleToggleIgnoreStock}
+          variant={ignoreStock ? "destructive" : "outline"}
+          className="w-full"
+        >
+          Abaikan Stok: {ignoreStock ? "Ya" : "Tidak"}
+        </Button>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {sortedMenuItems.map(item => (

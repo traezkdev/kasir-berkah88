@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import authFetch from '../../../utils/authFetch';
+import { jwtDecode } from 'jwt-decode';
 import { toast } from 'react-hot-toast';
 
 const SellerTransactionHistory = () => {
@@ -11,6 +12,7 @@ const SellerTransactionHistory = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [scrolled, setScrolled] = useState(false);
+    const [userRole, setUserRole] = useState(null);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [dateRange, setDateRange] = useState({
         startDate: '',
@@ -22,6 +24,16 @@ const SellerTransactionHistory = () => {
             setScrolled(window.scrollY > 50);
         };
         window.addEventListener('scroll', handleScroll);
+
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const decodedToken = jwtDecode(token);
+                setUserRole(decodedToken.role);
+            } catch (e) {
+                console.error("Error decoding token:", e);
+            }
+        }
 
         fetchTransactions();
 
@@ -102,7 +114,7 @@ const SellerTransactionHistory = () => {
     }, [filteredTransactions]);
 
     return (
-        <>
+        <div className="pb-10 animate-in fade-in duration-500 lg:static -mx-4 -mt-4 lg:mx-0 lg:mt-0">
             {/* Desktop UI */}
             <div className="hidden lg:block pb-10">
                 <header className="bg-white rounded-[2rem] p-8 shadow-sm border border-indigo-50/50 mb-8 flex justify-between items-center relative overflow-hidden">
@@ -245,31 +257,47 @@ const SellerTransactionHistory = () => {
             </div>
 
             {/* Mobile UI */}
-            <div className="pb-24 -mx-4 -mt-4 overflow-x-hidden lg:hidden">
+            <div className="pb-24 overflow-x-hidden lg:hidden">
+                {/* Floating Top Nav (App Bar feel) */}
                 <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/80 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'} lg:hidden`}>
-                    <div className="px-6 flex justify-between items-center">
-                        <span className={`font-bold transition-colors ${scrolled ? 'text-gray-800' : 'text-white text-xl'}`}>
-                            {scrolled ? 'Riwayat Transaksi' : ''}
+                    <div className="px-6 flex justify-between items-center text-white">
+                        <button onClick={() => navigate('/seller/dashboard')} className={`p-2 rounded-xl scale-110 active:scale-95 transition-all ${scrolled ? 'bg-gray-100 text-gray-600' : 'bg-white/20 text-white'}`}>
+                            <Icon name="ChevronLeft" size={24} />
+                        </button>
+                        <span className={`font-black tracking-tight flex-1 text-center transition-opacity duration-300 ${scrolled ? 'text-gray-800 opacity-100' : 'opacity-0 text-xl'}`}>
+                            Transaksi
                         </span>
-                        <div className="flex gap-3">
-                            <button onClick={fetchTransactions} className={`p-2 rounded-full ${scrolled ? 'bg-gray-100 text-gray-600' : 'bg-white/20 text-white'}`}>
-                                <Icon name="RefreshCw" size={20} />
+                        <div className="flex gap-2">
+                            {userRole === 'admin' && (
+                                <button
+                                    onClick={() => navigate('/main-dashboard')}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all ${scrolled ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-white/20 text-white border border-white/30'}`}
+                                >
+                                    <Icon name="ArrowLeft" size={14} />
+                                    Admin
+                                </button>
+                            )}
+                            <button onClick={fetchTransactions} className={`p-2 rounded-xl active:scale-90 transition-all ${scrolled ? 'bg-gray-100 text-gray-600' : 'bg-white/20 text-white'}`}>
+                                <Icon name="RefreshCw" size={20} className={isLoading ? 'animate-spin' : ''} />
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <header className="bg-gradient-to-br from-indigo-600 via-blue-600 to-blue-500 pt-24 pb-12 px-6 rounded-b-[2.5rem] shadow-xl relative z-10">
+                <header className="bg-gradient-to-br from-indigo-700 via-blue-600 to-indigo-500 pt-24 pb-12 px-6 rounded-b-[2.5rem] shadow-xl relative z-10">
                     <div className="absolute inset-0 overflow-hidden rounded-b-[2.5rem] pointer-events-none">
                         <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
                         <div className="absolute bottom-[-20%] left-[-5%] w-48 h-48 bg-blue-400/20 rounded-full blur-2xl"></div>
                     </div>
 
                     <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="text-blue-100 font-bold text-xs uppercase tracking-widest bg-white/10 px-4 py-1.5 rounded-full">Report History</span>
+                        </div>
                         <h1 className="text-3xl font-black text-white tracking-tight mb-2">Riwayat<br />Transaksi</h1>
                         <p className="text-blue-100 font-medium opacity-90">Total {stats.count} transaksi tercatat.</p>
 
-                        <div className="mt-6 bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl flex justify-between items-center">
+                        <div className="mt-6 bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-3xl flex justify-between items-center group active:scale-95 transition-all">
                             <div>
                                 <p className="text-blue-200 text-xs font-bold uppercase tracking-wider mb-1">Total Pendapatan</p>
                                 <h2 className="text-2xl font-black text-white">{formatCurrency(stats.total)}</h2>
@@ -447,8 +475,7 @@ const SellerTransactionHistory = () => {
                     </div>
                 </div>
             )}
-
-        </>
+        </div>
     );
 };
 

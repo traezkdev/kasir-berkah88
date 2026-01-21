@@ -139,7 +139,7 @@ const CustomerDashboard = () => {
             </header>
 
             {/* Integrated Action Card (Floated Half-In Half-Out) */}
-            <div className="mx-6 -mt-24 relative z-40 bg-white rounded-[2rem] shadow-xl text-gray-800 overflow-hidden border border-white">
+            <div className="mx-6 -mt-20 relative z-40 bg-white rounded-[2rem] shadow-xl text-gray-800 overflow-hidden border border-white">
                 {/* Saldo Section */}
                 <div className="p-5 flex justify-between items-center border-b border-gray-50">
                     <div className="flex flex-col">

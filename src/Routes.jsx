@@ -62,6 +62,7 @@ import SellerBanners from './pages/customer/Dashboard/SellerBanners';
 import SellerMenuManagement from './pages/customer/Dashboard/SellerMenuManagement';
 import SellerTransactionHistory from './pages/customer/Dashboard/SellerTransactionHistory';
 import SellerReceipt from './pages/customer/Dashboard/SellerReceipt';
+import SellerOrderManagement from './pages/customer/Dashboard/SellerOrderManagement';
 
 // ... (existing imports)
 
@@ -276,6 +277,7 @@ const AppRoutes = () => {
         <Route path="/seller/banners" element={<SellerBanners />} />
         <Route path="/seller/menu-management" element={<SellerMenuManagement />} />
         <Route path="/seller/transaction-history" element={<SellerTransactionHistory />} />
+        <Route path="/seller/orders" element={<SellerOrderManagement />} />
         <Route path="/seller/receipt" element={<SellerReceipt />} />
       </Route>
 

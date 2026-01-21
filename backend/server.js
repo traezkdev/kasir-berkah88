@@ -3040,46 +3040,55 @@ app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user', 'pelan
     }
 });
 
-// Update an order's status (admin only)
-
-app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'user', 'kasir', 'penjual'), async (req, res) => {
-
+// Update an order's status
+app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'user', 'kasir', 'penjual', 'pelanggan'), async (req, res) => {
     const { status } = req.body;
-
     const { id } = req.params;
 
+    if (!status || !['accepted', 'rejected', 'cancelled'].includes(status)) {
+        return res.status(400).json({ error: "Invalid status provided. Must be 'accepted', 'rejected', or 'cancelled'." });
+    }
 
-
-    if (!status || !['accepted', 'rejected'].includes(status)) {
-
-        return res.status(400).json({ error: "Invalid status provided. Must be 'accepted' or 'rejected'." });
-
+    // If role is pelanggan, they can only set to 'cancelled' and only if it's their own order
+    if (req.user.role === 'pelanggan' && status !== 'cancelled') {
+        return res.status(403).json({ error: "Pelanggan hanya diperbolehkan membatalkan pesanan." });
     }
 
 
 
     const connection = await db.getConnection();
 
-
-
     try {
-
         await connection.beginTransaction();
 
+        // Get the order to check ownership and current status
+        const [orderRows] = await connection.query('SELECT user_id, status FROM orders WHERE id = ? FOR UPDATE', [id]);
 
+        if (orderRows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ error: "Order not found." });
+        }
 
-        // Handle 'rejected' status: just update and finish
+        const order = orderRows[0];
 
-        if (status === 'rejected') {
+        // Security check for pelanggan
+        if (req.user.role === 'pelanggan') {
+            if (order.user_id !== req.user.userId) {
+                await connection.rollback();
+                return res.status(403).json({ error: "Unauthorized: You don't own this order." });
+            }
+            if (order.status !== 'pending') {
+                await connection.rollback();
+                return res.status(400).json({ error: "Pesanan tidak dapat dibatalkan karena sudah diproses." });
+            }
+        }
 
+        // Handle 'rejected' or 'cancelled' status: just update and finish
+        if (status === 'rejected' || status === 'cancelled') {
             const updateSql = 'UPDATE orders SET status = ? WHERE id = ?';
-
-            await connection.query(updateSql, ['rejected', id]);
-
+            await connection.query(updateSql, [status, id]);
             await connection.commit();
-
-            return res.json({ message: `Order ${id} has been rejected.` });
-
+            return res.json({ message: `Order ${id} has been ${status}.` });
         }
 
 

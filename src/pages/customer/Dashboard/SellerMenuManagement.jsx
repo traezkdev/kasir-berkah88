@@ -3,6 +3,7 @@ import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import authFetch from '../../../utils/authFetch';
+import { jwtDecode } from 'jwt-decode';
 
 const SellerMenuManagement = () => {
     const navigate = useNavigate();
@@ -13,6 +14,7 @@ const SellerMenuManagement = () => {
     const [editingItem, setEditingItem] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+    const [userRole, setUserRole] = useState(null);
     const [activeCategory, setActiveCategory] = useState('Semua');
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -33,6 +35,17 @@ const SellerMenuManagement = () => {
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 20);
         window.addEventListener('scroll', handleScroll);
+
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const decodedToken = jwtDecode(token);
+                setUserRole(decodedToken.role);
+            } catch (e) {
+                console.error("Error decoding token:", e);
+            }
+        }
+
         fetchData();
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
@@ -189,9 +202,20 @@ const SellerMenuManagement = () => {
                         <Icon name="ChevronLeft" size={24} />
                     </button>
                     <span className={`font-black tracking-tight flex-1 text-center ${scrolled ? 'text-gray-800' : 'text-white text-lg'}`}>Kelola Katalog</span>
-                    <button onClick={() => handleOpenModal()} className={`p-2 rounded-xl flex-shrink-0 ${scrolled ? 'bg-blue-600 text-white' : 'bg-white text-blue-600'}`}>
-                        <Icon name="Plus" size={20} />
-                    </button>
+                    <div className="flex gap-2">
+                        {userRole === 'admin' && (
+                            <button
+                                onClick={() => navigate('/main-dashboard')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all ${scrolled ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-white/20 text-white border border-white/30'}`}
+                            >
+                                <Icon name="ArrowLeft" size={14} />
+                                Admin
+                            </button>
+                        )}
+                        <button onClick={() => handleOpenModal()} className={`p-2 rounded-xl flex-shrink-0 ${scrolled ? 'bg-blue-600 text-white' : 'bg-white text-blue-600'}`}>
+                            <Icon name="Plus" size={20} />
+                        </button>
+                    </div>
                 </div>
             </div>
 
