@@ -39,14 +39,14 @@ const MenuSummaryCards = ({ menuItems }) => {
       {summaryCards.map((card, idx) => (
         <div
           key={idx}
-          className="min-w-[160px] flex-shrink-0 lg:min-w-0 bg-white dark:bg-slate-800 p-5 rounded-[2rem] border border-gray-100 dark:border-slate-700 shadow-sm transition-all active:scale-95"
+          className="min-w-[160px] flex-shrink-0 lg:min-w-0 bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm transition-all active:scale-95"
         >
           <div className="flex items-center justify-between mb-4">
-            <div className={`p-2.5 rounded-2xl ${card.color === 'blue' ? 'bg-blue-50 text-blue-600' :
-                card.color === 'indigo' ? 'bg-indigo-50 text-indigo-600' :
-                  card.color === 'emerald' ? 'bg-emerald-50 text-emerald-600' :
-                    card.color === 'orange' ? 'bg-orange-50 text-orange-600' :
-                      'bg-rose-50 text-rose-600'
+            <div className={`p-2.5 rounded-xl ${card.color === 'blue' ? 'bg-blue-50 text-blue-600' :
+              card.color === 'indigo' ? 'bg-indigo-50 text-indigo-600' :
+                card.color === 'emerald' ? 'bg-emerald-50 text-emerald-600' :
+                  card.color === 'orange' ? 'bg-orange-50 text-orange-600' :
+                    'bg-rose-50 text-rose-600'
               }`}>
               <Icon name={card.icon || 'Package'} size={18} />
             </div>

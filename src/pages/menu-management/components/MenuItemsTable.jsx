@@ -64,17 +64,17 @@ const MenuItemsTable = ({
     const stockStatus = getStockStatus(item?.stock);
 
     return (
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-[2.5rem] mb-4 border border-gray-100 dark:border-slate-700 shadow-sm active:scale-[0.98] transition-all duration-200">
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl mb-4 border border-gray-100 dark:border-slate-700 shadow-sm active:scale-[0.98] transition-all duration-200">
         <div className="flex items-start gap-5 mb-5">
           <div className="relative">
             <img
               src={item?.image_url ? `${apiUrl}${item.image_url}` : '/assets/images/no_image.png'}
               alt={item?.name}
-              className="w-24 h-24 object-cover rounded-[2rem] shadow-inner border border-gray-50 dark:border-slate-700"
+              className="w-24 h-24 object-cover rounded-xl shadow-inner border border-gray-50 dark:border-slate-700"
               onError={(e) => { e.target.onerror = null; e.target.src = '/assets/images/no_image.png' }}
             />
             {!!item?.is_featured && (
-              <div className="absolute -top-2 -right-2 w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center border-4 border-white dark:border-slate-800 shadow-md">
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-amber-400 rounded-lg flex items-center justify-center border-4 border-white dark:border-slate-800 shadow-md">
                 <Icon name="Star" size={12} className="text-white fill-current" />
               </div>
             )}
@@ -109,7 +109,7 @@ const MenuItemsTable = ({
         </div>
 
         <div className="flex items-center justify-between pt-4 border-t border-gray-50 dark:border-slate-700">
-          <div className={`px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] ${stockStatus?.color} ${stockStatus?.bg}`}>
+          <div className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.1em] ${stockStatus?.color} ${stockStatus?.bg}`}>
             {stockStatus?.label}
           </div>
 
@@ -118,13 +118,13 @@ const MenuItemsTable = ({
               <>
                 <button
                   onClick={() => onEditItem(item)}
-                  className="w-12 h-12 rounded-[1.25rem] bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center active:scale-90 transition-all border border-blue-100 dark:border-blue-800/30"
+                  className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center active:scale-90 transition-all border border-blue-100 dark:border-blue-800/30"
                 >
                   <Icon name="Pencil" size={20} />
                 </button>
                 <button
                   onClick={() => setShowDeleteConfirm(item?.id)}
-                  className="w-12 h-12 rounded-[1.25rem] bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 flex items-center justify-center active:scale-90 transition-all border border-rose-100 dark:border-rose-800/30"
+                  className="w-12 h-12 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 flex items-center justify-center active:scale-90 transition-all border border-rose-100 dark:border-rose-800/30"
                 >
                   <Icon name="Trash2" size={20} />
                 </button>
@@ -157,7 +157,7 @@ const MenuItemsTable = ({
   }
 
   return (
-    <div className="lg:bg-card lg:rounded-lg lg:shadow-sm lg:border lg:border-border overflow-hidden">
+    <div className="lg:bg-card lg:rounded-2xl lg:shadow-sm lg:border lg:border-border overflow-hidden">
       {/* Header - Desktop Only */}
       <div className="hidden lg:block p-6 border-b border-border">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
@@ -233,7 +233,7 @@ const MenuItemsTable = ({
                     <img
                       src={item?.image_url ? `${apiUrl}${item.image_url}` : '/assets/images/no_image.png'}
                       alt={item?.name}
-                      className="w-12 h-12 object-cover rounded-xl shadow-sm border border-gray-100 dark:border-slate-700"
+                      className="w-12 h-12 object-cover rounded-lg shadow-sm border border-gray-100 dark:border-slate-700"
                       onError={(e) => { e.target.onerror = null; e.target.src = '/assets/images/no_image.png' }}
                     />
                   </td>
@@ -248,7 +248,7 @@ const MenuItemsTable = ({
                     </div>
                   </td>
                   <td className="p-4">
-                    <span className="text-xs font-black text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg uppercase tracking-widest">
+                    <span className="text-xs font-black text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md uppercase tracking-widest">
                       {item?.category}
                     </span>
                   </td>
@@ -260,7 +260,7 @@ const MenuItemsTable = ({
                   </td>
                   <td className="p-4">
                     {item?.discount > 0 ? (
-                      <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">
+                      <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
                         {(item?.discount * 100).toFixed(0)}%
                       </span>
                     ) : (
@@ -269,13 +269,13 @@ const MenuItemsTable = ({
                   </td>
                   <td className="p-4">
                     {item?.is_featured ? (
-                      <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
+                      <div className="w-8 h-8 bg-amber-50 rounded-md flex items-center justify-center">
                         <Icon name="Star" size={16} className="text-amber-500 fill-current" />
                       </div>
                     ) : '-'}
                   </td>
                   <td className="p-4">
-                    <div className={`inline-flex px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest ${stockStatus?.color} ${stockStatus?.bg}`}>
+                    <div className={`inline-flex px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${stockStatus?.color} ${stockStatus?.bg}`}>
                       {stockStatus?.label}
                     </div>
                   </td>
@@ -311,7 +311,7 @@ const MenuItemsTable = ({
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center z-[1000] p-6 animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-2xl max-w-sm w-full p-8 animate-in zoom-in-95 duration-300">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-sm w-full p-8 animate-in zoom-in-95 duration-300">
             <div className="flex flex-col items-center text-center mb-8">
               <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 rounded-[2rem] flex items-center justify-center mb-4 border border-rose-100 dark:border-rose-900/30">
                 <Icon name="Trash2" size={32} className="text-rose-500" />
