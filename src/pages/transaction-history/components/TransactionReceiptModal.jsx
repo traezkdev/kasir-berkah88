@@ -245,10 +245,13 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
         className="fixed inset-0 bg-black bg-opacity-50 z-[9998] transition-opacity backdrop-blur-sm"
         onClick={onClose}
       ></div>
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[9999] flex items-end lg:items-center justify-center sm:p-4 p-0">
         <div
           id="receipt-container"
-          className="relative bg-card rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col"
+          className="relative w-full lg:max-w-2xl bg-white dark:bg-slate-900 shadow-2xl overflow-hidden
+             lg:mx-auto lg:h-[90vh]
+             fixed lg:relative bottom-0 left-0 right-0 h-[92vh] lg:h-auto
+             rounded-none lg:rounded-lg animate-in slide-in-from-bottom-full lg:zoom-in-95 duration-300 flex flex-col"
         >
           <div className="flex-1 overflow-y-auto bg-gray-50 flex justify-center p-4 sm:p-6">
             <div
