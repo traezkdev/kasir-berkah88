@@ -35,6 +35,20 @@ const MainDashboard = ({ headerTitle }) => {
     end: new Date().toISOString().split('T')[0],
   });
   const [showDetails, setShowDetails] = useState(false);
+  const [showStickyHeader, setShowStickyHeader] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 50) {
+        setShowStickyHeader(true);
+      } else {
+        setShowStickyHeader(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const fetchData = async (currentUserRole) => { // Add currentUserRole parameter
     const token = localStorage.getItem('token');
@@ -789,6 +803,28 @@ const MainDashboard = ({ headerTitle }) => {
 
   return (
     <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50 dark:bg-slate-950' : 'bg-transparent'}`}>
+      {/* Sticky Mobile Header */}
+      <div className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm py-3 ${showStickyHeader ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
+        <div className="px-6 flex items-center justify-between">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 rounded-2xl transition-all bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200 active:scale-95"
+          >
+            <Icon name="ChevronLeft" size={24} />
+          </button>
+          <div className="text-center">
+            <h2 className="font-black text-gray-800 dark:text-white tracking-tight">
+              {headerTitle || 'Dashboard'}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <button className="p-2 rounded-2xl transition-all bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200 active:scale-95">
+              <Icon name="Bell" size={20} />
+            </button>
+          </div>
+        </div>
+      </div>
+
       {theme === 'default' && (
         <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} hideMobileHeader={true} />
       )}
