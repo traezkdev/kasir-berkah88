@@ -80,6 +80,7 @@ const TransactionHistory = ({ headerTitle }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showStickyHeader, setShowStickyHeader] = useState(false);
+  const [showAllMetrics, setShowAllMetrics] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -900,8 +901,8 @@ const TransactionHistory = ({ headerTitle }) => {
             <h2 className="text-xl lg:text-2xl font-semibold text-text-primary mb-4">
               Ringkasan Pendapatan
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {revenueMetrics.map((metric, index) => (
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+              {revenueMetrics.slice(0, showAllMetrics || window.innerWidth >= 1024 ? revenueMetrics.length : 2).map((metric, index) => (
                 <MetricsCard
                   key={index}
                   title={metric.title}
@@ -918,8 +919,8 @@ const TransactionHistory = ({ headerTitle }) => {
           {/* Transaction Metrics Section */}
           <div className="mb-6">
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {transactionMetrics.map((metric, index) => (
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+              {transactionMetrics.slice(0, showAllMetrics || window.innerWidth >= 1024 ? transactionMetrics.length : 1).map((metric, index) => (
                 <MetricsCard
                   key={index}
                   title={metric.title}
@@ -930,6 +931,16 @@ const TransactionHistory = ({ headerTitle }) => {
                 />
               ))}
             </div>
+            {/* Show More Button - Mobile Only */}
+            {(revenueMetrics.length + transactionMetrics.length > 3) && (
+              <button
+                onClick={() => setShowAllMetrics(!showAllMetrics)}
+                className="lg:hidden mt-4 w-full py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-black text-gray-700 dark:text-gray-300 uppercase tracking-wider active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <Icon name={showAllMetrics ? "ChevronUp" : "ChevronDown"} size={18} />
+                {showAllMetrics ? "Sembunyikan Semua" : `Lihat ${revenueMetrics.length + transactionMetrics.length - 3} Metrik Lainnya`}
+              </button>
+            )}
           </div>
           {/* End Transaction Metrics Section */}
 
