@@ -104,15 +104,22 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
     setIgnoreStock(newValue);
 
     try {
-      await authFetch(`${apiUrl}/api/settings/ignore_stock_sales_form`, {
+      const response = await authFetch(`${apiUrl}/api/settings/ignore_stock_sales_form`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ value: newValue ? '1' : '0' }),
       });
+
+      if (!response.ok) {
+        throw new Error('Gagal menyinkronkan pengaturan ke server');
+      }
+
+      toast.success(newValue ? 'Mode Abaikan Stok Aktif' : 'Pengecekan Stok Aktif');
     } catch (err) {
       setIgnoreStock(!newValue);
+      toast.error('Gagal memperbarui pengaturan: ' + err.message);
       console.error('Terjadi kesalahan saat memperbarui pengaturan Abaikan Stok: ' + err.message);
     }
   };
@@ -127,17 +134,23 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       const cartItemId = getCartItemId(item, selectedOptions);
       const existingItem = prevCart.find(cartItem => cartItem.cartItemId === cartItemId);
 
+      // Calculate total quantity of this base item across all variations in cart
+      const totalQtyInCart = prevCart
+        .filter(cartItem => cartItem.id === item.id)
+        .reduce((sum, cartItem) => sum + cartItem.quantity, 0);
+
+      const itemStock = Number(item.stock);
+
+      if (!ignoreStock && totalQtyInCart + 1 > itemStock) {
+        toast.error(`Stok ${item.name} tidak mencukupi`);
+        return prevCart;
+      }
+
       const optionPriceAdjustment = selectedOptions.reduce((sum, opt) => sum + (opt.price_adjustment || 0), 0);
       const priceAfterDiscount = item.discount > 0 ? parseFloat(item.price) * (1 - item.discount) : parseFloat(item.price);
       const finalPrice = priceAfterDiscount + optionPriceAdjustment;
 
       if (existingItem) {
-        // Increment quantity if item with same options exists
-        if (!ignoreStock && existingItem.quantity + 1 > item.stock) {
-          toast.error(`Stok ${item.name} tidak mencukupi`);
-          return prevCart;
-        }
-
         return prevCart.map(cartItem =>
           cartItem.cartItemId === cartItemId
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
@@ -340,6 +353,30 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
             <h1 className="text-3xl font-black text-white tracking-tight leading-tight">
               Ayo Mulai<br />Transaksi Baru!
             </h1>
+
+            {/* Quick Actions Mobile Inside Banner */}
+            <div className="flex gap-3 mt-8">
+              <button
+                onClick={() => navigate('/transaksi-sederhana')}
+                className="flex-1 bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 flex items-center gap-2 active:scale-95 transition-all outline-none"
+              >
+                <div className="bg-white/20 p-2 rounded-xl text-white">
+                  <Icon name="Zap" size={18} />
+                </div>
+                <span className="font-black text-[11px] text-white leading-tight text-left">Mode<br />Sederhana</span>
+              </button>
+              <button
+                onClick={handleToggleIgnoreStock}
+                className={`flex-1 p-3 rounded-2xl border flex items-center gap-2 active:scale-95 transition-all outline-none ${ignoreStock ? 'bg-red-500/20 border-red-400/30' : 'bg-white/10 border-white/20 backdrop-blur-md'}`}
+              >
+                <div className={`${ignoreStock ? 'bg-red-500 text-white' : 'bg-white/20 text-white'} p-2 rounded-xl`}>
+                  <Icon name="Package" size={18} />
+                </div>
+                <span className={`font-black text-[11px] leading-tight text-left ${ignoreStock ? 'text-red-100' : 'text-white'}`}>
+                  {ignoreStock ? <>Abaikan<br />Stok Aktif</> : <>Cek<br />Stok</>}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -366,29 +403,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
             </Button>
           </div>
 
-          {/* Quick Actions Mobile (Pas di Layar) */}
-          <div className="lg:hidden flex gap-3 pb-4">
-            <button
-              onClick={() => navigate('/transaksi-sederhana')}
-              className="flex-1 bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-2 active:scale-95 transition-all outline-none"
-            >
-              <div className="bg-blue-50 p-2 rounded-xl text-[#118EEA]">
-                <Icon name="Zap" size={18} />
-              </div>
-              <span className="font-black text-[11px] text-gray-800 leading-tight text-left">Mode<br />Sederhana</span>
-            </button>
-            <button
-              onClick={handleToggleIgnoreStock}
-              className={`flex-1 p-3 rounded-2xl shadow-sm border flex items-center gap-2 active:scale-95 transition-all outline-none ${ignoreStock ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'}`}
-            >
-              <div className={`${ignoreStock ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-600'} p-2 rounded-xl`}>
-                <Icon name="Package" size={18} />
-              </div>
-              <span className={`font-black text-[11px] leading-tight text-left ${ignoreStock ? 'text-red-700' : 'text-gray-800'}`}>
-                {ignoreStock ? <>Abaikan<br />Stok Aktif</> : <>Cek<br />Stok</>}
-              </span>
-            </button>
-          </div>
+
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">

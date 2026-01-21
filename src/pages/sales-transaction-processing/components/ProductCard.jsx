@@ -10,8 +10,9 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl, i
   const itemsInCart = cart.filter(cartItem => cartItem.id === item.id);
   const quantityInCart = itemsInCart.reduce((sum, cartItem) => sum + cartItem.quantity, 0);
 
-  const canIncrement = item.stock > quantityInCart;
-  const isOutOfStock = item.stock === 0;
+  const itemStock = Number(item.stock);
+  const canIncrement = itemStock > quantityInCart;
+  const isOutOfStock = itemStock <= 0;
 
   // For decrementing, we need to target a specific cart item.
   // A reasonable default is to target the last variation of this item added to the cart.
@@ -90,7 +91,7 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl, i
             <button
               className="w-full py-2.5 bg-[#118EEA] text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-lg shadow-blue-100 active:scale-95 transition-all"
               onClick={() => onIncrement(item)}
-              disabled={userRole === 'guest'}
+              disabled={(!canIncrement && !ignoreStock) || userRole === 'guest'}
             >
               Tambah
             </button>

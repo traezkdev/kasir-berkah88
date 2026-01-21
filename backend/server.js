@@ -1427,7 +1427,7 @@ app.put("/api/settings/registration", authenticateToken, authorizeRoles('admin')
 });
 
 // Update a specific setting by key
-app.put('/api/settings/:key', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+app.put('/api/settings/:key', authenticateToken, authorizeRoles('admin', 'user', 'owner', 'kasir'), async (req, res) => {
     try {
         const { key } = req.params;
         const { value } = req.body;
