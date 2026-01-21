@@ -3685,10 +3685,6 @@ app.put('/api/settings/last_monthly_reset_date', authenticateToken, authorizeRol
     }
 });
 
-
-
-
-
 // Enable/disable registration
 app.put("/api/settings/registration", authenticateToken, authorizeRoles('admin'), async (req, res) => {
     try {
