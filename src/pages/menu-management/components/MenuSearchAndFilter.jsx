@@ -42,20 +42,19 @@ const MenuSearchAndFilter = ({
     <div className="space-y-6 mb-8">
       {/* Search & Actions */}
       <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-        <div className="relative flex-1 group">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Icon name="Search" size={18} className="text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+        <div className="relative flex-1 group pt-4 lg:pt-10">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none pt-4 lg:pt-10">
+            <Icon name="Search" size={18} className="text-gray-400 group-focus-within:text-blue-500 transition-colors " />
           </div>
           <input
-            type="text"
             placeholder="Cari produk menu..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-11 pr-4 py-3.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-sm font-medium transition-all"
+            className="w-full pl-14 pr-6 py-4 bg-white border-transparent shadow-sm rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:bg-slate-800 dark:text-white"
           />
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 lg:pt-10">
           <button
             onClick={onShareStock}
             className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-2xl text-xs font-black uppercase tracking-widest active:scale-95 transition-all"

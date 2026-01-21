@@ -854,29 +854,35 @@ const TransactionHistory = ({ headerTitle }) => {
             <div className="mt-8 flex gap-3 relative z-10">
               <button
                 onClick={handleOpenRecapPopup}
-                className="flex-1 bg-white p-3 rounded-2xl shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all"
+                className="flex-1 bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 flex items-center gap-2 active:scale-95 transition-all outline-none"
               >
-                <div className="bg-blue-600 p-2 rounded-xl text-white">
+                <div className="bg-white/20 p-2 rounded-xl text-white">
                   <Icon name="FileText" size={18} />
                 </div>
-                <span className="font-black text-[11px] text-gray-800 uppercase tracking-tight">Rekap Harian</span>
+                <span className="font-black text-[11px] text-white uppercase tracking-tight leading-tight text-left">
+                  Rekap<br />Harian
+                </span>
               </button>
               <button
                 onClick={() => handleExportTransactions('pdf', dateRange.startDate, dateRange.endDate)}
-                className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 flex items-center justify-center gap-2 active:scale-95 transition-all"
+                className="flex-1 bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 flex items-center gap-2 active:scale-95 transition-all outline-none"
               >
                 <div className="bg-white/20 p-2 rounded-xl text-white">
                   <Icon name="Download" size={18} />
                 </div>
-                <span className="font-black text-[11px] text-white uppercase tracking-tight">Ekspor PDF</span>
+                <span className="font-black text-[11px] text-white uppercase tracking-tight leading-tight text-left">
+                  Ekspor<br />PDF
+                </span>
               </button>
             </div>
           </div>
         )}
 
-        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 pt-2 space-y-6 lg:space-y-8" : "space-y-6"}>
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 space-y-6 lg:space-y-8" : "space-y-6"}>
+          {/* Search Bar - Overlapping Header */}
 
-          <div className="mb-8 lg:mb-6">
+
+          <div className="hidden lg:block mb-8 lg:mb-6">
 
             <div className="mb-4 hidden md:block">
               <BreadcrumbNavigation customPath={breadcrumbPath} />
@@ -894,6 +900,22 @@ const TransactionHistory = ({ headerTitle }) => {
               Kelola dan pantau semua transaksi penjualan Anda
             </p>
 
+          </div>
+
+          {/* Search Bar - Overlapping Header (Mobile) / Regular (Desktop) */}
+          <div className="!-mt-12 lg:mt-0 lg:pt-10 relative z-30 mb-6 px-0 lg:px-0 pt-4">
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                <Icon name="Search" size={18} className="text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+              </div>
+              <input
+                type="text"
+                placeholder="Cari transaksi..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-14 pr-6 py-4 bg-white border-transparent shadow-sm rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:bg-slate-800 dark:text-white"
+              />
+            </div>
           </div>
 
           {/* Revenue Metrics Section */}

@@ -55,6 +55,7 @@ const ExpenseTracking = ({ headerTitle }) => {
   const [pagination, setPagination] = useState(null);
 
   // Filter state (lifted from ExpenseHistoryTable)
+  const [searchTerm, setSearchTerm] = useState(''); // Lifted search state
   const [dateFilter, setDateFilter] = useState('');
   const [filteredCount, setFilteredCount] = useState(0); // Track filtered expenses count for pagination
 
@@ -492,27 +493,32 @@ const ExpenseTracking = ({ headerTitle }) => {
             <div className="mt-8 flex gap-3 relative z-10">
               <button
                 onClick={() => setIsAddModalOpen(true)}
-                className="flex-1 bg-white p-3 rounded-2xl shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all"
+                className="flex-1 bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 flex items-center gap-2 active:scale-95 transition-all outline-none"
               >
-                <div className="bg-blue-600 p-2 rounded-xl text-white">
+                <div className="bg-white/20 p-2 rounded-xl text-white">
                   <Icon name="Plus" size={18} />
                 </div>
-                <span className="font-black text-[11px] text-gray-800 uppercase tracking-tight">Catat Biaya</span>
+                <span className="font-black text-[11px] text-white uppercase tracking-tight leading-tight text-left">
+                  Catat<br />Biaya
+                </span>
               </button>
               <button
                 onClick={() => handleExportData('pdf', allExpenses)}
-                className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 flex items-center justify-center gap-2 active:scale-95 transition-all"
+                className="flex-1 bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 flex items-center gap-2 active:scale-95 transition-all outline-none"
               >
                 <div className="bg-white/20 p-2 rounded-xl text-white">
                   <Icon name="Download" size={18} />
                 </div>
-                <span className="font-black text-[11px] text-white uppercase tracking-tight">Ekspor PDF</span>
+                <span className="font-black text-[11px] text-white uppercase tracking-tight leading-tight text-left">
+                  Ekspor<br />PDF
+                </span>
               </button>
             </div>
           </div>
         )}
 
-        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 pt-2 lg:pt-8 space-y-8" : "space-y-8"}>
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 space-y-8" : "space-y-8"}>
+
           {/* Header & Breadcrumb - Desktop Only */}
           <div className="hidden lg:block mb-8">
             <div className="mb-4">
@@ -536,10 +542,27 @@ const ExpenseTracking = ({ headerTitle }) => {
               </button>
             </div>
           </div>
+
+          {/* Search Bar - Overlapping Header (Mobile) / Regular (Desktop) */}
+          <div className="!-mt-12 lg:mt-0 lg:pt-10 relative z-30 mb-6 px-0 lg:px-0 pt-4">
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                <Icon name="Search" size={18} className="text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+              </div>
+              <input
+                type="text"
+                placeholder="Cari pengeluaran..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-14 pr-6 py-4 bg-white border-transparent shadow-sm rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:bg-slate-800 dark:text-white"
+              />
+            </div>
+          </div>
           <ExpenseSummaryCard {...summaryMetrics} />
           {allExpenses?.length > 0 && <ExpenseAnalytics expenses={allExpenses} />}
           <ExpenseHistoryTable
             expenses={allExpenses} // Use allExpenses for proper filtering
+            searchTerm={searchTerm} // Pass searchTerm prop
             onDeleteExpense={handleDeleteExpense}
             onBulkDelete={handleBulkDelete}
             onExportData={handleExportData}

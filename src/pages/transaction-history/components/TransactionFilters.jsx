@@ -12,7 +12,7 @@ const TransactionFilters = ({
   employeeMealCount
 }) => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  // const [searchTerm, setSearchTerm] = useState(''); // Removed local state
   const [dateRange, setDateRange] = useState({
     startDate: '',
     endDate: ''
@@ -31,11 +31,7 @@ const TransactionFilters = ({
     })?.format(amount);
   };
 
-  const handleSearchChange = (e) => {
-    const value = e?.target?.value;
-    setSearchTerm(value);
-    onSearch(value);
-  };
+  // handleSearchChange removed
 
   const handleFilterChange = (filterType, value) => {
     const newFilters = { ...activeFilters, [filterType]: value };
@@ -50,7 +46,7 @@ const TransactionFilters = ({
   };
 
   const clearAllFilters = () => {
-    setSearchTerm('');
+    // setSearchTerm(''); // Removed
     setDateRange({ startDate: '', endDate: '' });
     setActiveFilters({ paymentMethod: 'all', amountRange: 'all' });
     onSearch('');
@@ -60,7 +56,7 @@ const TransactionFilters = ({
 
   const getActiveFilterCount = () => {
     let count = 0;
-    if (searchTerm) count++;
+    // if (searchTerm) count++; // Removed searchTerm from filter count
     if (dateRange?.startDate || dateRange?.endDate) count++;
     if (activeFilters?.paymentMethod !== 'all') count++;
     if (activeFilters?.amountRange !== 'all') count++;
@@ -71,63 +67,50 @@ const TransactionFilters = ({
     <div className="transaction-filters-root">
       {/* Search and Filter Controls */}
       <div className="filter-section-container">
-        <div className="flex flex-col lg:flex-row gap-3">
-          {/* Search Input */}
-          <div className="flex-1">
-            <div className="flex items-center px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm group focus-within:border-blue-500 dark:focus-within:border-blue-400 focus-within:shadow-md transition-all duration-300">
-              <Icon
-                name="Search"
-                size={20}
-                className="text-gray-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors flex-shrink-0"
-              />
-              <input
-                type="text"
-                placeholder="Cari transaksi..."
-                value={searchTerm}
-                onChange={handleSearchChange}
-                className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-semibold text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 placeholder:font-normal ml-3 outline-none"
-                autoComplete="off"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => { setSearchTerm(''); onSearch(''); }}
-                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition-all active:scale-95 flex-shrink-0"
-                >
-                  <Icon name="X" size={16} className="text-gray-400 dark:text-slate-500" />
-                </button>
-              )}
-            </div>
-          </div>
 
-          {/* Filter Toggle Button */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className={`flex items-center justify-center gap-2 h-12 px-5 rounded-xl border transition-all duration-300 active:scale-95 font-bold text-sm ${isFilterOpen
-                ? 'bg-blue-600 dark:bg-blue-500 text-white border-blue-600 dark:border-blue-500 shadow-lg shadow-blue-500/30'
-                : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border-gray-100 dark:border-slate-700 shadow-sm hover:border-blue-500 dark:hover:border-blue-400'
-                }`}
-            >
-              <Icon name="Filter" size={18} className={isFilterOpen ? 'text-white' : 'text-blue-600 dark:text-blue-400'} />
-              <span className="hidden sm:inline">Filter</span>
+        <div className="flex items-center gap-3 w-full">
+          <button
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            className={`flex-1 flex items-center justify-between px-4 lg:px-6 py-3 lg:py-4 rounded-2xl border transition-all duration-300 group text-left ${isFilterOpen
+              ? 'bg-blue-600 dark:bg-blue-500 text-white border-blue-600 dark:border-blue-500 shadow-xl shadow-blue-500/20'
+              : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-blue-200'
+              }`}
+          >
+            <div className="flex items-center gap-3 lg:gap-4">
+              <div className={`p-2.5 rounded-xl transition-colors ${isFilterOpen ? 'bg-white/20 text-white' : 'bg-blue-50 dark:bg-slate-700 text-blue-600 dark:text-blue-400 group-hover:bg-blue-100 dark:group-hover:bg-slate-600'}`}>
+                <Icon name="Filter" size={20} />
+              </div>
+              <div>
+                <span className={`block text-[10px] uppercase tracking-widest font-bold mb-0.5 ${isFilterOpen ? 'text-blue-100' : 'text-gray-400 dark:text-slate-500'}`}>
+                  Filter & Sortir
+                </span>
+                <span className={`block text-sm font-bold ${isFilterOpen ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                  Sesuaikan Tampilan Data
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {/* Badge */}
               {getActiveFilterCount() > 0 && (
-                <span className={`flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] rounded-full font-black ${isFilterOpen ? 'bg-white text-blue-600' : 'bg-blue-600 dark:bg-blue-500 text-white'
-                  }`}>
-                  {getActiveFilterCount()}
+                <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${isFilterOpen ? 'bg-white text-blue-600' : 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'}`}>
+                  {getActiveFilterCount()} Aktif
                 </span>
               )}
-            </button>
+              <Icon name={isFilterOpen ? "ChevronUp" : "ChevronDown"} size={20} className={isFilterOpen ? 'text-white' : 'text-gray-400'} />
+            </div>
+          </button>
 
-            {getActiveFilterCount() > 0 && (
-              <button
-                onClick={clearAllFilters}
-                className="h-12 w-12 flex items-center justify-center rounded-xl border border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 transition-all duration-300 active:scale-95 shadow-sm hover:shadow-md"
-                title="Reset semua filter"
-              >
-                <Icon name="RotateCcw" size={18} />
-              </button>
-            )}
-          </div>
+          {getActiveFilterCount() > 0 && (
+            <button
+              onClick={clearAllFilters}
+              className="h-[70px] w-[70px] flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 transition-all duration-300 active:scale-95 shadow-sm hover:shadow-md hover:bg-red-100 dark:hover:bg-red-900/30 group/reset"
+              title="Reset semua filter"
+            >
+              <Icon name="RotateCcw" size={18} className="group-hover/reset:-rotate-180 transition-transform duration-500" />
+              <span className="text-[9px] font-black uppercase tracking-wider">Reset</span>
+            </button>
+          )}
         </div>
 
         {/* Expanded Filters Panel */}

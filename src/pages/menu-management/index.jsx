@@ -386,24 +386,33 @@ Powered by Kasir Berkah 88`;
     });
   };
 
-  const filteredMenuItems = menuItems.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredMenuItems = (() => {
+    const term = searchTerm.toLowerCase();
 
-    // The backend handles category filtering. Here we only handle search and stock status.
-    if (activeFilter === 'all' || ['makanan', 'minuman', 'lainnya'].includes(activeFilter)) {
-      return matchesSearch;
+    // For Stock Filters or Search, use Client-Side Filtering on ALL items
+    // This overcomes the limitation of server-side pagination for these cases
+    if (['available', 'low', 'out'].includes(activeFilter) || term) {
+      return allMenuItems.filter(item => {
+        const matchesSearch = item.name.toLowerCase().includes(term);
+
+        let matchesFilter = true;
+
+        // Apply Category Filter if active
+        if (['makanan', 'minuman', 'lainnya'].includes(activeFilter)) {
+          matchesFilter = item.category === activeFilter;
+        }
+        // Apply Stock Filter if active
+        else if (activeFilter === 'available') matchesFilter = item.stock > 5;
+        else if (activeFilter === 'low') matchesFilter = item.stock <= 5 && item.stock > 0;
+        else if (activeFilter === 'out') matchesFilter = item.stock === 0;
+
+        return matchesSearch && matchesFilter;
+      });
     }
-    if (activeFilter === 'available') {
-      return matchesSearch && item.stock > 5;
-    }
-    if (activeFilter === 'low') {
-      return matchesSearch && item.stock <= 5 && item.stock > 0;
-    }
-    if (activeFilter === 'out') {
-      return matchesSearch && item.stock === 0;
-    }
-    return false;
-  });
+
+    // Default: Use Server-Side Paginated Items
+    return menuItems;
+  })();
 
   if (isLoading) {
     return (
@@ -487,27 +496,31 @@ Powered by Kasir Berkah 88`;
             <div className="mt-8 flex gap-3 relative z-10">
               <button
                 onClick={() => setIsAddModalOpen(true)}
-                className="flex-1 bg-white p-3 rounded-2xl shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all"
+                className="flex-1 bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 flex items-center gap-2 active:scale-95 transition-all outline-none"
               >
-                <div className="bg-blue-600 p-2 rounded-xl text-white">
+                <div className="bg-white/20 p-2 rounded-xl text-white">
                   <Icon name="Plus" size={18} />
                 </div>
-                <span className="font-black text-[11px] text-gray-800 uppercase tracking-tight">Tambah Menu</span>
+                <span className="font-black text-[11px] text-white uppercase tracking-tight leading-tight text-left">
+                  Tambah<br />Menu
+                </span>
               </button>
               <button
                 onClick={handleShareStock}
-                className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 flex items-center justify-center gap-2 active:scale-95 transition-all"
+                className="flex-1 bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 flex items-center gap-2 active:scale-95 transition-all outline-none"
               >
                 <div className="bg-white/20 p-2 rounded-xl text-white">
                   <Icon name="Share2" size={18} />
                 </div>
-                <span className="font-black text-[11px] text-white uppercase tracking-tight">Status Stok</span>
+                <span className="font-black text-[11px] text-white uppercase tracking-tight leading-tight text-left">
+                  Status<br />Stok
+                </span>
               </button>
             </div>
           </div>
         )}
 
-        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 pt-2 space-y-6 lg:space-y-8" : "space-y-6"}>
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 space-y-6 lg:space-y-8" : "space-y-6"}>
           {/* Breadcrumb - Desktop Only */}
           <div className="mb-6 hidden lg:block">
             <BreadcrumbNavigation />
@@ -536,21 +549,23 @@ Powered by Kasir Berkah 88`;
             </button>
           </div>
 
-          <div id="add-menu-form" className="-mt-10 lg:mt-0 relative z-20">
+          {/* Search and Filter - Overlapping Header */}
+          <div className="!-mt-12 lg:mt-0 lg:pt-10 relative z-30 mb-6">
+            <MenuSearchAndFilter
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              menuItems={allMenuItems}
+              onExportData={handleExportData}
+              onShareStock={handleShareStock}
+              activeFilter={activeFilter}
+              onFilterChange={setActiveFilter}
+            />
+          </div>
+
+          <div id="add-menu-form" className="relative z-10">
             {/* Summary Cards */}
             <MenuSummaryCards menuItems={allMenuItems} />
           </div>
-
-          {/* Search and Filter */}
-          <MenuSearchAndFilter
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            menuItems={allMenuItems}
-            onExportData={handleExportData}
-            onShareStock={handleShareStock}
-            activeFilter={activeFilter}
-            onFilterChange={setActiveFilter}
-          />
 
           {/* Menu Items Table */}
           <MenuItemsTable

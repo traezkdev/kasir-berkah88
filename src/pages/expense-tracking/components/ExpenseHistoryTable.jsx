@@ -18,9 +18,10 @@ const ExpenseHistoryTable = ({
   onDateFilterChange,
   onFilteredCountChange, // New prop to send filtered count to parent
   currentPage = 1,
-  itemsPerPage = 20
+  itemsPerPage = 20,
+  searchTerm = '' // Receive searchTerm as prop
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
+  // const [searchTerm, setSearchTerm] = useState(''); // Removed local state
   const [categoryFilter, setCategoryFilter] = useState('');
   const [selectedExpenses, setSelectedExpenses] = useState([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
@@ -192,21 +193,8 @@ const ExpenseHistoryTable = ({
 
       {/* Filters Overlay */}
       <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-          <div className="md:col-span-6 lg:col-span-7">
-            <div className="relative">
-              <Icon name="Search" size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="search"
-                placeholder="Cari transaksi..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e?.target?.value)}
-                className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all dark:text-white"
-              />
-            </div>
-          </div>
-
-          <div className="md:col-span-3 lg:col-span-2.5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
@@ -219,7 +207,7 @@ const ExpenseHistoryTable = ({
             </select>
           </div>
 
-          <div className="md:col-span-3 lg:col-span-2.5">
+          <div>
             <input
               type="date"
               value={dateFilter}
