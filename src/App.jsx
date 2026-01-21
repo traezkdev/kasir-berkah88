@@ -13,8 +13,11 @@ import OfflineSyncManager from './components/OfflineSyncManager';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
+import { useDarkMode } from './contexts/DarkModeContext';
+
 function App() {
   const { theme } = useTheme();
+  const { isDarkMode } = useDarkMode();
   const location = useLocation();
 
   // Hide floating action button on login and register pages
@@ -73,19 +76,24 @@ function App() {
 
   // Dynamic Theme Color for Browser (Meta Tag)
   useEffect(() => {
-    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
-    if (themeColorMeta) {
-      if (location.pathname.startsWith('/customer')) {
-        themeColorMeta.setAttribute('content', '#16a34a'); // Green-600 for customer pages
-      } else if (location.pathname.startsWith('/seller')) {
-        themeColorMeta.setAttribute('content', '#138FEA'); // Blue for seller pages
-      } else if (theme === 'dark') {
-        themeColorMeta.setAttribute('content', '#0f172a'); // Dark mode color (slate-900)
-      } else {
-        themeColorMeta.setAttribute('content', '#138FEA'); // Default Blue or Theme color
-      }
+    // Helper to verify and create meta if missing
+    let themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    if (!themeColorMeta) {
+      themeColorMeta = document.createElement('meta');
+      themeColorMeta.name = "theme-color";
+      document.head.appendChild(themeColorMeta);
     }
-  }, [location.pathname, theme]);
+
+    if (isDarkMode) {
+      themeColorMeta.setAttribute('content', '#0F172A'); // Global Dark Mode Color
+    } else if (location.pathname.startsWith('/customer')) {
+      themeColorMeta.setAttribute('content', '#0D9C59'); // Customer Green
+    } else if (location.pathname.startsWith('/seller')) {
+      themeColorMeta.setAttribute('content', '#3E59E9'); // Seller Blue
+    } else {
+      themeColorMeta.setAttribute('content', '#128EEA'); // Admin/Default Blue
+    }
+  }, [location.pathname, isDarkMode]);
 
   return (
     <AppSettingsProvider>
