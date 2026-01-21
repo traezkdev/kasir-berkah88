@@ -3491,7 +3491,7 @@ app.delete("/api/employees/:id", authenticateToken, authorizeRoles('admin'), asy
 // Register User
 app.post("/api/register", async (req, res) => {
     try {
-        const { username, password } = req.body;
+        const { username, password, phone, address } = req.body;
         if (!username || !password) {
             return res.status(400).json({ error: "Username and password are required" });
         }
@@ -3505,8 +3505,8 @@ app.post("/api/register", async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10); // Hash password
-        const sql = 'INSERT INTO users (username, password, role) VALUES (?, ?, ?)';
-        const [result] = await db.query(sql, [username, hashedPassword, 'user']);
+        const sql = 'INSERT INTO users (username, password, role, phone, address) VALUES (?, ?, ?, ?, ?)';
+        const [result] = await db.query(sql, [username, hashedPassword, 'pelanggan', phone || null, address || null]);
 
         res.status(201).json({ message: "User registered successfully", userId: result.insertId });
     } catch (err) {
@@ -3805,7 +3805,7 @@ app.post("/api/admin/users", authenticateToken, authorizeRoles('admin'), async (
 // Get all users (Admin only)
 app.get("/api/admin/users", authenticateToken, authorizeRoles('admin'), async (req, res) => {
     try {
-        const sql = 'SELECT id, username, role FROM users';
+        const sql = 'SELECT id, username, role, phone, address FROM users';
         const [rows] = await db.query(sql);
         res.json({ message: "success", data: rows });
     } catch (err) {
@@ -3819,8 +3819,8 @@ app.put("/api/admin/users/:id/role", authenticateToken, authorizeRoles('admin'),
         const { newRole } = req.body;
         const { id } = req.params;
 
-        if (!newRole || !['admin', 'user', 'kasir', 'guest'].includes(newRole)) {
-            return res.status(400).json({ error: "Invalid role specified. Must be 'admin', 'user', 'kasir', or 'guest'." });
+        if (!newRole || !['admin', 'user', 'kasir', 'guest', 'pelanggan', 'penjual', 'owner'].includes(newRole)) {
+            return res.status(400).json({ error: "Invalid role specified. Must be 'admin', 'user', 'kasir', 'guest', 'pelanggan', 'penjual', or 'owner'." });
         }
 
         // Prevent changing own role (optional, but good practice)
