@@ -95,12 +95,12 @@ const BulkActions = ({
   ];
 
   return (
-    <div className="my-6 text-white rounded-3xl shadow-lg shadow-blue-500/20 p-5 lg:p-6 bulk-actions-container relative overflow-hidden" style={{ backgroundColor: '#118EEA' }}>
+    <div className="my-6 text-white rounded-xl shadow-lg shadow-blue-500/20 p-5 lg:p-6 bulk-actions-container relative overflow-hidden" style={{ backgroundColor: '#118EEA' }}>
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
 
         {/* Information Section */}
         <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm text-white shadow-inner">
+          <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm text-white shadow-inner">
             <Icon name="List" size={24} />
           </div>
           <div>

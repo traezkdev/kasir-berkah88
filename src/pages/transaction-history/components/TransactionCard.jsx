@@ -64,55 +64,55 @@ const TransactionCard = ({ transaction, onDelete, onEdit, isMobile = false, user
   if (isMobile) {
     return (
       <div
-        className="dana-card p-6 mb-4 active:scale-[0.98] transition-all duration-200 border-none shadow-lg shadow-gray-200/50"
+        className="p-5 mb-3 rounded-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm active:scale-[0.98] transition-all duration-200"
         onClick={() => onRowClick(transaction)}
       >
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg uppercase tracking-widest">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1 rounded-lg uppercase tracking-widest">
                 #{transaction?.id.slice(-6).toUpperCase()}
               </span>
               {paymentBadge}
             </div>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">
+            <p className="text-[10px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-tight">
               {formatDateTime(transaction?.timestamp)}
             </p>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight mt-0.5">
-              Kasir: <span className="text-gray-900">{transaction.cashier_name ? transaction.cashier_name : 'System'}</span>
+            <p className="text-[10px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-tight mt-1">
+              Kasir: <span className="text-gray-900 dark:text-white font-bold">{transaction.cashier_name ? transaction.cashier_name : 'System'}</span>
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xl font-black text-gray-900 tracking-tighter">
+            <p className="text-xl font-black text-gray-900 dark:text-white tracking-tighter">
               {formatCurrency(transaction?.total)}
             </p>
-            <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">
+            <p className="text-[9px] font-black text-emerald-500 dark:text-emerald-400 uppercase tracking-widest mt-0.5">
               Success
             </p>
           </div>
         </div>
 
-        <div className="h-[1px] bg-gray-50 w-full mb-4"></div>
+        <div className="h-px bg-gray-100 dark:bg-slate-700 w-full mb-4"></div>
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+            <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
               <Icon name="Receipt" size={16} />
             </div>
-            <span className="text-[11px] font-black text-blue-600 uppercase tracking-tighter">Detail Struk</span>
+            <span className="text-[11px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-tight">Detail Struk</span>
           </div>
 
           {userRole !== 'guest' && (
             <div className="flex gap-2">
               <button
                 onClick={(e) => { e.stopPropagation(); onEdit(transaction); }}
-                className="w-10 h-10 rounded-2xl bg-gray-50 text-blue-500 flex items-center justify-center active:scale-90 transition-transform"
+                className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-slate-700 text-blue-500 dark:text-blue-400 flex items-center justify-center active:scale-90 transition-all hover:bg-gray-100 dark:hover:bg-slate-600"
               >
                 <Icon name="Pencil" size={18} />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onOpenDeleteConfirm(transaction.id); }}
-                className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center active:scale-90 transition-transform"
+                className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-500 dark:text-rose-400 flex items-center justify-center active:scale-90 transition-all hover:bg-rose-100 dark:hover:bg-rose-900/30"
               >
                 <Icon name="Trash2" size={18} />
               </button>

@@ -70,42 +70,49 @@ const TransactionFilters = ({
   return (
     <div className="transaction-filters-root">
       {/* Search and Filter Controls */}
-      <div className="px-4 lg:px-0 py-4 filter-section-container">
-        <div className="flex flex-col lg:flex-row gap-4">
+      <div className="filter-section-container">
+        <div className="flex flex-col lg:flex-row gap-3">
           {/* Search Input */}
           <div className="flex-1">
-            <div className="dana-card flex items-center px-4 py-2 border-none shadow-md shadow-gray-200/50 bg-white group focus-within:ring-2 focus-within:ring-blue-500/20 transition-all duration-300">
+            <div className="flex items-center px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm group focus-within:border-blue-500 dark:focus-within:border-blue-400 focus-within:shadow-md transition-all duration-300">
               <Icon
                 name="Search"
                 size={20}
-                className="text-gray-400 group-focus-within:text-blue-600 transition-colors"
+                className="text-gray-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors flex-shrink-0"
               />
               <input
                 type="text"
                 placeholder="Cari transaksi..."
                 value={searchTerm}
                 onChange={handleSearchChange}
-                className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-bold text-gray-900 placeholder:text-gray-300 placeholder:font-medium ml-3 h-10"
+                className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-semibold text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 placeholder:font-normal ml-3 outline-none"
                 autoComplete="off"
               />
               {searchTerm && (
-                <button onClick={() => { setSearchTerm(''); onSearch(''); }} className="p-1 hover:bg-gray-100 rounded-full transition-colors">
-                  <Icon name="X" size={16} className="text-gray-400" />
+                <button
+                  onClick={() => { setSearchTerm(''); onSearch(''); }}
+                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition-all active:scale-95 flex-shrink-0"
+                >
+                  <Icon name="X" size={16} className="text-gray-400 dark:text-slate-500" />
                 </button>
               )}
             </div>
           </div>
 
           {/* Filter Toggle Button */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className={`dana-card flex items-center justify-center gap-2 h-14 px-6 border-none shadow-md shadow-gray-200/50 transition-all duration-300 active:scale-95 ${isFilterOpen ? 'bg-blue-600 text-white' : 'bg-white text-gray-900 font-black tracking-tighter uppercase'}`}
+              className={`flex items-center justify-center gap-2 h-12 px-5 rounded-xl border transition-all duration-300 active:scale-95 font-bold text-sm ${isFilterOpen
+                ? 'bg-blue-600 dark:bg-blue-500 text-white border-blue-600 dark:border-blue-500 shadow-lg shadow-blue-500/30'
+                : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 border-gray-100 dark:border-slate-700 shadow-sm hover:border-blue-500 dark:hover:border-blue-400'
+                }`}
             >
-              <Icon name="Filter" size={18} className={isFilterOpen ? 'text-white' : 'text-blue-600'} />
-              <span className="text-sm">Filter</span>
+              <Icon name="Filter" size={18} className={isFilterOpen ? 'text-white' : 'text-blue-600 dark:text-blue-400'} />
+              <span className="hidden sm:inline">Filter</span>
               {getActiveFilterCount() > 0 && (
-                <span className={`flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] rounded-full font-black ${isFilterOpen ? 'bg-white text-blue-600' : 'bg-blue-600 text-white'}`}>
+                <span className={`flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] rounded-full font-black ${isFilterOpen ? 'bg-white text-blue-600' : 'bg-blue-600 dark:bg-blue-500 text-white'
+                  }`}>
                   {getActiveFilterCount()}
                 </span>
               )}
@@ -114,7 +121,8 @@ const TransactionFilters = ({
             {getActiveFilterCount() > 0 && (
               <button
                 onClick={clearAllFilters}
-                className="dana-card h-14 w-14 flex items-center justify-center border-none shadow-md shadow-red-100/50 bg-red-50 text-red-600 transition-all duration-300 active:scale-95"
+                className="h-12 w-12 flex items-center justify-center rounded-xl border border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 transition-all duration-300 active:scale-95 shadow-sm hover:shadow-md"
+                title="Reset semua filter"
               >
                 <Icon name="RotateCcw" size={18} />
               </button>
