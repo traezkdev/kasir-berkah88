@@ -837,6 +837,11 @@ const MainDashboard = ({ headerTitle }) => {
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-10 -mt-20 blur-3xl"></div>
             <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-400/10 rounded-full -ml-10 -mb-10 blur-2xl"></div>
+
+            {/* Transparent Background Icon */}
+            <div className="absolute -right-12 -top-12 text-white/10 -rotate-12 pointer-events-none z-0">
+              <Icon name="Store" size={200} />
+            </div>
           </div>
 
           {/* Top Bar */}
