@@ -24,6 +24,7 @@ const EditMenuItemModal = ({
         discount: menuItem.discount ? menuItem.discount.toString() : '0.00',
         is_featured: !!menuItem.is_featured,
         options: menuItem.options || [], // Initialize options
+        description: menuItem.description || '',
       });
     } else {
       setFormData(null); // Clear form data when modal is closed
@@ -43,7 +44,7 @@ const EditMenuItemModal = ({
     }
     setFormData(newFormData);
   };
-  
+
   // This function will be called by the child form on any change
   const handleFullFormChange = (updatedFormData) => {
     setFormData(updatedFormData);
@@ -60,31 +61,61 @@ const EditMenuItemModal = ({
       discount: parseFloat(finalFormData.discount || '0.00'),
       is_featured: finalFormData.is_featured,
       options: finalFormData.options || [], // Include options in the save payload
+      description: finalFormData.description,
     };
     await onSave(menuItem.id, dataToSave);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50">
-      <div className="bg-card rounded-lg shadow-xl p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-foreground">Edit Menu Item</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+    <div className="fixed inset-0 z-[150] flex items-end lg:items-center justify-center p-0 lg:p-6">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-[2px] transition-opacity"
+        onClick={onClose}
+      ></div>
+
+      {/* Modal Container */}
+      <div
+        className="relative w-full lg:max-w-2xl bg-white dark:bg-slate-900 shadow-2xl overflow-hidden
+                   lg:mx-auto lg:h-[90vh]
+                   fixed lg:relative bottom-0 left-0 right-0 h-[92vh] lg:h-auto
+                   rounded-none animate-in slide-in-from-bottom-full lg:zoom-in-95 duration-300"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Sticky Header */}
+        <div className="sticky top-0 right-0 p-6 flex justify-between items-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 border-b border-gray-100 dark:border-slate-800">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
+              <Icon name="Pencil" size={20} />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-gray-800 dark:text-white tracking-tight">Edit Item Menu</h2>
+              <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">{menuItem?.name}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 bg-gray-100 dark:bg-slate-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-all active:scale-95"
+          >
             <Icon name="X" size={20} />
-          </Button>
+          </button>
         </div>
-        <AddMenuItemForm
-          initialData={formData}
-          onAddItem={handleSubmit} // The form will call this with its final state
-          userRole={userRole}
-          isEditing={true}
-          // The form now manages its own state, so direct change handlers are less critical
-          // However, if you need to react to changes in the modal, you can use onFormChange
-          onFormChange={(field) => {
-              setFormData(prev => ({...prev, [field.name]: field.value}))
-          }}
-        />
+
+        {/* Scrollable Content */}
+        <div className="overflow-y-auto h-full pb-32">
+          <div className="p-6">
+            <AddMenuItemForm
+              initialData={formData}
+              onAddItem={handleSubmit}
+              userRole={userRole}
+              isEditing={true}
+              onFormChange={(field) => {
+                setFormData(prev => ({ ...prev, [field.name]: field.value }))
+              }}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

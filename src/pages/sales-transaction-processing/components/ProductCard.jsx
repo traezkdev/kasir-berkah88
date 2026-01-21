@@ -10,8 +10,9 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl, i
   const itemsInCart = cart.filter(cartItem => cartItem.id === item.id);
   const quantityInCart = itemsInCart.reduce((sum, cartItem) => sum + cartItem.quantity, 0);
 
-  const canIncrement = item.stock > quantityInCart;
-  const isOutOfStock = item.stock === 0;
+  const itemStock = Number(item.stock);
+  const canIncrement = itemStock > quantityInCart;
+  const isOutOfStock = itemStock <= 0;
 
   // For decrementing, we need to target a specific cart item.
   // A reasonable default is to target the last variation of this item added to the cart.
@@ -19,75 +20,81 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl, i
 
   return (
     <div className={cn(
-      "bg-card rounded-lg shadow-md overflow-hidden border border-transparent dark:border-gray-700 transform transition-transform duration-200 hover:scale-105" // Always allow hover/interaction
+      "bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 transition-all duration-300 active:scale-95 group",
+      "lg:bg-card lg:rounded-lg lg:shadow-md lg:border-transparent lg:dark:border-gray-700 lg:hover:scale-105"
     )}>
       <div className="relative">
         <AppImage
           src={item.image_url ? `${apiUrl}${item.image_url}` : './assets/images/no_image.png'}
           alt={item.name}
-          className="w-full h-32 object-cover"
+          className="w-full h-32 lg:h-32 object-cover transition-transform duration-500 group-hover:scale-110"
         />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent lg:hidden"></div>
         {!!item.is_featured && (
-          <span className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center z-10">
-            <Icon name="Star" size={14} className="mr-1 text-yellow-400" fill="currentColor" /> Unggulan
+          <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-yellow-600 text-[10px] font-black px-2 py-1 rounded-lg flex items-center z-10 shadow-sm border border-yellow-100">
+            <Icon name="Star" size={12} className="mr-1" fill="currentColor" /> HOT
           </span>
         )}
         {item.discount > 0 && (
-          <span className={`absolute ${!!item.is_featured ? 'top-10' : 'top-2'} right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10`}>
-            Diskon {item.discount * 100}%
+          <span className="absolute top-3 right-3 bg-red-500 text-white text-[10px] font-black px-2 py-1 rounded-lg z-10 shadow-lg animate-pulse">
+            -{item.discount * 100}%
           </span>
         )}
       </div>
-      <div className="p-4 flex flex-col flex-grow">
-        <h3 className="text-md font-semibold text-text-primary flex-grow min-h-[40px]">{item.name}</h3>
+      <div className="p-4 flex flex-col flex-grow relative">
+        <h3 className="text-sm lg:text-md font-black text-gray-800 lg:text-text-primary flex-grow min-h-[40px] leading-tight mb-1">{item.name}</h3>
         <div className="min-h-[36px]">
           {item.discount > 0 ? (
-            <>
-              <p className="text-xs text-gray-500 line-through">
+            <div className="flex flex-col">
+              <span className="text-[10px] text-gray-400 line-through font-bold">
                 Rp {item.price?.toLocaleString('id-ID')}
-              </p>
-              <p className="text-sm font-semibold text-red-600">
+              </span>
+              <span className="text-sm font-black text-red-600">
                 Rp {(item.price * (1 - item.discount)).toLocaleString('id-ID')}
-              </p>
-            </>
+              </span>
+            </div>
           ) : (
-            <p className="text-sm text-text-secondary">Rp {item.price?.toLocaleString('id-ID')}</p>
+            <p className="text-sm font-black text-[#118EEA] lg:text-text-secondary">Rp {item.price?.toLocaleString('id-ID')}</p>
           )}
         </div>
-        <p className="text-xs text-text-secondary mt-1">Stok: {item.stock}</p>
+
+        <div className="flex items-center justify-between mt-2">
+          <div className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${item.stock > 10 ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-600'}`}>
+            Stock: {item.stock}
+          </div>
+        </div>
 
         <div className="mt-4">
-          {quantityInCart > 0 ? ( // If already in cart, show quantity controls
-            <div className="flex items-center justify-center">
-              <Button
-                variant="outline" size="icon" className="rounded-r-none h-9 w-9"
+          {quantityInCart > 0 ? (
+            <div className="flex items-center justify-between bg-gray-50 rounded-xl p-1 border border-gray-100">
+              <button
                 onClick={() => lastItemVariationInCart && onDecrement(lastItemVariationInCart.cartItemId)}
+                className="w-8 h-8 flex items-center justify-center bg-white rounded-xl shadow-sm text-gray-600 active:bg-gray-100 transition-colors"
                 disabled={userRole === 'guest'}
               >
-                <Minus size={16} />
-              </Button>
-              <span className="px-4 py-2 border-t border-b border-border h-9 w-16 text-center font-semibold flex items-center justify-center">
+                <Minus size={14} strokeWidth={3} />
+              </button>
+              <span className="text-sm font-black text-gray-800">
                 {quantityInCart}
               </span>
-              <Button
-                variant="outline" size="icon" className="rounded-l-none h-9 w-9"
+              <button
                 onClick={() => onIncrement(item)}
-                disabled={(!canIncrement && !ignoreStock) || userRole === 'guest'} // Respect stock limit if not ignoring
+                className="w-8 h-8 flex items-center justify-center bg-[#118EEA] rounded-xl shadow-md shadow-blue-100 text-white active:bg-[#0A74BD] transition-colors"
+                disabled={(!canIncrement && !ignoreStock) || userRole === 'guest'}
               >
-                <Plus size={16} />
-              </Button>
+                <Plus size={14} strokeWidth={3} />
+              </button>
             </div>
-          ) : (isOutOfStock && !ignoreStock) ? ( // If out of stock and NOT ignoring
-            <Button className="w-full" disabled>Stok Habis</Button>
-          ) : ( // In stock, OR ignoring stock (and not in cart yet)
-            <Button
-              size="sm"
-              className="w-full"
+          ) : (isOutOfStock && !ignoreStock) ? (
+            <button className="w-full py-2.5 bg-gray-100 text-gray-400 rounded-xl font-bold text-xs cursor-not-allowed" disabled>Stok Habis</button>
+          ) : (
+            <button
+              className="w-full py-2.5 bg-[#118EEA] text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-lg shadow-blue-100 active:scale-95 transition-all"
               onClick={() => onIncrement(item)}
-              disabled={userRole === 'guest'}
+              disabled={(!canIncrement && !ignoreStock) || userRole === 'guest'}
             >
               Tambah
-            </Button>
+            </button>
           )}
         </div>
       </div>

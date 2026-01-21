@@ -102,9 +102,13 @@ const ExpenseSummaryCard = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Mobile: Horizontal Scroll Carousel, Desktop: Grid */}
+        <div className="flex lg:grid lg:grid-cols-3 gap-4 lg:gap-6 overflow-x-auto lg:overflow-visible snap-x snap-mandatory scrollbar-hide pb-2 -mx-4 px-4 lg:mx-0 lg:px-0">
           {summaryItems?.map((item, index) => (
-            <div key={index} className={`rounded-3xl p-6 transition-all duration-300 active:scale-95 shadow-lg shadow-gray-200/20 ${gradientClasses[index % gradientClasses.length]}`}>
+            <div
+              key={index}
+              className={`flex-shrink-0 w-[72vw] lg:w-auto rounded-2xl p-5 lg:p-6 transition-all duration-300 active:scale-95 shadow-lg shadow-gray-200/20 snap-center ${gradientClasses[index % gradientClasses.length]}`}
+            >
               <div className="flex items-center justify-between mb-4">
                 <div className={`p-3 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/20`}>
                   <Icon name={item?.icon} size={24} className="text-white" />

@@ -10,7 +10,7 @@ const MenuSearchAndFilter = ({
   onSearchChange,
   menuItems,
   onExportData,
-  onShareStock, // Tambahkan prop ini
+  onShareStock,
   isExporting,
   activeFilter,
   onFilterChange
@@ -34,100 +34,87 @@ const MenuSearchAndFilter = ({
     } else if (format === 'pdf') {
       exportToPdf(menuItems, 'Menu_Items');
     }
-    onExportData(format); // Keep this if there's external handling, otherwise remove
+    onExportData(format);
     setShowExportMenu(false);
   };
 
   return (
-    <div className="bg-card rounded-xl shadow-lg border border-border p-5 mb-8 transition-all duration-300">
-      <div className="flex flex-col gap-6">
-        {/* Top Row: Search & Action Buttons */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="relative flex-grow max-w-2xl group">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Icon
-                name="Search"
-                size={20}
-                className="text-text-secondary group-focus-within:text-primary transition-colors"
-              />
-            </div>
-            <input
-              type="text"
-              placeholder="Cari nama menu..."
-              value={searchTerm}
-              onChange={(e) => onSearchChange(e?.target?.value)}
-              className="block w-full pl-11 pr-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none text-text-primary shadow-sm hover:border-primary/50"
-            />
+    <div className="space-y-6 mb-8">
+      {/* Search & Actions */}
+      <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+        <div className="relative flex-1 group pt-4 lg:pt-10">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none pt-4 lg:pt-10">
+            <Icon name="Search" size={18} className="text-gray-400 group-focus-within:text-blue-500 transition-colors " />
           </div>
-
-          <div className="flex items-center gap-3 shrink-0">
-            {/* Share Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onShareStock}
-              iconName="Share2"
-              iconPosition="left"
-              className="h-11 px-4 font-medium"
-            >
-              Bagikan Stok
-            </Button>
-
-            {/* Export Dropdown */}
-            <div className="relative">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowExportMenu(!showExportMenu)}
-                iconName="Download"
-                iconPosition="left"
-                loading={isExporting}
-                className="h-11 px-4 font-medium"
-              >
-                Export
-              </Button>
-
-              {showExportMenu && (
-                <div className="absolute right-0 top-full mt-2 w-56 bg-popover rounded-xl shadow-2xl border border-border py-2 z-50 animate-in fade-in zoom-in duration-200">
-                  <button
-                    onClick={() => handleExport('excel')}
-                    className="w-full px-4 py-3 text-left text-sm text-text-primary hover:bg-muted transition-colors duration-200 flex items-center space-x-3"
-                  >
-                    <Icon name="FileSpreadsheet" size={18} className="text-green-500" />
-                    <span className="font-medium">Export ke Excel</span>
-                  </button>
-                  <button
-                    onClick={() => handleExport('pdf')}
-                    className="w-full px-4 py-3 text-left text-sm text-text-primary hover:bg-muted transition-colors duration-200 flex items-center space-x-3"
-                  >
-                    <Icon name="FileText" size={18} className="text-red-500" />
-                    <span className="font-medium">Export ke PDF</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+          <input
+            placeholder="Cari produk menu..."
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="w-full pl-14 pr-6 py-4 bg-white border-transparent shadow-sm rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:bg-slate-800 dark:text-white"
+          />
         </div>
 
-        {/* Bottom Row: Category Filters */}
-        <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-border/50">
-          <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider mr-2 hidden md:inline">Filter:</span>
-          {filterOptions?.map(option => (
+        <div className="flex items-center gap-3 lg:pt-10">
+          <button
+            onClick={onShareStock}
+            className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-2xl text-xs font-black uppercase tracking-widest active:scale-95 transition-all"
+          >
+            <Icon name="Share2" size={16} />
+            <span className="lg:inline">Status Stok</span>
+          </button>
+
+          <div className="relative flex-1 lg:flex-none">
             <button
-              key={option?.key}
-              onClick={() => onFilterChange(option?.key)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${activeFilter === option?.key
-                  ? 'bg-primary text-white shadow-md shadow-primary/25 transform scale-105'
-                  : 'bg-muted/50 text-text-secondary hover:bg-muted hover:text-text-primary'
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-gray-50 dark:bg-slate-900/50 text-gray-600 dark:text-gray-300 rounded-2xl text-xs font-black uppercase tracking-widest border border-gray-100 dark:border-slate-700 active:scale-95 transition-all"
+            >
+              <Icon name="Download" size={16} />
+              <span>Export</span>
+            </button>
+
+            {showExportMenu && (
+              <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                <button
+                  onClick={() => handleExport('excel')}
+                  className="w-full px-4 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-3 transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600">
+                    <Icon name="FileSpreadsheet" size={16} />
+                  </div>
+                  Excel Report
+                </button>
+                <button
+                  onClick={() => handleExport('pdf')}
+                  className="w-full px-4 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-3 transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/20 flex items-center justify-center text-rose-600">
+                    <Icon name="FileText" size={16} />
+                  </div>
+                  PDF Document
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Categories Horizontal Scroll */}
+      <div className="relative group">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
+          {filterOptions.map(option => (
+            <button
+              key={option.key}
+              onClick={() => onFilterChange(option.key)}
+              className={`flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeFilter === option.key
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none'
+                : 'bg-gray-50 dark:bg-slate-900/50 text-gray-400 dark:text-slate-500 hover:bg-gray-100 dark:hover:bg-slate-700'
                 }`}
             >
-              {option?.label}
-              {option?.count > 0 && (
-                <span className={`px-2 py-0.5 rounded-full text-[10px] ${activeFilter === option?.key
-                    ? 'bg-white/20 text-white'
-                    : 'bg-muted-foreground/20 text-text-secondary'
+              {option.label}
+              {option.count > 0 && (
+                <span className={`px-2 py-0.5 rounded-lg text-[10px] ${activeFilter === option.key ? 'bg-white/20' : 'bg-gray-200 dark:bg-slate-800'
                   }`}>
-                  {option?.count}
+                  {option.count}
                 </span>
               )}
             </button>
@@ -135,12 +122,8 @@ const MenuSearchAndFilter = ({
         </div>
       </div>
 
-      {/* Click outside handler */}
       {showExportMenu && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setShowExportMenu(false)}
-        />
+        <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)} />
       )}
     </div>
   );

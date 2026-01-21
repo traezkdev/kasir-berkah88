@@ -46,7 +46,7 @@ const OrderConfirmationPage = ({ headerTitle }) => {
         fetchOrders();
     }, [fetchOrders]);
 
-    const handleUpdateStatus = async (orderId, newStatus) => {
+    const handleUpdateStatus = async (orderId, newStatus, ignoreStock = false) => {
         try {
             const orderToUpdate = orders.find(order => order.id === orderId);
             if (!orderToUpdate) {
@@ -68,7 +68,7 @@ const OrderConfirmationPage = ({ headerTitle }) => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ status: newStatus, items: parsedItems }),
+                body: JSON.stringify({ status: newStatus, items: parsedItems, ignoreStock }),
             });
 
             const res = await response.json();
@@ -78,12 +78,27 @@ const OrderConfirmationPage = ({ headerTitle }) => {
 
             showNotification(res.message || 'Status pesanan berhasil diubah.', 'success');
             fetchOrders();
+            closeConfirmationModal();
 
         } catch (err) {
             console.error("Error updating order status:", err);
-            showNotification(`Error: ${err.message}`, 'error');
-        } finally {
-            closeConfirmationModal();
+
+            // Check if error is related to stock
+            if (err.message.includes('masalah stok') && newStatus === 'accepted') {
+                setModalState({
+                    isOpen: true,
+                    orderId,
+                    action: 'accepted_ignore_stock',
+                    title: 'Konfirmasi Stok Kosong',
+                    message: `${err.message}\n\nApakah Anda yakin stok di sini kosong? Jika Anda yakin, transaksi akan tetap berjalan dan pengecekan stok akan diabaikan.`,
+                    type: 'confirm',
+                    isDestructive: true,
+                    isBulk: false
+                });
+            } else {
+                showNotification(`Error: ${err.message}`, 'error');
+                closeConfirmationModal();
+            }
         }
     };
 
@@ -162,6 +177,8 @@ const OrderConfirmationPage = ({ headerTitle }) => {
     const handleConfirmAction = () => {
         if (modalState.action === 'accepted' || modalState.action === 'rejected') {
             handleUpdateStatus(modalState.orderId, modalState.action);
+        } else if (modalState.action === 'accepted_ignore_stock') {
+            handleUpdateStatus(modalState.orderId, 'accepted', true);
         } else if (modalState.action === 'delete' && !modalState.isBulk) {
             handleDeleteOrder(modalState.orderId);
         } else if (modalState.action === 'delete' && modalState.isBulk) {

@@ -35,6 +35,20 @@ const MainDashboard = ({ headerTitle }) => {
     end: new Date().toISOString().split('T')[0],
   });
   const [showDetails, setShowDetails] = useState(false);
+  const [showStickyHeader, setShowStickyHeader] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 50) {
+        setShowStickyHeader(true);
+      } else {
+        setShowStickyHeader(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const fetchData = async (currentUserRole) => { // Add currentUserRole parameter
     const token = localStorage.getItem('token');
@@ -224,6 +238,7 @@ const MainDashboard = ({ headerTitle }) => {
     { label: 'Dashboard', path: '/main-dashboard', icon: 'LayoutDashboard' },
     { label: 'Penjualan', path: appMode === 'simple' ? '/transaksi-sederhana' : '/transaksi', icon: 'ShoppingCart' },
     { label: 'Menu', path: '/menu-management', icon: 'UtensilsCrossed' },
+    { label: 'Penjual', path: '/seller/dashboard', icon: 'Store' },
     { label: 'Pengeluaran', path: '/expense-tracking', icon: 'Receipt' },
     { label: 'Transaksi', path: '/transaction-history', icon: 'ListOrdered' },
     { label: 'Catatan', path: '/notes', icon: 'Notebook' },
@@ -788,6 +803,28 @@ const MainDashboard = ({ headerTitle }) => {
 
   return (
     <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50 dark:bg-slate-950' : 'bg-transparent'}`}>
+      {/* Sticky Mobile Header */}
+      <div className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm py-3 ${showStickyHeader ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
+        <div className="px-6 flex items-center justify-between">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 rounded-2xl transition-all bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200 active:scale-95"
+          >
+            <Icon name="ChevronLeft" size={24} />
+          </button>
+          <div className="text-center">
+            <h2 className="font-black text-gray-800 dark:text-white tracking-tight">
+              {headerTitle || 'Dashboard'}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <button className="p-2 rounded-2xl transition-all bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200 active:scale-95">
+              <Icon name="Bell" size={20} />
+            </button>
+          </div>
+        </div>
+      </div>
+
       {theme === 'default' && (
         <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} hideMobileHeader={true} />
       )}
@@ -800,6 +837,11 @@ const MainDashboard = ({ headerTitle }) => {
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-10 -mt-20 blur-3xl"></div>
             <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-400/10 rounded-full -ml-10 -mb-10 blur-2xl"></div>
+
+            {/* Transparent Background Icon */}
+            <div className="absolute -right-12 -top-12 text-white/10 -rotate-12 pointer-events-none z-0">
+              <Icon name="Store" size={200} />
+            </div>
           </div>
 
           {/* Top Bar */}

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { formatInTimeZone } from 'date-fns-tz';
 import authFetch from '../../../utils/authFetch';
+import Icon from '../../../components/AppIcon';
 
-const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole }) => {
+const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole, isInsideModal = false }) => {
   const [formData, setFormData] = useState({
     category: '',
     description: '',
@@ -128,136 +129,118 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole }) => {
     setErrors({});
   };
 
-  // Simple SVG icons to replace the Icon component
-  const PlusIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="12" y1="5" x2="12" y2="19"></line>
-      <line x1="5" y1="12" x2="19" y2="12"></line>
-    </svg>
-  );
-
-  const ResetIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-      <path d="M3 3v5h5"></path>
-    </svg>
-  );
-
-  const ListIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="8" y1="6" x2="21" y2="6"></line>
-      <line x1="8" y1="12" x2="21" y2="12"></line>
-      <line x1="8" y1="18" x2="21" y2="18"></line>
-      <line x1="3" y1="6" x2="3.01" y2="6"></line>
-      <line x1="3" y1="12" x2="3.01" y2="12"></line>
-      <line x1="3" y1="18" x2="3.01" y2="18"></line>
-    </svg>
-  );
-
-  return (
-    <div className="bg-card rounded-lg shadow-md border border-border dark:bg-dark-card dark:border-dark-border dark:shadow-dark-md">
-      <div className="p-4 lg:p-6 border-b border-border dark:border-dark-border">
-        <div className="flex items-center space-x-3 mb-4">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <div className="text-blue-600">
-              <ListIcon />
-            </div>
+  // Content render
+  const formContent = (
+    <div className={isInsideModal ? "" : "p-4 lg:p-8"}>
+      {!isInsideModal && (
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400">
+            <Icon name="PlusCircle" size={24} />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-text-primary">Catat Pengeluaran</h2>
-            <p className="text-sm text-text-secondary">Tambahkan pengeluaran bisnis untuk tracking keuangan</p>
+            <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight leading-none mb-2">
+              Catat Pengeluaran
+            </h2>
+            <p className="text-[11px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">
+              Tambahkan detail biaya operasional bisnis Anda
+            </p>
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-[11px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">Kategori Pengeluaran</label>
+            <select
+              value={formData.category}
+              onChange={(e) => handleInputChange('category', e.target.value)}
+              className={`w-full px-4 py-3.5 bg-gray-50 dark:bg-slate-900/50 border rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-sm font-medium transition-all dark:text-white ${errors.category ? 'border-rose-500' : 'border-gray-100 dark:border-slate-700'}`}
+              required
+            >
+              <option value="" className="dark:bg-slate-900">Pilih kategori...</option>
+              {categoryOptions.map(option => (
+                <option key={option.value} value={option.value} className="dark:bg-slate-900">
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {errors.category && <p className="mt-1 text-[10px] font-bold text-rose-500 px-1">{errors.category}</p>}
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">Jumlah (Rp)</label>
+            <input
+              type="text"
+              placeholder="0"
+              value={formData.amount}
+              onChange={handleAmountChange}
+              className={`w-full px-4 py-3.5 bg-gray-50 dark:bg-slate-900/50 border rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-sm font-medium transition-all dark:text-white ${errors.amount ? 'border-rose-500' : 'border-gray-100 dark:border-slate-700'}`}
+              required
+            />
+            {errors.amount && <p className="mt-1 text-[10px] font-bold text-rose-500 px-1">{errors.amount}</p>}
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-[11px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">Deskripsi Pengeluaran</label>
+            <input
+              type="text"
+              placeholder="Contoh: Pembelian beras 10kg, bayar listrik"
+              value={formData.description}
+              onChange={(e) => handleInputChange('description', e.target.value)}
+              className={`w-full px-4 py-3.5 bg-gray-50 dark:bg-slate-900/50 border rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-sm font-medium transition-all dark:text-white ${errors.description ? 'border-rose-500' : 'border-gray-100 dark:border-slate-700'}`}
+              required
+            />
+            {errors.description && <p className="mt-1 text-[10px] font-bold text-rose-500 px-1">{errors.description}</p>}
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-[11px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">Catatan (Opsional)</label>
+            <textarea
+              placeholder="Informasi tambahan pengeluaran..."
+              value={formData.notes}
+              onChange={(e) => handleInputChange('notes', e.target.value)}
+              rows="3"
+              className="w-full px-4 py-3.5 bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-sm font-medium transition-all dark:text-white resize-none"
+            />
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="lg:col-span-1">
-              <label className="block text-sm font-medium text-text-primary mb-1">Kategori Pengeluaran</label>
-              <select
-                value={formData.category}
-                onChange={(e) => handleInputChange('category', e.target.value)}
-                className={`w-full px-3 py-2 border bg-input dark:bg-dark-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${errors.category ? 'border-destructive' : 'border-border dark:border-dark-border'}`}
-                required
-              >
-                <option value="">Pilih kategori pengeluaran</option>
-                {categoryOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category}</p>}
-            </div>
+        <div className="flex flex-col sm:flex-row gap-4 pt-4">
+          <button
+            type="submit"
+            disabled={isLoading || userRole === 'guest'}
+            className="flex-1 py-4 bg-[#118eea] text-white rounded-2xl font-black text-sm uppercase tracking-[0.2em] shadow-lg shadow-blue-200 dark:shadow-none active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <>
+                <Icon name="PlusCircle" size={20} />
+                <span>Simpan Pengeluaran</span>
+              </>
+            )}
+          </button>
 
-
-
-            <div className="lg:col-span-1">
-              <label className="block text-sm font-medium text-text-primary mb-1">Jumlah Pengeluaran</label>
-              <input
-                type="text"
-                placeholder="0"
-                value={formData.amount}
-                onChange={handleAmountChange}
-                className={`w-full px-3 py-2 border bg-input dark:bg-dark-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${errors.amount ? 'border-destructive' : 'border-border dark:border-dark-border'}`}
-                required
-              />
-              {errors.amount && <p className="mt-1 text-sm text-red-600">{errors.amount}</p>}
-              <p className="mt-1 text-xs text-text-secondary">Format: Rp 50.000</p>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-text-primary mb-1">Deskripsi Pengeluaran</label>
-            <input
-              type="text"
-              placeholder="Contoh: Pembelian beras 10kg, bayar listrik bulan ini"
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              className={`w-full px-3 py-2 border bg-input dark:bg-dark-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${errors.description ? 'border-destructive' : 'border-border dark:border-dark-border'}`}
-              required
-            />
-            {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-text-primary mb-1">Catatan Tambahan</label>
-            <input
-              type="text"
-              placeholder="Catatan opsional untuk pengeluaran ini"
-              value={formData.notes}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
-              className="w-full px-3 py-2 border bg-input dark:bg-dark-input border-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-            <p className="mt-1 text-xs text-text-secondary">Opsional - untuk informasi tambahan</p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3 pt-4">
-            <button
-              type="submit"
-              disabled={isLoading || userRole === 'guest'}
-              className="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors flex-1 sm:flex-none disabled:opacity-50"
-            >
-              {isLoading ? (
-                <span>Memproses...</span>
-              ) : (
-                <>
-                  <PlusIcon />
-                  <span>Tambah Pengeluaran</span>
-                </>
-              )}
-            </button>
-
+          {!isInsideModal && (
             <button
               type="button"
               onClick={handleClear}
-              className="flex items-center justify-center gap-2 border border-border dark:border-dark-border hover:bg-muted dark:hover:bg-dark-muted text-text-primary font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors flex-1 sm:flex-none"
+              className="px-8 py-4 bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 rounded-2xl font-black text-sm uppercase tracking-[0.2em] active:scale-95 transition-all"
             >
-              <ResetIcon />
-              <span>Bersihkan Form</span>
+              Reset
             </button>
-          </div>
-        </form>
-      </div>
+          )}
+        </div>
+      </form>
+    </div>
+  );
+
+  return isInsideModal ? (
+    formContent
+  ) : (
+    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
+      {formContent}
     </div>
   );
 };

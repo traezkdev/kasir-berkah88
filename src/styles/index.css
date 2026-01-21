@@ -87,7 +87,6 @@
 
 /* Header Gradient Utility */
 .style-elegant .bg-header-gradient,
-.style-elegant .filter-section-container,
 .style-elegant .bulk-actions-container {
   background: var(--primary-gradient) !important;
   color: white !important;
@@ -109,10 +108,11 @@
 }
 
 /* Default style for filter root (Option 1) */
+/* Default style for filter root (Option 1) */
 .transaction-filters-root {
-  background-color: white;
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* Remove white background behind the filter card (Option 2) */
@@ -122,38 +122,7 @@
   box-shadow: none !important;
 }
 
-.style-elegant .bg-header-gradient *,
-.style-elegant .filter-section-container * {
-  color: white !important;
-}
-
-/* Ensure inputs inside colorful filter look good */
-.style-elegant .filter-section-container input {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
-  color: white !important;
-}
-
-.style-elegant .filter-section-container input::placeholder {
-  color: rgba(255, 255, 255, 0.7) !important;
-}
-
-.style-elegant .filter-section-container .lucide-search {
-  color: white !important;
-}
-
-/* Fix Filter Button in colorful container */
-.style-elegant .filter-section-container button {
-  background-color: rgba(255, 255, 255, 0.15) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  color: white !important;
-}
-
-.style-elegant .filter-section-container button:hover {
-  background-color: rgba(255, 255, 255, 0.25) !important;
-}
-
-.style-elegant .filter-section-container button * {
+.style-elegant .bg-header-gradient * {
   color: white !important;
 }
 

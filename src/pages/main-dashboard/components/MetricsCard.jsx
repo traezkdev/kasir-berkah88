@@ -14,13 +14,13 @@ const MetricsCard = ({ title, value, icon, color = 'primary', trend = null, desc
   const gradient = gradientClasses[color] || gradientClasses.primary;
 
   return (
-    <div className={`${gradient} rounded-xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 h-full relative overflow-hidden group`}>
+    <div className={`${gradient} rounded-xl p-4 lg:p-5 shadow-lg hover:shadow-xl transition-all duration-300 h-full relative overflow-hidden group`}>
       {/* Decorative background circle */}
       <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-500"></div>
 
-      <div className="relative z-10 flex flex-col h-full py-1">
+      <div className="relative z-10 flex flex-col h-full">
         {/* Top Section: Icon & Trend */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-1 lg:mb-2">
           <div className="p-2 rounded-lg bg-white/20 backdrop-blur-md border border-white/10 shadow-sm transition-transform group-hover:scale-110">
             <Icon name={icon} size={20} className="text-white" />
           </div>
@@ -41,7 +41,7 @@ const MetricsCard = ({ title, value, icon, color = 'primary', trend = null, desc
           <p className="text-[10px] font-black text-white/70 uppercase tracking-[0.2em] mb-1">
             {title}
           </p>
-          <p className="text-2xl lg:text-2xl font-mono font-black text-white tracking-tighter leading-none mb-2 transition-all group-hover:scale-105 origin-left">
+          <p className="text-2xl lg:text-2xl font-mono font-black text-white tracking-tighter leading-none mb-1 lg:mb-2 transition-all group-hover:scale-105 origin-left">
             {value}
           </p>
           {description && (

@@ -2,32 +2,18 @@ import React from 'react';
 import Icon from '../../../components/AppIcon';
 
 const MenuSummaryCards = ({ menuItems }) => {
-  const gradientClasses = [
-    "bg-gradient-to-br from-purple-500 to-indigo-500",
-    "bg-gradient-to-br from-blue-500 to-cyan-500",
-    "bg-gradient-to-br from-green-500 to-teal-500",
-    "bg-gradient-to-br from-yellow-500 to-orange-500",
-    "bg-gradient-to-br from-red-500 to-pink-500",
-  ];
-
   const calculateSummary = () => {
     if (!menuItems) {
       return { totalItems: 0, totalStock: 0, totalValue: 0, lowStockItems: 0, outOfStockItems: 0 };
     }
-    
+
     const totalItems = menuItems.length;
     const totalStock = menuItems.reduce((sum, item) => sum + Number(item?.stock || 0), 0);
     const totalValue = menuItems.reduce((sum, item) => sum + (Number(item?.stock || 0) * Number(item?.price || 0)), 0);
     const lowStockItems = menuItems.filter(item => Number(item?.stock || 0) <= 5 && Number(item?.stock || 0) > 0).length;
     const outOfStockItems = menuItems.filter(item => Number(item?.stock || 0) === 0).length;
 
-    return {
-      totalItems,
-      totalStock,
-      totalValue,
-      lowStockItems,
-      outOfStockItems
-    };
+    return { totalItems, totalStock, totalValue, lowStockItems, outOfStockItems };
   };
 
   const summary = calculateSummary();
@@ -41,76 +27,36 @@ const MenuSummaryCards = ({ menuItems }) => {
   };
 
   const summaryCards = [
-    {
-      title: 'Total Menu',
-      value: summary?.totalItems?.toString(),
-      icon: 'UtensilsCrossed',
-      color: 'text-white',
-      bgColor: 'bg-white/20',
-      description: 'Item menu tersedia'
-    },
-    {
-      title: 'Total Stok',
-      value: summary?.totalStock?.toString(),
-      icon: 'Package',
-      color: 'text-white',
-      bgColor: 'bg-white/20',
-      description: 'Unit tersedia'
-    },
-    {
-      title: 'Nilai Stok',
-      value: formatCurrency(summary?.totalValue),
-      icon: 'DollarSign',
-      color: 'text-white',
-      bgColor: 'bg-white/20',
-      description: 'Total nilai inventori'
-    },
-    {
-      title: 'Stok Menipis',
-      value: summary?.lowStockItems?.toString(),
-      icon: 'AlertTriangle',
-      color: 'text-white',
-      bgColor: 'bg-white/20',
-      description: 'Perlu restok segera'
-    },
-    {
-      title: 'Stok Habis',
-      value: summary?.outOfStockItems?.toString(),
-      icon: 'XCircle',
-      color: 'text-white',
-      bgColor: 'bg-white/20',
-      description: 'Tidak tersedia'
-    }
+    { title: 'Total Menu', value: summary?.totalItems, icon: 'UtensilsCrossed', color: 'blue' },
+    { title: 'Total Stok', value: summary?.totalStock, icon: 'Package', color: 'indigo' },
+    { title: 'Nilai Stok', value: formatCurrency(summary?.totalValue), icon: 'DollarSign', color: 'emerald' },
+    { title: 'Stok Menipis', value: summary?.lowStockItems, icon: 'AlertTriangle', color: 'orange' },
+    { title: 'Stok Habis', value: summary?.outOfStockItems, icon: 'rose' }
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-      {summaryCards?.map((card, index) => (
+    <div className="flex overflow-x-auto lg:grid lg:grid-cols-5 gap-4 mb-6 pb-2 no-scrollbar px-1">
+      {summaryCards.map((card, idx) => (
         <div
-          key={index}
-          className={`rounded-lg shadow-elevation-1 p-4 hover:shadow-elevation-2 transition-shadow duration-200 ${gradientClasses[index % gradientClasses.length]}`}
+          key={idx}
+          className="min-w-[160px] flex-shrink-0 lg:min-w-0 bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm transition-all active:scale-95"
         >
-          <div className="flex items-center justify-between mb-3">
-            <div className={`p-2 rounded-lg ${card?.bgColor}`}>
-              <Icon name={card?.icon} size={20} className={card?.color} />
+          <div className="flex items-center justify-between mb-4">
+            <div className={`p-2.5 rounded-xl ${card.color === 'blue' ? 'bg-blue-50 text-blue-600' :
+              card.color === 'indigo' ? 'bg-indigo-50 text-indigo-600' :
+                card.color === 'emerald' ? 'bg-emerald-50 text-emerald-600' :
+                  card.color === 'orange' ? 'bg-orange-50 text-orange-600' :
+                    'bg-rose-50 text-rose-600'
+              }`}>
+              <Icon name={card.icon || 'Package'} size={18} />
             </div>
-            {card?.title === 'Stok Menipis' && summary?.lowStockItems > 0 && (
-              <div className="w-2 h-2 bg-warning rounded-full animate-pulse" />
-            )}
-            {card?.title === 'Stok Habis' && summary?.outOfStockItems > 0 && (
-              <div className="w-2 h-2 bg-error rounded-full animate-pulse" />
-            )}
           </div>
-          
           <div className="space-y-1">
-            <p className="text-2xl font-mono font-bold text-white">
-              {card?.value}
+            <p className="text-xl font-black text-gray-900 dark:text-white tracking-tighter">
+              {card.value}
             </p>
-            <p className="text-sm font-medium text-white">
-              {card?.title}
-            </p>
-            <p className="text-xs text-white/80">
-              {card?.description}
+            <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest leading-none">
+              {card.title}
             </p>
           </div>
         </div>

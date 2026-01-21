@@ -71,6 +71,22 @@ function App() {
     };
   }, []);
 
+  // Dynamic Theme Color for Browser (Meta Tag)
+  useEffect(() => {
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeColorMeta) {
+      if (location.pathname.startsWith('/customer')) {
+        themeColorMeta.setAttribute('content', '#16a34a'); // Green-600 for customer pages
+      } else if (location.pathname.startsWith('/seller')) {
+        themeColorMeta.setAttribute('content', '#138FEA'); // Blue for seller pages
+      } else if (theme === 'dark') {
+        themeColorMeta.setAttribute('content', '#0f172a'); // Dark mode color (slate-900)
+      } else {
+        themeColorMeta.setAttribute('content', '#138FEA'); // Default Blue or Theme color
+      }
+    }
+  }, [location.pathname, theme]);
+
   return (
     <AppSettingsProvider>
       <ThemeProvider> {/* Tambahkan ThemeProvider di sini */}

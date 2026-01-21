@@ -30,8 +30,13 @@ const setupDatabase = async () => {
         price DECIMAL(10, 2) NOT NULL,
         stock INT NOT NULL,
         category VARCHAR(255),
-      updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-      order_index INTEGER DEFAULT 0
+        image_url VARCHAR(255),
+        hpp DECIMAL(10, 2) DEFAULT 0,
+        discount DECIMAL(10, 2) DEFAULT 0,
+        is_featured BOOLEAN DEFAULT FALSE,
+        description TEXT,
+        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        order_index INTEGER DEFAULT 0
       );
     `;
 
@@ -93,7 +98,7 @@ const setupDatabase = async () => {
         id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(255) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
-        role ENUM('admin', 'user', 'kasir', 'guest', 'owner') DEFAULT 'user'
+        role ENUM('admin', 'user', 'kasir', 'guest', 'owner', 'pelanggan', 'penjual') DEFAULT 'user'
       );
     `;
 
@@ -109,27 +114,61 @@ const setupDatabase = async () => {
       );
     `;
 
-    const createOrdersTable = `
-      CREATE TABLE IF NOT EXISTS orders (
+    const createBannersTable = `
+      CREATE TABLE IF NOT EXISTS banners (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        customer_name VARCHAR(255) NOT NULL,
-        customer_address TEXT,
-        items JSON NOT NULL,
-        total DECIMAL(10, 2) NOT NULL,
-        status VARCHAR(50) NOT NULL DEFAULT 'pending', -- pending, accepted, rejected
+        title VARCHAR(255) NOT NULL,
+        subtitle VARCHAR(255),
+        image_url VARCHAR(255),
+        color_class VARCHAR(50) DEFAULT 'bg-green-600',
+        icon_name VARCHAR(50) DEFAULT 'Percent',
+        link_url VARCHAR(255),
+        is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `;
 
+    await connection.query(createNotesTable);
+    console.log('notes table is ready.');
+    await connection.query(createBannersTable);
+    console.log('banners table is ready.');
+
+    const createOrdersTable = `
+      CREATE TABLE IF NOT EXISTS orders(
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NULL,
+      customer_name VARCHAR(255) NOT NULL,
+      customer_address TEXT,
+      items JSON NOT NULL,
+      total DECIMAL(10, 2) NOT NULL,
+      status VARCHAR(50) NOT NULL DEFAULT 'pending',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
+    `;
+    await connection.query(createOrdersTable);
+    console.log('orders table is ready.');
+
+    // Check and add payment_method to orders
+    const checkPaymentMethodColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'payment_method';
+    `;
+    const [pmOrdersRows] = await connection.query(checkPaymentMethodColumn);
+    if (pmOrdersRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE orders ADD COLUMN payment_method VARCHAR(50) DEFAULT 'Tunai'");
+      console.log('Added payment_method column to orders table.');
+    }
+
     const createEmployeesTable = `
-      CREATE TABLE IF NOT EXISTS employees (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        position VARCHAR(255) NOT NULL,
-        avatar VARCHAR(255),
-        phone VARCHAR(255),
-        email VARCHAR(255)
-      );
+      CREATE TABLE IF NOT EXISTS employees(
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      position VARCHAR(255) NOT NULL,
+      avatar VARCHAR(255),
+      phone VARCHAR(255),
+      email VARCHAR(255)
+    );
     `;
 
     // Add role column if it doesn't exist and set default for existing users
@@ -147,18 +186,26 @@ const setupDatabase = async () => {
     // Execute the create table statements
     await connection.query(createMenuItemsTable);
 
-    // Check and add order_index column to menu_items if it doesn't exist
-    const checkOrderIndexColumn = `
-      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'menu_items' AND COLUMN_NAME = 'order_index';
-    `;
-    const addOrderIndexColumn = `
-      ALTER TABLE menu_items ADD COLUMN order_index INTEGER DEFAULT 0;
-    `;
-    const [orderIndexRows] = await connection.query(checkOrderIndexColumn);
-    if (orderIndexRows[0]['COUNT(*)'] === 0) {
-      await connection.query(addOrderIndexColumn);
-      console.log('Added order_index column to menu_items table.');
+    // List of columns to check and add if missing
+    const columnsToEnsure = [
+      { name: 'image_url', type: 'VARCHAR(255)' },
+      { name: 'hpp', type: 'DECIMAL(10, 2) DEFAULT 0' },
+      { name: 'discount', type: 'DECIMAL(10, 2) DEFAULT 0' },
+      { name: 'is_featured', type: 'BOOLEAN DEFAULT FALSE' },
+      { name: 'description', type: 'TEXT' },
+      { name: 'order_index', type: 'INTEGER DEFAULT 0' }
+    ];
+
+    for (const col of columnsToEnsure) {
+      const checkColumnSql = `
+        SELECT COUNT(*) as colCount FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'menu_items' AND COLUMN_NAME = ?;
+      `;
+      const [rows] = await connection.query(checkColumnSql, [col.name]);
+      if (rows[0].colCount === 0) {
+        await connection.query(`ALTER TABLE menu_items ADD COLUMN ${col.name} ${col.type}`);
+        console.log(`Successfully added column '${col.name}' to menu_items table.`);
+      }
     }
 
     // Create menu_item_options table
@@ -169,7 +216,7 @@ const setupDatabase = async () => {
 
 
     const insertDefaultSettings = `
-      INSERT IGNORE INTO settings (\`key\`, \`value\`) VALUES
+      INSERT IGNORE INTO settings(\`key\`, \`value\`) VALUES
       ('cashier_dashboard_title', 'Dasbor Kasir');
     `;
     await connection.query(insertDefaultSettings);
@@ -431,14 +478,12 @@ const setupDatabase = async () => {
 
     if (pbColumnInfo.length > 0) {
       const { COLUMN_TYPE, COLUMN_DEFAULT } = pbColumnInfo[0];
-      // Normalize default for comparison (MySQL returns DEFAULT '0.00' as '0.00')
       const normalizedDefault = COLUMN_DEFAULT !== null ? parseFloat(COLUMN_DEFAULT).toFixed(2) : null;
 
-      if (COLUMN_TYPE !== pbExpectedType || normalizedDefault !== pbExpectedDefault) {
+      if (COLUMN_TYPE.toUpperCase() !== pbExpectedType.toUpperCase() || normalizedDefault !== pbExpectedDefault) {
         console.log(`Modifying ${pbColumnName} column in ${pbTableName} table: Current type ${COLUMN_TYPE}, default ${COLUMN_DEFAULT}. Expected type ${pbExpectedType}, default ${pbExpectedDefault}.`);
-        await connection.query(`ALTER TABLE ${pbTableName} DROP COLUMN ${pbColumnName}`);
-        await connection.query(`ALTER TABLE ${pbTableName} ADD COLUMN ${pbColumnName} ${pbExpectedType} DEFAULT ${pbExpectedDefault}`);
-        console.log(`Re-added ${pbColumnName} column with correct definition.`);
+        await connection.query(`ALTER TABLE ${pbTableName} MODIFY COLUMN ${pbColumnName} ${pbExpectedType} DEFAULT ${pbExpectedDefault}`);
+        console.log(`Modified ${pbColumnName} column with correct definition.`);
       } else {
         console.log(`${pbColumnName} column in ${pbTableName} table is already correctly defined.`);
       }
@@ -644,8 +689,7 @@ const setupDatabase = async () => {
       console.log('Default "owner_deposit" account created.');
     }
 
-    await connection.query(createOrdersTable);
-    console.log('orders table is ready.');
+
 
     const createCategoriesTable = `
       CREATE TABLE IF NOT EXISTS categories (
@@ -740,10 +784,10 @@ const setupDatabase = async () => {
     } else {
       // If the column exists, modify it to the new ENUM type
       const alterRoleToEnum = `
-        ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'user', 'kasir', 'guest', 'owner') DEFAULT 'user';
+        ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'user', 'kasir', 'guest', 'owner', 'pelanggan', 'penjual') DEFAULT 'user';
       `;
       await connection.query(alterRoleToEnum);
-      console.log('Modified role column to ENUM type.');
+      console.log('Modified role column to ENUM type including penjual.');
     }
 
     // Check and add avatar_url column to users if it doesn't exist
@@ -772,6 +816,34 @@ const setupDatabase = async () => {
     if (appModeRows[0]['COUNT(*)'] === 0) {
       await connection.query(addAppModeColumn);
       console.log('Added app_mode column to users table.');
+    }
+
+    // Check and add phone column to users if it doesn't exist
+    const checkPhoneColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'phone';
+    `;
+    const addPhoneColumn = `
+      ALTER TABLE users ADD COLUMN phone VARCHAR(20) DEFAULT NULL;
+    `;
+    const [phoneRows] = await connection.query(checkPhoneColumn);
+    if (phoneRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addPhoneColumn);
+      console.log('Added phone column to users table.');
+    }
+
+    // Check and add address column to users if it doesn't exist
+    const checkAddressColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'address';
+    `;
+    const addAddressColumn = `
+      ALTER TABLE users ADD COLUMN address TEXT DEFAULT NULL;
+    `;
+    const [addressRows] = await connection.query(checkAddressColumn);
+    if (addressRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addAddressColumn);
+      console.log('Added address column to users table.');
     }
 
     const addUpdatedAtToMenuItems = `
@@ -811,6 +883,22 @@ const setupDatabase = async () => {
     if (orderIdRows[0]['COUNT(*)'] === 0) {
       await connection.query(addOrderIdColumn);
       console.log('Added order_id column and foreign key to transactions table.');
+    }
+
+    // Check and add user_id column to orders table if it doesn't exist
+    const checkOrderUserIdColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'user_id';
+    `;
+    const addOrderUserIdColumn = `
+      ALTER TABLE orders
+      ADD COLUMN user_id INT NULL,
+      ADD FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
+    `;
+    const [orderUserIdRows] = await connection.query(checkOrderUserIdColumn);
+    if (orderUserIdRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addOrderUserIdColumn);
+      console.log('Added user_id column and foreign key to orders table.');
     }
 
     // Check and add cash_paid and change columns to transactions if they don't exist
@@ -1065,6 +1153,20 @@ const setupDatabase = async () => {
     if (restaurantUrlRows[0]['COUNT(*)'] === 0) {
       await connection.query(addRestaurantUrlColumn);
       console.log('Added restaurant_url column to app_settings table.');
+    }
+
+    // Check and add is_open column to app_settings if it doesn't exist
+    const checkIsOpenColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'app_settings' AND COLUMN_NAME = 'is_open';
+    `;
+    const addIsOpenColumn = `
+      ALTER TABLE app_settings ADD COLUMN is_open TINYINT(1) DEFAULT 1;
+    `;
+    const [isOpenRows] = await connection.query(checkIsOpenColumn);
+    if (isOpenRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addIsOpenColumn);
+      console.log('Added is_open column to app_settings table.');
     }
 
     // --- Optimasi: Tambahkan Indeks untuk Peningkatan Performa ---

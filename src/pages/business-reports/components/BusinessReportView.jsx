@@ -11,10 +11,12 @@ import RawMaterialReportSection from './RawMaterialReportSection';
 import CombinedAnalyticsSection from './CombinedAnalyticsSection';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
+import Icon from '../../../components/AppIcon';
 import authFetch from '../../../utils/authFetch';
 import { formatInTimeZone } from 'date-fns-tz';
 import { exportToExcel, exportToPdf, prepareCombinedDataForExport } from '../../../utils/exportUtils';
 import { useTheme } from '../../../contexts/ThemeContext';
+import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -441,6 +443,279 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                 </div>
             ) : reportData ? (
                 <div className="space-y-8 mt-6">
+                    {/* Statistics Overview Section */}
+                    <section className="mb-8">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg">
+                                <Icon name="BarChart3" className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h2 className="text-2xl font-bold text-text-primary">Ringkasan Statistik</h2>
+                                <p className="text-sm text-text-secondary">Visualisasi data periode yang dipilih</p>
+                            </div>
+                        </div>
+
+                        {/* Summary Cards */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                            {/* Total Transaksi */}
+                            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+                                <div className="flex flex-col h-full">
+                                    <p className="text-blue-100 text-xs font-medium uppercase tracking-wider mb-3">Total Transaksi</p>
+                                    <div className="flex items-center justify-center flex-grow my-2">
+                                        <h3 className="text-4xl font-bold">{reportData?.sales?.totalTransactions || 0}</h3>
+                                    </div>
+                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/20">
+                                        <div className="flex items-center gap-2 text-blue-100 text-sm">
+                                            <Icon name="TrendingUp" className="w-4 h-4" />
+                                            <span>Periode ini</span>
+                                        </div>
+                                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                                            <Icon name="ShoppingCart" className="w-5 h-5" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Total Pendapatan */}
+                            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+                                <div className="flex flex-col h-full">
+                                    <p className="text-emerald-100 text-xs font-medium uppercase tracking-wider mb-3">Total Pendapatan</p>
+                                    <div className="flex items-center justify-center flex-grow my-2">
+                                        <h3 className="text-3xl font-bold text-center">
+                                            Rp {(reportData?.sales?.totalRevenue || 0).toLocaleString()}
+                                        </h3>
+                                    </div>
+                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/20">
+                                        <div className="flex items-center gap-2 text-emerald-100 text-sm">
+                                            <Icon name="ArrowUpRight" className="w-4 h-4" />
+                                            <span>Dari penjualan</span>
+                                        </div>
+                                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                                            <Icon name="DollarSign" className="w-5 h-5" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Total Pengeluaran */}
+                            <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+                                <div className="flex flex-col h-full">
+                                    <p className="text-orange-100 text-xs font-medium uppercase tracking-wider mb-3">Total Pengeluaran</p>
+                                    <div className="flex items-center justify-center flex-grow my-2">
+                                        <h3 className="text-3xl font-bold text-center">
+                                            Rp {(reportData?.expenses?.summary?.totalExpenses || 0).toLocaleString()}
+                                        </h3>
+                                    </div>
+                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/20">
+                                        <div className="flex items-center gap-2 text-orange-100 text-sm">
+                                            <Icon name="ArrowDownRight" className="w-4 h-4" />
+                                            <span>Operasional</span>
+                                        </div>
+                                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                                            <Icon name="Receipt" className="w-5 h-5" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Laba Bersih */}
+                            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+                                <div className="flex flex-col h-full">
+                                    <p className="text-purple-100 text-xs font-medium uppercase tracking-wider mb-3">Laba Bersih</p>
+                                    <div className="flex items-center justify-center flex-grow my-2">
+                                        <h3 className="text-3xl font-bold text-center">
+                                            Rp {((reportData?.sales?.totalRevenue || 0) - (reportData?.expenses?.summary?.totalExpenses || 0)).toLocaleString()}
+                                        </h3>
+                                    </div>
+                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/20">
+                                        <div className="flex items-center gap-2 text-purple-100 text-sm">
+                                            <Icon name="TrendingUp" className="w-4 h-4" />
+                                            <span>Pendapatan - Pengeluaran</span>
+                                        </div>
+                                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                                            <Icon name="Wallet" className="w-5 h-5" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Charts Grid */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                            {/* Payment Methods Distribution */}
+                            <div className="bg-card rounded-xl shadow-lg p-6 border border-border">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Icon name="PieChart" className="w-5 h-5 text-blue-600" />
+                                    <h3 className="text-lg font-bold text-text-primary">Distribusi Metode Pembayaran</h3>
+                                </div>
+                                <div className="h-80">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={(() => {
+                                                    const paymentMethods = {};
+                                                    transactions.filter(t => {
+                                                        const itemDate = new Date(t.timestamp);
+                                                        return itemDate >= selectedDateRange.startDate && itemDate <= selectedDateRange.endDate;
+                                                    }).forEach(t => {
+                                                        const method = t.payment_method || 'tunai';
+                                                        paymentMethods[method] = (paymentMethods[method] || 0) + 1;
+                                                    });
+                                                    const colors = {
+                                                        'tunai': '#3b82f6',
+                                                        'qris': '#10b981',
+                                                        'transfer': '#8b5cf6',
+                                                        'bon': '#f59e0b',
+                                                        'employee_meal': '#ef4444'
+                                                    };
+                                                    return Object.entries(paymentMethods).map(([name, value]) => ({
+                                                        name: name.charAt(0).toUpperCase() + name.slice(1).replace('_', ' '),
+                                                        value,
+                                                        color: colors[name] || '#6b7280'
+                                                    }));
+                                                })()}
+                                                cx="50%"
+                                                cy="50%"
+                                                labelLine={false}
+                                                label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                                                outerRadius={100}
+                                                fill="#8884d8"
+                                                dataKey="value"
+                                            >
+                                                {(() => {
+                                                    const paymentMethods = {};
+                                                    transactions.filter(t => {
+                                                        const itemDate = new Date(t.timestamp);
+                                                        return itemDate >= selectedDateRange.startDate && itemDate <= selectedDateRange.endDate;
+                                                    }).forEach(t => {
+                                                        const method = t.payment_method || 'tunai';
+                                                        paymentMethods[method] = (paymentMethods[method] || 0) + 1;
+                                                    });
+                                                    const colors = {
+                                                        'tunai': '#3b82f6',
+                                                        'qris': '#10b981',
+                                                        'transfer': '#8b5cf6',
+                                                        'bon': '#f59e0b',
+                                                        'employee_meal': '#ef4444'
+                                                    };
+                                                    return Object.entries(paymentMethods).map(([name], index) => (
+                                                        <Cell key={`cell-${index}`} fill={colors[name] || '#6b7280'} />
+                                                    ));
+                                                })()}
+                                            </Pie>
+                                            <Tooltip formatter={(value) => [`${value} transaksi`, 'Jumlah']} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+
+                            {/* Top 5 Menu Items */}
+                            <div className="bg-card rounded-xl shadow-lg p-6 border border-border">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Icon name="TrendingUp" className="w-5 h-5 text-emerald-600" />
+                                    <h3 className="text-lg font-bold text-text-primary">Top 5 Menu Terlaris</h3>
+                                </div>
+                                <div className="h-80">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart
+                                            data={(reportData?.sales?.topItems || []).slice(0, 5).map(item => ({
+                                                name: item.name,
+                                                quantity: item.sold
+                                            }))}
+                                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                                        >
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                                            <YAxis />
+                                            <Tooltip formatter={(value) => [`${value} porsi`, 'Terjual']} />
+                                            <Bar dataKey="quantity" fill="#10b981" radius={[8, 8, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Additional Stats Row */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Stock Status */}
+                            <div className="bg-card rounded-xl shadow-lg p-6 border border-border">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Icon name="Package" className="w-5 h-5 text-purple-600" />
+                                    <h3 className="text-lg font-bold text-text-primary">Status Stok</h3>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
+                                                <Icon name="UtensilsCrossed" className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-text-secondary">Total Menu</p>
+                                                <p className="text-2xl font-bold text-text-primary">{menuItems?.length || 0}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs text-text-secondary">Stok Rendah</p>
+                                            <p className="text-lg font-bold text-orange-600">
+                                                {reportData?.stock?.lowStockItems || 0}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg">
+                                                <Icon name="Leaf" className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-text-secondary">Bahan Mentah</p>
+                                                <p className="text-2xl font-bold text-text-primary">{rawMaterials?.length || 0}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs text-text-secondary">Perlu Restock</p>
+                                            <p className="text-lg font-bold text-orange-600">
+                                                {reportData?.rawMetrics?.lowStockRawCount || 0}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Financial Summary */}
+                            <div className="bg-card rounded-xl shadow-lg p-6 border border-border">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Icon name="Wallet" className="w-5 h-5 text-indigo-600" />
+                                    <h3 className="text-lg font-bold text-text-primary">Ringkasan Keuangan</h3>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-indigo-100 dark:bg-indigo-800 rounded-lg">
+                                                <Icon name="TrendingUp" className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-text-secondary">Rata-rata Order</p>
+                                                <p className="text-2xl font-bold text-text-primary">Rp {(reportData?.sales?.averageOrder || 0).toLocaleString()}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
+                                                <Icon name="Receipt" className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-text-secondary">Rata-rata Pengeluaran/Hari</p>
+                                                <p className="text-2xl font-bold text-text-primary">Rp {(reportData?.expenses?.summary?.averageDaily || 0).toLocaleString()}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Existing Report Sections */}
                     <SalesReportSection data={reportData.sales} dateRange={selectedDateRange} />
                     <StockReportSection data={reportData.stock} dateRange={selectedDateRange} />
                     <RawMaterialReportSection data={reportData.rawMetrics} units={units} dateRange={selectedDateRange} />

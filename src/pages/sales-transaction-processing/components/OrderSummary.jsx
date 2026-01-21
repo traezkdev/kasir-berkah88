@@ -22,11 +22,13 @@ const OrderSummary = ({
   setPaymentMethod,
   userRole,
   ignoreStock,
-  setIgnoreStock
+  setIgnoreStock,
+  isMobilePopup // New prop
 
 }) => {
   const { theme } = useTheme();
   const [ppnRate, setPpnRate] = useState(0.11); // Default PPN rate
+  const [isEditingPpn, setIsEditingPpn] = useState(false);
   const [isEditingTotal, setIsEditingTotal] = useState(false);
   const [customTotal, setCustomTotal] = useState(null);
   const [isTotalOverridden, setIsTotalOverridden] = useState(false);
@@ -179,39 +181,68 @@ const OrderSummary = ({
   const disablePaymentButton = isLoading || !isCartValid();
 
   return (
-    <div className={`bg-card rounded-lg shadow-lg p-6 lg:sticky ${theme === 'admin' ? 'lg:top-4' : 'lg:top-16'}`}>
-      <h2 className="text-xl font-bold text-foreground mb-4">Ringkasan Pesanan</h2>
+    <div className={isMobilePopup ? "pb-24" : `bg-card rounded-lg shadow-lg p-6 lg:sticky ${theme === 'admin' ? 'lg:top-4' : 'lg:top-16'}`}>
+      {!isMobilePopup && <h2 className="text-xl font-bold text-foreground mb-4">Ringkasan Pesanan</h2>}
 
       {cart.length === 0 ? (
         <p className="text-muted-foreground text-center py-8">Keranjang belanja kosong</p>
       ) : (
-        <div className="space-y-4">
+        <div className={isMobilePopup ? "space-y-6" : "space-y-4"}>
           {cart.map(item => (
-            <div key={item.cartItemId} className="flex items-start justify-between">
-              <div>
-                <div className="flex items-baseline"> {/* Flex container for name and options */}
-                  <p className="font-semibold">{item.name}</p>
+            <div key={item.cartItemId} className={isMobilePopup ? "flex items-center justify-between bg-gray-50 dark:bg-slate-800/50 p-3 rounded-2xl border border-gray-100 dark:border-slate-800" : "flex items-start justify-between"}>
+              <div className="flex-grow">
+                <div className="flex flex-col">
+                  <p className={`font-black tracking-tight ${isMobilePopup ? 'text-sm text-gray-800 dark:text-gray-100' : 'font-semibold'}`}>
+                    {item.name}
+                  </p>
                   {item.selectedOptions && item.selectedOptions.length > 0 && (
-                    <div className="text-xs text-muted-foreground ml-2"> {/* Added ml-2 for spacing */}
+                    <div className="flex flex-wrap gap-1 mt-1">
                       {item.selectedOptions.map(opt => (
-                        <span key={opt.id}>+ {opt.name}</span> // Changed <p> to <span> to keep them inline
+                        <span key={opt.id} className="text-[10px] bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-md font-bold uppercase transition-colors">
+                          {opt.name}
+                        </span>
                       ))}
                     </div>
                   )}
+                  <p className={`text-xs font-bold mt-1 ${isMobilePopup ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}`}>
+                    Rp {item.finalPrice?.toLocaleString('id-ID')}
+                  </p>
                 </div>
-                <p className="text-sm text-muted-foreground">Rp {item.finalPrice?.toLocaleString('id-ID')}</p>
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="1"
-                  value={item.quantity}
-                  onChange={(e) => onUpdateQuantity(item.cartItemId, parseInt(e.target.value, 10) || 0)}
-                  className="w-16 text-center border border-input rounded-md text-foreground bg-background"
-                />
-                <Button variant="ghost" size="icon" onClick={() => onRemoveFromCart(item.cartItemId)}>
-                  <Icon name="Trash2" size={16} />
-                </Button>
+
+              <div className="flex items-center gap-2 ml-4">
+                {isMobilePopup ? (
+                  <div className="flex items-center bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700 p-1 shadow-sm">
+                    <button
+                      onClick={() => onUpdateQuantity(item.cartItemId, item.quantity - 1)}
+                      className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <Icon name={item.quantity === 1 ? "Trash2" : "Minus"} size={14} />
+                    </button>
+                    <span className="w-8 text-center text-xs font-black text-gray-800 dark:text-white">
+                      {item.quantity}
+                    </span>
+                    <button
+                      onClick={() => onUpdateQuantity(item.cartItemId, item.quantity + 1)}
+                      className="p-1.5 text-blue-600 hover:text-blue-700 transition-colors"
+                    >
+                      <Icon name="Plus" size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="number"
+                      min="1"
+                      value={item.quantity}
+                      onChange={(e) => onUpdateQuantity(item.cartItemId, parseInt(e.target.value, 10) || 0)}
+                      className="w-16 text-center border border-input rounded-md text-foreground bg-background"
+                    />
+                    <Button variant="ghost" size="icon" onClick={() => onRemoveFromCart(item.cartItemId)}>
+                      <Icon name="Trash2" size={16} />
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           ))}
@@ -220,89 +251,97 @@ const OrderSummary = ({
 
       {cart.length > 0 && (
         <>
-          <div className="border-t my-4"></div>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <p>Subtotal</p>
-              <p>Rp {subtotal.toLocaleString('id-ID')}</p>
+          <div className={`my-6 space-y-3 ${isMobilePopup ? 'bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-3xl border border-blue-100 dark:border-blue-900/30' : 'border-t pt-4'}`}>
+            <div className="flex justify-between items-center text-sm">
+              <p className="text-gray-500 dark:text-slate-400 font-medium whitespace-nowrap">Subtotal</p>
+              <div className="flex-grow border-b border-dashed border-gray-200 dark:border-slate-700 mx-4"></div>
+              <p className="font-bold text-gray-800 dark:text-white">Rp {subtotal.toLocaleString('id-ID')}</p>
             </div>
-            <div className="flex justify-between items-center">
-              <p>PPN ({`${(ppnRate * 100).toFixed(0)}%`})</p>
+            <div className="flex justify-between items-center text-sm">
+              <p className="text-gray-500 dark:text-slate-400 font-medium whitespace-nowrap">PPN ({`${(ppnRate * 100).toFixed(0)}%`})</p>
+              <div className="flex-grow border-b border-dashed border-gray-200 dark:border-slate-700 mx-4"></div>
               <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  value={ppnRate * 100}
-                  onChange={handlePpnChange}
-                  className="w-16 text-center border border-input rounded-md text-foreground bg-background"
-                />
-                <Button variant="ghost" size="icon" onClick={handleSavePpn}>
-                  <Icon name="Save" size={16} />
-                </Button>
+                {isEditingPpn ? (
+                  <div className="flex items-center gap-1 bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 px-1">
+                    <input
+                      type="number"
+                      value={ppnRate * 100}
+                      onChange={handlePpnChange}
+                      className="w-10 text-center text-xs font-black text-gray-800 dark:text-white bg-transparent outline-none py-1"
+                    />
+                    <button onClick={handleSavePpn} className="text-blue-600 p-1">
+                      <Icon name="Check" size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <p className="font-bold text-gray-800 dark:text-white flex items-center gap-1" onClick={() => setIsEditingPpn(true)}>
+                    Rp {tax.toLocaleString('id-ID')}
+                    {isMobilePopup && <Icon name="Edit3" size={12} className="opacity-40" />}
+                  </p>
+                )}
               </div>
-            </div>
-            <div className="flex justify-between">
-              <p></p>
-              <p>Rp {tax.toLocaleString('id-ID')}</p>
             </div>
             {manualDiscount > 0 && (
-              <div className="flex justify-between text-red-500">
-                <p>Diskon</p>
-                <p>- Rp {manualDiscount.toLocaleString('id-ID')}</p>
+              <div className="flex justify-between items-center text-sm">
+                <p className="text-red-500 font-medium whitespace-nowrap">Diskon</p>
+                <div className="flex-grow border-b border-dashed border-red-100 dark:border-red-900/20 mx-4"></div>
+                <p className="font-bold text-red-500">- Rp {manualDiscount.toLocaleString('id-ID')}</p>
               </div>
             )}
-            <div className="flex justify-between items-center font-bold text-lg">
-              <p>Total</p>
+            <div className="pt-2 flex justify-between items-center">
+              <p className="text-gray-800 dark:text-white font-black uppercase tracking-wider text-xs">Total Akhir</p>
               {isEditingTotal ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 rounded-xl border-2 border-blue-500 p-1">
+                  <span className="pl-2 text-xs font-bold text-gray-400">Rp</span>
                   <input
                     type="number"
                     value={customTotal}
                     onChange={(e) => setCustomTotal(parseFloat(e.target.value))}
-                    className="w-32 text-right border border-input rounded-md px-2 py-1 text-foreground bg-background"
+                    className="w-24 text-right text-sm font-black text-gray-800 dark:text-white bg-transparent outline-none pr-2"
+                    autoFocus
                   />
-                  <Button variant="ghost" size="icon" onClick={() => {
-                    setIsEditingTotal(false);
-                    setIsTotalOverridden(false); // Batalkan override
-                  }}>
-                    <Icon name="X" size={16} />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => {
-                    setIsEditingTotal(false);
-                    setIsTotalOverridden(true); // Terapkan override
-                  }}>
-                    <Icon name="Check" size={16} />
-                  </Button>
+                  <div className="flex border-l border-gray-100 dark:border-slate-800">
+                    <button onClick={() => { setIsEditingTotal(false); setIsTotalOverridden(true); }} className="p-1.5 text-blue-600">
+                      <Icon name="Check" size={16} />
+                    </button>
+                    <button onClick={() => { setIsEditingTotal(false); setIsTotalOverridden(false); }} className="p-1.5 text-gray-400">
+                      <Icon name="X" size={16} />
+                    </button>
+                  </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <p>Rp {customTotal?.toLocaleString('id-ID')}</p>
-                  <Button variant="ghost" size="icon" onClick={() => setIsEditingTotal(true)}>
-                    <Icon name="Pencil" size={16} />
-                  </Button>
+                <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsEditingTotal(true)}>
+                  <p className="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tighter">
+                    Rp {customTotal?.toLocaleString('id-ID')}
+                  </p>
+                  <Icon name="Edit2" size={14} className="text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               )}
             </div>
           </div>
           <div className="border-t my-4"></div>
 
-          <div className="space-y-4">
-
+          <div className={isMobilePopup ? "space-y-5 bg-gray-50 dark:bg-slate-800/30 p-5 rounded-3xl border border-gray-100 dark:border-slate-800" : "space-y-4"}>
             <div className="space-y-2">
-              <label htmlFor="payment-method" className="text-sm font-medium text-muted-foreground">Metode Pembayaran</label>
+              <label htmlFor="payment-method" className="text-[11px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                <Icon name="CreditCard" size={12} />
+                Metode Pembayaran
+              </label>
               <Select
                 id="payment-method"
                 options={paymentMethodOptions}
                 value={paymentMethod}
                 onChange={handlePaymentMethodChange}
+                className={isMobilePopup ? "h-12 rounded-xl" : ""}
               />
             </div>
 
             {paymentMethod === 'tunai' && (
-              <div className="space-y-3 border-t pt-4 mt-4">
-
+              <div className={`space-y-3 ${isMobilePopup ? 'pt-2' : 'border-t pt-4 mt-4'}`}>
                 <div className="space-y-2">
-                  <label htmlFor="cash-paid-select" className="text-sm font-medium text-muted-foreground">
-                    Nominal Tunai (Opsional)
+                  <label htmlFor="cash-paid-select" className="text-[11px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                    <Icon name="Banknote" size={12} />
+                    Nominal Tunai
                   </label>
                   <Select
                     id="cash-paid-select"
@@ -319,51 +358,71 @@ const OrderSummary = ({
                     onChange={(value) => {
                       setSelectedCashOption(value);
                       if (value !== 'custom') {
-                        setCustomCashInput(''); // Clear custom input if a preset is selected
+                        setCashPaid(value);
                       }
                     }}
+                    className={isMobilePopup ? "h-12 rounded-xl" : ""}
                   />
+
                   {selectedCashOption === 'custom' && (
-                    <input
-                      id="cash-paid-custom"
-                      type="text"
-                      value={customCashInput === '' || isNaN(parseFloat(customCashInput)) ? '' : parseFloat(customCashInput).toLocaleString('id-ID')}
-                      onChange={(e) => {
-                        const rawValue = e.target.value.replace(/\./g, '');
-                        setCustomCashInput(rawValue);
-                      }}
-                      className="w-full text-center border border-input rounded-md px-2 py-1 text-foreground bg-background mt-2"
-                      placeholder="Masukkan nominal kustom"
-                    />
+                    <div className="relative group">
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">Rp</div>
+                      <input
+                        id="cash-paid-custom"
+                        type="text"
+                        className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-800 dark:text-white font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
+                        placeholder="0"
+                        value={customCashInput}
+                        onChange={(e) => setCustomCashInput(e.target.value)}
+                      />
+                    </div>
                   )}
                 </div>
-                {cashPaid && (change > 0 || moneyShortage > 0) && (
-                  <div className="flex justify-between items-center font-bold text-lg">
+
+                {parseFloat(cashPaid) > 0 && (
+                  <div className="space-y-2">
                     {change > 0 && (
-                      <p className="text-green-500">Kembalian: Rp {change.toLocaleString('id-ID')}</p>
+                      <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/10 rounded-xl border border-green-100 dark:border-green-900/30">
+                        <p className="text-[10px] font-black text-green-600 dark:text-green-400 uppercase tracking-tight">Kembali</p>
+                        <p className="text-sm font-black text-green-700 dark:text-green-300">Rp {change.toLocaleString('id-ID')}</p>
+                      </div>
                     )}
                     {moneyShortage > 0 && (
-                      <p className="text-red-500">Uang kurang: Rp {moneyShortage.toLocaleString('id-ID')}</p>
+                      <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30">
+                        <p className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-tight">Uang Kurang</p>
+                        <p className="text-sm font-black text-red-700 dark:text-red-300">Rp {moneyShortage.toLocaleString('id-ID')}</p>
+                      </div>
                     )}
                   </div>
                 )}
               </div>
             )}
 
-            <div className="space-y-2 pt-2">
-              <label htmlFor="catatan" className="text-sm font-medium text-muted-foreground">Catatan (Opsional)</label>
+            <div className={`space-y-2 ${isMobilePopup ? 'pt-2' : 'pt-2'}`}>
+              <label htmlFor="catatan" className="text-[11px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                <Icon name="FileText" size={12} />
+                Catatan (Opsional)
+              </label>
               <textarea
                 id="catatan"
                 value={catatan}
                 onChange={(e) => setCatatan(e.target.value)}
-                className="w-full border border-input rounded-md px-3 py-2 text-foreground bg-background text-sm h-20 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="Tambahkan catatan untuk transaksi ini..."
+                className={`w-full border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-gray-800 dark:text-white bg-white dark:bg-slate-900 text-sm h-24 resize-none transition-all outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm ${isMobilePopup ? '' : ''}`}
+                placeholder="Tambahkan catatan transaksi..."
               />
             </div>
           </div>
 
-          <div className="flex gap-2 mt-4">
-            <Button variant="outline" onClick={onClearCart} className="w-full">Kosongkan</Button>
+          <div className={isMobilePopup
+            ? "fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-6 border-t border-gray-100 dark:border-slate-800 z-[200] shadow-[0_-20px_40px_rgba(0,0,0,0.1)] flex gap-3"
+            : "flex gap-2 mt-4"}>
+            <Button
+              variant="outline"
+              onClick={onClearCart}
+              className={isMobilePopup ? "flex-1 h-14 rounded-2xl border-gray-200 dark:border-slate-700 font-black text-xs uppercase tracking-widest text-gray-500" : "w-full"}
+            >
+              Kosongkan
+            </Button>
             <Button
               onClick={() => onProcessPayment({
                 total: customTotal,
@@ -373,7 +432,7 @@ const OrderSummary = ({
                 manual_discount: manualDiscount,
                 catatan: catatan
               })}
-              className="w-full"
+              className={isMobilePopup ? "flex-[2] h-14 bg-[#118EEA] hover:bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-500/20" : "w-full"}
               loading={isLoading}
               disabled={disablePaymentButton || userRole === 'guest'}
             >

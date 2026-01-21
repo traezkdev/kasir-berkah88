@@ -9,11 +9,14 @@ import MenuItemsTable from './components/MenuItemsTable';
 import MenuSummaryCards from './components/MenuSummaryCards';
 import MenuSearchAndFilter from './components/MenuSearchAndFilter';
 import EditMenuItemModal from './components/EditMenuItemModal';
+import AddMenuItemModal from './components/AddMenuItemModal';
 import RecipeManagementModal from './RecipeManagementModal'; // Import the new modal
 import Pagination from '../../components/ui/Pagination'; // Add this import
 
 import Button from '../../components/ui/Button';
+import Icon from '../../components/AppIcon';
 import authFetch from '../../utils/authFetch'; // Add this import
+import { useNavigate } from 'react-router-dom';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -21,6 +24,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 
 const MenuManagement = ({ headerTitle }) => {
   const { theme } = useTheme();
+  const navigate = useNavigate();
   const [menuItems, setMenuItems] = useState([]);
   const [allMenuItems, setAllMenuItems] = useState([]); // State for all menu items
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,11 +33,21 @@ const MenuManagement = ({ headerTitle }) => {
   const [userRole, setUserRole] = useState(null); // New state for user role
   const [notification, setNotification] = useState(null);
   const [editingMenuItem, setEditingMenuItem] = useState(null); // State for item being edited
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false); // State for adding new item
   const [isRecipeModalOpen, setRecipeModalOpen] = useState(false); // State for recipe modal
   const [selectedMenuItemForRecipe, setSelectedMenuItemForRecipe] = useState(null); // State for recipe item
   const [pagination, setPagination] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showStickyHeader, setShowStickyHeader] = useState(false);
   const itemsPerPage = 20;
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowStickyHeader(window.scrollY > 100);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
@@ -131,6 +145,7 @@ const MenuManagement = ({ headerTitle }) => {
       discount: parseFloat(itemData.discount || 0),
       is_featured: itemData.is_featured ? 1 : 0, // Ensure 0 or 1
       options: itemData.options || [], // Include options
+      description: itemData.description,
     };
 
     let body;
@@ -181,6 +196,7 @@ const MenuManagement = ({ headerTitle }) => {
       discount: parseFloat(updatedData.discount || 0),
       is_featured: updatedData.is_featured ? 1 : 0, // Ensure 0 or 1
       options: updatedData.options || [], // Include options
+      description: updatedData.description,
     };
     let body;
     let headers = {};
@@ -370,24 +386,33 @@ Powered by Kasir Berkah 88`;
     });
   };
 
-  const filteredMenuItems = menuItems.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredMenuItems = (() => {
+    const term = searchTerm.toLowerCase();
 
-    // The backend handles category filtering. Here we only handle search and stock status.
-    if (activeFilter === 'all' || ['makanan', 'minuman', 'lainnya'].includes(activeFilter)) {
-      return matchesSearch;
+    // For Stock Filters or Search, use Client-Side Filtering on ALL items
+    // This overcomes the limitation of server-side pagination for these cases
+    if (['available', 'low', 'out'].includes(activeFilter) || term) {
+      return allMenuItems.filter(item => {
+        const matchesSearch = item.name.toLowerCase().includes(term);
+
+        let matchesFilter = true;
+
+        // Apply Category Filter if active
+        if (['makanan', 'minuman', 'lainnya'].includes(activeFilter)) {
+          matchesFilter = item.category === activeFilter;
+        }
+        // Apply Stock Filter if active
+        else if (activeFilter === 'available') matchesFilter = item.stock > 5;
+        else if (activeFilter === 'low') matchesFilter = item.stock <= 5 && item.stock > 0;
+        else if (activeFilter === 'out') matchesFilter = item.stock === 0;
+
+        return matchesSearch && matchesFilter;
+      });
     }
-    if (activeFilter === 'available') {
-      return matchesSearch && item.stock > 5;
-    }
-    if (activeFilter === 'low') {
-      return matchesSearch && item.stock <= 5 && item.stock > 0;
-    }
-    if (activeFilter === 'out') {
-      return matchesSearch && item.stock === 0;
-    }
-    return false;
-  });
+
+    // Default: Use Server-Side Paginated Items
+    return menuItems;
+  })();
 
   if (isLoading) {
     return (
@@ -415,7 +440,7 @@ Powered by Kasir Berkah 88`;
 
 
       {theme === 'default' && (
-        <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} />
+        <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} hideMobileHeader={true} />
       )}
 
       {notification && (
@@ -425,40 +450,122 @@ Powered by Kasir Berkah 88`;
         </div>
       )}
 
-      <main className={`${theme === 'default' ? 'pt-18 lg:pt-16' : ''} pb-24 lg:pb-8`}>
-        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 pt-2 space-y-6 lg:space-y-8" : "space-y-6"}>
-          {/* Breadcrumb */}
-          <div className="mb-6 hidden md:block">
+      <main className={`${theme === 'default' ? 'pt-0 lg:pt-16' : ''} pb-24 lg:pb-8`}>
+        {/* Sticky Mobile Header */}
+        <div className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden ${showStickyHeader ? 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}>
+          <div className="px-6 flex items-center justify-between">
+            <button
+              onClick={() => navigate(-1)}
+              className={`p-2 rounded-2xl transition-all active:scale-95 ${showStickyHeader ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`}
+            >
+              <Icon name="ChevronLeft" size={24} />
+            </button>
+            <div className={`text-center transition-all duration-300 ${showStickyHeader ? 'opacity-100' : 'opacity-0'}`}>
+              <h2 className="font-black text-gray-800 dark:text-white tracking-tight">
+                {headerTitle || 'Kelola Menu'}
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <button className={`p-2 rounded-2xl transition-all active:scale-95 ${showStickyHeader ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`}>
+                <Icon name="Bell" size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Header Banner (lg:hidden) */}
+        {theme === 'default' && (
+          <div className="lg:hidden bg-gradient-to-br from-[#118eea] to-[#0d70ba] dark:from-slate-900 dark:to-slate-800 pt-20 pb-14 px-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/10 rounded-full -ml-24 -mb-24 blur-2xl"></div>
+
+            {/* Decorative Background Icon */}
+            <div className="absolute -right-12 -top-12 text-white/20 -rotate-12 pointer-events-none">
+              <Icon name="LayoutGrid" size={200} />
+            </div>
+
+            <div className="relative z-10">
+              <div>
+                <p className="text-[10px] font-black text-blue-100 dark:text-blue-200/60 uppercase tracking-[0.2em] mb-2 opacity-80">Inventori Warung</p>
+                <h1 className="text-4xl font-black text-white tracking-tight leading-tight">
+                  Atur Menu<br />{allMenuItems.length > 0 ? `${allMenuItems.length} Produk` : 'Warung'}
+                </h1>
+              </div>
+            </div>
+
+            <div className="mt-8 flex gap-3 relative z-10">
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="flex-1 bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 flex items-center gap-2 active:scale-95 transition-all outline-none"
+              >
+                <div className="bg-white/20 p-2 rounded-xl text-white">
+                  <Icon name="Plus" size={18} />
+                </div>
+                <span className="font-black text-[11px] text-white uppercase tracking-tight leading-tight text-left">
+                  Tambah<br />Menu
+                </span>
+              </button>
+              <button
+                onClick={handleShareStock}
+                className="flex-1 bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 flex items-center gap-2 active:scale-95 transition-all outline-none"
+              >
+                <div className="bg-white/20 p-2 rounded-xl text-white">
+                  <Icon name="Share2" size={18} />
+                </div>
+                <span className="font-black text-[11px] text-white uppercase tracking-tight leading-tight text-left">
+                  Status<br />Stok
+                </span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 space-y-6 lg:space-y-8" : "space-y-6"}>
+          {/* Breadcrumb - Desktop Only */}
+          <div className="mb-6 hidden lg:block">
             <BreadcrumbNavigation />
           </div>
 
-          {/* Page Header */}
-          <div className="mb-8 lg:mb-6">
-            <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
-              Kelola Menu
-            </h1>
-            <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>
-            <p className="text-xs lg:text-sm text-text-secondary mt-2 font-bold uppercase tracking-widest opacity-60">
-              Tambah, edit, dan kelola menu warung Anda dengan mudah.
-            </p>
+          {/* Page Header - Desktop Only */}
+          <div className="mb-8 lg:mb-6 hidden lg:flex lg:items-center lg:justify-between">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
+                Kelola Menu
+              </h1>
+              <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>
+              <p className="text-xs lg:text-sm text-text-secondary mt-2 font-bold uppercase tracking-widest opacity-60">
+                Tambah, edit, dan kelola menu warung Anda dengan mudah.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="bg-[#118eea] hover:bg-[#0d70ba] text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-500/20 transition-all active:scale-95 flex items-center gap-2"
+            >
+              <div className="bg-white/20 p-1.5 rounded-lg">
+                <Icon name="Plus" size={16} />
+              </div>
+              Tambah Menu Baru
+            </button>
           </div>
 
-          {/* Summary Cards */}
-          <MenuSummaryCards menuItems={allMenuItems} />
+          {/* Search and Filter - Overlapping Header */}
+          <div className="!-mt-12 lg:mt-0 lg:pt-10 relative z-30 mb-6">
+            <MenuSearchAndFilter
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              menuItems={allMenuItems}
+              onExportData={handleExportData}
+              onShareStock={handleShareStock}
+              activeFilter={activeFilter}
+              onFilterChange={setActiveFilter}
+            />
+          </div>
 
-          {/* Add Menu Form */}
-          <AddMenuItemForm onAddItem={handleAddItem} userRole={userRole} />
-
-          {/* Search and Filter */}
-          <MenuSearchAndFilter
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            menuItems={allMenuItems}
-            onExportData={handleExportData}
-            onShareStock={handleShareStock}
-            activeFilter={activeFilter}
-            onFilterChange={setActiveFilter}
-          />
+          <div id="add-menu-form" className="relative z-10">
+            {/* Summary Cards */}
+            <MenuSummaryCards menuItems={allMenuItems} />
+          </div>
 
           {/* Menu Items Table */}
           <MenuItemsTable
@@ -474,13 +581,23 @@ Powered by Kasir Berkah 88`;
           />
 
           {/* Pagination */}
-          <div className="mt-6">
+          <div className="mt-6 pb-20">
             <Pagination
               itemsPerPage={itemsPerPage}
               totalItems={pagination?.totalItems || 0}
               paginate={paginate}
               currentPage={currentPage}
             />
+          </div>
+
+          {/* Floating Action Button for Mobile */}
+          <div className="lg:hidden fixed bottom-24 right-6 z-50">
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="w-14 h-14 bg-[#118eea] text-white rounded-full shadow-2xl flex items-center justify-center active:scale-90 transition-transform"
+            >
+              <Icon name="Plus" size={28} />
+            </button>
           </div>
         </div>
       </main>
@@ -499,6 +616,13 @@ Powered by Kasir Berkah 88`;
           />
         )
       }
+
+      <AddMenuItemModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSave={handleAddItem}
+        userRole={userRole}
+      />
 
       {
         selectedMenuItemForRecipe && (

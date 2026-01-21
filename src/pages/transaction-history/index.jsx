@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate, useLocation } from 'react-router-dom'; // Import useNavigate and useLocation
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 
@@ -78,6 +78,17 @@ const TransactionHistory = ({ headerTitle }) => {
 
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const [showStickyHeader, setShowStickyHeader] = useState(false);
+  const [showAllMetrics, setShowAllMetrics] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowStickyHeader(window.scrollY > 100);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // State for delete confirmation modal
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -787,32 +798,124 @@ const TransactionHistory = ({ headerTitle }) => {
 
     <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50 lg:bg-background' : ''}`}>
 
+      {/* Custom Mobile Header */}
       {theme === 'default' && (
-        <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} />
+        <>
+          {/* Desktop Header */}
+          <div className="hidden lg:block">
+            <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} />
+          </div>
+
+          {/* Mobile Header */}
+          <div className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden ${showStickyHeader ? 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}>
+            <div className="px-6 flex items-center justify-between">
+              <button
+                onClick={() => navigate(-1)}
+                className={`p-2 rounded-2xl transition-all active:scale-95 ${showStickyHeader ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`}
+              >
+                <Icon name="ChevronLeft" size={24} />
+              </button>
+
+              <div className={`text-center transition-all duration-300 ${showStickyHeader ? 'opacity-100' : 'opacity-0'}`}>
+                <h2 className="font-black text-gray-800 dark:text-white tracking-tight">Riwayat Transaksi</h2>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button className={`p-2 rounded-2xl transition-all active:scale-95 ${showStickyHeader ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`}>
+                  <Icon name="Bell" size={20} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
-      <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>
+      <main className={`${theme === 'default' ? 'pb-24 lg:pb-8' : 'pb-24 lg:pb-8'}`}>
+        {/* Mobile Header Banner (lg:hidden) */}
+        {theme === 'default' && (
+          <div className="lg:hidden bg-gradient-to-br from-[#118eea] to-[#0d70ba] dark:from-slate-900 dark:to-slate-800 pt-20 pb-14 px-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/10 rounded-full -ml-24 -mb-24 blur-2xl"></div>
 
-        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 pt-2 space-y-6 lg:space-y-8" : "space-y-6"}>
+            {/* Decorative Background Icon */}
+            <div className="absolute -right-12 -top-12 text-white/20 -rotate-12 pointer-events-none">
+              <Icon name="Receipt" size={200} />
+            </div>
 
-          <div className="mb-8 lg:mb-6">
+            <div className="relative z-10">
+              <div>
+                <p className="text-[10px] font-black text-blue-100 dark:text-blue-200/60 uppercase tracking-[0.2em] mb-2 opacity-80">Catatan Penjualan</p>
+                <h1 className="text-4xl font-black text-white tracking-tight leading-tight">
+                  Riwayat<br />{pagination?.totalItems > 0 ? `${pagination.totalItems} Transaksi` : 'Transaksi'}
+                </h1>
+              </div>
+            </div>
+
+            <div className="mt-8 flex gap-3 relative z-10">
+              <button
+                onClick={handleOpenRecapPopup}
+                className="flex-1 bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 flex items-center gap-2 active:scale-95 transition-all outline-none"
+              >
+                <div className="bg-white/20 p-2 rounded-xl text-white">
+                  <Icon name="FileText" size={18} />
+                </div>
+                <span className="font-black text-[11px] text-white uppercase tracking-tight leading-tight text-left">
+                  Rekap<br />Harian
+                </span>
+              </button>
+              <button
+                onClick={() => handleExportTransactions('pdf', dateRange.startDate, dateRange.endDate)}
+                className="flex-1 bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 flex items-center gap-2 active:scale-95 transition-all outline-none"
+              >
+                <div className="bg-white/20 p-2 rounded-xl text-white">
+                  <Icon name="Download" size={18} />
+                </div>
+                <span className="font-black text-[11px] text-white uppercase tracking-tight leading-tight text-left">
+                  Ekspor<br />PDF
+                </span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 space-y-6 lg:space-y-8" : "space-y-6"}>
+          {/* Search Bar - Overlapping Header */}
+
+
+          <div className="hidden lg:block mb-8 lg:mb-6">
 
             <div className="mb-4 hidden md:block">
               <BreadcrumbNavigation customPath={breadcrumbPath} />
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div className="hidden lg:flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
                 Riwayat Transaksi
               </h1>
             </div>
 
-            <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>
+            <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 hidden lg:block"></div>
 
-            <p className="text-xs lg:text-sm text-text-secondary mt-2 font-bold uppercase tracking-widest opacity-60">
+            <p className="hidden lg:block text-xs lg:text-sm text-text-secondary mt-2 font-bold uppercase tracking-widest opacity-60">
               Kelola dan pantau semua transaksi penjualan Anda
             </p>
 
+          </div>
+
+          {/* Search Bar - Overlapping Header (Mobile) / Regular (Desktop) */}
+          <div className="!-mt-12 lg:mt-0 lg:pt-10 relative z-30 mb-6 px-0 lg:px-0 pt-4">
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                <Icon name="Search" size={18} className="text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+              </div>
+              <input
+                type="text"
+                placeholder="Cari transaksi..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-14 pr-6 py-4 bg-white border-transparent shadow-sm rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:bg-slate-800 dark:text-white"
+              />
+            </div>
           </div>
 
           {/* Revenue Metrics Section */}
@@ -820,8 +923,8 @@ const TransactionHistory = ({ headerTitle }) => {
             <h2 className="text-xl lg:text-2xl font-semibold text-text-primary mb-4">
               Ringkasan Pendapatan
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {revenueMetrics.map((metric, index) => (
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+              {revenueMetrics.slice(0, showAllMetrics || window.innerWidth >= 1024 ? revenueMetrics.length : 2).map((metric, index) => (
                 <MetricsCard
                   key={index}
                   title={metric.title}
@@ -838,8 +941,8 @@ const TransactionHistory = ({ headerTitle }) => {
           {/* Transaction Metrics Section */}
           <div className="mb-6">
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {transactionMetrics.map((metric, index) => (
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+              {transactionMetrics.slice(0, showAllMetrics || window.innerWidth >= 1024 ? transactionMetrics.length : 1).map((metric, index) => (
                 <MetricsCard
                   key={index}
                   title={metric.title}
@@ -850,6 +953,16 @@ const TransactionHistory = ({ headerTitle }) => {
                 />
               ))}
             </div>
+            {/* Show More Button - Mobile Only */}
+            {(revenueMetrics.length + transactionMetrics.length > 3) && (
+              <button
+                onClick={() => setShowAllMetrics(!showAllMetrics)}
+                className="lg:hidden mt-4 w-full py-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-black text-gray-700 dark:text-gray-300 uppercase tracking-wider active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <Icon name={showAllMetrics ? "ChevronUp" : "ChevronDown"} size={18} />
+                {showAllMetrics ? "Sembunyikan Semua" : `Lihat ${revenueMetrics.length + transactionMetrics.length - 3} Metrik Lainnya`}
+              </button>
+            )}
           </div>
           {/* End Transaction Metrics Section */}
 
@@ -961,6 +1074,51 @@ const TransactionHistory = ({ headerTitle }) => {
               </Button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Bottom Navigation Bar for Mobile */}
+      {theme === 'default' && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white dark:bg-[#0f172a] border-t border-gray-100 dark:border-slate-800 safe-area-bottom shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+          <nav className="flex items-center justify-between h-18 px-4 py-2">
+            {[
+              { label: 'Dashboard', path: '/main-dashboard', icon: 'LayoutDashboard' },
+              { label: 'Penjualan', path: '/transaksi', icon: 'ShoppingCart' },
+              { label: 'Menu', path: '/menu-management', icon: 'UtensilsCrossed' },
+              { label: 'Pengeluaran', path: '/expense-tracking', icon: 'Receipt' },
+              { label: 'Transaksi', path: '/transaction-history', icon: 'ListOrdered' },
+            ].map((item) => {
+              const active = location.pathname === item.path;
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => navigate(item.path)}
+                  className={`flex items-center justify-center transition-all duration-500 ease-in-out h-12 rounded-2xl relative group active:scale-90
+                      ${active
+                      ? 'flex-[2.5] bg-blue-600 dark:bg-white text-white dark:text-slate-900 px-4 shadow-lg shadow-blue-500/30 dark:shadow-white/10 hover:brightness-110'
+                      : 'flex-1 text-gray-400 dark:text-slate-500 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
+                >
+                  <div className="flex items-center gap-2 relative z-10">
+                    <Icon
+                      name={item.icon}
+                      size={24}
+                      className={`transition-colors duration-300 ${active ? 'text-white dark:text-slate-900' : 'text-gray-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`}
+                    />
+                    {active && (
+                      <span className="text-[10px] font-black uppercase tracking-wider whitespace-nowrap animate-in fade-in slide-in-from-left-2 duration-500">
+                        {item.label === 'Dashboard' ? 'Home' : item.label.split(' ')[0]}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Adaptive Glassy Overlay */}
+                  {active && (
+                    <div className="absolute inset-0 rounded-2xl bg-white/10 dark:bg-black/5 transition-opacity group-hover:opacity-20" />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
         </div>
       )}
     </div>
