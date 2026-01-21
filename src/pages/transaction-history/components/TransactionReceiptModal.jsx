@@ -249,10 +249,16 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
         <div
           id="receipt-container"
           className="relative w-full lg:max-w-2xl bg-white dark:bg-slate-900 shadow-2xl overflow-hidden
-             lg:mx-auto lg:h-[90vh]
+             lg:mx-auto lg:max-h-[90vh]
              fixed lg:relative bottom-0 left-0 right-0 h-[92vh] lg:h-auto
              rounded-none lg:rounded-lg animate-in slide-in-from-bottom-full lg:zoom-in-95 duration-300 flex flex-col"
         >
+          <div className="flex justify-between items-center px-6 py-4 border-b border-border">
+            <h2 className="text-xl font-semibold text-foreground">Detail Transaksi #{transaction?.id}</h2>
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <Icon name="X" size={20} />
+            </Button>
+          </div>
           <div className="flex-1 overflow-y-auto bg-gray-50 flex justify-center p-4 sm:p-6">
             <div
               ref={receiptRef}
@@ -741,12 +747,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
               </Button>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 print:hidden"
-          >
-            <X size={20} />
-          </button>
+
         </div>
       </div>
       <style>{`
