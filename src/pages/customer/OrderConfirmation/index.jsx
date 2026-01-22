@@ -2,14 +2,29 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import authFetch from '../../../utils/authFetch';
+import { useChat } from '../../../contexts/ChatContext';
 
 const CustomerOrderConfirmation = () => {
     const navigate = useNavigate();
+    const { setActiveChat } = useChat();
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
+    const handleChatWithSeller = async () => {
+        try {
+            const res = await authFetch(`${API_URL}/api/messages/contacts`);
+            const data = await res.json();
+            if (data.data && data.data.length > 0) {
+                const defaultSeller = data.data[0];
+                setActiveChat({ user_id: defaultSeller.id, ...defaultSeller });
+            }
+        } catch (error) {
+            console.error("Error starting chat:", error);
+        }
+    };
 
     const fetchOrders = useCallback(async (pageNum = 1) => {
         try {
@@ -149,26 +164,38 @@ const CustomerOrderConfirmation = () => {
                                     ))}
                                 </div>
 
-                                <div className="pt-4 border-t border-dashed border-gray-100 flex justify-between items-center">
-                                    <div>
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">METODE PEMBAYARAN</p>
-                                        <p className="text-sm font-black uppercase text-gray-800">{order.payment_method || 'TUNAI'}</p>
+                                <div className="pt-4 border-t border-dashed border-gray-100 space-y-4">
+                                    <div className="flex justify-between items-center px-1">
+                                        <div>
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">METODE PEMBAYARAN</p>
+                                            <p className="text-sm font-black uppercase text-gray-800">{order.payment_method || 'TUNAI'}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total</p>
+                                            <p className="text-lg font-black text-green-600">{formatCurrency(order.total)}</p>
+                                        </div>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total</p>
-                                        <p className="text-lg font-black text-green-600">{formatCurrency(order.total)}</p>
-                                    </div>
-                                    <div className="flex gap-2 ml-4">
+
+                                    <div className="flex gap-2">
                                         {order.status === 'pending' && (
                                             <button
-                                                className="bg-red-50 text-red-500 font-extrabold px-4 py-2 rounded-xl active:scale-95 transition-all text-xs uppercase tracking-wider border border-red-100"
+                                                className="flex-1 bg-red-50 text-red-500 font-extrabold py-3 rounded-2xl active:scale-95 transition-all text-xs uppercase tracking-wider border border-red-100"
                                                 onClick={() => handleCancelOrder(order.id)}
                                             >
                                                 Batalkan
                                             </button>
                                         )}
+                                        {/* Chat Button */}
                                         <button
-                                            className="bg-gray-50 text-gray-400 p-3 rounded-xl active:scale-90 transition-all"
+                                            className={`${order.status === 'pending' ? 'px-4' : 'flex-1'} bg-blue-50 text-blue-500 py-3 rounded-2xl active:scale-90 transition-all border border-blue-100 flex items-center justify-center gap-2`}
+                                            onClick={() => handleChatWithSeller()}
+                                            title="Chat Penjual"
+                                        >
+                                            <Icon name="MessageCircle" className="w-4 h-4" />
+                                            <span className="text-[10px] font-black uppercase tracking-wider">Chat</span>
+                                        </button>
+                                        <button
+                                            className="bg-gray-50 text-gray-400 p-3 rounded-2xl active:scale-90 transition-all border border-gray-100"
                                             onClick={() => fetchOrders(1)}
                                         >
                                             <Icon name="RefreshCw" className="w-4 h-4" />
@@ -194,9 +221,12 @@ const CustomerOrderConfirmation = () => {
                 <div className="bg-blue-600 rounded-[2rem] p-6 text-white shadow-xl shadow-blue-100 overflow-hidden relative">
                     <div className="relative z-10">
                         <h3 className="font-black text-lg mb-1">Butuh Bantuan?</h3>
-                        <p className="text-blue-100 text-xs font-medium opacity-90 leading-relaxed mb-4">Jika pesanan Anda mengalami kendala, hubungi layanan pelanggan kami.</p>
-                        <button className="bg-white text-blue-600 font-black py-2 px-6 rounded-full text-xs shadow-lg active:scale-95 transition-all">
-                            Hubungi Kami
+                        <p className="text-blue-100 text-xs font-medium opacity-90 leading-relaxed mb-4">Jika pesanan Anda mengalami kendala, hubungi layanan pelanggan kami melalui chat.</p>
+                        <button
+                            onClick={() => handleChatWithSeller()}
+                            className="bg-white text-blue-600 font-black py-2 px-6 rounded-full text-xs shadow-lg active:scale-95 transition-all"
+                        >
+                            Chat Sekarang
                         </button>
                     </div>
                     <Icon name="HelpCircle" className="absolute -right-4 -bottom-4 w-32 h-32 text-blue-500/30 rotate-12" />

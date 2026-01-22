@@ -69,6 +69,12 @@ const LoginV2 = () => {
             if (response.ok) {
                 localStorage.setItem('token', data.token);
                 const decodedToken = jwtDecode(data.token);
+
+                // Simpan info user ke localStorage untuk akses cepat
+                localStorage.setItem('userId', decodedToken.userId);
+                localStorage.setItem('role', decodedToken.role);
+                localStorage.setItem('username', decodedToken.username || formData.username);
+
                 setOneSignalUser(decodedToken.userId); // Hubungkan OneSignal User
                 const userRole = decodedToken.role;
                 if (userRole === 'kasir') {

@@ -1227,6 +1227,25 @@ const setupDatabase = async () => {
     await connection.query(createActivityLogsTable);
     console.log('activity_logs table is ready.');
 
+    // --- Chat System: create messages table ---
+    const createMessagesTable = `
+      CREATE TABLE IF NOT EXISTS messages (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        sender_id INT NOT NULL,
+        receiver_id INT NOT NULL,
+        message TEXT NOT NULL,
+        order_id INT DEFAULT NULL,
+        is_read TINYINT(1) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        deleted_at TIMESTAMP NULL DEFAULT NULL,
+        FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL
+      );
+    `;
+    await connection.query(createMessagesTable);
+    console.log('messages table is ready.');
+
     connection.release();
 
   } catch (error) {

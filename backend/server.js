@@ -4660,6 +4660,131 @@ app.post("/api/admin/send-daily-summary", authenticateToken, authorizeRoles('adm
     }
 });
 
+// --- Chat System Endpoints ---
+
+// Kirim Pesan
+app.post("/api/messages", authenticateToken, async (req, res) => {
+    try {
+        const { receiver_id, message, order_id } = req.body;
+        const sender_id = req.user.userId;
+
+        if (!receiver_id || !message) {
+            return res.status(400).json({ error: "Receiver ID dan pesan wajib diisi" });
+        }
+
+        const sql = "INSERT INTO messages (sender_id, receiver_id, message, order_id) VALUES (?, ?, ?, ?)";
+        const [result] = await db.query(sql, [sender_id, receiver_id, message, order_id || null]);
+
+        // Kirim Notifikasi Push ke Penerima
+        sendPushNotification(
+            message,
+            `Pesan dari ${req.user.username}`,
+            { type: 'chat', senderId: sender_id, orderId: order_id },
+            [receiver_id]
+        ).catch(e => console.error('OneSignal Chat Notif Error:', e));
+
+        res.status(201).json({
+            message: "Pesan terkirim",
+            data: { id: result.insertId, sender_id, receiver_id, message, order_id, created_at: new Date() }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Ambil Riwayat Chat dengan User Tertentu
+app.get("/api/messages/history/:otherUserId", authenticateToken, async (req, res) => {
+    try {
+        const { otherUserId } = req.params;
+        const myId = req.user.userId;
+
+        const sql = `
+            SELECT * FROM messages 
+            WHERE (sender_id = ? AND receiver_id = ?) 
+               OR (sender_id = ? AND receiver_id = ?)
+            ORDER BY created_at ASC
+        `;
+        const [rows] = await db.query(sql, [myId, otherUserId, otherUserId, myId]);
+        res.json({ data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Ambil Daftar Percakapan Aktif (Inbox)
+app.get("/api/messages/conversations", authenticateToken, async (req, res) => {
+    try {
+        const myId = req.user.userId;
+        const sql = `
+            SELECT 
+                u.id as user_id, 
+                u.username, 
+                u.role,
+                u.avatar_url,
+                m.message as last_message, 
+                m.created_at as last_message_time,
+                (SELECT COUNT(*) FROM messages WHERE sender_id = u.id AND receiver_id = ? AND is_read = 0) as unread_count
+            FROM users u
+            JOIN (
+                SELECT 
+                    CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END as contact_id,
+                    MAX(created_at) as latest_msg_time
+                FROM messages
+                WHERE sender_id = ? OR receiver_id = ?
+                GROUP BY contact_id
+            ) last_msgs ON u.id = last_msgs.contact_id
+            JOIN messages m ON m.created_at = last_msgs.latest_msg_time 
+                AND ((m.sender_id = ? AND m.receiver_id = u.id) OR (m.sender_id = u.id AND m.receiver_id = ?))
+            ORDER BY m.created_at DESC
+        `;
+        const [rows] = await db.query(sql, [myId, myId, myId, myId, myId, myId]);
+        res.json({ data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Tandai pesan sudah dibaca
+app.put("/api/messages/read/:senderId", authenticateToken, async (req, res) => {
+    try {
+        const { senderId } = req.params;
+        const myId = req.user.userId;
+        const sql = "UPDATE messages SET is_read = 1 WHERE sender_id = ? AND receiver_id = ? AND is_read = 0";
+        await db.query(sql, [senderId, myId]);
+        res.json({ message: "Pesan ditandai sudah dibaca" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Ambil ID Penjual/Admin/Owner yang tersedia untuk dichat oleh pelanggan
+app.get("/api/messages/contacts", authenticateToken, async (req, res) => {
+    try {
+        const sql = "SELECT id, username, role, avatar_url FROM users WHERE role IN ('admin', 'owner', 'penjual')";
+        const [rows] = await db.query(sql);
+        res.json({ data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Ambil Pesanan Aktif untuk disematkan di Chat
+app.get("/api/messages/active-order/:userId", authenticateToken, async (req, res) => {
+    try {
+        const { userId } = req.params; // ID pelanggan
+        const sql = `
+            SELECT id, total, status, created_at, items
+            FROM orders 
+            WHERE user_id = ? AND status IN ('pending', 'accepted')
+            ORDER BY created_at DESC LIMIT 1
+        `;
+        const [rows] = await db.query(sql, [userId]);
+        res.json({ data: rows[0] || null });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get("/api/guest/menu-items", async (req, res) => {
     try {
         const sql = "SELECT id, name, price, stock, category, image_url, discount FROM menu_items";

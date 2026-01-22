@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import Icon from '../AppIcon';
 import { useOrderNotification } from '../../contexts/OrderNotificationContext';
 
-const NotificationBell = ({ size = 24, className = "" }) => {
+const NotificationBell = ({ size = 24, className = "", to = "/order-confirmation" }) => {
     const navigate = useNavigate();
     const { pendingCount } = useOrderNotification();
 
     return (
         <button
-            onClick={() => navigate('/order-confirmation')}
+            onClick={() => navigate(to)}
             className={`relative p-2 rounded-full transition-all active:scale-95 hover:bg-black/5 dark:hover:bg-white/5 ${className}`}
             aria-label="Notifikasi Pesanan"
         >

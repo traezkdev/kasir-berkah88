@@ -62,6 +62,18 @@ export const initOneSignal = async () => {
         if (error.message && error.message.includes("already initialized")) {
             return;
         }
+
+        // Tangani error Domain Mismatch (biasanya di localhost)
+        if (error.message && error.message.includes("Can only be used on")) {
+            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            if (isLocalhost) {
+                console.warn("OneSignal: Domain mismatch terdeteksi di localhost. Fitur notifikasi push tidak akan aktif di environment development kecuali dikonfigurasi di dashboard OneSignal.");
+            } else {
+                console.error("OneSignal Domain Error:", error.message);
+            }
+            return;
+        }
+
         console.error("OneSignal Init Error:", error);
     }
 };
@@ -70,8 +82,31 @@ export const initOneSignal = async () => {
  * Menghubungkan OneSignal dengan user ID aplikasi
  * @param {string} userId - ID User dari aplikasi kita
  */
-export const setOneSignalUser = (userId) => {
-    if (userId) {
-        OneSignal.setExternalUserId(userId.toString());
+export const setOneSignalUser = async (userId) => {
+    if (!userId) return;
+
+    try {
+        // Tunggu inisialisasi selesai jika perlu
+        if (!OneSignal.initialized) {
+            await initOneSignal();
+        }
+
+        const userIdStr = userId.toString();
+
+        // OneSignal Web SDK v16+ menggunakan login()
+        if (typeof OneSignal.login === 'function') {
+            await OneSignal.login(userIdStr);
+            console.log("OneSignal: User logged in with ID", userIdStr);
+        }
+        // Versi lama menggunakan setExternalUserId()
+        else if (typeof OneSignal.setExternalUserId === 'function') {
+            await OneSignal.setExternalUserId(userIdStr);
+            console.log("OneSignal: External User ID set to", userIdStr);
+        } else {
+            console.warn("OneSignal: Tidak dapat menemukan metode login atau setExternalUserId. Versi SDK mungkin tidak sesuai.");
+        }
+    } catch (error) {
+        // Jangan biarkan error OneSignal menghentikan proses login aplikasi
+        console.warn("OneSignal Login Error (Abaikan jika di localhost):", error);
     }
 };

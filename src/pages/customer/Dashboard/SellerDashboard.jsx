@@ -8,9 +8,11 @@ import ConfirmationModal from '../../../components/ui/ConfirmationModal';
 import { toast } from 'react-hot-toast';
 import { useAppSettings } from '../../../contexts/AppSettingsContext';
 import NotificationBell from '../../../components/ui/NotificationBell';
+import { useChat } from '../../../contexts/ChatContext';
 
 const SellerDashboard = () => {
     const navigate = useNavigate();
+    const { unreadCount } = useChat();
     const [stats, setStats] = useState({
         activeBanners: 0,
         featuredItems: 0,
@@ -277,7 +279,21 @@ const SellerDashboard = () => {
                                     Admin
                                 </button>
                             )}
-                            <NotificationBell size={20} className={`${scrolled ? 'bg-gray-100 text-gray-600' : 'bg-white/20 text-white'}`} />
+                            <button
+                                onClick={() => navigate('/seller/chat')}
+                                className={`relative p-2 rounded-full transition-all active:scale-95 ${scrolled ? 'bg-gray-100 text-gray-600' : 'bg-white/20 text-white'}`}
+                            >
+                                <Icon name="MessageCircle" size={20} />
+                                {unreadCount > 0 && (
+                                    <span className="absolute top-1.5 right-1.5 flex h-4 w-4">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500 text-[10px] font-bold text-white items-center justify-center">
+                                            {unreadCount}
+                                        </span>
+                                    </span>
+                                )}
+                            </button>
+                            <NotificationBell to="/seller/orders" size={20} className={`${scrolled ? 'bg-gray-100 text-gray-600' : 'bg-white/20 text-white'}`} />
                         </div>
                     </div>
                 </div>
@@ -358,9 +374,9 @@ const SellerDashboard = () => {
                         </div>
                         <div className="grid grid-cols-4 gap-4">
                             {[
-                                { label: 'Kelola Banner', icon: 'Image', color: 'bg-blue-50 text-blue-600', path: '/seller/banners' },
+                                { label: 'Obrolan', icon: 'MessageCircle', color: 'bg-blue-600 text-white shadow-blue-200', path: '/seller/chat' },
+                                { label: 'Banners', icon: 'Image', color: 'bg-blue-50 text-blue-600', path: '/seller/banners' },
                                 { label: 'Tambah Menu', icon: 'PlusCircle', color: 'bg-green-50 text-green-600', path: '/seller/menu-management' },
-                                { label: 'Kategori', icon: 'LayoutGrid', color: 'bg-indigo-50 text-indigo-600', path: '/seller/menu-management' },
                                 { label: 'Riwayat', icon: 'History', color: 'bg-purple-50 text-purple-600', path: '/seller/transaction-history' }
                             ].map((action, i) => (
                                 <button
