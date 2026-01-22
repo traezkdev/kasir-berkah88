@@ -1,20 +1,10 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiShoppingBag, FiX, FiArrowRight, FiBell } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 
 const NewOrderPopup = ({ isOpen, onClose, orderData }) => {
     const navigate = useNavigate();
-
-    // Auto close after 10 seconds
-    useEffect(() => {
-        if (isOpen) {
-            const timer = setTimeout(() => {
-                onClose();
-            }, 10000);
-            return () => clearTimeout(timer);
-        }
-    }, [isOpen, onClose]);
 
     if (!orderData) return null;
 
