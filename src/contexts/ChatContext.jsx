@@ -19,7 +19,7 @@ export const ChatProvider = ({ children }) => {
                 setConversations(data.data);
 
                 // Calculate total unread
-                const totalUnread = data.data.reduce((acc, conv) => acc + (conv.unread_count || 0), 0);
+                const totalUnread = data.data.reduce((acc, conv) => acc + (Number(conv.unread_count) || 0), 0);
                 setUnreadCount(totalUnread);
             }
         } catch (error) {

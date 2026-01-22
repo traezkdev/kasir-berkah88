@@ -40,35 +40,74 @@ const ChatWidget = () => {
     const themeColor = getThemeColor();
     const shadowColor = userRole === 'pelanggan' ? 'shadow-green-500/30' : 'shadow-blue-500/30';
 
-    const scrollToBottom = (force = false) => {
+    const scrollToBottom = (force = false, smooth = true) => {
         if (!scrollRef.current) return;
         const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
         const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
 
         if (force || isNearBottom) {
-            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            if (smooth) {
+                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            } else {
+                // Instant jump
+                scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            }
         }
     };
 
     // Auto scroll when messages change
     useEffect(() => {
-        if (view === 'chat') {
+        if (view === 'chat' && isOpen) {
             scrollToBottom();
         }
-    }, [messages, view]);
+    }, [messages]);
 
-    // Fetch messages when activeChat changes
+    // Force scroll to bottom when widget opens or view changes to chat
     useEffect(() => {
-        if (activeChat) {
-            setIsOpen(true); // <--- Buka widget otomatis
-            setView('chat'); // <--- Langsung masuk ke mode chat
+        if (isOpen && view === 'chat') {
+            // Instant jump on open
+            setTimeout(() => {
+                scrollToBottom(true, false);
+            }, 50);
+        }
+    }, [isOpen, view]);
+
+    // Auto-open chat for pelanggan
+    useEffect(() => {
+        if (isOpen && userRole === 'pelanggan') {
+            if (conversations.length > 0) {
+                // If there's already a conversation, use it
+                if (!activeChat) {
+                    setActiveChat(conversations[0]);
+                }
+                setView('chat');
+            } else {
+                // If no conversation, find a contact to start one
+                fetchContacts().then(contacts => {
+                    if (contacts && contacts.length > 0) {
+                        // Priority: admin > owner > penjual
+                        const admin = contacts.find(u => u.role === 'admin') ||
+                            contacts.find(u => u.role === 'owner') ||
+                            contacts[0];
+                        setActiveChat({ user_id: admin.id, ...admin });
+                        setView('chat');
+                    }
+                });
+            }
+        }
+    }, [isOpen, conversations]);
+
+    // Fetch messages when activeChat changes or isOpen changes
+    useEffect(() => {
+        if (activeChat && isOpen) {
+            setView('chat');
             fetchMessages();
             fetchActiveOrder();
             markAsRead(activeChat.user_id);
-            const interval = setInterval(fetchMessages, 3000); // Poll messages every 3s when chat is open
+            const interval = setInterval(fetchMessages, 3000);
             return () => clearInterval(interval);
         }
-    }, [activeChat]);
+    }, [activeChat, isOpen]);
 
     // Fetch contacts for new chat (if customer)
     useEffect(() => {
@@ -83,6 +122,7 @@ const ChatWidget = () => {
             if (res.ok) {
                 const data = await res.json();
                 setOtherUsers(data.data);
+                return data.data;
             }
         } catch (e) {
             console.error("Error fetching contacts:", e);
@@ -208,18 +248,20 @@ const ChatWidget = () => {
                             <div className="flex items-center justify-between">
                                 {view === 'chat' ? (
                                     <div className="flex items-center gap-3">
-                                        <button onClick={goBack} className="rounded-full p-1 hover:bg-white/20">
-                                            <FiArrowLeft size={20} />
-                                        </button>
+                                        {userRole !== 'pelanggan' && (
+                                            <button onClick={goBack} className="rounded-full p-1 hover:bg-white/20">
+                                                <FiArrowLeft size={20} />
+                                            </button>
+                                        )}
                                         <div className="flex items-center gap-2">
                                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 font-black text-white">
-                                                {activeChat.avatar_url ? (
+                                                {activeChat?.avatar_url ? (
                                                     <img src={activeChat.avatar_url} className="h-full w-full rounded-full object-cover" />
                                                 ) : <FiUser size={20} />}
                                             </div>
                                             <div>
-                                                <h4 className="text-sm font-bold">{activeChat.username}</h4>
-                                                <p className="text-[10px] opacity-80 font-medium uppercase tracking-widest">{activeChat.role}</p>
+                                                <h4 className="text-sm font-bold">{activeChat?.username || 'Memuat...'}</h4>
+                                                <p className="text-[10px] opacity-80 font-medium uppercase tracking-widest">{activeChat?.role || ''}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -301,7 +343,7 @@ const ChatWidget = () => {
                                                     <div key={idx} className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
                                                         {showName && (
                                                             <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">
-                                                                {activeChat.username}
+                                                                {activeChat?.username}
                                                             </span>
                                                         )}
                                                         <div className={`max-w-[85%] space-y-1`}>

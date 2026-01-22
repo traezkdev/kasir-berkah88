@@ -39,19 +39,32 @@ const SellerChatPage = () => {
     };
     const themeColor = getThemeColor();
 
-    const scrollToBottom = (force = false) => {
+    const scrollToBottom = (force = false, smooth = true) => {
         if (!scrollRef.current) return;
         const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
         const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
 
         if (force || isNearBottom) {
-            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            if (smooth) {
+                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            } else {
+                scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            }
         }
     };
 
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    // Instant jump when switching active chat
+    useEffect(() => {
+        if (activeChat) {
+            setTimeout(() => {
+                scrollToBottom(true, false);
+            }, 50);
+        }
+    }, [activeChat]);
 
     useEffect(() => {
         if (activeChat) {

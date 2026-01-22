@@ -4715,6 +4715,15 @@ app.get("/api/messages/history/:otherUserId", authenticateToken, async (req, res
 app.get("/api/messages/conversations", authenticateToken, async (req, res) => {
     try {
         const myId = req.user.userId;
+        const myRole = req.user.role;
+
+        let roleFilter = "";
+        if (myRole === 'pelanggan') {
+            roleFilter = "AND u.role IN ('admin', 'owner', 'penjual')";
+        } else if (['admin', 'owner', 'penjual'].includes(myRole)) {
+            roleFilter = "AND u.role = 'pelanggan'";
+        }
+
         const sql = `
             SELECT 
                 u.id as user_id, 
@@ -4735,6 +4744,7 @@ app.get("/api/messages/conversations", authenticateToken, async (req, res) => {
             ) last_msgs ON u.id = last_msgs.contact_id
             JOIN messages m ON m.created_at = last_msgs.latest_msg_time 
                 AND ((m.sender_id = ? AND m.receiver_id = u.id) OR (m.sender_id = u.id AND m.receiver_id = ?))
+            WHERE 1=1 ${roleFilter}
             ORDER BY m.created_at DESC
         `;
         const [rows] = await db.query(sql, [myId, myId, myId, myId, myId, myId]);
@@ -4760,7 +4770,14 @@ app.put("/api/messages/read/:senderId", authenticateToken, async (req, res) => {
 // Ambil ID Penjual/Admin/Owner yang tersedia untuk dichat oleh pelanggan
 app.get("/api/messages/contacts", authenticateToken, async (req, res) => {
     try {
-        const sql = "SELECT id, username, role, avatar_url FROM users WHERE role IN ('admin', 'owner', 'penjual')";
+        let sql;
+        if (req.user.role === 'pelanggan') {
+            // Pelanggan hanya bisa melihat Admin, Owner, dan Penjual
+            sql = "SELECT id, username, role, avatar_url FROM users WHERE role IN ('admin', 'owner', 'penjual')";
+        } else {
+            // Admin/Owner/Penjual hanya bisa melihat Pelanggan
+            sql = "SELECT id, username, role, avatar_url FROM users WHERE role = 'pelanggan'";
+        }
         const [rows] = await db.query(sql);
         res.json({ data: rows });
     } catch (err) {
