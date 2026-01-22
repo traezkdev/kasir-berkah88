@@ -2002,7 +2002,11 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
                 timestamp,
                 items: itemsWithDetails,
                 total: finalTotal,
-                payment_method: finalPaymentMethod
+                payment_method: finalPaymentMethod,
+                cash_paid: parseFloat(cashPaid || 0),
+                change: parseFloat(change || 0),
+                manual_discount: parseFloat(manual_discount || 0),
+                catatan: catatan || null
             },
             "id": newTransactionId
         });
@@ -4711,10 +4715,37 @@ app.get("/api/messages/history/:otherUserId", authenticateToken, async (req, res
     }
 });
 
+// Hapus Riwayat Chat dengan User Tertentu
+app.delete("/api/messages/history/:otherUserId", authenticateToken, async (req, res) => {
+    try {
+        const { otherUserId } = req.params;
+        const myId = req.user.userId;
+
+        const sql = `
+            DELETE FROM messages 
+            WHERE (sender_id = ? AND receiver_id = ?) 
+               OR (sender_id = ? AND receiver_id = ?)
+        `;
+        await db.query(sql, [myId, otherUserId, otherUserId, myId]);
+        res.json({ message: "Riwayat obrolan berhasil dihapus" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Ambil Daftar Percakapan Aktif (Inbox)
 app.get("/api/messages/conversations", authenticateToken, async (req, res) => {
     try {
         const myId = req.user.userId;
+        const myRole = req.user.role;
+
+        let roleFilter = "";
+        if (myRole === 'pelanggan') {
+            roleFilter = "AND u.role IN ('admin', 'owner', 'penjual')";
+        } else if (['admin', 'owner', 'penjual'].includes(myRole)) {
+            roleFilter = "AND u.role = 'pelanggan'";
+        }
+
         const sql = `
             SELECT 
                 u.id as user_id, 
@@ -4735,6 +4766,7 @@ app.get("/api/messages/conversations", authenticateToken, async (req, res) => {
             ) last_msgs ON u.id = last_msgs.contact_id
             JOIN messages m ON m.created_at = last_msgs.latest_msg_time 
                 AND ((m.sender_id = ? AND m.receiver_id = u.id) OR (m.sender_id = u.id AND m.receiver_id = ?))
+            WHERE 1=1 ${roleFilter}
             ORDER BY m.created_at DESC
         `;
         const [rows] = await db.query(sql, [myId, myId, myId, myId, myId, myId]);
@@ -4760,7 +4792,14 @@ app.put("/api/messages/read/:senderId", authenticateToken, async (req, res) => {
 // Ambil ID Penjual/Admin/Owner yang tersedia untuk dichat oleh pelanggan
 app.get("/api/messages/contacts", authenticateToken, async (req, res) => {
     try {
-        const sql = "SELECT id, username, role, avatar_url FROM users WHERE role IN ('admin', 'owner', 'penjual')";
+        let sql;
+        if (req.user.role === 'pelanggan') {
+            // Pelanggan hanya bisa melihat Admin, Owner, dan Penjual
+            sql = "SELECT id, username, role, avatar_url FROM users WHERE role IN ('admin', 'owner', 'penjual')";
+        } else {
+            // Admin/Owner/Penjual hanya bisa melihat Pelanggan
+            sql = "SELECT id, username, role, avatar_url FROM users WHERE role = 'pelanggan'";
+        }
         const [rows] = await db.query(sql);
         res.json({ data: rows });
     } catch (err) {

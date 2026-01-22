@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FiMessageCircle, FiX, FiSend, FiChevronLeft,
-    FiUser, FiCheck, FiClock, FiMoreVertical, FiArrowLeft
+    FiUser, FiCheck, FiClock, FiMoreVertical, FiArrowLeft, FiTrash2
 } from 'react-icons/fi';
+import { toast } from 'react-hot-toast';
 import { useChat } from '../../contexts/ChatContext';
 import authFetch from '../../utils/authFetch';
 import OrderPinWidget from './OrderPinWidget';
@@ -15,16 +16,19 @@ const ChatWidget = () => {
         setActiveChat,
         markAsRead,
         conversations,
-        fetchConversations
+        fetchConversations,
+        isOpen,
+        setIsOpen,
+        activeOrder,
+        setActiveOrder
     } = useChat();
 
-    const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [otherUsers, setOtherUsers] = useState([]);
-    const [activeOrder, setActiveOrder] = useState(null);
     const [view, setView] = useState('list'); // 'list' or 'chat'
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     const messagesEndRef = useRef(null);
     const scrollRef = useRef(null);
@@ -40,35 +44,74 @@ const ChatWidget = () => {
     const themeColor = getThemeColor();
     const shadowColor = userRole === 'pelanggan' ? 'shadow-green-500/30' : 'shadow-blue-500/30';
 
-    const scrollToBottom = (force = false) => {
+    const scrollToBottom = (force = false, smooth = true) => {
         if (!scrollRef.current) return;
         const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
         const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
 
         if (force || isNearBottom) {
-            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            if (smooth) {
+                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            } else {
+                // Instant jump
+                scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            }
         }
     };
 
     // Auto scroll when messages change
     useEffect(() => {
-        if (view === 'chat') {
+        if (view === 'chat' && isOpen) {
             scrollToBottom();
         }
-    }, [messages, view]);
+    }, [messages]);
 
-    // Fetch messages when activeChat changes
+    // Force scroll to bottom when widget opens or view changes to chat
     useEffect(() => {
-        if (activeChat) {
-            setIsOpen(true); // <--- Buka widget otomatis
-            setView('chat'); // <--- Langsung masuk ke mode chat
+        if (isOpen && view === 'chat') {
+            // Instant jump on open
+            setTimeout(() => {
+                scrollToBottom(true, false);
+            }, 50);
+        }
+    }, [isOpen, view]);
+
+    // Auto-open chat for pelanggan
+    useEffect(() => {
+        if (isOpen && userRole === 'pelanggan') {
+            if (conversations.length > 0) {
+                // If there's already a conversation, use it
+                if (!activeChat) {
+                    setActiveChat(conversations[0]);
+                }
+                setView('chat');
+            } else {
+                // If no conversation, find a contact to start one
+                fetchContacts().then(contacts => {
+                    if (contacts && contacts.length > 0) {
+                        // Priority: admin > owner > penjual
+                        const admin = contacts.find(u => u.role === 'admin') ||
+                            contacts.find(u => u.role === 'owner') ||
+                            contacts[0];
+                        setActiveChat({ user_id: admin.id, ...admin });
+                        setView('chat');
+                    }
+                });
+            }
+        }
+    }, [isOpen, conversations]);
+
+    // Fetch messages when activeChat changes or isOpen changes
+    useEffect(() => {
+        if (activeChat && isOpen) {
+            setView('chat');
             fetchMessages();
             fetchActiveOrder();
             markAsRead(activeChat.user_id);
-            const interval = setInterval(fetchMessages, 3000); // Poll messages every 3s when chat is open
+            const interval = setInterval(fetchMessages, 3000);
             return () => clearInterval(interval);
         }
-    }, [activeChat]);
+    }, [activeChat, isOpen]);
 
     // Fetch contacts for new chat (if customer)
     useEffect(() => {
@@ -83,6 +126,7 @@ const ChatWidget = () => {
             if (res.ok) {
                 const data = await res.json();
                 setOtherUsers(data.data);
+                return data.data;
             }
         } catch (e) {
             console.error("Error fetching contacts:", e);
@@ -110,6 +154,10 @@ const ChatWidget = () => {
 
     const fetchActiveOrder = async () => {
         if (!activeChat) return;
+
+        // Jika pembeli sudah punya order yang di-pin (dari tombol chat di pesanan), jangan timpa
+        if (userRole === 'pelanggan' && activeOrder) return;
+
         // If I am a seller, I want to see the other user's (customer) active order
         // If I am a customer, I want to see my active order
         const targetId = userRole === 'pelanggan' ? myId : activeChat.user_id;
@@ -121,6 +169,28 @@ const ChatWidget = () => {
             }
         } catch (e) {
             console.error("Error fetching active order:", e);
+        }
+    };
+
+    const handleDeleteChat = () => {
+        if (!activeChat) return;
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDeleteChat = async () => {
+        try {
+            const res = await authFetch(`/api/messages/history/${activeChat.id || activeChat.user_id}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                setMessages([]);
+                fetchConversations();
+                toast.success("Riwayat chat dihapus");
+                setShowDeleteConfirm(false);
+            }
+        } catch (e) {
+            console.error("Error deleting chat:", e);
+            toast.error("Gagal menghapus chat");
         }
     };
 
@@ -208,18 +278,28 @@ const ChatWidget = () => {
                             <div className="flex items-center justify-between">
                                 {view === 'chat' ? (
                                     <div className="flex items-center gap-3">
-                                        <button onClick={goBack} className="rounded-full p-1 hover:bg-white/20">
-                                            <FiArrowLeft size={20} />
-                                        </button>
+                                        {userRole !== 'pelanggan' && (
+                                            <button onClick={goBack} className="rounded-full p-1 hover:bg-white/20">
+                                                <FiArrowLeft size={20} />
+                                            </button>
+                                        )}
                                         <div className="flex items-center gap-2">
                                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 font-black text-white">
-                                                {activeChat.avatar_url ? (
-                                                    <img src={activeChat.avatar_url} className="h-full w-full rounded-full object-cover" />
-                                                ) : <FiUser size={20} />}
+                                                {userRole === 'pelanggan' ? (
+                                                    <FiMessageCircle size={22} />
+                                                ) : (
+                                                    activeChat?.avatar_url ? (
+                                                        <img src={activeChat.avatar_url} className="h-full w-full rounded-full object-cover" />
+                                                    ) : <FiUser size={20} />
+                                                )}
                                             </div>
                                             <div>
-                                                <h4 className="text-sm font-bold">{activeChat.username}</h4>
-                                                <p className="text-[10px] opacity-80 font-medium uppercase tracking-widest">{activeChat.role}</p>
+                                                <h4 className="text-sm font-bold">
+                                                    {userRole === 'pelanggan' ? 'Layanan Pelanggan' : (activeChat?.username || 'Memuat...')}
+                                                </h4>
+                                                <p className="text-[10px] opacity-80 font-medium uppercase tracking-widest">
+                                                    {userRole === 'pelanggan' ? 'Kasir Berkah88' : (activeChat?.role || '')}
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
@@ -235,6 +315,11 @@ const ChatWidget = () => {
                                     </div>
                                 )}
                                 <div className="flex items-center gap-2">
+                                    {view === 'chat' && (
+                                        <button onClick={handleDeleteChat} className="rounded-full p-1 hover:bg-white/20 text-white/70 hover:text-white transition-colors">
+                                            <FiTrash2 size={18} />
+                                        </button>
+                                    )}
                                     <button onClick={closeWidget} className="rounded-full p-1 hover:bg-white/20">
                                         <FiMoreVertical size={20} />
                                     </button>
@@ -243,7 +328,48 @@ const ChatWidget = () => {
                         </div>
 
                         {/* Body */}
-                        <div className="flex h-[450px] flex-col bg-gray-50/50 dark:bg-gray-950/50">
+                        <div className="flex h-[450px] flex-col bg-gray-50/50 dark:bg-gray-950/50 relative">
+                            {/* Delete Confirmation Overlay */}
+                            <AnimatePresence>
+                                {showDeleteConfirm && (
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm"
+                                    >
+                                        <motion.div
+                                            initial={{ scale: 0.9, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            exit={{ scale: 0.9, opacity: 0 }}
+                                            className="w-full max-w-[280px] bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-2xl text-center"
+                                        >
+                                            <div className="mx-auto w-16 h-16 bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center text-red-500 mb-4">
+                                                <FiTrash2 size={32} />
+                                            </div>
+                                            <h3 className="text-lg font-black text-gray-900 dark:text-white mb-2">Hapus Chat?</h3>
+                                            <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-6 font-medium leading-relaxed">
+                                                Semua riwayat pesan dengan <span className="font-bold text-gray-800 dark:text-gray-200">{activeChat?.username}</span> akan dihapus permanen.
+                                            </p>
+                                            <div className="flex flex-col gap-2">
+                                                <button
+                                                    onClick={confirmDeleteChat}
+                                                    className="w-full py-3 bg-red-500 hover:bg-red-600 text-white rounded-2xl text-xs font-black shadow-lg shadow-red-500/30 transition-all active:scale-95"
+                                                >
+                                                    HAPUS SEKARANG
+                                                </button>
+                                                <button
+                                                    onClick={() => setShowDeleteConfirm(false)}
+                                                    className="w-full py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-2xl text-xs font-black transition-all active:scale-95"
+                                                >
+                                                    TIDAK, BATALKAN
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
                             {view === 'list' ? (
                                 <div className="flex-1 overflow-y-auto p-4 no-scrollbar">
                                     {displayList.length > 0 ? (
@@ -290,45 +416,64 @@ const ChatWidget = () => {
                                     {/* Order Context Pin */}
                                     <OrderPinWidget order={activeOrder} />
 
-                                    {/* Messages Area */}
                                     <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 no-scrollbar">
-                                        <div className="flex flex-col space-y-4">
-                                            {messages.map((msg, idx) => {
-                                                const isMine = msg.sender_id === myId;
-                                                const showName = !isMine && (idx === 0 || messages[idx - 1].sender_id !== msg.sender_id);
+                                        {messages.length > 0 ? (
+                                            <div className="flex flex-col space-y-4">
+                                                {messages.map((msg, idx) => {
+                                                    const isMine = msg.sender_id === myId;
+                                                    const showName = !isMine && (idx === 0 || messages[idx - 1].sender_id !== msg.sender_id);
 
-                                                return (
-                                                    <div key={idx} className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
-                                                        {showName && (
-                                                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">
-                                                                {activeChat.username}
-                                                            </span>
-                                                        )}
-                                                        <div className={`max-w-[85%] space-y-1`}>
-                                                            <div className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm transition-all duration-300 ${isMine
-                                                                ? 'text-white rounded-tr-none'
-                                                                : 'bg-white text-gray-800 rounded-tl-none dark:bg-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-700'
-                                                                }`}
-                                                                style={{ backgroundColor: isMine ? themeColor : undefined }}
-                                                            >
-                                                                {msg.message}
-                                                            </div>
-                                                            <div className={`flex items-center gap-1.5 text-[9px] uppercase font-black tracking-widest text-gray-400 ${isMine ? 'justify-end' : 'justify-start'}`}>
-                                                                <FiClock size={10} />
-                                                                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                {isMine && (
-                                                                    <div className="flex -space-x-1.5 items-center">
-                                                                        <FiCheck size={11} style={{ color: msg.is_read ? themeColor : '#D1D5DB' }} />
-                                                                        <FiCheck size={11} style={{ color: msg.is_read ? themeColor : '#D1D5DB' }} />
-                                                                    </div>
-                                                                )}
+                                                    return (
+                                                        <div key={idx} className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
+                                                            {showName && (
+                                                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">
+                                                                    {userRole === 'pelanggan' ? 'Staf Berkah88' : activeChat?.username}
+                                                                </span>
+                                                            )}
+                                                            <div className={`max-w-[85%] space-y-1`}>
+                                                                <div className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm transition-all duration-300 ${isMine
+                                                                    ? 'text-white rounded-tr-none'
+                                                                    : 'bg-white text-gray-800 rounded-tl-none dark:bg-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-700'
+                                                                    }`}
+                                                                    style={{ backgroundColor: isMine ? themeColor : undefined }}
+                                                                >
+                                                                    {msg.message}
+                                                                </div>
+                                                                <div className={`flex items-center gap-1.5 text-[9px] uppercase font-black tracking-widest text-gray-400 ${isMine ? 'justify-end' : 'justify-start'}`}>
+                                                                    <FiClock size={10} />
+                                                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                    {isMine && (
+                                                                        <div className="flex -space-x-1.5 items-center">
+                                                                            <FiCheck size={11} style={{ color: msg.is_read ? themeColor : '#D1D5DB' }} />
+                                                                            <FiCheck size={11} style={{ color: msg.is_read ? themeColor : '#D1D5DB' }} />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                );
-                                            })}
-                                            <div ref={messagesEndRef} />
-                                        </div>
+                                                    );
+                                                })}
+                                                <div ref={messagesEndRef} />
+                                            </div>
+                                        ) : (
+                                            <div className="flex h-full flex-col items-center justify-center text-center p-6">
+                                                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-gray-300 dark:bg-gray-800">
+                                                    <FiMessageCircle size={32} />
+                                                </div>
+                                                <h5 className="mb-2 text-sm font-bold text-gray-500">Mulai Percakapan</h5>
+                                                <p className="mb-6 text-[11px] text-gray-400">Belum ada pesan. Sapa {activeChat?.username} untuk memulai.</p>
+                                                <button
+                                                    onClick={() => {
+                                                        setNewMessage("Halo! 👋");
+                                                        // Auto focus input if possible could be added here
+                                                    }}
+                                                    className="px-6 py-2.5 rounded-2xl text-white text-xs font-bold shadow-lg transition-all active:scale-95"
+                                                    style={{ backgroundColor: themeColor, boxShadow: `0 8px 20px -6px ${themeColor}66` }}
+                                                >
+                                                    Say Hello 👋
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Input Area */}

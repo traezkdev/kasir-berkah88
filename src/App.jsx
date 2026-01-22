@@ -22,8 +22,52 @@ function App() {
   const { isDarkMode } = useDarkMode();
   const location = useLocation();
 
-  // Hide floating action button on login, register, and seller chat pages
-  const showFloatingButton = !['/login', '/register', '/seller/chat'].includes(location.pathname);
+  // Hide floating action button on login, register, seller pages, and admin pages
+  const adminPaths = [
+    '/main-dashboard',
+    '/menu-management',
+    '/expense-tracking',
+    '/transaction-history',
+    '/transaction-trash',
+    '/notes',
+    '/calculator',
+    '/employee-list',
+    '/hpp',
+    '/order-confirmation',
+    '/transaksi',
+    '/raw-material-stock',
+    '/main-critical-stock',
+    '/admin-uang-bisnis',
+    '/laporan',
+    '/cash-reconciliation',
+    '/dashboard-v2',
+    '/settings',
+    '/profile',
+    '/credits',
+    '/chatbot',
+    '/all-features',
+    '/analisis-data',
+    '/auditor',
+    '/all-logs',
+    '/lapak-deposit',
+    '/transaksi-sederhana',
+    // Owner pages
+    '/owner-dashboard',
+    '/uang-bisnis',
+    '/owner/business-reports',
+    '/owner-profile',
+    '/owner-raw-material-stock',
+    '/critical-stock',
+    '/laporan-lengkap',
+    // Kasir pages
+    '/cashier-dashboard',
+    '/cashier-transaction-history'
+  ];
+
+  const isAdminPage = adminPaths.some(path => location.pathname.startsWith(path));
+  const showFloatingButton = !['/login', '/register', '/seller/chat'].includes(location.pathname)
+    && !location.pathname.startsWith('/seller')
+    && !isAdminPage;
 
   useEffect(() => {
     const handleContextMenu = (event) => {

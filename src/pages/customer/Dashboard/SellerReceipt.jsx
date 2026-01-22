@@ -447,15 +447,15 @@ const SellerReceipt = () => {
                         </div>
 
                         {/* Additional Payment Info (V2 Style) */}
-                        {(transaction.payment_method === 'Tunai' || transaction.payment_method === 'tunai' || transaction.payment_method === 'cash') && transaction.cash_paid > 0 && (
+                        {(transaction.payment_method?.toLowerCase() === 'tunai' || transaction.payment_method?.toLowerCase() === 'cash') && (
                             <div className="flex gap-3 mb-8 px-2">
                                 <div className="flex-1 px-4 py-3 bg-gray-50 rounded-2xl border border-gray-100 flex flex-col items-center">
                                     <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">DIBAYAR</span>
-                                    <span className="text-sm font-mono font-black text-gray-900">Rp {Number(transaction.cash_paid).toLocaleString("id-ID")}</span>
+                                    <span className="text-sm font-mono font-black text-gray-900">Rp {Number(transaction.cash_paid || 0).toLocaleString("id-ID")}</span>
                                 </div>
                                 <div className="flex-1 px-4 py-3 bg-emerald-50 rounded-2xl border border-emerald-100 flex flex-col items-center shadow-sm shadow-emerald-100/50">
                                     <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest mb-1">KEMBALI</span>
-                                    <span className="text-sm font-mono font-black text-emerald-700">Rp {Number(transaction.change).toLocaleString("id-ID")}</span>
+                                    <span className="text-sm font-mono font-black text-emerald-700">Rp {Number(transaction.change || 0).toLocaleString("id-ID")}</span>
                                 </div>
                             </div>
                         )}

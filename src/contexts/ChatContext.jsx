@@ -19,7 +19,7 @@ export const ChatProvider = ({ children }) => {
                 setConversations(data.data);
 
                 // Calculate total unread
-                const totalUnread = data.data.reduce((acc, conv) => acc + (conv.unread_count || 0), 0);
+                const totalUnread = data.data.reduce((acc, conv) => acc + (Number(conv.unread_count) || 0), 0);
                 setUnreadCount(totalUnread);
             }
         } catch (error) {
@@ -32,6 +32,10 @@ export const ChatProvider = ({ children }) => {
         const interval = setInterval(fetchConversations, 5000); // Polling every 5 seconds
         return () => clearInterval(interval);
     }, [fetchConversations]);
+
+    const [isOpen, setIsOpen] = useState(false);
+
+    const [activeOrder, setActiveOrder] = useState(null);
 
     const markAsRead = async (senderId) => {
         try {
@@ -49,7 +53,11 @@ export const ChatProvider = ({ children }) => {
             fetchConversations,
             activeChat,
             setActiveChat,
-            markAsRead
+            markAsRead,
+            isOpen,
+            setIsOpen,
+            activeOrder,
+            setActiveOrder
         }}>
             {children}
         </ChatContext.Provider>

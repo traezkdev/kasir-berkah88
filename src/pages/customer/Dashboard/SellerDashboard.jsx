@@ -375,7 +375,7 @@ const SellerDashboard = () => {
                         <div className="grid grid-cols-4 gap-4">
                             {[
                                 { label: 'Obrolan', icon: 'MessageCircle', color: 'bg-blue-600 text-white shadow-blue-200', path: '/seller/chat' },
-                                { label: 'Banners', icon: 'Image', color: 'bg-blue-50 text-blue-600', path: '/seller/banners' },
+                                { label: 'Transaksi', icon: 'ShoppingCart', color: 'bg-blue-50 text-blue-600', path: '/seller/transactions' },
                                 { label: 'Tambah Menu', icon: 'PlusCircle', color: 'bg-green-50 text-green-600', path: '/seller/menu-management' },
                                 { label: 'Riwayat', icon: 'History', color: 'bg-purple-50 text-purple-600', path: '/seller/transaction-history' }
                             ].map((action, i) => (

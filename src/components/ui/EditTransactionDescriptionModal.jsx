@@ -1,123 +1,108 @@
-import React, { useState, useEffect } from 'react';
-import Button from './Button';
+import React, { useState } from 'react';
 import Icon from '../AppIcon';
-import Input from './Input';
+import PremiumModal from './PremiumModal';
 
 const EditTransactionDescriptionModal = ({ isOpen, onClose, onSave, transaction }) => {
-    const [description, setDescription] = useState('');
-    const [amount, setAmount] = useState(0);
-    const [date, setDate] = useState('');
+    const [amount, setAmount] = useState(transaction?.amount || 0);
+    const [description, setDescription] = useState(transaction?.description || '');
+    const [date, setDate] = useState(transaction?.date ? new Date(transaction.date).toISOString().slice(0, 19) : '');
     const [error, setError] = useState('');
 
-    useEffect(() => {
-        if (isOpen && transaction) {
-            setDescription(transaction.description || '');
-            setAmount(transaction.amount || 0);
-
-            // Format created_at to YYYY-MM-DDTHH:mm:ss for datetime-local input
-            const d = new Date(transaction.created_at);
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            const hours = String(d.getHours()).padStart(2, '0');
-            const minutes = String(d.getMinutes()).padStart(2, '0');
-            const seconds = String(d.getSeconds()).padStart(2, '0');
-            setDate(`${year}-${month}-${day}T${hours}:${minutes}:${seconds}`);
-
-            setError('');
-        }
-    }, [isOpen, transaction]);
-
-    const handleSave = () => {
-        if (!description.trim()) {
-            setError('Deskripsi tidak boleh kosong.');
-            return;
-        }
-        if (isNaN(parseFloat(amount)) || parseFloat(amount) < 0) {
-            setError('Nominal harus berupa angka yang valid.');
-            return;
-        }
-        if (!date) {
-            setError('Tanggal & waktu tidak boleh kosong.');
-            return;
-        }
-        onSave(transaction.id, description, parseFloat(amount), date);
-    };
-
     const formatNumber = (num) => {
-        return num.toLocaleString('id-ID');
+        return new Intl.NumberFormat('id-ID').format(num);
     };
 
     const parseNumber = (str) => {
-        const cleanedStr = str.replace(/[^,\d]/g, '').replace(/,/g, '.');
-        return parseFloat(cleanedStr);
+        return parseFloat(str.replace(/[^0-9.-]+/g, ""));
     };
 
-    if (!isOpen) return null;
+    const handleSave = () => {
+        if (!description.trim()) {
+            setError('Deskripsi tidak boleh kosong');
+            return;
+        }
+        if (amount <= 0) {
+            setError('Nominal harus lebih dari 0');
+            return;
+        }
+        if (!date) {
+            setError('Tanggal harus diisi');
+            return;
+        }
+        onSave({ id: transaction.id, amount, description, date });
+    };
+
+    if (!transaction) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-card p-6 rounded-lg shadow-xl w-full max-w-md">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold text-text-primary">Edit Transaksi</h2>
-                    <Button variant="ghost" size="icon" onClick={onClose}>
-                        <Icon name="X" className="h-4 w-4" />
-                    </Button>
-                </div>
-                <div className="space-y-4">
-                    <div>
-                        <label htmlFor="date" className="block text-sm font-medium text-text-secondary mb-1">Tanggal & Waktu</label>
-                        <Input
-                            id="date"
-                            type="datetime-local"
-                            step="1"
-                            value={date}
-                            onChange={(e) => { setDate(e.target.value); setError(''); }}
-                            required
-                        />
+        <PremiumModal
+            isOpen={isOpen}
+            onClose={onClose}
+            title="Edit Transaksi"
+            subtitle="Sesuaikan detail catatan dana"
+            variant="blue"
+        >
+            <div className="space-y-6">
+                <PremiumModal.Field label="Tanggal & Waktu" icon="Calendar" variant="blue">
+                    <input
+                        type="datetime-local"
+                        id="date"
+                        step="1"
+                        value={date}
+                        onChange={(e) => { setDate(e.target.value); setError(''); }}
+                        className="w-full pl-12 pr-4 h-12 rounded-2xl bg-gray-50/50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700/50 focus:border-[#118eea] focus:ring-4 focus:ring-[#118eea]/10 focus:bg-white dark:focus:bg-slate-800 transition-all font-mono font-medium outline-none text-sm text-gray-700 dark:text-gray-200"
+                        required
+                    />
+                </PremiumModal.Field>
+
+                <PremiumModal.Field label="Nominal (Rp)" icon="Wallet" variant="blue">
+                    <input
+                        type="text"
+                        id="amount"
+                        value={`Rp${formatNumber(amount)}`}
+                        onChange={(e) => {
+                            const val = parseNumber(e.target.value);
+                            setAmount(isNaN(val) ? 0 : val);
+                            setError('');
+                        }}
+                        onFocus={(e) => {
+                            e.target.value = parseNumber(e.target.value).toString();
+                        }}
+                        onBlur={(e) => {
+                            const value = parseNumber(e.target.value);
+                            e.target.value = `Rp${formatNumber(isNaN(value) ? 0 : value)}`;
+                        }}
+                        className="w-full pl-12 pr-4 h-12 rounded-2xl bg-gray-50/50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700/50 focus:border-[#118eea] focus:ring-4 focus:ring-[#118eea]/10 focus:bg-white dark:focus:bg-slate-800 transition-all font-black text-lg tracking-tight text-[#118eea] outline-none"
+                        required
+                    />
+                </PremiumModal.Field>
+
+                <PremiumModal.Field label="Deskripsi Catatan" icon="AlignLeft" variant="blue">
+                    <textarea
+                        id="description"
+                        value={description}
+                        onChange={(e) => { setDescription(e.target.value); setError(''); }}
+                        className="w-full pl-12 pr-4 py-4 rounded-2xl bg-gray-50/50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700/50 focus:border-[#118eea] focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-[#118eea]/10 outline-none transition-all text-sm text-gray-700 dark:text-gray-200 font-medium min-h-[100px] resize-none"
+                        placeholder="Masukkan deskripsi transaksi"
+                        required
+                    ></textarea>
+                </PremiumModal.Field>
+
+                {error && (
+                    <div className="flex items-center gap-2 p-4 bg-red-50 dark:bg-red-500/10 rounded-2xl text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-widest border border-red-100 dark:border-red-500/20">
+                        <Icon name="AlertCircle" size={16} />
+                        {error}
                     </div>
-                    <div>
-                        <label htmlFor="amount" className="block text-sm font-medium text-text-secondary mb-1">Nominal (Rp)</label>
-                        <Input
-                            id="amount"
-                            type="text"
-                            value={`Rp${formatNumber(amount)}`}
-                            onChange={(e) => {
-                                const val = parseNumber(e.target.value);
-                                setAmount(isNaN(val) ? 0 : val);
-                                setError('');
-                            }}
-                            onFocus={(e) => {
-                                e.target.value = parseNumber(e.target.value).toString();
-                            }}
-                            onBlur={(e) => {
-                                const value = parseNumber(e.target.value);
-                                e.target.value = `Rp${formatNumber(isNaN(value) ? 0 : value)}`;
-                            }}
-                            placeholder="Masukkan nominal"
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-text-secondary mb-1">Deskripsi</label>
-                        <textarea
-                            id="description"
-                            value={description}
-                            onChange={(e) => { setDescription(e.target.value); setError(''); }}
-                            className="w-full p-2 border border-border rounded-md bg-background text-text-primary focus:ring-primary focus:border-primary"
-                            rows="3"
-                            placeholder="Masukkan deskripsi transaksi"
-                            required
-                        ></textarea>
-                    </div>
-                    {error && <p className="text-red-500 text-sm">{error}</p>}
-                    <div className="flex justify-end gap-2 pt-2">
-                        <Button variant="outline" onClick={onClose}>Batal</Button>
-                        <Button onClick={handleSave}>Simpan Perubahan</Button>
-                    </div>
-                </div>
+                )}
+
+                <PremiumModal.Actions
+                    onCancel={onClose}
+                    onConfirm={handleSave}
+                    confirmText="Simpan"
+                    variant="blue"
+                />
             </div>
-        </div>
+        </PremiumModal>
     );
 };
 

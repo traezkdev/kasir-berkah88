@@ -62,6 +62,14 @@ const CustomerDashboard = () => {
         };
     }, []);
 
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 11) return 'Selamat Pagi';
+        if (hour >= 11 && hour < 15) return 'Selamat Siang';
+        if (hour >= 15 && hour < 19) return 'Selamat Sore';
+        return 'Selamat Malam';
+    };
+
     const formatCurrency = (val) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
     };
@@ -88,7 +96,7 @@ const CustomerDashboard = () => {
             <header className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 pt-6 pb-28 rounded-b-[2rem] text-white shadow-lg sticky top-0 z-30">
                 <div className="flex justify-between items-center mb-4">
                     <div>
-                        <p className="text-green-100 text-sm font-medium">Selamat Pagi,</p>
+                        <p className="text-green-100 text-sm font-medium">{getGreeting()},</p>
                         <h1 className="text-2xl font-bold">{userName}</h1>
                     </div>
                     <Link to="/customer/profile" className="bg-white/20 p-2 rounded-full hover:bg-white/30 transition-colors backdrop-blur-sm">

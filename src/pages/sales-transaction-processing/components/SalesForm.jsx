@@ -42,12 +42,12 @@ const SalesForm = ({ menuItems, onIncrementItem, onDecrementItem, cart, userRole
     <div className="">
       <div className="relative mb-6">
         <Icon name="Search" className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-        <Input
+        <input
           type="text"
           placeholder="Cari menu favorit..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-14 pr-6 py-4 bg-white border-transparent shadow-sm rounded-3xl focus:ring-2 focus:ring-indigo-500 transition-all"
+          className="w-full pl-14 pr-6 py-4 bg-white border-transparent shadow-sm rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:bg-slate-800 dark:text-white"
         />
       </div>
 

@@ -6,20 +6,24 @@ import { useChat } from '../../../contexts/ChatContext';
 
 const CustomerOrderConfirmation = () => {
     const navigate = useNavigate();
-    const { setActiveChat } = useChat();
+    const { setActiveChat, setIsOpen, setActiveOrder } = useChat();
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
-    const handleChatWithSeller = async () => {
+    const handleChatWithSeller = async (order = null) => {
         try {
             const res = await authFetch(`${API_URL}/api/messages/contacts`);
             const data = await res.json();
             if (data.data && data.data.length > 0) {
-                const defaultSeller = data.data[0];
-                setActiveChat({ user_id: defaultSeller.id, ...defaultSeller });
+                // Find a staff member (prioritize admin)
+                const staff = data.data.find(c => c.role === 'admin') || data.data[0];
+
+                setActiveChat({ user_id: staff.id, ...staff });
+                if (order) setActiveOrder(order);
+                setIsOpen(true);
             }
         } catch (error) {
             console.error("Error starting chat:", error);
@@ -188,7 +192,7 @@ const CustomerOrderConfirmation = () => {
                                         {/* Chat Button */}
                                         <button
                                             className={`${order.status === 'pending' ? 'px-4' : 'flex-1'} bg-blue-50 text-blue-500 py-3 rounded-2xl active:scale-90 transition-all border border-blue-100 flex items-center justify-center gap-2`}
-                                            onClick={() => handleChatWithSeller()}
+                                            onClick={() => handleChatWithSeller(order)}
                                             title="Chat Penjual"
                                         >
                                             <Icon name="MessageCircle" className="w-4 h-4" />
