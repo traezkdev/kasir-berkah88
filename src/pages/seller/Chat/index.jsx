@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FiMessageCircle, FiSend, FiUser, FiCheck, FiClock,
-    FiSearch, FiArrowLeft, FiMoreVertical, FiShoppingBag, FiX
+    FiSearch, FiArrowLeft, FiMoreVertical, FiShoppingBag, FiX, FiTrash2
 } from 'react-icons/fi';
+import { toast } from 'react-hot-toast';
 import { useChat } from '../../../contexts/ChatContext';
 import authFetch from '../../../utils/authFetch';
 import OrderPinWidget from '../../../components/ui/OrderPinWidget';
@@ -17,14 +18,16 @@ const SellerChatPage = () => {
         fetchConversations,
         activeChat,
         setActiveChat,
-        markAsRead
+        markAsRead,
+        activeOrder,
+        setActiveOrder
     } = useChat();
 
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [activeOrder, setActiveOrder] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     const messagesEndRef = useRef(null);
     const scrollRef = useRef(null);
@@ -104,6 +107,28 @@ const SellerChatPage = () => {
             }
         } catch (e) {
             console.error("Error fetching active order:", e);
+        }
+    };
+
+    const handleDeleteChat = () => {
+        if (!activeChat) return;
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDeleteChat = async () => {
+        try {
+            const res = await authFetch(`/api/messages/history/${activeChat.id || activeChat.user_id}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                setMessages([]);
+                fetchConversations();
+                toast.success("Riwayat chat dihapus");
+                setShowDeleteConfirm(false);
+            }
+        } catch (e) {
+            console.error("Error deleting chat:", e);
+            toast.error("Gagal menghapus chat");
         }
     };
 
@@ -239,7 +264,7 @@ const SellerChatPage = () => {
                 </div>
 
                 {/* Main Chat Content */}
-                <div className={`flex-1 flex flex-col bg-white dark:bg-gray-900 ${!activeChat ? 'hidden md:flex' : 'flex'}`}>
+                <div className={`flex-1 flex flex-col bg-white dark:bg-gray-900 relative ${!activeChat ? 'hidden md:flex' : 'flex'}`}>
                     {activeChat ? (
                         <>
                             {/* Header */}
@@ -261,55 +286,76 @@ const SellerChatPage = () => {
                                         </div>
                                     </div>
                                 </div>
-                                <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
-                                    <FiMoreVertical size={20} className="text-gray-400" />
-                                </button>
+                                <div className="flex items-center gap-3">
+                                    <button onClick={handleDeleteChat} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 rounded-full transition-colors" title="Hapus Riwayat Chat">
+                                        <FiTrash2 size={18} />
+                                    </button>
+                                    <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+                                        <FiMoreVertical size={20} className="text-gray-400" />
+                                    </button>
+                                </div>
                             </header>
 
-                            {/* Messages Area */}
                             <main ref={scrollRef} className="flex-1 overflow-y-auto p-6 no-scrollbar bg-gray-50/30 dark:bg-gray-950/20">
                                 <div className="max-w-4xl mx-auto flex flex-col min-h-full">
                                     <div className="mb-4 sticky top-0 z-[5]">
                                         <OrderPinWidget order={activeOrder} />
                                     </div>
 
-                                    <div className="flex-1 flex flex-col space-y-6">
-                                        {messages.map((msg, idx) => {
-                                            const isMine = msg.sender_id === myId;
-                                            const showName = !isMine && (idx === 0 || messages[idx - 1].sender_id !== msg.sender_id);
+                                    {messages.length > 0 ? (
+                                        <div className="flex-1 flex flex-col space-y-6">
+                                            {messages.map((msg, idx) => {
+                                                const isMine = msg.sender_id === myId;
+                                                const showName = !isMine && (idx === 0 || messages[idx - 1].sender_id !== msg.sender_id);
 
-                                            return (
-                                                <div key={idx} className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
-                                                    {showName && (
-                                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
-                                                            {activeChat.username}
-                                                        </span>
-                                                    )}
-                                                    <div className={`max-w-[80%] md:max-w-[70%] space-y-1`}>
-                                                        <div className={`rounded-3xl px-5 py-3 text-sm shadow-sm transition-all duration-300 ${isMine
-                                                            ? 'text-white rounded-tr-none'
-                                                            : 'bg-white text-gray-800 rounded-tl-none dark:bg-gray-800 dark:text-gray-100 border border-gray-100 dark:border-gray-700'
-                                                            }`}
-                                                            style={isMine ? { backgroundColor: themeColor } : {}}
-                                                        >
-                                                            {msg.message}
-                                                        </div>
-                                                        <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-gray-400 ${isMine ? 'justify-end' : 'justify-start'}`}>
-                                                            <FiClock size={10} />
-                                                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                            {isMine && (
-                                                                <div className="flex -space-x-1.5 items-center">
-                                                                    <FiCheck size={11} style={{ color: msg.is_read ? themeColor : '#D1D5DB' }} />
-                                                                    <FiCheck size={11} style={{ color: msg.is_read ? themeColor : '#D1D5DB' }} />
-                                                                </div>
-                                                            )}
+                                                return (
+                                                    <div key={idx} className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
+                                                        {showName && (
+                                                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+                                                                {activeChat.username}
+                                                            </span>
+                                                        )}
+                                                        <div className={`max-w-[80%] md:max-w-[70%] space-y-1`}>
+                                                            <div className={`rounded-3xl px-5 py-3 text-sm shadow-sm transition-all duration-300 ${isMine
+                                                                ? 'text-white rounded-tr-none'
+                                                                : 'bg-white text-gray-800 rounded-tl-none dark:bg-gray-800 dark:text-gray-100 border border-gray-100 dark:border-gray-700'
+                                                                }`}
+                                                                style={isMine ? { backgroundColor: themeColor } : {}}
+                                                            >
+                                                                {msg.message}
+                                                            </div>
+                                                            <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-gray-400 ${isMine ? 'justify-end' : 'justify-start'}`}>
+                                                                <FiClock size={10} />
+                                                                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                {isMine && (
+                                                                    <div className="flex -space-x-1.5 items-center">
+                                                                        <FiCheck size={11} style={{ color: msg.is_read ? themeColor : '#D1D5DB' }} />
+                                                                        <FiCheck size={11} style={{ color: msg.is_read ? themeColor : '#D1D5DB' }} />
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            );
-                                        })}
-                                        <div ref={messagesEndRef} />
-                                    </div>
+                                                );
+                                            })}
+                                            <div ref={messagesEndRef} />
+                                        </div>
+                                    ) : (
+                                        <div className="flex-1 flex flex-col items-center justify-center text-center p-12">
+                                            <div className="h-24 w-24 bg-white dark:bg-gray-800 rounded-[2rem] shadow-xl flex items-center justify-center mb-6 border border-gray-100 dark:border-gray-700">
+                                                <FiMessageCircle size={40} className="text-gray-200" />
+                                            </div>
+                                            <h3 className="text-xl font-black text-gray-800 dark:text-gray-100 mb-2">Mulai Percakapan</h3>
+                                            <p className="text-xs text-gray-400 font-medium max-w-xs mx-auto mb-8">Belum ada riwayat pesan. Kirim pesan pertama Anda untuk menyapa {activeChat?.username}.</p>
+                                            <button
+                                                onClick={() => setNewMessage("Halo! Ada yang bisa kami bantu? 👋")}
+                                                className="px-8 py-3.5 rounded-2xl text-white text-sm font-bold shadow-xl transition-all active:scale-95"
+                                                style={{ backgroundColor: themeColor, boxShadow: `0 10px 25px -5px ${themeColor}4d` }}
+                                            >
+                                                Kirim Salam 👋
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </main>
 
@@ -354,6 +400,43 @@ const SellerChatPage = () => {
                                 </div>
                             </div>
                         </div>
+                    )}
+                    {showDeleteConfirm && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm"
+                        >
+                            <motion.div
+                                initial={{ scale: 0.9, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.9, opacity: 0 }}
+                                className="w-full max-w-[320px] bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-2xl text-center"
+                            >
+                                <div className="mx-auto w-20 h-20 bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center text-red-500 mb-6">
+                                    <FiTrash2 size={40} />
+                                </div>
+                                <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2">Hapus Chat?</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 font-medium leading-relaxed">
+                                    Semua riwayat pesan dengan <span className="font-bold text-gray-800 dark:text-gray-200">{activeChat?.username}</span> akan dihapus permanen.
+                                </p>
+                                <div className="flex flex-col gap-3">
+                                    <button
+                                        onClick={confirmDeleteChat}
+                                        className="w-full py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl text-sm font-black shadow-lg shadow-red-500/30 transition-all active:scale-95"
+                                    >
+                                        HAPUS SEKARANG
+                                    </button>
+                                    <button
+                                        onClick={() => setShowDeleteConfirm(false)}
+                                        className="w-full py-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-2xl text-sm font-black transition-all active:scale-95"
+                                    >
+                                        TIDAK, BATALKAN
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </motion.div>
                     )}
                 </div>
             </div>

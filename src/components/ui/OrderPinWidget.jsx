@@ -1,9 +1,11 @@
 import React from 'react';
-import { FiShoppingBag, FiInfo, FiChevronRight } from 'react-icons/fi';
+import { FiShoppingBag, FiInfo, FiChevronRight, FiX } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
+import { useChat } from '../../contexts/ChatContext';
 
 const OrderPinWidget = ({ order }) => {
     const navigate = useNavigate();
+    const { setActiveOrder } = useChat();
     if (!order) return null;
 
     const userRole = localStorage.getItem('role');
@@ -55,6 +57,15 @@ const OrderPinWidget = ({ order }) => {
                     <div className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${getStatusColor(order.status)}`}>
                         {getStatusLabel(order.status)}
                     </div>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveOrder(null);
+                        }}
+                        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors text-gray-400 hover:text-gray-600"
+                    >
+                        <FiX size={14} />
+                    </button>
                     <FiChevronRight className="text-gray-400 group-hover:translate-x-0.5 transition-transform" size={14} />
                 </div>
             </div>

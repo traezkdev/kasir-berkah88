@@ -33,6 +33,10 @@ export const ChatProvider = ({ children }) => {
         return () => clearInterval(interval);
     }, [fetchConversations]);
 
+    const [isOpen, setIsOpen] = useState(false);
+
+    const [activeOrder, setActiveOrder] = useState(null);
+
     const markAsRead = async (senderId) => {
         try {
             await authFetch(`/api/messages/read/${senderId}`, { method: 'PUT' });
@@ -49,7 +53,11 @@ export const ChatProvider = ({ children }) => {
             fetchConversations,
             activeChat,
             setActiveChat,
-            markAsRead
+            markAsRead,
+            isOpen,
+            setIsOpen,
+            activeOrder,
+            setActiveOrder
         }}>
             {children}
         </ChatContext.Provider>

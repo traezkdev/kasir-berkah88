@@ -4711,6 +4711,24 @@ app.get("/api/messages/history/:otherUserId", authenticateToken, async (req, res
     }
 });
 
+// Hapus Riwayat Chat dengan User Tertentu
+app.delete("/api/messages/history/:otherUserId", authenticateToken, async (req, res) => {
+    try {
+        const { otherUserId } = req.params;
+        const myId = req.user.userId;
+
+        const sql = `
+            DELETE FROM messages 
+            WHERE (sender_id = ? AND receiver_id = ?) 
+               OR (sender_id = ? AND receiver_id = ?)
+        `;
+        await db.query(sql, [myId, otherUserId, otherUserId, myId]);
+        res.json({ message: "Riwayat obrolan berhasil dihapus" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Ambil Daftar Percakapan Aktif (Inbox)
 app.get("/api/messages/conversations", authenticateToken, async (req, res) => {
     try {
