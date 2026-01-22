@@ -3,13 +3,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiShoppingBag, FiX, FiArrowRight, FiBell } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 
-const NewOrderPopup = ({ isOpen, onClose, orderData }) => {
+const NewOrderPopup = ({ isOpen, onClose, orderData, userRole }) => {
     const navigate = useNavigate();
 
     if (!orderData) return null;
 
     const handleViewDetails = () => {
-        navigate('/order-confirmation');
+        // Navigasi berdasarkan role
+        if (userRole === 'penjual') {
+            navigate('/seller/orders');
+        } else {
+            navigate('/order-confirmation');
+        }
         onClose();
     };
 

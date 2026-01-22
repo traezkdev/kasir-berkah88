@@ -86,6 +86,7 @@ export const OrderNotificationProvider = ({ children }) => {
                 isOpen={isPopupOpen}
                 onClose={() => setIsPopupOpen(false)}
                 orderData={latestOrder}
+                userRole={userRole}
             />
         </OrderNotificationContext.Provider>
     );

@@ -155,7 +155,7 @@ const CustomerOrderConfirmation = () => {
                                         <p className="text-sm font-black uppercase text-gray-800">{order.payment_method || 'TUNAI'}</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Pembayaran</p>
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total</p>
                                         <p className="text-lg font-black text-green-600">{formatCurrency(order.total)}</p>
                                     </div>
                                     <div className="flex gap-2 ml-4">
