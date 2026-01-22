@@ -22,7 +22,7 @@ const NewOrderPopup = ({ isOpen, onClose, orderData }) => {
                     exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
                     className="fixed bottom-24 left-1/2 z-[9999] w-[90%] max-w-md"
                 >
-                    <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-white/80 p-5 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-gray-900/80">
+                    <div className="relative overflow-hidden rounded-3xl border-2 border-[#128EEA] bg-white/90 p-5 shadow-[0_20px_50px_rgba(18,142,234,0.3)] backdrop-blur-xl dark:border-blue-500 dark:bg-gray-900/90">
                         {/* Animated Background Pulse */}
                         <div className="absolute -left-10 -top-10 h-32 w-32 animate-pulse rounded-full bg-blue-500/10 blur-3xl"></div>
                         <div className="absolute -right-10 -bottom-10 h-32 w-32 animate-pulse rounded-full bg-purple-500/10 blur-3xl"></div>
