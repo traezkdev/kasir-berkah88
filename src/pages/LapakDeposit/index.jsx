@@ -17,6 +17,7 @@ import Select from '../../components/ui/Select';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { jwtDecode } from 'jwt-decode';
 import OwnerNavigationHeader from '../../components/ui/OwnerNavigationHeader';
+import AdminMobileHeader from '../../components/ui/AdminMobileHeader';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -285,24 +286,49 @@ const LapakDeposit = ({ headerTitle }) => {
         );
     }
 
+    const mobileActions = [
+        {
+            label: 'Tambah Deposit',
+            icon: 'Plus',
+            onClick: handleAddDeposit
+        },
+        {
+            label: 'Catat Pengeluaran',
+            icon: 'Minus',
+            onClick: handleRecordExpense
+        }
+    ];
+
     return (
-        <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
+        <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50 lg:bg-background' : 'bg-transparent'}`}>
             {theme === 'default' && (
                 userRole === 'owner' ? (
                     <OwnerNavigationHeader
                         onToggleSidebar={toggleSidebar}
                         headerTitle={headerTitle || 'Pengeluaran Lapak'}
+                        hideMobileHeader={true}
                     />
                 ) : (
                     <NavigationHeader
                         onToggleSidebar={toggleSidebar}
                         headerTitle={headerTitle || 'Pengeluaran Lapak'}
+                        hideMobileHeader={true}
                     />
                 )
             )}
-            <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>
+            <main className={`${theme === 'default' ? 'pt-0 lg:pt-16' : ''} pb-24 lg:pb-8`}>
+                {theme === 'default' && (
+                    <AdminMobileHeader
+                        title="Atur Lapak"
+                        subtitle="Deposit & Pengeluaran"
+                        badgeText="Lapak Deposit"
+                        stickyTitle={headerTitle || 'Pengeluaran Lapak'}
+                        actions={mobileActions}
+                        decorativeIcon="Wallet"
+                    />
+                )}
                 <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 py-4 md:py-6" : ""}>
-                    <div className="mb-6 mt-4">
+                    <div className="mb-6 mt-4 hidden lg:block">
                         <div className="hidden md:block">
                             <BreadcrumbNavigation />
                         </div>
@@ -315,24 +341,25 @@ const LapakDeposit = ({ headerTitle }) => {
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                        <MetricsCard
-                            title="Saldo Lapak"
-                            value={formatCurrency(lapakAccount?.account?.balance || 0)}
-                            icon="Wallet"
-                            color="info"
-                            description="Total dana tersedia untuk operasional lapak"
-                        />
-                        {/* Other lapak-specific metrics can go here */}
-                    </div>
+                    <div className="!-mt-20 lg:!mt-0 relative z-30">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                            <MetricsCard
+                                title="Saldo Lapak"
+                                value={formatCurrency(lapakAccount?.account?.balance || 0)}
+                                icon="Wallet"
+                                color="white"
+                                description="Total dana tersedia untuk operasional lapak"
+                            />
+                        </div>
 
-                    <div className="flex flex-wrap justify-start gap-4 mb-8">
-                        <Button variant="primary" iconName="Plus" onClick={handleAddDeposit}>
-                            Tambah Deposit
-                        </Button>
-                        <Button variant="destructive" iconName="Minus" onClick={handleRecordExpense}>
-                            Catat Pengeluaran
-                        </Button>
+                        <div className="hidden lg:flex flex-wrap justify-start gap-4 mb-8">
+                            <Button variant="primary" iconName="Plus" onClick={handleAddDeposit}>
+                                Tambah Deposit
+                            </Button>
+                            <Button variant="destructive" iconName="Minus" onClick={handleRecordExpense}>
+                                Catat Pengeluaran
+                            </Button>
+                        </div>
                     </div>
 
                     {/* Filter Section */}
