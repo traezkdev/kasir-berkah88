@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import Button from './Button';
 import Icon from '../AppIcon';
+import PremiumModal from './PremiumModal';
 
 const DepositModal = ({ isOpen, onClose, onSave, accountType }) => {
     // Standardize date to YYYY-MM-DDTHH:mm for datetime-local input
@@ -28,61 +28,64 @@ const DepositModal = ({ isOpen, onClose, onSave, accountType }) => {
         setError('');
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-card p-6 rounded-lg shadow-xl w-full max-w-md">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold text-text-primary">Tambah Deposit {accountType === 'owner' ? 'Owner' : 'Lapak'}</h2>
-                    <Button variant="ghost" size="icon" onClick={onClose}>
-                        <Icon name="X" className="h-4 w-4" />
-                    </Button>
-                </div>
-                <div className="space-y-4">
-                    <div>
-                        <label htmlFor="date" className="block text-sm font-medium text-text-secondary mb-1">Tanggal & Waktu</label>
-                        <input
-                            type="datetime-local"
-                            id="date"
-                            step="1"
-                            value={date}
-                            onChange={(e) => setDate(e.target.value)}
-                            className="w-full p-2 border border-border rounded-md bg-background text-text-primary focus:ring-primary focus:border-primary"
-                            required
-                        />
+        <PremiumModal
+            isOpen={isOpen}
+            onClose={onClose}
+            title="Tambah Deposit"
+            subtitle={`Top up saldo ${accountType === 'owner' ? 'Owner' : 'Lapak'}`}
+            variant="blue"
+        >
+            <div className="space-y-6">
+                <PremiumModal.Field label="Tanggal & Waktu" icon="Calendar" variant="blue">
+                    <input
+                        type="datetime-local"
+                        id="date"
+                        step="1"
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        className="w-full pl-12 pr-4 h-12 rounded-2xl bg-gray-50/50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700/50 focus:border-[#118eea] focus:ring-4 focus:ring-[#118eea]/10 focus:bg-white dark:focus:bg-slate-800 transition-all font-mono font-medium outline-none text-sm text-gray-700 dark:text-gray-200"
+                        required
+                    />
+                </PremiumModal.Field>
+
+                <PremiumModal.Field label="Jumlah Deposit (Rp)" icon="Wallet" variant="blue">
+                    <input
+                        type="number"
+                        id="amount"
+                        value={amount}
+                        onChange={(e) => { setAmount(e.target.value); setError(''); }}
+                        className="w-full pl-12 pr-4 h-12 rounded-2xl bg-gray-50/50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700/50 focus:border-[#118eea] focus:ring-4 focus:ring-[#118eea]/10 focus:bg-white dark:focus:bg-slate-800 transition-all font-black text-lg tracking-tight text-[#118eea] outline-none"
+                        placeholder="0"
+                        required
+                    />
+                </PremiumModal.Field>
+
+                <PremiumModal.Field label="Deskripsi Tambahan" icon="AlignLeft" variant="blue">
+                    <textarea
+                        id="description"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        className="w-full pl-12 pr-4 py-4 rounded-2xl bg-gray-50/50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700/50 focus:border-[#118eea] focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-[#118eea]/10 outline-none transition-all text-sm text-gray-700 dark:text-gray-200 font-medium min-h-[100px] resize-none"
+                        placeholder="Misal: Dana pribadi, Penjualan tambahan"
+                    ></textarea>
+                </PremiumModal.Field>
+
+                {error && (
+                    <div className="flex items-center gap-2 p-4 bg-red-50 dark:bg-red-500/10 rounded-2xl text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-widest border border-red-100 dark:border-red-500/20">
+                        <Icon name="AlertCircle" size={16} />
+                        {error}
                     </div>
-                    <div>
-                        <label htmlFor="amount" className="block text-sm font-medium text-text-secondary mb-1">Jumlah</label>
-                        <input
-                            type="number"
-                            id="amount"
-                            value={amount}
-                            onChange={(e) => { setAmount(e.target.value); setError(''); }}
-                            className="w-full p-2 border border-border rounded-md bg-background text-text-primary focus:ring-primary focus:border-primary"
-                            placeholder="Contoh: 100000"
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-text-secondary mb-1">Deskripsi (Opsional)</label>
-                        <textarea
-                            id="description"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            className="w-full p-2 border border-border rounded-md bg-background text-text-primary focus:ring-primary focus:border-primary"
-                            rows="3"
-                            placeholder="Misal: Dana pribadi, Penjualan tambahan"
-                        ></textarea>
-                    </div>
-                    {error && <p className="text-red-500 text-sm">{error}</p>}
-                    <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={onClose}>Batal</Button>
-                        <Button onClick={handleSave}>Tambah Deposit</Button>
-                    </div>
-                </div>
+                )}
+
+                <PremiumModal.Actions
+                    onCancel={onClose}
+                    onConfirm={handleSave}
+                    confirmText="Tambah"
+                    variant="blue"
+                />
             </div>
-        </div>
+        </PremiumModal>
     );
 };
 

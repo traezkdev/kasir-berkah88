@@ -11,6 +11,9 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from 'react-hot-toast';
 import { jwtDecode } from 'jwt-decode';
 import OwnerNavigationHeader from '../../components/ui/OwnerNavigationHeader';
+import AdminMobileHeader from '../../components/ui/AdminMobileHeader';
+import MobileBottomNav from '../../components/ui/MobileBottomNav';
+
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -201,27 +204,45 @@ export default function AuditorPage() {
     }
 
     return (
-        <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50' : 'bg-transparent'} pb-20`}>
+        <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50' : 'bg-transparent'} pb-20 lg:pb-0`}>
+            {/* Mobile-Only Premium Header */}
+            <AdminMobileHeader
+                title="Sistem Audit"
+                subtitle="Data Konsolidasi"
+                badgeText="Keamanan & Transparansi"
+                decorativeIcon="ShieldCheck"
+                stickyTitle="Audit Sistem"
+                actions={[
+                    {
+                        label: 'Refresh Data',
+                        icon: 'RefreshCw',
+                        onClick: fetchData
+                    }
+                ]}
+            />
+
             {theme === 'default' && (
-                userRole === 'owner' ? (
-                    <OwnerNavigationHeader
-                        onToggleSidebar={toggleSidebar}
-                        headerTitle="Sistem Audit"
-                    />
-                ) : (
-                    <NavigationHeader
-                        onToggleSidebar={toggleSidebar}
-                        headerTitle="Sistem Audit"
-                    />
-                )
+                <div className="hidden lg:block">
+                    {userRole === 'owner' ? (
+                        <OwnerNavigationHeader
+                            onToggleSidebar={toggleSidebar}
+                            headerTitle="Sistem Audit"
+                        />
+                    ) : (
+                        <NavigationHeader
+                            onToggleSidebar={toggleSidebar}
+                            headerTitle="Sistem Audit"
+                        />
+                    )}
+                </div>
             )}
 
-            <main className={`max-w-7xl mx-auto ${theme === 'default' ? 'px-4 lg:px-6 pt-20 lg:pt-16 pb-12' : 'p-0'}`}>
-                <div className="pt-2">
+            <main className={`max-w-7xl mx-auto ${theme === 'default' ? 'px-4 lg:px-6 pt-6 lg:pt-16 pb-12' : 'p-0'}`}>
+                <div className="hidden lg:block pt-2">
                     <BreadcrumbNavigation customPath={[{ label: 'Audit', path: '/auditor', isActive: true }]} />
                 </div>
 
-                <header className="mb-8 lg:mb-6">
+                <header className="hidden lg:block mb-8 lg:mb-6">
                     <h1 className="text-2xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case">
                         Pusat Audit Data
                     </h1>
@@ -231,27 +252,58 @@ export default function AuditorPage() {
                     </p>
                 </header>
 
-                {/* Audit Status Bar */}
-                <div className={`mb-8 p-6 rounded-[2rem] border-2 flex flex-col md:flex-row items-center justify-between gap-6 ${Math.abs(data.metrics.cashDifference) <= 100
-                    ? 'bg-emerald-50 border-emerald-100'
-                    : 'bg-rose-50 border-rose-100'
-                    }`}>
-                    <div className="flex items-center gap-6">
-                        <div className={`w-16 h-16 rounded-full flex items-center justify-center ${Math.abs(data.metrics.cashDifference) <= 100 ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'
-                            } shadow-lg shadow-current/20`}>
-                            <Icon name={Math.abs(data.metrics.cashDifference) <= 100 ? 'CheckCircle' : 'AlertCircle'} size={32} />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-black text-gray-900 leading-tight">Status Integritas Data</h2>
-                            <p className={`font-bold ${Math.abs(data.metrics.cashDifference) <= 100 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                {Math.abs(data.metrics.cashDifference) <= 100
-                                    ? 'Sangat Akurat: Catatan sistem sesuai dengan uang fisik.'
-                                    : `Ditemukan Selisih: Rp ${formatNumber(data.metrics.cashDifference)}`
-                                }
-                            </p>
+                {/* Audit Status Bar - Premium Redesign */}
+                <div className={`mb-10 lg:!mt-0 -mt-24 relative z-20 rounded-[2.5rem] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden border border-white dark:border-slate-800`}>
+                    <div className="flex flex-col md:flex-row items-stretch">
+                        {/* Status Accent Side */}
+                        <div className={`w-2 shrink-0 ${Math.abs(data.metrics.cashDifference) <= 100 ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
+
+                        <div className="flex-1 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-8">
+                            <div className="flex items-center gap-7">
+                                {/* Icon container without colored shadows */}
+                                <div className="relative">
+                                    <div className={`relative w-16 h-16 rounded-[1.5rem] flex items-center justify-center ${Math.abs(data.metrics.cashDifference) <= 100 ? 'bg-emerald-500' : 'bg-rose-500'} text-white shadow-xl`}>
+                                        <Icon name={Math.abs(data.metrics.cashDifference) <= 100 ? 'CheckCircle' : 'AlertTriangle'} size={32} />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
+                                        Status Integritas Data
+                                        <span className={`inline-block w-2 h-2 rounded-full animate-ping ${Math.abs(data.metrics.cashDifference) <= 100 ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                                    </h2>
+                                    <div className="flex flex-col">
+                                        <p className={`text-sm font-black uppercase tracking-widest ${Math.abs(data.metrics.cashDifference) <= 100 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            {Math.abs(data.metrics.cashDifference) <= 100
+                                                ? 'Sangat Akurat (100%)'
+                                                : `Peringatan: Selisih Rp ${formatNumber(Math.abs(data.metrics.cashDifference))}`
+                                            }
+                                        </p>
+                                        <p className="text-[11px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-tight mt-1">
+                                            {Math.abs(data.metrics.cashDifference) <= 100
+                                                ? 'Catatan kasir & uang fisik di bank/laci saat ini sinkron.'
+                                                : 'Ditemukan ketidakcocokan antara uang fisik dan catatan sistem.'
+                                            }
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col items-end gap-3">
+                                <Button
+                                    onClick={fetchData}
+                                    variant="ghost"
+                                    className="h-14 px-8 rounded-2xl bg-gray-50 dark:bg-slate-800/50 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-800 dark:text-white font-black text-xs uppercase tracking-[0.2em] transition-all border border-gray-100 dark:border-slate-700 flex items-center gap-3 active:scale-95"
+                                >
+                                    <Icon name="RefreshCw" size={16} className={loading ? 'animate-spin' : ''} />
+                                    Audit Ulang
+                                </Button>
+                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mr-2">
+                                    Update: {new Date().toLocaleTimeString('id-ID')}
+                                </p>
+                            </div>
                         </div>
                     </div>
-                    <Button onClick={fetchData} variant="outline" iconName="RefreshCw">Refresh Data</Button>
                 </div>
 
                 {/* Main Audit Grid */}
@@ -450,6 +502,8 @@ export default function AuditorPage() {
                     </div>
                 </div>
             </main>
+
+            <MobileBottomNav />
         </div>
     );
 }
