@@ -630,10 +630,10 @@ const MainDashboard = ({ headerTitle }) => {
       color: 'destructive'
     },
     {
-      title: 'Daftar Karyawan',
-      description: 'Lihat struktur organisasi',
-      icon: 'Users',
-      route: '/employee-list',
+      title: 'Konfirmasi Pesanan',
+      description: 'Kelola pesanan masuk',
+      icon: 'ClipboardList',
+      route: '/order-confirmation',
       color: 'success'
     },
     {
@@ -893,6 +893,13 @@ const MainDashboard = ({ headerTitle }) => {
             </div>
             <div className="flex gap-1">
               <NotificationBell size={24} className="text-white" />
+              <button
+                className="relative p-2 rounded-full transition-all active:scale-95 bg-white/20 text-white"
+                onClick={() => navigate('/seller/chat')}
+                aria-label="Chat"
+              >
+                <Icon name="MessageCircle" size={20} />
+              </button>
               <div className="p-2 active:bg-white/10 rounded-full transition-colors" onClick={toggleDarkMode}>
                 <Icon name={isDarkMode ? "Sun" : "Moon"} size={24} />
               </div>
@@ -953,9 +960,9 @@ const MainDashboard = ({ headerTitle }) => {
           <div className="grid grid-cols-4 gap-4 relative z-10">
             <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate(appMode === 'simple' ? '/transaksi-sederhana' : '/transaksi')}>
               <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center backdrop-blur-md group-active:scale-95 transition-transform duration-200">
-                <Icon name="QrCode" size={32} />
+                <Icon name="ShoppingCart" size={32} />
               </div>
-              <span className="text-[11px] font-black uppercase tracking-tight text-white/90 dark:text-gray-300">Pindai</span>
+              <span className="text-[11px] font-black uppercase tracking-tight text-white/90 dark:text-gray-300">Transaksi</span>
             </div>
             <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate('/admin-uang-bisnis')}>
               <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center backdrop-blur-md group-active:scale-95 transition-transform duration-200">

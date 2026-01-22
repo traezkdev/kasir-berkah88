@@ -24,7 +24,7 @@ const SellerLayout = () => {
     const menuItems = [
         { name: 'Dashboard', path: '/seller/dashboard', icon: 'LayoutDashboard', label: 'Dashboard' },
         { name: 'Pesanan', path: '/seller/orders', icon: 'ShoppingBag', label: 'Pesanan' },
-        { name: 'Banner', path: '/seller/banners', icon: 'Image', label: 'Banners' },
+        { name: 'Transaksi', path: '/seller/transactions', icon: 'ShoppingCart', label: 'Jual' },
         { name: 'Menu', path: '/seller/menu-management', icon: 'Utensils', label: 'Katalog' },
         { name: 'Riwayat', path: '/seller/transaction-history', icon: 'History', label: 'Transaksi' },
     ];
