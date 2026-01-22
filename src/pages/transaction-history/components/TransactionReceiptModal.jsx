@@ -667,19 +667,19 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
                     </div>
                   )}
 
-                  {/* Notes Section */}
+                  {/* Customer Notes (Modern Style) */}
                   {transaction.catatan && (
-                    <div className="mt-8 relative pt-6">
-                      <div className="absolute top-0 left-0 right-0 h-px bg-gray-100"></div>
-                      <div className="bg-amber-50/50 rounded-2xl p-4 border border-amber-100/50 border-dashed">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Icon name="MessageSquare" size={14} className="text-amber-600" />
-                          <span className="text-[10px] font-black text-amber-800 uppercase tracking-widest">Catatan Pesanan</span>
-                        </div>
-                        <p className="text-xs text-amber-900 italic font-medium leading-relaxed italic">
-                          "{transaction.catatan}"
-                        </p>
+                    <div className="mt-8 relative p-4 bg-amber-50/40 rounded-2xl border border-amber-100/50 group overflow-hidden">
+                      <div className="absolute top-0 right-0 -mt-2 -mr-2 w-12 h-12 bg-amber-200/20 rounded-full blur-xl group-hover:bg-amber-200/30 transition-colors"></div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Icon name="MessageSquare" size={14} className="text-amber-500" />
+                        <span className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Catatan Pesanan</span>
                       </div>
+                      <p className="text-xs text-amber-900 italic font-medium leading-relaxed pl-5 relative text-left">
+                        <span className="absolute left-0 top-0 text-amber-300 text-lg leading-none">"</span>
+                        {transaction.catatan}
+                        <span className="text-amber-300 text-lg leading-none ml-0.5">"</span>
+                      </p>
                     </div>
                   )}
 

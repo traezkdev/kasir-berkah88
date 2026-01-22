@@ -2002,7 +2002,11 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
                 timestamp,
                 items: itemsWithDetails,
                 total: finalTotal,
-                payment_method: finalPaymentMethod
+                payment_method: finalPaymentMethod,
+                cash_paid: parseFloat(cashPaid || 0),
+                change: parseFloat(change || 0),
+                manual_discount: parseFloat(manual_discount || 0),
+                catatan: catatan || null
             },
             "id": newTransactionId
         });
