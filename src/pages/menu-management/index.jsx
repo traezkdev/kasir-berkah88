@@ -18,6 +18,7 @@ import Icon from '../../components/AppIcon';
 import NotificationBell from '../../components/ui/NotificationBell';
 import authFetch from '../../utils/authFetch'; // Add this import
 import { useNavigate } from 'react-router-dom';
+import AdminMobileHeader from '../../components/ui/AdminMobileHeader';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -39,16 +40,7 @@ const MenuManagement = ({ headerTitle }) => {
   const [selectedMenuItemForRecipe, setSelectedMenuItemForRecipe] = useState(null); // State for recipe item
   const [pagination, setPagination] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [showStickyHeader, setShowStickyHeader] = useState(false);
   const itemsPerPage = 20;
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowStickyHeader(window.scrollY > 100);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
@@ -452,71 +444,18 @@ Powered by Kasir Berkah 88`;
       )}
 
       <main className={`${theme === 'default' ? 'pt-0 lg:pt-16' : ''} pb-24 lg:pb-8`}>
-        {/* Sticky Mobile Header */}
-        <div className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden ${showStickyHeader ? 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}>
-          <div className="px-6 flex items-center justify-between">
-            <button
-              onClick={() => navigate(-1)}
-              className={`p-2 rounded-2xl transition-all active:scale-95 ${showStickyHeader ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`}
-            >
-              <Icon name="ChevronLeft" size={24} />
-            </button>
-            <div className={`text-center transition-all duration-300 ${showStickyHeader ? 'opacity-100' : 'opacity-0'}`}>
-              <h2 className="font-black text-gray-800 dark:text-white tracking-tight">
-                {headerTitle || 'Kelola Menu'}
-              </h2>
-            </div>
-            <div className="flex items-center gap-2">
-              <NotificationBell size={20} className={`${showStickyHeader ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`} />
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Header Banner (lg:hidden) */}
+        {/* Admin Mobile Header Template */}
         {theme === 'default' && (
-          <div className="lg:hidden bg-gradient-to-br from-[#118eea] to-[#0d70ba] dark:from-slate-900 dark:to-slate-800 pt-20 pb-14 px-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/10 rounded-full -ml-24 -mb-24 blur-2xl"></div>
-
-            {/* Decorative Background Icon */}
-            <div className="absolute -right-12 -top-12 text-white/20 -rotate-12 pointer-events-none">
-              <Icon name="LayoutGrid" size={200} />
-            </div>
-
-            <div className="relative z-10">
-              <div>
-                <p className="text-[10px] font-black text-blue-100 dark:text-blue-200/60 uppercase tracking-[0.2em] mb-2 opacity-80">Inventori Warung</p>
-                <h1 className="text-4xl font-black text-white tracking-tight leading-tight">
-                  Atur Menu<br />{allMenuItems.length > 0 ? `${allMenuItems.length} Produk` : 'Warung'}
-                </h1>
-              </div>
-            </div>
-
-            <div className="mt-8 flex gap-3 relative z-10">
-              <button
-                onClick={() => setIsAddModalOpen(true)}
-                className="flex-1 bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 flex items-center gap-2 active:scale-95 transition-all outline-none"
-              >
-                <div className="bg-white/20 p-2 rounded-xl text-white">
-                  <Icon name="Plus" size={18} />
-                </div>
-                <span className="font-black text-[11px] text-white uppercase tracking-tight leading-tight text-left">
-                  Tambah<br />Menu
-                </span>
-              </button>
-              <button
-                onClick={handleShareStock}
-                className="flex-1 bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 flex items-center gap-2 active:scale-95 transition-all outline-none"
-              >
-                <div className="bg-white/20 p-2 rounded-xl text-white">
-                  <Icon name="Share2" size={18} />
-                </div>
-                <span className="font-black text-[11px] text-white uppercase tracking-tight leading-tight text-left">
-                  Status<br />Stok
-                </span>
-              </button>
-            </div>
-          </div>
+          <AdminMobileHeader
+            title="Atur Menu"
+            subtitle={allMenuItems.length > 0 ? `${allMenuItems.length} Produk` : 'Warung'}
+            badgeText="Inventori Warung"
+            stickyTitle={headerTitle || 'Kelola Menu'}
+            actions={[
+              { label: 'Tambah Menu', icon: 'Plus', onClick: () => setIsAddModalOpen(true) },
+              { label: 'Status Stok', icon: 'Share2', onClick: handleShareStock }
+            ]}
+          />
         )}
 
         <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 space-y-6 lg:space-y-8" : "space-y-6"}>

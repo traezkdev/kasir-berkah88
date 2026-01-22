@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import authFetch from '../../../utils/authFetch';
 import { jwtDecode } from 'jwt-decode';
+import SellerHeader from '../../../components/ui/SellerHeader';
 
 const SellerMenuManagement = () => {
     const navigate = useNavigate();
@@ -13,7 +14,6 @@ const SellerMenuManagement = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
-    const [scrolled, setScrolled] = useState(false);
     const [userRole, setUserRole] = useState(null);
     const [activeCategory, setActiveCategory] = useState('Semua');
     const [searchTerm, setSearchTerm] = useState('');
@@ -33,9 +33,6 @@ const SellerMenuManagement = () => {
     const [imagePreview, setImagePreview] = useState(null);
 
     useEffect(() => {
-        const handleScroll = () => setScrolled(window.scrollY > 20);
-        window.addEventListener('scroll', handleScroll);
-
         const token = localStorage.getItem('token');
         if (token) {
             try {
@@ -47,7 +44,6 @@ const SellerMenuManagement = () => {
         }
 
         fetchData();
-        return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
     const fetchData = async () => {
@@ -196,47 +192,21 @@ const SellerMenuManagement = () => {
     return (
         <div className="pb-24 -mx-4 -mt-4 lg:-mx-10 lg:-mt-10 overflow-x-hidden animate-fade-in" style={{ maxWidth: '100vw' }}>
             {/* Top Bar Floating */}
-            <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 overflow-hidden ${scrolled ? 'bg-white/80 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'} lg:hidden`} style={{ maxWidth: '100vw' }}>
-                <div className="px-6 flex items-center justify-between max-w-full">
-                    <button onClick={() => navigate(-1)} className={`p-2 rounded-xl flex-shrink-0 ${scrolled ? 'bg-gray-100 text-gray-800' : 'bg-white/20 text-white'}`}>
-                        <Icon name="ChevronLeft" size={24} />
+            <SellerHeader
+                title="Katalog Menu"
+                subtitle="Kelola stok, harga, dan ketersediaan menu."
+                badgeText="Inventory System"
+                stickyTitle="Kelola Katalog"
+                showAdminButton={userRole === 'admin'}
+                stickyRightContent={(scrolled) => (
+                    <button
+                        onClick={() => handleOpenModal()}
+                        className={`p-2 rounded-xl flex-shrink-0 transition-all ${scrolled ? 'bg-blue-600 text-white' : 'bg-white/20 text-white'}`}
+                    >
+                        <Icon name="Plus" size={20} />
                     </button>
-                    <span className={`font-black tracking-tight flex-1 text-center ${scrolled ? 'text-gray-800' : 'text-white text-lg'}`}>Kelola Katalog</span>
-                    <div className="flex gap-2">
-                        {userRole === 'admin' && (
-                            <button
-                                onClick={() => navigate('/main-dashboard')}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all ${scrolled ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-white/20 text-white border border-white/30'}`}
-                            >
-                                <Icon name="ArrowLeft" size={14} />
-                                Admin
-                            </button>
-                        )}
-                        <button onClick={() => handleOpenModal()} className={`p-2 rounded-xl flex-shrink-0 ${scrolled ? 'bg-blue-600 text-white' : 'bg-white text-blue-600'}`}>
-                            <Icon name="Plus" size={20} />
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Header Section */}
-            <header className="bg-gradient-to-br from-indigo-800 via-blue-700 to-indigo-600 pt-16 pb-10 px-6 lg:pt-10 rounded-b-[2.5rem] shadow-xl relative z-10">
-                <div className="absolute inset-0 overflow-hidden rounded-b-[2.5rem] pointer-events-none">
-                    <div className="absolute top-[-20%] right-[-10%] w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
-                </div>
-
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6 pt-6">
-                    <div>
-                        <div className="flex items-center gap-2 mb-2">
-                            <button onClick={() => navigate(-1)} className="hidden lg:flex p-2 bg-white/20 rounded-xl text-white hover:bg-white/30 transition-all mr-2">
-                                <Icon name="ChevronLeft" size={20} />
-                            </button>
-                            <span className="text-blue-100 font-bold text-xs uppercase tracking-widest bg-white/10 px-3 py-1 rounded-full">Inventory System</span>
-                        </div>
-                        <h1 className="text-3xl font-black text-white tracking-tight">Katalog Menu</h1>
-                        <p className="text-blue-100/80 font-medium mt-1">Kelola stok, harga, dan ketersediaan menu.</p>
-                    </div>
-
+                )}
+                rightContent={
                     <button
                         onClick={() => handleOpenModal()}
                         className="hidden lg:flex bg-white text-blue-700 px-8 py-3.5 rounded-2xl font-black shadow-xl shadow-blue-900/20 hover:scale-105 active:scale-95 transition-all items-center gap-2"
@@ -244,8 +214,8 @@ const SellerMenuManagement = () => {
                         <Icon name="Plus" size={20} />
                         Tambah Menu Baru
                     </button>
-                </div>
-            </header>
+                }
+            />
 
             {/* Content Area */}
             <main className="px-6 mt-8 space-y-6">

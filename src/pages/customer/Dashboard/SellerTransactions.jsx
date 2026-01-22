@@ -4,6 +4,7 @@ import Icon from '../../../components/AppIcon';
 import authFetch from '../../../utils/authFetch';
 import { toast } from 'react-hot-toast';
 import OptionSelectionModal from '../../sales-transaction-processing/components/OptionSelectionModal';
+import SellerHeader from '../../../components/ui/SellerHeader';
 
 const SellerTransactions = () => {
     const navigate = useNavigate();
@@ -140,7 +141,7 @@ const SellerTransactions = () => {
             ppn: 0,
             isEmployeeMeal: false,
             payment_method: 'tunai',
-            ignoreStock: true, 
+            ignoreStock: true,
             cashPaid: totalCartPrice,
             change: 0,
             manual_discount: 0,
@@ -173,25 +174,19 @@ const SellerTransactions = () => {
 
     return (
         <div className="pb-24 -mx-4 -mt-4 lg:-mx-10 lg:-mt-10 overflow-x-hidden animate-fade-in" style={{ maxWidth: '100vw' }}>
-           
-            <header className="bg-gradient-to-br from-indigo-800 via-blue-700 to-indigo-600 pt-16 pb-10 px-6 lg:pt-10 rounded-b-[2.5rem] shadow-xl relative z-10">
-                <div className="absolute inset-0 overflow-hidden rounded-b-[2.5rem] pointer-events-none">
-                    <div className="absolute top-[-20%] right-[-10%] w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
-                </div>
-
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6 pt-6">
-                    <div>
-                        <div className="flex items-center gap-2 mb-2">
-                            <button onClick={() => navigate(-1)} className="hidden lg:flex p-2 bg-white/20 rounded-xl text-white hover:bg-white/30 transition-all mr-2">
-                                <Icon name="ChevronLeft" size={20} />
-                            </button>
-                            <span className="text-blue-100 font-bold text-xs uppercase tracking-widest bg-white/10 px-3 py-1 rounded-full">Transaksi Baru</span>
-                        </div>
-                        <h1 className="text-3xl font-black text-white tracking-tight">Kasir Penjual</h1>
-                        <p className="text-blue-100/80 font-medium mt-1">Pilih menu untuk memulai transaksi.</p>
-                    </div>
-                </div>
-            </header>
+            <SellerHeader
+                title="Kasir Penjual"
+                subtitle="Pilih menu untuk memulai transaksi."
+                badgeText="Transaksi Baru"
+                stickyRightContent={(scrolled) => (
+                    <button
+                        onClick={() => navigate('/seller/transaction-history')}
+                        className={`p-2 rounded-xl flex-shrink-0 active:scale-95 transition-all ${scrolled ? 'bg-gray-100 text-gray-800' : 'bg-white/20 text-white'}`}
+                    >
+                        <Icon name="History" size={20} />
+                    </button>
+                )}
+            />
 
             <main className="px-6 mt-8 space-y-6">
                 <section className="space-y-4">
@@ -230,51 +225,61 @@ const SellerTransactions = () => {
                     </div>
                 ) : filteredItems.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {filteredItems.map((item) => (
-                            <div 
-                                key={item.id} 
-                                className="bg-white rounded-[2rem] p-4 border border-gray-50 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group relative overflow-hidden"
-                                onClick={() => handleItemClick(item)}
-                            >
-                                {item.is_featured === 1 && (
-                                    <div className="absolute top-4 right-4 z-10 bg-orange-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg animate-pulse">
-                                        Featured
-                                    </div>
-                                )}
-                                 {item.discount > 0 && (
-                                    <div className="absolute top-3 right-3 bg-red-500 text-white text-[9px] font-black px-2.5 py-1.5 rounded-full shadow-lg shadow-red-200 uppercase">
-                                        -{item.discount * 100}%
-                                    </div>
-                                )}
+                        {filteredItems.map((item) => {
+                            const itemQty = cart.filter(cit => cit.id === item.id).reduce((sum, cit) => sum + cit.quantity, 0);
 
-                                <div className="flex gap-4">
-                                    <div className="w-24 h-24 rounded-2xl overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-50">
-                                        {item.image_url ? (
-                                            <img
-                                                src={`${apiUrl}${item.image_url}`}
-                                                alt={item.name}
-                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-gray-300 bg-gray-50">
-                                                <Icon name="Image" size={32} />
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="flex-1 flex flex-col justify-between py-1 overflow-hidden">
-                                        <div>
-                                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest block truncate">{item.category}</span>
-                                            <h3 className="font-black text-gray-800 text-lg leading-tight truncate">{item.name}</h3>
-                                            <p className="text-blue-600 font-black text-xl mt-1 tracking-tight truncate">{formatCurrency(item.price)}</p>
+                            return (
+                                <div
+                                    key={item.id}
+                                    className={`bg-white rounded-[2rem] p-4 border shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group relative overflow-hidden cursor-pointer ${itemQty > 0 ? 'border-blue-500 ring-2 ring-blue-50' : 'border-gray-50'}`}
+                                    onClick={() => handleItemClick(item)}
+                                >
+                                    {itemQty > 0 && (
+                                        <div className="absolute top-2 left-2 z-[20] bg-blue-600 text-white min-w-[28px] h-7 flex items-center justify-center rounded-full text-[12px] font-black shadow-lg shadow-blue-200 animate-scale-up">
+                                            {itemQty}
                                         </div>
-                                        <div className="flex items-center gap-2 mt-2">
-                                            <div className={`w-2 h-2 rounded-full ${item.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`} />
-                                            <span className="text-[11px] font-bold text-gray-500">Stok: <span className={item.stock > 0 ? 'text-gray-800' : 'text-red-500'}>{item.stock}</span></span>
+                                    )}
+
+                                    {item.is_featured === 1 && (
+                                        <div className="absolute top-4 right-4 z-10 bg-orange-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg animate-pulse">
+                                            Featured
+                                        </div>
+                                    )}
+                                    {item.discount > 0 && (
+                                        <div className="absolute top-3 right-3 bg-red-500 text-white text-[9px] font-black px-2.5 py-1.5 rounded-full shadow-lg shadow-red-200 uppercase">
+                                            -{item.discount * 100}%
+                                        </div>
+                                    )}
+
+                                    <div className="flex gap-4">
+                                        <div className="w-24 h-24 rounded-2xl overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-50">
+                                            {item.image_url ? (
+                                                <img
+                                                    src={`${apiUrl}${item.image_url}`}
+                                                    alt={item.name}
+                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-gray-300 bg-gray-50">
+                                                    <Icon name="Image" size={32} />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 flex flex-col justify-between py-1 overflow-hidden">
+                                            <div>
+                                                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest block truncate">{item.category}</span>
+                                                <h3 className="font-black text-gray-800 text-lg leading-tight truncate">{item.name}</h3>
+                                                <p className="text-blue-600 font-black text-xl mt-1 tracking-tight truncate">{formatCurrency(item.price)}</p>
+                                            </div>
+                                            <div className="flex items-center gap-2 mt-2">
+                                                <div className={`w-2 h-2 rounded-full ${item.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`} />
+                                                <span className="text-[11px] font-bold text-gray-500">Stok: <span className={item.stock > 0 ? 'text-gray-800' : 'text-red-500'}>{item.stock}</span></span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 ) : (
                     <div className="text-center py-20 bg-gray-50 rounded-[2.5rem] border-2 border-dashed border-gray-200">
@@ -314,9 +319,15 @@ const SellerTransactions = () => {
             )}
 
             {isCartOpen && (
-                <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-0 lg:p-4">
-                     <div className="absolute inset-0" onClick={() => setIsCartOpen(false)}></div>
-                    <div className="bg-white w-full max-w-xl rounded-t-[2.5rem] lg:rounded-[2.5rem] overflow-hidden flex flex-col shadow-2xl animate-slide-up lg:animate-scale-up max-h-[92vh]" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 z-[999] flex items-end lg:items-center justify-center p-0 lg:p-4">
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
+                        onClick={() => setIsCartOpen(false)}
+                    ></div>
+                    <div
+                        className="relative z-10 bg-white w-full max-w-xl rounded-t-[2.5rem] lg:rounded-[2.5rem] overflow-hidden flex flex-col shadow-2xl animate-slide-up lg:animate-scale-up max-h-[92vh]"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <div className="px-8 py-6 border-b border-gray-50 flex justify-between items-center bg-white sticky top-0 z-10">
                             <div>
                                 <h2 className="text-2xl font-black text-gray-800 tracking-tight">Detail Pesanan</h2>
@@ -359,21 +370,21 @@ const SellerTransactions = () => {
                             ))}
                         </div>
 
-                         <div className="px-8 py-6 bg-white border-t border-gray-100 space-y-4">
-                            <div className="flex justify-between items-center">
-                                <span className="text-gray-500 font-bold">Total Pembayaran</span>
-                                <span className="text-3xl font-black text-blue-700 tracking-tight">{formatCurrency(totalCartPrice)}</span>
+                        <div className="px-6 py-4 bg-white border-t border-gray-100 space-y-3">
+                            <div className="flex justify-between items-center px-1">
+                                <span className="text-gray-500 font-bold text-sm">Total Pembayaran</span>
+                                <span className="text-xl font-black text-blue-700 tracking-tight">{formatCurrency(totalCartPrice)}</span>
                             </div>
                             <button
                                 onClick={handleProcessPayment}
                                 disabled={isProcessing}
-                                className="w-full bg-blue-700 text-white py-5 rounded-2xl font-black text-sm uppercase tracking-[0.1em] shadow-xl shadow-blue-200 disabled:opacity-50 active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                                className="w-full bg-blue-700 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-[0.1em] shadow-xl shadow-blue-200 disabled:opacity-50 active:scale-[0.98] transition-all flex items-center justify-center gap-3"
                             >
                                 {isProcessing ? (
                                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                                 ) : (
                                     <>
-                                        <Icon name="CheckCircle" size={18} />
+                                        <Icon name="CheckCircle" size={16} />
                                         Konfirmasi & Proses
                                     </>
                                 )}
