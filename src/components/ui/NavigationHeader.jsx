@@ -6,6 +6,7 @@ import Button from './Button';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import DarkModeToggle from './DarkModeToggle';
+import NotificationBell from './NotificationBell';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -169,6 +170,12 @@ const NavigationHeader = ({ isCollapsed = false, onToggleSidebar, headerTitle = 
 
             {/* Icons Group */}
             <div className="flex items-center gap-2">
+              {/* Notification Bell for Admin/User/Kasir on Desktop */}
+              {['admin', 'user', 'kasir'].includes(userRole) && (
+                <div className="hidden lg:block">
+                  <NotificationBell size={20} className="text-text-secondary hover:text-text-primary hover:bg-muted" />
+                </div>
+              )}
               {rightContent}
 
 

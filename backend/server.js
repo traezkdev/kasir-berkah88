@@ -23,6 +23,7 @@ const {
     getMenuRecipes,
     deleteMenuRecipe,
 } = require('./rawMaterialsDb');
+const { sendPushNotification } = require('./utils/oneSignal');
 
 const app = express();
 
@@ -2973,6 +2974,13 @@ app.post("/api/orders", (req, res, next) => {
         const params = [userId, customer_name, customer_address, JSON.stringify(orderItemsWithDetails), calculatedTotal, 'pending', paymentMethodValue];
         const [result] = await db.query(sql, params);
 
+        // Kirim Notifikasi Push via OneSignal
+        sendPushNotification(
+            `Pesanan baru dari ${customer_name} sebesar Rp ${calculatedTotal.toLocaleString('id-ID')}`,
+            'Pesanan Masuk! 🔔',
+            { orderId: result.insertId, type: 'new_order' }
+        ).catch(e => console.error('Gagal mengirim notifikasi OneSignal:', e));
+
         res.status(201).json({
             message: "Order created successfully and is pending verification.",
             data: {
@@ -3087,6 +3095,14 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
         if (status === 'rejected' || status === 'cancelled') {
             const updateSql = 'UPDATE orders SET status = ? WHERE id = ?';
             await connection.query(updateSql, [status, id]);
+
+            // Kirim Notifikasi ke Pelanggan
+            if (order.user_id) {
+                const statusMsg = status === 'rejected' ? 'Maaf, pesanan Anda ditolak/dibatalkan oleh penjual.' : 'Pesanan Anda telah dibatalkan.';
+                sendPushNotification(statusMsg, 'Update Pesanan 📦', { orderId: id, status }, [order.user_id])
+                    .catch(e => console.error('OneSignal Error:', e));
+            }
+
             await connection.commit();
             return res.json({ message: `Order ${id} has been ${status}.` });
         }
@@ -3206,11 +3222,23 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
             }
 
             // 3. Stock Reduction
-
             for (const item of items) {
-
                 await connection.query('UPDATE menu_items SET stock = stock - ? WHERE id = ?', [item.quantity, item.id]);
 
+                // Notifikasi Stok Kritis ke Owner
+                const [updatedStock] = await connection.query('SELECT name, stock FROM menu_items WHERE id = ?', [item.id]);
+                if (updatedStock.length > 0 && updatedStock[0].stock <= 5) {
+                    const [owners] = await connection.query('SELECT id FROM users WHERE role = ?', ['owner']);
+                    const ownerIds = owners.map(o => o.id);
+                    if (ownerIds.length > 0) {
+                        sendPushNotification(
+                            `Stok ${updatedStock[0].name} hampir habis (Tersisa: ${updatedStock[0].stock})`,
+                            'Peringatan Stok! ⚠️',
+                            { itemId: item.id },
+                            ownerIds
+                        ).catch(e => console.error('OneSignal Owner Alert Error:', e));
+                    }
+                }
             }
 
 
@@ -3282,15 +3310,20 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
 
 
             // 5. Update the order status to 'accepted'
-
             await connection.query('UPDATE orders SET status = ? WHERE id = ?', ['accepted', id]);
 
-
+            // Kirim Notifikasi ke Pelanggan - Pesanan Diterima
+            if (order.user_id) {
+                sendPushNotification(
+                    'Pesanan Anda telah diterima dan sedang diproses!',
+                    'Pesanan Diterima! ✅',
+                    { orderId: id, status: 'accepted' },
+                    [order.user_id]
+                ).catch(e => console.error('OneSignal Accept Notif Error:', e));
+            }
 
             // 6. Commit the transaction
-
             await connection.commit();
-
             res.json({ message: `Order ${id} has been accepted and transaction ${newTransactionId} created.` });
 
         }
@@ -4592,6 +4625,41 @@ app.delete("/api/credits/:id", authenticateToken, authorizeRoles('admin', 'owner
 });
 
 // Public API to get all menu items for guest users (no authentication required)
+// --- OneSignal Daily Summary ---
+app.post("/api/admin/send-daily-summary", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+
+        // Hitung total penjualan hari ini dari tabel transactions
+        const [salesRows] = await db.query(
+            "SELECT SUM(total) as total_sales, COUNT(*) as total_transactions FROM transactions WHERE DATE(timestamp) = ?",
+            [today]
+        );
+
+        const totalSales = salesRows[0].total_sales || 0;
+        const totalTransactions = salesRows[0].total_transactions || 0;
+
+        // Cari ID semua owner
+        const [owners] = await db.query('SELECT id FROM users WHERE role = ?', ['owner']);
+        const ownerIds = owners.map(o => o.id);
+
+        if (ownerIds.length > 0) {
+            await sendPushNotification(
+                `Laporan Penjualan Hari Ini (${today}): Rp ${totalSales.toLocaleString('id-ID')} dengan total ${totalTransactions} transaksi.`,
+                'Ringkasan Harian 📊',
+                { date: today, type: 'daily_summary' },
+                ownerIds
+            );
+            res.json({ message: "Laporan harian berhasil dikirim ke semua Owner." });
+        } else {
+            res.status(404).json({ error: "Tidak ditemukan user dengan role owner." });
+        }
+    } catch (err) {
+        console.error('Error sending daily summary:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get("/api/guest/menu-items", async (req, res) => {
     try {
         const sql = "SELECT id, name, price, stock, category, image_url, discount FROM menu_items";

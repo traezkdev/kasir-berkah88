@@ -12,6 +12,7 @@ import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsConte
 import OfflineSyncManager from './components/OfflineSyncManager';
 
 const apiUrl = import.meta.env.VITE_API_URL;
+import { initOneSignal } from './utils/oneSignal';
 
 import { useDarkMode } from './contexts/DarkModeContext';
 
@@ -67,6 +68,7 @@ function App() {
     };
 
     fetchOgSettings();
+    initOneSignal();
 
     return () => {
       document.removeEventListener('contextmenu', handleContextMenu);

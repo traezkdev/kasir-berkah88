@@ -7,6 +7,7 @@ import SellerOrderCard from './components/SellerOrderCard';
 import ConfirmationModal from '../../../components/ui/ConfirmationModal';
 import { toast } from 'react-hot-toast';
 import { useAppSettings } from '../../../contexts/AppSettingsContext';
+import NotificationBell from '../../../components/ui/NotificationBell';
 
 const SellerDashboard = () => {
     const navigate = useNavigate();
@@ -276,9 +277,7 @@ const SellerDashboard = () => {
                                     Admin
                                 </button>
                             )}
-                            <button className={`p-2 rounded-full ${scrolled ? 'bg-gray-100 text-gray-600' : 'bg-white/20 text-white'}`}>
-                                <Icon name="Bell" size={20} />
-                            </button>
+                            <NotificationBell size={20} className={`${scrolled ? 'bg-gray-100 text-gray-600' : 'bg-white/20 text-white'}`} />
                         </div>
                     </div>
                 </div>

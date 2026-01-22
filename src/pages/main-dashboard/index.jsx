@@ -14,6 +14,7 @@ import Button from '../../components/ui/Button';
 // import DarkModeToggle from '../../components/ui/DarkModeToggle';
 import authFetch from '../../utils/authFetch'; // Add this import
 import StockAlertBanner from '../../components/StockAlertBanner';
+import NotificationBell from '../../components/ui/NotificationBell';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -29,6 +30,8 @@ const MainDashboard = ({ headerTitle }) => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [isSendingSummary, setIsSendingSummary] = useState(false);
   const [filterType, setFilterType] = useState('monthly'); // Options: 'this_week', 'monthly', 'yearly', 'all_time', 'custom'
   const [customDateRange, setCustomDateRange] = useState({
     start: new Date().toISOString().split('T')[0],
@@ -221,6 +224,7 @@ const MainDashboard = ({ headerTitle }) => {
       try {
         const decodedToken = JSON.parse(atob(token.split('.')[1]));
         const role = decodedToken.role;
+        setUserRole(role);
         // Pass the role to fetchData
         fetchData(role);
       } catch (e) {
@@ -554,6 +558,27 @@ const MainDashboard = ({ headerTitle }) => {
     navigate('/transaction-history');
   };
 
+  const handleSendDailySummary = async () => {
+    if (isSendingSummary) return;
+    setIsSendingSummary(true);
+    try {
+      const response = await authFetch(`${apiUrl}/api/admin/send-daily-summary`, {
+        method: 'POST'
+      });
+      const data = await response.json();
+      if (response.ok) {
+        alert(data.message || 'Laporan harian berhasil dikirim!');
+      } else {
+        alert('Gagal mengirim laporan: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Error sending summary:', error);
+      alert('Terjadi kesalahan jaringan saat mengirim laporan.');
+    } finally {
+      setIsSendingSummary(false);
+    }
+  };
+
   const quickActions = [
     {
       title: 'Proses Penjualan',
@@ -583,6 +608,13 @@ const MainDashboard = ({ headerTitle }) => {
       route: '/laporan',
       color: 'secondary'
     },
+    ...(['admin', 'owner'].includes(userRole) ? [{
+      title: isSendingSummary ? 'Mengirim...' : 'Kirim Laporan Harian',
+      description: 'Push summary harian ke OneSignal',
+      icon: 'Send',
+      action: () => handleSendDailySummary(),
+      color: 'info'
+    }] : []),
     {
       title: 'Statistik V2',
       description: 'Dashboard analisis modern',
@@ -818,9 +850,7 @@ const MainDashboard = ({ headerTitle }) => {
             </h2>
           </div>
           <div className="flex items-center gap-2">
-            <button className="p-2 rounded-2xl transition-all bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200 active:scale-95">
-              <Icon name="Bell" size={20} />
-            </button>
+            <NotificationBell size={20} className="bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200" />
           </div>
         </div>
       </div>
@@ -862,6 +892,7 @@ const MainDashboard = ({ headerTitle }) => {
               </div>
             </div>
             <div className="flex gap-1">
+              <NotificationBell size={24} className="text-white" />
               <div className="p-2 active:bg-white/10 rounded-full transition-colors" onClick={toggleDarkMode}>
                 <Icon name={isDarkMode ? "Sun" : "Moon"} size={24} />
               </div>

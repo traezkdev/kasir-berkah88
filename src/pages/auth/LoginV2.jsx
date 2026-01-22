@@ -7,6 +7,7 @@ import { jwtDecode } from 'jwt-decode';
 import AppIcon from '../../components/AppIcon';
 import DarkModeToggle from '../../components/ui/DarkModeToggle';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { setOneSignalUser } from '../../utils/oneSignal';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -68,6 +69,7 @@ const LoginV2 = () => {
             if (response.ok) {
                 localStorage.setItem('token', data.token);
                 const decodedToken = jwtDecode(data.token);
+                setOneSignalUser(decodedToken.userId); // Hubungkan OneSignal User
                 const userRole = decodedToken.role;
                 if (userRole === 'kasir') {
                     navigate('/cashier-dashboard');
