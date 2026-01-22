@@ -844,12 +844,16 @@ const Settings = () => {
           </div>
           <div className="overflow-x-auto border border-border rounded-lg">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-100 dark:bg-gray-800 text-left text-text-secondary"><tr><th className="p-3">ID</th><th className="p-3">Nama</th><th className="p-3">Peran</th><th className="p-3">Aksi</th></tr></thead>
+              <thead className="bg-gray-100 dark:bg-gray-800 text-left text-text-secondary"><tr><th className="p-3">ID</th><th className="p-3">Nama/Kontak</th><th className="p-3">Peran</th><th className="p-3">Aksi</th></tr></thead>
               <tbody>
                 {users.map(user => (
                   <tr key={user.id} className="border-t border-border">
                     <td className="p-3">{user.id}</td>
-                    <td className="p-3">{user.username}</td>
+                    <td className="p-3">
+                      <div className="font-bold">{user.username}</div>
+                      <div className="text-[10px] text-text-secondary">{user.phone || '-'}</div>
+                      <div className="text-[10px] text-text-secondary truncate max-w-[150px]" title={user.address}>{user.address || '-'}</div>
+                    </td>
                     <td className="p-3">
                       <select value={user.role} onChange={(e) => handleRoleChange(user.id, e.target.value)} className="bg-background border border-input rounded-md p-1" disabled={isLoading || user.id === 1}>
                         <option value="user">Pengguna</option>
@@ -857,6 +861,7 @@ const Settings = () => {
                         <option value="admin">Admin</option>
                         <option value="owner">Owner</option>
                         <option value="pelanggan">Pelanggan</option>
+                        <option value="penjual">Penjual</option>
                       </select>
                     </td>
                     <td className="p-3">

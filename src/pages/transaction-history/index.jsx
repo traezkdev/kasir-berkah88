@@ -14,6 +14,7 @@ import DailyRecapPopup from './components/DailyRecapPopup'; // Import the daily 
 import TransactionChart from './components/TransactionChart'; // Import TransactionChart
 import Icon from '../../components/AppIcon'; // Import Icon for the delete confirmation modal
 import Button from '../../components/ui/Button'; // Import Button for the delete confirmation modal
+import NotificationBell from '../../components/ui/NotificationBell';
 
 
 import MetricsCard from '../main-dashboard/components/MetricsCard'; // Import MetricsCard
@@ -821,9 +822,7 @@ const TransactionHistory = ({ headerTitle }) => {
               </div>
 
               <div className="flex items-center gap-2">
-                <button className={`p-2 rounded-2xl transition-all active:scale-95 ${showStickyHeader ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`}>
-                  <Icon name="Bell" size={20} />
-                </button>
+                <NotificationBell size={20} className={`${showStickyHeader ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`} />
               </div>
             </div>
           </div>

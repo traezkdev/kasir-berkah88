@@ -7,9 +7,11 @@ import authFetch from '../../utils/authFetch';
 import OrderCard from './components/OrderCard';
 import ConfirmationModal from '../../components/ui/ConfirmationModal';
 import Button from '../../components/ui/Button';
+import { useOrderNotification } from '../../contexts/OrderNotificationContext';
 
 const OrderConfirmationPage = ({ headerTitle }) => {
     const { theme } = useTheme();
+    const { fetchPendingCount } = useOrderNotification();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -34,6 +36,7 @@ const OrderConfirmationPage = ({ headerTitle }) => {
             const data = await response.json();
 
             setOrders(data.data || []);
+            fetchPendingCount();
         } catch (err) {
             setError(err.message);
             showNotification(`Error: ${err.message}`, 'error');

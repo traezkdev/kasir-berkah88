@@ -15,6 +15,7 @@ import Pagination from '../../components/ui/Pagination'; // Add this import
 
 import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
+import NotificationBell from '../../components/ui/NotificationBell';
 import authFetch from '../../utils/authFetch'; // Add this import
 import { useNavigate } from 'react-router-dom';
 
@@ -466,9 +467,7 @@ Powered by Kasir Berkah 88`;
               </h2>
             </div>
             <div className="flex items-center gap-2">
-              <button className={`p-2 rounded-2xl transition-all active:scale-95 ${showStickyHeader ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`}>
-                <Icon name="Bell" size={20} />
-              </button>
+              <NotificationBell size={20} className={`${showStickyHeader ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`} />
             </div>
           </div>
         </div>

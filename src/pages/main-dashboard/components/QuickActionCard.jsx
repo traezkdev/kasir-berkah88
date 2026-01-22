@@ -3,11 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const QuickActionCard = ({ title, description, icon, route, color = 'primary', disabled = false }) => {
+const QuickActionCard = ({ title, description, icon, route, action, color = 'primary', disabled = false }) => {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    if (!disabled && route) {
+    if (disabled) return;
+    if (action) {
+      action();
+    } else if (route) {
       navigate(route);
     }
   };
@@ -28,9 +31,9 @@ const QuickActionCard = ({ title, description, icon, route, color = 'primary', d
     >
       <div className="flex items-center space-x-3 mb-3">
         <div className={`p-2 rounded-md ${color === 'primary' ? 'bg-primary text-primary-foreground' :
-            color === 'success' ? 'bg-success text-success-foreground' :
-              color === 'accent' ? 'bg-accent text-accent-foreground' :
-                color === 'destructive' ? 'bg-destructive text-destructive-foreground' : 'bg-secondary text-secondary-foreground'
+          color === 'success' ? 'bg-success text-success-foreground' :
+            color === 'accent' ? 'bg-accent text-accent-foreground' :
+              color === 'destructive' ? 'bg-destructive text-destructive-foreground' : 'bg-secondary text-secondary-foreground'
           }`}>
           <Icon name={icon} size={20} />
         </div>

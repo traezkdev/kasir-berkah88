@@ -8,7 +8,9 @@ import './styles/index.css';
 
 import { ThemeProvider as LayoutThemeProvider } from './contexts/ThemeContext';
 import { DarkModeProvider } from './contexts/DarkModeContext';
-import { ToastProvider } from './components/ui/ToastNotification'; // <--- Import ToastProvider
+import { OrderNotificationProvider } from './contexts/OrderNotificationContext';
+import { ChatProvider } from './contexts/ChatContext';
+import { ToastProvider } from './components/ui/ToastNotification';
 
 // Easter egg for the developer console
 console.log(
@@ -23,9 +25,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <BrowserRouter>
         <DarkModeProvider>
           <LayoutThemeProvider>
-            <ToastProvider> {/* <--- Bungkus dengan ToastProvider */}
-              <App />
-            </ToastProvider>
+            <OrderNotificationProvider>
+              <ChatProvider>
+                <ToastProvider>
+                  <App />
+                </ToastProvider>
+              </ChatProvider>
+            </OrderNotificationProvider>
           </LayoutThemeProvider>
         </DarkModeProvider>
       </BrowserRouter>

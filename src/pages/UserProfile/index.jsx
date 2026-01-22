@@ -54,8 +54,10 @@ const UserProfile = ({ headerTitle }) => {
   const { theme } = useTheme();
   const { toggleSidebar } = useAppSettings();
   // --- States ---
-  const [user, setUser] = useState({ id: '', username: '', role: '', avatar_url: null });
+  const [user, setUser] = useState({ id: '', username: '', role: '', avatar_url: null, phone: '', address: '' });
   const [newUsername, setNewUsername] = useState('');
+  const [newPhone, setNewPhone] = useState('');
+  const [newAddress, setNewAddress] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
@@ -82,6 +84,8 @@ const UserProfile = ({ headerTitle }) => {
       if (response.ok) {
         setUser(data.data);
         setNewUsername(data.data.username);
+        setNewPhone(data.data.phone || '');
+        setNewAddress(data.data.address || '');
       } else {
         setError(data.error || 'Gagal memuat profil pengguna');
       }
@@ -119,6 +123,31 @@ const UserProfile = ({ headerTitle }) => {
       }
     } catch (err) {
       setError('Kesalahan jaringan atau server tidak dapat dijangkau');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateContact = async (e) => {
+    e.preventDefault();
+    clearMessages();
+    setIsLoading(true);
+    try {
+      const response = await authFetch(`${apiUrl}/api/user/profile`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: newPhone, address: newAddress }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setMessage('Informasi kontak berhasil diperbarui!');
+        fetchUserProfile();
+        setTimeout(() => handleModalClose(), 2000);
+      } else {
+        setError(data.error || 'Gagal memperbarui kontak');
+      }
+    } catch (err) {
+      setError('Kesalahan jaringan');
     } finally {
       setIsLoading(false);
     }
@@ -245,6 +274,8 @@ const UserProfile = ({ headerTitle }) => {
                   <p><strong className="font-medium">ID Pengguna:</strong> {user.id}</p>
                   <p><strong className="font-medium">Nama Pengguna:</strong> {user.username}</p>
                   <p><strong className="font-medium">Peran:</strong> <span className="capitalize px-2 py-1 bg-white/20 rounded-full text-xs">{user.role}</span></p>
+                  {user.phone && <p><strong className="font-medium">No. HP:</strong> {user.phone}</p>}
+                  {user.address && <p><strong className="font-medium block">Alamat:</strong> {user.address}</p>}
                 </div>
               </div>
             </div>
@@ -253,6 +284,12 @@ const UserProfile = ({ headerTitle }) => {
               title="Ubah Foto Profil"
               description="Perbarui foto profil Anda."
               onClick={() => setActiveModal('avatar')}
+            />
+            <ProfileCard
+              icon="Contact"
+              title="Informasi Kontak"
+              description="Perbarui nomor HP dan alamat."
+              onClick={() => setActiveModal('contact')}
             />
             <ProfileCard
               icon="UserCog"
@@ -305,6 +342,24 @@ const UserProfile = ({ headerTitle }) => {
           <Input label="Kata Sandi Baru" name="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
           <Input label="Konfirmasi Kata Sandi Baru" name="confirmNewPassword" type="password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} required />
           <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Ubah Kata Sandi'}</Button>
+          {message && <p className="text-sm text-center text-green-500 mt-2">{message}</p>}
+          {error && <p className="text-sm text-center text-red-500 mt-2">{error}</p>}
+        </form>
+      </ProfileModal>
+
+      <ProfileModal title="Informasi Kontak & Alamat" isOpen={activeModal === 'contact'} onClose={handleModalClose}>
+        <form onSubmit={handleUpdateContact} className="space-y-4">
+          <Input label="Nomor WhatsApp / HP" name="newPhone" type="tel" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="Contoh: 08123456789" />
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-text-primary pl-1">Alamat Lengkap</label>
+            <textarea
+              className="w-full bg-background border border-border rounded-lg p-3 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary min-h-[100px] transition-all"
+              value={newAddress}
+              onChange={(e) => setNewAddress(e.target.value)}
+              placeholder="Masukkan alamat lengkap Anda"
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
           {message && <p className="text-sm text-center text-green-500 mt-2">{message}</p>}
           {error && <p className="text-sm text-center text-red-500 mt-2">{error}</p>}
         </form>

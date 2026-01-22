@@ -10,8 +10,10 @@ import StickyThemeSwitcher from './components/ui/StickyThemeSwitcher';
 import DailyWelcomeModal from './components/ui/DailyWelcomeModal';
 import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext';
 import OfflineSyncManager from './components/OfflineSyncManager';
+import ChatWidget from './components/ui/ChatWidget';
 
 const apiUrl = import.meta.env.VITE_API_URL;
+import { initOneSignal } from './utils/oneSignal';
 
 import { useDarkMode } from './contexts/DarkModeContext';
 
@@ -20,8 +22,8 @@ function App() {
   const { isDarkMode } = useDarkMode();
   const location = useLocation();
 
-  // Hide floating action button on login and register pages
-  const showFloatingButton = !['/login', '/register'].includes(location.pathname);
+  // Hide floating action button on login, register, and seller chat pages
+  const showFloatingButton = !['/login', '/register', '/seller/chat'].includes(location.pathname);
 
   useEffect(() => {
     const handleContextMenu = (event) => {
@@ -67,6 +69,7 @@ function App() {
     };
 
     fetchOgSettings();
+    initOneSignal();
 
     return () => {
       document.removeEventListener('contextmenu', handleContextMenu);
@@ -104,6 +107,7 @@ function App() {
         {!['/cashier-dashboard', '/', '/transaksi-sederhana'].includes(location.pathname) && <StickyThemeSwitcher />}
         {theme === 'default' && !['/cashier-dashboard', '/', '/transaksi-sederhana'].includes(location.pathname) && <StickyDarkModeToggle />}
         <OfflineSyncManager />
+        {showFloatingButton && <ChatWidget />}
       </ThemeProvider>
     </AppSettingsProvider>
   );

@@ -12,6 +12,7 @@ import { savePendingTransaction } from '../../utils/offlinePersistence';
 
 import toast from 'react-hot-toast';
 import Icon from '../../components/AppIcon';
+import NotificationBell from '../../components/ui/NotificationBell';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -327,9 +328,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
             <h2 className="font-black text-gray-800 tracking-tight">Transaksi</h2>
           </div>
           <div className="flex items-center gap-2">
-            <button className={`p-2 rounded-2xl transition-all ${scrolled ? 'bg-gray-100 text-gray-800' : 'bg-white/20 text-white backdrop-blur-md'}`}>
-              <Icon name="Bell" size={20} />
-            </button>
+            <NotificationBell size={20} className={`${scrolled ? 'bg-gray-100 text-gray-800' : 'bg-white/20 text-white backdrop-blur-md'}`} />
           </div>
         </div>
       </div>
