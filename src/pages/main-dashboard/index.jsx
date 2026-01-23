@@ -21,6 +21,7 @@ const apiUrl = import.meta.env.VITE_API_URL;
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { useDarkMode } from '../../contexts/DarkModeContext';
+import { useChat } from '../../contexts/ChatContext';
 
 const MainDashboard = ({ headerTitle }) => {
   const { theme } = useTheme();
@@ -39,6 +40,13 @@ const MainDashboard = ({ headerTitle }) => {
   });
   const [showDetails, setShowDetails] = useState(false);
   const [showStickyHeader, setShowStickyHeader] = useState(false);
+  const { unreadCount, fetchConversations } = useChat();
+
+  useEffect(() => {
+    fetchConversations();
+    const interval = setInterval(fetchConversations, 10000); // Poll every 10s for new message notifications
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -895,10 +903,13 @@ const MainDashboard = ({ headerTitle }) => {
               <NotificationBell size={24} className="text-white" />
               <button
                 className="relative p-2 rounded-full transition-all active:scale-95 bg-white/20 text-white"
-                onClick={() => navigate('/seller/chat')}
+                onClick={() => navigate('/admin/chat')}
                 aria-label="Chat"
               >
                 <Icon name="MessageCircle" size={20} />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 h-2.5 w-2.5 bg-red-500 rounded-full border border-white dark:border-slate-900 animate-pulse"></span>
+                )}
               </button>
               <div className="p-2 active:bg-white/10 rounded-full transition-colors" onClick={toggleDarkMode}>
                 <Icon name={isDarkMode ? "Sun" : "Moon"} size={24} />

@@ -65,6 +65,7 @@ import SellerReceipt from './pages/customer/Dashboard/SellerReceipt';
 import SellerOrderManagement from './pages/customer/Dashboard/SellerOrderManagement';
 import SellerTransactions from './pages/customer/Dashboard/SellerTransactions';
 import SellerChatPage from './pages/seller/Chat';
+import AdminChatPage from './pages/admin/Chat';
 
 // ... (existing imports)
 
@@ -198,6 +199,7 @@ const AppRoutes = () => {
         <Route path="/transaksi-sederhana" element={<SimpleTransactionPage />} />
         <Route path="/chatbot" element={<ChatbotPage />} />
         <Route path="/all-features" element={<AllFeatures />} />
+        <Route path="/admin/chat" element={<AdminChatPage />} />
       </Route>
 
 
