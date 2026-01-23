@@ -74,8 +74,13 @@ const MenuItemsTable = ({
               onError={(e) => { e.target.onerror = null; e.target.src = '/assets/images/no_image.png' }}
             />
             {!!item?.is_featured && (
-              <div className="absolute -top-2 -right-2 w-8 h-8 bg-amber-400 rounded-lg flex items-center justify-center border-4 border-white dark:border-slate-800 shadow-md">
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-amber-400 rounded-lg flex items-center justify-center border-4 border-white dark:border-slate-800 shadow-md z-10">
                 <Icon name="Star" size={12} className="text-white fill-current" />
+              </div>
+            )}
+            {item?.discount > 0 && (
+              <div className="absolute -top-2 -left-2 bg-rose-500 text-white text-[9px] font-black px-1.5 py-1 rounded-lg shadow-md border-2 border-white dark:border-slate-800 z-10 animate-bounce">
+                {parseFloat(item.discount).toFixed(0)}% OFF
               </div>
             )}
           </div>
@@ -261,7 +266,7 @@ const MenuItemsTable = ({
                   <td className="p-4">
                     {item?.discount > 0 ? (
                       <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
-                        {(item?.discount * 100).toFixed(0)}%
+                        {parseFloat(item?.discount).toFixed(0)}%
                       </span>
                     ) : (
                       <span className="text-gray-300">-</span>

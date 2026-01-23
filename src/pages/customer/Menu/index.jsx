@@ -214,6 +214,11 @@ const CustomerMenu = () => {
                                             <Icon name="Image" className="w-8 h-8" />
                                         </div>
                                     )}
+                                    {menu.discount > 0 && (
+                                        <div className="absolute top-1 left-1 bg-red-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded shadow-sm z-10">
+                                            {menu.discount}% OFF
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex-1 flex flex-col justify-between">
                                     <div>
@@ -221,7 +226,10 @@ const CustomerMenu = () => {
                                         <p className="text-xs text-gray-500 line-clamp-2 mt-1">{menu.description || 'Tidak ada deskripsi'}</p>
                                     </div>
                                     <div className="flex justify-between items-end mt-2">
-                                        <span className="font-bold text-gray-900">{formatCurrency(menu.price)}</span>
+                                        <div className="flex flex-col">
+                                            {menu.discount > 0 && <span className="text-[10px] text-gray-400 line-through leading-none">{formatCurrency(menu.price)}</span>}
+                                            <span className="font-bold text-gray-900 leading-none">{formatCurrency(menu.discount > 0 ? menu.price * (1 - menu.discount / 100) : menu.price)}</span>
+                                        </div>
                                         {qty > 0 && (
                                             <div className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
                                                 {qty}x
@@ -265,7 +273,10 @@ const CustomerMenu = () => {
                         {/* Content */}
                         <div className="p-6 overflow-y-auto flex-1">
                             <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedItem.name}</h2>
-                            <p className="text-lg font-bold text-green-600 mb-4">{formatCurrency(selectedItem.price)}</p>
+                            <div className="flex items-center gap-2 mb-4">
+                                {selectedItem.discount > 0 && <span className="text-sm text-gray-400 line-through">{formatCurrency(selectedItem.price)}</span>}
+                                <p className="text-lg font-bold text-green-600">{formatCurrency(selectedItem.discount > 0 ? selectedItem.price * (1 - selectedItem.discount / 100) : selectedItem.price)}</p>
+                            </div>
                             <p className="text-gray-600 text-sm leading-relaxed mb-6">
                                 {selectedItem.description || 'Menu lezat yang disiapkan spesial untuk Anda. Rasakan kenikmatan di setiap gigitan.'}
                             </p>
@@ -326,7 +337,7 @@ const CustomerMenu = () => {
                                         }`}
                                 >
                                     <span>Tambah ke Keranjang</span>
-                                    <span>{formatCurrency(selectedItem.price + selectedOptions.reduce((acc, opt) => acc + (parseFloat(opt.price_adjustment) || 0), 0))}</span>
+                                    <span>{formatCurrency((selectedItem.discount > 0 ? selectedItem.price * (1 - selectedItem.discount / 100) : selectedItem.price) + selectedOptions.reduce((acc, opt) => acc + (parseFloat(opt.price_adjustment) || 0), 0))}</span>
                                 </button>
                             ) : (
                                 <div className="flex items-center justify-between gap-4">

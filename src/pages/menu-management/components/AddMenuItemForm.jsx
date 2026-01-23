@@ -186,15 +186,15 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
 
           <div>
             <Input
-              label="Diskon (0.00 - 1.00)"
+              label="Diskon (%)"
               type="number"
               name="discount"
-              placeholder="0.00"
+              placeholder="0"
               value={formData?.discount ?? ''}
               onChange={handleChange}
               min="0"
-              max="1"
-              step="0.01"
+              max="100"
+              step="1"
             />
           </div>
 

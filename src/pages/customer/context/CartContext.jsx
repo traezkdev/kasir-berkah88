@@ -75,7 +75,8 @@ export const CartProvider = ({ children }) => {
 
     const cartTotal = cart.reduce((acc, item) => {
         const optionsTotal = (item.selectedOptions || []).reduce((sum, opt) => sum + (parseFloat(opt.price_adjustment) || 0), 0);
-        return acc + ((item.price + optionsTotal) * item.quantity);
+        const priceAfterDiscount = item.discount > 0 ? parseFloat(item.price) * (1 - (item.discount / 100)) : parseFloat(item.price);
+        return acc + ((priceAfterDiscount + optionsTotal) * item.quantity);
     }, 0);
 
     const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
