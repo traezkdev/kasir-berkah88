@@ -325,7 +325,7 @@ const CustomerDashboard = () => {
                                     {menu.discount > 0 && (
                                         <div className="absolute top-2 left-2 z-10 bg-gradient-to-r from-red-600 to-rose-500 text-white text-[8px] font-black px-2 py-1 rounded-lg shadow-lg flex items-center gap-1 animate-pulse">
                                             <Icon name="Zap" className="w-2.5 h-2.5 fill-current" />
-                                            <span>PROMO {menu.discount}%</span>
+                                            <span>PROMO {parseFloat(menu.discount).toFixed(0)}%</span>
                                         </div>
                                     )}
                                 </div>
@@ -335,7 +335,7 @@ const CustomerDashboard = () => {
                                         {menu.discount > 0 ? (
                                             <>
                                                 <span className="text-[10px] text-gray-400 line-through leading-none">{formatCurrency(menu.price)}</span>
-                                                <span className="font-bold text-green-600 text-sm leading-none">{formatCurrency(menu.price * (1 - menu.discount / 100))}</span>
+                                                <span className="font-bold text-green-600 text-sm leading-none">{formatCurrency(Math.round(menu.price * (1 - menu.discount / 100)))}</span>
                                             </>
                                         ) : (
                                             <span className="font-bold text-green-600 text-sm leading-none">{formatCurrency(menu.price)}</span>

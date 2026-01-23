@@ -216,7 +216,7 @@ const CustomerMenu = () => {
                                     )}
                                     {menu.discount > 0 && (
                                         <div className="absolute top-1 left-1 bg-red-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded shadow-sm z-10">
-                                            {menu.discount}% OFF
+                                            {parseFloat(menu.discount).toFixed(0)}% OFF
                                         </div>
                                     )}
                                 </div>
@@ -228,7 +228,7 @@ const CustomerMenu = () => {
                                     <div className="flex justify-between items-end mt-2">
                                         <div className="flex flex-col">
                                             {menu.discount > 0 && <span className="text-[10px] text-gray-400 line-through leading-none">{formatCurrency(menu.price)}</span>}
-                                            <span className="font-bold text-gray-900 leading-none">{formatCurrency(menu.discount > 0 ? menu.price * (1 - menu.discount / 100) : menu.price)}</span>
+                                            <span className="font-bold text-gray-900 leading-none">{formatCurrency(Math.round(menu.discount > 0 ? menu.price * (1 - menu.discount / 100) : menu.price))}</span>
                                         </div>
                                         {qty > 0 && (
                                             <div className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
@@ -275,7 +275,7 @@ const CustomerMenu = () => {
                             <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedItem.name}</h2>
                             <div className="flex items-center gap-2 mb-4">
                                 {selectedItem.discount > 0 && <span className="text-sm text-gray-400 line-through">{formatCurrency(selectedItem.price)}</span>}
-                                <p className="text-lg font-bold text-green-600">{formatCurrency(selectedItem.discount > 0 ? selectedItem.price * (1 - selectedItem.discount / 100) : selectedItem.price)}</p>
+                                <p className="text-lg font-bold text-green-600">{formatCurrency(Math.round(selectedItem.discount > 0 ? selectedItem.price * (1 - selectedItem.discount / 100) : selectedItem.price))}</p>
                             </div>
                             <p className="text-gray-600 text-sm leading-relaxed mb-6">
                                 {selectedItem.description || 'Menu lezat yang disiapkan spesial untuk Anda. Rasakan kenikmatan di setiap gigitan.'}
@@ -337,7 +337,7 @@ const CustomerMenu = () => {
                                         }`}
                                 >
                                     <span>Tambah ke Keranjang</span>
-                                    <span>{formatCurrency((selectedItem.discount > 0 ? selectedItem.price * (1 - selectedItem.discount / 100) : selectedItem.price) + selectedOptions.reduce((acc, opt) => acc + (parseFloat(opt.price_adjustment) || 0), 0))}</span>
+                                    <span>{formatCurrency(Math.round((selectedItem.discount > 0 ? selectedItem.price * (1 - selectedItem.discount / 100) : selectedItem.price) + selectedOptions.reduce((acc, opt) => acc + (parseFloat(opt.price_adjustment) || 0), 0)))}</span>
                                 </button>
                             ) : (
                                 <div className="flex items-center justify-between gap-4">

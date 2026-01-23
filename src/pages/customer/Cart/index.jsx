@@ -113,7 +113,7 @@ const CustomerCart = () => {
             {/* Cart Items */}
             <div className="p-4 space-y-4">
                 {cart.map((item) => {
-                    const priceAfterDiscount = item.discount > 0 ? parseFloat(item.price) * (1 - (item.discount / 100)) : parseFloat(item.price);
+                    const priceAfterDiscount = item.discount > 0 ? Math.round(parseFloat(item.price) * (1 - (item.discount / 100))) : parseFloat(item.price);
                     const unitPrice = priceAfterDiscount + optionsTotal;
 
                     // Fallback for key and ID if migration hasn't run yet (though it should have)
