@@ -6,6 +6,7 @@ import Icon from '../../components/AppIcon';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import authFetch from '../../utils/authFetch';
 import OrderCard from './components/OrderCard';
+import MobileOrderCard from './components/MobileOrderCard';
 import ConfirmationModal from '../../components/ui/ConfirmationModal';
 import Button from '../../components/ui/Button';
 import AdminMobileHeader from '../../components/ui/AdminMobileHeader';
@@ -255,13 +256,24 @@ const OrderConfirmationPage = ({ headerTitle }) => {
         return (
             <div className="space-y-4">
                 {filteredOrders.map(order => (
-                    <OrderCard
-                        key={order.id}
-                        order={order}
-                        onAccept={() => openConfirmationModal(order.id, 'accepted')}
-                        onReject={() => openConfirmationModal(order.id, 'rejected')}
-                        onDelete={() => openConfirmationModal(order.id, 'delete')}
-                    />
+                    <React.Fragment key={order.id}>
+                        <div className="hidden lg:block">
+                            <OrderCard
+                                order={order}
+                                onAccept={() => openConfirmationModal(order.id, 'accepted')}
+                                onReject={() => openConfirmationModal(order.id, 'rejected')}
+                                onDelete={() => openConfirmationModal(order.id, 'delete')}
+                            />
+                        </div>
+                        <div className="lg:hidden">
+                            <MobileOrderCard
+                                order={order}
+                                onAccept={() => openConfirmationModal(order.id, 'accepted')}
+                                onReject={() => openConfirmationModal(order.id, 'rejected')}
+                                onDelete={() => openConfirmationModal(order.id, 'delete')}
+                            />
+                        </div>
+                    </React.Fragment>
                 ))}
             </div>
         );
@@ -372,8 +384,40 @@ const OrderConfirmationPage = ({ headerTitle }) => {
                         </div>
                     </div>
 
-                    {/* Main Content Card */}
-                    <div className="bg-card rounded-xl shadow-lg border border-border overflow-hidden">
+                    {/* Main Content Area - Tabs & List */}
+                    <div className="lg:hidden mt-4">
+                        <div className="bg-white dark:bg-slate-800 p-2 rounded-[2rem] border border-gray-100 dark:border-slate-700 shadow-sm flex gap-2 mb-6 overflow-x-auto hide-scrollbar sticky top-4 z-30">
+                            {[
+                                { id: 'pending', label: 'Baru', icon: 'Clock', color: 'blue', count: pendingCount },
+                                { id: 'accepted', label: 'Diterima', icon: 'CheckCircle', color: 'green', count: acceptedCount },
+                                { id: 'rejected', label: 'Ditolak', icon: 'XCircle', color: 'red', count: rejectedCount }
+                            ].map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex items-center gap-3 px-6 py-3.5 rounded-[1.5rem] font-black transition-all whitespace-nowrap active:scale-95 ${activeTab === tab.id
+                                            ? 'bg-blue-600 text-white shadow-xl shadow-blue-100 dark:shadow-none'
+                                            : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700/50'
+                                        }`}
+                                >
+                                    <Icon
+                                        name={tab.icon}
+                                        size={18}
+                                        className={activeTab === tab.id ? 'text-white' : `text-${tab.color}-600`}
+                                    />
+                                    <span className="text-xs uppercase tracking-wider">{tab.label}</span>
+                                    {tab.count > 0 && (
+                                        <span className={`${activeTab === tab.id ? 'bg-white/20' : 'bg-gray-100 dark:bg-slate-700'} px-2 py-0.5 rounded-full text-[10px]`}>
+                                            {tab.count}
+                                        </span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Desktop Content Card */}
+                    <div className="hidden lg:block bg-card rounded-xl shadow-lg border border-border overflow-hidden">
                         {/* Tab Navigation */}
                         <div className="border-b border-border bg-muted/30 overflow-x-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
                             <nav className="flex min-w-max sm:min-w-0">
@@ -456,10 +500,26 @@ const OrderConfirmationPage = ({ headerTitle }) => {
                             </div>
                         )}
 
-                        {/* Content Area */}
+                        {/* Desktop Content Area */}
                         <div className="p-6">
                             {renderContent()}
                         </div>
+                    </div>
+
+                    {/* Mobile Content Area */}
+                    <div className="lg:hidden">
+                        {filteredOrders.length > 0 && activeTab !== 'pending' && (
+                            <div className="mb-4">
+                                <button
+                                    onClick={() => openConfirmationModal(activeTab, 'delete', true)}
+                                    className="w-full py-3 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 border border-red-100 dark:border-red-900/20 active:scale-95 transition-all"
+                                >
+                                    <Icon name="Trash2" size={14} />
+                                    Hapus Semua Riwayat {activeTab === 'accepted' ? 'Diterima' : 'Ditolak'}
+                                </button>
+                            </div>
+                        )}
+                        {renderContent()}
                     </div>
 
                     {/* Confirmation Modal */}
