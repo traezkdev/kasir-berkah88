@@ -26,6 +26,7 @@ const {
 const { sendPushNotification } = require('./utils/oneSignal');
 
 const app = express();
+app.set('trust proxy', 1); // Trust first proxy (fix for express-rate-limit behind proxy)
 
 // Ensure uploads directory exists
 // Ensure uploads directory exists

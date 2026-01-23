@@ -146,7 +146,7 @@ function App() {
     <AppSettingsProvider>
       <ThemeProvider> {/* Tambahkan ThemeProvider di sini */}
         <Toaster position="bottom-center" reverseOrder={false} />
-        <DailyWelcomeModal />
+        {!location.pathname.startsWith('/customer') && <DailyWelcomeModal />}
         <Routes />
         {!['/cashier-dashboard', '/', '/transaksi-sederhana'].includes(location.pathname) && <StickyThemeSwitcher />}
         {theme === 'default' && !['/cashier-dashboard', '/', '/transaksi-sederhana'].includes(location.pathname) && <StickyDarkModeToggle />}
