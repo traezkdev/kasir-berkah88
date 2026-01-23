@@ -1246,6 +1246,57 @@ const setupDatabase = async () => {
     await connection.query(createMessagesTable);
     console.log('messages table is ready.');
 
+    // Check and add order_id column to messages if it doesn't exist
+    const checkMessageOrderIdColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'messages' AND COLUMN_NAME = 'order_id';
+    `;
+    const addMessageOrderIdColumn = `
+      ALTER TABLE messages ADD COLUMN order_id INT DEFAULT NULL;
+    `;
+    const addMessageOrderForeignKey = `
+      ALTER TABLE messages ADD CONSTRAINT fk_messages_order_id FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL;
+    `;
+
+    const [msgOrderRows] = await connection.query(checkMessageOrderIdColumn);
+    if (msgOrderRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addMessageOrderIdColumn);
+      try {
+        await connection.query(addMessageOrderForeignKey);
+      } catch (e) {
+        console.log('Skipping FK creation for messages.order_id (might already exist or index issue)');
+      }
+      console.log('Added order_id column and foreign key to messages table.');
+    }
+
+    // Check and add is_read column to messages if it doesn't exist
+    const checkIsReadColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'messages' AND COLUMN_NAME = 'is_read';
+    `;
+    const addIsReadColumn = `
+      ALTER TABLE messages ADD COLUMN is_read TINYINT(1) DEFAULT 0;
+    `;
+    const [msgIsReadRows] = await connection.query(checkIsReadColumn);
+    if (msgIsReadRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addIsReadColumn);
+      console.log('Added is_read column to messages table.');
+    }
+
+    // Check and add deleted_at column to messages if it doesn't exist
+    const checkDeletedAtMsgColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'messages' AND COLUMN_NAME = 'deleted_at';
+    `;
+    const addDeletedAtMsgColumn = `
+      ALTER TABLE messages ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL;
+    `;
+    const [msgDeletedAtRows] = await connection.query(checkDeletedAtMsgColumn);
+    if (msgDeletedAtRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addDeletedAtMsgColumn);
+      console.log('Added deleted_at column to messages table.');
+    }
+
     connection.release();
 
   } catch (error) {
