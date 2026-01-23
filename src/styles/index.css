@@ -57,7 +57,9 @@
 
   html,
   body {
-    overscroll-behavior: none;
+    overscroll-behavior-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
   }
 }
 
@@ -160,6 +162,8 @@
   background: var(--primary-gradient) !important;
   border-bottom: none !important;
   box-shadow: 0 4px 20px rgba(79, 70, 229, 0.2) !important;
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 /* Make floating navigation header text white */
