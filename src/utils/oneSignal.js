@@ -47,7 +47,10 @@ export const initOneSignal = async () => {
             welcomeNotification: {
                 title: "Kasir Berkah 88",
                 message: "Terima kasih telah mengaktifkan notifikasi!",
-            }
+            },
+            // Konfigurasi eksplisit untuk Service Worker
+            serviceWorkerPath: "OneSignalSDKWorker.js",
+            serviceWorkerParam: { scope: "/" }
         });
 
         console.log("OneSignal Berhasil Diinisialisasi");
