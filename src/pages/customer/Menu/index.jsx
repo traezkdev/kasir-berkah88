@@ -17,6 +17,8 @@ const CustomerMenu = () => {
     const [loading, setLoading] = useState(true);
     const [selectedItem, setSelectedItem] = useState(null);
     const [selectedOptions, setSelectedOptions] = useState([]);
+    const [reviews, setReviews] = useState([]);
+    const [reviewsLoading, setReviewsLoading] = useState(false);
 
     // Filters
     const [searchTerm, setSearchTerm] = useState('');
@@ -33,9 +35,11 @@ const CustomerMenu = () => {
             if (item) {
                 setSelectedItem(item);
                 setSelectedOptions([]);
+                fetchReviews(item.id);
             }
         } else if (!id) {
             setSelectedItem(null);
+            setReviews([]);
         }
     }, [id, menus]);
 
@@ -83,6 +87,21 @@ const CustomerMenu = () => {
             console.error(error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchReviews = async (menuItemId) => {
+        setReviewsLoading(true);
+        try {
+            const res = await authFetch(`${import.meta.env.VITE_API_URL}/api/menu-reviews/${menuItemId}`);
+            const data = await res.json();
+            if (data.message === 'success') {
+                setReviews(data.data || []);
+            }
+        } catch (error) {
+            console.error("Error fetching reviews:", error);
+        } finally {
+            setReviewsLoading(false);
         }
     };
 
@@ -222,7 +241,15 @@ const CustomerMenu = () => {
                                 </div>
                                 <div className="flex-1 flex flex-col justify-between">
                                     <div>
-                                        <h4 className="font-bold text-gray-800 text-sm">{menu.name}</h4>
+                                        <div className="flex justify-between items-start">
+                                            <h4 className="font-bold text-gray-800 text-sm">{menu.name}</h4>
+                                            {menu.total_reviews > 0 && (
+                                                <div className="flex items-center gap-0.5 text-[10px] text-amber-500 font-bold">
+                                                    <Icon name="Star" className="w-3 h-3 fill-current" />
+                                                    <span>{parseFloat(menu.average_rating).toFixed(1)}</span>
+                                                </div>
+                                            )}
+                                        </div>
                                         <p className="text-xs text-gray-500 line-clamp-2 mt-1">{menu.description || 'Tidak ada deskripsi'}</p>
                                     </div>
                                     <div className="flex justify-between items-end mt-2">
@@ -320,6 +347,73 @@ const CustomerMenu = () => {
                                     <span className="text-gray-500">Stok Tersedia</span>
                                     <span className="font-medium text-gray-900">{selectedItem.stock} Porsi</span>
                                 </div>
+                            </div>
+
+                            {/* Reviews Section */}
+                            <div className="mt-8 pt-8 border-t border-gray-100">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="font-black text-gray-900 text-lg tracking-tight">Ulasan Pelanggan</h3>
+                                    {selectedItem.total_reviews > 0 && (
+                                        <div className="flex items-center gap-1.5 bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
+                                            <Icon name="Star" className="w-4 h-4 text-amber-500 fill-current" />
+                                            <span className="text-sm font-black text-amber-700">{parseFloat(selectedItem.average_rating).toFixed(1)}</span>
+                                            <span className="text-xs text-amber-400 font-bold">({selectedItem.total_reviews})</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {reviewsLoading ? (
+                                    <div className="space-y-4">
+                                        {[1, 2].map(i => (
+                                            <div key={i} className="animate-pulse space-y-2">
+                                                <div className="h-4 bg-gray-100 rounded w-1/4" />
+                                                <div className="h-4 bg-gray-50 rounded w-full" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : reviews.length > 0 ? (
+                                    <div className="space-y-6">
+                                        {reviews.map((rv, idx) => (
+                                            <div key={idx} className="group">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 font-black text-[10px]">
+                                                            {rv.username?.substring(0, 2).toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-black text-gray-800 text-xs leading-none mb-1">{rv.username}</p>
+                                                            <div className="flex gap-0.5">
+                                                                {[1, 2, 3, 4, 5].map(star => (
+                                                                    <Icon
+                                                                        key={star}
+                                                                        name="Star"
+                                                                        className={`w-2.5 h-2.5 ${star <= rv.rating ? 'text-amber-400 fill-current' : 'text-gray-200'}`}
+                                                                    />
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-[9px] font-bold text-gray-300 uppercase tracking-tighter">
+                                                        {new Date(rv.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                    </span>
+                                                </div>
+                                                {rv.comment && (
+                                                    <p className="text-sm text-gray-600 font-medium pl-10 leading-relaxed italic">
+                                                        "{rv.comment}"
+                                                    </p>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="bg-gray-50 rounded-2xl p-8 text-center border-2 border-dashed border-gray-100">
+                                        <div className="bg-white w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
+                                            <Icon name="MessageSquare" className="w-6 h-6 text-gray-200" />
+                                        </div>
+                                        <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Belum ada ulasan</p>
+                                        <p className="text-[10px] text-gray-300 font-medium mt-1">Jadilah yang pertama mencoba!</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 

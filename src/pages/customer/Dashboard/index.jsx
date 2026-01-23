@@ -343,7 +343,7 @@ const CustomerDashboard = () => {
                                     </div>
                                     <div className="flex items-center gap-1 text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">
                                         <Icon name="Star" className="w-3 h-3 text-yellow-400 fill-current" />
-                                        <span>4.8</span>
+                                        <span>{menu.average_rating ? parseFloat(menu.average_rating).toFixed(1) : '0.0'}</span>
                                     </div>
                                 </div>
                             </div>

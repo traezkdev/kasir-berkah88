@@ -205,6 +205,7 @@ const MenuItemsTable = ({
               <th className="text-left p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Harga</th>
               <th className="text-left p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Diskon</th>
               <th className="text-left py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Unggulan</th>
+              <th className="text-left p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Rating</th>
               <th className="text-left p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
               <th className="text-left p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Update</th>
               <th className="text-center p-4 w-40 text-[10px] font-black text-gray-400 uppercase tracking-widest">Aksi</th>
@@ -278,6 +279,19 @@ const MenuItemsTable = ({
                         <Icon name="Star" size={16} className="text-amber-500 fill-current" />
                       </div>
                     ) : '-'}
+                  </td>
+                  <td className="p-4">
+                    {item?.total_reviews > 0 ? (
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-0.5 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-lg border border-amber-100 dark:border-amber-800/30">
+                          <Icon name="Star" size={10} className="text-amber-500 fill-current" />
+                          <span className="text-xs font-black text-amber-700 dark:text-amber-400">{parseFloat(item.average_rating).toFixed(1)}</span>
+                        </div>
+                        <span className="text-[10px] text-gray-400 font-bold">({item.total_reviews})</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-300 dark:text-gray-600 font-bold italic">N/A</span>
+                    )}
                   </td>
                   <td className="p-4">
                     <div className={`inline-flex px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${stockStatus?.color} ${stockStatus?.bg}`}>
