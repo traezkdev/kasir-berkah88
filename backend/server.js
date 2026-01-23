@@ -4693,6 +4693,11 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
             data: { id: result.insertId, sender_id, receiver_id, message, order_id, created_at: new Date() }
         });
     } catch (err) {
+        console.error("Error sending message:", err);
+        const errorLog = `\n--- MESSAGE ERROR ---\nTime: ${new Date().toISOString()}\nError: ${err.message}\nStack: ${err.stack}\n---------------------\n`;
+        try {
+            fs.appendFileSync(path.join(__dirname, 'error.log'), errorLog);
+        } catch (e) { }
         res.status(500).json({ error: err.message });
     }
 });

@@ -53,7 +53,14 @@ export const initOneSignal = async () => {
         console.log("OneSignal Berhasil Diinisialisasi");
 
         // Pancing popup muncul jika belum berlangganan
-        if (!OneSignal.isPushNotificationsEnabled()) {
+        let isEnabled = false;
+        if (typeof OneSignal.User?.PushSubscription?.optedIn !== 'undefined') {
+            isEnabled = OneSignal.User.PushSubscription.optedIn;
+        } else if (typeof OneSignal.isPushNotificationsEnabled === 'function') {
+            isEnabled = await OneSignal.isPushNotificationsEnabled();
+        }
+
+        if (!isEnabled) {
             await OneSignal.showSlidedownPrompt();
         }
 
