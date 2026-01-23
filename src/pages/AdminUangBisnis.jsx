@@ -10,7 +10,8 @@ import DepositModal from '../components/ui/DepositModal'; // Import DepositModal
 import ExpenseModal from '../components/ui/ExpenseModal'; // Import ExpenseModal
 import EditTransactionDescriptionModal from '../components/ui/EditTransactionDescriptionModal'; // Import EditTransactionDescriptionModal
 import ConfirmationModal from '../components/ui/ConfirmationModal'; // Import ConfirmationModal
-import { useToast } from '../components/ui/ToastNotification'; // <--- Import useToast
+import AdminMobileHeader from '../components/ui/AdminMobileHeader';
+import { useToast } from '../components/ui/ToastNotification';
 import BreadcrumbNavigation from '../components/ui/BreadcrumbNavigation';
 import { jwtDecode } from 'jwt-decode';
 
@@ -265,10 +266,24 @@ const AdminUangBisnis = ({ headerTitle }) => { // Changed component name
 
     return (
         <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
-            {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || 'Uang Bisnis'} />}
-            <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'pt-20' : ''}`}>
+            {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || 'Uang Bisnis'} hideMobileHeader={true} />}
+            <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'pt-0 lg:pt-16' : ''}`}>
+                {theme === 'default' && (
+                    <AdminMobileHeader
+                        title="Uang Bisnis"
+                        subtitle="Cash Flow Warung"
+                        badgeText="Keuangan Bisnis"
+                        stickyTitle={headerTitle || 'Uang Bisnis'}
+                        decorativeIcon="Wallet"
+                        actions={userRole === 'owner' ? [
+                            { label: 'Tambah Deposit', icon: 'Plus', onClick: handleAddDeposit },
+                            { label: 'Catat Keluar', icon: 'Minus', onClick: handleRecordExpense }
+                        ] : []}
+                    />
+                )}
+
                 <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
-                    <div className={`mb-8 lg:mb-10 ${theme === 'default' ? 'mt-4' : ''}`}>
+                    <div className={`mb-8 lg:mb-10 ${theme === 'default' ? 'mt-4' : ''} hidden lg:block`}>
                         <div className="mb-4 hidden md:block">
                             <BreadcrumbNavigation />
                         </div>
@@ -281,7 +296,7 @@ const AdminUangBisnis = ({ headerTitle }) => { // Changed component name
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 !-mt-12 lg:mt-0 relative z-20">
                         <MetricsCard
                             title="Saldo Owner"
                             value={formatCurrency(ownerAccount?.account?.balance || 0)}
@@ -299,7 +314,7 @@ const AdminUangBisnis = ({ headerTitle }) => { // Changed component name
                     </div>
 
                     {userRole === 'owner' && (
-                        <div className="flex flex-wrap justify-start gap-4 mb-8">
+                        <div className="hidden lg:flex flex-wrap justify-start gap-4 mb-8">
                             <Button variant="primary" iconName="Plus" onClick={handleAddDeposit}>
                                 Tambah Deposit
                             </Button>
