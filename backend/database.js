@@ -12,7 +12,8 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  timezone: '+07:00'
+  timezone: '+07:00',
+  charset: 'utf8mb4'
 });
 
 const promisePool = pool.promise();
@@ -1295,6 +1296,14 @@ const setupDatabase = async () => {
     if (msgDeletedAtRows[0]['COUNT(*)'] === 0) {
       await connection.query(addDeletedAtMsgColumn);
       console.log('Added deleted_at column to messages table.');
+    }
+
+    // Ensure messages table supports emojis (utf8mb4)
+    try {
+      await connection.query("ALTER TABLE messages CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+      console.log('Converted messages table to utf8mb4.');
+    } catch (e) {
+      console.error('Failed to convert messages table to utf8mb4:', e.message);
     }
 
     connection.release();
