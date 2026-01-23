@@ -171,45 +171,110 @@ const ReceiptPage = () => {
   };
 
   const copyAsText = () => {
-    let text = `${restaurantName.toUpperCase()}\n`;
-    text += `${restaurantSlogan}\n`;
+    // Helper function to center text (32 chars width for thermal printer)
+    const centerText = (text, width = 32) => {
+      const padding = Math.max(0, Math.floor((width - text.length) / 2));
+      return ' '.repeat(padding) + text;
+    };
+
+    let text = `${centerText(restaurantName.toUpperCase())}\n`;
+    text += `${centerText(restaurantSlogan)}\n`;
     text += `--------------------------------\n`;
     text += `ID: ${transaction.id}\n`;
-    text += `Tgl: ${new Date(transaction.timestamp).toLocaleString("id-ID")}\n`;
-    text += `Ksr: ${transaction.cashier_name || 'SISTEM'}\n`;
+    text += `Tanggal: ${new Date(transaction.timestamp).toLocaleString("id-ID")}\n`;
+    text += `Kasir: ${transaction.cashier_name || 'SISTEM'}\n`;
+
+    // Payment Method
+    const paymentMethodText = transaction.payment_method === 'employee_meal'
+      ? 'MAKAN KARYAWAN'
+      : (transaction.payment_method === 'cash' || transaction.payment_method === 'tunai' || transaction.payment_method === 'Tunai')
+        ? 'TUNAI'
+        : transaction.payment_method.toUpperCase();
+    text += `Metode: ${paymentMethodText}\n`;
     text += `--------------------------------\n`;
 
     transaction.items.forEach(item => {
       text += `${item.name.substring(0, 20)}\n`;
       const priceVal = Number(item.price) || 0;
       const qtyVal = Number(item.quantity) || 0;
+
+      // For display in copy text, we show the item's unit price and the subtotal for that line
       const qtyPrice = `${qtyVal} x ${priceVal.toLocaleString("id-ID")}`;
-      const subtotal = (priceVal * qtyVal).toLocaleString("id-ID");
-      const spaces = 32 - qtyPrice.length - subtotal.length;
-      text += `${qtyPrice}${" ".repeat(Math.max(1, spaces))}${subtotal}\n`;
+      const itemSubtotal = (priceVal * qtyVal).toLocaleString("id-ID");
+      const spaces = 32 - qtyPrice.length - itemSubtotal.length;
+      text += `${qtyPrice}${" ".repeat(Math.max(1, spaces))}${itemSubtotal}\n`;
+
+      // Options
       if (item.options?.length > 0) {
-        item.options.forEach(opt => text += ` - ${opt.name}\n`);
+        item.options.forEach(opt => text += ` + ${opt.name}\n`);
+      }
+
+      // Item Discount if applicable
+      if (item.discount > 0) {
+        text += ` HEMAT ${(item.discount * 100).toFixed(0)}%\n`;
       }
     });
 
     text += `--------------------------------\n`;
+
+    // Subtotal
+    const subtotalLabel = "SUBTOTAL";
+    const subtotalVal = `Rp ${Number(subtotalBeforeAllDiscounts).toLocaleString("id-ID")}`;
+    text += `${subtotalLabel}${" ".repeat(32 - subtotalLabel.length - subtotalVal.length)}${subtotalVal}\n`;
+
+    // Item Discounts
+    if (subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts > 0) {
+      const discLabel = "DISKON ITEM";
+      const discVal = `-Rp ${(subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts).toLocaleString("id-ID")}`;
+      text += `${discLabel}${" ".repeat(32 - discLabel.length - discVal.length)}${discVal}\n`;
+    }
+
+    // Manual Discount
+    if (manualDiscountAmount > 0) {
+      const manualDiscLabel = "DISKON TAMBAHAN";
+      const manualDiscVal = `-Rp ${manualDiscountAmount.toLocaleString("id-ID")}`;
+      text += `${manualDiscLabel}${" ".repeat(32 - manualDiscLabel.length - manualDiscVal.length)}${manualDiscVal}\n`;
+    }
+
+    // PPN/Tax
+    if (ppnAmount > 0) {
+      const ppnLabel = "PPN/TAX";
+      const ppnVal = `Rp ${ppnAmount.toLocaleString("id-ID")}`;
+      text += `${ppnLabel}${" ".repeat(32 - ppnLabel.length - ppnVal.length)}${ppnVal}\n`;
+    }
+
+    text += `--------------------------------\n`;
+
+    // Total
     const totalLabel = "TOTAL";
     const totalVal = `Rp ${Number(transaction.total).toLocaleString("id-ID")}`;
     text += `${totalLabel}${" ".repeat(32 - totalLabel.length - totalVal.length)}${totalVal}\n`;
 
-    const bayarLabel = "BAYAR";
-    const bayarVal = `Rp ${Number(transaction.cash_paid || 0).toLocaleString("id-ID")}`;
-    text += `${bayarLabel}${" ".repeat(32 - bayarLabel.length - bayarVal.length)}${bayarVal}\n`;
+    // Cash Payment Details (only for cash transactions)
+    if ((transaction.payment_method === 'Tunai' || transaction.payment_method === 'tunai' || transaction.payment_method === 'cash') && transaction.cash_paid > 0) {
+      text += `--------------------------------\n`;
+      const bayarLabel = "BAYAR";
+      const bayarVal = `Rp ${Number(transaction.cash_paid || 0).toLocaleString("id-ID")}`;
+      text += `${bayarLabel}${" ".repeat(32 - bayarLabel.length - bayarVal.length)}${bayarVal}\n`;
 
-    const kembaliLabel = "KEMBALI";
-    const kembaliVal = `Rp ${Number(transaction.change || 0).toLocaleString("id-ID")}`;
-    text += `${kembaliLabel}${" ".repeat(32 - kembaliLabel.length - kembaliVal.length)}${kembaliVal}\n`;
+      const kembaliLabel = "KEMBALI";
+      const kembaliVal = `Rp ${Number(transaction.change || 0).toLocaleString("id-ID")}`;
+      text += `${kembaliLabel}${" ".repeat(32 - kembaliLabel.length - kembaliVal.length)}${kembaliVal}\n`;
+    }
+
+    // Customer Notes
+    if (transaction.catatan) {
+      text += `--------------------------------\n`;
+      text += `CATATAN:\n`;
+      text += `"${transaction.catatan}"\n`;
+    }
 
     text += `--------------------------------\n`;
-    text += `     TERIMA KASIH      \n`;
+    text += `${centerText('TERIMA KASIH')}\n`;
+    text += `${centerText(restaurantUrl)}\n`;
 
     navigator.clipboard.writeText(text);
-    toast.success('Format teks disalin! Silakan paste di aplikasi Printer.');
+    toast.success('Format teks lengkap disalin! Silakan paste di aplikasi Printer.');
   };
 
   const transactionDate = new Date(transaction.timestamp).toLocaleString("id-ID", {

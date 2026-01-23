@@ -37,7 +37,7 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl, i
         )}
         {item.discount > 0 && (
           <span className="absolute top-3 right-3 bg-red-500 text-white text-[10px] font-black px-2 py-1 rounded-lg z-10 shadow-lg animate-pulse">
-            -{item.discount}%
+            {Math.round(item.discount)}%
           </span>
         )}
       </div>
