@@ -21,6 +21,7 @@ const apiUrl = import.meta.env.VITE_API_URL;
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { useDarkMode } from '../../contexts/DarkModeContext';
+import { useChat } from '../../contexts/ChatContext';
 
 const MainDashboard = ({ headerTitle }) => {
   const { theme } = useTheme();
@@ -39,6 +40,13 @@ const MainDashboard = ({ headerTitle }) => {
   });
   const [showDetails, setShowDetails] = useState(false);
   const [showStickyHeader, setShowStickyHeader] = useState(false);
+  const { unreadCount, fetchConversations } = useChat();
+
+  useEffect(() => {
+    fetchConversations();
+    const interval = setInterval(fetchConversations, 10000); // Poll every 10s for new message notifications
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -869,9 +877,7 @@ const MainDashboard = ({ headerTitle }) => {
             <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-400/10 rounded-full -ml-10 -mb-10 blur-2xl"></div>
 
             {/* Transparent Background Icon */}
-            <div className="absolute -right-12 -top-12 text-white/10 -rotate-12 pointer-events-none z-0">
-              <Icon name="Store" size={200} />
-            </div>
+
           </div>
 
           {/* Top Bar */}
@@ -895,10 +901,13 @@ const MainDashboard = ({ headerTitle }) => {
               <NotificationBell size={24} className="text-white" />
               <button
                 className="relative p-2 rounded-full transition-all active:scale-95 bg-white/20 text-white"
-                onClick={() => navigate('/seller/chat')}
+                onClick={() => navigate('/admin/chat')}
                 aria-label="Chat"
               >
                 <Icon name="MessageCircle" size={20} />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 h-2.5 w-2.5 bg-red-500 rounded-full border border-white dark:border-slate-900 animate-pulse"></span>
+                )}
               </button>
               <div className="p-2 active:bg-white/10 rounded-full transition-colors" onClick={toggleDarkMode}>
                 <Icon name={isDarkMode ? "Sun" : "Moon"} size={24} />
@@ -987,7 +996,7 @@ const MainDashboard = ({ headerTitle }) => {
 
         {/* Floating Balance Card */}
         <section className="px-5 -mt-8 relative z-20">
-          <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] p-8 border border-blue-50/50 dark:border-slate-700">
+          <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] p-8 border border-blue-500 dark:border-blue-500 shadow-xl">
             {/* ... content ... */}
             <div className="flex justify-between items-center mb-4">
               <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 tracking-[0.25em] uppercase">Total Kas Lapak</p>
@@ -1036,21 +1045,21 @@ const MainDashboard = ({ headerTitle }) => {
             </span>
           </div>
 
-          <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] p-8 grid grid-cols-4 gap-y-10 border border-gray-50 dark:border-slate-700">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-900 rounded-[2.5rem] p-8 grid grid-cols-4 gap-y-10 border border-blue-500/50 dark:border-blue-500/50">
             {quickActions.slice(0, 8).map((action, idx) => (
               <div
                 key={idx}
                 className="flex flex-col items-center gap-3 group"
                 onClick={() => navigate(action.route)}
               >
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 group-active:scale-90 ${action.color === 'primary' ? 'bg-blue-50 text-blue-600' :
-                  action.color === 'success' ? 'bg-emerald-50 text-emerald-600' :
-                    action.color === 'destructive' ? 'bg-rose-50 text-rose-600' :
-                      'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400'
-                  } border border-current/5`}>
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 group-active:scale-90 shadow-lg shadow-blue-500/5 ${action.color === 'primary' ? 'bg-white dark:bg-slate-700 text-blue-600' :
+                    action.color === 'success' ? 'bg-white dark:bg-slate-700 text-emerald-600' :
+                      action.color === 'destructive' ? 'bg-white dark:bg-slate-700 text-rose-600' :
+                        'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400'
+                  } border border-white/50 dark:border-slate-600`}>
                   <Icon name={action.icon} size={24} />
                 </div>
-                <span className="text-[10px] font-bold text-gray-500 dark:text-slate-400 text-center leading-tight">
+                <span className="text-[10px] font-bold text-gray-600 dark:text-slate-300 text-center leading-tight">
                   {action.title.split(' ').length > 1 ? action.title.split(' ')[0] : action.title}
                 </span>
               </div>

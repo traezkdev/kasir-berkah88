@@ -21,7 +21,7 @@ const EditMenuItemModal = ({
         category: menuItem.category,
         image_url: menuItem.image_url,
         image: null,
-        discount: menuItem.discount ? menuItem.discount.toString() : '0.00',
+        discount: menuItem.discount ? menuItem.discount.toString() : '0',
         is_featured: !!menuItem.is_featured,
         options: menuItem.options || [], // Initialize options
         description: menuItem.description || '',
@@ -58,7 +58,7 @@ const EditMenuItemModal = ({
       stock: parseInt(finalFormData.stock),
       category: finalFormData.category,
       image: finalFormData.image,
-      discount: parseFloat(finalFormData.discount || '0.00'),
+      discount: parseFloat(finalFormData.discount || '0'),
       is_featured: finalFormData.is_featured,
       options: finalFormData.options || [], // Include options in the save payload
       description: finalFormData.description,

@@ -1306,6 +1306,25 @@ const setupDatabase = async () => {
       console.error('Failed to convert messages table to utf8mb4:', e.message);
     }
 
+    // Create menu_reviews table
+    const createMenuReviewsTable = `
+      CREATE TABLE IF NOT EXISTS menu_reviews (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        menu_item_id VARCHAR(255) NOT NULL,
+        user_id INT NOT NULL,
+        order_id INT NULL,
+        rating TINYINT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+        comment TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL,
+        UNIQUE KEY \`unique_user_item_order\` (user_id, menu_item_id(191), order_id)
+      );
+    `;
+    await connection.query(createMenuReviewsTable);
+    console.log('menu_reviews table is ready.');
+
     connection.release();
 
   } catch (error) {

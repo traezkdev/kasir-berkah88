@@ -290,9 +290,18 @@ const SellerMenuManagement = () => {
                                                 </p>
                                             )}
                                         </div>
-                                        <div className="flex items-center gap-2 mt-2">
-                                            <div className={`w-2 h-2 rounded-full ${item.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`} />
-                                            <span className="text-[11px] font-bold text-gray-500">Stok: <span className={item.stock > 0 ? 'text-gray-800' : 'text-red-500'}>{item.stock}</span></span>
+                                        <div className="flex items-center justify-between mt-2">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-2 h-2 rounded-full ${item.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`} />
+                                                <span className="text-[11px] font-bold text-gray-500">Stok: <span className={item.stock > 0 ? 'text-gray-800' : 'text-red-500'}>{item.stock}</span></span>
+                                            </div>
+                                            {item.total_reviews > 0 && (
+                                                <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100">
+                                                    <Icon name="Star" size={10} className="text-amber-500 fill-current" />
+                                                    <span className="text-[10px] font-black text-amber-700">{parseFloat(item.average_rating).toFixed(1)}</span>
+                                                    <span className="text-[8px] text-amber-400 font-bold">({item.total_reviews})</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

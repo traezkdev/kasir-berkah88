@@ -65,7 +65,7 @@ function App() {
   ];
 
   const isAdminPage = adminPaths.some(path => location.pathname.startsWith(path));
-  const showFloatingButton = !['/login', '/register', '/seller/chat'].includes(location.pathname)
+  const showFloatingButton = !['/login', '/register', '/seller/chat', '/admin/chat'].includes(location.pathname)
     && !location.pathname.startsWith('/seller')
     && !isAdminPage;
 

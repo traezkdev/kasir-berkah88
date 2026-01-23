@@ -148,7 +148,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       }
 
       const optionPriceAdjustment = selectedOptions.reduce((sum, opt) => sum + (opt.price_adjustment || 0), 0);
-      const priceAfterDiscount = item.discount > 0 ? parseFloat(item.price) * (1 - item.discount) : parseFloat(item.price);
+      const priceAfterDiscount = item.discount > 0 ? Math.round(parseFloat(item.price) * (1 - (item.discount / 100))) : parseFloat(item.price);
       const finalPrice = priceAfterDiscount + optionPriceAdjustment;
 
       if (existingItem) {

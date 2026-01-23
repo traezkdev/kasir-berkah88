@@ -11,6 +11,9 @@ const CustomerOrderConfirmation = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
+    const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
+    const [selectedOrderForRating, setSelectedOrderForRating] = useState(null);
+    const [submittingRating, setSubmittingRating] = useState(false);
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
     const handleChatWithSeller = async (order = null) => {
@@ -18,9 +21,7 @@ const CustomerOrderConfirmation = () => {
             const res = await authFetch(`${API_URL}/api/messages/contacts`);
             const data = await res.json();
             if (data.data && data.data.length > 0) {
-                // Find a staff member (prioritize admin)
                 const staff = data.data.find(c => c.role === 'admin') || data.data[0];
-
                 setActiveChat({ user_id: staff.id, ...staff });
                 if (order) setActiveOrder(order);
                 setIsOpen(true);
@@ -43,9 +44,7 @@ const CustomerOrderConfirmation = () => {
                 } else {
                     setOrders(prev => [...prev, ...newOrders]);
                 }
-
-                // Assuming default limit is 5 as requested in fetch
-                setHasMore(newOrders.length === 5); // If we got full limit, assume more might exist (simple check)
+                setHasMore(newOrders.length === 5);
                 setPage(pageNum);
             }
         } catch (error) {
@@ -80,14 +79,12 @@ const CustomerOrderConfirmation = () => {
 
     const handleCancelOrder = async (orderId) => {
         if (!window.confirm("Apakah Anda yakin ingin membatalkan pesanan ini?")) return;
-
         try {
             const response = await authFetch(`${API_URL}/api/orders/${orderId}/status`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: 'cancelled' })
             });
-
             if (response.ok) {
                 fetchOrders(1);
             } else {
@@ -97,6 +94,33 @@ const CustomerOrderConfirmation = () => {
         } catch (error) {
             console.error("Error cancelling order:", error);
             alert("Terjadi kesalahan koneksi saat membatalkan pesanan");
+        }
+    };
+
+    const handleOpenRatingModal = (order) => {
+        setSelectedOrderForRating(order);
+        setIsRatingModalOpen(true);
+    };
+
+    const handleSubmitRating = async (menuItemId, rating, comment) => {
+        try {
+            setSubmittingRating(true);
+            const response = await authFetch(`${API_URL}/api/menu-reviews`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    menu_item_id: menuItemId,
+                    order_id: selectedOrderForRating.id,
+                    rating,
+                    comment
+                })
+            });
+            return response.ok;
+        } catch (error) {
+            console.error("Error submitting rating:", error);
+            return false;
+        } finally {
+            setSubmittingRating(false);
         }
     };
 
@@ -111,7 +135,6 @@ const CustomerOrderConfirmation = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-24 font-sans">
-            {/* Header */}
             <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-8 pb-16 text-white rounded-b-[2.5rem] shadow-lg mb-[-40px]">
                 <div className="flex items-center gap-3 mb-2">
                     <button onClick={() => navigate('/customer/dashboard')} className="p-2 bg-white/20 rounded-full">
@@ -189,21 +212,28 @@ const CustomerOrderConfirmation = () => {
                                                 Batalkan
                                             </button>
                                         )}
-                                        {/* Chat Button */}
                                         <button
                                             className={`${order.status === 'pending' ? 'px-4' : 'flex-1'} bg-blue-50 text-blue-500 py-3 rounded-2xl active:scale-90 transition-all border border-blue-100 flex items-center justify-center gap-2`}
                                             onClick={() => handleChatWithSeller(order)}
-                                            title="Chat Penjual"
                                         >
                                             <Icon name="MessageCircle" className="w-4 h-4" />
                                             <span className="text-[10px] font-black uppercase tracking-wider">Chat</span>
                                         </button>
                                         <button
                                             className="bg-gray-50 text-gray-400 p-3 rounded-2xl active:scale-90 transition-all border border-gray-100"
-                                            onClick={() => fetchOrders(1)}
+                                            onClick={() => fetchOrders(page)}
                                         >
                                             <Icon name="RefreshCw" className="w-4 h-4" />
                                         </button>
+                                        {order.status === 'accepted' && (
+                                            <button
+                                                className="flex-1 bg-amber-50 text-amber-600 font-extrabold py-3 rounded-2xl active:scale-95 transition-all text-xs uppercase tracking-wider border border-amber-100 flex items-center justify-center gap-2"
+                                                onClick={() => handleOpenRatingModal(order)}
+                                            >
+                                                <Icon name="Star" className="w-4 h-4 fill-current" />
+                                                Beri Ulasan
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -214,27 +244,143 @@ const CustomerOrderConfirmation = () => {
                 {orders.length > 0 && hasMore && (
                     <button
                         onClick={() => fetchOrders(page + 1)}
-                        className="w-full py-4 bg-white rounded-2xl text-green-600 font-bold text-sm shadow-sm border border-green-100 hover:bg-green-50 transition-colors disabled:opacity-70 flex justify-center items-center gap-2"
+                        className="w-full py-4 bg-white rounded-2xl text-green-600 font-bold text-sm"
                     >
-                        <span>Muat Lebih Banyak</span>
-                        <Icon name="ChevronDown" className="w-4 h-4" />
+                        Muat Lebih Banyak
                     </button>
                 )}
 
-                {/* Info Card */}
-                <div className="bg-blue-600 rounded-[2rem] p-6 text-white shadow-xl shadow-blue-100 overflow-hidden relative">
+                <div className="bg-blue-600 rounded-[2rem] p-6 text-white overflow-hidden relative">
                     <div className="relative z-10">
                         <h3 className="font-black text-lg mb-1">Butuh Bantuan?</h3>
                         <p className="text-blue-100 text-xs font-medium opacity-90 leading-relaxed mb-4">Jika pesanan Anda mengalami kendala, hubungi layanan pelanggan kami melalui chat.</p>
                         <button
                             onClick={() => handleChatWithSeller()}
-                            className="bg-white text-blue-600 font-black py-2 px-6 rounded-full text-xs shadow-lg active:scale-95 transition-all"
+                            className="bg-white text-blue-600 font-black py-2 px-6 rounded-full text-xs"
                         >
                             Chat Sekarang
                         </button>
                     </div>
-                    <Icon name="HelpCircle" className="absolute -right-4 -bottom-4 w-32 h-32 text-blue-500/30 rotate-12" />
                 </div>
+            </div>
+
+            {isRatingModalOpen && selectedOrderForRating && (
+                <RatingModal
+                    order={selectedOrderForRating}
+                    onClose={() => setIsRatingModalOpen(false)}
+                    onSubmit={handleSubmitRating}
+                    submitting={submittingRating}
+                />
+            )}
+        </div>
+    );
+};
+
+const RatingModal = ({ order, onClose, onSubmit, submitting }) => {
+    const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+    const [ratedItems, setRatedItems] = useState({});
+
+    const handleRate = (itemId, rating) => {
+        setRatedItems(prev => ({
+            ...prev,
+            [itemId]: { ...prev[itemId], rating }
+        }));
+    };
+
+    const handleComment = (itemId, comment) => {
+        setRatedItems(prev => ({
+            ...prev,
+            [itemId]: { ...prev[itemId], comment }
+        }));
+    };
+
+    const submitItem = async (item) => {
+        const itemRating = ratedItems[item.id];
+        if (!itemRating || !itemRating.rating) {
+            alert("Harap pilih bintang terlebih dahulu!");
+            return;
+        }
+
+        const success = await onSubmit(item.id, itemRating.rating, itemRating.comment || '');
+        if (success) {
+            setRatedItems(prev => ({
+                ...prev,
+                [item.id]: { ...prev[item.id], submitted: true }
+            }));
+        } else {
+            alert("Gagal mengirim ulasan.");
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4 h-full">
+            <div className="w-full max-w-md bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 sm:p-8 flex flex-col max-h-[90vh]">
+                <div className="flex justify-between items-center mb-6 shrink-0">
+                    <div>
+                        <h2 className="text-xl font-black text-gray-900 tracking-tight leading-none mb-1">Beri Ulasan</h2>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Pesanan #{order.id}</p>
+                    </div>
+                    <button onClick={onClose} className="p-2 bg-gray-100 rounded-full text-gray-500">
+                        <Icon name="X" className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <div className="overflow-y-auto flex-1 space-y-8 pr-1 pb-4">
+                    {items.map((item, idx) => {
+                        const state = ratedItems[item.id] || { rating: 0, comment: '', submitted: false };
+                        return (
+                            <div key={idx} className={`space-y-4 pb-6 border-b border-gray-50 last:border-0 ${state.submitted ? 'opacity-50 pointer-events-none' : ''}`}>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center shrink-0">
+                                        <Icon name="Utensils" className="w-6 h-6 text-gray-300" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="font-extrabold text-gray-800 text-sm">{item.name}</h4>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Pilih Bintang & Komentar</p>
+                                    </div>
+                                    {state.submitted && (
+                                        <div className="flex items-center gap-1 text-green-600 font-black text-[10px] uppercase">
+                                            <Icon name="Check" className="w-3 h-3" />
+                                            <span>Terkirim</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex justify-center gap-3 py-2">
+                                    {[1, 2, 3, 4, 5].map(star => (
+                                        <button
+                                            key={star}
+                                            onClick={() => handleRate(item.id, star)}
+                                            className={`transition-all duration-300 ${state.rating >= star ? 'scale-125' : 'grayscale opacity-30 hover:opacity-100'}`}
+                                        >
+                                            <Icon name="Star" className={`w-8 h-8 ${state.rating >= star ? 'text-amber-400 fill-current' : 'text-gray-300'}`} />
+                                        </button>
+                                    ))}
+                                </div>
+                                <textarea
+                                    placeholder="Tulis ulasan Anda (Opsional)..."
+                                    className="w-full bg-gray-50 border-2 border-transparent focus:border-amber-400 focus:bg-white rounded-2xl p-4 text-xs text-gray-700 font-bold transition-all outline-none min-h-[80px]"
+                                    value={state.comment}
+                                    onChange={(e) => handleComment(item.id, e.target.value)}
+                                />
+                                {!state.submitted && (
+                                    <button
+                                        onClick={() => submitItem(item)}
+                                        disabled={!state.rating || submitting}
+                                        className="w-full bg-amber-500 text-white font-black py-3 rounded-2xl"
+                                    >
+                                        Kirim Ulasan Untuk Menu Ini
+                                    </button>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+                <button
+                    onClick={onClose}
+                    className="w-full mt-6 bg-gray-900 text-white font-black py-4 rounded-2xl"
+                >
+                    Selesai
+                </button>
             </div>
         </div>
     );

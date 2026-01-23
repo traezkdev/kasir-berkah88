@@ -13,8 +13,8 @@ const CustomerDashboard = () => {
     const { isOpen } = useAppSettings();
 
     const [banners, setBanners] = useState([]);
-
     const [scrolled, setScrolled] = useState(false);
+    const [orderNotificationCount, setOrderNotificationCount] = useState(0);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -30,8 +30,7 @@ const CustomerDashboard = () => {
         const fetchData = async () => {
             try {
                 // Fetch User Name (from token or profile endpoint if available)
-                // For now assuming token has payload or default 'Pelanggan'
-                const storedName = localStorage.getItem('username'); // Or decode JWT
+                const storedName = localStorage.getItem('username');
                 if (storedName) setUserName(storedName);
 
                 // Fetch Banners
@@ -42,12 +41,42 @@ const CustomerDashboard = () => {
                 // Fetch Categories
                 const catRes = await authFetch(`${import.meta.env.VITE_API_URL}/api/categories`);
                 const catData = await catRes.json();
-                if (catData.data) setCategories(catData.data.slice(0, 5)); // Limit 5 for home
+                if (catData.data) setCategories(catData.data.slice(0, 5));
 
                 // Fetch Recommended Menus (Top 5)
                 const menuRes = await authFetch(`${import.meta.env.VITE_API_URL}/api/menu-items?limit=6`);
                 const menuData = await menuRes.json();
                 if (menuData.data) setMenus(menuData.data);
+
+                // Fetch Orders to count active ones for notification
+                const ordersRes = await authFetch(`${import.meta.env.VITE_API_URL}/api/orders?limit=10`);
+                const ordersData = await ordersRes.json();
+                if (ordersData.message === 'success' && ordersData.data) {
+                    const currentOrders = ordersData.data;
+
+                    // Get seen order states from localStorage
+                    const seenOrderStates = JSON.parse(localStorage.getItem('seenOrderStates') || '{}');
+
+                    // Count orders based on new logic:
+                    // 1. 'pending' always counts (persistent notification)
+                    // 2. 'accepted' or 'rejected' counts only if status changed since last seen
+                    const unreadOrders = currentOrders.filter(order => {
+                        // Persistent for pending
+                        if (order.status === 'pending') return true;
+
+                        // New status notification for accepted/rejected
+                        if (['accepted', 'rejected'].includes(order.status)) {
+                            const lastSeenStatus = seenOrderStates[order.id];
+                            return lastSeenStatus !== order.status;
+                        }
+
+                        return false;
+                    });
+
+                    setOrderNotificationCount(unreadOrders.length);
+                    // Store current orders temporarily to mark as read when clicked
+                    window.currentDashboardOrders = currentOrders;
+                }
             } catch (error) {
                 console.error("Error fetching dashboard data:", error);
             } finally {
@@ -56,11 +85,26 @@ const CustomerDashboard = () => {
         };
 
         fetchData();
+        const pollInterval = setInterval(fetchData, 10000); // Poll every 10s for better responsiveness
 
         return () => {
             window.removeEventListener('scroll', handleScroll);
+            clearInterval(pollInterval);
         };
     }, []);
+
+    const handleStatusClick = () => {
+        // Mark all current orders as seen
+        if (window.currentDashboardOrders) {
+            const seenOrderStates = JSON.parse(localStorage.getItem('seenOrderStates') || '{}');
+            window.currentDashboardOrders.forEach(order => {
+                seenOrderStates[order.id] = order.status;
+            });
+            localStorage.setItem('seenOrderStates', JSON.stringify(seenOrderStates));
+        }
+        setOrderNotificationCount(0);
+        navigate('/customer/order-confirmation');
+    };
 
     const getGreeting = () => {
         const hour = new Date().getHours();
@@ -172,11 +216,16 @@ const CustomerDashboard = () => {
 
                 {/* Status Pesanan Section (The one user liked) */}
                 <div
-                    onClick={() => navigate('/customer/order-confirmation')}
-                    className="flex items-center gap-4 p-5 cursor-pointer active:bg-gray-50 transition-all duration-200 group"
+                    onClick={handleStatusClick}
+                    className="flex items-center gap-4 p-5 cursor-pointer active:bg-gray-50 transition-all duration-200 group relative"
                 >
-                    <div className="p-3 rounded-2xl group-active:scale-90 transition-transform bg-orange-50 text-orange-500">
+                    <div className="p-3 rounded-2xl group-active:scale-90 transition-transform bg-orange-50 text-orange-500 relative">
                         <Icon name="ShoppingBag" className="w-6 h-6" />
+                        {orderNotificationCount > 0 && (
+                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-white animate-bounce-subtle shadow-sm">
+                                {orderNotificationCount}
+                            </span>
+                        )}
                     </div>
                     <div className="flex-1">
                         <span className="block font-extrabold text-gray-800 tracking-tight">Status Pesanan</span>
@@ -272,16 +321,29 @@ const CustomerDashboard = () => {
                                     >
                                         <Icon name="Plus" className="w-4 h-4 text-green-600" />
                                     </button>
+                                    {/* Promo Badge */}
+                                    {menu.discount > 0 && (
+                                        <div className="absolute top-2 left-2 z-10 bg-gradient-to-r from-red-600 to-rose-500 text-white text-[8px] font-black px-2 py-1 rounded-lg shadow-lg flex items-center gap-1 animate-pulse">
+                                            <Icon name="Zap" className="w-2.5 h-2.5 fill-current" />
+                                            <span>PROMO {parseFloat(menu.discount).toFixed(0)}%</span>
+                                        </div>
+                                    )}
                                 </div>
                                 <h4 className="font-bold text-gray-800 text-sm line-clamp-2 mb-1">{menu.name}</h4>
                                 <div className="flex justify-between items-end mt-auto">
                                     <div className="flex flex-col">
-                                        <span className="text-[10px] text-gray-400 line-through">Rp {parseFloat(menu.price * 1.1).toLocaleString()}</span>
-                                        <span className="font-bold text-green-600 text-sm">{formatCurrency(menu.price)}</span>
+                                        {menu.discount > 0 ? (
+                                            <>
+                                                <span className="text-[10px] text-gray-400 line-through leading-none">{formatCurrency(menu.price)}</span>
+                                                <span className="font-bold text-green-600 text-sm leading-none">{formatCurrency(Math.round(menu.price * (1 - menu.discount / 100)))}</span>
+                                            </>
+                                        ) : (
+                                            <span className="font-bold text-green-600 text-sm leading-none">{formatCurrency(menu.price)}</span>
+                                        )}
                                     </div>
                                     <div className="flex items-center gap-1 text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">
                                         <Icon name="Star" className="w-3 h-3 text-yellow-400 fill-current" />
-                                        <span>4.8</span>
+                                        <span>{menu.average_rating ? parseFloat(menu.average_rating).toFixed(1) : '0.0'}</span>
                                     </div>
                                 </div>
                             </div>

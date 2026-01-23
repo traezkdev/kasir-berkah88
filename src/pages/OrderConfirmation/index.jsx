@@ -1,15 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import Icon from '../../components/AppIcon';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import authFetch from '../../utils/authFetch';
 import OrderCard from './components/OrderCard';
+import MobileOrderCard from './components/MobileOrderCard';
 import ConfirmationModal from '../../components/ui/ConfirmationModal';
 import Button from '../../components/ui/Button';
+import AdminMobileHeader from '../../components/ui/AdminMobileHeader';
 import { useOrderNotification } from '../../contexts/OrderNotificationContext';
 
 const OrderConfirmationPage = ({ headerTitle }) => {
+    const navigate = useNavigate();
     const { theme } = useTheme();
     const { fetchPendingCount } = useOrderNotification();
     const [orders, setOrders] = useState([]);
@@ -252,13 +256,24 @@ const OrderConfirmationPage = ({ headerTitle }) => {
         return (
             <div className="space-y-4">
                 {filteredOrders.map(order => (
-                    <OrderCard
-                        key={order.id}
-                        order={order}
-                        onAccept={() => openConfirmationModal(order.id, 'accepted')}
-                        onReject={() => openConfirmationModal(order.id, 'rejected')}
-                        onDelete={() => openConfirmationModal(order.id, 'delete')}
-                    />
+                    <React.Fragment key={order.id}>
+                        <div className="hidden lg:block">
+                            <OrderCard
+                                order={order}
+                                onAccept={() => openConfirmationModal(order.id, 'accepted')}
+                                onReject={() => openConfirmationModal(order.id, 'rejected')}
+                                onDelete={() => openConfirmationModal(order.id, 'delete')}
+                            />
+                        </div>
+                        <div className="lg:hidden">
+                            <MobileOrderCard
+                                order={order}
+                                onAccept={() => openConfirmationModal(order.id, 'accepted')}
+                                onReject={() => openConfirmationModal(order.id, 'rejected')}
+                                onDelete={() => openConfirmationModal(order.id, 'delete')}
+                            />
+                        </div>
+                    </React.Fragment>
                 ))}
             </div>
         );
@@ -266,7 +281,7 @@ const OrderConfirmationPage = ({ headerTitle }) => {
 
     return (
         <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
-            {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} />}
+            {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle} hideMobileHeader={true} />}
 
             {/* Notification Toast */}
             {notification && (
@@ -283,12 +298,56 @@ const OrderConfirmationPage = ({ headerTitle }) => {
                 </div>
             )}
 
-            <div className={`${theme === 'default' ? 'pt-20' : ''}`}>
-                <div className={`container mx-auto ${theme === 'default' ? 'px-4' : ''} lg:px-6 space-y-6 py-4 pb-20`}>
-                    <BreadcrumbNavigation className="mb-4" />
+            <main className={`${theme === 'default' ? 'pt-0 lg:pt-16' : ''} pb-24 lg:pb-8`}>
+                {theme === 'default' && (
+                    <AdminMobileHeader
+                        title="Daftar Pesanan"
+                        subtitle={pendingCount > 0 ? `${pendingCount} Pesanan Baru` : 'Monitoring'}
+                        badgeText="Update Real-time"
+                        stickyTitle={headerTitle || 'Konfirmasi Pesanan'}
+                        decorativeIcon="ShoppingBag"
+                        actions={[
+                            {
+                                label: 'Hapus Riwayat',
+                                icon: 'Trash2',
+                                onClick: () => openConfirmationModal(activeTab, 'delete', true)
+                            }
+                        ]}
+                    />
+                )}
 
-                    {/* Header Section */}
-                    <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl p-6 mb-6 border border-primary/20">
+                <div className={`container mx-auto ${theme === 'default' ? 'px-4' : ''} lg:px-6 space-y-6 py-4 pb-20`}>
+                    <div className="hidden lg:block">
+                        <BreadcrumbNavigation className="mb-4" />
+                    </div>
+
+                    {/* Stats Summary - Mobile Only (Floating Cards) */}
+                    <div className="lg:hidden grid grid-cols-3 gap-3 !-mt-16 relative z-20 mb-2">
+                        <div className="bg-white dark:bg-slate-800 rounded-[1.5rem] p-4 shadow-sm border border-yellow-100/50 dark:border-yellow-900/20 flex flex-col items-center text-center">
+                            <div className="w-10 h-10 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl flex items-center justify-center text-yellow-500 mb-2">
+                                <Icon name="Clock" size={20} />
+                            </div>
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.1em] mb-1">Menunggu</span>
+                            <p className="text-xl font-black text-slate-800 dark:text-white leading-none">{pendingCount}</p>
+                        </div>
+                        <div className="bg-white dark:bg-slate-800 rounded-[1.5rem] p-4 shadow-sm border border-green-100/50 dark:border-green-900/20 flex flex-col items-center text-center">
+                            <div className="w-10 h-10 bg-green-50 dark:bg-green-900/20 rounded-xl flex items-center justify-center text-green-500 mb-2">
+                                <Icon name="CheckCircle" size={20} />
+                            </div>
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.1em] mb-1">Diterima</span>
+                            <p className="text-xl font-black text-slate-800 dark:text-white leading-none">{acceptedCount}</p>
+                        </div>
+                        <div className="bg-white dark:bg-slate-800 rounded-[1.5rem] p-4 shadow-sm border border-red-100/50 dark:border-red-900/20 flex flex-col items-center text-center">
+                            <div className="w-10 h-10 bg-red-50 dark:bg-red-900/20 rounded-xl flex items-center justify-center text-red-500 mb-2">
+                                <Icon name="XCircle" size={20} />
+                            </div>
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.1em] mb-1">Ditolak</span>
+                            <p className="text-xl font-black text-slate-800 dark:text-white leading-none">{rejectedCount}</p>
+                        </div>
+                    </div>
+
+                    {/* Header Section - Desktop Only */}
+                    <div className="hidden lg:block bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl p-6 mb-6 border border-primary/20">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center">
                                 <Icon name="ShoppingBag" size={24} className="text-primary" />
@@ -325,8 +384,40 @@ const OrderConfirmationPage = ({ headerTitle }) => {
                         </div>
                     </div>
 
-                    {/* Main Content Card */}
-                    <div className="bg-card rounded-xl shadow-lg border border-border overflow-hidden">
+                    {/* Main Content Area - Tabs & List */}
+                    <div className="lg:hidden mt-4">
+                        <div className="bg-white dark:bg-slate-800 p-2 rounded-[2rem] border border-gray-100 dark:border-slate-700 shadow-sm flex gap-2 mb-6 overflow-x-auto hide-scrollbar sticky top-4 z-30">
+                            {[
+                                { id: 'pending', label: 'Baru', icon: 'Clock', color: 'blue', count: pendingCount },
+                                { id: 'accepted', label: 'Diterima', icon: 'CheckCircle', color: 'green', count: acceptedCount },
+                                { id: 'rejected', label: 'Ditolak', icon: 'XCircle', color: 'red', count: rejectedCount }
+                            ].map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex items-center gap-3 px-6 py-3.5 rounded-[1.5rem] font-black transition-all whitespace-nowrap active:scale-95 ${activeTab === tab.id
+                                            ? 'bg-blue-600 text-white shadow-xl shadow-blue-100 dark:shadow-none'
+                                            : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700/50'
+                                        }`}
+                                >
+                                    <Icon
+                                        name={tab.icon}
+                                        size={18}
+                                        className={activeTab === tab.id ? 'text-white' : `text-${tab.color}-600`}
+                                    />
+                                    <span className="text-xs uppercase tracking-wider">{tab.label}</span>
+                                    {tab.count > 0 && (
+                                        <span className={`${activeTab === tab.id ? 'bg-white/20' : 'bg-gray-100 dark:bg-slate-700'} px-2 py-0.5 rounded-full text-[10px]`}>
+                                            {tab.count}
+                                        </span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Desktop Content Card */}
+                    <div className="hidden lg:block bg-card rounded-xl shadow-lg border border-border overflow-hidden">
                         {/* Tab Navigation */}
                         <div className="border-b border-border bg-muted/30 overflow-x-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
                             <nav className="flex min-w-max sm:min-w-0">
@@ -409,10 +500,26 @@ const OrderConfirmationPage = ({ headerTitle }) => {
                             </div>
                         )}
 
-                        {/* Content Area */}
+                        {/* Desktop Content Area */}
                         <div className="p-6">
                             {renderContent()}
                         </div>
+                    </div>
+
+                    {/* Mobile Content Area */}
+                    <div className="lg:hidden">
+                        {filteredOrders.length > 0 && activeTab !== 'pending' && (
+                            <div className="mb-4">
+                                <button
+                                    onClick={() => openConfirmationModal(activeTab, 'delete', true)}
+                                    className="w-full py-3 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 border border-red-100 dark:border-red-900/20 active:scale-95 transition-all"
+                                >
+                                    <Icon name="Trash2" size={14} />
+                                    Hapus Semua Riwayat {activeTab === 'accepted' ? 'Diterima' : 'Ditolak'}
+                                </button>
+                            </div>
+                        )}
+                        {renderContent()}
                     </div>
 
                     {/* Confirmation Modal */}
@@ -425,7 +532,7 @@ const OrderConfirmationPage = ({ headerTitle }) => {
                         isDestructive={modalState.isDestructive}
                     />
                 </div>
-            </div>
+            </main>
         </div>
     );
 };

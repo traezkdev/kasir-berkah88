@@ -366,21 +366,23 @@ const LapakDeposit = ({ headerTitle }) => {
                     {/* Filter Section */}
                     <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm mb-8 overflow-hidden border border-gray-100 dark:border-slate-800 transition-all duration-300">
                         <div
-                            className="p-5 flex flex-row items-center justify-between cursor-pointer bg-[#118eea] hover:bg-[#0d70ba] transition-all relative overflow-hidden group"
+                            className="p-5 flex flex-row items-center justify-between cursor-pointer bg-[#118eea] lg:bg-white lg:dark:bg-slate-900 border-b border-gray-50 dark:border-slate-800 hover:bg-[#0d70ba] lg:hover:bg-gray-50 lg:dark:hover:bg-slate-800 transition-all relative overflow-hidden group"
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
                         >
-                            {/* Simple Decorative Light */}
-                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all"></div>
+                            {/* Simple Decorative Light - Hidden on Desktop */}
+                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all lg:hidden"></div>
 
                             <div className="flex items-center gap-3 relative z-10">
-                                <div className={`p-2 rounded-xl transition-colors ${isFilterOpen ? 'bg-white/20 text-white' : 'bg-black/10 text-white/80'}`}>
+                                <div className={`p-2 rounded-xl transition-colors ${isFilterOpen
+                                    ? 'bg-white/20 lg:bg-blue-50 lg:dark:bg-blue-900/20 text-white lg:text-blue-600'
+                                    : 'bg-black/10 lg:bg-gray-100 lg:dark:bg-slate-800 text-white/80 lg:text-gray-400'}`}>
                                     <Icon name="Filter" className="h-5 w-5" />
                                 </div>
                                 <div>
-                                    <h2 className="text-sm lg:text-base font-black text-white uppercase tracking-tight">
+                                    <h2 className="text-sm lg:text-base font-black text-white lg:text-gray-800 lg:dark:text-white uppercase tracking-tight">
                                         Filter Transaksi
                                     </h2>
-                                    <p className="text-[10px] font-bold text-white/70 uppercase tracking-widest leading-none mt-1">
+                                    <p className="text-[10px] font-bold text-white/70 lg:text-gray-400 uppercase tracking-widest leading-none mt-1">
                                         {isFilterOpen ? 'Klik untuk menutup' : 'Cari berdasarkan tipe & tanggal'}
                                     </p>
                                 </div>
@@ -393,13 +395,13 @@ const LapakDeposit = ({ headerTitle }) => {
                                         e.stopPropagation();
                                         handleResetFilters();
                                     }}
-                                    className="h-8 px-3 rounded-lg bg-white/10 text-white hover:bg-white/20 font-black text-[10px] uppercase tracking-widest transition-all border border-white/10"
+                                    className="h-8 px-3 rounded-lg bg-white/10 lg:bg-gray-100 lg:dark:bg-slate-800 text-white lg:text-gray-600 lg:dark:text-gray-400 hover:bg-white/20 lg:hover:bg-gray-200 lg:dark:hover:bg-slate-700 font-black text-[10px] uppercase tracking-widest transition-all border border-white/10 lg:border-gray-200 lg:dark:border-slate-700"
                                 >
                                     Reset
                                 </Button>
                                 <Icon
                                     name={isFilterOpen ? "ChevronUp" : "ChevronDown"}
-                                    className={`h-5 w-5 text-white/50 transition-transform duration-500 ${isFilterOpen ? 'rotate-180 text-white' : ''}`}
+                                    className={`h-5 w-5 transition-transform duration-500 ${isFilterOpen ? 'rotate-180 text-white lg:text-blue-500' : 'text-white/50 lg:text-gray-400'}`}
                                 />
                             </div>
                         </div>

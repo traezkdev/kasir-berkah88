@@ -74,8 +74,13 @@ const MenuItemsTable = ({
               onError={(e) => { e.target.onerror = null; e.target.src = '/assets/images/no_image.png' }}
             />
             {!!item?.is_featured && (
-              <div className="absolute -top-2 -right-2 w-8 h-8 bg-amber-400 rounded-lg flex items-center justify-center border-4 border-white dark:border-slate-800 shadow-md">
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-amber-400 rounded-lg flex items-center justify-center border-4 border-white dark:border-slate-800 shadow-md z-10">
                 <Icon name="Star" size={12} className="text-white fill-current" />
+              </div>
+            )}
+            {item?.discount > 0 && (
+              <div className="absolute -top-2 -left-2 bg-rose-500 text-white text-[9px] font-black px-1.5 py-1 rounded-lg shadow-md border-2 border-white dark:border-slate-800 z-10 animate-bounce">
+                {parseFloat(item.discount).toFixed(0)}% OFF
               </div>
             )}
           </div>
@@ -200,6 +205,7 @@ const MenuItemsTable = ({
               <th className="text-left p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Harga</th>
               <th className="text-left p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Diskon</th>
               <th className="text-left py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Unggulan</th>
+              <th className="text-left p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Rating</th>
               <th className="text-left p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
               <th className="text-left p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Update</th>
               <th className="text-center p-4 w-40 text-[10px] font-black text-gray-400 uppercase tracking-widest">Aksi</th>
@@ -261,7 +267,7 @@ const MenuItemsTable = ({
                   <td className="p-4">
                     {item?.discount > 0 ? (
                       <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
-                        {(item?.discount * 100).toFixed(0)}%
+                        {parseFloat(item?.discount).toFixed(0)}%
                       </span>
                     ) : (
                       <span className="text-gray-300">-</span>
@@ -273,6 +279,19 @@ const MenuItemsTable = ({
                         <Icon name="Star" size={16} className="text-amber-500 fill-current" />
                       </div>
                     ) : '-'}
+                  </td>
+                  <td className="p-4">
+                    {item?.total_reviews > 0 ? (
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-0.5 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-lg border border-amber-100 dark:border-amber-800/30">
+                          <Icon name="Star" size={10} className="text-amber-500 fill-current" />
+                          <span className="text-xs font-black text-amber-700 dark:text-amber-400">{parseFloat(item.average_rating).toFixed(1)}</span>
+                        </div>
+                        <span className="text-[10px] text-gray-400 font-bold">({item.total_reviews})</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-300 dark:text-gray-600 font-bold italic">N/A</span>
+                    )}
                   </td>
                   <td className="p-4">
                     <div className={`inline-flex px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${stockStatus?.color} ${stockStatus?.bg}`}>

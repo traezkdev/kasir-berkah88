@@ -635,7 +635,9 @@ app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'g
                         WHERE mio.menu_item_id = mi.id
                     ),
                     '[]'
-                ) AS options
+                ) AS options,
+                (SELECT COALESCE(AVG(rating), 0) FROM menu_reviews WHERE menu_item_id = mi.id) as average_rating,
+                (SELECT COUNT(*) FROM menu_reviews WHERE menu_item_id = mi.id) as total_reviews
             FROM menu_items mi
             ${whereClause}
             ORDER BY mi.order_index ASC 
@@ -685,7 +687,9 @@ app.get("/api/menu-items/all", authenticateToken, authorizeRoles('user', 'admin'
                         WHERE mio.menu_item_id = mi.id
                     ),
                     '[]'
-                ) AS options
+                ) AS options,
+                (SELECT COALESCE(AVG(rating), 0) FROM menu_reviews WHERE menu_item_id = mi.id) as average_rating,
+                (SELECT COUNT(*) FROM menu_reviews WHERE menu_item_id = mi.id) as total_reviews
             FROM menu_items mi
             ORDER BY mi.order_index ASC;
         `;
@@ -725,7 +729,9 @@ app.get("/api/public/menu-items", async (req, res) => {
                         WHERE mio.menu_item_id = mi.id
                     ),
                     '[]'
-                ) AS options
+                ) AS options,
+                (SELECT COALESCE(AVG(rating), 0) FROM menu_reviews WHERE menu_item_id = mi.id) as average_rating,
+                (SELECT COUNT(*) FROM menu_reviews WHERE menu_item_id = mi.id) as total_reviews
             FROM menu_items mi
             ORDER BY mi.order_index ASC;
         `;
@@ -942,6 +948,52 @@ app.delete("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'adm
         res.status(400).json({ "error": err.message });
     }
 });
+
+// --- Menu Reviews Endpoints ---
+app.post("/api/menu-reviews", authenticateToken, authorizeRoles('pelanggan', 'user', 'admin'), async (req, res) => {
+    try {
+        const { menu_item_id, order_id, rating, comment } = req.body;
+        const user_id = req.user.userId;
+
+        if (!menu_item_id || !rating) {
+            return res.status(400).json({ error: "menu_item_id and rating are required" });
+        }
+
+        const sql = `
+            INSERT INTO menu_reviews (menu_item_id, user_id, order_id, rating, comment)
+            VALUES (?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE rating = VALUES(rating), comment = VALUES(comment)
+        `;
+
+        await db.query(sql, [menu_item_id, user_id, order_id || null, rating, comment || null]);
+
+        await logActivity(user_id, 'Beri Ulasan', 'menu_item', menu_item_id, `Rating ${rating} untuk menu ${menu_item_id}`);
+
+        res.status(201).json({ message: "success", data: { menu_item_id, rating, comment } });
+    } catch (err) {
+        console.error("Error submitting review:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get reviews for a specific menu item
+app.get("/api/menu-reviews/:menu_item_id", async (req, res) => {
+    try {
+        const { menu_item_id } = req.params;
+        const sql = `
+            SELECT r.*, u.username 
+            FROM menu_reviews r
+            JOIN users u ON r.user_id = u.id
+            WHERE r.menu_item_id = ?
+            ORDER BY r.created_at DESC
+        `;
+        const [rows] = await db.query(sql, [menu_item_id]);
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 
 // --- Categories Endpoints ---
 app.get("/api/categories", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'pelanggan', 'penjual'), async (req, res) => {
