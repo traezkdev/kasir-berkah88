@@ -3,13 +3,13 @@ import Icon from '../../../components/AppIcon';
 
 const MetricsCard = ({ title, value, icon, color = 'primary', trend = null, description = null }) => {
   const desktopGradients = {
-    primary: 'lg:bg-gradient-to-br lg:from-indigo-500 lg:to-purple-600',
+    primary: 'lg:bg-[#1187DE]',
     success: 'lg:bg-gradient-to-br lg:from-emerald-500 lg:to-teal-600',
     warning: 'lg:bg-gradient-to-br lg:from-orange-500 lg:to-amber-600',
     accent: 'lg:bg-gradient-to-br lg:from-pink-500 lg:to-rose-600',
-    info: 'lg:bg-gradient-to-br lg:from-blue-500 lg:to-sky-600',
+    info: 'lg:bg-[#1187DE]',
     destructive: 'lg:bg-gradient-to-br lg:from-red-500 lg:to-rose-700',
-    white: 'lg:bg-gradient-to-br lg:from-slate-400 lg:to-slate-600',
+    white: 'lg:bg-[#1187DE]',
   };
 
   const mobileIconColors = {

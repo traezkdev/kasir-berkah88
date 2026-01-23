@@ -172,6 +172,7 @@ const ExpenseEntryForm = ({ onAddExpense, isLoading, userRole, isInsideModal = f
             <label className="block text-[11px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">Jumlah (Rp)</label>
             <input
               type="text"
+              inputMode="numeric"
               placeholder="0"
               value={formData.amount}
               onChange={handleAmountChange}
