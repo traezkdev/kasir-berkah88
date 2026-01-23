@@ -18,14 +18,14 @@ const CustomerDashboard = () => {
 
     useEffect(() => {
         const handleScroll = () => {
-            if (window.scrollY > 150) {
-                setScrolled(true);
-            } else {
-                setScrolled(false);
-            }
+            const isScrolled = window.scrollY > 150;
+            setScrolled(prev => {
+                if (prev !== isScrolled) return isScrolled;
+                return prev;
+            });
         };
 
-        window.addEventListener('scroll', handleScroll);
+        window.addEventListener('scroll', handleScroll, { passive: true });
 
         const fetchData = async () => {
             try {
