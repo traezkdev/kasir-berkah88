@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { useChat } from '../../../contexts/ChatContext';
 
 const OrderCard = ({ order, onAccept, onReject, onDelete }) => {
+  const navigate = useNavigate();
+  const { setActiveChat, setActiveOrder } = useChat();
   const [showDetails, setShowDetails] = useState(false);
 
   const formatCurrency = (amount) => {
@@ -83,19 +87,36 @@ const OrderCard = ({ order, onAccept, onReject, onDelete }) => {
           <span>{formatCurrency(order.total)}</span>
         </div>
       </div>
-      <div className="p-4 bg-background border-t border-border flex justify-end space-x-3">
+      <div className="p-4 bg-background border-t border-border flex flex-wrap justify-center sm:justify-end gap-2 sm:gap-3">
+        {order.user_id && (
+          <Button
+            variant="outline"
+            onClick={() => {
+              setActiveChat({
+                user_id: order.user_id,
+                username: order.customer_name,
+                role: 'pelanggan'
+              });
+              setActiveOrder(order);
+              navigate('/admin/chat');
+            }}
+            className="flex-1 sm:flex-none border-primary text-primary hover:bg-primary/10 min-w-[80px]"
+          >
+            <Icon name="MessageCircle" className="mr-2" /> Chat
+          </Button>
+        )}
         {order.status === 'pending' && (
           <>
-            <Button variant="destructive" onClick={onReject}>
+            <Button variant="destructive" onClick={onReject} className="flex-1 sm:flex-none min-w-[80px]">
               <Icon name="X" className="mr-2" /> Tolak
             </Button>
-            <Button variant="success" onClick={onAccept}>
+            <Button variant="success" onClick={onAccept} className="flex-1 sm:flex-none min-w-[80px]">
               <Icon name="Check" className="mr-2" /> Terima
             </Button>
           </>
         )}
         {(order.status === 'rejected' || order.status === 'accepted') && (
-          <Button variant="outline" onClick={onDelete}>
+          <Button variant="outline" onClick={onDelete} className="flex-1 sm:flex-none min-w-[80px]">
             <Icon name="Trash2" className="mr-2" /> Hapus
           </Button>
         )}
