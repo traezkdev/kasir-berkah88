@@ -222,8 +222,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
 
   // Calculate subtotal based on original prices (basePrice + options) for all items
   const subtotalBeforeAllDiscounts = transaction.items.reduce((sum, item) => {
-    const originalBasePrice = Number(item.basePrice || item.price) || 0; // Use item.basePrice or item.price for original
-    // Ensure item.options is an array before reducing
+    const originalBasePrice = Number(item.basePrice || item.price) || 0;
     const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
     const pricePerUnitBeforeDiscount = originalBasePrice + optionAdjustment;
     return sum + (pricePerUnitBeforeDiscount * (Number(item.quantity) || 0));
@@ -231,10 +230,9 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
 
   // Subtotal after item-level discounts, before manual discount and PPN
   const subtotalAfterItemDiscounts = transaction.items.reduce((sum, item) => {
-    // item.price is already finalPrice for SalesTransactionProcessing, or basePrice for CashierDashboard
-    const priceAfterItemDiscountAndOptions = Number(item.price) || 0;
-    // If item.discount is present, it means item.price was likely basePrice and discount needs to be applied
-    const effectivePricePerUnit = item.discount ? priceAfterItemDiscountAndOptions * (1 - item.discount) : priceAfterItemDiscountAndOptions;
+    const pricePerUnit = Number(item.price) || 0;
+    const itemDiscount = Number(item.discount) || 0;
+    const effectivePricePerUnit = item.basePrice ? pricePerUnit : (itemDiscount > 0 ? pricePerUnit * (1 - itemDiscount) : pricePerUnit);
     const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
     return sum + ((effectivePricePerUnit + optionAdjustment) * (Number(item.quantity) || 0));
   }, 0);

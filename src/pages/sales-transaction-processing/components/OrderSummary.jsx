@@ -48,7 +48,7 @@ const OrderSummary = ({
     }
     setCashPaid(currentCashPaid); // Update cashPaid state
 
-    if (paymentMethod === 'cash' && currentCashPaid && customTotal) {
+    if (paymentMethod === 'tunai' && currentCashPaid && customTotal) {
       const calculatedDifference = currentCashPaid - customTotal;
       if (calculatedDifference >= 0) {
         setChange(calculatedDifference);

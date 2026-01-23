@@ -37,7 +37,7 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl, i
         )}
         {item.discount > 0 && (
           <span className="absolute top-3 right-3 bg-red-500 text-white text-[10px] font-black px-2 py-1 rounded-lg z-10 shadow-lg animate-pulse">
-            -{item.discount * 100}%
+            {Math.round(item.discount)}%
           </span>
         )}
       </div>
@@ -50,7 +50,7 @@ const ProductCard = ({ item, onIncrement, onDecrement, cart, userRole, apiUrl, i
                 Rp {item.price?.toLocaleString('id-ID')}
               </span>
               <span className="text-sm font-black text-red-600">
-                Rp {(item.price * (1 - item.discount)).toLocaleString('id-ID')}
+                Rp {(item.price * (1 - item.discount / 100)).toLocaleString('id-ID')}
               </span>
             </div>
           ) : (
