@@ -700,53 +700,69 @@ const OwnerDashboard = ({ headerTitle }) => {
                             ))}
                         </div>
                     </div>
-                    <div className="mt-8 pb-16 lg:pb-8">
-                        <h2 className="text-xl font-semibold text-text-primary mb-4">
-                            Status Sinkronisasi Data
-                        </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="bg-card border border-border rounded-lg p-4 text-center">
-                                <div className="flex items-center justify-center gap-2 mb-2">
-                                    <div className="p-2 bg-primary/10 rounded-md">
-                                        <Icon name="BookUser" size={20} className="text-primary" />
-                                    </div>
-                                    <h3 className="font-semibold text-text-primary">Stok Menu</h3>
-                                </div>
-                                <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
-                                <p className="text-sm font-medium text-text-primary">
-                                    {dashboardData.timestamps?.menuStock
-                                        ? new Date(dashboardData.timestamps.menuStock).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                                        : 'Belum pernah'}
-                                </p>
+                    <div className="mt-12 pb-16 lg:pb-8">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800/50">
+                                <Icon name="RefreshCw" className="text-indigo-600 dark:text-indigo-400" size={20} />
                             </div>
-                            <div className="bg-card border border-border rounded-lg p-4 text-center">
-                                <div className="flex items-center justify-center gap-2 mb-2">
-                                    <div className="p-2 bg-success/10 rounded-md">
-                                        <Icon name="Package" size={20} className="text-success" />
+                            <h2 className="text-xl font-black text-text-primary uppercase tracking-tight">
+                                Sinkronisasi Data
+                            </h2>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {/* Menu Stock Sync */}
+                            <div className="bg-white dark:bg-slate-800 border border-gray-100/50 dark:border-slate-700 rounded-3xl p-6 text-center shadow-xl shadow-gray-200/50 dark:shadow-none relative overflow-hidden group">
+                                <div className="relative z-10">
+                                    <div className="w-14 h-14 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-100 dark:border-blue-800/30 transition-transform group-hover:scale-110">
+                                        <Icon name="BookUser" size={24} className="text-blue-600 dark:text-blue-400" />
                                     </div>
-                                    <h3 className="font-semibold text-text-primary">Bahan Baku</h3>
+                                    <h3 className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-1">Stok Menu</h3>
+                                    <p className="text-[10px] font-bold text-gray-300 dark:text-slate-600 uppercase tracking-widest mb-3">Terakhir diperbarui</p>
+                                    <div className="px-4 py-2 bg-gray-50 dark:bg-slate-900/50 rounded-xl inline-block border border-gray-100 dark:border-slate-700">
+                                        <p className="text-xs font-black text-gray-700 dark:text-gray-200">
+                                            {dashboardData.timestamps?.menuStock
+                                                ? new Date(dashboardData.timestamps.menuStock).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+                                                : 'Belum pernah'}
+                                        </p>
+                                    </div>
                                 </div>
-                                <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
-                                <p className="text-sm font-medium text-text-primary">
-                                    {dashboardData.timestamps?.rawMaterials
-                                        ? new Date(dashboardData.timestamps.rawMaterials).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                                        : 'Belum pernah'}
-                                </p>
                             </div>
 
-                            <div className="bg-card border border-border rounded-lg p-4 text-center">
-                                <div className="flex items-center justify-center gap-2 mb-2">
-                                    <div className="p-2 bg-accent/10 rounded-md">
-                                        <Icon name="Wallet" size={20} className="text-accent" />
+                            {/* Raw Materials Sync */}
+                            <div className="bg-white dark:bg-slate-800 border border-gray-100/50 dark:border-slate-700 rounded-3xl p-6 text-center shadow-xl shadow-gray-200/50 dark:shadow-none relative overflow-hidden group">
+                                <div className="relative z-10">
+                                    <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-emerald-100 dark:border-emerald-800/30 transition-transform group-hover:scale-110">
+                                        <Icon name="Package" size={24} className="text-emerald-600 dark:text-emerald-400" />
                                     </div>
-                                    <h3 className="font-semibold text-text-primary">Uang Lapak</h3>
+                                    <h3 className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-1">Bahan Baku</h3>
+                                    <p className="text-[10px] font-bold text-gray-300 dark:text-slate-600 uppercase tracking-widest mb-3">Terakhir diperbarui</p>
+                                    <div className="px-4 py-2 bg-gray-50 dark:bg-slate-900/50 rounded-xl inline-block border border-gray-100 dark:border-slate-700">
+                                        <p className="text-xs font-black text-gray-700 dark:text-gray-200">
+                                            {dashboardData.timestamps?.rawMaterials
+                                                ? new Date(dashboardData.timestamps.rawMaterials).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+                                                : 'Belum pernah'}
+                                        </p>
+                                    </div>
                                 </div>
-                                <p className="text-xs text-text-secondary">Terakhir diperbarui:</p>
-                                <p className="text-sm font-medium text-text-primary">
-                                    {dashboardData.timestamps?.lapakFunds
-                                        ? new Date(dashboardData.timestamps.lapakFunds).toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                                        : 'Belum pernah'}
-                                </p>
+                            </div>
+
+                            {/* lapak Funds Sync */}
+                            <div className="bg-white dark:bg-slate-800 border border-gray-100/50 dark:border-slate-700 rounded-3xl p-6 text-center shadow-xl shadow-gray-200/50 dark:shadow-none relative overflow-hidden group">
+                                <div className="relative z-10">
+                                    <div className="w-14 h-14 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-100 dark:border-amber-800/30 transition-transform group-hover:scale-110">
+                                        <Icon name="Wallet" size={24} className="text-amber-600 dark:text-amber-400" />
+                                    </div>
+                                    <h3 className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-1">Uang Lapak</h3>
+                                    <p className="text-[10px] font-bold text-gray-300 dark:text-slate-600 uppercase tracking-widest mb-3">Terakhir diperbarui</p>
+                                    <div className="px-4 py-2 bg-gray-50 dark:bg-slate-900/50 rounded-xl inline-block border border-gray-100 dark:border-slate-700">
+                                        <p className="text-xs font-black text-gray-700 dark:text-gray-200">
+                                            {dashboardData.timestamps?.lapakFunds
+                                                ? new Date(dashboardData.timestamps.lapakFunds).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+                                                : 'Belum pernah'}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

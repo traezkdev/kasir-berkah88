@@ -266,7 +266,7 @@ const AllLogs = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${log.action?.includes('Hapus') || log.action?.includes('RESET')
+                                                <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider leading-normal ${log.action?.includes('Hapus') || log.action?.includes('RESET')
                                                     ? 'bg-destructive/10 text-destructive'
                                                     : log.action?.includes('Tambah') || log.action?.includes('Membuat') || log.action?.includes('Masuk')
                                                         ? 'bg-green-100 text-green-600'

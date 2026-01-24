@@ -670,7 +670,7 @@ const AnalisisData = () => {
                                                             </div>
                                                         </td>
                                                         <td className="px-4 py-4 border-y border-transparent group-hover/row:border-rose-100 dark:group-hover/row:border-rose-900/30">
-                                                            <span className="px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-slate-700 shadow-sm">
+                                                            <span className="inline-block px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-slate-700 shadow-sm leading-normal">
                                                                 {exp.category || 'Umum'}
                                                             </span>
                                                         </td>
