@@ -12,6 +12,7 @@ import CombinedAnalyticsSection from './CombinedAnalyticsSection';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Icon from '../../../components/AppIcon';
+import CardTemplate2 from '../../../components/ui/CardTemplate2';
 import authFetch from '../../../utils/authFetch';
 import { formatInTimeZone } from 'date-fns-tz';
 import { exportToExcel, exportToPdf, prepareCombinedDataForExport } from '../../../utils/exportUtils';
@@ -455,89 +456,44 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
                             </div>
                         </div>
 
-                        {/* Summary Cards */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                            {/* Total Transaksi */}
-                            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-                                <div className="flex flex-col h-full">
-                                    <p className="text-blue-100 text-xs font-medium uppercase tracking-wider mb-3">Total Transaksi</p>
-                                    <div className="flex items-center justify-center flex-grow my-2">
-                                        <h3 className="text-4xl font-bold">{reportData?.sales?.totalTransactions || 0}</h3>
-                                    </div>
-                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/20">
-                                        <div className="flex items-center gap-2 text-blue-100 text-sm">
-                                            <Icon name="TrendingUp" className="w-4 h-4" />
-                                            <span>Periode ini</span>
-                                        </div>
-                                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                                            <Icon name="ShoppingCart" className="w-5 h-5" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Total Pendapatan */}
-                            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-                                <div className="flex flex-col h-full">
-                                    <p className="text-emerald-100 text-xs font-medium uppercase tracking-wider mb-3">Total Pendapatan</p>
-                                    <div className="flex items-center justify-center flex-grow my-2">
-                                        <h3 className="text-3xl font-bold text-center">
-                                            Rp {(reportData?.sales?.totalRevenue || 0).toLocaleString()}
-                                        </h3>
-                                    </div>
-                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/20">
-                                        <div className="flex items-center gap-2 text-emerald-100 text-sm">
-                                            <Icon name="ArrowUpRight" className="w-4 h-4" />
-                                            <span>Dari penjualan</span>
-                                        </div>
-                                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                                            <Icon name="DollarSign" className="w-5 h-5" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Total Pengeluaran */}
-                            <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-                                <div className="flex flex-col h-full">
-                                    <p className="text-orange-100 text-xs font-medium uppercase tracking-wider mb-3">Total Pengeluaran</p>
-                                    <div className="flex items-center justify-center flex-grow my-2">
-                                        <h3 className="text-3xl font-bold text-center">
-                                            Rp {(reportData?.expenses?.summary?.totalExpenses || 0).toLocaleString()}
-                                        </h3>
-                                    </div>
-                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/20">
-                                        <div className="flex items-center gap-2 text-orange-100 text-sm">
-                                            <Icon name="ArrowDownRight" className="w-4 h-4" />
-                                            <span>Operasional</span>
-                                        </div>
-                                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                                            <Icon name="Receipt" className="w-5 h-5" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Laba Bersih */}
-                            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-                                <div className="flex flex-col h-full">
-                                    <p className="text-purple-100 text-xs font-medium uppercase tracking-wider mb-3">Laba Bersih</p>
-                                    <div className="flex items-center justify-center flex-grow my-2">
-                                        <h3 className="text-3xl font-bold text-center">
-                                            Rp {((reportData?.sales?.totalRevenue || 0) - (reportData?.expenses?.summary?.totalExpenses || 0)).toLocaleString()}
-                                        </h3>
-                                    </div>
-                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/20">
-                                        <div className="flex items-center gap-2 text-purple-100 text-sm">
-                                            <Icon name="TrendingUp" className="w-4 h-4" />
-                                            <span>Pendapatan - Pengeluaran</span>
-                                        </div>
-                                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                                            <Icon name="Wallet" className="w-5 h-5" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        {/* Summary Cards (Using Premium Template 2) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            <CardTemplate2
+                                title="Total Transaksi"
+                                value={reportData?.sales?.totalTransactions || 0}
+                                icon="ShoppingCart"
+                                description="Total pesanan periode ini"
+                                color="primary"
+                                badgeText="TRX"
+                                trend={{ type: 'neutral', value: 'Periode Ini' }}
+                            />
+                            <CardTemplate2
+                                title="Total Pendapatan"
+                                value={`Rp ${(reportData?.sales?.totalRevenue || 0).toLocaleString()}`}
+                                icon="DollarSign"
+                                description="Total bruto penjualan"
+                                color="success"
+                                badgeText="REV"
+                                trend={{ type: 'up', value: 'Sales' }}
+                            />
+                            <CardTemplate2
+                                title="Total Pengeluaran"
+                                value={`Rp ${(reportData?.expenses?.summary?.totalExpenses || 0).toLocaleString()}`}
+                                icon="Receipt"
+                                description="Biaya operasional & stok"
+                                color="warning"
+                                badgeText="EXP"
+                                trend={{ type: 'down', value: 'Cost' }}
+                            />
+                            <CardTemplate2
+                                title="Laba Bersih"
+                                value={`Rp ${((reportData?.sales?.totalRevenue || 0) - (reportData?.expenses?.summary?.totalExpenses || 0)).toLocaleString()}`}
+                                icon="Wallet"
+                                description="Pendapatan bersih (Nett)"
+                                color="info"
+                                badgeText="PFT"
+                                trend={{ type: 'up', value: 'Profit' }}
+                            />
                         </div>
 
                         {/* Charts Grid */}
