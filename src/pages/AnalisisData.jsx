@@ -24,6 +24,7 @@ import {
 import { Loader2, TrendingUp, TrendingDown, DollarSign, ShoppingBag, CreditCard, FileDown } from 'lucide-react';
 import { exportToExcel, exportToPdf } from '../utils/exportUtils';
 import OwnerNavigationHeader from '../components/ui/OwnerNavigationHeader';
+import AdminMobileHeader from '../components/ui/AdminMobileHeader';
 import { jwtDecode } from 'jwt-decode';
 
 // Setup axios instance
@@ -278,110 +279,159 @@ const AnalisisData = () => {
         <div className={`min-h-screen text-foreground ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
 
             {theme === 'default' && (
-                userRole === 'owner' ? (
-                    <OwnerNavigationHeader
-                        onToggleSidebar={toggleSidebar}
-                        headerTitle="Analisis Bisnis"
+                <>
+                    <div className="hidden lg:block">
+                        {userRole === 'owner' ? (
+                            <OwnerNavigationHeader
+                                onToggleSidebar={toggleSidebar}
+                                headerTitle="Analisis Bisnis"
+                            />
+                        ) : (
+                            <NavigationHeader
+                                isCollapsed={isSidebarCollapsed}
+                                onToggleSidebar={toggleSidebar}
+                                headerTitle="Analisis Bisnis"
+                            />
+                        )}
+                    </div>
+                    <AdminMobileHeader
+                        title="Analisis"
+                        subtitle="Bisnis"
+                        badgeText="Data Breakdown"
+                        decorativeIcon="BarChart3"
+                        stickyTitle="Analisis Bisnis"
+                        actions={[
+                            {
+                                label: "Terapkan",
+                                icon: "RefreshCw",
+                                color: "success",
+                                onClick: fetchData
+                            },
+                            {
+                                label: "Export PDF",
+                                icon: "FileText",
+                                color: "danger",
+                                onClick: handleExportPDF
+                            }
+                        ]}
                     />
-                ) : (
-                    <NavigationHeader
-                        isCollapsed={isSidebarCollapsed}
-                        onToggleSidebar={toggleSidebar}
-                        headerTitle="Analisis Bisnis"
-                    />
-                )
+                </>
             )}
 
-            <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>
+            <main className={`${theme === 'default' ? 'lg:pt-16' : ''} pb-24 lg:pb-8`}>
                 <div className="p-4 md:p-6 space-y-8 max-w-[1600px] mx-auto w-full">
 
-                    {/* --- Filter Section --- */}
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-end bg-card p-4 rounded-xl shadow-sm border border-border gap-4 md:gap-0">
-                        <div className="w-full md:w-auto">
-                            <h2 className="text-xl font-bold mb-1">Periode Analisis</h2>
-                            <p className="text-sm text-muted-foreground">Pilih rentang tanggal untuk melihat breakdown data.</p>
-                        </div>
-                        <div className="flex flex-col md:flex-row items-stretch md:items-end gap-3 w-full md:w-auto">
-                            <div className="grid grid-cols-2 gap-3 w-full md:w-auto md:flex md:items-end md:gap-4">
-                                <div className="flex flex-col">
-                                    <label className="text-xs font-semibold mb-1 text-muted-foreground">Dari Tanggal</label>
-                                    <Input
-                                        type="date"
-                                        value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
-                                        className="w-full md:w-36 text-sm px-2"
-                                    />
-                                </div>
-                                <div className="flex flex-col">
-                                    <label className="text-xs font-semibold mb-1 text-muted-foreground">Sampai Tanggal</label>
-                                    <Input
-                                        type="date"
-                                        value={endDate}
-                                        onChange={(e) => setEndDate(e.target.value)}
-                                        className="w-full md:w-36 text-sm px-2"
-                                    />
-                                </div>
+                    {/* --- Premium Filter Section (Native App Style) --- */}
+                    <div className="lg:mt-0 -mt-10 relative z-20">
+                        <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] p-6 lg:p-8 shadow-2xl shadow-blue-900/10 dark:shadow-none border border-blue-50/50 dark:border-slate-700 relative overflow-hidden group">
+                            {/* Decorative Background Icon */}
+                            <div className="absolute -right-6 -top-6 text-blue-500/5 group-hover:text-blue-500/10 transition-colors duration-500 pointer-events-none">
+                                <Icon name="Calendar" size={120} />
                             </div>
 
-                            <div className="grid grid-cols-2 lg:flex md:items-center gap-2 mt-2 md:mt-0">
-                                <button
-                                    onClick={fetchData}
-                                    className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg font-medium text-sm transition-all h-[38px] flex justify-center items-center"
-                                >
-                                    Terapkan
-                                </button>
-                                <button
-                                    onClick={handleSetAllTime}
-                                    className="bg-secondary hover:bg-secondary/80 text-secondary-foreground px-4 py-2 rounded-lg font-medium text-sm transition-all h-[38px] whitespace-nowrap flex justify-center items-center"
-                                >
-                                    Semua Waktu
-                                </button>
-                            </div>
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-2.5 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-100 dark:border-blue-800/50">
+                                        <Icon name="CalendarRange" className="text-blue-600 dark:text-blue-400" size={20} />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-sm lg:text-base font-black text-gray-900 dark:text-white uppercase tracking-tight">Periode Analisis</h2>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Atur rentang waktu data</p>
+                                    </div>
+                                </div>
 
-                            {/* Export Button with Dropdown */}
-                            {data && (
-                                <div className="relative mt-2 md:mt-auto w-full md:w-auto">
-                                    <button
-                                        onClick={() => setShowExportMenu(!showExportMenu)}
-                                        className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all h-[38px] w-full md:w-auto whitespace-nowrap"
-                                        title="Export Data"
-                                    >
-                                        <FileDown className="w-4 h-4" />
-                                        Export Data
-                                    </button>
-
-                                    {showExportMenu && (
-                                        <>
-                                            <div
-                                                className="fixed inset-0 z-10"
-                                                onClick={() => setShowExportMenu(false)}
-                                            ></div>
-                                            <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-lg shadow-xl z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                                                <button
-                                                    onClick={() => {
-                                                        handleExportExcel();
-                                                        setShowExportMenu(false);
-                                                    }}
-                                                    className="w-full text-left px-4 py-3 text-sm hover:bg-accent hover:text-accent-foreground flex items-center gap-2 transition-colors border-b border-border/50"
-                                                >
-                                                    <span className="text-green-600"><FileDown size={16} /></span>
-                                                    Export Excel
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        handleExportPDF();
-                                                        setShowExportMenu(false);
-                                                    }}
-                                                    className="w-full text-left px-4 py-3 text-sm hover:bg-accent hover:text-accent-foreground flex items-center gap-2 transition-colors"
-                                                >
-                                                    <span className="text-red-600"><FileDown size={16} /></span>
-                                                    Export PDF
-                                                </button>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">Dari Tanggal</label>
+                                        <div className="relative">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                                <Icon name="Calendar" size={16} />
                                             </div>
-                                        </>
-                                    )}
+                                            <Input
+                                                type="date"
+                                                value={startDate}
+                                                onChange={(e) => setStartDate(e.target.value)}
+                                                className="w-full pl-11 h-12 rounded-2xl bg-gray-50/50 dark:bg-slate-900/50 border-gray-100 dark:border-slate-700 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-bold text-sm"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">Sampai Tanggal</label>
+                                        <div className="relative">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                                <Icon name="Calendar" size={16} />
+                                            </div>
+                                            <Input
+                                                type="date"
+                                                value={endDate}
+                                                onChange={(e) => setEndDate(e.target.value)}
+                                                className="w-full pl-11 h-12 rounded-2xl bg-gray-50/50 dark:bg-slate-900/50 border-gray-100 dark:border-slate-700 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-bold text-sm"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3 lg:col-span-1">
+                                        <button
+                                            onClick={fetchData}
+                                            className="h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
+                                        >
+                                            <Icon name="RefreshCw" size={14} className={loading ? 'animate-spin' : ''} />
+                                            Terapkan
+                                        </button>
+                                        <button
+                                            onClick={handleSetAllTime}
+                                            className="h-12 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-600 dark:text-gray-200 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2"
+                                        >
+                                            <Icon name="History" size={14} />
+                                            Semua
+                                        </button>
+                                    </div>
+
+                                    <div className="relative lg:col-span-1">
+                                        {data && (
+                                            <>
+                                                <button
+                                                    onClick={() => setShowExportMenu(!showExportMenu)}
+                                                    className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+                                                >
+                                                    <Icon name="FileDown" size={14} />
+                                                    Export Data
+                                                </button>
+
+                                                {showExportMenu && (
+                                                    <div className="absolute bottom-full lg:top-full left-0 right-0 mb-3 lg:mt-3 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-3xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 lg:slide-in-from-top-2 duration-300">
+                                                        <button
+                                                            onClick={() => {
+                                                                handleExportExcel();
+                                                                setShowExportMenu(false);
+                                                            }}
+                                                            className="w-full text-left px-5 py-4 text-[11px] font-black uppercase tracking-widest hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-3 transition-colors text-gray-700 dark:text-gray-200 border-b border-gray-50 dark:border-slate-700"
+                                                        >
+                                                            <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg text-emerald-600">
+                                                                <Icon name="FileDown" size={16} />
+                                                            </div>
+                                                            Export ke Excel
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                handleExportPDF();
+                                                                setShowExportMenu(false);
+                                                            }}
+                                                            className="w-full text-left px-5 py-4 text-[11px] font-black uppercase tracking-widest hover:bg-rose-50 dark:hover:bg-rose-900/20 flex items-center gap-3 transition-colors text-gray-700 dark:text-gray-200"
+                                                        >
+                                                            <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg text-rose-600">
+                                                                <Icon name="FileText" size={16} />
+                                                            </div>
+                                                            Export ke PDF
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     </div>
 

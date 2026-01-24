@@ -355,9 +355,21 @@ const AdminUangBisnis = ({ headerTitle }) => { // Changed component name
                                                                     {transaction.description || 'Tanpa Catatan'}
                                                                 </p>
                                                             </div>
-                                                            <div className="flex items-center gap-2 mt-1">
-                                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                                                    {new Date(transaction.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })} • {transaction.created_by_username}
+                                                            <div className="flex items-center gap-3 mt-2">
+                                                                <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700/50">
+                                                                    <Icon name="Calendar" size={12} className="text-gray-400" />
+                                                                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">
+                                                                        {new Date(transaction.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700/50">
+                                                                    <Icon name="Clock" size={12} className="text-gray-400" />
+                                                                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">
+                                                                        {new Date(transaction.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                                                    </span>
+                                                                </div>
+                                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+                                                                    • {transaction.created_by_username}
                                                                 </span>
                                                             </div>
                                                         </div>

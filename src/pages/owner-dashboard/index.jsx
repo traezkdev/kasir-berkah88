@@ -10,6 +10,7 @@ import Icon from '../../components/AppIcon';
 import StockAlertBanner from '../../components/StockAlertBanner';
 import OwnerMotivationalModal from '../../components/ui/OwnerMotivationalModal';
 import { useDarkMode } from '../../contexts/DarkModeContext';
+import NotificationBell from '../../components/ui/NotificationBell';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -20,6 +21,15 @@ const OwnerDashboard = ({ headerTitle }) => {
     const location = useLocation();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [dashboardData, setDashboardData] = useState(null);
+    const [showStickyHeader, setShowStickyHeader] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setShowStickyHeader(window.scrollY > 80);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     const navigationItems = [
         { label: 'Beranda', path: '/owner-dashboard', icon: 'LayoutDashboard' },
@@ -341,6 +351,26 @@ const OwnerDashboard = ({ headerTitle }) => {
             {theme === 'default' && (
                 <OwnerNavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || 'Dashboard Owner'} hideMobileHeader={true} />
             )}
+
+            {/* Sticky Mobile Header */}
+            <div className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm py-3 ${showStickyHeader ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
+                <div className="px-6 flex items-center justify-between">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="p-2 rounded-2xl transition-all bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200 active:scale-95"
+                    >
+                        <Icon name="ChevronLeft" size={24} />
+                    </button>
+                    <div className="text-center">
+                        <h2 className="font-black text-gray-800 dark:text-white tracking-tight">
+                            Dashboard Owner
+                        </h2>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <NotificationBell size={20} className="bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200" />
+                    </div>
+                </div>
+            </div>
 
             {/* --- MOBILE OWNER DANA-STYLE UI (lg:hidden) --- */}
             <div className="lg:hidden flex flex-col pb-24">
