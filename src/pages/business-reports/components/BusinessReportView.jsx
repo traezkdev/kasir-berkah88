@@ -12,6 +12,8 @@ import CombinedAnalyticsSection from './CombinedAnalyticsSection';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Icon from '../../../components/AppIcon';
+import AdminMobileHeader from '../../../components/ui/AdminMobileHeader';
+import CardTemplate2 from '../../../components/ui/CardTemplate2';
 import authFetch from '../../../utils/authFetch';
 import { formatInTimeZone } from 'date-fns-tz';
 import { exportToExcel, exportToPdf, prepareCombinedDataForExport } from '../../../utils/exportUtils';
@@ -49,6 +51,7 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [userRole, setUserRole] = useState(null);
+    const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -399,362 +402,473 @@ const BusinessReportView = ({ headerTitle, isOwner = false }) => {
     };
 
     return (
-        <div className={theme === 'default' && !isOwner ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
-            {/* Header Section */}
-            <div className="mb-8 lg:mb-6">
-                <div className="mb-4 hidden md:block">
-                    <BreadcrumbNavigation />
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case">
-                            {headerTitle || "Laporan Bisnis"}
-                        </h1>
-                        <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>
-                        <p className="text-xs lg:text-sm text-text-secondary mt-2 font-bold uppercase tracking-widest opacity-60">
-                            Analisis komprehensif performa bisnis Anda.
-                        </p>
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                        <Button
-                            variant="primary"
-                            onClick={() => navigate('/analisis-data')}
-                            iconName="BarChart3"
-                            iconPosition="left"
-                        >
-                            Analisis Data
-                        </Button>
-                        <Button variant="destructive" onClick={() => setIsModalOpen(true)}>
-                            Hapus Semua Data
-                        </Button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Date Range Selector */}
-            <DateRangeSelector
-                onDateRangeChange={handleDateRangeChange}
-                selectedRange={selectedDateRange?.range}
+        <div className="w-full">
+            <AdminMobileHeader
+                title={headerTitle || "Laporan Bisnis"}
+                subtitle="Analisis Komprehensif"
+                badgeText="BIZ REPORTS"
+                decorativeIcon="TrendingUp"
+                showNotificationBell={false}
+                rightIcon="Home"
+                onRightAction={() => navigate('/owner-dashboard')}
+                actions={[
+                    {
+                        label: 'Analisis Data',
+                        icon: 'BarChart3',
+                        onClick: () => navigate('/analisis-data')
+                    },
+                    {
+                        label: 'Export Laporan',
+                        icon: 'DownloadCloud',
+                        color: 'success',
+                        onClick: () => setIsExportMenuOpen(true)
+                    }
+                ]}
             />
 
-            {isLoading ? (
-                <div className="text-center py-16">
-                    <p className="text-text-secondary">Memuat data laporan...</p>
-                </div>
-            ) : reportData ? (
-                <div className="space-y-8 mt-6">
-                    {/* Statistics Overview Section */}
-                    <section className="mb-8">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg">
-                                <Icon name="BarChart3" className="w-6 h-6 text-white" />
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-bold text-text-primary">Ringkasan Statistik</h2>
-                                <p className="text-sm text-text-secondary">Visualisasi data periode yang dipilih</p>
-                            </div>
+            <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 mt-6 lg:mt-0" : "px-4"}>
+                {/* Desktop-Only Premium Content Header */}
+                <div className="hidden lg:block mb-10">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <BreadcrumbNavigation />
+                            <h1 className="text-3xl font-black text-gray-900 dark:text-white mt-4 tracking-tighter uppercase font-black">
+                                {headerTitle || "Laporan Bisnis"}
+                            </h1>
+                            <p className="text-xs text-gray-400 font-bold uppercase tracking-[0.2em] mt-2 opacity-70">
+                                Business Insight & Performance Analytics
+                            </p>
                         </div>
 
-                        {/* Summary Cards */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                            {/* Total Transaksi */}
-                            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-                                <div className="flex flex-col h-full">
-                                    <p className="text-blue-100 text-xs font-medium uppercase tracking-wider mb-3">Total Transaksi</p>
-                                    <div className="flex items-center justify-center flex-grow my-2">
-                                        <h3 className="text-4xl font-bold">{reportData?.sales?.totalTransactions || 0}</h3>
-                                    </div>
-                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/20">
-                                        <div className="flex items-center gap-2 text-blue-100 text-sm">
-                                            <Icon name="TrendingUp" className="w-4 h-4" />
-                                            <span>Periode ini</span>
-                                        </div>
-                                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                                            <Icon name="ShoppingCart" className="w-5 h-5" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={() => navigate('/analisis-data')}
+                                className="flex items-center gap-3 px-6 py-3 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 text-gray-600 dark:text-gray-300 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-sm hover:shadow-md hover:bg-gray-50 dark:hover:bg-slate-700 transition-all active:scale-95"
+                            >
+                                <Icon name="BarChart3" size={16} strokeWidth={2.5} className="text-primary" />
+                                <span>Analisis Data</span>
+                            </button>
 
-                            {/* Total Pendapatan */}
-                            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-                                <div className="flex flex-col h-full">
-                                    <p className="text-emerald-100 text-xs font-medium uppercase tracking-wider mb-3">Total Pendapatan</p>
-                                    <div className="flex items-center justify-center flex-grow my-2">
-                                        <h3 className="text-3xl font-bold text-center">
-                                            Rp {(reportData?.sales?.totalRevenue || 0).toLocaleString()}
-                                        </h3>
-                                    </div>
-                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/20">
-                                        <div className="flex items-center gap-2 text-emerald-100 text-sm">
-                                            <Icon name="ArrowUpRight" className="w-4 h-4" />
-                                            <span>Dari penjualan</span>
-                                        </div>
-                                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                                            <Icon name="DollarSign" className="w-5 h-5" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Total Pengeluaran */}
-                            <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-                                <div className="flex flex-col h-full">
-                                    <p className="text-orange-100 text-xs font-medium uppercase tracking-wider mb-3">Total Pengeluaran</p>
-                                    <div className="flex items-center justify-center flex-grow my-2">
-                                        <h3 className="text-3xl font-bold text-center">
-                                            Rp {(reportData?.expenses?.summary?.totalExpenses || 0).toLocaleString()}
-                                        </h3>
-                                    </div>
-                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/20">
-                                        <div className="flex items-center gap-2 text-orange-100 text-sm">
-                                            <Icon name="ArrowDownRight" className="w-4 h-4" />
-                                            <span>Operasional</span>
-                                        </div>
-                                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                                            <Icon name="Receipt" className="w-5 h-5" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Laba Bersih */}
-                            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-                                <div className="flex flex-col h-full">
-                                    <p className="text-purple-100 text-xs font-medium uppercase tracking-wider mb-3">Laba Bersih</p>
-                                    <div className="flex items-center justify-center flex-grow my-2">
-                                        <h3 className="text-3xl font-bold text-center">
-                                            Rp {((reportData?.sales?.totalRevenue || 0) - (reportData?.expenses?.summary?.totalExpenses || 0)).toLocaleString()}
-                                        </h3>
-                                    </div>
-                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/20">
-                                        <div className="flex items-center gap-2 text-purple-100 text-sm">
-                                            <Icon name="TrendingUp" className="w-4 h-4" />
-                                            <span>Pendapatan - Pengeluaran</span>
-                                        </div>
-                                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                                            <Icon name="Wallet" className="w-5 h-5" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Charts Grid */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                            {/* Payment Methods Distribution */}
-                            <div className="bg-card rounded-xl shadow-lg p-6 border border-border">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <Icon name="PieChart" className="w-5 h-5 text-blue-600" />
-                                    <h3 className="text-lg font-bold text-text-primary">Distribusi Metode Pembayaran</h3>
-                                </div>
-                                <div className="h-80">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie
-                                                data={(() => {
-                                                    const paymentMethods = {};
-                                                    transactions.filter(t => {
-                                                        const itemDate = new Date(t.timestamp);
-                                                        return itemDate >= selectedDateRange.startDate && itemDate <= selectedDateRange.endDate;
-                                                    }).forEach(t => {
-                                                        const method = t.payment_method || 'tunai';
-                                                        paymentMethods[method] = (paymentMethods[method] || 0) + 1;
-                                                    });
-                                                    const colors = {
-                                                        'tunai': '#3b82f6',
-                                                        'qris': '#10b981',
-                                                        'transfer': '#8b5cf6',
-                                                        'bon': '#f59e0b',
-                                                        'employee_meal': '#ef4444'
-                                                    };
-                                                    return Object.entries(paymentMethods).map(([name, value]) => ({
-                                                        name: name.charAt(0).toUpperCase() + name.slice(1).replace('_', ' '),
-                                                        value,
-                                                        color: colors[name] || '#6b7280'
-                                                    }));
-                                                })()}
-                                                cx="50%"
-                                                cy="50%"
-                                                labelLine={false}
-                                                label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                                                outerRadius={100}
-                                                fill="#8884d8"
-                                                dataKey="value"
-                                            >
-                                                {(() => {
-                                                    const paymentMethods = {};
-                                                    transactions.filter(t => {
-                                                        const itemDate = new Date(t.timestamp);
-                                                        return itemDate >= selectedDateRange.startDate && itemDate <= selectedDateRange.endDate;
-                                                    }).forEach(t => {
-                                                        const method = t.payment_method || 'tunai';
-                                                        paymentMethods[method] = (paymentMethods[method] || 0) + 1;
-                                                    });
-                                                    const colors = {
-                                                        'tunai': '#3b82f6',
-                                                        'qris': '#10b981',
-                                                        'transfer': '#8b5cf6',
-                                                        'bon': '#f59e0b',
-                                                        'employee_meal': '#ef4444'
-                                                    };
-                                                    return Object.entries(paymentMethods).map(([name], index) => (
-                                                        <Cell key={`cell-${index}`} fill={colors[name] || '#6b7280'} />
-                                                    ));
-                                                })()}
-                                            </Pie>
-                                            <Tooltip formatter={(value) => [`${value} transaksi`, 'Jumlah']} />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
-
-                            {/* Top 5 Menu Items */}
-                            <div className="bg-card rounded-xl shadow-lg p-6 border border-border">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <Icon name="TrendingUp" className="w-5 h-5 text-emerald-600" />
-                                    <h3 className="text-lg font-bold text-text-primary">Top 5 Menu Terlaris</h3>
-                                </div>
-                                <div className="h-80">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart
-                                            data={(reportData?.sales?.topItems || []).slice(0, 5).map(item => ({
-                                                name: item.name,
-                                                quantity: item.sold
-                                            }))}
-                                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                                        >
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                                            <YAxis />
-                                            <Tooltip formatter={(value) => [`${value} porsi`, 'Terjual']} />
-                                            <Bar dataKey="quantity" fill="#10b981" radius={[8, 8, 0, 0]} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Additional Stats Row */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {/* Stock Status */}
-                            <div className="bg-card rounded-xl shadow-lg p-6 border border-border">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <Icon name="Package" className="w-5 h-5 text-purple-600" />
-                                    <h3 className="text-lg font-bold text-text-primary">Status Stok</h3>
-                                </div>
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
-                                                <Icon name="UtensilsCrossed" className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm text-text-secondary">Total Menu</p>
-                                                <p className="text-2xl font-bold text-text-primary">{menuItems?.length || 0}</p>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-xs text-text-secondary">Stok Rendah</p>
-                                            <p className="text-lg font-bold text-orange-600">
-                                                {reportData?.stock?.lowStockItems || 0}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-between p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg">
-                                                <Icon name="Leaf" className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm text-text-secondary">Bahan Mentah</p>
-                                                <p className="text-2xl font-bold text-text-primary">{rawMaterials?.length || 0}</p>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-xs text-text-secondary">Perlu Restock</p>
-                                            <p className="text-lg font-bold text-orange-600">
-                                                {reportData?.rawMetrics?.lowStockRawCount || 0}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Financial Summary */}
-                            <div className="bg-card rounded-xl shadow-lg p-6 border border-border">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <Icon name="Wallet" className="w-5 h-5 text-indigo-600" />
-                                    <h3 className="text-lg font-bold text-text-primary">Ringkasan Keuangan</h3>
-                                </div>
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-indigo-100 dark:bg-indigo-800 rounded-lg">
-                                                <Icon name="TrendingUp" className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm text-text-secondary">Rata-rata Order</p>
-                                                <p className="text-2xl font-bold text-text-primary">Rp {(reportData?.sales?.averageOrder || 0).toLocaleString()}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
-                                                <Icon name="Receipt" className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm text-text-secondary">Rata-rata Pengeluaran/Hari</p>
-                                                <p className="text-2xl font-bold text-text-primary">Rp {(reportData?.expenses?.summary?.averageDaily || 0).toLocaleString()}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Existing Report Sections */}
-                    <SalesReportSection data={reportData.sales} dateRange={selectedDateRange} />
-                    <StockReportSection data={reportData.stock} dateRange={selectedDateRange} />
-                    <RawMaterialReportSection data={reportData.rawMetrics} units={units} dateRange={selectedDateRange} />
-                    <ExpenseReportSection data={reportData.expenses} dateRange={selectedDateRange} />
-                    <EmployeeMealReportSection data={reportData.employeeMeals} dateRange={selectedDateRange} />
-                    <ReconciliationReportSection reconciliations={reportData.reconciliations} dateRange={selectedDateRange} />
-                    <CombinedAnalyticsSection
-                        reportData={reportData}
-                        onExportCombined={handleExportCombinedData}
-                    />
-                    <div className="bg-card rounded-lg border border-border shadow-elevation-1 p-6 mt-6">
-                        <p className="text-sm text-text-secondary mb-4 text-center dark:text-gray-400">Export laporan gabungan untuk analisis lebih lanjut.</p>
-                        <div className="flex justify-center space-x-3">
-                            <Button variant="outline" onClick={() => handleExportCombinedData('excel')} iconName="Download" iconPosition="left" loading={isExporting}>
-                                Export Excel
-                            </Button>
-                            <Button variant="outline" onClick={() => handleExportCombinedData('pdf')} iconName="FileText" iconPosition="left" loading={isExporting}>
-                                Export PDF
-                            </Button>
+                            <button
+                                onClick={() => setIsModalOpen(true)}
+                                className="flex items-center gap-3 px-6 py-3 bg-rose-50/50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/20 text-rose-600 dark:text-rose-400 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all active:scale-95"
+                            >
+                                <Icon name="Trash2" size={16} strokeWidth={2.5} />
+                                <span>Reset Data</span>
+                            </button>
                         </div>
                     </div>
                 </div>
-            ) : (
-                <div className="text-center py-16">
-                    <p className="text-text-secondary">Tidak ada data untuk ditampilkan pada periode ini.</p>
-                </div>
-            )}
 
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
-                        <h2 className="text-lg font-bold mb-4">Konfirmasi Hapus Data</h2>
-                        <p className="text-text-secondary mb-4">Tindakan ini akan menghapus semua data transaksi secara permanen. Masukkan kata sandi untuk melanjutkan.</p>
-                        <Input type="password" placeholder="Kata Sandi" value={password} onChange={(e) => setPassword(e.target.value)} className="mb-4" />
-                        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-                        <div className="flex justify-end space-x-2">
-                            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Batal</Button>
-                            <Button variant="danger" onClick={handleClearData}>Hapus Data</Button>
+                {/* Date Range Selector */}
+                <DateRangeSelector
+                    onDateRangeChange={handleDateRangeChange}
+                    selectedRange={selectedDateRange?.range}
+                />
+
+                {isLoading ? (
+                    <div className="text-center py-16">
+                        <p className="text-text-secondary">Memuat data laporan...</p>
+                    </div>
+                ) : reportData ? (
+                    <div className="space-y-8 mt-6">
+                        {/* Statistics Overview Section */}
+                        <section className="mb-8">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg">
+                                    <Icon name="BarChart3" className="w-6 h-6 text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter uppercase">Ringkasan Statistik</h2>
+                                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mt-1">Visualisasi data periode yang dipilih</p>
+                                </div>
+                            </div>
+                            {/* ... sisanya tetap sama ... */}
+
+                            {/* Summary Cards (Using Premium Template 2) */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                                <CardTemplate2
+                                    title="Total Transaksi"
+                                    value={reportData?.sales?.totalTransactions || 0}
+                                    icon="ShoppingCart"
+                                    description="Total pesanan periode ini"
+                                    color="primary"
+                                    badgeText="TRX"
+                                    trend={{ type: 'neutral', value: 'Periode Ini' }}
+                                />
+                                <CardTemplate2
+                                    title="Total Pendapatan"
+                                    value={`Rp ${(reportData?.sales?.totalRevenue || 0).toLocaleString()}`}
+                                    icon="DollarSign"
+                                    description="Total bruto penjualan"
+                                    color="success"
+                                    badgeText="REV"
+                                    trend={{ type: 'up', value: 'Sales' }}
+                                />
+                                <CardTemplate2
+                                    title="Total Pengeluaran"
+                                    value={`Rp ${(reportData?.expenses?.summary?.totalExpenses || 0).toLocaleString()}`}
+                                    icon="Receipt"
+                                    description="Biaya operasional & stok"
+                                    color="warning"
+                                    badgeText="EXP"
+                                    trend={{ type: 'down', value: 'Cost' }}
+                                />
+                                <CardTemplate2
+                                    title="Laba Bersih"
+                                    value={`Rp ${((reportData?.sales?.totalRevenue || 0) - (reportData?.expenses?.summary?.totalExpenses || 0)).toLocaleString()}`}
+                                    icon="Wallet"
+                                    description="Pendapatan bersih (Nett)"
+                                    color="info"
+                                    badgeText="PFT"
+                                    trend={{ type: 'up', value: 'Profit' }}
+                                />
+                            </div>
+
+                            {/* Charts Grid */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                                {/* Payment Methods Distribution */}
+                                <div className="bg-white dark:bg-slate-800 rounded-3xl p-7 shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100/50 dark:border-slate-700 transition-all duration-300 hover:shadow-2xl">
+                                    <div className="flex items-center gap-4 mb-8">
+                                        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800/20">
+                                            <Icon name="PieChart" className="w-5 h-5 text-blue-600 dark:text-blue-400" strokeWidth={2.5} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-tight">Metode Pembayaran</h3>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Distribusi Transaksi</p>
+                                        </div>
+                                    </div>
+                                    <div className="h-80">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie
+                                                    data={(() => {
+                                                        const paymentMethods = {};
+                                                        transactions.filter(t => {
+                                                            const itemDate = new Date(t.timestamp);
+                                                            return itemDate >= selectedDateRange.startDate && itemDate <= selectedDateRange.endDate;
+                                                        }).forEach(t => {
+                                                            const method = t.payment_method || 'tunai';
+                                                            paymentMethods[method] = (paymentMethods[method] || 0) + 1;
+                                                        });
+                                                        const colors = {
+                                                            'tunai': '#3b82f6',
+                                                            'qris': '#10b981',
+                                                            'transfer': '#8b5cf6',
+                                                            'bon': '#f59e0b',
+                                                            'employee_meal': '#ef4444'
+                                                        };
+                                                        return Object.entries(paymentMethods).map(([name, value]) => ({
+                                                            name: name.charAt(0).toUpperCase() + name.slice(1).replace('_', ' '),
+                                                            value,
+                                                            color: colors[name] || '#6b7280'
+                                                        }));
+                                                    })()}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    labelLine={false}
+                                                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                                                    outerRadius={100}
+                                                    fill="#8884d8"
+                                                    dataKey="value"
+                                                >
+                                                    {(() => {
+                                                        const paymentMethods = {};
+                                                        transactions.filter(t => {
+                                                            const itemDate = new Date(t.timestamp);
+                                                            return itemDate >= selectedDateRange.startDate && itemDate <= selectedDateRange.endDate;
+                                                        }).forEach(t => {
+                                                            const method = t.payment_method || 'tunai';
+                                                            paymentMethods[method] = (paymentMethods[method] || 0) + 1;
+                                                        });
+                                                        const colors = {
+                                                            'tunai': '#3b82f6',
+                                                            'qris': '#10b981',
+                                                            'transfer': '#8b5cf6',
+                                                            'bon': '#f59e0b',
+                                                            'employee_meal': '#ef4444'
+                                                        };
+                                                        return Object.entries(paymentMethods).map(([name], index) => (
+                                                            <Cell key={`cell-${index}`} fill={colors[name] || '#6b7280'} />
+                                                        ));
+                                                    })()}
+                                                </Pie>
+                                                <Tooltip
+                                                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
+                                                    formatter={(value) => [`${value} transaksi`, 'Jumlah']}
+                                                />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+
+                                {/* Top 5 Menu Items */}
+                                <div className="bg-white dark:bg-slate-800 rounded-3xl p-7 shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100/50 dark:border-slate-700 transition-all duration-300 hover:shadow-2xl">
+                                    <div className="flex items-center gap-4 mb-8">
+                                        <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-800/20">
+                                            <Icon name="TrendingUp" className="w-5 h-5 text-emerald-600 dark:text-emerald-400" strokeWidth={2.5} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-tight">Menu Terlaris</h3>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Top 5 Performa</p>
+                                        </div>
+                                    </div>
+                                    <div className="h-80">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart
+                                                data={(reportData?.sales?.topItems || []).slice(0, 5).map(item => ({
+                                                    name: item.name,
+                                                    quantity: item.sold
+                                                }))}
+                                                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                                            >
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700 }} />
+                                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700 }} />
+                                                <Tooltip
+                                                    cursor={{ fill: '#f8fafc' }}
+                                                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
+                                                    formatter={(value) => [`${value} porsi`, 'Terjual']}
+                                                />
+                                                <Bar dataKey="quantity" fill="#10b981" radius={[10, 10, 0, 0]} barSize={40} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Additional Stats Row */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                {/* Stock Status */}
+                                <div className="bg-white dark:bg-slate-800 rounded-3xl p-7 shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100/50 dark:border-slate-700">
+                                    <div className="flex items-center gap-4 mb-8">
+                                        <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-2xl border border-purple-100 dark:border-purple-800/20">
+                                            <Icon name="Package" className="w-5 h-5 text-purple-600 dark:text-purple-400" strokeWidth={2.5} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-tight">Status Persediaan</h3>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Ketersediaan Barang</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="group p-5 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border border-blue-100/50 dark:border-blue-800/20 transition-all hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className="p-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm">
+                                                    <Icon name="UtensilsCrossed" className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                                </div>
+                                                <p className="text-[10px] font-black uppercase text-blue-600/60 tracking-widest leading-none">Total Menu</p>
+                                            </div>
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="text-3xl font-black text-slate-800 dark:text-white tracking-tighter">{menuItems?.length || 0}</span>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Item</span>
+                                            </div>
+                                            <div className="mt-4 flex items-center justify-between">
+                                                <span className="text-[9px] font-bold text-orange-500 uppercase tracking-widest">Rendah: {reportData?.stock?.lowStockItems || 0}</span>
+                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+                                            </div>
+                                        </div>
+
+                                        <div className="group p-5 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100/50 dark:border-emerald-800/20 transition-all hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className="p-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm">
+                                                    <Icon name="Leaf" className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                                                </div>
+                                                <p className="text-[10px] font-black uppercase text-emerald-600/60 tracking-widest leading-none">Bahan Baku</p>
+                                            </div>
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="text-3xl font-black text-slate-800 dark:text-white tracking-tighter">{rawMaterials?.length || 0}</span>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Item</span>
+                                            </div>
+                                            <div className="mt-4 flex items-center justify-between">
+                                                <span className="text-[9px] font-bold text-orange-500 uppercase tracking-widest">Kritis: {reportData?.rawMetrics?.lowStockRawCount || 0}</span>
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Financial Summary */}
+                                <div className="bg-white dark:bg-slate-800 rounded-3xl p-7 shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100/50 dark:border-slate-700">
+                                    <div className="flex items-center gap-4 mb-8">
+                                        <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800/20">
+                                            <Icon name="Wallet" className="w-5 h-5 text-indigo-600 dark:text-indigo-400" strokeWidth={2.5} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-tight">Analisis Keuangan</h3>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Rata-rata Performa</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div className="group p-5 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-2xl border border-indigo-100/50 dark:border-blue-800/20 transition-all hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm">
+                                                        <Icon name="TrendingUp" className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[10px] font-black uppercase text-indigo-600/60 tracking-widest leading-none mb-1">Rata-rata Order</p>
+                                                        <p className="text-xl font-black text-slate-800 dark:text-white tracking-tighter">Rp {(reportData?.sales?.averageOrder || 0).toLocaleString()}</p>
+                                                    </div>
+                                                </div>
+                                                <Icon name="ChevronRight" size={14} className="text-indigo-300 group-hover:translate-x-1 transition-transform" />
+                                            </div>
+                                        </div>
+                                        <div className="group p-5 bg-purple-50/50 dark:bg-purple-900/10 rounded-2xl border border-purple-100/50 dark:border-purple-800/20 transition-all hover:bg-purple-50 dark:hover:bg-purple-900/20">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm">
+                                                        <Icon name="Receipt" className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[10px] font-black uppercase text-purple-600/60 tracking-widest leading-none mb-1">Pengeluaran Harian</p>
+                                                        <p className="text-xl font-black text-slate-800 dark:text-white tracking-tighter">Rp {(reportData?.expenses?.summary?.averageDaily || 0).toLocaleString()}</p>
+                                                    </div>
+                                                </div>
+                                                <Icon name="ChevronRight" size={14} className="text-purple-300 group-hover:translate-x-1 transition-transform" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Existing Report Sections */}
+                        <SalesReportSection data={reportData.sales} dateRange={selectedDateRange} />
+                        <StockReportSection data={reportData.stock} dateRange={selectedDateRange} />
+                        <RawMaterialReportSection data={reportData.rawMetrics} units={units} dateRange={selectedDateRange} />
+                        <ExpenseReportSection data={reportData.expenses} dateRange={selectedDateRange} />
+                        <EmployeeMealReportSection data={reportData.employeeMeals} dateRange={selectedDateRange} />
+                        <ReconciliationReportSection reconciliations={reportData.reconciliations} dateRange={selectedDateRange} />
+                        <CombinedAnalyticsSection
+                            reportData={reportData}
+                            onExportCombined={handleExportCombinedData}
+                        />
+                        {/* Modern Export Center */}
+                        <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-xl shadow-gray-200/50 dark:shadow-none p-8 lg:p-10 mt-10 overflow-hidden relative group">
+                            {/* Decorative Background Element */}
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl transition-all group-hover:bg-primary/10"></div>
+
+                            <div className="flex flex-col items-center text-center relative z-10">
+                                <div className="w-16 h-16 bg-primary/10 dark:bg-primary/20 rounded-2xl flex items-center justify-center mb-6 border border-primary/10 transition-transform group-hover:scale-110 duration-500">
+                                    <Icon name="DownloadCloud" size={32} strokeWidth={2.5} className="text-primary" />
+                                </div>
+
+                                <h2 className="text-xl lg:text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight mb-3">Export Center</h2>
+                                <p className="text-sm text-gray-500 dark:text-slate-400 font-medium max-w-md mx-auto mb-8 leading-relaxed">
+                                    Unduh laporan bisnis komprehensif Anda dalam berbagai format untuk keperluan arsip, presentasi, atau analisis mendalam.
+                                </p>
+
+                                <div className="flex flex-wrap justify-center gap-4 w-full">
+                                    <button
+                                        onClick={() => handleExportCombinedData('excel')}
+                                        disabled={isExporting}
+                                        className="flex items-center gap-3 px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-200 dark:shadow-none transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                                    >
+                                        <Icon name="FileSpreadsheet" size={18} strokeWidth={2.5} />
+                                        <span>Export ke Excel</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => handleExportCombinedData('pdf')}
+                                        disabled={isExporting}
+                                        className="flex items-center gap-3 px-8 py-4 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-rose-200 dark:shadow-none transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                                    >
+                                        <Icon name="FileText" size={18} strokeWidth={2.5} />
+                                        <span>Unduh File PDF</span>
+                                    </button>
+                                </div>
+
+                                <p className="mt-8 text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] opacity-60">
+                                    Laporan mencakup semua parameter yang dipilih di atas
+                                </p>
+                            </div>
                         </div>
+                    </div>
+                ) : (
+                    <div className="text-center py-16">
+                        <p className="text-text-secondary">Tidak ada data untuk ditampilkan pada periode ini.</p>
+                    </div>
+                )}
+
+                {isModalOpen && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+                            <h2 className="text-lg font-bold mb-4">Konfirmasi Hapus Data</h2>
+                            <p className="text-text-secondary mb-4">Tindakan ini akan menghapus semua data transaksi secara permanen. Masukkan kata sandi untuk melanjutkan.</p>
+                            <Input type="password" placeholder="Kata Sandi" value={password} onChange={(e) => setPassword(e.target.value)} className="mb-4" />
+                            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+                            <div className="flex justify-end space-x-2">
+                                <Button variant="outline" onClick={() => setIsModalOpen(false)}>Batal</Button>
+                                <Button variant="danger" onClick={handleClearData}>Hapus Data</Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+            {/* Export Format Selection Menu (Bottom Sheet Style for Mobile) */}
+            {isExportMenuOpen && (
+                <div className="fixed inset-0 z-[200] flex items-end justify-center lg:items-center p-0 lg:p-4">
+                    <div
+                        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
+                        onClick={() => setIsExportMenuOpen(false)}
+                    ></div>
+                    <div className="relative w-full lg:max-w-md bg-white dark:bg-slate-900 rounded-t-[2.5rem] lg:rounded-[2rem] p-8 lg:p-10 shadow-2xl animate-in slide-in-from-bottom duration-500">
+                        <div className="w-12 h-1.5 bg-gray-200 dark:bg-slate-800 rounded-full mx-auto mb-8 lg:hidden"></div>
+
+                        <div className="text-center mb-8">
+                            <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-emerald-100 dark:border-emerald-800/20">
+                                <Icon name="FileDown" size={32} className="text-emerald-600 dark:text-emerald-400" strokeWidth={2.5} />
+                            </div>
+                            <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Format Laporan</h3>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-2">Pilih format dokumen untuk diunduh</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4">
+                            <button
+                                onClick={() => {
+                                    handleExportCombinedData('excel');
+                                    setIsExportMenuOpen(false);
+                                }}
+                                className="group flex items-center justify-between p-5 bg-gray-50 dark:bg-slate-800/50 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-2xl border border-gray-100 dark:border-slate-800 hover:border-emerald-200 transition-all active:scale-[0.98]"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/20">
+                                        <Icon name="FileSpreadsheet" size={24} strokeWidth={2.5} />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="font-black text-sm text-gray-800 dark:text-white uppercase tracking-tight">Microsoft Excel</p>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Format .xlsx (Editable)</p>
+                                    </div>
+                                </div>
+                                <Icon name="ChevronRight" size={18} className="text-gray-300 group-hover:text-emerald-500 transition-colors" />
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    handleExportCombinedData('pdf');
+                                    setIsExportMenuOpen(false);
+                                }}
+                                className="group flex items-center justify-between p-5 bg-gray-50 dark:bg-slate-800/50 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-2xl border border-gray-100 dark:border-slate-800 hover:border-rose-200 transition-all active:scale-[0.98]"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-500/20">
+                                        <Icon name="FileText" size={24} strokeWidth={2.5} />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="font-black text-sm text-gray-800 dark:text-white uppercase tracking-tight">Dokumen PDF</p>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Format .pdf (Ready to Print)</p>
+                                    </div>
+                                </div>
+                                <Icon name="ChevronRight" size={18} className="text-gray-300 group-hover:text-rose-500 transition-colors" />
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={() => setIsExportMenuOpen(false)}
+                            className="w-full mt-6 p-4 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] hover:text-gray-600 transition-colors"
+                        >
+                            Batalkan
+                        </button>
                     </div>
                 </div>
             )}

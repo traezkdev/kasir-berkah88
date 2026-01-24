@@ -25,47 +25,84 @@ const MetricsCard = ({ title, value, icon, color = 'primary', trend = null, desc
   const activeGradient = desktopGradients[color] || desktopGradients.primary;
   const activeMobileIcon = mobileIconColors[color] || mobileIconColors.primary;
 
+  const renderValue = (val) => {
+    if (typeof val === 'string' && val.includes('Rp')) {
+      const parts = val.split(' ');
+      if (parts.length >= 2) {
+        return (
+          <>
+            <span className="text-sm lg:text-[11px] font-bold opacity-70 mr-1">{parts[0]}</span>
+            <span>{parts[1]}</span>
+          </>
+        );
+      }
+    }
+    return val;
+  };
+
+  const glowColors = {
+    primary: 'bg-blue-400',
+    success: 'bg-emerald-400',
+    warning: 'bg-amber-400',
+    accent: 'bg-pink-400',
+    info: 'bg-indigo-400',
+    destructive: 'bg-rose-400',
+    white: 'bg-slate-200'
+  };
+
+  const activeGlow = glowColors[color] || glowColors.primary;
+
   return (
-    <div className={`bg-white dark:bg-slate-800 ${activeGradient} lg:border-none rounded-[2rem] p-6 lg:p-7 transition-all duration-300 h-full relative overflow-hidden group shadow-[0_8px_30px_rgb(0,0,0,0.04)] lg:shadow-lg border border-gray-100 dark:border-slate-700 hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] hover:-translate-y-1`}>
+    <div className={`bg-white dark:bg-slate-800 rounded-3xl p-6 lg:p-5 transition-all duration-300 h-full relative overflow-hidden group shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100/50 dark:border-slate-700 hover:shadow-2xl hover:-translate-y-1`}>
+      {/* Background Glow Effect */}
+      <div className={`absolute -right-8 -bottom-8 w-32 h-32 rounded-full blur-3xl opacity-10 group-hover:opacity-25 transition-opacity duration-500 pointer-events-none ${activeGlow}`}></div>
+
+      {/* Subtle Background Icon Decor */}
+      <div className={`absolute -left-4 -bottom-4 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity duration-500 pointer-events-none text-slate-900 dark:text-white`}>
+        <Icon name={icon} size={100} />
+      </div>
+
       <div className="relative z-10 flex flex-col h-full">
         {/* Top Section: Icon & Trend */}
-        <div className="flex items-center justify-between mb-5">
-          <div className={`p-4 rounded-2xl transition-transform group-hover:scale-110 shadow-sm border lg:border-white/10 lg:bg-white/20 lg:text-white ${activeMobileIcon}`}>
-            <Icon name={icon} size={24} strokeWidth={2.5} />
+        <div className="flex items-start justify-between mb-6 lg:mb-4">
+          <div className={`p-3.5 lg:p-3 rounded-2xl transition-transform group-hover:scale-110 shadow-inner border flex items-center justify-center ${activeMobileIcon}`}>
+            <Icon name={icon} size={22} lg:size={18} strokeWidth={2.5} />
           </div>
-          {trend && (
-            <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-gray-50 dark:bg-slate-700/30 lg:bg-white/20 border border-gray-100 dark:border-slate-700 lg:border-white/10 text-gray-500 dark:text-gray-400 lg:text-white shadow-sm">
-              <Icon
-                name={trend?.type === 'up' ? 'TrendingUp' : trend?.type === 'down' ? 'TrendingDown' : 'Minus'}
-                size={12}
-                strokeWidth={3}
-              />
-              <span>{trend?.value}</span>
+
+          <div className="flex flex-col items-end gap-2">
+            <div className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest shadow-sm border ${activeMobileIcon}`}>
+              OVR
             </div>
-          )}
+            {trend && (
+              <div className="flex items-center space-x-1 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider bg-gray-50 dark:bg-slate-700/50 border border-gray-100 dark:border-slate-600 text-gray-500 dark:text-gray-300 shadow-sm">
+                <Icon
+                  name={trend?.type === 'up' ? 'TrendingUp' : trend?.type === 'down' ? 'TrendingDown' : 'Minus'}
+                  size={10}
+                  strokeWidth={3}
+                />
+                <span>{trend?.value}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Content Section */}
         <div className="flex-1 flex flex-col justify-end">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-2 text-gray-400 dark:text-gray-500 lg:text-white/70 leading-none">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1.5 text-gray-400 dark:text-slate-500 leading-none">
             {title}
           </p>
-          <p className="text-2xl lg:text-3xl font-black tracking-tight leading-none mb-3 text-slate-800 dark:text-white lg:text-white transition-all group-hover:scale-105 origin-left">
-            {value}
-          </p>
+          <div className="flex items-baseline gap-1 mb-2 lg:mb-1">
+            <p className="text-2xl lg:text-xl font-black tracking-tighter leading-none text-gray-900 dark:text-white transition-all group-hover:scale-105 origin-left truncate">
+              {renderValue(value)}
+            </p>
+          </div>
           {description && (
-            <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 lg:text-white/40 line-clamp-1 opacity-80 leading-snug">
+            <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 line-clamp-1 opacity-80 leading-tight">
               {description}
             </p>
           )}
         </div>
       </div>
-
-      {/* Decorative background circles - Desktop Only */}
-      <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-500 hidden lg:block"></div>
-
-      {/* Subtle Glow Effect - Mobile Only */}
-      <div className="absolute -right-12 -bottom-12 w-32 h-32 bg-gray-50 dark:bg-slate-700/10 rounded-full blur-3xl group-hover:bg-blue-50 dark:group-hover:bg-blue-900/5 transition-all duration-500 lg:hidden"></div>
     </div>
   );
 };

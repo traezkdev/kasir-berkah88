@@ -11,6 +11,8 @@ const AdminMobileHeader = ({
     actions = [],
     stickyTitle,
     showNotificationBell = true,
+    rightIcon,
+    onRightAction,
     decorativeIcon = "LayoutGrid",
     scrollThreshold = 100
 }) => {
@@ -51,11 +53,20 @@ const AdminMobileHeader = ({
                         </h2>
                     </div>
                     <div className="flex items-center gap-2">
-                        {showNotificationBell && (
-                            <NotificationBell
-                                size={20}
-                                className={`${scrolled ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`}
-                            />
+                        {rightIcon ? (
+                            <button
+                                onClick={onRightAction}
+                                className={`p-2 rounded-full transition-all active:scale-95 ${scrolled ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`}
+                            >
+                                <Icon name={rightIcon} size={20} />
+                            </button>
+                        ) : (
+                            showNotificationBell && (
+                                <NotificationBell
+                                    size={20}
+                                    className={`${scrolled ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`}
+                                />
+                            )
                         )}
                     </div>
                 </div>
@@ -87,24 +98,41 @@ const AdminMobileHeader = ({
 
                 {actions.length > 0 && (
                     <div className="mt-8 flex gap-3 relative z-10">
-                        {actions.map((action, index) => (
-                            <button
-                                key={index}
-                                onClick={action.onClick}
-                                className="flex-1 bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 flex items-center gap-2 active:scale-95 transition-all outline-none"
-                            >
-                                <div className="bg-white/20 p-2 rounded-xl text-white">
-                                    <Icon name={action.icon} size={18} />
-                                </div>
-                                <span className="font-black text-[11px] text-white uppercase tracking-tight leading-tight text-left">
-                                    {action.label.includes(' ') ? (
-                                        <>
-                                            {action.label.split(' ')[0]}<br />{action.label.split(' ').slice(1).join(' ')}
-                                        </>
-                                    ) : action.label}
-                                </span>
-                            </button>
-                        ))}
+                        {actions.map((action, index) => {
+                            const isSuccess = action.color === 'success';
+                            const isDanger = action.color === 'danger' || action.color === 'destructive';
+
+                            const buttonClass = isSuccess
+                                ? "bg-emerald-500/40 border-emerald-400/50 shadow-[0_8px_32px_rgba(16,185,129,0.15)]"
+                                : isDanger
+                                    ? "bg-rose-500/40 border-rose-400/50 shadow-[0_8px_32px_rgba(244,63,94,0.15)]"
+                                    : "bg-white/20 border-white/30";
+
+                            const iconBoxClass = isSuccess
+                                ? "bg-emerald-400/50 text-white"
+                                : isDanger
+                                    ? "bg-rose-400/50 text-white"
+                                    : "bg-white/30 text-white";
+
+                            return (
+                                <button
+                                    key={index}
+                                    onClick={action.onClick}
+                                    className={`flex-1 backdrop-blur-xl p-3.5 rounded-2xl border flex items-center gap-2.5 active:scale-95 transition-all outline-none ${buttonClass}`}
+                                >
+                                    <div className={`p-2 rounded-xl scale-110 ${iconBoxClass}`}>
+                                        <Icon name={action.icon} size={18} strokeWidth={3} />
+                                    </div>
+                                    <span className="font-black text-[12px] text-white uppercase tracking-wide leading-tight text-left drop-shadow-sm">
+                                        {action.label.includes(' ') ? (
+                                            <>
+                                                {action.label.split(' ')[0]}<br />{action.label.split(' ').slice(1).join(' ')}
+                                            </>
+                                        ) : action.label}
+                                    </span>
+                                </button>
+                            );
+                        })}
                     </div>
                 )}
             </div>

@@ -996,7 +996,7 @@ const MainDashboard = ({ headerTitle }) => {
 
         {/* Floating Balance Card */}
         <section className="px-5 -mt-8 relative z-20">
-          <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] p-8 border border-blue-500 dark:border-blue-500 shadow-xl">
+          <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] p-8 shadow-xl">
             {/* ... content ... */}
             <div className="flex justify-between items-center mb-4">
               <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 tracking-[0.25em] uppercase">Total Kas Lapak</p>
@@ -1053,9 +1053,9 @@ const MainDashboard = ({ headerTitle }) => {
                 onClick={() => navigate(action.route)}
               >
                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 group-active:scale-90 shadow-lg shadow-blue-500/5 ${action.color === 'primary' ? 'bg-white dark:bg-slate-700 text-blue-600' :
-                    action.color === 'success' ? 'bg-white dark:bg-slate-700 text-emerald-600' :
-                      action.color === 'destructive' ? 'bg-white dark:bg-slate-700 text-rose-600' :
-                        'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400'
+                  action.color === 'success' ? 'bg-white dark:bg-slate-700 text-emerald-600' :
+                    action.color === 'destructive' ? 'bg-white dark:bg-slate-700 text-rose-600' :
+                      'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400'
                   } border border-white/50 dark:border-slate-600`}>
                   <Icon name={action.icon} size={24} />
                 </div>

@@ -8,11 +8,9 @@ const OwnerBusinessReports = ({ headerTitle }) => {
 
   return (
     <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
-      {theme === 'default' && <OwnerNavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || "Laporan Bisnis"} />}
-      <div className={`${theme === 'default' ? 'pt-20' : ''} pb-24 lg:pb-8`}>
-        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
-          <BusinessReportView headerTitle={headerTitle || "Laporan Bisnis"} isOwner={true} />
-        </div>
+      {theme === 'default' && <OwnerNavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || "Laporan Bisnis"} hideMobileHeader={true} />}
+      <div className={`${theme === 'default' ? 'lg:pt-20' : ''} pb-24 lg:pb-8`}>
+        <BusinessReportView headerTitle={headerTitle || "Laporan Bisnis"} isOwner={true} />
       </div>
     </div>
   );

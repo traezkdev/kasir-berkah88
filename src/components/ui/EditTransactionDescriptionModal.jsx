@@ -5,7 +5,13 @@ import PremiumModal from './PremiumModal';
 const EditTransactionDescriptionModal = ({ isOpen, onClose, onSave, transaction }) => {
     const [amount, setAmount] = useState(transaction?.amount || 0);
     const [description, setDescription] = useState(transaction?.description || '');
-    const [date, setDate] = useState(transaction?.date ? new Date(transaction.date).toISOString().slice(0, 19) : '');
+    const [date, setDate] = useState(() => {
+        const dateVal = transaction?.date || transaction?.created_at;
+        if (!dateVal) return '';
+        const d = new Date(dateVal);
+        const pad = (n) => n.toString().padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    });
     const [error, setError] = useState('');
 
     const formatNumber = (num) => {

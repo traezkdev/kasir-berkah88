@@ -24,6 +24,8 @@ import {
 import { Loader2, TrendingUp, TrendingDown, DollarSign, ShoppingBag, CreditCard, FileDown } from 'lucide-react';
 import { exportToExcel, exportToPdf } from '../utils/exportUtils';
 import OwnerNavigationHeader from '../components/ui/OwnerNavigationHeader';
+import AdminMobileHeader from '../components/ui/AdminMobileHeader';
+import Icon from '../components/AppIcon';
 import { jwtDecode } from 'jwt-decode';
 
 // Setup axios instance
@@ -278,110 +280,161 @@ const AnalisisData = () => {
         <div className={`min-h-screen text-foreground ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
 
             {theme === 'default' && (
-                userRole === 'owner' ? (
-                    <OwnerNavigationHeader
-                        onToggleSidebar={toggleSidebar}
-                        headerTitle="Analisis Bisnis"
+                <>
+                    {userRole === 'owner' ? (
+                        <OwnerNavigationHeader
+                            onToggleSidebar={toggleSidebar}
+                            headerTitle="Analisis Bisnis"
+                            hideMobileHeader={true}
+                        />
+                    ) : (
+                        <NavigationHeader
+                            isCollapsed={isSidebarCollapsed}
+                            onToggleSidebar={toggleSidebar}
+                            headerTitle="Analisis Bisnis"
+                            hideMobileHeader={true}
+                        />
+                    )}
+                    <AdminMobileHeader
+                        title="Analisis"
+                        subtitle="Bisnis"
+                        badgeText="Data Breakdown"
+                        decorativeIcon="BarChart3"
+                        stickyTitle="Analisis Bisnis"
+                        rightIcon="Home"
+                        onRightAction={() => window.history.back()}
+                        actions={[
+                            {
+                                label: "Terapkan",
+                                icon: "RefreshCw",
+                                color: "success",
+                                onClick: fetchData
+                            },
+                            {
+                                label: "Export PDF",
+                                icon: "FileText",
+                                color: "danger",
+                                onClick: handleExportPDF
+                            }
+                        ]}
                     />
-                ) : (
-                    <NavigationHeader
-                        isCollapsed={isSidebarCollapsed}
-                        onToggleSidebar={toggleSidebar}
-                        headerTitle="Analisis Bisnis"
-                    />
-                )
+                </>
             )}
 
-            <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>
+            <main className={`${theme === 'default' ? 'lg:pt-16' : ''} pb-24 lg:pb-8`}>
                 <div className="p-4 md:p-6 space-y-8 max-w-[1600px] mx-auto w-full">
 
-                    {/* --- Filter Section --- */}
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-end bg-card p-4 rounded-xl shadow-sm border border-border gap-4 md:gap-0">
-                        <div className="w-full md:w-auto">
-                            <h2 className="text-xl font-bold mb-1">Periode Analisis</h2>
-                            <p className="text-sm text-muted-foreground">Pilih rentang tanggal untuk melihat breakdown data.</p>
-                        </div>
-                        <div className="flex flex-col md:flex-row items-stretch md:items-end gap-3 w-full md:w-auto">
-                            <div className="grid grid-cols-2 gap-3 w-full md:w-auto md:flex md:items-end md:gap-4">
-                                <div className="flex flex-col">
-                                    <label className="text-xs font-semibold mb-1 text-muted-foreground">Dari Tanggal</label>
-                                    <Input
-                                        type="date"
-                                        value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
-                                        className="w-full md:w-36 text-sm px-2"
-                                    />
-                                </div>
-                                <div className="flex flex-col">
-                                    <label className="text-xs font-semibold mb-1 text-muted-foreground">Sampai Tanggal</label>
-                                    <Input
-                                        type="date"
-                                        value={endDate}
-                                        onChange={(e) => setEndDate(e.target.value)}
-                                        className="w-full md:w-36 text-sm px-2"
-                                    />
-                                </div>
+                    {/* --- Premium Filter Section (Native App Style) --- */}
+                    <div className="lg:mt-0 -mt-16 relative z-20">
+                        <div className="bg-white dark:bg-slate-800 rounded-[2.5rem]  p-6 lg:p-8 shadow-2xl shadow-gray-200/50 dark:shadow-none border border-blue-50/50 dark:border-slate-700 relative overflow-hidden group">
+                            {/* Decorative Background Icon */}
+                            <div className="absolute -right-6 -top-6 text-blue-500/5 group-hover:text-blue-500/10 transition-colors duration-500 pointer-events-none">
+                                <Icon name="Calendar" size={120} />
                             </div>
 
-                            <div className="grid grid-cols-2 lg:flex md:items-center gap-2 mt-2 md:mt-0">
-                                <button
-                                    onClick={fetchData}
-                                    className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg font-medium text-sm transition-all h-[38px] flex justify-center items-center"
-                                >
-                                    Terapkan
-                                </button>
-                                <button
-                                    onClick={handleSetAllTime}
-                                    className="bg-secondary hover:bg-secondary/80 text-secondary-foreground px-4 py-2 rounded-lg font-medium text-sm transition-all h-[38px] whitespace-nowrap flex justify-center items-center"
-                                >
-                                    Semua Waktu
-                                </button>
-                            </div>
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-2.5 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-100 dark:border-blue-800/50">
+                                        <Icon name="CalendarRange" className="text-blue-600 dark:text-blue-400" size={20} />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-sm lg:text-base font-black text-gray-900 dark:text-white uppercase tracking-tight">Periode Analisis</h2>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Atur rentang waktu data</p>
+                                    </div>
+                                </div>
 
-                            {/* Export Button with Dropdown */}
-                            {data && (
-                                <div className="relative mt-2 md:mt-auto w-full md:w-auto">
-                                    <button
-                                        onClick={() => setShowExportMenu(!showExportMenu)}
-                                        className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all h-[38px] w-full md:w-auto whitespace-nowrap"
-                                        title="Export Data"
-                                    >
-                                        <FileDown className="w-4 h-4" />
-                                        Export Data
-                                    </button>
-
-                                    {showExportMenu && (
-                                        <>
-                                            <div
-                                                className="fixed inset-0 z-10"
-                                                onClick={() => setShowExportMenu(false)}
-                                            ></div>
-                                            <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-lg shadow-xl z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                                                <button
-                                                    onClick={() => {
-                                                        handleExportExcel();
-                                                        setShowExportMenu(false);
-                                                    }}
-                                                    className="w-full text-left px-4 py-3 text-sm hover:bg-accent hover:text-accent-foreground flex items-center gap-2 transition-colors border-b border-border/50"
-                                                >
-                                                    <span className="text-green-600"><FileDown size={16} /></span>
-                                                    Export Excel
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        handleExportPDF();
-                                                        setShowExportMenu(false);
-                                                    }}
-                                                    className="w-full text-left px-4 py-3 text-sm hover:bg-accent hover:text-accent-foreground flex items-center gap-2 transition-colors"
-                                                >
-                                                    <span className="text-red-600"><FileDown size={16} /></span>
-                                                    Export PDF
-                                                </button>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">Dari Tanggal</label>
+                                        <div className="relative">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                                <Icon name="Calendar" size={16} />
                                             </div>
-                                        </>
-                                    )}
+                                            <Input
+                                                type="date"
+                                                value={startDate}
+                                                onChange={(e) => setStartDate(e.target.value)}
+                                                className="w-full pl-11 h-12 rounded-2xl bg-gray-50/50 dark:bg-slate-900/50 border-gray-100 dark:border-slate-700 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-bold text-sm"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">Sampai Tanggal</label>
+                                        <div className="relative">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                                <Icon name="Calendar" size={16} />
+                                            </div>
+                                            <Input
+                                                type="date"
+                                                value={endDate}
+                                                onChange={(e) => setEndDate(e.target.value)}
+                                                className="w-full pl-11 h-12 rounded-2xl bg-gray-50/50 dark:bg-slate-900/50 border-gray-100 dark:border-slate-700 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-bold text-sm"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3 lg:col-span-1">
+                                        <button
+                                            onClick={fetchData}
+                                            className="h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 px-8"
+                                        >
+                                            <Icon name="RefreshCw" size={14} className={loading ? 'animate-spin' : ''} />
+                                            Terapkan
+                                        </button>
+                                        <button
+                                            onClick={handleSetAllTime}
+                                            className="h-12 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-600 dark:text-gray-200 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2 px-8"
+                                        >
+                                            <Icon name="History" size={14} />
+                                            Semua
+                                        </button>
+                                    </div>
+
+                                    <div className="relative lg:col-span-1">
+                                        {data && (
+                                            <>
+                                                <button
+                                                    onClick={() => setShowExportMenu(!showExportMenu)}
+                                                    className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+                                                >
+                                                    <Icon name="FileDown" size={14} />
+                                                    Export Data
+                                                </button>
+
+                                                {showExportMenu && (
+                                                    <div className="absolute bottom-full lg:top-full left-0 right-0 mb-3 lg:mt-3 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-3xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 lg:slide-in-from-top-2 duration-300">
+                                                        <button
+                                                            onClick={() => {
+                                                                handleExportExcel();
+                                                                setShowExportMenu(false);
+                                                            }}
+                                                            className="w-full text-left px-5 py-4 text-[11px] font-black uppercase tracking-widest hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-3 transition-colors text-gray-700 dark:text-gray-200 border-b border-gray-50 dark:border-slate-700"
+                                                        >
+                                                            <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg text-emerald-600">
+                                                                <Icon name="FileDown" size={16} />
+                                                            </div>
+                                                            Export ke Excel
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                handleExportPDF();
+                                                                setShowExportMenu(false);
+                                                            }}
+                                                            className="w-full text-left px-5 py-4 text-[11px] font-black uppercase tracking-widest hover:bg-rose-50 dark:hover:bg-rose-900/20 flex items-center gap-3 transition-colors text-gray-700 dark:text-gray-200"
+                                                        >
+                                                            <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg text-rose-600">
+                                                                <Icon name="FileText" size={16} />
+                                                            </div>
+                                                            Export ke PDF
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     </div>
 
@@ -393,93 +446,106 @@ const AnalisisData = () => {
 
                     {data && (
                         <>
-                            {/* --- Summary Cards --- */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {/* --- Summary Cards (Premium Native App Style) --- */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                                 <SummaryCard
                                     title="Total Pendapatan"
                                     value={formatCurrency(data.summary.totalRevenue)}
-                                    icon={<TrendingUp className="text-green-500" />}
-                                    colorClass="text-green-600 dark:text-green-400"
+                                    icon="TrendingUp"
+                                    color="success"
                                 />
                                 <SummaryCard
                                     title="Total Pengeluaran"
                                     value={formatCurrency(data.summary.totalExpense)}
-                                    icon={<TrendingDown className="text-red-500" />}
-                                    colorClass="text-red-600 dark:text-red-400"
+                                    icon="TrendingDown"
+                                    color="danger"
                                 />
                                 <SummaryCard
                                     title="Laba Bersih"
                                     value={formatCurrency(data.summary.netIncome)}
-                                    icon={<DollarSign className="text-blue-500" />}
-                                    colorClass="text-blue-600 dark:text-blue-400"
+                                    icon="DollarSign"
+                                    color="info"
                                     desc="Pendapatan - Pengeluaran"
                                 />
                                 <SummaryCard
                                     title="Total Transaksi"
                                     value={data.sales.totalTransactions}
-                                    icon={<ShoppingBag className="text-purple-500" />}
-                                    colorClass="text-purple-600 dark:text-purple-400"
-                                    isCurrency={false}
+                                    icon="ShoppingBag"
+                                    color="primary"
                                 />
                             </div>
 
-                            {/* --- Visualizations --- */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* --- Visualizations (Premium Native App Style) --- */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                 {/* Top Selling Chart */}
-                                <Card className="shadow-lg border-border/50">
-                                    <CardHeader>
-                                        <CardTitle className="text-lg flex items-center gap-2">
-                                            <ShoppingBag className="w-5 h-5 text-primary" />
-                                            Top 5 Item Terlaris
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="h-[350px]">
+                                <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 lg:p-7 shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100/50 dark:border-slate-700 relative overflow-hidden group flex flex-col h-full">
+                                    <div className="flex items-center gap-4 mb-5">
+                                        <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-2xl text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50 shadow-sm shrink-0">
+                                            <Icon name="ShoppingBag" size={22} strokeWidth={2.5} />
+                                        </div>
+                                        <div className="flex flex-col justify-center">
+                                            <h3 className="text-sm lg:text-base font-black text-gray-900 dark:text-white uppercase tracking-tight leading-none mb-1.5">Top 5 Item Terlaris</h3>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Produk dengan penjualan tertinggi</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 min-h-[350px] w-full mt-2">
                                         <ResponsiveContainer width="100%" height="100%">
                                             <BarChart
                                                 layout="vertical"
                                                 data={data.sales.topSellingItems.slice(0, 5)}
-                                                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                                                margin={{ top: 10, right: 30, left: 20, bottom: 20 }}
                                             >
-                                                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} opacity={0.3} />
-                                                <XAxis type="number" />
-                                                <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
+                                                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} opacity={0.1} />
+                                                <XAxis type="number" hide />
+                                                <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 10, fontWeight: 700, fill: 'currentColor' }} className="text-gray-500" />
                                                 <Tooltip
-                                                    contentStyle={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)', borderRadius: '8px' }}
-                                                    itemStyle={{ color: 'var(--color-text-primary)' }}
+                                                    cursor={{ fill: 'transparent' }}
+                                                    contentStyle={{
+                                                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                                        backdropFilter: 'blur(10px)',
+                                                        border: '1px solid #f1f5f9',
+                                                        borderRadius: '20px',
+                                                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.05)'
+                                                    }}
                                                     formatter={(value) => [value, 'Terjual']}
                                                 />
-                                                <Bar dataKey="quantity" fill="#8884d8" radius={[0, 4, 4, 0]}>
+                                                <Bar dataKey="quantity" radius={[0, 12, 12, 0]} barSize={32}>
                                                     {data.sales.topSellingItems.slice(0, 5).map((entry, index) => (
                                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                     ))}
                                                 </Bar>
                                             </BarChart>
                                         </ResponsiveContainer>
-                                    </CardContent>
-                                </Card>
+                                    </div>
+                                </div>
 
                                 {/* Expense Categories Chart */}
-                                <Card className="shadow-lg border-border/50">
-                                    <CardHeader>
-                                        <CardTitle className="text-lg flex items-center gap-2">
-                                            <TrendingDown className="w-5 h-5 text-red-500" />
-                                            Pengeluaran berdasarkan Kategori
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="h-[350px]">
+                                <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 lg:p-7 shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100/50 dark:border-slate-700 relative overflow-hidden group flex flex-col h-full">
+                                    <div className="flex items-center gap-4 mb-5">
+                                        <div className="p-3 bg-rose-50 dark:bg-rose-900/30 rounded-2xl text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800/50 shadow-sm shrink-0">
+                                            <Icon name="TrendingDown" size={22} strokeWidth={2.5} />
+                                        </div>
+                                        <div className="flex flex-col justify-center">
+                                            <h3 className="text-sm lg:text-base font-black text-gray-900 dark:text-white uppercase tracking-tight leading-none mb-1.5">Pengeluaran per Kategori</h3>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Breakdown biaya operasional</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 min-h-[350px] w-full mt-2 flex items-center justify-center">
                                         {data.expenses.byCategory && data.expenses.byCategory.length > 0 ? (
                                             <ResponsiveContainer width="100%" height="100%">
                                                 <PieChart>
                                                     <Pie
                                                         data={data.expenses.byCategory}
                                                         cx="50%"
-                                                        cy="50%"
-                                                        labelLine={false}
-                                                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                                        cy="45%"
+                                                        innerRadius={70}
                                                         outerRadius={100}
-                                                        fill="#8884d8"
+                                                        paddingAngle={8}
                                                         dataKey="total"
                                                         nameKey="category"
+                                                        stroke="none"
                                                     >
                                                         {data.expenses.byCategory.map((entry, index) => (
                                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -487,122 +553,181 @@ const AnalisisData = () => {
                                                     </Pie>
                                                     <Tooltip
                                                         formatter={(value) => formatCurrency(value)}
-                                                        contentStyle={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)', borderRadius: '8px' }}
+                                                        contentStyle={{
+                                                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                                            backdropFilter: 'blur(10px)',
+                                                            border: '1px solid #f1f5f9',
+                                                            borderRadius: '20px',
+                                                            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.05)'
+                                                        }}
                                                     />
-                                                    <Legend />
+                                                    <Legend
+                                                        verticalAlign="bottom"
+                                                        align="center"
+                                                        iconType="circle"
+                                                        wrapperStyle={{
+                                                            fontSize: '9px',
+                                                            fontWeight: 800,
+                                                            textTransform: 'uppercase',
+                                                            letterSpacing: '0.05em',
+                                                            paddingTop: '30px',
+                                                            paddingBottom: '10px'
+                                                        }}
+                                                    />
                                                 </PieChart>
                                             </ResponsiveContainer>
                                         ) : (
-                                            <div className="flex items-center justify-center h-full">
-                                                <p className="text-muted-foreground text-center">
-                                                    Tidak ada data pengeluaran untuk periode ini
-                                                </p>
+                                            <div className="text-center py-10 text-gray-400">
+                                                <Icon name="Inbox" className="mx-auto mb-3" size={40} />
+                                                <p className="text-[10px] font-bold uppercase tracking-widest">Tidak ada data</p>
                                             </div>
                                         )}
-                                    </CardContent>
-                                </Card>
+                                    </div>
+                                </div>
                             </div>
 
-                            {/* --- Tables --- */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* --- Tables (Premium Native App Style) --- */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                 {/* Detail Top Selling */}
-                                <Card className="shadow-lg border-border/50">
-                                    <CardHeader>
-                                        <CardTitle className="text-lg">Detail Penjualan Item</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
-                                            <table className="w-full text-sm text-left">
-                                                <thead className="bg-muted text-muted-foreground sticky top-0">
-                                                    <tr>
-                                                        <th className="px-3 py-2 rounded-tl-md">Nama Item</th>
-                                                        <th className="px-3 py-2 text-center">Qty</th>
-                                                        <th className="px-3 py-2 text-right rounded-tr-md">Total Pendapatan</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {data.sales.topSellingItems.map((item, idx) => (
-                                                        <tr key={idx} className="border-b border-border hover:bg-muted/30">
-                                                            <td className="px-3 py-2 font-medium">{item.name}</td>
-                                                            <td className="px-3 py-2 text-center">{item.quantity}</td>
-                                                            <td className="px-3 py-2 text-right text-green-600 dark:text-green-400 font-medium">
-                                                                {formatCurrency(item.revenue)}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                    {data.sales.topSellingItems.length === 0 && (
-                                                        <tr><td colSpan="3" className="text-center py-4 text-muted-foreground">Tidak ada data penjualan</td></tr>
-                                                    )}
-                                                </tbody>
-                                            </table>
+                                <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 lg:p-7 shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100/50 dark:border-slate-700 relative overflow-hidden group flex flex-col h-full">
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <div className="p-3 bg-amber-50 dark:bg-amber-900/30 rounded-2xl text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800/50 shadow-sm shrink-0">
+                                            <Icon name="Award" size={22} strokeWidth={2.5} />
                                         </div>
-                                    </CardContent>
-                                </Card>
+                                        <div className="flex flex-col justify-center">
+                                            <h3 className="text-sm lg:text-base font-black text-gray-900 dark:text-white uppercase tracking-tight leading-none mb-1.5">Peringkat Penjualan</h3>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Detail unit dan pendapatan item</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 overflow-y-auto max-h-[460px] custom-scrollbar -mx-2 px-2">
+                                        <table className="w-full text-left border-separate border-spacing-y-2">
+                                            <thead className="sticky top-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md z-10">
+                                                <tr className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                                                    <th className="px-4 py-3">Item</th>
+                                                    <th className="px-4 py-3 text-center">Qty</th>
+                                                    <th className="px-4 py-3 text-right">Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="text-sm">
+                                                {data.sales.topSellingItems.map((item, idx) => (
+                                                    <tr key={idx} className="group/row bg-gray-50/30 dark:bg-slate-900/30 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors">
+                                                        <td className="px-4 py-4 rounded-l-2xl border-l border-y border-transparent group-hover/row:border-blue-100 dark:group-hover/row:border-blue-900/30">
+                                                            <div className="flex items-center gap-3">
+                                                                <span className="w-6 h-6 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center text-[10px] font-black shadow-sm border border-gray-100 dark:border-slate-700">{idx + 1}</span>
+                                                                <span className="font-bold text-gray-700 dark:text-gray-200">{item.name}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-4 text-center font-black text-gray-500 border-y border-transparent group-hover/row:border-blue-100 dark:group-hover/row:border-blue-900/30">
+                                                            {item.quantity}
+                                                        </td>
+                                                        <td className="px-4 py-4 text-right rounded-r-2xl border-r border-y border-transparent group-hover/row:border-blue-100 dark:group-hover/row:border-blue-900/30">
+                                                            <span className="font-black text-blue-600 dark:text-blue-400">{formatCurrency(item.revenue)}</span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {data.sales.topSellingItems.length === 0 && (
+                                                    <tr>
+                                                        <td colSpan="3" className="py-20 text-center">
+                                                            <Icon name="SearchX" className="mx-auto mb-3 text-gray-300" size={40} />
+                                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Data penjualan kosong</p>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
 
                                 {/* Top Expenses List */}
-                                <Card className="shadow-lg border-border/50">
-                                    <CardHeader>
-                                        <CardTitle className="text-lg">10 Pengeluaran Terbesar</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
-                                            <table className="w-full text-sm text-left">
-                                                <thead className="bg-muted text-muted-foreground sticky top-0">
-                                                    <tr>
-                                                        <th className="px-3 py-2 rounded-tl-md">Deskripsi</th>
-                                                        <th className="px-3 py-2">Kategori</th>
-                                                        <th className="px-3 py-2 text-right rounded-tr-md">Jumlah</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {data.expenses.topExpenses.map((exp, idx) => (
-                                                        <tr key={idx} className="border-b border-border hover:bg-muted/30">
-                                                            <td className="px-3 py-2 font-medium">
-                                                                <div className="flex flex-col">
-                                                                    <span>{exp.name}</span>
-                                                                    <span className="text-xs text-muted-foreground">{format(new Date(exp.date), 'dd/MM/yyyy')}</span>
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-3 py-2">
-                                                                <span className="px-2 py-0.5 rounded-full text-xs bg-secondary text-secondary-foreground">
-                                                                    {exp.category || 'Umum'}
-                                                                </span>
-                                                            </td>
-                                                            <td className="px-3 py-2 text-right text-red-600 dark:text-red-400 font-medium">
-                                                                {formatCurrency(exp.amount)}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                    {data.expenses.topExpenses.length === 0 && (
-                                                        <tr><td colSpan="3" className="text-center py-4 text-muted-foreground">Tidak ada data pengeluaran</td></tr>
-                                                    )}
-                                                </tbody>
-                                            </table>
+                                <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 lg:p-7 shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100/50 dark:border-slate-700 relative overflow-hidden group flex flex-col h-full">
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <div className="p-3 bg-rose-50 dark:bg-rose-900/30 rounded-2xl text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800/50 shadow-sm shrink-0">
+                                            <Icon name="Receipt" size={22} strokeWidth={2.5} />
                                         </div>
-                                    </CardContent>
-                                </Card>
+                                        <div className="flex flex-col justify-center">
+                                            <h3 className="text-sm lg:text-base font-black text-gray-900 dark:text-white uppercase tracking-tight leading-none mb-1.5">Pengeluaran Terbesar</h3>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">10 pengeluaran teratas periode ini</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 overflow-y-auto max-h-[460px] custom-scrollbar -mx-2 px-2">
+                                        <table className="w-full text-left border-separate border-spacing-y-2">
+                                            <thead className="sticky top-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md z-10">
+                                                <tr className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                                                    <th className="px-4 py-3">Deskripsi</th>
+                                                    <th className="px-4 py-3">Kategori</th>
+                                                    <th className="px-4 py-3 text-right">Jumlah</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="text-sm">
+                                                {data.expenses.topExpenses.map((exp, idx) => (
+                                                    <tr key={idx} className="group/row bg-gray-50/30 dark:bg-slate-900/30 hover:bg-rose-50/50 dark:hover:bg-rose-900/10 transition-colors">
+                                                        <td className="px-4 py-4 rounded-l-2xl border-l border-y border-transparent group-hover/row:border-rose-100 dark:group-hover/row:border-rose-900/30">
+                                                            <div className="flex flex-col">
+                                                                <span className="font-bold text-gray-700 dark:text-gray-200 line-clamp-1">{exp.name}</span>
+                                                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">{format(new Date(exp.date), 'dd MMM yyyy')}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-4 border-y border-transparent group-hover/row:border-rose-100 dark:group-hover/row:border-rose-900/30">
+                                                            <span className="inline-block px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-slate-700 shadow-sm leading-normal">
+                                                                {exp.category || 'Umum'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-4 text-right rounded-r-2xl border-r border-y border-transparent group-hover/row:border-rose-100 dark:group-hover/row:border-rose-900/30">
+                                                            <span className="font-black text-rose-600 dark:text-rose-400">{formatCurrency(exp.amount)}</span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {data.expenses.topExpenses.length === 0 && (
+                                                    <tr>
+                                                        <td colSpan="3" className="py-20 text-center">
+                                                            <Icon name="Inbox" className="mx-auto mb-3 text-gray-300" size={40} />
+                                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tidak ada pengeluaran</p>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
 
-                            {/* --- Payment Methods (Initiative) --- */}
-                            <Card className="shadow-lg border-border/50">
-                                <CardHeader>
-                                    <CardTitle className="text-lg flex items-center gap-2">
-                                        <CreditCard className="w-5 h-5 text-blue-500" />
-                                        Breakdown Metode Pembayaran
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                        {data.sales.paymentMethods.map((pm, idx) => (
-                                            <div key={idx} className="bg-background border border-border p-4 rounded-lg flex flex-col items-center">
-                                                <h3 className="text-md font-semibold capitalize">{pm.payment_method}</h3>
-                                                <div className="text-2xl font-bold mt-2">{pm.count} <span className="text-sm font-normal text-muted-foreground">Transaksi</span></div>
-                                                <div className="text-sm font-medium mt-1 text-primary">{formatCurrency(pm.total)}</div>
-                                            </div>
-                                        ))}
+                            {/* --- Payment Methods (Premium Native App Style) --- */}
+                            <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 lg:p-8 shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100/50 dark:border-slate-700 relative overflow-hidden group">
+                                <div className="flex items-center gap-4 mb-8">
+                                    <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50 shadow-sm shrink-0">
+                                        <Icon name="CreditCard" size={24} strokeWidth={2.5} />
                                     </div>
-                                </CardContent>
-                            </Card>
+                                    <div className="flex flex-col justify-center">
+                                        <h3 className="text-sm lg:text-base font-black text-gray-900 dark:text-white uppercase tracking-tight leading-none mb-1.5">Metode Pembayaran</h3>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Rincian transaksi per kanal</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    {data.sales.paymentMethods.map((pm, idx) => {
+                                        const isCash = pm.payment_method.toLowerCase().includes('tunai') || pm.payment_method.toLowerCase().includes('cash');
+                                        const isDigital = pm.payment_method.toLowerCase().includes('qris') || pm.payment_method.toLowerCase().includes('transfer');
+
+                                        return (
+                                            <div key={idx} className="bg-gray-50/50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700 p-5 rounded-3xl flex flex-col relative overflow-hidden group/pm transition-all hover:bg-white dark:hover:bg-slate-800 hover:shadow-lg hover:-translate-y-1">
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <div className={`p-2 rounded-xl border ${isCash ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800/20' : isDigital ? 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800/20' : 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-slate-800 dark:border-slate-700'}`}>
+                                                        <Icon name={isCash ? "Banknote" : isDigital ? "QrCode" : "Wallet"} size={18} />
+                                                    </div>
+                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{pm.count} TX</span>
+                                                </div>
+
+                                                <div className="mt-auto">
+                                                    <h4 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-1">{pm.payment_method}</h4>
+                                                    <p className="text-lg font-black text-gray-900 dark:text-white tracking-tight">{formatCurrency(pm.total)}</p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                         </>
                     )}
                 </div>
@@ -611,26 +736,47 @@ const AnalisisData = () => {
     );
 };
 
-// Sub-component for simple card
-// Sub-component for simple card
-const SummaryCard = ({ title, value, icon, colorClass, desc, isCurrency = true }) => {
+// Sub-component for premium summary card
+const SummaryCard = ({ title, value, icon, color = 'primary', desc }) => {
+    const colorStyles = {
+        primary: 'text-blue-600 bg-blue-50 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800/20',
+        success: 'text-emerald-600 bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800/20',
+        danger: 'text-rose-600 bg-rose-50 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800/20',
+        info: 'text-indigo-600 bg-indigo-50 border-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800/20',
+    };
+
+    const activeStyle = colorStyles[color] || colorStyles.primary;
+
     return (
-        <Card className="shadow-md border-border/60 hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-muted-foreground">{title}</p>
-                    <div className={`p-3 rounded-full bg-secondary/50 shrink-0`}>
-                        {icon}
+        <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 lg:p-6 shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100/50 dark:border-slate-700 relative overflow-hidden group hover:shadow-2xl transition-all duration-300">
+            {/* Background Glow */}
+            <div className={`absolute -right-12 -bottom-12 w-32 h-32 rounded-full blur-3xl opacity-20 group-hover:opacity-40 transition-opacity duration-500 ${color === 'success' ? 'bg-emerald-400' : color === 'danger' ? 'bg-rose-400' : color === 'info' ? 'bg-indigo-400' : 'bg-blue-400'}`}></div>
+
+            <div className="relative z-10">
+                <div className="flex justify-between items-start mb-6 lg:mb-4">
+                    <div className={`p-4 lg:p-3 rounded-[1.5rem] lg:rounded-2xl shadow-inner border flex items-center justify-center transition-transform group-hover:scale-110 duration-300 ${activeStyle}`}>
+                        <Icon name={icon} size={24} lg:size={20} strokeWidth={2.5} />
+                    </div>
+                    <div className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-sm ${activeStyle}`}>
+                        Analisis
                     </div>
                 </div>
-                <div>
-                    <h3 className={`text-2xl font-bold ${colorClass} break-words`}>
+
+                <div className="space-y-1">
+                    <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">
+                        {title}
+                    </p>
+                    <h3 className="text-2xl lg:text-xl font-black text-gray-900 dark:text-white tracking-tighter leading-none py-1 truncate">
                         {value}
                     </h3>
-                    {desc && <p className="text-xs text-muted-foreground mt-1">{desc}</p>}
+                    {desc && (
+                        <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1 mt-2 lg:mt-1">
+                            {desc}
+                        </p>
+                    )}
                 </div>
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 };
 

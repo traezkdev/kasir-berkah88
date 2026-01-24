@@ -12,6 +12,7 @@ import EditTransactionDescriptionModal from '../../components/ui/EditTransaction
 import ConfirmationModal from '../../components/ui/ConfirmationModal'; // Import ConfirmationModal
 import { useToast } from '../../components/ui/ToastNotification'; // <--- Import useToast
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
+import AdminMobileHeader from '../../components/ui/AdminMobileHeader';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -250,23 +251,50 @@ const UangBisnis = ({ headerTitle }) => {
 
     return (
         <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
-            {theme === 'default' && <OwnerNavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || 'Uang Bisnis'} />}
-            <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'pt-24 lg:pt-16' : ''}`}>
+            {theme === 'default' && (
+                <>
+                    <OwnerNavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || 'Uang Bisnis'} hideMobileHeader={true} />
+                    <AdminMobileHeader
+                        title="Uang Bisnis"
+                        subtitle="Cash Flow"
+                        badgeText="Owner Deposit"
+                        decorativeIcon="Wallet"
+                        stickyTitle="Riwayat Transaksi"
+                        rightIcon="Home"
+                        onRightAction={() => navigate('/owner-dashboard')}
+                        actions={[
+                            {
+                                label: "Tambah Deposit",
+                                icon: "Plus",
+                                color: "success",
+                                onClick: handleAddDeposit
+                            },
+                            {
+                                label: "Catat Pengeluaran",
+                                icon: "Minus",
+                                color: "danger",
+                                onClick: handleRecordExpense
+                            }
+                        ]}
+                    />
+                </>
+            )}
+            <main className={`pb-20 lg:pb-8 ${theme === 'default' ? 'lg:pt-16' : ''}`}>
                 <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6" : ""}>
-                    <div className="mb-8 mt-6 lg:mb-10 lg:mt-0">
-                        <div className="mb-4 hidden md:block">
+                    <div className="mb-8 mt-6 lg:mb-10 lg:mt-0 hidden lg:block">
+                        <div className="mb-4">
                             <BreadcrumbNavigation paths={[{ name: 'Beranda Owner', path: '/owner-dashboard' }, { name: 'Uang Bisnis', path: '/uang-bisnis' }]} className="mb-4" />
                         </div>
                         <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
                             Riwayat Transaksi Owner
                         </h1>
-                        <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>
+                        <div className="w-12 h-1 bg-blue-600 rounded-full mt-2"></div>
                         <p className="text-xs lg:text-sm text-text-secondary mt-2 font-bold uppercase tracking-widest opacity-60">
                             Cash flow Kerongkongan berkah 88
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 -mt-16 lg:mt-0">
                         <MetricsCard
                             title="Saldo Owner"
                             value={formatCurrency(ownerAccount?.account?.balance || 0)}
@@ -283,7 +311,7 @@ const UangBisnis = ({ headerTitle }) => {
                         />
                     </div>
 
-                    <div className="flex flex-wrap justify-start gap-4 mb-8">
+                    <div className="hidden lg:flex flex-wrap justify-start gap-4 mb-8">
                         <Button variant="primary" iconName="Plus" onClick={handleAddDeposit}>
                             Tambah Deposit
                         </Button>
@@ -293,64 +321,136 @@ const UangBisnis = ({ headerTitle }) => {
                     </div>
 
                     {/* Transaction List */}
-                    <div className="bg-card p-4 rounded-md shadow">
-                        <h2 className="text-xl font-semibold text-text-primary mb-4">Riwayat Transaksi Owner</h2>
-                        {ownerAccount?.transactions?.length > 0 ? (
-                            <>
-                                <ul className="divide-y divide-border">
-                                    {currentTransactions.map((transaction) => (
-                                        <li key={transaction.id} className="py-3 flex justify-between items-center">
-                                            <div>
-                                                <p className="text-text-primary font-medium">
-                                                    {transaction.type === 'deposit' ? 'Deposit masuk' : 'Pengeluaran'}
-                                                </p>
-                                                <p className="text-sm text-text-secondary">
-                                                    {transaction.description || 'Tidak ada deskripsi'}
-                                                </p>
-                                                <p className="text-xs text-text-tertiary">
-                                                    {new Date(transaction.created_at).toLocaleString()} oleh {transaction.created_by_username}
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center gap-2"> {/* Container for amount and buttons */}
-                                                <p className={`font-semibold ${transaction.type === 'deposit' ? 'text-success' : 'text-destructive'}`}>
-                                                    {transaction.type === 'deposit' ? '+' : '-'} {formatCurrency(transaction.amount)}
-                                                </p>
-                                                <Button variant="ghost" size="icon" onClick={() => handleEditClick(transaction)}>
-                                                    <Icon name="Edit" className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(transaction)}>
-                                                    <Icon name="Trash2" className="h-4 w-4 text-destructive" />
-                                                </Button>
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
+                    <div className="mt-8">
+                        <div className="flex items-center justify-between mb-6 px-1">
+                            <div>
+                                <h2 className="text-xl font-black text-gray-800 dark:text-white uppercase tracking-tight">Riwayat Transaksi Owner</h2>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Catatan dana keluar masuk owner</p>
+                            </div>
+                        </div>
 
-                                {totalPages > 1 && (
-                                    <div className="flex justify-between items-center mt-4">
-                                        <Button
-                                            variant="outline"
-                                            onClick={prevPage}
-                                            disabled={currentPage === 1}
-                                        >
-                                            Sebelumnya
-                                        </Button>
-                                        <span className="text-sm text-text-secondary">
-                                            Halaman {currentPage} dari {totalPages}
-                                        </span>
-                                        <Button
-                                            variant="outline"
-                                            onClick={nextPage}
-                                            disabled={currentPage === totalPages}
-                                        >
-                                            Berikutnya
-                                        </Button>
+                        <div className="relative min-h-[400px]">
+                            {ownerAccount?.transactions?.length > 0 ? (
+                                <>
+                                    <ul className="space-y-4">
+                                        {currentTransactions.map((transaction) => (
+                                            <li key={transaction.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 transition-all hover:shadow-md group">
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${transaction.type === 'deposit' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                                                            <Icon name={transaction.type === 'deposit' ? 'TrendingUp' : 'TrendingDown'} size={24} />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <h4 className="text-sm font-black text-gray-800 dark:text-white uppercase tracking-tight truncate">
+                                                                {transaction.type === 'deposit' ? 'Deposit Masuk' : 'Pengeluaran Owner'}
+                                                            </h4>
+                                                            {/* Premium Record Badge */}
+                                                            <div className={`mt-2 px-3 py-2 rounded-xl border flex items-center gap-2.5 ${transaction.type === 'deposit' ? 'bg-emerald-50/50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800/20' : 'bg-rose-50/50 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800/20'}`}>
+                                                                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${transaction.type === 'deposit' ? 'bg-emerald-500' : 'bg-rose-500'} animate-pulse`}></div>
+                                                                <p className={`text-[11px] font-black uppercase tracking-widest leading-none ${transaction.type === 'deposit' ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}`}>
+                                                                    {transaction.description || 'Tanpa Catatan'}
+                                                                </p>
+                                                            </div>
+                                                            <div className="flex items-center gap-3 mt-2">
+                                                                <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700/50">
+                                                                    <Icon name="Calendar" size={12} className="text-gray-400" />
+                                                                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">
+                                                                        {new Date(transaction.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700/50">
+                                                                    <Icon name="Clock" size={12} className="text-gray-400" />
+                                                                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">
+                                                                        {new Date(transaction.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                                                    </span>
+                                                                </div>
+                                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+                                                                    • {transaction.created_by_username}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center justify-between sm:justify-end gap-6 pl-16 sm:pl-0 border-t border-gray-50 dark:border-slate-800 pt-3 sm:pt-0 sm:border-t-0">
+                                                        <div className="text-right">
+                                                            <p className={`text-lg font-black tracking-tighter ${transaction.type === 'deposit' ? 'text-green-600' : 'text-red-600'}`}>
+                                                                {transaction.type === 'deposit' ? '+' : '-'} {formatCurrency(transaction.amount)}
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => handleEditClick(transaction)}
+                                                                className="h-9 w-9 p-0 bg-gray-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-400 hover:text-blue-600 rounded-xl transition-all"
+                                                            >
+                                                                <Icon name="Edit" size={16} />
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => handleDeleteClick(transaction)}
+                                                                className="h-9 w-9 p-0 bg-gray-50 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-600 rounded-xl transition-all"
+                                                            >
+                                                                <Icon name="Trash2" size={16} />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+
+                                    {/* Premium Pagination Controls */}
+                                    {totalPages > 1 && (
+                                        <div className="flex flex-col sm:flex-row justify-between items-center mt-8 gap-4 px-2">
+                                            <div className="flex items-center gap-2 order-2 sm:order-1">
+                                                <Button
+                                                    onClick={prevPage}
+                                                    disabled={currentPage === 1}
+                                                    variant="ghost"
+                                                    className="h-10 px-4 rounded-xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-sm text-gray-600 dark:text-gray-300 font-bold text-xs uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-slate-800 transition-all flex items-center gap-2 group"
+                                                >
+                                                    <Icon name="ChevronLeft" size={16} className="transition-transform group-hover:-translate-x-1" />
+                                                    Sebelumnya
+                                                </Button>
+                                                <Button
+                                                    onClick={nextPage}
+                                                    disabled={currentPage === totalPages}
+                                                    variant="ghost"
+                                                    className="h-10 px-4 rounded-xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-sm text-gray-600 dark:text-gray-300 font-bold text-xs uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-slate-800 transition-all flex items-center gap-2 group"
+                                                >
+                                                    Berikutnya
+                                                    <Icon name="ChevronRight" size={16} className="transition-transform group-hover:translate-x-1" />
+                                                </Button>
+                                            </div>
+
+                                            <div className="flex items-center gap-3 order-1 sm:order-2">
+                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                    Halaman
+                                                </span>
+                                                <div className="flex items-center justify-center h-8 px-4 rounded-lg bg-blue-600 text-white font-mono font-black text-sm shadow-lg shadow-blue-500/30">
+                                                    {currentPage}
+                                                </div>
+                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                    Dari {totalPages}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-20 px-4 bg-gray-50/50 dark:bg-slate-900/50 rounded-3xl border-2 border-dashed border-gray-100 dark:border-slate-800">
+                                    <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-3xl shadow-xl flex items-center justify-center mb-6">
+                                        <Icon name="Inbox" size={40} className="text-gray-300 dark:text-gray-600" />
                                     </div>
-                                )}
-                            </>
-                        ) : (
-                            <p className="text-text-secondary">Belum ada transaksi.</p>
-                        )}
+                                    <h3 className="text-lg font-black text-gray-800 dark:text-white uppercase tracking-tight">Belum Ada Transaksi</h3>
+                                    <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-2 text-center max-w-[280px]">
+                                        Silakan tambah deposit atau catat pengeluaran untuk melihat riwayat.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </main>
