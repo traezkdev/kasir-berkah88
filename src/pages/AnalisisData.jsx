@@ -25,6 +25,7 @@ import { Loader2, TrendingUp, TrendingDown, DollarSign, ShoppingBag, CreditCard,
 import { exportToExcel, exportToPdf } from '../utils/exportUtils';
 import OwnerNavigationHeader from '../components/ui/OwnerNavigationHeader';
 import AdminMobileHeader from '../components/ui/AdminMobileHeader';
+import Icon from '../components/AppIcon';
 import { jwtDecode } from 'jwt-decode';
 
 // Setup axios instance
@@ -300,6 +301,8 @@ const AnalisisData = () => {
                         badgeText="Data Breakdown"
                         decorativeIcon="BarChart3"
                         stickyTitle="Analisis Bisnis"
+                        rightIcon="Home"
+                        onRightAction={() => navigate('/owner-dashboard')}
                         actions={[
                             {
                                 label: "Terapkan",
@@ -322,8 +325,8 @@ const AnalisisData = () => {
                 <div className="p-4 md:p-6 space-y-8 max-w-[1600px] mx-auto w-full">
 
                     {/* --- Premium Filter Section (Native App Style) --- */}
-                    <div className="lg:mt-0 -mt-10 relative z-20">
-                        <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] p-6 lg:p-8 shadow-2xl shadow-blue-900/10 dark:shadow-none border border-blue-50/50 dark:border-slate-700 relative overflow-hidden group">
+                    <div className="lg:mt-0 -mt-16 relative z-20">
+                        <div className="bg-white dark:bg-slate-800 rounded-[2.5rem]  p-6 lg:p-8 shadow-2xl shadow-gray-200/50 dark:shadow-none border border-blue-50/50 dark:border-slate-700 relative overflow-hidden group">
                             {/* Decorative Background Icon */}
                             <div className="absolute -right-6 -top-6 text-blue-500/5 group-hover:text-blue-500/10 transition-colors duration-500 pointer-events-none">
                                 <Icon name="Calendar" size={120} />
@@ -374,14 +377,14 @@ const AnalisisData = () => {
                                     <div className="grid grid-cols-2 gap-3 lg:col-span-1">
                                         <button
                                             onClick={fetchData}
-                                            className="h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
+                                            className="h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 px-8"
                                         >
                                             <Icon name="RefreshCw" size={14} className={loading ? 'animate-spin' : ''} />
                                             Terapkan
                                         </button>
                                         <button
                                             onClick={handleSetAllTime}
-                                            className="h-12 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-600 dark:text-gray-200 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2"
+                                            className="h-12 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-600 dark:text-gray-200 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2 px-8"
                                         >
                                             <Icon name="History" size={14} />
                                             Semua
@@ -443,33 +446,32 @@ const AnalisisData = () => {
 
                     {data && (
                         <>
-                            {/* --- Summary Cards --- */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {/* --- Summary Cards (Premium Native App Style) --- */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                                 <SummaryCard
                                     title="Total Pendapatan"
                                     value={formatCurrency(data.summary.totalRevenue)}
-                                    icon={<TrendingUp className="text-green-500" />}
-                                    colorClass="text-green-600 dark:text-green-400"
+                                    icon="TrendingUp"
+                                    color="success"
                                 />
                                 <SummaryCard
                                     title="Total Pengeluaran"
                                     value={formatCurrency(data.summary.totalExpense)}
-                                    icon={<TrendingDown className="text-red-500" />}
-                                    colorClass="text-red-600 dark:text-red-400"
+                                    icon="TrendingDown"
+                                    color="danger"
                                 />
                                 <SummaryCard
                                     title="Laba Bersih"
                                     value={formatCurrency(data.summary.netIncome)}
-                                    icon={<DollarSign className="text-blue-500" />}
-                                    colorClass="text-blue-600 dark:text-blue-400"
+                                    icon="DollarSign"
+                                    color="info"
                                     desc="Pendapatan - Pengeluaran"
                                 />
                                 <SummaryCard
                                     title="Total Transaksi"
                                     value={data.sales.totalTransactions}
-                                    icon={<ShoppingBag className="text-purple-500" />}
-                                    colorClass="text-purple-600 dark:text-purple-400"
-                                    isCurrency={false}
+                                    icon="ShoppingBag"
+                                    color="primary"
                                 />
                             </div>
 
@@ -661,26 +663,47 @@ const AnalisisData = () => {
     );
 };
 
-// Sub-component for simple card
-// Sub-component for simple card
-const SummaryCard = ({ title, value, icon, colorClass, desc, isCurrency = true }) => {
+// Sub-component for premium summary card
+const SummaryCard = ({ title, value, icon, color = 'primary', desc }) => {
+    const colorStyles = {
+        primary: 'text-blue-600 bg-blue-50 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800/20',
+        success: 'text-emerald-600 bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800/20',
+        danger: 'text-rose-600 bg-rose-50 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800/20',
+        info: 'text-indigo-600 bg-indigo-50 border-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800/20',
+    };
+
+    const activeStyle = colorStyles[color] || colorStyles.primary;
+
     return (
-        <Card className="shadow-md border-border/60 hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-muted-foreground">{title}</p>
-                    <div className={`p-3 rounded-full bg-secondary/50 shrink-0`}>
-                        {icon}
+        <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 lg:p-6 shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100/50 dark:border-slate-700 relative overflow-hidden group hover:shadow-2xl transition-all duration-300">
+            {/* Background Glow */}
+            <div className={`absolute -right-12 -bottom-12 w-32 h-32 rounded-full blur-3xl opacity-20 group-hover:opacity-40 transition-opacity duration-500 ${color === 'success' ? 'bg-emerald-400' : color === 'danger' ? 'bg-rose-400' : color === 'info' ? 'bg-indigo-400' : 'bg-blue-400'}`}></div>
+
+            <div className="relative z-10">
+                <div className="flex justify-between items-start mb-6 lg:mb-4">
+                    <div className={`p-4 lg:p-3 rounded-[1.5rem] lg:rounded-2xl shadow-inner border flex items-center justify-center transition-transform group-hover:scale-110 duration-300 ${activeStyle}`}>
+                        <Icon name={icon} size={24} lg:size={20} strokeWidth={2.5} />
+                    </div>
+                    <div className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-sm ${activeStyle}`}>
+                        Analisis
                     </div>
                 </div>
-                <div>
-                    <h3 className={`text-2xl font-bold ${colorClass} break-words`}>
+
+                <div className="space-y-1">
+                    <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">
+                        {title}
+                    </p>
+                    <h3 className="text-2xl lg:text-xl font-black text-gray-900 dark:text-white tracking-tighter leading-none py-1 truncate">
                         {value}
                     </h3>
-                    {desc && <p className="text-xs text-muted-foreground mt-1">{desc}</p>}
+                    {desc && (
+                        <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest ml-1 mt-2 lg:mt-1">
+                            {desc}
+                        </p>
+                    )}
                 </div>
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 };
 

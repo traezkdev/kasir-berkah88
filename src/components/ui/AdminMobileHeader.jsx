@@ -11,6 +11,8 @@ const AdminMobileHeader = ({
     actions = [],
     stickyTitle,
     showNotificationBell = true,
+    rightIcon,
+    onRightAction,
     decorativeIcon = "LayoutGrid",
     scrollThreshold = 100
 }) => {
@@ -51,11 +53,20 @@ const AdminMobileHeader = ({
                         </h2>
                     </div>
                     <div className="flex items-center gap-2">
-                        {showNotificationBell && (
-                            <NotificationBell
-                                size={20}
-                                className={`${scrolled ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`}
-                            />
+                        {rightIcon ? (
+                            <button
+                                onClick={onRightAction}
+                                className={`p-2 rounded-full transition-all active:scale-95 ${scrolled ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`}
+                            >
+                                <Icon name={rightIcon} size={20} />
+                            </button>
+                        ) : (
+                            showNotificationBell && (
+                                <NotificationBell
+                                    size={20}
+                                    className={`${scrolled ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`}
+                                />
+                            )
                         )}
                     </div>
                 </div>

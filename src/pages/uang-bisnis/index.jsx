@@ -260,6 +260,8 @@ const UangBisnis = ({ headerTitle }) => {
                         badgeText="Owner Deposit"
                         decorativeIcon="Wallet"
                         stickyTitle="Riwayat Transaksi"
+                        rightIcon="Home"
+                        onRightAction={() => navigate('/owner-dashboard')}
                         actions={[
                             {
                                 label: "Tambah Deposit",
