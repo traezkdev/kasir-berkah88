@@ -175,9 +175,8 @@ const authenticateToken = (req, res, next) => {
 // Auth Middleware for Role-Based Access Control
 const authorizeRoles = (...roles) => {
     return (req, res, next) => {
-
         if (!req.user || !req.user.role || !roles.includes(req.user.role)) {
-            console.log('Forbidden: Insufficient permissions for user:', req.user ? req.user.username : 'N/A');
+            console.log('❌ Forbidden: Insufficient permissions for user:', req.user ? req.user.username : 'N/A', 'Role:', req.user?.role);
             return res.status(403).json({ error: "Forbidden: Insufficient permissions" });
         }
 
@@ -3056,7 +3055,7 @@ app.post("/api/orders", (req, res, next) => {
     }
 });
 // Get orders (Admin/User: all, Pelanggan: their own)
-app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user', 'pelanggan', 'penjual', 'kasir'), async (req, res) => {
+app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user', 'pelanggan', 'penjual', 'kasir', 'owner'), async (req, res) => {
     try {
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 20;

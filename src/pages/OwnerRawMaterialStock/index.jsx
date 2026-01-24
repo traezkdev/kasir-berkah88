@@ -7,6 +7,7 @@ import EditRawMaterialModal from '../RawMaterialStock/EditRawMaterialModal';
 import AddRawMaterialModal from '../RawMaterialStock/AddRawMaterialModal';
 import { useTheme } from '../../contexts/ThemeContext';
 import OwnerNavigationHeader from '../../components/ui/OwnerNavigationHeader';
+import AdminMobileHeader from '../../components/ui/AdminMobileHeader';
 import useNotification from '../../hooks/useNotification';
 import MetricsCard from '../main-dashboard/components/MetricsCard';
 import Icon from '../../components/AppIcon';
@@ -186,14 +187,43 @@ const OwnerRawMaterialStockDashboard = () => {
 
   return (
     <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
-      {theme === 'default' && <OwnerNavigationHeader />}
-      <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>
-        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6" : "py-4 md:py-6"}>
-          <BreadcrumbNavigation paths={[{ name: 'Beranda Owner', path: '/owner-dashboard' }, { name: 'Stok Bahan Mentah Owner', path: '/owner-raw-material-stock' }]} className="mb-4" />
-          <h1 className="text-2xl font-bold mb-4">Dashboard Stok Bahan Mentah Owner</h1>
+      {theme === 'default' && (
+        <>
+          <OwnerNavigationHeader hideMobileHeader={true} />
+          <AdminMobileHeader
+            title="Stok Bahan Mentah"
+            subtitle="Owner Dashboard"
+            badgeText="RAW MATERIALS"
+            decorativeIcon="Package"
+            stickyTitle="Stok Bahan Mentah"
+            rightIcon="Home"
+            onRightAction={() => navigate('/owner-dashboard')}
+            actions={[
+              {
+                label: 'Tambah Bahan',
+                icon: 'Plus',
+                color: 'success',
+                onClick: handleAddMaterialClick
+              },
+              {
+                label: 'Stok Kritis',
+                icon: 'AlertTriangle',
+                color: 'danger',
+                onClick: () => navigate('/critical-stock')
+              }
+            ]}
+          />
+        </>
+      )}
+      <main className={`${theme === 'default' ? 'lg:pt-16' : ''} pb-24 lg:pb-8`}>
+        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 mt-6 lg:mt-0" : "py-4 md:py-6"}>
+          <div className="hidden lg:block mb-4">
+            <BreadcrumbNavigation paths={[{ name: 'Beranda Owner', path: '/owner-dashboard' }, { name: 'Stok Bahan Mentah Owner', path: '/owner-raw-material-stock' }]} />
+          </div>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight mb-4 hidden lg:block">Dashboard Stok Bahan Mentah Owner</h1>
 
           {/* Metrics Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 -mt-24 lg:mt-0">
             <MetricsCard
               title="Total Nilai Stok Menu"
               value={formatCurrency(totalMenuStockValue)}

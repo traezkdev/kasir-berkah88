@@ -95,85 +95,89 @@ const Pagination = ({
   }
 
   return (
-    <nav className="flex flex-col sm:flex-row items-center justify-between gap-4">
-      {/* Page Info */}
-      <div className="text-sm text-text-secondary flex items-center gap-2">
-        <Icon name="FileText" size={16} className="opacity-50" />
-        <span>
-          Halaman <span className="font-semibold text-text-primary">{currentPage}</span> dari{' '}
-          <span className="font-semibold text-text-primary">{totalPages}</span>
+    <nav className="flex flex-col sm:flex-row items-center justify-between gap-6 mt-10 p-2">
+      {/* Page Info (Native Style) */}
+      <div className="flex items-center gap-4 px-5 py-2.5 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-700/50 shadow-sm">
+        <Icon name="FileText" size={14} className="text-primary opacity-70" strokeWidth={2.5} />
+        <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.15em]">
+          Halaman <span className="text-gray-900 dark:text-white px-1.5 py-0.5 bg-white dark:bg-slate-800 rounded-lg shadow-inner border border-gray-100 dark:border-slate-700 mx-1">{currentPage}</span> Dari <span className="text-gray-900 dark:text-white">{totalPages}</span>
         </span>
       </div>
 
-      {/* Pagination Controls */}
-      <ul className='flex items-center gap-1'>
-        {/* First Page Button */}
-        <li>
-          <Button
-            onClick={handleFirst}
-            disabled={currentPage === 1}
-            variant="outline"
-            size="sm"
-            iconName="ChevronsLeft"
-            title="Halaman Pertama"
-            className="hidden sm:flex"
-          />
-        </li>
-
-        {/* Previous Button */}
-        <li>
-          <Button
-            onClick={handlePrevious}
-            disabled={currentPage === 1}
-            variant="outline"
-            size="sm"
-            iconName="ChevronLeft"
-            title="Halaman Sebelumnya"
-          />
-        </li>
-
-        {/* Page Numbers */}
-        {pageNumbers.map((number, index) => (
-          <li key={index} className='page-item'>
-            {number === '...' ? (
-              <span className="flex items-center justify-center h-9 w-9 text-sm text-text-secondary">...</span>
-            ) : (
-              <Button
-                onClick={() => handlePageChange(number)}
-                variant={currentPage === number ? 'default' : 'outline'}
-                size="sm"
-                className="min-w-[36px]"
-              >
-                {number}
-              </Button>
-            )}
+      {/* Pagination Controls (Native Premium) */}
+      <ul className='flex items-center gap-2'>
+        {/* Navigation Buttons Row */}
+        <div className="flex items-center gap-1.5 p-1.5 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-700/50 shadow-sm">
+          <li>
+            <Button
+              onClick={handleFirst}
+              disabled={currentPage === 1}
+              variant="outline"
+              size="sm"
+              iconName="ChevronsLeft"
+              title="Halaman Pertama"
+              className="hidden sm:flex border-none hover:bg-white dark:hover:bg-slate-800 rounded-xl"
+            />
           </li>
-        ))}
+          <li>
+            <Button
+              onClick={handlePrevious}
+              disabled={currentPage === 1}
+              variant="outline"
+              size="sm"
+              iconName="ChevronLeft"
+              title="Halaman Sebelumnya"
+              className="border-none hover:bg-white dark:hover:bg-slate-800 rounded-xl"
+            />
+          </li>
+        </div>
 
-        {/* Next Button */}
-        <li>
-          <Button
-            onClick={handleNext}
-            disabled={currentPage === totalPages}
-            variant="outline"
-            size="sm"
-            iconName="ChevronRight"
-            title="Halaman Selanjutnya"
-          />
-        </li>
+        {/* Page Numbers Row */}
+        <div className="flex items-center gap-1.5 p-1.5 bg-white dark:bg-slate-800 rounded-2xl shadow-inner border border-gray-100 dark:border-slate-700 mx-1">
+          {pageNumbers.map((number, index) => (
+            <li key={index} className='page-item'>
+              {number === '...' ? (
+                <span className="flex items-center justify-center h-9 w-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">...</span>
+              ) : (
+                <button
+                  onClick={() => handlePageChange(number)}
+                  className={`flex items-center justify-center h-9 min-w-[36px] px-3 rounded-xl text-[11px] font-black transition-all duration-200 ${currentPage === number
+                    ? 'bg-primary text-white shadow-lg shadow-primary/25 scale-105 active:scale-95'
+                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700'
+                    }`}
+                >
+                  {number}
+                </button>
+              )}
+            </li>
+          ))}
+        </div>
 
-        {/* Last Page Button */}
-        <li>
-          <Button
-            onClick={handleLast}
-            disabled={currentPage === totalPages}
-            variant="outline"
-            size="sm"
-            iconName="ChevronsRight"
-            title="Halaman Terakhir"
-            className="hidden sm:flex"
-          />
-        </li>
+        {/* Next Buttons Row */}
+        <div className="flex items-center gap-1.5 p-1.5 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-700/50 shadow-sm">
+          <li>
+            <Button
+              onClick={handleNext}
+              disabled={currentPage === totalPages}
+              variant="outline"
+              size="sm"
+              iconName="ChevronRight"
+              title="Halaman Selanjutnya"
+              className="border-none hover:bg-white dark:hover:bg-slate-800 rounded-xl"
+            />
+          </li>
+          <li>
+            <Button
+              onClick={handleLast}
+              disabled={currentPage === totalPages}
+              variant="outline"
+              size="sm"
+              iconName="ChevronsRight"
+              title="Halaman Terakhir"
+              className="hidden sm:flex border-none hover:bg-white dark:hover:bg-slate-800 rounded-xl"
+            />
+          </li>
+        </div>
       </ul>
     </nav>
   );

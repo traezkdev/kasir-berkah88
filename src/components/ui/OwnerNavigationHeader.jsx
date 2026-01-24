@@ -140,33 +140,46 @@ const OwnerNavigationHeader = ({ onToggleSidebar, headerTitle = "Kasir Berkah 88
         </div>
       </header>
 
-      {/* Mobile Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 bg-card border-t border-border shadow-[0_-4px_12px_rgba(0,0,0,0.1)] lg:hidden safe-area-bottom">
-        <nav className="flex items-center justify-around h-16 px-2">
+      {/* Premium Expanding Bottom Navigation (Modern & Native Style) */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white dark:bg-[#0f172a] border-t border-gray-100 dark:border-slate-800 safe-area-bottom shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+        <nav className="flex items-center justify-between h-18 px-4 py-2">
           {navigationItems.map((item) => {
             const active = isActiveRoute(item.path);
             return (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex flex-col items-center justify-center flex-1 min-w-0 transition-all duration-300 relative ${active ? 'text-primary scale-110' : 'text-text-secondary hover:text-text-primary'
-                  }`}
+                className={`flex items-center justify-center transition-all duration-500 ease-in-out h-12 rounded-2xl relative group active:scale-90
+                    ${active
+                    ? 'flex-[2.5] bg-blue-600 dark:bg-white text-white dark:text-slate-900 px-4 shadow-lg shadow-blue-500/30 dark:shadow-white/10 hover:brightness-110'
+                    : 'flex-1 text-gray-400 dark:text-slate-500 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
               >
-                <div className={`p-1.5 rounded-xl transition-colors duration-300 ${active ? 'bg-primary/30' : ''}`}>
+                <div className="flex items-center gap-2 relative z-10">
                   <Icon
                     name={item.icon}
-                    size={20}
-                    color={active ? 'var(--color-primary)' : 'currentColor'}
+                    size={24}
+                    className={`transition-colors duration-300 ${active ? 'text-white dark:text-slate-900' : 'text-gray-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`}
                   />
+                  {active && (
+                    <span className="text-[10px] font-black uppercase tracking-wider whitespace-nowrap animate-in fade-in slide-in-from-left-2 duration-500">
+                      {item.label === 'Beranda' ? 'Home' : item.label.split(' ')[0]}
+                    </span>
+                  )}
                 </div>
-                <span className={`text-[10px] font-bold mt-1 truncate w-full text-center transition-all duration-300 ${active ? 'opacity-100' : 'opacity-100'}`}>
-                  {item.label}
-                </span>
+
+                {/* Adaptive Glassy Overlay */}
                 {active && (
-                  <span className="absolute -bottom-1 w-1 h-1 bg-primary rounded-full"></span>
+                  <div className="absolute inset-0 rounded-2xl bg-white/10 dark:bg-black/5 transition-opacity group-hover:opacity-20" />
                 )}
-                {item.path === '/critical-stock' && lowStockCount > 0 && !active && (
-                  <span className="absolute top-1 right-1/4 h-2 w-2 rounded-full bg-red-600 border-2 border-card"></span>
+
+                {/* Critical Stock Badge - Premium Style */}
+                {item.path === '/critical-stock' && lowStockCount > 0 && (
+                  <div className={`absolute -top-1 -right-1 ${active ? 'bg-white text-blue-600 dark:bg-slate-900 dark:text-white' : 'bg-red-500 text-white'} 
+                    min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[9px] font-black 
+                    shadow-lg ${active ? 'shadow-white/30' : 'shadow-red-500/50'} border-2 border-white dark:border-slate-900
+                    animate-pulse`}>
+                    {lowStockCount > 9 ? '9+' : lowStockCount}
+                  </div>
                 )}
               </Link>
             );

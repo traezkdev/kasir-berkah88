@@ -281,20 +281,20 @@ const AnalisisData = () => {
 
             {theme === 'default' && (
                 <>
-                    <div className="hidden lg:block">
-                        {userRole === 'owner' ? (
-                            <OwnerNavigationHeader
-                                onToggleSidebar={toggleSidebar}
-                                headerTitle="Analisis Bisnis"
-                            />
-                        ) : (
-                            <NavigationHeader
-                                isCollapsed={isSidebarCollapsed}
-                                onToggleSidebar={toggleSidebar}
-                                headerTitle="Analisis Bisnis"
-                            />
-                        )}
-                    </div>
+                    {userRole === 'owner' ? (
+                        <OwnerNavigationHeader
+                            onToggleSidebar={toggleSidebar}
+                            headerTitle="Analisis Bisnis"
+                            hideMobileHeader={true}
+                        />
+                    ) : (
+                        <NavigationHeader
+                            isCollapsed={isSidebarCollapsed}
+                            onToggleSidebar={toggleSidebar}
+                            headerTitle="Analisis Bisnis"
+                            hideMobileHeader={true}
+                        />
+                    )}
                     <AdminMobileHeader
                         title="Analisis"
                         subtitle="Bisnis"
@@ -302,7 +302,7 @@ const AnalisisData = () => {
                         decorativeIcon="BarChart3"
                         stickyTitle="Analisis Bisnis"
                         rightIcon="Home"
-                        onRightAction={() => navigate('/owner-dashboard')}
+                        onRightAction={() => window.history.back()}
                         actions={[
                             {
                                 label: "Terapkan",

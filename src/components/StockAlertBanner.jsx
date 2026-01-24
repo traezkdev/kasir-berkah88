@@ -114,7 +114,7 @@ const StockAlertBanner = ({ isOwner = false }) => {
     return (
         <div className="my-6 animate-in fade-in slide-in-from-top duration-500 px-1 sm:px-0">
             {/* Desktop UI (Frosted Glass Style) */}
-            <div className="hidden sm:block relative overflow-hidden rounded-[2.5rem] shadow-2xl shadow-red-200/20 dark:shadow-none transition-all duration-500 hover:shadow-red-300/30 hover:-translate-y-1 my-8 border border-red-100/50 dark:border-red-900/30 group">
+            <div className="hidden sm:block relative overflow-hidden rounded-3xl shadow-2xl shadow-red-200/20 dark:shadow-none transition-all duration-500 hover:shadow-red-300/30 hover:-translate-y-1 my-8 border border-red-100/50 dark:border-red-900/30 group">
                 {/* Frosted Glass Background */}
                 <div className="absolute inset-0 bg-white/70 dark:bg-slate-800/80 backdrop-blur-2xl"></div>
 

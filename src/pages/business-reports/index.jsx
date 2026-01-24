@@ -8,8 +8,8 @@ const BusinessReports = ({ headerTitle }) => {
 
   return (
     <div className="min-h-screen">
-      {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || "Laporan Bisnis"} />}
-      <main className={`${theme === 'default' ? 'pt-20' : ''} pb-24 lg:pb-8`}>
+      {theme === 'default' && <NavigationHeader onToggleSidebar={() => { }} headerTitle={headerTitle || "Laporan Bisnis"} hideMobileHeader={true} />}
+      <main className={`${theme === 'default' ? 'lg:pt-20' : ''} pb-24 lg:pb-8`}>
         <BusinessReportView headerTitle={headerTitle} />
       </main>
     </div>
