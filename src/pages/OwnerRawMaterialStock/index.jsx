@@ -91,8 +91,6 @@ const OwnerRawMaterialStockDashboard = () => {
     setIsAddModalOpen(false);
     setIsUnitSettingsOpen(false);
     setSelectedMaterial(null);
-    fetchRawMaterials();
-    fetchUnits();
   };
 
   const handleDeleteClick = async (materialId) => {
@@ -268,38 +266,95 @@ const OwnerRawMaterialStockDashboard = () => {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:justify-between items-center mb-4 gap-2">
+
+          {/* Premium Action Cards Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+            {/* Tambah Bahan */}
             <button
               onClick={handleAddMaterialClick}
-              className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded flex items-center w-full sm:w-auto"
+              className="group relative bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 border-2 border-gray-100 dark:border-slate-700 hover:border-emerald-200 dark:hover:border-emerald-800 rounded-2xl p-4 transition-all duration-300 active:scale-95 shadow-sm hover:shadow-lg"
             >
-              <FaPlus className="mr-2" /> Tambah Bahan Mentah Baru
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Icon name="Plus" size={24} className="text-emerald-600 dark:text-emerald-400" strokeWidth={2.5} />
+                </div>
+                <div className="text-center">
+                  <p className="text-[11px] font-black text-gray-900 dark:text-white uppercase tracking-tight leading-tight">Tambah</p>
+                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Bahan</p>
+                </div>
+              </div>
             </button>
+
+            {/* Stok Kritis */}
             <button
               onClick={() => navigate('/critical-stock')}
-              className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded flex items-center w-full sm:w-auto"
+              className="group relative bg-white dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-900/20 border-2 border-gray-100 dark:border-slate-700 hover:border-rose-200 dark:hover:border-rose-800 rounded-2xl p-4 transition-all duration-300 active:scale-95 shadow-sm hover:shadow-lg"
             >
-              <FaExclamationTriangle className="mr-2" /> Lihat Stok Kritis
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-12 h-12 rounded-xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center group-hover:scale-110 transition-transform relative">
+                  <Icon name="AlertTriangle" size={24} className="text-rose-600 dark:text-rose-400" strokeWidth={2.5} />
+                  {lowStockItemsCount > 0 && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-rose-600 text-white rounded-full flex items-center justify-center text-[9px] font-black border-2 border-white dark:border-slate-800">
+                      {lowStockItemsCount}
+                    </div>
+                  )}
+                </div>
+                <div className="text-center">
+                  <p className="text-[11px] font-black text-gray-900 dark:text-white uppercase tracking-tight leading-tight">Stok</p>
+                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Kritis</p>
+                </div>
+              </div>
             </button>
+
+            {/* Export Excel */}
             <button
               onClick={handleExportExcel}
-              className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center w-full sm:w-auto"
+              className="group relative bg-white dark:bg-slate-800 hover:bg-green-50 dark:hover:bg-green-900/20 border-2 border-gray-100 dark:border-slate-700 hover:border-green-200 dark:hover:border-green-800 rounded-2xl p-4 transition-all duration-300 active:scale-95 shadow-sm hover:shadow-lg"
             >
-              <Icon name="FileText" className="mr-2" /> Export Excel
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Icon name="FileSpreadsheet" size={24} className="text-green-600 dark:text-green-400" strokeWidth={2.5} />
+                </div>
+                <div className="text-center">
+                  <p className="text-[11px] font-black text-gray-900 dark:text-white uppercase tracking-tight leading-tight">Excel</p>
+                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Export</p>
+                </div>
+              </div>
             </button>
+
+            {/* Export PDF */}
             <button
               onClick={handleExportPdf}
-              className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded flex items-center w-full sm:w-auto"
+              className="group relative bg-white dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/20 border-2 border-gray-100 dark:border-slate-700 hover:border-red-200 dark:hover:border-red-800 rounded-2xl p-4 transition-all duration-300 active:scale-95 shadow-sm hover:shadow-lg"
             >
-              <Icon name="FileText" className="mr-2" /> Export PDF
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-12 h-12 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Icon name="FileText" size={24} className="text-red-600 dark:text-red-400" strokeWidth={2.5} />
+                </div>
+                <div className="text-center">
+                  <p className="text-[11px] font-black text-gray-900 dark:text-white uppercase tracking-tight leading-tight">PDF</p>
+                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Export</p>
+                </div>
+              </div>
             </button>
+
+            {/* Atur Satuan */}
             <button
               onClick={() => setIsUnitSettingsOpen(true)}
-              className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded flex items-center w-full sm:w-auto"
+              className="group relative bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-2 border-gray-100 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800 rounded-2xl p-4 transition-all duration-300 active:scale-95 shadow-sm hover:shadow-lg"
             >
-              <Icon name="Settings" className="mr-2" /> Atur Satuan
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Icon name="Settings" size={24} className="text-blue-600 dark:text-blue-400" strokeWidth={2.5} />
+                </div>
+                <div className="text-center">
+                  <p className="text-[11px] font-black text-gray-900 dark:text-white uppercase tracking-tight leading-tight">Satuan</p>
+                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Atur</p>
+                </div>
+              </div>
             </button>
           </div>
+
 
           {/* Table View */}
           <div className="overflow-x-auto bg-card rounded-lg shadow p-4 hidden sm:block">
@@ -356,37 +411,149 @@ const OwnerRawMaterialStockDashboard = () => {
             </table>
           </div>
 
-          {/* Mobile View */}
+
+          {/* Premium Mobile Cards View */}
           <div className="block sm:hidden space-y-4 mt-4 pb-24">
-            {filteredRawMaterials.map((material) => (
-              <div key={material.id} className="bg-card rounded-lg shadow p-4 border border-border">
-                <div className="flex justify-between items-center pb-2 mb-2 border-b border-border">
-                  <p className="text-lg font-bold text-card-foreground">{material.name}</p>
-                  <div>
-                    {(parseFloat(material.current_stock || 0) + parseFloat(material.menu_stock || 0)) < parseFloat(material.stok_minimum || 0) ? (
-                      <span className="px-2 inline-flex text-xs font-semibold rounded-full bg-destructive/10 text-destructive">Stok Menipis!</span>
-                    ) : (
-                      <span className="px-2 inline-flex text-xs font-semibold rounded-full bg-success/10 text-success">Cukup</span>
-                    )}
+            {filteredRawMaterials.map((material) => {
+              const totalStock = parseFloat(material.current_stock || 0) + parseFloat(material.menu_stock || 0);
+              const isLowStock = totalStock < parseFloat(material.stok_minimum || 0);
+
+              return (
+                <div
+                  key={material.id}
+                  className="relative bg-white dark:bg-slate-800 rounded-3xl shadow-lg border-2 border-gray-100 dark:border-slate-700 overflow-hidden transition-all duration-300 hover:shadow-xl"
+                >
+                  {/* Gradient Header with Icon */}
+                  <div className={`relative p-5 ${isLowStock
+                    ? 'bg-gradient-to-br from-rose-500 to-rose-600'
+                    : 'bg-gradient-to-br from-blue-600 to-blue-700'}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30">
+                          <Icon name="Package" size={24} className="text-white" strokeWidth={2.5} />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-black text-white uppercase tracking-tight leading-tight">
+                            {material.name}
+                          </h3>
+                          <p className="text-[10px] font-bold text-white/80 uppercase tracking-widest">
+                            {material.unit}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Status Badge */}
+                      <div className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider ${isLowStock
+                        ? 'bg-white text-rose-600'
+                        : 'bg-white/20 text-white border border-white/30'
+                        }`}>
+                        {isLowStock ? '⚠ Kritis' : '✓ Aman'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Content Body */}
+                  <div className="p-5 space-y-4">
+                    {/* Stock Stats Grid */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Stok Mentah */}
+                      <div className="bg-gray-50 dark:bg-slate-900/50 rounded-2xl p-3 border border-gray-100 dark:border-slate-700">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                            <Icon name="Box" size={14} className="text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Mentah</p>
+                        </div>
+                        <p className="text-lg font-black text-gray-900 dark:text-white tracking-tighter">
+                          {material.current_stock}
+                        </p>
+                      </div>
+
+                      {/* Stok Menu */}
+                      <div className="bg-gray-50 dark:bg-slate-900/50 rounded-2xl p-3 border border-gray-100 dark:border-slate-700">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-6 h-6 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
+                            <Icon name="UtensilsCrossed" size={14} className="text-emerald-600 dark:text-emerald-400" />
+                          </div>
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Menu</p>
+                        </div>
+                        <p className="text-lg font-black text-gray-900 dark:text-white tracking-tighter">
+                          {material.menu_stock}
+                        </p>
+                      </div>
+
+                      {/* Total Stok */}
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-2xl p-3 border-2 border-blue-200 dark:border-blue-800">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center">
+                            <Icon name="Layers" size={14} className="text-white" strokeWidth={2.5} />
+                          </div>
+                          <p className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">Total</p>
+                        </div>
+                        <p className="text-xl font-black text-blue-700 dark:text-blue-300 tracking-tighter">
+                          {totalStock}
+                        </p>
+                      </div>
+
+                      {/* Stok Minimum */}
+                      <div className={`rounded-2xl p-3 border-2 ${isLowStock
+                        ? 'bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-800/20 border-rose-200 dark:border-rose-800'
+                        : 'bg-gray-50 dark:bg-slate-900/50 border-gray-100 dark:border-slate-700'
+                        }`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${isLowStock ? 'bg-rose-600' : 'bg-gray-300 dark:bg-slate-700'
+                            }`}>
+                            <Icon name="AlertCircle" size={14} className={isLowStock ? 'text-white' : 'text-gray-600 dark:text-gray-400'} strokeWidth={2.5} />
+                          </div>
+                          <p className={`text-[9px] font-black uppercase tracking-widest ${isLowStock ? 'text-rose-600 dark:text-rose-400' : 'text-gray-400'
+                            }`}>Min</p>
+                        </div>
+                        <p className={`text-lg font-black tracking-tighter ${isLowStock ? 'text-rose-700 dark:text-rose-300' : 'text-gray-900 dark:text-white'
+                          }`}>
+                          {material.stok_minimum}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Price Info */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-3 border border-emerald-100 dark:border-emerald-800/30">
+                        <p className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Harga Menu</p>
+                        <p className="text-sm font-black text-emerald-700 dark:text-emerald-300 tracking-tight">
+                          {formatCurrency(material.price_per_item)}
+                        </p>
+                      </div>
+                      <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 border border-blue-100 dark:border-blue-800/30">
+                        <p className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">Harga Mentah</p>
+                        <p className="text-sm font-black text-blue-700 dark:text-blue-300 tracking-tight">
+                          {formatCurrency(material.raw_stock_price)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        onClick={() => handleEditClick(material)}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl p-3 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-blue-600/20"
+                      >
+                        <Icon name="Edit" size={18} strokeWidth={2.5} />
+                        <span className="text-[11px] font-black uppercase tracking-wider">Edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(material.id)}
+                        className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl p-3 flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-rose-600/20"
+                      >
+                        <Icon name="Trash2" size={18} strokeWidth={2.5} />
+                        <span className="text-[11px] font-black uppercase tracking-wider">Hapus</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground pb-2 mb-2 border-b border-border">
-                  <div><p className="font-medium">Stok Mentah:</p><p>{material.current_stock} {material.unit}</p></div>
-                  <div><p className="font-medium">Stok Menu:</p><p>{material.menu_stock} {material.unit}</p></div>
-                  <div><p className="font-medium">Total Stok:</p><p>{parseFloat(material.current_stock || 0) + parseFloat(material.menu_stock || 0)} {material.unit}</p></div>
-                  <div><p className="font-medium">Stok Min:</p><p>{material.stok_minimum} {material.unit}</p></div>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground pb-2 mb-2 border-b border-border">
-                  <div><p className="font-medium">Harga Stok Menu:</p><p>{formatCurrency(material.price_per_item)}</p></div>
-                  <div><p className="font-medium">Harga Stok Mentah:</p><p>{formatCurrency(material.raw_stock_price)}</p></div>
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <button onClick={() => handleEditClick(material)} className="text-blue-600 p-2 rounded-full bg-primary/10"><FaEdit /></button>
-                  <button onClick={() => handleDeleteClick(material.id)} className="text-red-600 p-2 rounded-full bg-destructive/10"><FaTrash /></button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
+
 
           {selectedMaterial && (
             <EditRawMaterialModal
