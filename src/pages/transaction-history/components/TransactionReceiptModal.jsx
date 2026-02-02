@@ -251,9 +251,9 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
              fixed lg:relative inset-0 h-full lg:h-auto
              rounded-none lg:rounded-lg animate-in slide-in-from-bottom-full lg:zoom-in-95 duration-300 flex flex-col"
         >
-          <div className="flex justify-between items-center px-6 py-4 border-b border-border">
-            <h2 className="text-xl font-semibold text-foreground">Detail Transaksi #{transaction?.id}</h2>
-            <Button variant="ghost" size="icon" onClick={onClose}>
+          <div className="flex justify-between items-center px-6 py-4 border-b border-blue-700 bg-blue-600 dark:bg-blue-700">
+            <h2 className="text-xl font-semibold text-white">Detail Transaksi #{transaction?.id}</h2>
+            <Button variant="ghost" size="icon" onClick={onClose} className="text-white hover:bg-blue-700 dark:hover:bg-blue-600">
               <Icon name="X" size={20} />
             </Button>
           </div>
@@ -445,7 +445,9 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
 
                       <div className="flex flex-col items-center">
                         <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mb-0.5">KASIR</span>
-                        <span className="text-[9px] font-black text-white uppercase tracking-tight">{transaction.cashier_name || 'SISTEM'}</span>
+                        <span className="text-[9px] font-black text-white uppercase tracking-tight">
+                          {transaction.cashier_name || (localStorage.getItem('username') ? localStorage.getItem('username').toUpperCase() : 'SISTEM')}
+                        </span>
                       </div>
 
                       <div className="flex flex-col items-center border-l border-gray-700 pl-4 text-emerald-400">
