@@ -21,6 +21,8 @@ const EditTransactionModal = ({
     manual_discount: '0',
     catatan: '',
     items: [],
+    cash_paid: '0.00',
+    change: '0.00',
   });
   const [menuItems, setMenuItems] = useState([]);
   const [selectedMenuItemId, setSelectedMenuItemId] = useState('');
@@ -87,6 +89,8 @@ const EditTransactionModal = ({
         manual_discount: transaction.manual_discount ? transaction.manual_discount.toString() : '0',
         catatan: transaction.catatan || '',
         items: parsedItems,
+        cash_paid: transaction.cash_paid ? transaction.cash_paid.toString() : '0.00',
+        change: transaction.change ? transaction.change.toString() : '0.00',
       });
     }
   }, [transaction]);
@@ -192,7 +196,9 @@ const EditTransactionModal = ({
       payment_method: formData.payment_method,
       manual_discount: parseFloat(formData.manual_discount),
       catatan: formData.catatan,
-      items: formData.items
+      items: formData.items,
+      cash_paid: parseFloat(formData.cash_paid || 0),
+      change: parseFloat(formData.change || 0),
     };
 
     await onUpdateTransaction(transaction.id, dataToUpdate);
@@ -215,7 +221,7 @@ const EditTransactionModal = ({
       <div
         className="relative w-full lg:max-w-xl bg-card lg:rounded-lg shadow-xl overflow-hidden
              lg:mx-auto lg:h-auto lg:max-h-[90vh]
-             fixed lg:relative bottom-0 left-0 right-0 h-[92vh] lg:h-auto
+             fixed lg:relative inset-0 lg:inset-auto h-full lg:h-auto
              rounded-none animate-in slide-in-from-bottom-full lg:zoom-in-95 duration-300 flex flex-col "
         onClick={(e) => e.stopPropagation()}
       >
@@ -379,6 +385,42 @@ const EditTransactionModal = ({
                 Dihitung otomatis berdasarkan item, tapi dapat disesuaikan manual.
               </p>
             </div>
+
+            {/* Cash Paid and Change - Only for Tunai */}
+            {formData.payment_method === 'Tunai' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-border pt-4">
+                <div>
+                  <Input
+                    label="Uang Dibayar"
+                    type="number"
+                    name="cash_paid"
+                    value={formData.cash_paid}
+                    onChange={(e) => {
+                      const cashPaid = parseFloat(e.target.value || 0);
+                      const total = parseFloat(formData.total || 0);
+                      const change = Math.max(0, cashPaid - total);
+                      setFormData(prev => ({
+                        ...prev,
+                        cash_paid: e.target.value,
+                        change: change.toFixed(2)
+                      }));
+                    }}
+                    step="0.01"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <Input
+                    label="Kembalian"
+                    type="number"
+                    name="change"
+                    value={formData.change}
+                    disabled
+                    className="bg-muted/50"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="border-t border-border pt-4">
               <label className="block text-sm font-medium mb-1 text-foreground">Catatan</label>
