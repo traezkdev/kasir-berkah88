@@ -20,11 +20,18 @@ const AdminMobileHeader = ({
     const [scrolled, setScrolled] = useState(false);
 
     useEffect(() => {
+        let ticking = false;
         const handleScroll = () => {
-            setScrolled(window.scrollY > scrollThreshold);
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    setScrolled(window.scrollY > scrollThreshold);
+                    ticking = false;
+                });
+                ticking = true;
+            }
         };
 
-        window.addEventListener('scroll', handleScroll);
+        window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
     }, [scrollThreshold]);
 
@@ -39,11 +46,11 @@ const AdminMobileHeader = ({
     return (
         <div className="lg:hidden">
             {/* Sticky Header */}
-            <div className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${scrolled ? 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}>
+            <div className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${scrolled ? 'bg-white/95 dark:bg-slate-900/95 shadow-sm py-3' : 'bg-transparent py-5'}`}>
                 <div className="px-6 flex items-center justify-between">
                     <button
                         onClick={handleDefaultBack}
-                        className={`p-2 rounded-2xl transition-all active:scale-95 ${scrolled ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`}
+                        className={`p-2 rounded-2xl transition-all active:scale-95 ${scrolled ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-sm'}`}
                     >
                         <Icon name="ChevronLeft" size={24} />
                     </button>
@@ -56,7 +63,7 @@ const AdminMobileHeader = ({
                         {rightIcon ? (
                             <button
                                 onClick={onRightAction}
-                                className={`p-2 rounded-full transition-all active:scale-95 ${scrolled ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`}
+                                className={`p-2 rounded-full transition-all active:scale-95 ${scrolled ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-sm'}`}
                             >
                                 <Icon name={rightIcon} size={20} />
                             </button>
@@ -64,7 +71,7 @@ const AdminMobileHeader = ({
                             showNotificationBell && (
                                 <NotificationBell
                                     size={20}
-                                    className={`${scrolled ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`}
+                                    className={`${scrolled ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-sm'}`}
                                 />
                             )
                         )}
@@ -118,7 +125,7 @@ const AdminMobileHeader = ({
                                 <button
                                     key={index}
                                     onClick={action.onClick}
-                                    className={`flex-1 backdrop-blur-xl p-3.5 rounded-2xl border flex items-center gap-2.5 active:scale-95 transition-all outline-none ${buttonClass}`}
+                                    className={`flex-1 backdrop-blur-sm p-3.5 rounded-2xl border flex items-center gap-2.5 active:scale-95 transition-all outline-none ${buttonClass}`}
                                 >
                                     <div className={`p-2 rounded-xl scale-110 ${iconBoxClass}`}>
                                         <Icon name={action.icon} size={18} strokeWidth={3} />

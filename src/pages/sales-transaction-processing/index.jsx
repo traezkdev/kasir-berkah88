@@ -530,7 +530,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setIsMobileSummaryOpen(false)}
           ></div>
-          <div className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
+          <div className="absolute inset-0 h-full w-full bg-white dark:bg-slate-900 shadow-2xl animate-in slide-in-from-bottom-full duration-300 flex flex-col">
             <div className="sticky top-0 right-0 p-4 flex justify-between items-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 border-b border-gray-100 dark:border-slate-800">
               <h3 className="font-black text-lg text-gray-800 dark:text-white ml-2">Ringkasan Pesanan</h3>
               <button
@@ -540,7 +540,7 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
                 <Icon name="X" size={20} />
               </button>
             </div>
-            <div className="p-6">
+            <div className="p-6 flex-1 overflow-y-auto pb-safe">
               <OrderSummary
                 cart={cart}
                 menuItems={menuItems}

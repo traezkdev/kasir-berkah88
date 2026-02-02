@@ -114,6 +114,8 @@ const Settings = () => {
   const [newReceiptVersion, setNewReceiptVersion] = useState('1');
   const [authUiVersion, setAuthUiVersion] = useState('1');
   const [newAuthUiVersion, setNewAuthUiVersion] = useState('1');
+  const [dailyWelcomeEnabled, setDailyWelcomeEnabled] = useState(true);
+  const [newDailyWelcomeEnabled, setNewDailyWelcomeEnabled] = useState(true);
 
   // --- Effects ---
   useEffect(() => {
@@ -130,6 +132,8 @@ const Settings = () => {
         }
       } catch (e) { console.error("Error decoding token:", e); setUserRole(''); }
     }
+    setDailyWelcomeEnabled(localStorage.getItem('daily_welcome_enabled') !== 'false');
+    setNewDailyWelcomeEnabled(localStorage.getItem('daily_welcome_enabled') !== 'false');
   }, []);
 
   // Update document title when websiteTitle changes
@@ -593,6 +597,10 @@ const Settings = () => {
             <SettingsCard icon="Store" title="Identitas Toko" description="Nama, logo, dan deskripsi website" onClick={() => setActiveModal('restaurantSettings')} disabled={!isAdmin} />
             <SettingsCard icon="Layout" title="Tampilan & Tema" description="Ubah tema warna dan gaya aplikasi" onClick={() => setActiveModal('appStyleSelection')} disabled={!isAdmin} />
             <SettingsCard icon="Zap" title="Mode Aplikasi" description="Beralih mode Sederhana/Lengkap" onClick={() => setActiveModal('appMode')} disabled={!isAdmin} />
+            <SettingsCard icon="Sunrise" title="Motivasi Harian" description="Aktifkan pesan penyemangat pagi" onClick={() => {
+              setNewDailyWelcomeEnabled(dailyWelcomeEnabled);
+              setActiveModal('dailyWelcome');
+            }} />
 
             {/* General Settings */}
             <SettingsCard icon="FileText" title="PPN & Struk" description="Atur rate PPN dan versi struk" onClick={() => setActiveModal('receiptVersion')} disabled={!isAdmin} />
@@ -718,6 +726,45 @@ const Settings = () => {
             {isLoading ? 'Menyimpan...' : 'Gunakan Tampilan Terpilih'}
           </Button>
         </form>
+      </SettingsModal>
+
+      <SettingsModal title="Pop-up Motivasi Harian" isOpen={activeModal === 'dailyWelcome'} onClose={handleModalClose}>
+        <div className="space-y-6">
+          <p className="text-sm text-text-secondary mb-4">
+            Tampilkan pesan motivasi dan ayat penyemangat setiap pagi saat pertama kali membuka aplikasi.
+          </p>
+          <div className="grid grid-cols-1 gap-4">
+            {/* Enable Card */}
+            <div onClick={() => setNewDailyWelcomeEnabled(true)} className={`cursor-pointer p-4 border-2 rounded-xl transition-all duration-200 flex items-center gap-4 ${newDailyWelcomeEnabled ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}>
+              <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <AppIcon name="CheckCircle" className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <h4 className="font-bold text-text-primary">Aktifkan</h4>
+                <p className="text-sm text-text-secondary">Tampilkan pop-up setiap pagi.</p>
+              </div>
+              {newDailyWelcomeEnabled && <AppIcon name="Check" className="ml-auto text-primary w-6 h-6" />}
+            </div>
+
+            {/* Disable Card */}
+            <div onClick={() => setNewDailyWelcomeEnabled(false)} className={`cursor-pointer p-4 border-2 rounded-xl transition-all duration-200 flex items-center gap-4 ${!newDailyWelcomeEnabled ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}>
+              <div className="w-12 h-12 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <AppIcon name="XCircle" className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h4 className="font-bold text-text-primary">Nonaktifkan</h4>
+                <p className="text-sm text-text-secondary">Jangan tampilkan pop-up ini lagi.</p>
+              </div>
+              {!newDailyWelcomeEnabled && <AppIcon name="Check" className="ml-auto text-primary w-6 h-6" />}
+            </div>
+          </div>
+          <Button onClick={() => {
+            localStorage.setItem('daily_welcome_enabled', newDailyWelcomeEnabled);
+            setDailyWelcomeEnabled(newDailyWelcomeEnabled);
+            setMessage('Pengaturan berhasil disimpan!');
+            setTimeout(() => handleModalClose(), 1000);
+          }} className="w-full mt-4" disabled={isLoading}>Simpan Pengaturan</Button>
+        </div>
       </SettingsModal>
 
       <SettingsModal title="Tampilan & Tema" isOpen={activeModal === 'appStyleSelection'} onClose={handleModalClose}>

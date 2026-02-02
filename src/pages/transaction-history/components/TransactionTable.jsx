@@ -18,8 +18,8 @@ const TransactionTable = ({ transactions, onDeleteTransaction, onEditTransaction
       <div className="space-y-3">
         {transactions?.map((transaction) => (
           <TransactionCard
-            key={transaction?.id} 
-            transaction={transaction} 
+            key={transaction?.id}
+            transaction={transaction}
             onDelete={onDeleteTransaction}
             onEdit={onEditTransaction}
             onRowClick={onRowClick} // Pass prop
@@ -82,4 +82,4 @@ const TransactionTable = ({ transactions, onDeleteTransaction, onEditTransaction
   );
 };
 
-export default TransactionTable;
+export default React.memo(TransactionTable);

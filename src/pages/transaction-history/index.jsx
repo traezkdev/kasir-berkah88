@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom'; // Import useNavigate and useLocation
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
@@ -84,10 +84,17 @@ const TransactionHistory = ({ headerTitle }) => {
   const [showAllMetrics, setShowAllMetrics] = useState(false);
 
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      setShowStickyHeader(window.scrollY > 100);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setShowStickyHeader(window.scrollY > 20);
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -234,20 +241,20 @@ const TransactionHistory = ({ headerTitle }) => {
     }
   }, []);
 
-  const handleTransactionClick = (transaction) => {
+  const handleTransactionClick = useCallback((transaction) => {
     setSelectedTransaction(transaction);
     setIsReceiptModalOpen(true);
-  };
+  }, []);
 
   const handleCloseReceiptModal = () => {
     setIsReceiptModalOpen(false);
     setSelectedTransaction(null);
   };
 
-  const handleEditTransaction = (transaction) => {
+  const handleEditTransaction = useCallback((transaction) => {
     setTransactionToEdit(transaction);
     setIsEditModalOpen(true);
-  };
+  }, []);
 
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false);
@@ -341,10 +348,10 @@ const TransactionHistory = ({ headerTitle }) => {
     // Removed currentDailyDate and its handlers
   };
 
-  const handleOpenDeleteConfirm = (transactionId) => {
+  const handleOpenDeleteConfirm = useCallback((transactionId) => {
     setTransactionToDeleteId(transactionId);
     setShowDeleteConfirm(true);
-  };
+  }, []);
 
   const handleCloseDeleteConfirm = () => {
     setTransactionToDeleteId(null);
@@ -808,11 +815,11 @@ const TransactionHistory = ({ headerTitle }) => {
           </div>
 
           {/* Mobile Header */}
-          <div className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden ${showStickyHeader ? 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}>
+          <div className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden ${showStickyHeader ? 'bg-white/95 dark:bg-slate-900/95 shadow-sm py-3' : 'bg-transparent py-5'}`}>
             <div className="px-6 flex items-center justify-between">
               <button
                 onClick={() => navigate(-1)}
-                className={`p-2 rounded-2xl transition-all active:scale-95 ${showStickyHeader ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`}
+                className={`p-2 rounded-2xl transition-all active:scale-95 ${showStickyHeader ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-sm'}`}
               >
                 <Icon name="ChevronLeft" size={24} />
               </button>
@@ -822,7 +829,7 @@ const TransactionHistory = ({ headerTitle }) => {
               </div>
 
               <div className="flex items-center gap-2">
-                <NotificationBell size={20} className={`${showStickyHeader ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`} />
+                <NotificationBell size={20} className={`${showStickyHeader ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-sm'}`} />
               </div>
             </div>
           </div>
@@ -853,7 +860,7 @@ const TransactionHistory = ({ headerTitle }) => {
             <div className="mt-8 flex gap-3 relative z-10">
               <button
                 onClick={handleOpenRecapPopup}
-                className="flex-1 bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 flex items-center gap-2 active:scale-95 transition-all outline-none"
+                className="flex-1 bg-white/10 backdrop-blur-sm p-3 rounded-2xl border border-white/20 flex items-center gap-2 active:scale-95 transition-all outline-none"
               >
                 <div className="bg-white/20 p-2 rounded-xl text-white">
                   <Icon name="FileText" size={18} />
@@ -864,7 +871,7 @@ const TransactionHistory = ({ headerTitle }) => {
               </button>
               <button
                 onClick={() => handleExportTransactions('pdf', dateRange.startDate, dateRange.endDate)}
-                className="flex-1 bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 flex items-center gap-2 active:scale-95 transition-all outline-none"
+                className="flex-1 bg-white/10 backdrop-blur-sm p-3 rounded-2xl border border-white/20 flex items-center gap-2 active:scale-95 transition-all outline-none"
               >
                 <div className="bg-white/20 p-2 rounded-xl text-white">
                   <Icon name="Download" size={18} />

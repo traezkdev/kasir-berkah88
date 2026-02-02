@@ -62,8 +62,10 @@ const DailyWelcomeModal = () => {
             const lastShownDate = localStorage.getItem('last_welcome_popup_date');
             const token = localStorage.getItem('token');
 
-            // Syarat: Jam >= 7 pagi DAN belum pernah muncul hari ini DAN sudah login (punya token)
-            if (currentHour >= 7 && lastShownDate !== todayDate && token) {
+            const isEnabled = localStorage.getItem('daily_welcome_enabled') !== 'false';
+
+            // Syarat: Fitur Aktif DAN Jam >= 7 pagi DAN belum pernah muncul hari ini DAN sudah login (punya token)
+            if (isEnabled && currentHour >= 7 && lastShownDate !== todayDate && token) {
                 // Pilih konten secara acak berdasarkan hari
                 const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
 

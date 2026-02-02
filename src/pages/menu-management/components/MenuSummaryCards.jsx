@@ -65,4 +65,4 @@ const MenuSummaryCards = ({ menuItems }) => {
   );
 };
 
-export default MenuSummaryCards;
+export default React.memo(MenuSummaryCards);

@@ -362,4 +362,4 @@ const MenuItemsTable = ({
   );
 };
 
-export default MenuItemsTable;
+export default React.memo(MenuItemsTable);

@@ -23,8 +23,8 @@ const AddExpenseModal = ({
             <div
                 className="relative w-full lg:max-w-2xl bg-white dark:bg-slate-900 shadow-2xl overflow-hidden
                    lg:mx-auto lg:h-[90vh]
-                   fixed lg:relative bottom-0 left-0 right-0 h-[92vh] lg:h-auto
-                   rounded-none animate-in slide-in-from-bottom-full lg:zoom-in-95 duration-300"
+                   fixed lg:relative inset-0 h-full lg:h-auto
+                   rounded-none lg:rounded-2xl animate-in slide-in-from-bottom-full lg:zoom-in-95 duration-300"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Sticky Header */}
