@@ -19,7 +19,7 @@ const NotFound = () => {
           </div>
         </div>
 
-        <h2 className="text-2xl font-medium text-onBackground mb-2">Page Not Found</h2>
+        <h2 className="text-2xl font-medium text-onBackground mb-2">Halaman Tidak Ditemukan</h2>
         <p className="text-onBackground/70 mb-8">
           Tidak ada apa apa disini, silahkan kembali ke halaman sebelumnya atau ke halaman utama.
         </p>

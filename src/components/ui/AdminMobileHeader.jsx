@@ -46,16 +46,19 @@ const AdminMobileHeader = ({
     return (
         <div className="lg:hidden">
             {/* Sticky Header */}
-            <div className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${scrolled ? 'bg-white/95 dark:bg-slate-900/95 shadow-sm py-3' : 'bg-transparent py-5'}`}>
+            <div
+                className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${scrolled ? 'shadow-sm py-3' : 'bg-transparent py-5'}`}
+                style={scrolled ? { backgroundColor: 'rgba(20, 143, 234, 0.95)' } : {}}
+            >
                 <div className="px-6 flex items-center justify-between">
                     <button
                         onClick={handleDefaultBack}
-                        className={`p-2 rounded-2xl transition-all active:scale-95 ${scrolled ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-sm'}`}
+                        className={`p-2 rounded-2xl transition-all active:scale-95 ${scrolled ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white/20 text-white backdrop-blur-sm'}`}
                     >
                         <Icon name="ChevronLeft" size={24} />
                     </button>
                     <div className={`text-center transition-all duration-300 ${scrolled ? 'opacity-100' : 'opacity-0'}`}>
-                        <h2 className="font-black text-gray-800 dark:text-white tracking-tight">
+                        <h2 className="font-black text-white tracking-tight">
                             {stickyTitle || title}
                         </h2>
                     </div>
@@ -63,7 +66,7 @@ const AdminMobileHeader = ({
                         {rightIcon ? (
                             <button
                                 onClick={onRightAction}
-                                className={`p-2 rounded-full transition-all active:scale-95 ${scrolled ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-sm'}`}
+                                className={`p-2 rounded-full transition-all active:scale-95 ${scrolled ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white/20 text-white backdrop-blur-sm'}`}
                             >
                                 <Icon name={rightIcon} size={20} />
                             </button>
@@ -71,7 +74,7 @@ const AdminMobileHeader = ({
                             showNotificationBell && (
                                 <NotificationBell
                                     size={20}
-                                    className={`${scrolled ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-sm'}`}
+                                    className={`${scrolled ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white/20 text-white backdrop-blur-sm'}`}
                                 />
                             )
                         )}

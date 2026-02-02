@@ -441,21 +441,24 @@ const ExpenseTracking = ({ headerTitle }) => {
           </div>
 
           {/* Mobile Header */}
-          <div className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden ${showStickyHeader ? 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}>
+          <div
+            className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden ${showStickyHeader ? 'backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}
+            style={showStickyHeader ? { backgroundColor: 'rgba(20, 143, 234, 0.95)' } : {}}
+          >
             <div className="px-6 flex items-center justify-between">
               <button
                 onClick={() => navigate(-1)}
-                className={`p-2 rounded-2xl transition-all active:scale-95 ${showStickyHeader ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`}
+                className={`p-2 rounded-2xl transition-all active:scale-95 ${showStickyHeader ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white/20 text-white backdrop-blur-md'}`}
               >
                 <Icon name="ChevronLeft" size={24} />
               </button>
 
               <div className={`text-center transition-all duration-300 ${showStickyHeader ? 'opacity-100' : 'opacity-0'}`}>
-                <h2 className="font-black text-gray-800 dark:text-white tracking-tight">Tracking Biaya</h2>
+                <h2 className="font-black text-white tracking-tight">Tracking Biaya</h2>
               </div>
 
               <div className="flex items-center gap-2">
-                <NotificationBell size={20} className={`${showStickyHeader ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200' : 'bg-white/20 text-white backdrop-blur-md'}`} />
+                <NotificationBell size={20} className={`${showStickyHeader ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white/20 text-white backdrop-blur-md'}`} />
               </div>
             </div>
           </div>

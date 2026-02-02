@@ -307,23 +307,27 @@ const ReceiptPage = () => {
 
   return (
     <>
-      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-0 sm:p-4 cursor-default selection:bg-primary/10 overflow-hidden">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998]" onClick={() => navigate('/transaksi')}></div>
+      <div className="fixed inset-0 z-[9999] flex items-end lg:items-center justify-center sm:p-4 p-0 pointer-events-none">
         <div
           id="receipt-container"
-          className="relative w-full h-full sm:h-auto sm:max-h-[95vh] lg:max-w-2xl bg-white dark:bg-slate-900 shadow-2xl overflow-hidden sm:rounded-2xl flex flex-col animate-in slide-in-from-bottom-full sm:zoom-in-95 duration-500"
+          className="relative w-full lg:max-w-2xl bg-white dark:bg-slate-900 shadow-2xl overflow-hidden
+             lg:mx-auto lg:max-h-[90vh]
+             fixed lg:relative inset-0 h-full lg:h-auto
+             rounded-none lg:rounded-lg animate-in slide-in-from-bottom-full lg:zoom-in-95 duration-300 flex flex-col pointer-events-auto"
         >
           {/* Header Section (Synced with Modal) */}
-          <div className="flex justify-between items-center px-6 py-4 border-b border-border bg-white dark:bg-slate-900 z-10 shrink-0">
-            <h2 className="text-xl font-semibold text-foreground">Detail Transaksi #{transaction?.id}</h2>
-            <Button variant="ghost" size="icon" onClick={() => navigate('/transaksi')}>
+          <div className="flex justify-between items-center px-6 py-4 border-b border-blue-700 bg-blue-600 dark:bg-blue-700 z-10 shrink-0">
+            <h2 className="text-xl font-semibold text-white">Detail Transaksi #{transaction?.id}</h2>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/transaksi')} className="text-white hover:bg-blue-700 dark:hover:bg-blue-600">
               <Icon name="X" size={20} />
             </Button>
           </div>
 
-          <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-slate-950 flex justify-center p-4 sm:p-6 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto bg-gray-50 flex justify-center p-4 sm:p-6">
             <div
               ref={receiptRef}
-              className="bg-white shadow-2xl h-fit rounded-lg w-full max-w-[520px] mb-8"
+              className="bg-white shadow-2xl h-fit rounded-lg w-full max-w-[520px]"
             >
               <div>
                 {receiptVersion === '2' ? (
@@ -509,7 +513,9 @@ const ReceiptPage = () => {
 
                         <div className="flex flex-col items-center">
                           <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mb-0.5">KASIR</span>
-                          <span className="text-[9px] font-black text-white uppercase tracking-tight">{transaction.cashier_name || 'SISTEM'}</span>
+                          <span className="text-[9px] font-black text-white uppercase tracking-tight">
+                            {transaction.cashier_name || (localStorage.getItem('username') ? localStorage.getItem('username').toUpperCase() : 'SISTEM')}
+                          </span>
                         </div>
 
                         <div className="flex flex-col items-center border-l border-gray-700 pl-4 text-emerald-400">
@@ -770,7 +776,7 @@ const ReceiptPage = () => {
               </div>
             </div>
           </div>
-          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-b-lg flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center border-t dark:border-gray-700 print:hidden shrink-0">
+          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-b-lg flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center print:hidden">
             <div className="flex flex-wrap items-center justify-center gap-2 w-full">
               <Button
                 variant="outline"

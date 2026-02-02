@@ -319,16 +319,19 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
       </div>
 
       {/* Mobile Floating Header (Native App Feel) */}
-      <div className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden ${scrolled ? 'bg-white/80 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}>
+      <div
+        className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden ${scrolled ? 'backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}
+        style={scrolled ? { backgroundColor: 'rgba(20, 143, 234, 0.95)' } : {}}
+      >
         <div className="px-6 flex items-center justify-between">
-          <button onClick={() => navigate(-1)} className={`p-2 rounded-2xl transition-all ${scrolled ? 'bg-gray-100 text-gray-800' : 'bg-white/20 text-white backdrop-blur-md'}`}>
+          <button onClick={() => navigate(-1)} className={`p-2 rounded-2xl transition-all ${scrolled ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white/20 text-white backdrop-blur-md'}`}>
             <Icon name="ChevronLeft" size={24} />
           </button>
           <div className={`text-center transition-all duration-300 ${scrolled ? 'opacity-100' : 'opacity-0'}`}>
-            <h2 className="font-black text-gray-800 tracking-tight">Transaksi</h2>
+            <h2 className="font-black text-white tracking-tight">Transaksi</h2>
           </div>
           <div className="flex items-center gap-2">
-            <NotificationBell size={20} className={`${scrolled ? 'bg-gray-100 text-gray-800' : 'bg-white/20 text-white backdrop-blur-md'}`} />
+            <NotificationBell size={20} className={`${scrolled ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white/20 text-white backdrop-blur-md'}`} />
           </div>
         </div>
       </div>
@@ -531,11 +534,11 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
             onClick={() => setIsMobileSummaryOpen(false)}
           ></div>
           <div className="absolute inset-0 h-full w-full bg-white dark:bg-slate-900 shadow-2xl animate-in slide-in-from-bottom-full duration-300 flex flex-col">
-            <div className="sticky top-0 right-0 p-4 flex justify-between items-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 border-b border-gray-100 dark:border-slate-800">
-              <h3 className="font-black text-lg text-gray-800 dark:text-white ml-2">Ringkasan Pesanan</h3>
+            <div className="sticky top-0 right-0 p-4 flex justify-between items-center bg-blue-600/95 dark:bg-blue-700/95 backdrop-blur-md z-10 border-b border-blue-700 dark:border-blue-800">
+              <h3 className="font-black text-lg text-white ml-2">Ringkasan Pesanan</h3>
               <button
                 onClick={() => setIsMobileSummaryOpen(false)}
-                className="p-2 bg-gray-100 dark:bg-slate-800 rounded-md text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-2 bg-blue-700 dark:bg-blue-600 rounded-md text-white hover:bg-blue-800 dark:hover:bg-blue-500 transition-colors"
               >
                 <Icon name="X" size={20} />
               </button>

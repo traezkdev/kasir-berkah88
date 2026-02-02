@@ -65,7 +65,7 @@ function App() {
   ];
 
   const isAdminPage = adminPaths.some(path => location.pathname.startsWith(path));
-  const showFloatingButton = !['/login', '/register', '/seller/chat', '/admin/chat'].includes(location.pathname)
+  const showFloatingButton = !['/login', '/register', '/seller/chat', '/admin/chat', '/receipt'].includes(location.pathname)
     && !location.pathname.startsWith('/seller')
     && !isAdminPage;
 
@@ -145,6 +145,7 @@ function App() {
   return (
     <AppSettingsProvider>
       <ThemeProvider> {/* Tambahkan ThemeProvider di sini */}
+        <ScrollToTop />
         <Toaster position="bottom-center" reverseOrder={false} />
         {!location.pathname.startsWith('/customer') && <DailyWelcomeModal />}
         <Routes />
