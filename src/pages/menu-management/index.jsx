@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 
@@ -179,7 +179,7 @@ const MenuManagement = ({ headerTitle }) => {
     }
   };
 
-  const handleUpdateItem = async (id, updatedData) => {
+  const handleUpdateItem = useCallback(async (id, updatedData) => {
     const dataToSend = {
       name: updatedData.name,
       price: parseFloat(updatedData.price),
@@ -224,9 +224,9 @@ const MenuManagement = ({ headerTitle }) => {
       console.error('Error updating item:', error);
       showNotification(`Error memperbarui item: ${error.message}`, 'error');
     }
-  };
+  }, [currentPage, activeFilter]);
 
-  const handleDeleteItem = async (id) => {
+  const handleDeleteItem = useCallback(async (id) => {
     try {
       const response = await authFetch(`${apiUrl}/api/menu-items/${id}`, {
         method: 'DELETE',
@@ -241,7 +241,7 @@ const MenuManagement = ({ headerTitle }) => {
     } catch (error) {
       console.error('Error deleting item:', error);
     }
-  };
+  }, [currentPage, activeFilter]);
 
   const handleBulkDelete = async (ids) => {
     try {
@@ -325,14 +325,14 @@ Powered by Kasir Berkah 88`;
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  const handleEditMenuItem = (item) => {
+  const handleEditMenuItem = useCallback((item) => {
     setEditingMenuItem(item);
-  };
+  }, []);
 
-  const handleOpenRecipeModal = (item) => {
+  const handleOpenRecipeModal = useCallback((item) => {
     setSelectedMenuItemForRecipe(item);
     setRecipeModalOpen(true);
-  };
+  }, []);
 
   const handleCloseRecipeModal = () => {
     setRecipeModalOpen(false);
@@ -340,7 +340,7 @@ Powered by Kasir Berkah 88`;
   };
 
 
-  const handleMoveItem = (id, direction) => {
+  const handleMoveItem = useCallback((id, direction) => {
     setMenuItems(prevItems => {
       const newItems = [...prevItems];
       const index = newItems.findIndex(item => item.id === id);
@@ -377,7 +377,7 @@ Powered by Kasir Berkah 88`;
 
       return newItems;
     });
-  };
+  }, []);
 
   const filteredMenuItems = (() => {
     const term = searchTerm.toLowerCase();

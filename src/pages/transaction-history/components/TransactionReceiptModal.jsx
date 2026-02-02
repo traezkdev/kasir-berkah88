@@ -248,7 +248,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
           id="receipt-container"
           className="relative w-full lg:max-w-2xl bg-white dark:bg-slate-900 shadow-2xl overflow-hidden
              lg:mx-auto lg:max-h-[90vh]
-             fixed lg:relative bottom-0 left-0 right-0 h-[92vh] lg:h-auto
+             fixed lg:relative inset-0 h-full lg:h-auto
              rounded-none lg:rounded-lg animate-in slide-in-from-bottom-full lg:zoom-in-95 duration-300 flex flex-col"
         >
           <div className="flex justify-between items-center px-6 py-4 border-b border-border">
