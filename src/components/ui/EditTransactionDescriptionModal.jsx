@@ -1,18 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Icon from '../AppIcon';
 import PremiumModal from './PremiumModal';
 
 const EditTransactionDescriptionModal = ({ isOpen, onClose, onSave, transaction }) => {
-    const [amount, setAmount] = useState(transaction?.amount || 0);
-    const [description, setDescription] = useState(transaction?.description || '');
-    const [date, setDate] = useState(() => {
-        const dateVal = transaction?.date || transaction?.created_at;
-        if (!dateVal) return '';
-        const d = new Date(dateVal);
-        const pad = (n) => n.toString().padStart(2, '0');
-        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-    });
+    const [amount, setAmount] = useState(0);
+    const [description, setDescription] = useState('');
+    const [date, setDate] = useState('');
     const [error, setError] = useState('');
+
+    // Synchronize local state with transaction prop when it changes or modal opens
+    useEffect(() => {
+        if (isOpen && transaction) {
+            setAmount(transaction.amount || 0);
+            setDescription(transaction.description || '');
+
+            const dateVal = transaction.date || transaction.created_at;
+            if (dateVal) {
+                const d = new Date(dateVal);
+                const pad = (n) => n.toString().padStart(2, '0');
+                const formattedDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+                setDate(formattedDate);
+            } else {
+                setDate('');
+            }
+            setError('');
+        }
+    }, [isOpen, transaction]);
 
     const formatNumber = (num) => {
         return new Intl.NumberFormat('id-ID').format(num);
@@ -35,7 +48,7 @@ const EditTransactionDescriptionModal = ({ isOpen, onClose, onSave, transaction 
             setError('Tanggal harus diisi');
             return;
         }
-        onSave({ id: transaction.id, amount, description, date });
+        onSave(transaction.id, description, amount, date);
     };
 
     if (!transaction) return null;

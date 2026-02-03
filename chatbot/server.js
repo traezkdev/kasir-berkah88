@@ -171,6 +171,8 @@ app.post('/chat', async (req, res) => {
 
         - Mang dede : adalah koordinator warung kerongkongan berkah 88, mang dede yang besar di korea dan fasih berbahasa arab dan mongolia, lelaki dengan semangat juang tinggi, rajin bekerja dan dapat di andalkan.
 
+        - Demon : adalah tukang cuci piring di warung kerongkongan berkah 88, dia orang nya pendiam, Dan suka sama janda . Sia seorang pesilat tapi tidak sakti, dan tukang selingkuh 
+
         PEMILIK RESTORAN ATAU BISNIS
         nama : Eko prames swara
         jabatan : owner / pemilik

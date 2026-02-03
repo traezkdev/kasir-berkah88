@@ -52,19 +52,19 @@ const Settings = () => {
     <div
       onClick={!disabled ? onClick : undefined}
       className={`
-        relative overflow-hidden p-6 h-full rounded-[2.5rem] bg-card border border-gray-100/80 dark:border-slate-800/50
-        transition-all duration-700 ease-out group
+        relative overflow-hidden p-5 h-full rounded-[2rem] bg-card border border-gray-100/80 dark:border-slate-800/50
+        transition-all duration-700 ease-out group gpu-acceleration
         ${disabled
           ? 'opacity-50 cursor-not-allowed grayscale'
-          : 'cursor-pointer hover:shadow-[0_20px_50px_rgba(19,143,234,0.15)] hover:border-blue-500/50 hover:-translate-y-3 active:scale-[0.96] bg-gradient-to-br from-white to-gray-50/30 dark:from-slate-900 dark:to-slate-950/50'
+          : 'cursor-pointer hover:shadow-[0_20px_50px_rgba(19,143,234,0.15)] hover:border-blue-500/50 hover:-translate-y-2 active:scale-[0.96] bg-gradient-to-br from-white to-gray-50/30 dark:from-slate-900 dark:to-slate-950/50'
         }
       `}
     >
       {/* Dynamic Background Elements (Visible but faint in idle) */}
       {!disabled && (
         <>
-          <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-500/[0.03] dark:bg-blue-500/[0.05] rounded-full blur-xl group-hover:bg-blue-500/20 group-hover:scale-150 transition-all duration-1000 animate-blob"></div>
-          <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-indigo-500/[0.02] dark:bg-indigo-500/[0.04] rounded-full blur-xl group-hover:bg-indigo-500/10 group-hover:scale-150 transition-all duration-1000 animate-blob animation-delay-2000"></div>
+          <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-500/[0.03] dark:bg-blue-500/[0.05] rounded-full blur-xl group-hover:bg-blue-500/20 group-hover:scale-150 transition-all duration-1000 animate-blob" style={{ willChange: 'transform, opacity' }}></div>
+          <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-indigo-500/[0.02] dark:bg-indigo-500/[0.04] rounded-full blur-xl group-hover:bg-indigo-500/10 group-hover:scale-150 transition-all duration-1000 animate-blob animation-delay-2000" style={{ willChange: 'transform, opacity' }}></div>
 
           {/* Subtle Grid Pattern */}
           <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none gpu-acceleration"
@@ -75,18 +75,18 @@ const Settings = () => {
       <div className="relative z-10 flex flex-col gap-6 h-full justify-between">
         <div>
           <div className={`
-            w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-700 transform
+            w-12 h-12 rounded-[1.2rem] flex items-center justify-center transition-all duration-700 transform
             ${disabled
               ? 'bg-gray-100 dark:bg-gray-800 text-gray-400'
-              : 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-lg shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-slate-700 group-hover:scale-110 group-hover:-rotate-6 group-hover:bg-gradient-to-br group-hover:from-[#138FEA] group-hover:to-[#0A56B1] group-hover:text-white group-hover:shadow-2xl group-hover:shadow-blue-500/40 group-hover:border-transparent'
+              : 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm border border-gray-100 dark:border-slate-700 group-hover:scale-110 group-hover:-rotate-6 group-hover:bg-gradient-to-br group-hover:from-[#138FEA] group-hover:to-[#0A56B1] group-hover:text-white group-hover:shadow-2xl group-hover:shadow-blue-500/40 group-hover:border-transparent'
             }
           `}>
-            <AppIcon name={icon} size={30} />
+            <AppIcon name={icon} size={22} />
           </div>
 
-          <div className="mt-6 space-y-2">
+          <div className="mt-4 space-y-1.5">
             <div className="flex items-center gap-2">
-              <h3 className="text-xl font-black text-text-primary tracking-tight uppercase leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+              <h3 className="text-base font-black text-text-primary tracking-tight uppercase leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                 {title}
               </h3>
               {!disabled && (
@@ -109,7 +109,7 @@ const Settings = () => {
 
             {/* Visual Flair in Idle */}
             <div className="w-8 h-1 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden group-hover:w-0 transition-all duration-500">
-              <div className="w-full h-full bg-blue-500/20 animate-pulse"></div>
+              <div className="w-full h-full bg-blue-500/20 animate-pulse" style={{ willChange: 'opacity' }}></div>
             </div>
           </div>
         )}
@@ -627,7 +627,7 @@ const Settings = () => {
       )}
 
       <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>
-        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 pt-8 space-y-6 lg:space-y-8" : "space-y-6"}>
+        <div className={theme === 'default' ? "w-full px-4 lg:px-8 pt-8 space-y-6 lg:space-y-8" : "space-y-6"}>
           {/* Breadcrumb */}
           <div className="mb-6 hidden md:block">
             <BreadcrumbNavigation paths={breadcrumbs} />
@@ -644,7 +644,7 @@ const Settings = () => {
           </div>
 
           {/* Settings Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch optimize-scroll">
             {/* Store Configuration Section */}
             <SettingsCard icon="Store" title="Identitas Toko" description="Nama, logo, dan deskripsi website" onClick={() => setActiveModal('restaurantSettings')} disabled={!isAdmin} />
             <SettingsCard icon="Layout" title="Tampilan & Tema" description="Ubah tema warna dan gaya aplikasi" onClick={() => setActiveModal('appStyleSelection')} disabled={!isAdmin} />

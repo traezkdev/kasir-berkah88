@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 import NavigationHeader from '../components/ui/NavigationHeader';
+import BreadcrumbNavigation from '../components/ui/BreadcrumbNavigation';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { formatCurrency } from '../utils/formatCurrency';
 import { format, subDays } from 'date-fns';
@@ -319,7 +320,17 @@ const AnalisisData = () => {
             )}
 
             <main className={`${theme === 'default' ? 'lg:pt-16' : ''} pb-24 lg:pb-8`}>
-                <div className="p-4 md:p-6 space-y-8 max-w-[1600px] mx-auto w-full">
+                {/* Breadcrumb Section */}
+                <div className="px-6 py-4 mb-2 lg:block hidden">
+                    <BreadcrumbNavigation
+                        items={[
+                            { label: 'Dashboard', path: userRole === 'owner' ? '/owner-dashboard' : '/main-dashboard' },
+                            { label: 'Analisis Data', active: true }
+                        ]}
+                    />
+                </div>
+
+                <div className="space-y-8 w-full">
 
                     {/* --- Premium Filter Section (Native App Style) --- */}
                     <div className="lg:mt-0 -mt-16 relative z-20">
