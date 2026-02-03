@@ -532,17 +532,15 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     modalOverlay: {
-        position: 'absolute',
-        inset: 0,
+        flex: 1,
         backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'flex-end',
-        zIndex: 1000,
     },
     modalContent: {
         backgroundColor: '#FFFFFF',
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
-        maxHeight: '90%',
+        height: '90%',
         width: '100%',
     },
     modalHeader: {
