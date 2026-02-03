@@ -9,12 +9,15 @@ import {
     Dimensions,
     Image,
     Platform,
-    Share
+    Share,
+    ActivityIndicator,
+    Alert
 } from 'react-native';
-import { X, Printer, Share2, Copy, CheckCircle2, ShoppingCart, Tag, MessageSquare, Zap, ShieldCheck } from 'lucide-react-native';
+import { X, Printer, Share2, CheckCircle2, ShoppingCart, MessageSquare, Zap, ShieldCheck } from 'lucide-react-native';
 import apiService, { API_URL } from '../api/apiService';
+import BluetoothPrinter from '../utils/BluetoothPrinter';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 const ReceiptModal = ({ visible, onClose, transaction }) => {
     const [settings, setSettings] = useState({
@@ -23,12 +26,24 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
         restaurant_url: 'www.berkah88.id',
     });
     const [logoUrl, setLogoUrl] = useState(null);
+    const [isPrinting, setIsPrinting] = useState(false);
 
     useEffect(() => {
         if (visible) {
             fetchSettings();
         }
     }, [visible]);
+
+    const handlePrint = async () => {
+        try {
+            setIsPrinting(true);
+            await BluetoothPrinter.printReceipt(settings, transaction);
+        } catch (error) {
+            Alert.alert('Gagal Mencetak', error.message || 'Terjadi kesalahan saat membuat struk.');
+        } finally {
+            setIsPrinting(false);
+        }
+    };
 
     const fetchSettings = async () => {
         try {
@@ -55,28 +70,18 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
     const formatDate = (dateStr) => {
         const date = new Date(dateStr);
         return date.toLocaleDateString('id-ID', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
         });
     };
 
     const formatCurrency = (val) => {
         return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0
+            style: 'currency', currency: 'IDR', minimumFractionDigits: 0
         }).format(val || 0);
     };
 
     const handleShareText = async () => {
-        const centerText = (text, w = 32) => {
-            const padding = Math.max(0, Math.floor((w - text.length) / 2));
-            return ' '.repeat(padding) + text;
-        };
-
         let message = `*${settings.restaurant_name.toUpperCase()}*\n`;
         message += `${settings.restaurant_slogan}\n`;
         message += `--------------------------\n`;
@@ -97,9 +102,7 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
         message += `Terima Kasih!\n${settings.restaurant_url}`;
 
         try {
-            await Share.share({
-                message: message,
-            });
+            await Share.share({ message });
         } catch (error) {
             console.error(error);
         }
@@ -114,7 +117,6 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
         >
             <View style={styles.overlay}>
                 <View style={styles.modalContainer}>
-                    {/* Header Bagian Atas (Biru seperti Web) */}
                     <View style={styles.topHeader}>
                         <Text style={styles.topHeaderText}>Bukti Transaksi</Text>
                         <TouchableOpacity onPress={onClose} style={styles.closeHeaderBtn}>
@@ -124,7 +126,6 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
 
                     <ScrollView style={styles.scrollBody} showsVerticalScrollIndicator={false}>
                         <View style={styles.receiptBody}>
-                            {/* Logo & Nama Toko */}
                             <View style={styles.receiptHeader}>
                                 <View style={styles.logoContainer}>
                                     {logoUrl ? (
@@ -138,7 +139,6 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                 <Text style={styles.restaurantName}>{settings.restaurant_name}</Text>
                                 <Text style={styles.restaurantSlogan}>{settings.restaurant_slogan.toUpperCase()}</Text>
 
-                                {/* Divider Estetik */}
                                 <View style={styles.dividerRow}>
                                     <View style={styles.dividerLine} />
                                     <View style={styles.dividerDot} />
@@ -146,7 +146,6 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                 </View>
                             </View>
 
-                            {/* Info Bar */}
                             <View style={styles.infoBar}>
                                 <View>
                                     <Text style={styles.infoLabel}>ID REFERENSI</Text>
@@ -161,7 +160,6 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                 </View>
                             </View>
 
-                            {/* Item List */}
                             <View style={styles.sectionHeader}>
                                 <View style={styles.sectionTitleRow}>
                                     <ShoppingCart size={14} color="#1E40AF" />
@@ -184,15 +182,6 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                                         <Text style={styles.itemQtyText}>x{item.quantity || item.qty}</Text>
                                                     </View>
                                                 </View>
-                                                {item.options && (
-                                                    <View style={styles.optionsList}>
-                                                        {JSON.parse(typeof item.options === 'string' ? item.options : '[]').map((opt, i) => (
-                                                            <View key={i} style={styles.optionBadge}>
-                                                                <Text style={styles.optionText}>{opt.name}</Text>
-                                                            </View>
-                                                        ))}
-                                                    </View>
-                                                )}
                                             </View>
                                         </View>
                                         <View style={styles.itemRight}>
@@ -203,7 +192,6 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                 ))}
                             </View>
 
-                            {/* Summary Detail */}
                             <View style={styles.summaryCard}>
                                 <View style={styles.summaryGlow} />
                                 <View style={styles.summaryContent}>
@@ -211,15 +199,7 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                         <Text style={styles.summaryLabel}>Harga Dasar</Text>
                                         <Text style={styles.summaryValue}>{formatCurrency(transaction.total - (transaction.ppn || 0))}</Text>
                                     </View>
-                                    {transaction.ppn > 0 && (
-                                        <View style={styles.summaryRow}>
-                                            <Text style={styles.summaryLabel}>PPN (Tax)</Text>
-                                            <Text style={styles.summaryValue}>{formatCurrency(transaction.ppn)}</Text>
-                                        </View>
-                                    )}
-
                                     <View style={styles.thickDivider} />
-
                                     <View style={styles.totalSection}>
                                         <Text style={styles.totalLabel}>TOTAL TAGIHAN</Text>
                                         <View style={styles.totalValueRow}>
@@ -234,7 +214,6 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                 </View>
                             </View>
 
-                            {/* Payment Info */}
                             <View style={styles.paymentPill}>
                                 <View style={styles.pillPart}>
                                     <Text style={styles.pillLabel}>METODE</Text>
@@ -246,38 +225,34 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                 </View>
                             </View>
 
-                            {/* Catatan */}
-                            {transaction.catatan && (
-                                <View style={styles.noteArea}>
-                                    <View style={styles.noteHeader}>
-                                        <MessageSquare size={14} color="#D97706" />
-                                        <Text style={styles.noteTitle}>CATATAN PESANAN</Text>
-                                    </View>
-                                    <Text style={styles.noteText}>"{transaction.catatan}"</Text>
-                                </View>
-                            )}
-
-                            {/* Footer */}
                             <View style={styles.receiptFooter}>
                                 <View style={styles.footerDecoration}>
                                     <Zap size={12} color="#E2E8F0" fill="#E2E8F0" />
                                 </View>
                                 <Text style={styles.footerMainText}>TERIMA KASIH</Text>
-                                <Text style={styles.footerSubText}>SAMPAI JUMPA KEMBALI!</Text>
-                                <Text style={styles.footerUrl}>{settings.restaurant_url}</Text>
+                                <Text style={styles.footerSubText}>SEMOGA BERKAH</Text>
                             </View>
                         </View>
                     </ScrollView>
 
-                    {/* Bottom Actions */}
                     <View style={styles.actionFooter}>
                         <TouchableOpacity style={styles.actionBtnOutline} onPress={handleShareText}>
                             <Share2 size={20} color="#64748B" />
                             <Text style={styles.actionBtnTextOutline}>Share</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.actionBtnPrimary}>
-                            <Printer size={20} color="#FFFFFF" />
-                            <Text style={styles.actionBtnTextPrimary}>Cetak Struk</Text>
+                        <TouchableOpacity
+                            style={[styles.actionBtnPrimary, isPrinting && { opacity: 0.7 }]}
+                            onPress={handlePrint}
+                            disabled={isPrinting}
+                        >
+                            {isPrinting ? (
+                                <ActivityIndicator color="#FFFFFF" size="small" />
+                            ) : (
+                                <Printer size={20} color="#FFFFFF" />
+                            )}
+                            <Text style={styles.actionBtnTextPrimary}>
+                                {isPrinting ? 'Memproses...' : 'Cetak Struk'}
+                            </Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -334,11 +309,16 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 16,
-        shadowColor: '#148FEA',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.2,
-        shadowRadius: 15,
-        elevation: 10,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#148FEA',
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.2,
+                shadowRadius: 15,
+            },
+            android: { elevation: 10 },
+            web: { boxShadow: '0px 10px 15px rgba(20, 143, 234, 0.2)' }
+        })
     },
     logoImage: {
         width: '100%',
@@ -513,25 +493,6 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         color: '#1E293B',
     },
-    optionsList: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        marginTop: 6,
-        gap: 4,
-    },
-    optionBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#EEF2FF',
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 6,
-    },
-    optionText: {
-        fontSize: 8,
-        fontWeight: '900',
-        color: '#4338CA',
-    },
     summaryCard: {
         position: 'relative',
         marginBottom: 24,
@@ -549,10 +510,16 @@ const styles = StyleSheet.create({
         padding: 20,
         borderWidth: 1,
         borderColor: '#F1F5F9',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.05,
+                shadowRadius: 10,
+            },
+            android: { elevation: 2 },
+            web: { boxShadow: '0px 4px 10px rgba(0,0,0,0.05)' }
+        })
     },
     summaryRow: {
         flexDirection: 'row',
@@ -649,102 +616,58 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         color: '#FFFFFF',
     },
-    noteArea: {
-        backgroundColor: '#FFFBEB',
-        borderWidth: 1,
-        borderColor: '#FEF3C7',
-        borderRadius: 20,
-        padding: 16,
-        marginBottom: 30,
-    },
-    noteHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        marginBottom: 6,
-    },
-    noteTitle: {
-        fontSize: 9,
-        fontWeight: '900',
-        color: '#D97706',
-        letterSpacing: 1,
-    },
-    noteText: {
-        fontSize: 12,
-        color: '#92400E',
-        fontStyle: 'italic',
-        fontWeight: '500',
-    },
     receiptFooter: {
         alignItems: 'center',
-        paddingTop: 20,
-        borderTopWidth: 1,
-        borderTopColor: '#F1F5F9',
-        borderStyle: 'dashed',
-    },
-    footerDecoration: {
-        position: 'absolute',
-        top: -7,
-        alignSelf: 'center',
-        backgroundColor: '#F8FAFC',
-        paddingHorizontal: 8,
+        marginTop: 10,
+        marginBottom: 20,
     },
     footerMainText: {
         fontSize: 14,
         fontWeight: '900',
         color: '#1E293B',
-        letterSpacing: 2,
     },
     footerSubText: {
-        fontSize: 9,
+        fontSize: 10,
         color: '#94A3B8',
         fontWeight: 'bold',
         marginTop: 4,
     },
-    footerUrl: {
-        fontSize: 8,
-        color: '#CBD5E1',
-        fontWeight: '900',
-        letterSpacing: 4,
-        marginTop: 15,
-    },
     actionFooter: {
-        padding: 24,
         flexDirection: 'row',
-        gap: 12,
+        padding: 20,
         backgroundColor: '#FFFFFF',
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',
+        gap: 12,
     },
     actionBtnOutline: {
         flex: 1,
         flexDirection: 'row',
-        justifyContent: 'center',
         alignItems: 'center',
-        height: 56,
+        justifyContent: 'center',
+        paddingVertical: 14,
         borderRadius: 16,
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-        gap: 10,
+        backgroundColor: '#F1F5F9',
+        gap: 8,
     },
     actionBtnTextOutline: {
         fontSize: 14,
-        fontWeight: '900',
+        fontWeight: 'bold',
         color: '#64748B',
     },
     actionBtnPrimary: {
-        flex: 1.5,
+        flex: 2,
         flexDirection: 'row',
-        justifyContent: 'center',
         alignItems: 'center',
-        height: 56,
+        justifyContent: 'center',
+        paddingVertical: 14,
         borderRadius: 16,
-        backgroundColor: '#1E40AF',
-        gap: 10,
+        backgroundColor: '#148FEA',
+        gap: 8,
     },
     actionBtnTextPrimary: {
         fontSize: 14,
-        fontWeight: '900',
+        fontWeight: 'bold',
         color: '#FFFFFF',
     },
 });

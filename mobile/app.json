@@ -30,6 +30,19 @@
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
+    "plugins": [
+      "./with-min-sdk-fix",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 24,
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35
+          }
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "9fa48a0e-790d-4bc2-abc0-93f397944920"
