@@ -8,6 +8,7 @@ import { jwtDecode } from 'jwt-decode';
 import OwnerNavigationHeader from '../../components/ui/OwnerNavigationHeader';
 import ConfirmationModal from '../../components/ui/ConfirmationModal';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useToast } from '../../components/ui/ToastNotification';
 import AppIcon from '../../components/AppIcon';
 import RestaurantSettingsModal from './components/RestaurantSettingsModal';
 import DataSyncModal from './DataSyncModal';
@@ -46,25 +47,26 @@ const SettingsModal = ({ title, isOpen, onClose, children, size = 'lg' }) => {
 const Settings = () => {
   const { theme, toggleTheme, appStyle, setAppStyle } = useTheme();
   const { appMode, toggleAppMode, toggleSidebar } = useAppSettings();
+  const { showToast } = useToast();
 
   // Reusable Card Component (Updated for Ultra Premium Style)
   const SettingsCard = ({ icon, title, description, onClick, disabled = false }) => (
     <div
       onClick={!disabled ? onClick : undefined}
       className={`
-        relative overflow-hidden p-6 h-full rounded-[2.5rem] bg-card border border-gray-100/80 dark:border-slate-800/50
-        transition-all duration-700 ease-out group
+        relative overflow-hidden p-5 h-full rounded-[2rem] bg-card border border-gray-100/80 dark:border-slate-800/50
+        transition-all duration-700 ease-out group gpu-acceleration
         ${disabled
           ? 'opacity-50 cursor-not-allowed grayscale'
-          : 'cursor-pointer hover:shadow-[0_20px_50px_rgba(19,143,234,0.15)] hover:border-blue-500/50 hover:-translate-y-3 active:scale-[0.96] bg-gradient-to-br from-white to-gray-50/30 dark:from-slate-900 dark:to-slate-950/50'
+          : 'cursor-pointer hover:shadow-[0_20px_50px_rgba(19,143,234,0.15)] hover:border-blue-500/50 hover:-translate-y-2 active:scale-[0.96] bg-gradient-to-br from-white to-gray-50/30 dark:from-slate-900 dark:to-slate-950/50'
         }
       `}
     >
       {/* Dynamic Background Elements (Visible but faint in idle) */}
       {!disabled && (
         <>
-          <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-500/[0.03] dark:bg-blue-500/[0.05] rounded-full blur-xl group-hover:bg-blue-500/20 group-hover:scale-150 transition-all duration-1000 animate-blob"></div>
-          <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-indigo-500/[0.02] dark:bg-indigo-500/[0.04] rounded-full blur-xl group-hover:bg-indigo-500/10 group-hover:scale-150 transition-all duration-1000 animate-blob animation-delay-2000"></div>
+          <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-500/[0.03] dark:bg-blue-500/[0.05] rounded-full blur-xl group-hover:bg-blue-500/20 group-hover:scale-150 transition-all duration-1000 animate-blob" style={{ willChange: 'transform, opacity' }}></div>
+          <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-indigo-500/[0.02] dark:bg-indigo-500/[0.04] rounded-full blur-xl group-hover:bg-indigo-500/10 group-hover:scale-150 transition-all duration-1000 animate-blob animation-delay-2000" style={{ willChange: 'transform, opacity' }}></div>
 
           {/* Subtle Grid Pattern */}
           <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none gpu-acceleration"
@@ -75,18 +77,18 @@ const Settings = () => {
       <div className="relative z-10 flex flex-col gap-6 h-full justify-between">
         <div>
           <div className={`
-            w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-700 transform
+            w-12 h-12 rounded-[1.2rem] flex items-center justify-center transition-all duration-700 transform
             ${disabled
               ? 'bg-gray-100 dark:bg-gray-800 text-gray-400'
-              : 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-lg shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-slate-700 group-hover:scale-110 group-hover:-rotate-6 group-hover:bg-gradient-to-br group-hover:from-[#138FEA] group-hover:to-[#0A56B1] group-hover:text-white group-hover:shadow-2xl group-hover:shadow-blue-500/40 group-hover:border-transparent'
+              : 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm border border-gray-100 dark:border-slate-700 group-hover:scale-110 group-hover:-rotate-6 group-hover:bg-gradient-to-br group-hover:from-[#138FEA] group-hover:to-[#0A56B1] group-hover:text-white group-hover:shadow-2xl group-hover:shadow-blue-500/40 group-hover:border-transparent'
             }
           `}>
-            <AppIcon name={icon} size={30} />
+            <AppIcon name={icon} size={22} />
           </div>
 
-          <div className="mt-6 space-y-2">
+          <div className="mt-4 space-y-1.5">
             <div className="flex items-center gap-2">
-              <h3 className="text-xl font-black text-text-primary tracking-tight uppercase leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+              <h3 className="text-base font-black text-text-primary tracking-tight uppercase leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                 {title}
               </h3>
               {!disabled && (
@@ -109,7 +111,7 @@ const Settings = () => {
 
             {/* Visual Flair in Idle */}
             <div className="w-8 h-1 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden group-hover:w-0 transition-all duration-500">
-              <div className="w-full h-full bg-blue-500/20 animate-pulse"></div>
+              <div className="w-full h-full bg-blue-500/20 animate-pulse" style={{ willChange: 'opacity' }}></div>
             </div>
           </div>
         )}
@@ -126,8 +128,6 @@ const Settings = () => {
   const [registrationEnabled, setRegistrationEnabled] = useState(false);
   const [adminUsername, setAdminUsername] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [userRole, setUserRole] = useState('');
   const [users, setUsers] = useState([]);
@@ -215,11 +215,9 @@ const Settings = () => {
   }, [location]);
 
   // --- Handlers ---
-  const clearMessages = () => { setMessage(''); setError(''); };
-  const handleModalClose = () => { setActiveModal(null); clearMessages(); setEditingEmployee(null); };
+  const handleModalClose = () => { setActiveModal(null); setEditingEmployee(null); };
 
   const handleSaveRestaurantSettings = async (settings) => {
-    clearMessages();
     setIsLoading(true);
     try {
       const response = await authFetch(`${apiUrl}/api/restaurant-settings`, {
@@ -229,13 +227,13 @@ const Settings = () => {
       });
       const data = await response.json();
       if (response.ok) {
-        setMessage('Pengaturan restoran berhasil diperbarui!');
+        showToast('Pengaturan restoran berhasil diperbarui!', 'success');
         fetchSettings(); // Refresh settings to update displayed values
       } else {
-        setError(data.error || 'Gagal memperbarui pengaturan restoran');
+        showToast(data.error || 'Gagal memperbarui pengaturan restoran', 'error');
       }
     } catch (err) {
-      setError('Kesalahan jaringan atau server tidak dapat dijangkau');
+      showToast('Kesalahan jaringan atau server tidak dapat dijangkau', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -280,10 +278,10 @@ const Settings = () => {
         }
 
       } else {
-        setError(data.error || 'Failed to fetch settings');
+        showToast(data.error || 'Failed to fetch settings', 'error');
       }
     } catch (err) {
-      setError('Kesalahan jaringan atau server tidak dapat dijangkau');
+      showToast('Kesalahan jaringan atau server tidak dapat dijangkau', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -307,22 +305,21 @@ const Settings = () => {
 
   const handleUpdateSetting = async (e, endpoint, body, successMessage, method = 'PUT') => {
     e.preventDefault();
-    clearMessages();
     setIsLoading(true);
 
     // Validation for title-related settings to prevent empty values
     if (endpoint === '/api/settings/header_title' && (!body.value || body.value.trim() === '')) {
-      setError('Judul header tidak boleh kosong');
+      showToast('Judul header tidak boleh kosong', 'error');
       setIsLoading(false);
       return;
     }
     if (endpoint === '/api/settings/website_title' && (!body.value || body.value.trim() === '')) {
-      setError('Judul situs web tidak boleh kosong');
+      showToast('Judul situs web tidak boleh kosong', 'error');
       setIsLoading(false);
       return;
     }
     if (endpoint === '/api/settings/cashier_dashboard_title' && (!body.value || body.value.trim() === '')) {
-      setError('Judul dasbor kasir tidak boleh kosong');
+      showToast('Judul dasbor kasir tidak boleh kosong', 'error');
       setIsLoading(false);
       return;
     }
@@ -335,14 +332,14 @@ const Settings = () => {
       });
       const data = await response.json();
       if (response.ok) {
-        setMessage(successMessage);
+        showToast(successMessage, 'success');
         fetchSettings();
         setTimeout(() => handleModalClose(), 1500);
       } else {
-        setError(data.error || 'Gagal melakukan pembaruan');
+        showToast(data.error || 'Gagal melakukan pembaruan', 'error');
       }
     } catch (err) {
-      setError('Kesalahan jaringan atau server tidak dapat dijangkau');
+      showToast('Kesalahan jaringan atau server tidak dapat dijangkau', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -358,8 +355,7 @@ const Settings = () => {
 
   const handleLogoUpload = async (e) => {
     e.preventDefault();
-    if (!logoFile) { setError('Pilih file logo untuk diunggah.'); return; }
-    clearMessages();
+    if (!logoFile) { showToast('Pilih file logo untuk diunggah.', 'error'); return; }
     setIsLoading(true);
     const formData = new FormData();
     formData.append('logo', logoFile);
@@ -367,40 +363,38 @@ const Settings = () => {
       const response = await authFetch(`${apiUrl}/api/settings/logo`, { method: 'POST', body: formData });
       const data = await response.json();
       if (response.ok) {
-        setMessage('Logo berhasil diunggah! Halaman akan dimuat ulang.');
+        showToast('Logo berhasil diunggah! Halaman akan dimuat ulang.', 'success');
         setTimeout(() => window.location.reload(), 2000);
       } else {
-        setError(data.error || 'Gagal mengunggah logo');
+        showToast(data.error || 'Gagal mengunggah logo', 'error');
       }
     } catch (err) {
-      setError('Kesalahan jaringan atau server tidak dapat dijangkau');
+      showToast('Kesalahan jaringan atau server tidak dapat dijangkau', 'error');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDeleteLogo = async () => {
-    clearMessages();
     setIsLoading(true);
     setShowDeleteLogoConfirmation(false); // Close modal immediately
     try {
       const response = await authFetch(`${apiUrl}/api/settings/logo`, { method: 'DELETE' });
       const data = await response.json();
       if (response.ok) {
-        setMessage('Logo berhasil dihapus! Halaman akan dimuat ulang.');
+        showToast('Logo berhasil dihapus! Halaman akan dimuat ulang.', 'success');
         setTimeout(() => window.location.reload(), 2000);
       } else {
-        setError(data.error || 'Gagal menghapus logo');
+        showToast(data.error || 'Gagal menghapus logo', 'error');
       }
     } catch (err) {
-      setError('Kesalahan jaringan atau server tidak dapat dijangkau');
+      showToast('Kesalahan jaringan atau server tidak dapat dijangkau', 'error');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleRoleChange = async (userId, newRole) => {
-    clearMessages();
     setIsLoading(true);
     try {
       const response = await authFetch(`${apiUrl}/api/admin/users/${userId}/role`, {
@@ -410,13 +404,13 @@ const Settings = () => {
       });
       const data = await response.json();
       if (response.ok) {
-        setMessage(`Peran pengguna berhasil diperbarui!`);
+        showToast(`Peran pengguna berhasil diperbarui!`, 'success');
         fetchUsers();
       } else {
-        setError(data.error || 'Gagal memperbarui peran');
+        showToast(data.error || 'Gagal memperbarui peran', 'error');
       }
     } catch (err) {
-      setError('Kesalahan jaringan');
+      showToast('Kesalahan jaringan', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -429,20 +423,19 @@ const Settings = () => {
   };
 
   const handleDeleteUser = async () => {
-    clearMessages();
     setIsLoading(true);
     setShowDeleteUserConfirmation(false); // Close modal immediately
     try {
       const response = await authFetch(`${apiUrl}/api/admin/users/${userToDeleteId}`, { method: 'DELETE' });
       const data = await response.json();
       if (response.ok) {
-        setMessage(`Pengguna "${userToDeleteUsername}" berhasil dihapus!`);
+        showToast(`Pengguna "${userToDeleteUsername}" berhasil dihapus!`, 'success');
         fetchUsers();
       } else {
-        setError(data.error || 'Gagal menghapus pengguna');
+        showToast(data.error || 'Gagal menghapus pengguna', 'error');
       }
     } catch (err) {
-      setError('Kesalahan jaringan');
+      showToast('Kesalahan jaringan', 'error');
     } finally {
       setIsLoading(false);
       setUserToDeleteId(null);
@@ -452,7 +445,6 @@ const Settings = () => {
 
   const handleCreateAdminUser = async (e) => {
     e.preventDefault();
-    clearMessages();
     setIsLoading(true);
 
     try {
@@ -465,16 +457,16 @@ const Settings = () => {
       });
       const data = await response.json();
       if (response.ok) {
-        setMessage('Admin user created successfully!');
+        showToast('Admin user created successfully!', 'success');
         setAdminUsername('');
         setAdminPassword('');
         fetchUsers(); // Refresh user list
         setTimeout(() => handleModalClose(), 1500);
       } else {
-        setError(data.error || 'Failed to create admin user');
+        showToast(data.error || 'Failed to create admin user', 'error');
       }
     } catch (err) {
-      setError('Network error or server unreachable');
+      showToast('Network error or server unreachable', 'error');
       console.error('Create admin user error:', err);
     } finally {
       setIsLoading(false);
@@ -483,9 +475,8 @@ const Settings = () => {
 
   const handleChangeMasterPassword = async (e) => {
     e.preventDefault();
-    clearMessages(); // Clear previous messages
     if (newMasterPassword !== confirmNewMasterPassword) {
-      setError('Kata sandi master baru dan konfirmasi tidak cocok.');
+      showToast('Kata sandi master baru dan konfirmasi tidak cocok.', 'error');
       return;
     }
     try {
@@ -500,23 +491,22 @@ const Settings = () => {
         }),
       });
       if (res.ok) {
-        setMessage('Kata sandi master berhasil diperbarui!');
+        showToast('Kata sandi master berhasil diperbarui!', 'success');
         setCurrentMasterPassword('');
         setNewMasterPassword('');
         setConfirmNewMasterPassword('');
       } else {
         const errorData = await res.json();
-        setError(errorData.error || 'Gagal memperbarui kata sandi master.');
+        showToast(errorData.error || 'Gagal memperbarui kata sandi master.', 'error');
       }
     } catch (error) {
       console.error('Error updating master password:', error);
-      setError(error.message);
+      showToast(error.message, 'error');
     }
   };
 
   const handleSaveEmployee = async (e) => {
     e.preventDefault();
-    clearMessages();
     setIsLoading(true);
     const formData = new FormData(e.target);
     const url = editingEmployee ? `${apiUrl}/api/employees/${editingEmployee.id}` : `${apiUrl}/api/employees`;
@@ -526,15 +516,15 @@ const Settings = () => {
       const response = await authFetch(url, { method, body: formData });
       const data = await response.json();
       if (response.ok) {
-        setMessage(editingEmployee ? 'Karyawan berhasil diperbarui!' : 'Karyawan berhasil ditambahkan!');
+        showToast(editingEmployee ? 'Karyawan berhasil diperbarui!' : 'Karyawan berhasil ditambahkan!', 'success');
         fetchEmployees();
         setActiveModal('employeeManagement'); // Go back to list
         setEditingEmployee(null);
       } else {
-        setError(data.error || 'Gagal menyimpan data karyawan');
+        showToast(data.error || 'Gagal menyimpan data karyawan', 'error');
       }
     } catch (err) {
-      setError('Kesalahan jaringan atau server tidak dapat dijangkau');
+      showToast('Kesalahan jaringan atau server tidak dapat dijangkau', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -546,20 +536,19 @@ const Settings = () => {
   };
 
   const handleDeleteEmployee = async () => {
-    clearMessages();
     setIsLoading(true);
     setShowDeleteEmployeeConfirmation(false); // Close modal immediately
     try {
       const response = await authFetch(`${apiUrl}/api/employees/${employeeToDeleteId}`, { method: 'DELETE' });
       if (response.ok) {
-        setMessage('Karyawan berhasil dihapus.');
+        showToast('Karyawan berhasil dihapus.', 'success');
         fetchEmployees();
       } else {
         const data = await response.json();
-        setError(data.error || 'Gagal menghapus karyawan');
+        showToast(data.error || 'Gagal menghapus karyawan', 'error');
       }
     } catch (err) {
-      setError('Kesalahan jaringan');
+      showToast('Kesalahan jaringan', 'error');
     } finally {
       setIsLoading(false);
       setEmployeeToDeleteId(null);
@@ -573,7 +562,6 @@ const Settings = () => {
 
   const handleClearAllData = async (e) => {
     e.preventDefault();
-    clearMessages();
     setIsLoading(true);
 
     try {
@@ -587,15 +575,15 @@ const Settings = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage('Semua data berhasil dihapus!');
+        showToast('Semua data berhasil dihapus!', 'success');
         // Optionally clear masterPasswordForClear here if needed
       } else if (response.status === 401) {
-        setError(data.error || 'Kata sandi master salah!');
+        showToast(data.error || 'Kata sandi master salah!', 'error');
       } else {
-        setError(data.error || 'Gagal menghapus semua data');
+        showToast(data.error || 'Gagal menghapus semua data', 'error');
       }
     } catch (err) {
-      setError('Kesalahan jaringan atau server tidak dapat dijangkau');
+      showToast('Kesalahan jaringan atau server tidak dapat dijangkau', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -627,7 +615,7 @@ const Settings = () => {
       )}
 
       <main className={`${theme === 'default' ? 'pt-20 lg:pt-16' : ''} pb-24 lg:pb-8`}>
-        <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-6 pt-8 space-y-6 lg:space-y-8" : "space-y-6"}>
+        <div className={theme === 'default' ? "w-full px-4 lg:px-8 pt-8 space-y-6 lg:space-y-8" : "space-y-6"}>
           {/* Breadcrumb */}
           <div className="mb-6 hidden md:block">
             <BreadcrumbNavigation paths={breadcrumbs} />
@@ -644,7 +632,7 @@ const Settings = () => {
           </div>
 
           {/* Settings Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch optimize-scroll">
             {/* Store Configuration Section */}
             <SettingsCard icon="Store" title="Identitas Toko" description="Nama, logo, dan deskripsi website" onClick={() => setActiveModal('restaurantSettings')} disabled={!isAdmin} />
             <SettingsCard icon="Layout" title="Tampilan & Tema" description="Ubah tema warna dan gaya aplikasi" onClick={() => setActiveModal('appStyleSelection')} disabled={!isAdmin} />
@@ -813,7 +801,7 @@ const Settings = () => {
           <Button onClick={() => {
             localStorage.setItem('daily_welcome_enabled', newDailyWelcomeEnabled);
             setDailyWelcomeEnabled(newDailyWelcomeEnabled);
-            setMessage('Pengaturan berhasil disimpan!');
+            showToast('Pengaturan berhasil disimpan!', 'success');
             setTimeout(() => handleModalClose(), 1000);
           }} className="w-full mt-4" disabled={isLoading}>Simpan Pengaturan</Button>
         </div>
@@ -1068,9 +1056,6 @@ const Settings = () => {
       <ConfirmationModal isOpen={showDeleteUserConfirmation} onClose={() => setShowDeleteUserConfirmation(false)} onConfirm={handleDeleteUser} title="Hapus Pengguna" message={`Hapus "${userToDeleteUsername}"?`} />
       <ConfirmationModal isOpen={showDeleteEmployeeConfirmation} onClose={() => setShowDeleteEmployeeConfirmation(false)} onConfirm={handleDeleteEmployee} title="Hapus Karyawan" message="Hapus karyawan ini?" />
       <ConfirmationModal isOpen={showDeleteLogoConfirmation} onClose={() => setShowDeleteLogoConfirmation(false)} onConfirm={handleDeleteLogo} title="Hapus Logo" message="Hapus logo header?" />
-
-      {message && <div className="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{message}</div>}
-      {error && <div className="fixed bottom-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-lg z-[3000]">{error}</div>}
     </div>
   );
 };

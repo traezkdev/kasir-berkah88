@@ -247,6 +247,7 @@ app.post("/api/raw-materials", authenticateToken, authorizeRoles('admin', 'owner
         );
 
         // Asumsi result mengandung insertId jika berhasil
+        await logActivity(req.user.userId, 'Tambah Bahan', 'raw_material', result.insertId, `Bahan baru: ${name}`);
         res.status(201).json({
             message: "Raw material added successfully",
             data: { id: result.insertId, name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, menu_stock, raw_stock_price },
@@ -285,6 +286,7 @@ app.put("/api/raw-materials/:id", authenticateToken, authorizeRoles('admin', 'ow
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: "Raw material not found" });
         }
+        await logActivity(req.user.userId, 'Suntung Bahan', 'raw_material', id, `Bahan ID ${id} (${name}) diperbarui`);
         res.json({ message: "success", data: { id, name, unit, custom_unit, stok_minimum, price_per_item, standard_stock_per_day, suggestion_purchase_quantity, current_stock, menu_stock, raw_stock_price } });
     } catch (err) {
         if (err.message && err.message.includes('ER_DUP_ENTRY')) {
@@ -304,6 +306,7 @@ app.delete("/api/raw-materials/:id", authenticateToken, authorizeRoles('admin', 
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: "Raw material not found" });
         }
+        await logActivity(req.user.userId, 'Hapus Bahan', 'raw_material', id, `Bahan ID ${id} dihapus`);
         res.json({ message: "Raw material and its history deleted successfully" });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -330,6 +333,7 @@ app.post("/api/units", authenticateToken, authorizeRoles('admin', 'owner'), asyn
         }
         const sql = 'INSERT INTO material_units (name) VALUES (?)';
         const [result] = await db.query(sql, [name]);
+        await logActivity(req.user.userId, 'Tambah Satuan', 'unit', result.insertId, `Satuan baru: ${name}`);
         res.status(201).json({
             message: "Unit added successfully",
             data: { id: result.insertId, name, is_calculable: true } // Default is true
@@ -355,6 +359,7 @@ app.put("/api/units/:id", authenticateToken, authorizeRoles('admin', 'owner'), a
             return res.status(404).json({ error: "Unit not found" });
         }
 
+        await logActivity(req.user.userId, 'Update Satuan', 'unit', id, `Status kalkulasi satuan ID ${id} diubah ke ${is_calculable}`);
         res.json({ message: "Unit updated successfully" });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -371,6 +376,7 @@ app.delete("/api/units/:id", authenticateToken, authorizeRoles('admin', 'owner')
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: "Unit not found" });
         }
+        await logActivity(req.user.userId, 'Hapus Satuan', 'unit', id, `Satuan ID ${id} dihapus`);
         res.json({ message: "Unit deleted successfully" });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -570,6 +576,7 @@ app.post("/api/menu-recipes", authenticateToken, authorizeRoles('admin', 'owner'
             return res.status(400).json({ error: "menu_item_id, raw_material_id, and quantity are required" });
         }
         const result = await addMenuRecipe(menu_item_id, raw_material_id, quantity);
+        await logActivity(req.user.userId, 'Tambah Resep', 'recipe', result.insertId, `Tambah bahan mentah ID ${raw_material_id} ke menu ${menu_item_id}`);
         res.status(201).json({
             message: "Menu recipe added successfully",
             data: { id: result.insertId, menu_item_id, raw_material_id, quantity },
@@ -587,6 +594,7 @@ app.delete("/api/menu-recipes/:id", authenticateToken, authorizeRoles('admin', '
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: "Menu recipe not found" });
         }
+        await logActivity(req.user.userId, 'Hapus Resep', 'recipe', id, `Resep ID ${id} dihapus`);
         res.json({ message: "Menu recipe deleted successfully" });
     } catch (err) {
         console.error("Error deleting menu recipe:", err);
@@ -1189,6 +1197,7 @@ app.put("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penjual'
         params.push(id);
 
         await db.query(sql, params);
+        await logActivity(req.user.userId, 'Update Banner', 'banner', id, `Banner ID ${id} diperbarui`);
         res.json({
             "message": "success",
             "data": { id, ...bannerData, is_active: final_is_active }
@@ -1205,6 +1214,7 @@ app.delete("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penju
         const { id } = req.params;
         const sql = 'DELETE FROM banners WHERE id = ?';
         await db.query(sql, [id]);
+        await logActivity(req.user.userId, 'Hapus Banner', 'banner', id, `Banner ID ${id} dihapus`);
         res.json({ "message": "success" });
     } catch (err) {
         res.status(400).json({ "error": err.message });
@@ -1236,6 +1246,7 @@ app.post("/api/expense-categories", authenticateToken, authorizeRoles('admin'), 
         }
         const sql = 'INSERT INTO expense_categories (name) VALUES (?)';
         const [result] = await db.query(sql, [name]);
+        await logActivity(req.user.userId, 'Tambah Kategori Biaya', 'category', result.insertId, `Kategori biaya baru: ${name}`);
         res.status(201).json({
             "message": "success",
             "data": { id: result.insertId, name },
@@ -1261,6 +1272,7 @@ app.put("/api/expense-categories/:id", authenticateToken, authorizeRoles('admin'
         if (result.affectedRows === 0) {
             return res.status(404).json({ "error": "Expense Category not found" });
         }
+        await logActivity(req.user.userId, 'Update Kategori Biaya', 'category', id, `Kategori biaya ID ${id} diubah ke ${name}`);
         res.json({
             "message": "success",
             "data": { id, name },
@@ -1296,6 +1308,7 @@ app.delete("/api/expense-categories/:id", authenticateToken, authorizeRoles('adm
         const [deleteResult] = await connection.query('DELETE FROM expense_categories WHERE id = ?', [id]);
 
         await connection.commit();
+        await logActivity(req.user.userId, 'Hapus Kategori Biaya', 'category', id, `Kategori biaya ID ${id} dihapus`);
         res.json({ message: "success", deletedId: id, affectedExpenses: true });
     } catch (err) {
         if (connection) await connection.rollback();
@@ -2111,6 +2124,7 @@ app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
             return res.status(404).json({ "error": "Transaction not found" });
         }
 
+        await logActivity(req.user.userId, 'Sunting Transaksi', 'transaction', id, `Transaksi ${id} diperbarui. Total: Rp ${parseFloat(total).toLocaleString('id-ID')}`);
         res.json({ message: "success", data: req.body, changes: result.affectedRows });
     } catch (err) {
         res.status(400).json({ "error": err.message, "stack": err.stack });
@@ -2153,6 +2167,7 @@ app.delete("/api/transactions/:id/permanent", authenticateToken, authorizeRoles(
         if (result.affectedRows === 0) {
             return res.status(404).json({ "error": "Transaction not found" });
         }
+        await logActivity(req.user.userId, 'Hapus Transaksi Permanen', 'transaction', req.params.id, `Transaksi ${req.params.id} dihapus dari sistem`);
         res.json({ "message": "permanently deleted", changes: result.affectedRows });
     } catch (err) {
         res.status(400).json({ "error": err.message });
@@ -2164,6 +2179,7 @@ app.delete("/api/transactions", authenticateToken, authorizeRoles('admin'), asyn
     try {
         const sql = 'UPDATE transactions SET deleted_at = ? WHERE deleted_at IS NULL';
         const [result] = await db.query(sql, [new Date()]);
+        await logActivity(req.user.userId, 'Kosongkan Sampah', 'transaction', 'all', `Admin memindahkan ${result.affectedRows} transaksi ke sampah`);
         res.json({ "message": "all deleted", changes: result.affectedRows });
     } catch (err) {
         res.status(400).json({ "error": err.message });
@@ -2206,7 +2222,7 @@ app.post("/api/v2/transactions", authenticateToken, authorizeRoles('user', 'admi
         await connection.query(itemsSql, [itemValues]);
 
         await connection.commit();
-
+        await logActivity(user_id, 'Membuat Transaksi V2', 'transaction', simple_transaction_id, `Transaksi V2 senilai Rp ${parseFloat(total_amount).toLocaleString('id-ID')}`);
         res.status(201).json({
             message: "Simple transaction created successfully",
             data: {
@@ -4107,6 +4123,7 @@ app.put("/api/user/profile/password", authenticateToken, authorizeRoles('user', 
         const [result] = await db.query(updateSql, [hashedNewPassword, req.user.userId]);
 
         if (result.affectedRows > 0) {
+            await logActivity(req.user.userId, 'Ganti Password', 'user', req.user.userId, 'User memperbarui password keamanan');
             res.json({ message: "Password updated successfully" });
         } else {
             res.status(500).json({ error: "Failed to update password" });
@@ -4164,6 +4181,7 @@ app.put("/api/user/app-mode", authenticateToken, async (req, res) => {
         const [result] = await db.query(sql, [app_mode, req.user.userId]);
 
         if (result.affectedRows > 0) {
+            await logActivity(req.user.userId, 'Ganti Mode App', 'user', req.user.userId, `User mengubah mode aplikasi menjadi ${app_mode}`);
             res.json({ message: "App mode updated successfully", data: { app_mode } });
         } else {
             res.status(404).json({ error: "User not found or app mode not changed" });
@@ -4393,6 +4411,7 @@ app.post("/api/cash-reconciliation/save", authenticateToken, async (req, res) =>
             variance_tunai, variance_transfer, variance_gojek, notes, user_id
         ]);
 
+        await logActivity(user_id, 'Simpan Rekonsiliasi', 'cash_reconciliation', date, `Simpan rekonsiliasi kas tanggal ${date}`);
         res.json({
             message: "success",
             data: {
@@ -4480,6 +4499,7 @@ app.delete("/api/cash-reconciliation/:id", authenticateToken, async (req, res) =
             return res.status(404).json({ error: "Reconciliation record not found" });
         }
 
+        await logActivity(req.user.userId, 'Hapus Rekonsiliasi', 'cash_reconciliation', id, `Hapus rekonsiliasi kas ID ${id}`);
         res.json({ message: "success", deletedId: id });
 
     } catch (err) {
@@ -4598,6 +4618,7 @@ app.post("/api/database/restore", authenticateToken, authorizeRoles('admin', 'ow
             fs.unlinkSync(req.file.path);
         }
 
+        await logActivity(req.user.userId, 'RUBAH DATABASE (RESTORE)', 'system', 'backup', 'Admin melakukan restore database dari file cadangan.');
         res.json({ message: "Database restored successfully!" });
     } catch (err) {
         if (connection) {
@@ -4645,6 +4666,7 @@ app.post("/api/credits", authenticateToken, authorizeRoles('admin', 'owner'), as
         const sql = "INSERT INTO employee_credits (employee_name, amount, description, credit_date, due_date, status) VALUES (?, ?, ?, ?, ?, 'unpaid')";
         const [result] = await db.query(sql, [employee_name, amount, description, credit_date, due_date || null]);
 
+        await logActivity(req.user.userId, 'Tambah Kasbon', 'credit', result.insertId, `Kasbon baru: ${employee_name} sebesar Rp ${parseFloat(amount).toLocaleString('id-ID')}`);
         res.status(201).json({ message: "Data kasbon berhasil ditambahkan", data: { id: result.insertId, ...req.body, status: 'unpaid' } });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -4662,6 +4684,7 @@ app.put("/api/credits/:id", authenticateToken, authorizeRoles('admin', 'owner'),
 
         if (result.affectedRows === 0) return res.status(404).json({ error: "Data tidak ditemukan" });
 
+        await logActivity(req.user.userId, 'Update Kasbon', 'credit', id, `Pembaruan kasbon ID ${id} (${employee_name})`);
         res.json({ message: "Data kasbon berhasil diperbarui" });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -4677,6 +4700,7 @@ app.delete("/api/credits/:id", authenticateToken, authorizeRoles('admin', 'owner
 
         if (result.affectedRows === 0) return res.status(404).json({ error: "Data tidak ditemukan" });
 
+        await logActivity(req.user.userId, 'Hapus Kasbon', 'credit', id, `Hapus kasbon ID ${id}`);
         res.json({ message: "Data kasbon berhasil dihapus" });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -4709,6 +4733,7 @@ app.post("/api/admin/send-daily-summary", authenticateToken, authorizeRoles('adm
                 { date: today, type: 'daily_summary' },
                 ownerIds
             );
+            await logActivity(req.user.userId, 'Kirim Summary Harian', 'notification', 'all_owners', `Admin mengirim ringkasan harian ke semua owner via push notification`);
             res.json({ message: "Laporan harian berhasil dikirim ke semua Owner." });
         } else {
             res.status(404).json({ error: "Tidak ditemukan user dengan role owner." });

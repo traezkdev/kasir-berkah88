@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../AppIcon';
 import NotificationBell from './NotificationBell';
@@ -18,13 +18,19 @@ const AdminMobileHeader = ({
 }) => {
     const navigate = useNavigate();
     const [scrolled, setScrolled] = useState(false);
+    const scrollThresholdValue = scrollThreshold;
 
     useEffect(() => {
+        let lastScrollY = window.scrollY;
         let ticking = false;
+
         const handleScroll = () => {
             if (!ticking) {
                 window.requestAnimationFrame(() => {
-                    setScrolled(window.scrollY > scrollThreshold);
+                    const currentScrolled = window.scrollY > scrollThresholdValue;
+                    if (scrolled !== currentScrolled) {
+                        setScrolled(currentScrolled);
+                    }
                     ticking = false;
                 });
                 ticking = true;
@@ -33,22 +39,21 @@ const AdminMobileHeader = ({
 
         window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
-    }, [scrollThreshold]);
+    }, [scrolled, scrollThresholdValue]);
 
-    const handleDefaultBack = () => {
+    const handleDefaultBack = useCallback(() => {
         if (onBack) {
             onBack();
         } else {
             navigate(-1);
         }
-    };
+    }, [onBack, navigate]);
 
     return (
         <div className="lg:hidden">
             {/* Sticky Header */}
             <div
-                className={`fixed top-0 left-0 right-0 z-[100] transition-[background-color,padding,box-shadow] duration-300 will-change-[background-color,padding,box-shadow] ${scrolled ? 'shadow-sm py-3' : 'bg-transparent py-5'}`}
-                style={scrolled ? { backgroundColor: '#148FEA' } : {}}
+                className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${scrolled ? 'shadow-sm py-3 bg-[#138FEA]' : 'bg-transparent py-5'}`}
             >
                 <div className="px-6 flex items-center justify-between">
                     <button
@@ -150,4 +155,4 @@ const AdminMobileHeader = ({
     );
 };
 
-export default AdminMobileHeader;
+export default memo(AdminMobileHeader);

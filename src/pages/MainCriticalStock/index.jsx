@@ -1,10 +1,83 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import axios from 'axios';
 import NavigationHeader from '../../components/ui/NavigationHeader';
-import { FaSync, FaExclamationTriangle, FaArrowLeft } from 'react-icons/fa';
+import AdminMobileHeader from '../../components/ui/AdminMobileHeader';
+import Icon from '../../components/AppIcon';
 import { useNavigate } from 'react-router-dom';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import { useTheme } from '../../contexts/ThemeContext';
+
+const CriticalItemCard = memo(({ item }) => {
+  const totalStock = Number(item.current_stock) + Number(item.menu_stock);
+  const suggestion = Number(item.suggestion_purchase_quantity);
+
+  return (
+    <div className="relative bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden transition-all active:scale-[0.98]">
+      {/* Risk Badge */}
+      <div className="absolute top-0 right-0 px-4 py-1.5 bg-rose-500 text-white font-black text-[10px] uppercase tracking-widest rounded-bl-2xl">
+        Kritis
+      </div>
+
+      <div className="p-6">
+        {/* Header: Name & Unit */}
+        <div className="flex items-center gap-4 mb-6">
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-rose-50 border-2 border-rose-100 text-rose-500 dark:bg-rose-900/20 dark:border-rose-800">
+            <Icon name="AlertTriangle" size={28} />
+          </div>
+          <div>
+            <h3 className="text-xl font-black text-slate-900 dark:text-white leading-tight uppercase tracking-tight">{item.name}</h3>
+            <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Standar: {Number(item.stok_minimum)} {item.unit}</p>
+          </div>
+        </div>
+
+        {/* Stock Breakdown */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Stok Mentah</p>
+            <p className="text-lg font-black text-rose-600 dark:text-rose-400">{Number(item.current_stock)}</p>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Stok Menu</p>
+            <p className="text-lg font-black text-rose-600 dark:text-rose-400">{Number(item.menu_stock)}</p>
+          </div>
+        </div>
+
+        {/* Total Progress */}
+        <div className="mb-6">
+          <div className="flex justify-between items-end mb-2">
+            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Ketersediaan Saat Ini</p>
+            <p className="text-sm font-black text-slate-900 dark:text-white">{totalStock} <span className="text-slate-400">/ {Number(item.stok_minimum)}</span></p>
+          </div>
+          <div className="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-200/50 dark:border-slate-700">
+            <div
+              className="h-full rounded-full transition-all duration-1000 bg-gradient-to-r from-rose-600 to-orange-500"
+              style={{ width: `${Math.min(100, (totalStock / Number(item.stok_minimum)) * 100)}%` }}
+            ></div>
+          </div>
+        </div>
+
+        {/* Action Suggestion */}
+        <div className="bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl p-5 border-2 border-dashed border-emerald-200 dark:border-emerald-800/30">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest mb-1">Saran Pembelian</p>
+              <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400">{suggestion} <span className="text-sm font-bold opacity-70">{item.unit}</span></p>
+            </div>
+            <div className="w-12 h-12 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/30">
+              <Icon name="ShoppingCart" size={20} />
+            </div>
+          </div>
+        </div>
+
+        {item.deficit > 0 && (
+          <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest text-center mt-4 italic">
+            * Kekurangan {Number(item.deficit)} {item.unit} dari standar
+          </p>
+        )}
+      </div>
+    </div>
+  );
+});
 
 const MainCriticalStockPage = () => {
   const [lowStockItems, setLowStockItems] = useState([]);
@@ -15,7 +88,7 @@ const MainCriticalStockPage = () => {
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
-  const fetchLowStockItems = async () => {
+  const fetchLowStockItems = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -32,7 +105,7 @@ const MainCriticalStockPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_BASE_URL]);
 
   const handleWhatsAppShare = async () => {
     if (lowStockItems.length === 0) {
@@ -41,7 +114,6 @@ const MainCriticalStockPage = () => {
     }
 
     try {
-      // Fetch owner phone from restaurant settings
       const settingsRes = await fetch(`${API_BASE_URL}/api/restaurant-settings`);
       const settingsData = await settingsRes.json();
       const ownerPhone = settingsData.data?.owner_phone;
@@ -52,24 +124,22 @@ const MainCriticalStockPage = () => {
         return;
       }
 
-      // Format message
       let message = `*LAPORAN STOK KRITIS - ${restaurantName}*\n`;
       message += `Tanggal: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}\n\n`;
       message += `Berikut daftar stok yang perlu segera dibeli:\n\n`;
 
       lowStockItems.forEach((item, index) => {
         message += `${index + 1}. *${item.name}*\n`;
-        message += `   - Stok Saat Ini: ${parseInt(item.current_stock)} ${item.unit}\n`;
-        message += `   - Stok Menu (diolah): ${parseInt(item.menu_stock)} ${item.unit}\n`;
-        message += `   - *Total Stok: ${parseInt(item.current_stock) + parseInt(item.menu_stock)} ${item.unit}*\n`;
-        message += `   - Stok Minimum: ${parseInt(item.stok_minimum)} ${item.unit}\n`;
-        message += `   - *Saran Pembelian: ${parseInt(item.suggestion_purchase_quantity)} ${item.unit}*\n\n`;
+        message += `   - Stok Saat Ini: ${Number(item.current_stock)} ${item.unit}\n`;
+        message += `   - Stok Menu (diolah): ${Number(item.menu_stock)} ${item.unit}\n`;
+        message += `   - *Total Stok: ${Number(item.current_stock) + Number(item.menu_stock)} ${item.unit}*\n`;
+        message += `   - Stok Minimum: ${Number(item.stok_minimum)} ${item.unit}\n`;
+        message += `   - *Saran Pembelian: ${Number(item.suggestion_purchase_quantity)} ${item.unit}*\n\n`;
       });
 
       message += `_Mohon segera dilakukan pengadaan stok tersebut. Terima kasih._`;
 
       const encodedMessage = encodeURIComponent(message);
-      // Clean ownerPhone (remove non-digits, ensure it starts with 62)
       let cleanPhone = ownerPhone.replace(/\D/g, '');
       if (cleanPhone.startsWith('0')) {
         cleanPhone = '62' + cleanPhone.substring(1);
@@ -87,153 +157,167 @@ const MainCriticalStockPage = () => {
 
   useEffect(() => {
     fetchLowStockItems();
-  }, []);
+  }, [fetchLowStockItems]);
 
   return (
-    <div className={`min-h-screen ${theme === 'default' ? 'bg-background' : 'bg-transparent'}`}>
-      {theme === 'default' && <NavigationHeader />}
-      <div className={`${theme === 'default' ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 mt-16" : "p-4 sm:p-6"}`}>
-        {/* Breadcrumb Navigation */}
-        <div className="mb-4 hidden md:block">
+    <div className={`min-h-screen ${theme === 'default' ? 'bg-slate-50 dark:bg-slate-950' : 'bg-transparent'}`}>
+      {theme === 'default' && (
+        <>
+          <NavigationHeader hideMobileHeader={true} />
+          <AdminMobileHeader
+            title="Stok Kritis"
+            subtitle="Pembelian"
+            badgeText="Urgent"
+            decorativeIcon="AlertTriangle"
+            stickyTitle="Daftar Pembelian Stok"
+            actions={[
+              {
+                label: "Refresh",
+                icon: "RefreshCw",
+                color: "primary",
+                onClick: fetchLowStockItems
+              },
+              {
+                label: "Lapor",
+                icon: "MessageSquare",
+                color: "success",
+                onClick: handleWhatsAppShare
+              }
+            ]}
+            rightIcon="Archive"
+            onRightAction={() => navigate('/raw-material-stock')}
+          />
+        </>
+      )}
+
+      <div className={`${theme === 'default' ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 mt-16 md:mt-24" : "p-4 sm:p-6"}`}>
+        {/* Breadcrumb Navigation - Desktop Only */}
+        <div className="mb-6 hidden md:block">
           <BreadcrumbNavigation />
-        </div>
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6">
-          <h1 className="text-2xl font-bold mb-4 sm:mb-0">Daftar Pembelian Stok (Stok Kritis)</h1>
-          <div className="flex flex-wrap items-center gap-2"> {/* New div for buttons */}
-            <button
-              onClick={() => navigate('/raw-material-stock')}
-              className="bg-muted hover:bg-muted/80 text-muted-foreground font-bold py-2 px-4 rounded flex items-center w-full sm:w-auto"
-            >
-              <FaArrowLeft className="mr-2" /> Kembali
-            </button>
-            <button
-              onClick={fetchLowStockItems}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-2 px-4 rounded flex items-center justify-center w-full sm:w-auto"
-              disabled={loading}
-            >
-              <FaSync className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
-              {loading ? 'Memuat...' : 'Refresh Data'}
-            </button>
-            <button
-              onClick={handleWhatsAppShare}
-              className="bg-green-600 hover:bg-green-700 active:scale-95 transition-transform text-white font-bold py-2 px-4 rounded flex items-center justify-center w-full sm:w-auto shadow-md"
-              disabled={loading}
-            >
-              <svg className="w-5 h-5 mr-2 fill-current" viewBox="0 0 24 24">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-              </svg>
-              Kirim Laporan ke Owner
-            </button>
+          <div className="flex justify-between items-center mt-6">
+            <div>
+              <h1 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Daftar Pembelian Stok</h1>
+              <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-1">Item yang di bawah standar minimum</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => navigate('/raw-material-stock')}
+                className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-black px-6 py-3 rounded-2xl flex items-center gap-2 hover:bg-slate-50 transition-all active:scale-95 uppercase tracking-widest text-xs"
+              >
+                <Icon name="ArrowLeft" size={18} /> Kembali
+              </button>
+              <button
+                onClick={fetchLowStockItems}
+                className="bg-blue-600 text-white font-black px-6 py-3 rounded-2xl flex items-center gap-2 hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-500/20 uppercase tracking-widest text-xs"
+                disabled={loading}
+              >
+                <Icon name="RefreshCw" size={18} className={loading ? 'animate-spin' : ''} /> Refresh
+              </button>
+              <button
+                onClick={handleWhatsAppShare}
+                className="bg-emerald-600 text-white font-black px-6 py-3 rounded-2xl flex items-center gap-2 hover:bg-emerald-700 transition-all active:scale-95 shadow-lg shadow-emerald-500/20 uppercase tracking-widest text-xs"
+                disabled={loading}
+              >
+                <Icon name="Send" size={18} /> Kirim WhatsApp
+              </button>
+            </div>
           </div>
         </div>
 
-        {error && <div className="p-4 text-center text-red-500 bg-red-100 rounded-lg">{error}</div>}
+        {error && (
+          <div className="bg-rose-50 dark:bg-rose-900/20 border-2 border-rose-100 dark:border-rose-900/30 rounded-3xl p-6 flex flex-col items-center gap-4 text-center my-8 animate-in fade-in zoom-in duration-300">
+            <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/40 rounded-full flex items-center justify-center text-rose-500">
+              <Icon name="AlertTriangle" size={32} />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-rose-900 dark:text-rose-200 uppercase tracking-tight"> Terjadi Kesalahan</h3>
+              <p className="text-sm font-bold text-rose-600 dark:text-rose-400 mt-1">{error}</p>
+            </div>
+            <button onClick={fetchLowStockItems} className="bg-rose-500 text-white font-black px-8 py-3 rounded-2xl uppercase tracking-widest text-xs shadow-lg shadow-rose-500/30">Coba Lagi</button>
+          </div>
+        )}
 
         {loading ? (
-          <div className="text-center py-8">Memuat data...</div>
+          <div className="flex flex-col items-center justify-center py-24 space-y-6">
+            <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-600 rounded-full animate-spin"></div>
+            <p className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest animate-pulse">Menghitung Data Stok Kritis...</p>
+          </div>
         ) : lowStockItems.length === 0 ? (
-          <div className="text-center py-8 px-4 bg-success/10 text-success rounded-lg">
-            <p className="text-lg">👍 Semua stok dalam kondisi aman. Tidak ada yang perlu dibeli saat ini.</p>
+          <div className="max-w-md mx-auto bg-white dark:bg-slate-900 rounded-[2.5rem] border-2 border-slate-100 dark:border-slate-800 p-10 text-center shadow-2xl shadow-slate-200/50 dark:shadow-none my-12 animate-in fade-in zoom-in duration-500">
+            <div className="w-24 h-24 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-8 border-4 border-emerald-50 dark:border-emerald-800">
+              <Icon name="CheckCircle" size={48} />
+            </div>
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight mb-3">Semua Stok Aman</h3>
+            <p className="text-sm font-bold text-slate-400 dark:text-slate-500 leading-relaxed">
+              Luar biasa! Tidak ada bahan yang berada di bawah standar minimum saat ini.
+            </p>
+            <button
+              onClick={() => navigate('/raw-material-stock')}
+              className="mt-8 w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 font-black py-4 rounded-2xl uppercase tracking-widest text-xs transition-all active:scale-95"
+            >
+              Kembali ke Inventori
+            </button>
           </div>
         ) : (
           <>
             {/* Desktop Table View */}
-            <div className="hidden sm:block overflow-x-auto bg-card rounded-lg shadow">
-              <table className="min-w-full divide-y divide-border">
-                <thead className="bg-muted">
+            <div className="hidden md:block overflow-hidden bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-[2rem] shadow-xl shadow-slate-200/50 dark:shadow-none mb-24">
+              <table className="min-w-full divide-y-2 divide-slate-50 dark:divide-slate-800">
+                <thead className="bg-slate-50 dark:bg-slate-800/50">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Nama Bahan
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Stok Saat Ini
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Stok Menu
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Total Stok
-                    </th>
-
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Stok Minimum
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Saran Pembelian
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Notifikasi
-                    </th>
+                    <th scope="col" className="px-6 py-5 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Nama Bahan</th>
+                    <th scope="col" className="px-6 py-5 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Stok Sekarang</th>
+                    <th scope="col" className="px-6 py-5 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Standar Min</th>
+                    <th scope="col" className="px-6 py-5 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Defisit</th>
+                    <th scope="col" className="px-6 py-5 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[#118eea]">Saran Beli</th>
                   </tr>
                 </thead>
-                <tbody className="bg-card divide-y divide-border">
-                  {lowStockItems.map((item) => (
-                    <tr key={item.id} className="bg-destructive/10 hover:bg-destructive/20">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground flex items-center">
-                        <FaExclamationTriangle className="text-destructive mr-2" />
-                        {item.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-destructive font-bold">
-                        {parseInt(item.current_stock)} {item.unit}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-destructive font-bold">
-                        {parseInt(item.menu_stock)} {item.unit}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground font-bold">
-                        {parseInt(item.current_stock) + parseInt(item.menu_stock)} {item.unit}
-                      </td>
-
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                        {parseInt(item.stok_minimum)} {item.unit}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-success font-bold">
-                        {parseInt(item.suggestion_purchase_quantity)} {item.unit}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-destructive">
-                        {item.deficit > 0 ? `Stok menipis, kurang ${parseInt(item.deficit)} dari standar.` : ''}
-                      </td>
-                    </tr>
-                  ))}
+                <tbody className="divide-y-2 divide-slate-50 dark:divide-slate-800">
+                  {lowStockItems.map((item) => {
+                    const total = Number(item.current_stock) + Number(item.menu_stock);
+                    return (
+                      <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                        <td className="px-6 py-6">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-xl flex items-center justify-center">
+                              <Icon name="Archive" size={18} />
+                            </div>
+                            <div>
+                              <p className="font-black text-slate-900 dark:text-white uppercase text-sm tracking-tight">{item.name}</p>
+                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">ID: #{item.id}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-6">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-black text-rose-600 dark:text-rose-400">{total} <span className="text-[10px] opacity-70 uppercase">{item.unit}</span></span>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight mt-1">Mentah: {Number(item.current_stock)} | Menu: {Number(item.menu_stock)}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-6 text-sm font-bold text-slate-500 dark:text-slate-400">{Number(item.stok_minimum)}</td>
+                        <td className="px-6 py-6">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full animate-pulse bg-rose-500"></div>
+                            <span className="text-xs font-black text-rose-500 uppercase tracking-widest">-{Number(item.deficit)}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-6">
+                          <div className="px-5 py-2.5 bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 rounded-xl inline-flex items-center gap-2 font-black text-xs uppercase tracking-widest border-2 border-emerald-100 dark:border-emerald-900/30">
+                            <Icon name="ShoppingCart" size={14} />
+                            {Number(item.suggestion_purchase_quantity)} {item.unit}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
 
             {/* Mobile Card View */}
-            <div className="block sm:hidden space-y-4">
+            <div className="md:hidden grid grid-cols-1 gap-5 pb-24 lg:mt-0 -mt-32">
               {lowStockItems.map((item) => (
-                <div key={item.id} className="bg-card rounded-lg shadow border border-destructive/50 p-4">
-                  <div className="flex items-center pb-2 mb-3 border-b border-border">
-                    <FaExclamationTriangle className="text-destructive mr-3 flex-shrink-0" />
-                    <h3 className="font-bold text-lg text-foreground">{item.name}</h3>
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                    <div className="font-medium text-muted-foreground">Stok Saat Ini:</div>
-                    <div className="text-destructive font-bold">{parseInt(item.current_stock)} {item.unit}</div>
-
-                    <div className="font-medium text-muted-foreground">Stok Menu:</div>
-                    <div className="text-destructive font-bold">{parseInt(item.menu_stock)} {item.unit}</div>
-
-                    <div className="font-medium text-muted-foreground">Total Stok:</div>
-                    <div className="text-foreground font-bold">{parseInt(item.current_stock) + parseInt(item.menu_stock)} {item.unit}</div>
-
-
-
-                    <div className="font-medium text-muted-foreground">Stok Minimum:</div>
-                    <div className="text-foreground">{parseInt(item.stok_minimum)} {item.unit}</div>
-
-                    <div className="font-medium text-muted-foreground">Estimasi Porsi:</div>
-                    <div className="text-foreground">{item.estimated_menu_portions !== null ? `${parseInt(item.estimated_menu_portions)} porsi` : 'N/A'}</div>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-border">
-                    <div className="font-medium text-muted-foreground text-sm">Saran Pembelian:</div>
-                    <div className="text-success font-bold text-lg">{parseInt(item.suggestion_purchase_quantity)} {item.unit}</div>
-                    {item.deficit > 0 && (
-                      <div className="text-destructive text-sm mt-2">
-                        Notifikasi: Stok menipis, kurang {parseInt(item.deficit)} dari standar.
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <CriticalItemCard key={item.id} item={item} />
               ))}
             </div>
           </>

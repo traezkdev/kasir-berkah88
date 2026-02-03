@@ -199,19 +199,17 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end lg:items-center justify-center z-50 p-0 lg:p-4 animate-in fade-in duration-300"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end lg:items-center justify-center z-[1001] p-0 lg:p-4 animate-in fade-in duration-300"
       onClick={handleBackdropClick}
     >
       {/* Premium Modal Container */}
       <div
-        className="relative bg-white dark:bg-slate-900 w-full lg:max-w-2xl max-h-[95vh] lg:max-h-[90vh] overflow-hidden rounded-t-[2.5rem] lg:rounded-[2rem] shadow-2xl animate-in slide-in-from-bottom lg:slide-in-from-bottom-0 duration-500"
+        className="relative bg-white dark:bg-slate-900 w-full lg:max-w-2xl h-full lg:h-auto lg:max-h-[90vh] flex flex-col overflow-hidden lg:rounded-[2rem] shadow-2xl animate-in slide-in-from-bottom lg:slide-in-from-bottom-0 duration-500"
         onClick={(e) => e.stopPropagation()}
       >
 
-        {/* Gradient Header with Icon */}
-        <div className="relative bg-gradient-to-br from-blue-600 to-blue-700 p-6 lg:p-8">
-          {/* Drag Handle (Mobile) */}
-          <div className="w-12 h-1.5 bg-white/30 rounded-full mx-auto mb-4 lg:hidden"></div>
+        {/* Premium Header with Icon */}
+        <div className="relative bg-[#118eea] p-6 lg:p-8 shrink-0">
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -248,8 +246,8 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
         </div>
 
         {/* Form Content - Scrollable */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[calc(95vh-180px)] lg:max-h-[calc(90vh-220px)]">
-          <div className="p-6 lg:p-8 space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 overflow-y-auto p-6 lg:p-8 space-y-6">
 
             {/* Section: Info Dasar */}
             <div className="space-y-4">
@@ -450,20 +448,20 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
             )}
           </div>
 
-          {/* Sticky Action Buttons */}
-          <div className="sticky bottom-0 bg-white dark:bg-slate-900 border-t-2 border-gray-100 dark:border-slate-800 p-6 lg:p-8 flex gap-3">
+          {/* Action Buttons */}
+          <div className="bg-white dark:bg-slate-900 border-t-2 border-gray-100 dark:border-slate-800 p-4 lg:p-8 flex gap-2 lg:gap-3 shrink-0">
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="flex-1 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-black py-4 rounded-2xl uppercase tracking-wider text-sm transition-all active:scale-95 disabled:opacity-50"
+              className="flex-1 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-black py-3 lg:py-4 rounded-2xl uppercase tracking-wider text-xs lg:text-sm transition-all active:scale-95 disabled:opacity-50"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-black py-4 rounded-2xl uppercase tracking-wider text-sm shadow-lg shadow-blue-600/30 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-black py-3 lg:py-4 rounded-2xl uppercase tracking-wider text-xs lg:text-sm shadow-lg shadow-blue-600/30 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
