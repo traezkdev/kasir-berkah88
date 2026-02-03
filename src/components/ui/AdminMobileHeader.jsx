@@ -47,17 +47,17 @@ const AdminMobileHeader = ({
         <div className="lg:hidden">
             {/* Sticky Header */}
             <div
-                className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${scrolled ? 'shadow-sm py-3' : 'bg-transparent py-5'}`}
+                className={`fixed top-0 left-0 right-0 z-[100] transition-[background-color,padding,box-shadow] duration-300 will-change-[background-color,padding,box-shadow] ${scrolled ? 'shadow-sm py-3' : 'bg-transparent py-5'}`}
                 style={scrolled ? { backgroundColor: 'rgba(20, 143, 234, 0.95)' } : {}}
             >
                 <div className="px-6 flex items-center justify-between">
                     <button
                         onClick={handleDefaultBack}
-                        className={`p-2 rounded-2xl transition-all active:scale-95 ${scrolled ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white/20 text-white backdrop-blur-sm'}`}
+                        className={`p-2 rounded-2xl transition-[transform,background-color] active:scale-95 ${scrolled ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white/20 text-white backdrop-blur-sm'}`}
                     >
                         <Icon name="ChevronLeft" size={24} />
                     </button>
-                    <div className={`text-center transition-all duration-300 ${scrolled ? 'opacity-100' : 'opacity-0'}`}>
+                    <div className={`text-center transition-opacity duration-300 ${scrolled ? 'opacity-100' : 'opacity-0'}`}>
                         <h2 className="font-black text-white tracking-tight">
                             {stickyTitle || title}
                         </h2>

@@ -32,19 +32,19 @@ const MobileBottomNav = ({ items }) => {
                         <Link
                             key={item.path}
                             to={item.path}
-                            className={`flex items-center justify-center transition-all duration-500 ease-in-out h-12 rounded-2xl relative group active:scale-90
+                            className={`flex items-center justify-center transition-[flex,background-color,color,transform] duration-300 ease-out h-12 rounded-2xl relative group active:scale-90 will-change-[flex,transform]
                       ${active
-                                    ? 'flex-[2.5] bg-blue-600 dark:bg-white text-white dark:text-slate-900 px-4 shadow-lg shadow-blue-500/30 dark:shadow-white/10 hover:brightness-110'
+                                    ? 'flex-[2.5] bg-blue-600 dark:bg-white text-white dark:text-slate-900 px-4 shadow-md shadow-blue-500/20 dark:shadow-white/5 hover:brightness-110'
                                     : 'flex-1 text-gray-400 dark:text-slate-500 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
                         >
                             <div className="flex items-center gap-2 relative z-10">
                                 <Icon
                                     name={item.icon}
                                     size={24}
-                                    className={`transition-colors duration-300 ${active ? 'text-white dark:text-slate-900' : 'text-gray-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`}
+                                    className={`transition-colors duration-200 ${active ? 'text-white dark:text-slate-900' : 'text-gray-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`}
                                 />
                                 {active && (
-                                    <span className="text-[10px] font-black uppercase tracking-wider whitespace-nowrap animate-in fade-in slide-in-from-left-2 duration-500">
+                                    <span className="text-[10px] font-black uppercase tracking-wider whitespace-nowrap animate-in fade-in slide-in-from-left-1 duration-300">
                                         {item.label}
                                     </span>
                                 )}

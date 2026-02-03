@@ -509,8 +509,8 @@ export default function SimpleTransaction() { // Renamed component
               return (
                 <div
                   key={item.id}
-                  className={`group bg-white dark:bg-gray-800 rounded-2xl p-3 transition-all duration-300 relative flex flex-col h-full shadow-sm
-                              ${isOutOfStock && !ignoreStock ? 'opacity-60 grayscale' : 'cursor-pointer hover:shadow-xl hover:-translate-y-1 active:scale-95'}
+                  className={`group bg-white dark:bg-gray-800 rounded-2xl p-3 transition-[transform,box-shadow,opacity] duration-300 relative flex flex-col h-full shadow-sm will-change-transform
+                              ${isOutOfStock && !ignoreStock ? 'opacity-60 grayscale' : 'cursor-pointer hover:shadow-md hover:-translate-y-1 active:scale-95'}
                               ${isInCart ? 'ring-2 ring-primary bg-primary/5 dark:bg-primary/10' : 'border border-transparent'}`
                   } onClick={() => (currentAvailableStock > 0 || ignoreStock) && handleItemClick(item)}
                 >
@@ -527,7 +527,7 @@ export default function SimpleTransaction() { // Renamed component
 
                   {/* Image Container */}
                   <div className="relative aspect-[4/3] overflow-hidden rounded-xl mb-3 bg-gray-50 dark:bg-gray-700">
-                    <img
+                    <AppImage
                       src={item.image_url ? `${apiUrl}${item.image_url}` : '/assets/images/no_image.png'}
                       alt={item.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
@@ -543,7 +543,7 @@ export default function SimpleTransaction() { // Renamed component
                     {/* Quick Add Overlay */}
                     {!isOutOfStock && (
                       <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-colors flex items-center justify-center">
-                        <div className="bg-white/90 dark:bg-gray-800/90 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 scale-50 group-hover:scale-100 transition-all duration-300">
+                        <div className="bg-white/90 dark:bg-gray-800/90 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 scale-50 group-hover:scale-100 transition-[transform,opacity] duration-300">
                           <FiPlus className="text-primary w-5 h-5" />
                         </div>
                       </div>
