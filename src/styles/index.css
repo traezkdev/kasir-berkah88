@@ -511,6 +511,8 @@
 
 .animate-blob {
   animation: blob 7s infinite;
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .animation-delay-2000 {
@@ -519,6 +521,19 @@
 
 .animation-delay-4000 {
   animation-delay: 4s;
+}
+
+/* Optimize Rendering */
+.gpu-acceleration {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  perspective: 1000;
+}
+
+.optimize-scroll {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 500px;
 }
 
 /* Global Scrollbar Styles */

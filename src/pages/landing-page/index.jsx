@@ -8,8 +8,16 @@ const LandingPage = () => {
     const [isVisible, setIsVisible] = useState({});
 
     useEffect(() => {
-        const handleScroll = () => setScrollY(window.scrollY);
-        window.addEventListener('scroll', handleScroll);
+        const handleScroll = () => {
+            if (window.requestAnimationFrame) {
+                window.requestAnimationFrame(() => {
+                    setScrollY(window.scrollY);
+                });
+            } else {
+                setScrollY(window.scrollY);
+            }
+        };
+        window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
@@ -77,7 +85,7 @@ const LandingPage = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white overflow-hidden">
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white overflow-hidden gpu-acceleration">
             {/* Animated Background Blobs */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <div
@@ -129,13 +137,14 @@ const LandingPage = () => {
                     </h1>
 
                     <p
-                        className="text-xl sm:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto"
+                        className="text-xl sm:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto gpu-acceleration"
                         data-animate
                         id="hero-subtitle"
                         style={{
                             opacity: isVisible['hero-subtitle'] ? 1 : 0,
                             transform: isVisible['hero-subtitle'] ? 'translateY(0)' : 'translateY(30px)',
                             transition: 'all 0.8s ease-out 0.4s',
+                            willChange: 'transform, opacity'
                         }}
                     >
                         Kelola penjualan, inventori, dan keuangan bisnis Anda dengan mudah.
@@ -180,7 +189,7 @@ const LandingPage = () => {
             </section>
 
             {/* Features Section */}
-            <section className="relative py-20 px-4 sm:px-6 lg:px-8">
+            <section className="relative py-20 px-4 sm:px-6 lg:px-8 optimize-scroll">
                 <div className="max-w-7xl mx-auto">
                     <div
                         className="text-center mb-16"
@@ -229,7 +238,7 @@ const LandingPage = () => {
             </section>
 
             {/* Statistics Section */}
-            <section className="relative py-20 px-4 sm:px-6 lg:px-8">
+            <section className="relative py-20 px-4 sm:px-6 lg:px-8 optimize-scroll">
                 <div className="max-w-7xl mx-auto">
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                         {stats.map((stat, index) => (
@@ -311,6 +320,7 @@ const LandingPage = () => {
 
         .animate-blob {
           animation: blob 7s infinite;
+          will-change: transform;
         }
 
         .animation-delay-2000 {
@@ -324,6 +334,7 @@ const LandingPage = () => {
         .animate-gradient {
           background-size: 200% 200%;
           animation: gradient 3s ease infinite;
+          will-change: background-position;
         }
       `}</style>
         </div>

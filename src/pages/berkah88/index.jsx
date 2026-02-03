@@ -56,12 +56,12 @@ const BerkahLandingPage = () => {
             <LandingHeader />
 
             {/* Hero Section */}
-            <section id="hero" className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
+            <section id="hero" className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden gpu-acceleration">
                 {/* Background Video/Image Placeholder */}
                 <div className="absolute inset-0 z-0">
                     <img
                         src="/assets/images/bg.jpeg"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover gpu-acceleration"
                         alt="Background"
                     />
                     <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/60 to-slate-50" />
@@ -114,7 +114,7 @@ const BerkahLandingPage = () => {
             )}
 
             {/* Main Product Grid */}
-            <section id="products" className="py-20 bg-slate-50">
+            <section id="products" className="py-20 bg-slate-50 optimize-scroll">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
                         <h2 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600 mb-4 inline-block">
@@ -191,7 +191,7 @@ const BerkahLandingPage = () => {
             </section>
 
             {/* Delivery Services Section */}
-            <section id="delivery" className="py-20 bg-slate-50 relative overflow-hidden">
+            <section id="delivery" className="py-20 bg-slate-50 relative overflow-hidden optimize-scroll">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="text-center mb-16">
                         <h2 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600 mb-4 inline-block">
@@ -263,7 +263,7 @@ const BerkahLandingPage = () => {
             </section>
 
             {/* Location Section */}
-            <section id="location" className="py-20 bg-white">
+            <section id="location" className="py-20 bg-white optimize-scroll">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-12">
                         <h2 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600 mb-4 inline-block">
@@ -300,6 +300,7 @@ const BerkahLandingPage = () => {
                 }
                 .animate-fade-in-up {
                     animation: fade-in-up 0.8s ease-out forwards;
+                    will-change: transform, opacity;
                 }
                 .delay-100 { animation-delay: 0.1s; }
                 .delay-200 { animation-delay: 0.2s; }
