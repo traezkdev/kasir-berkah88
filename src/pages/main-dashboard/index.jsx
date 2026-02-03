@@ -16,6 +16,8 @@ import authFetch from '../../utils/authFetch'; // Add this import
 import StockAlertBanner from '../../components/StockAlertBanner';
 import NotificationBell from '../../components/ui/NotificationBell';
 
+import LoadingScreen from '../../components/ui/LoadingScreen';
+
 const apiUrl = import.meta.env.VITE_API_URL;
 
 import { useTheme } from '../../contexts/ThemeContext';
@@ -552,14 +554,7 @@ const MainDashboard = ({ headerTitle }) => {
   };
 
   if (!dashboardData) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-text-secondary">Memuat data dashboard...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Menyiapkan Dashboard" submessage="Menyusun data statistik dan performa" />;
   }
 
   const handleViewAllTransactions = () => {
@@ -844,7 +839,7 @@ const MainDashboard = ({ headerTitle }) => {
   return (
     <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50 dark:bg-slate-950' : 'bg-transparent'}`}>
       {/* Sticky Mobile Header */}
-      <div className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden backdrop-blur-md shadow-sm py-3 ${showStickyHeader ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`} style={{ backgroundColor: 'rgba(20, 143, 234, 0.95)' }}>
+      <div className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden shadow-sm py-3 ${showStickyHeader ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`} style={{ backgroundColor: '#148FEA' }}>
         <div className="px-6 flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}

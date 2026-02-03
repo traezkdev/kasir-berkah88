@@ -4499,15 +4499,18 @@ app.get("/api/database/backup", authenticateToken, authorizeRoles('admin', 'owne
         const tableNames = tables.map(t => Object.values(t)[0]);
 
         const backupData = {
-            version: "1.0",
+            version: "1.1",
             timestamp: new Date().toISOString(),
             database: dbName,
+            tableCount: tableNames.length,
+            summary: {},
             data: {}
         };
 
         for (const tableName of tableNames) {
             const [rows] = await db.query(`SELECT * FROM \`${tableName}\``);
             backupData.data[tableName] = rows;
+            backupData.summary[tableName] = rows.length;
         }
 
         const fileName = `backup-${dbName}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;

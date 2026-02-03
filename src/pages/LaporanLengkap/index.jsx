@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import authFetch from '../../utils/authFetch';
-import { RingLoader } from 'react-spinners';
+import LoadingScreen from '../../components/ui/LoadingScreen';
 import * as XLSX from 'xlsx';
 import { exportToPdf } from '../../utils/exportUtils'; // Correctly import the utility
 import { useTheme } from '../../contexts/ThemeContext';
@@ -344,9 +344,7 @@ const LaporanLengkap = ({ headerTitle }) => {
           </div>
 
           {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <RingLoader color="#4A90E2" size={80} />
-            </div>
+            <LoadingScreen message="Menyusun Laporan Lengkap" submessage="Mengumpulkan data transaksi, stok, dan mutasi kas" />
           ) : error ? (
             <div className="p-4 text-red-500 bg-red-100 rounded-md">Error: {error}</div>
           ) : (

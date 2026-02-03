@@ -123,8 +123,13 @@ const DatabaseManagement = () => {
                             <div>
                                 <h2 className="text-xl font-bold text-text-primary">Cadangkan Data</h2>
                                 <p className="text-sm text-text-secondary mt-2">
-                                    Unduh semua data saat ini (transaksi, menu, stok, dll) ke dalam file .json yang aman.
+                                    Unduh seluruh data database (Menu, Transaksi, Stok, Karyawan, Kasbon, Chat, hingga Log Aktivitas) ke dalam file .json.
                                 </p>
+                                <div className="mt-3 flex flex-wrap justify-center gap-2">
+                                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-[10px] font-bold text-blue-600 dark:text-blue-400 rounded-md uppercase">26+ Tabel</span>
+                                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-[10px] font-bold text-green-600 dark:text-green-400 rounded-md uppercase">Semua Riwayat</span>
+                                    <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-[10px] font-bold text-amber-600 dark:text-amber-400 rounded-md uppercase text-xs">Kecuali File Gambar</span>
+                                </div>
                             </div>
                             <Button
                                 onClick={handleBackup}

@@ -320,18 +320,18 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
 
       {/* Mobile Floating Header (Native App Feel) */}
       <div
-        className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden ${scrolled ? 'backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}
-        style={scrolled ? { backgroundColor: 'rgba(20, 143, 234, 0.95)' } : {}}
+        className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden ${scrolled ? 'shadow-sm py-3' : 'bg-transparent py-5'}`}
+        style={scrolled ? { backgroundColor: '#148FEA' } : {}}
       >
         <div className="px-6 flex items-center justify-between">
-          <button onClick={() => navigate(-1)} className={`p-2 rounded-2xl transition-all ${scrolled ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white/20 text-white backdrop-blur-md'}`}>
+          <button onClick={() => navigate(-1)} className={`p-2 rounded-2xl transition-all ${scrolled ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white/20 text-white'}`}>
             <Icon name="ChevronLeft" size={24} />
           </button>
           <div className={`text-center transition-all duration-300 ${scrolled ? 'opacity-100' : 'opacity-0'}`}>
             <h2 className="font-black text-white tracking-tight">Transaksi</h2>
           </div>
           <div className="flex items-center gap-2">
-            <NotificationBell size={20} className={`${scrolled ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white/20 text-white backdrop-blur-md'}`} />
+            <NotificationBell size={20} className={`${scrolled ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white/20 text-white'}`} />
           </div>
         </div>
       </div>

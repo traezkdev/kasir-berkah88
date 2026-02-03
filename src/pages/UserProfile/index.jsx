@@ -10,6 +10,7 @@ import OwnerNavigationHeader from '../../components/ui/OwnerNavigationHeader';
 import AppIcon from '../../components/AppIcon';
 import ConfirmationModal from '../../components/ui/ConfirmationModal';
 import { useTheme } from '../../contexts/ThemeContext';
+import AdminMobileHeader from '../../components/ui/AdminMobileHeader';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -18,7 +19,7 @@ const ProfileModal = ({ title, isOpen, onClose, children }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-[2000] p-4" onClick={onClose}>
-      <div className="bg-card rounded-xl shadow-2xl w-full max-w-md flex flex-col" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-card rounded-3xl shadow-2xl w-full max-w-md flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center p-6 border-b border-border">
           <h3 className="text-xl font-semibold text-text-primary">{title}</h3>
           <Button variant="ghost" size="icon" onClick={onClose}><AppIcon name="X" className="w-6 h-6" /></Button>
@@ -34,19 +35,21 @@ const ProfileCard = ({ icon, title, description, onClick, isDestructive = false 
   <div
     onClick={onClick}
     className={`
-      bg-card p-6 rounded-xl shadow-lg border border-border
-      transition-all duration-300 ease-in-out cursor-pointer group
+      bg-card p-6 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-800
+      transition-all duration-300 ease-in-out cursor-pointer group hover:-translate-y-2
       ${isDestructive
-        ? 'hover:border-destructive/50 hover:shadow-destructive/20'
-        : 'hover:border-primary/50 hover:shadow-primary/20'
+        ? 'hover:border-destructive/30 hover:shadow-destructive/10'
+        : 'hover:border-blue-500/30 hover:shadow-blue-500/10'
       }
     `}
   >
-    <div className="flex items-center gap-4 mb-2">
-      <AppIcon name={icon} className={`w-8 h-8 ${isDestructive ? 'text-destructive' : 'text-primary'} transition-colors`} />
-      <h3 className="text-lg font-bold text-text-primary">{title}</h3>
+    <div className="flex items-center gap-4 mb-3">
+      <div className={`p-3 rounded-2xl transition-all duration-300 ${isDestructive ? 'bg-rose-50 dark:bg-rose-900/20 text-destructive group-hover:bg-destructive group-hover:text-white' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white'}`}>
+        <AppIcon name={icon} className="w-6 h-6" />
+      </div>
+      <h3 className="text-sm font-black text-text-primary tracking-tight uppercase transition-colors">{title}</h3>
     </div>
-    <p className="text-sm text-text-secondary">{description}</p>
+    <p className="text-xs font-bold text-text-secondary leading-relaxed pl-1 opacity-70 group-hover:opacity-100 transition-opacity">{description}</p>
   </div>
 );
 
@@ -240,20 +243,31 @@ const UserProfile = ({ headerTitle }) => {
           <OwnerNavigationHeader
             onToggleSidebar={toggleSidebar}
             headerTitle={headerTitle || "Profil Pengguna"}
+            hideMobileHeader={true}
           />
         ) : (
           <NavigationHeader
             onToggleSidebar={toggleSidebar}
             headerTitle={headerTitle || "Profil Pengguna"}
+            hideMobileHeader={true}
           />
         )
       )}
+      <AdminMobileHeader
+        title="Profil"
+        subtitle="Pengguna"
+        badgeText="Identitas Akun"
+        decorativeIcon="UserCircle"
+        stickyTitle="Profil Pengguna"
+        rightIcon="Home"
+        onRightAction={() => navigate('/main-dashboard')}
+      />
       <main className={`flex-grow ${theme === 'default' ? 'pt-20 lg:pt-16' : ''}`}>
         <div className={theme === 'default' ? "max-w-7xl mx-auto px-4 lg:px-8 py-8" : ""}>
           <div className="hidden md:block">
             <BreadcrumbNavigation paths={breadcrumbs} />
           </div>
-          <header className="mb-8 lg:mb-6">
+          <header className="mb-8 lg:mb-6 hidden lg:block">
             <h1 className="text-2xl lg:text-3xl font-black text-text-primary mt-4 tracking-tighter uppercase lg:normal-case flex items-center gap-3">
               <AppIcon name="UserCircle" className="w-8 h-8 lg:w-10 lg:h-10 text-primary" />
               Profil Pengguna
@@ -264,18 +278,79 @@ const UserProfile = ({ headerTitle }) => {
             </p>
           </header>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-24">
-            {/* Info Card */}
-            <div className="md:col-span-3 bg-gradient-to-br from-sky-400 to-blue-600 text-white rounded-lg p-4 shadow-lg flex items-center gap-6">
-              <img src={avatarSrc} alt="Foto Profil" className="w-24 h-24 rounded-full object-cover border-4 border-white/20" />
-              <div className="flex-grow">
-                <h3 className="text-xl font-bold mb-2">Informasi Akun</h3>
-                <div className="space-y-2 text-sm">
-                  <p><strong className="font-medium">ID Pengguna:</strong> {user.id}</p>
-                  <p><strong className="font-medium">Nama Pengguna:</strong> {user.username}</p>
-                  <p><strong className="font-medium">Peran:</strong> <span className="capitalize px-2 py-1 bg-white/20 rounded-full text-xs">{user.role}</span></p>
-                  {user.phone && <p><strong className="font-medium">No. HP:</strong> {user.phone}</p>}
-                  {user.address && <p><strong className="font-medium block">Alamat:</strong> {user.address}</p>}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-24 lg:mt-0 -mt-20 relative z-20">
+            {/* Premium Info Card */}
+            <div className="md:col-span-3 relative overflow-hidden bg-gradient-to-br from-[#138FEA] to-[#0A56B1] text-white rounded-[2rem] p-6 lg:p-10 shadow-2xl shadow-blue-500/20 group">
+              {/* Decorative Background Elements */}
+              <div className="absolute -right-20 -top-20 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-blob"></div>
+              <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
+
+              <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 lg:gap-12">
+                {/* Avatar Section with Glow */}
+                <div className="relative shrink-0 group/avatar">
+                  <div className="absolute -inset-4 bg-white/20 rounded-full blur-xl group-hover/avatar:bg-white/30 transition-all duration-500"></div>
+                  <div className="relative">
+                    <img
+                      src={avatarSrc}
+                      alt="Foto Profil"
+                      className="w-32 h-32 lg:w-40 lg:h-40 rounded-full object-cover border-4 border-white/30 shadow-2xl transition-transform duration-500 group-hover/avatar:scale-105"
+                    />
+                    {/* Active Status Badge */}
+                    <div className="absolute bottom-2 right-2 w-6 h-6 lg:w-8 lg:h-8 bg-green-500 border-4 border-[#138FEA] rounded-full shadow-lg"></div>
+                  </div>
+                </div>
+
+                {/* Info Side */}
+                <div className="flex-grow w-full">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                    <div>
+                      <h3 className="text-2xl lg:text-3xl font-black tracking-tight uppercase">Informasi Akun</h3>
+                      <p className="text-blue-100/60 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Data autentikasi & identitas</p>
+                    </div>
+                    <div className="px-4 py-2 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center gap-2 self-start sm:self-center">
+                      <div className="w-2 h-2 rounded-full bg-blue-300 animate-pulse"></div>
+                      <span className="text-xs font-black uppercase tracking-widest">{user.role}</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
+                    {/* Info Items */}
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                      <div className="flex items-center gap-3 mb-1">
+                        <AppIcon name="Fingerprint" className="w-4 h-4 text-blue-200" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-100/50">ID Pengguna</span>
+                      </div>
+                      <p className="font-bold tracking-tight text-lg">#{user.id}</p>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                      <div className="flex items-center gap-3 mb-1">
+                        <AppIcon name="User" className="w-4 h-4 text-blue-200" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-100/50">Username</span>
+                      </div>
+                      <p className="font-bold tracking-tight text-lg">{user.username}</p>
+                    </div>
+
+                    {user.phone && (
+                      <div className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                        <div className="flex items-center gap-3 mb-1">
+                          <AppIcon name="Phone" className="w-4 h-4 text-blue-200" />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-blue-100/50">Nomor HP</span>
+                        </div>
+                        <p className="font-bold tracking-tight text-lg">{user.phone}</p>
+                      </div>
+                    )}
+
+                    <div className={`p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors ${user.phone ? 'sm:col-span-2' : ''}`}>
+                      <div className="flex items-center gap-3 mb-1">
+                        <AppIcon name="MapPin" className="w-4 h-4 text-blue-200" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-100/50">Alamat Lengkap</span>
+                      </div>
+                      <p className="font-bold tracking-tight text-sm lg:text-base leading-relaxed">
+                        {user.address || 'Alamat belum diatur'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

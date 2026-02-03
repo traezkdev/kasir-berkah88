@@ -11,6 +11,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from 'react-hot-toast';
 import { jwtDecode } from 'jwt-decode';
 import OwnerNavigationHeader from '../../components/ui/OwnerNavigationHeader';
+import LoadingScreen from '../../components/ui/LoadingScreen';
 import AdminMobileHeader from '../../components/ui/AdminMobileHeader';
 import MobileBottomNav from '../../components/ui/MobileBottomNav';
 
@@ -195,14 +196,7 @@ export default function AuditorPage() {
     };
 
     if (loading || !data) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                    <p className="font-bold text-gray-500 animate-pulse">Menghitung Audit Sistem...</p>
-                </div>
-            </div>
-        );
+        return <LoadingScreen message="Menganalisis Data Keuangan" submessage="Melakukan kalkulasi aset dan transaksi" />;
     }
 
     return (

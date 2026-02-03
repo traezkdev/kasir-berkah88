@@ -13,6 +13,7 @@ import ConfirmationModal from '../components/ui/ConfirmationModal'; // Import Co
 import AdminMobileHeader from '../components/ui/AdminMobileHeader';
 import { useToast } from '../components/ui/ToastNotification';
 import BreadcrumbNavigation from '../components/ui/BreadcrumbNavigation';
+import LoadingScreen from '../components/ui/LoadingScreen';
 import { jwtDecode } from 'jwt-decode';
 
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -243,14 +244,7 @@ const AdminUangBisnis = ({ headerTitle }) => { // Changed component name
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen bg-background flex items-center justify-center">
-                <div className="text-center">
-                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-text-secondary">Memuat data owner...</p>
-                </div>
-            </div>
-        );
+        return <LoadingScreen message="Memuat Saldo & Transaksi" submessage="Menyinkronkan data keuangan owner dan lapak" />;
     }
 
     if (error) {

@@ -59,7 +59,7 @@
   body {
     overscroll-behavior-y: auto;
     -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
     text-rendering: optimizeSpeed;
     /* Prioritaskan kecepatan render di HP */
     -webkit-font-smoothing: antialiased;
