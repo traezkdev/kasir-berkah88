@@ -26,6 +26,7 @@ import { exportToExcel, exportToPdf } from '../utils/exportUtils';
 import OwnerNavigationHeader from '../components/ui/OwnerNavigationHeader';
 import AdminMobileHeader from '../components/ui/AdminMobileHeader';
 import Icon from '../components/AppIcon';
+import LoadingScreen from '../components/ui/LoadingScreen';
 import { jwtDecode } from 'jwt-decode';
 
 // Setup axios instance
@@ -269,11 +270,7 @@ const AnalisisData = () => {
 
     // Loading State
     if (loading && !data) {
-        return (
-            <div className="flex bg-background min-h-screen items-center justify-center">
-                <Loader2 className="w-10 h-10 animate-spin text-primary" />
-            </div>
-        );
+        return <LoadingScreen message="Menganalisis Performa Bisnis" submessage="Mengkalkulasi pendapatan, pengeluaran, dan laba bersih" />;
     }
 
     return (

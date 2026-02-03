@@ -16,6 +16,8 @@ import authFetch from '../../utils/authFetch'; // Add this import
 import StockAlertBanner from '../../components/StockAlertBanner';
 import NotificationBell from '../../components/ui/NotificationBell';
 
+import LoadingScreen from '../../components/ui/LoadingScreen';
+
 const apiUrl = import.meta.env.VITE_API_URL;
 
 import { useTheme } from '../../contexts/ThemeContext';
@@ -552,14 +554,7 @@ const MainDashboard = ({ headerTitle }) => {
   };
 
   if (!dashboardData) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-text-secondary">Memuat data dashboard...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Menyiapkan Dashboard" submessage="Menyusun data statistik dan performa" />;
   }
 
   const handleViewAllTransactions = () => {
