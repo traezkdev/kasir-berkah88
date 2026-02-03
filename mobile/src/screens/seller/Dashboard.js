@@ -6,7 +6,6 @@ import {
     ScrollView,
     TouchableOpacity,
     ActivityIndicator,
-    Alert,
     Dimensions,
     RefreshControl,
     Platform
@@ -29,12 +28,14 @@ import {
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import SellerOrderCard from '../../components/SellerOrderCard';
 
 const { width } = Dimensions.get('window');
 
 const SellerDashboard = ({ navigation }) => {
     const { user } = useAuth();
+    const { showToast } = useToast();
     const [stats, setStats] = useState({
         activeBanners: 0,
         featuredItems: 0,
@@ -93,19 +94,19 @@ const SellerDashboard = ({ navigation }) => {
         try {
             await apiService.patch('/api/restaurant-settings/status', { is_open: newStatus });
             setIsOpen(newStatus);
-            Alert.alert('Sukses', `Toko telah ${newStatus ? 'dibuka' : 'ditutup'}`);
+            showToast(`Toko telah ${newStatus ? 'dibuka' : 'ditutup'}`, 'success');
         } catch (error) {
-            Alert.alert('Eror', 'Gagal mengubah status toko');
+            showToast('Gagal mengubah status toko', 'error');
         }
     };
 
     const handleUpdateStatus = async (orderId, status) => {
         try {
             await apiService.put(`/api/orders/${orderId}/status`, { status });
-            Alert.alert('Berhasil', `Pesanan telah ${status === 'accepted' ? 'diterima' : 'ditolak'}.`);
+            showToast(`Pesanan telah ${status === 'accepted' ? 'diterima' : 'ditolak'}`, 'success');
             fetchData();
         } catch (error) {
-            Alert.alert('Eror', error.response?.data?.error || 'Gagal memperbarui status pesanan.');
+            showToast(error.response?.data?.error || 'Gagal memperbarui status pesanan', 'error');
         }
     };
 
@@ -118,12 +119,8 @@ const SellerDashboard = ({ navigation }) => {
     }
 
     return (
-        <ScrollView
-            style={styles.container}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-            showsVerticalScrollIndicator={false}
-        >
-            {/* Gradient Header Mockup */}
+        <View style={styles.container}>
+            {/* Fixed Gradient Header */}
             <View style={styles.header}>
                 <View style={styles.headerTop}>
                     <View>
@@ -163,94 +160,109 @@ const SellerDashboard = ({ navigation }) => {
                 </View>
             </View>
 
-            {/* Quick Stats */}
-            <View style={styles.statsGrid}>
-                <View style={styles.statItem}>
-                    <View style={[styles.statIcon, { backgroundColor: '#EFF6FF' }]}><Package size={20} color="#3B82F6" /></View>
-                    <Text style={styles.statNum}>{stats.totalItems}</Text>
-                    <Text style={styles.statLabel}>Produk</Text>
-                </View>
-                <View style={styles.statItem}>
-                    <View style={[styles.statIcon, { backgroundColor: '#FFF7ED' }]}><Star size={20} color="#F97316" /></View>
-                    <Text style={styles.statNum}>{stats.featuredItems}</Text>
-                    <Text style={styles.statLabel}>Unggulan</Text>
-                </View>
-                <View style={styles.statItem}>
-                    <View style={[styles.statIcon, { backgroundColor: '#F0FDF4' }]}><ShoppingBag size={20} color="#22C55E" /></View>
-                    <Text style={styles.statNum}>{pendingOrders.length}</Text>
-                    <Text style={styles.statLabel}>Pesanan</Text>
-                </View>
-                <View style={styles.statItem}>
-                    <View style={[styles.statIcon, { backgroundColor: '#FAF5FF' }]}><BarChart3 size={20} color="#A855F7" /></View>
-                    <Text style={styles.statNum}>{stats.categories}</Text>
-                    <Text style={styles.statLabel}>Kategori</Text>
-                </View>
-            </View>
+            <ScrollView
+                style={styles.container}
+                contentContainerStyle={styles.scrollContent}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        progressViewOffset={200}
+                        colors={['#1E40AF']}
+                    />
+                }
+                showsVerticalScrollIndicator={false}
+            >
 
-            {/* Quick Actions */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Aksi Cepat</Text>
-                <View style={styles.actionGrid}>
-                    <TouchableOpacity
-                        style={styles.actionItem}
-                        onPress={() => navigation.navigate('Pesanan')}
-                    >
-                        <View style={[styles.actionIcon, { backgroundColor: '#F1F5F9' }]}><ShoppingBag size={24} color="#64748B" /></View>
-                        <Text style={styles.actionLabel}>Pesanan</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.actionItem}
-                        onPress={() => navigation.navigate('Jual')}
-                    >
-                        <View style={[styles.actionIcon, { backgroundColor: '#2563EB' }]}><ShoppingCart size={24} color="#FFFFFF" /></View>
-                        <Text style={styles.actionLabel}>Jual</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.actionItem}
-                        onPress={() => navigation.navigate('Katalog')}
-                    >
-                        <View style={[styles.actionIcon, { backgroundColor: '#F1F5F9' }]}><PlusCircle size={24} color="#64748B" /></View>
-                        <Text style={styles.actionLabel}>Katalog</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.actionItem}
-                        onPress={() => navigation.navigate('Transaksi')}
-                    >
-                        <View style={[styles.actionIcon, { backgroundColor: '#F1F5F9' }]}><History size={24} color="#64748B" /></View>
-                        <Text style={styles.actionLabel}>Riwayat</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            {/* Pending Orders */}
-            <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Pesanan Baru</Text>
-                    <TouchableOpacity onPress={() => navigation.navigate('Pesanan')}>
-                        <Text style={styles.viewAll}>Lihat Semua</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {pendingOrders.length > 0 ? (
-                    pendingOrders.slice(0, 3).map((order) => (
-                        <SellerOrderCard
-                            key={order.id}
-                            order={order}
-                            onAccept={() => handleUpdateStatus(order.id, 'accepted')}
-                            onReject={() => handleUpdateStatus(order.id, 'rejected')}
-                        />
-                    ))
-                ) : (
-                    <View style={styles.emptyCard}>
-                        <CheckCircle size={40} color="#22C55E" />
-                        <Text style={styles.emptyTitle}>Semua Aman!</Text>
-                        <Text style={styles.emptyBody}>Belum ada pesanan baru yang menunggu.</Text>
+                {/* Quick Stats */}
+                <View style={styles.statsGrid}>
+                    <View style={styles.statItem}>
+                        <View style={[styles.statIcon, { backgroundColor: '#EFF6FF' }]}><Package size={20} color="#3B82F6" /></View>
+                        <Text style={styles.statNum}>{stats.totalItems}</Text>
+                        <Text style={styles.statLabel}>Produk</Text>
                     </View>
-                )}
-            </View>
+                    <View style={styles.statItem}>
+                        <View style={[styles.statIcon, { backgroundColor: '#FFF7ED' }]}><Star size={20} color="#F97316" /></View>
+                        <Text style={styles.statNum}>{stats.featuredItems}</Text>
+                        <Text style={styles.statLabel}>Unggulan</Text>
+                    </View>
+                    <View style={styles.statItem}>
+                        <View style={[styles.statIcon, { backgroundColor: '#F0FDF4' }]}><ShoppingBag size={20} color="#22C55E" /></View>
+                        <Text style={styles.statNum}>{pendingOrders.length}</Text>
+                        <Text style={styles.statLabel}>Pesanan</Text>
+                    </View>
+                    <View style={styles.statItem}>
+                        <View style={[styles.statIcon, { backgroundColor: '#FAF5FF' }]}><BarChart3 size={20} color="#A855F7" /></View>
+                        <Text style={styles.statNum}>{stats.categories}</Text>
+                        <Text style={styles.statLabel}>Kategori</Text>
+                    </View>
+                </View>
 
-            <View style={{ height: 40 }} />
-        </ScrollView>
+                {/* Quick Actions */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Aksi Cepat</Text>
+                    <View style={styles.actionGrid}>
+                        <TouchableOpacity
+                            style={styles.actionItem}
+                            onPress={() => navigation.navigate('Pesanan')}
+                        >
+                            <View style={[styles.actionIcon, { backgroundColor: '#F1F5F9' }]}><ShoppingBag size={24} color="#64748B" /></View>
+                            <Text style={styles.actionLabel}>Pesanan</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.actionItem}
+                            onPress={() => navigation.navigate('Jual')}
+                        >
+                            <View style={[styles.actionIcon, { backgroundColor: '#2563EB' }]}><ShoppingCart size={24} color="#FFFFFF" /></View>
+                            <Text style={styles.actionLabel}>Jual</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.actionItem}
+                            onPress={() => navigation.navigate('Katalog')}
+                        >
+                            <View style={[styles.actionIcon, { backgroundColor: '#F1F5F9' }]}><PlusCircle size={24} color="#64748B" /></View>
+                            <Text style={styles.actionLabel}>Katalog</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.actionItem}
+                            onPress={() => navigation.navigate('Transaksi')}
+                        >
+                            <View style={[styles.actionIcon, { backgroundColor: '#F1F5F9' }]}><History size={24} color="#64748B" /></View>
+                            <Text style={styles.actionLabel}>Riwayat</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                {/* Pending Orders */}
+                <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Pesanan Baru</Text>
+                        <TouchableOpacity onPress={() => navigation.navigate('Pesanan')}>
+                            <Text style={styles.viewAll}>Lihat Semua</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {pendingOrders.length > 0 ? (
+                        pendingOrders.slice(0, 3).map((order) => (
+                            <SellerOrderCard
+                                key={order.id}
+                                order={order}
+                                onAccept={() => handleUpdateStatus(order.id, 'accepted')}
+                                onReject={() => handleUpdateStatus(order.id, 'rejected')}
+                            />
+                        ))
+                    ) : (
+                        <View style={styles.emptyCard}>
+                            <CheckCircle size={40} color="#22C55E" />
+                            <Text style={styles.emptyTitle}>Semua Aman!</Text>
+                            <Text style={styles.emptyBody}>Belum ada pesanan baru yang menunggu.</Text>
+                        </View>
+                    )}
+                </View>
+
+                <View style={{ height: 40 }} />
+            </ScrollView>
+        </View>
     );
 };
 
@@ -266,16 +278,25 @@ const styles = StyleSheet.create({
     },
     header: {
         backgroundColor: '#1E40AF',
-        paddingTop: 40,
+        paddingTop: Platform.OS === 'ios' ? 60 : 40,
         paddingBottom: 80,
         paddingHorizontal: 25,
-        borderBottomLeftRadius: 30,
-        borderBottomRightRadius: 30,
+        borderBottomLeftRadius: 32,
+        borderBottomRightRadius: 32,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 100,
+    },
+    scrollContent: {
+        paddingTop: 240, // Tinggi header + floating card
     },
     headerTop: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
+        marginTop: 15,
     },
     roleBadge: {
         flexDirection: 'row',
@@ -366,7 +387,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     statsGrid: {
-        marginTop: 60,
+        marginTop: 35,
         flexDirection: 'row',
         flexWrap: 'wrap',
         paddingHorizontal: 15,

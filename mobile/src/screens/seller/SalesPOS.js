@@ -14,7 +14,8 @@ import {
     Modal,
     ScrollView,
     KeyboardAvoidingView,
-    RefreshControl
+    RefreshControl,
+    Switch
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -28,9 +29,11 @@ import {
     ChevronDown,
     CreditCard,
     Banknote,
-    Smartphone
+    Smartphone,
+    PackageX
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
+import ReceiptModal from '../../components/ReceiptModal';
 
 const { width, height } = Dimensions.get('window');
 const COLUMN_WIDTH = (width - 48) / 2;
@@ -48,6 +51,11 @@ const SalesPOS = () => {
     const [paymentMethod, setPaymentMethod] = useState('tunai');
     const [cashPaid, setCashPaid] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
+    const [ignoreStock, setIgnoreStock] = useState(false);
+
+    // Receipt State
+    const [showReceipt, setShowReceipt] = useState(false);
+    const [lastTransaction, setLastTransaction] = useState(null);
 
     const fetchData = async () => {
         setLoading(true);
@@ -84,18 +92,22 @@ const SalesPOS = () => {
         setCart(prevCart => {
             const existing = prevCart.find(i => i.id === item.id);
             if (existing) {
-                if (existing.quantity >= item.stock && item.stock !== null) {
-                    Alert.alert('Stok Habis', 'Jumlah melebihi stok yang tersedia');
+                if (!ignoreStock && existing.quantity >= item.stock && item.stock !== null) {
+                    Alert.alert('Stok Habis', 'Jumlah melebihi stok yang tersedia. Aktifkan "Abaikan Stok" jika ingin tetap menjual.');
                     return prevCart;
                 }
                 return prevCart.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
             }
-            if (item.stock <= 0 && item.stock !== null) {
-                Alert.alert('Stok Habis', 'Produk ini sedang kosong');
+            if (!ignoreStock && item.stock <= 0 && item.stock !== null) {
+                Alert.alert('Stok Habis', 'Produk ini sedang kosong. Aktifkan "Abaikan Stok" jika ingin tetap menjual.');
                 return prevCart;
             }
             return [...prevCart, { ...item, quantity: 1 }];
         });
+    };
+
+    const removeFromCart = (id) => {
+        setCart(prevCart => prevCart.filter(item => item.id !== id));
     };
 
     const updateQuantity = (id, delta) => {
@@ -106,7 +118,7 @@ const SalesPOS = () => {
                     if (newQty <= 0) return null;
                     // Check stock
                     const originalItem = menuItems.find(m => m.id === id);
-                    if (delta > 0 && originalItem && originalItem.stock !== null && newQty > originalItem.stock) {
+                    if (!ignoreStock && delta > 0 && originalItem && originalItem.stock !== null && newQty > originalItem.stock) {
                         return item;
                     }
                     return { ...item, quantity: newQty };
@@ -116,25 +128,22 @@ const SalesPOS = () => {
         });
     };
 
-    const removeFromCart = (id) => {
-        setCart(prevCart => prevCart.filter(item => item.id !== id));
-    };
+    const subtotal = useMemo(() => {
+        return cart.reduce((acc, curr) => acc + (curr.price * curr.quantity), 0);
+    }, [cart]);
 
-    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+    const totalItemsCount = useMemo(() => {
+        return cart.reduce((acc, curr) => acc + curr.quantity, 0);
+    }, [cart]);
 
     const formatCurrency = (val) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0
-        }).format(val || 0);
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
     };
 
     const handleProcessTransaction = async () => {
         if (cart.length === 0) return;
 
-        const total = subtotal; // Assume no PPN for now or add later
+        const total = subtotal;
         const paid = paymentMethod === 'tunai' ? parseFloat(cashPaid || 0) : total;
 
         if (paymentMethod === 'tunai' && paid < total) {
@@ -156,14 +165,23 @@ const SalesPOS = () => {
                 ppn: 0,
                 cashPaid: paid,
                 change: paid - total,
-                payment_method: paymentMethod
+                payment_method: paymentMethod,
+                ignoreStock: ignoreStock,
+                timestamp: new Date()
             };
 
-            await apiService.post('/api/transactions', transactionData);
-            Alert.alert('Sukses', 'Transaksi berhasil diproses');
+            const response = await apiService.post('/api/transactions', transactionData);
+
+            // Set transaction data for receipt (use ID from server if available)
+            setLastTransaction({
+                ...transactionData,
+                id: response.data.transactionId || response.data.id || 'TRX-' + Date.now(),
+            });
+
             setCart([]);
             setIsCartModalOpen(false);
             setCashPaid('');
+            setShowReceipt(true);
             fetchData();
         } catch (error) {
             console.error('Transaction Error:', error);
@@ -182,9 +200,9 @@ const SalesPOS = () => {
 
         return (
             <TouchableOpacity
-                style={[styles.productCard, isOutOfStock && styles.outOfStockCard]}
-                onPress={() => !isOutOfStock && addToCart(item)}
-                disabled={isOutOfStock}
+                style={[styles.productCard, isOutOfStock && !ignoreStock && styles.outOfStockCard]}
+                onPress={() => (ignoreStock || !isOutOfStock) && addToCart(item)}
+                disabled={isOutOfStock && !ignoreStock}
             >
                 <View style={styles.imageWrapper}>
                     {item.image_url ? (
@@ -225,7 +243,20 @@ const SalesPOS = () => {
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <Text style={styles.title}>Kasir Jual</Text>
+                <View style={styles.headerTopRow}>
+                    <Text style={styles.title}>Kasir Jual</Text>
+                    <View style={styles.headerSwitch}>
+                        <PackageX size={18} color={ignoreStock ? "#2563EB" : "#94A3B8"} />
+                        <Text style={[styles.switchLabel, ignoreStock && styles.switchLabelActive]}>Abaikan Stok</Text>
+                        <Switch
+                            value={ignoreStock}
+                            onValueChange={setIgnoreStock}
+                            trackColor={{ false: "#E2E8F0", true: "#BFDBFE" }}
+                            thumbColor={ignoreStock ? "#2563EB" : "#94A3B8"}
+                            style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
+                        />
+                    </View>
+                </View>
                 <View style={styles.searchBar}>
                     <Search size={20} color="#94A3B8" />
                     <TextInput
@@ -455,6 +486,13 @@ const SalesPOS = () => {
                     </View>
                 </KeyboardAvoidingView>
             </Modal>
+
+            {/* Receipt Modal */}
+            <ReceiptModal
+                visible={showReceipt}
+                onClose={() => setShowReceipt(false)}
+                transaction={lastTransaction}
+            />
         </View>
     );
 };
@@ -719,6 +757,7 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
         height: '90%',
+        width: '100%',
     },
     modalHeader: {
         flexDirection: 'row',
@@ -802,6 +841,31 @@ const styles = StyleSheet.create({
     },
     trashBtn: {
         padding: 8,
+    },
+    headerSwitch: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    headerTopRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    switchLabel: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: '#94A3B8',
+        marginHorizontal: 6,
+    },
+    switchLabelActive: {
+        color: '#2563EB',
     },
     sectionLabel: {
         fontSize: 10,

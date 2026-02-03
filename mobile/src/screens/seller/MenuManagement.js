@@ -708,6 +708,7 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
         height: '92%',
+        width: '100%',
         display: 'flex',
     },
     modalHeader: {

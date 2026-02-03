@@ -5,6 +5,8 @@ import LoginScreen from './src/screens/LoginScreen';
 import AppNavigator from './src/navigation/AppNavigator';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { ToastProvider } from './src/context/ToastContext';
+
 const MainApp = () => {
   const { user, loading } = useAuth();
 
@@ -31,11 +33,13 @@ const MainApp = () => {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <MainApp />
-      </AuthProvider>
-    </SafeAreaProvider>
+    <ToastProvider>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <MainApp />
+        </AuthProvider>
+      </SafeAreaProvider>
+    </ToastProvider>
   );
 }
 

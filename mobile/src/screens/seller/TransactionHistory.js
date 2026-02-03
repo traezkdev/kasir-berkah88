@@ -9,7 +9,8 @@ import {
     Platform,
     TextInput,
     Dimensions,
-    RefreshControl
+    RefreshControl,
+    Modal
 } from 'react-native';
 import {
     ChevronLeft,
@@ -25,6 +26,7 @@ import {
     MapPin
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
+import ReceiptModal from '../../components/ReceiptModal';
 
 const { width } = Dimensions.get('window');
 
@@ -34,6 +36,7 @@ const TransactionHistory = ({ navigation }) => {
     const [refreshing, setRefreshing] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedTx, setSelectedTx] = useState(null);
+    const [showReceipt, setShowReceipt] = useState(false);
 
     const fetchTransactions = async (isRefresh = false) => {
         if (!isRefresh) setLoading(true);
@@ -82,7 +85,7 @@ const TransactionHistory = ({ navigation }) => {
 
     const filteredTransactions = useMemo(() => {
         return transactions.filter(t =>
-            t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            t.id.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
             t.items.some(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
         );
     }, [transactions, searchTerm]);
@@ -204,65 +207,82 @@ const TransactionHistory = ({ navigation }) => {
             )}
 
             {/* Detail Modal Overlay */}
-            {selectedTx && (
+            <Modal
+                visible={!!selectedTx}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setSelectedTx(null)}
+            >
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
                             <View>
                                 <Text style={styles.modalTitle}>Detail Transaksi</Text>
-                                <Text style={styles.modalId}>#{selectedTx.id}</Text>
+                                <Text style={styles.modalId}>#{selectedTx?.id}</Text>
                             </View>
                             <TouchableOpacity onPress={() => setSelectedTx(null)} style={styles.closeBtn}>
                                 <X size={20} color="#94A3B8" />
                             </TouchableOpacity>
                         </View>
 
-                        <FlatList
-                            data={selectedTx.items}
-                            keyExtractor={(_, i) => i.toString()}
-                            style={styles.modalScroll}
-                            ListHeaderComponent={() => (
-                                <View style={styles.txInfoCard}>
-                                    <View style={styles.txInfoRow}>
-                                        <Text style={styles.txInfoLabel}>Waktu</Text>
-                                        <Text style={styles.txInfoValue}>{formatDate(selectedTx.timestamp)}</Text>
-                                    </View>
-                                    <View style={styles.txInfoRow}>
-                                        <Text style={styles.txInfoLabel}>Metode Pembayaran</Text>
-                                        <Text style={[styles.txInfoValue, { color: '#1E40AF', fontWeight: '900' }]}>{(selectedTx.payment_method || 'Tunai').toUpperCase()}</Text>
-                                    </View>
-                                </View>
-                            )}
-                            renderItem={({ item }) => (
-                                <View style={styles.modalItemRow}>
-                                    <View style={styles.modalItemLeft}>
-                                        <View style={styles.modalQtyBadge}>
-                                            <Text style={styles.modalQtyText}>x{item.qty || item.quantity || 1}</Text>
+                        <View style={{ flex: 1 }}>
+                            <FlatList
+                                data={selectedTx?.items || []}
+                                keyExtractor={(_, i) => i.toString()}
+                                style={styles.modalScroll}
+                                ListHeaderComponent={() => (
+                                    <View style={styles.txInfoCard}>
+                                        <View style={styles.txInfoRow}>
+                                            <Text style={styles.txInfoLabel}>Waktu</Text>
+                                            <Text style={styles.txInfoValue}>{selectedTx ? formatDate(selectedTx.timestamp) : ''}</Text>
                                         </View>
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={styles.modalItemName}>{item.name}</Text>
-                                            <Text style={styles.modalItemPrice}>@{formatCurrency(item.price)}</Text>
+                                        <View style={styles.txInfoRow}>
+                                            <Text style={styles.txInfoLabel}>Metode Pembayaran</Text>
+                                            <Text style={[styles.txInfoValue, { color: '#1E40AF', fontWeight: '900' }]}>{(selectedTx?.payment_method || 'Tunai').toUpperCase()}</Text>
                                         </View>
                                     </View>
-                                    <Text style={styles.modalItemSubtotal}>{formatCurrency(item.price * (item.qty || item.quantity || 1))}</Text>
-                                </View>
-                            )}
-                            ListFooterComponent={() => (
-                                <View style={styles.modalFooter}>
-                                    <View style={styles.totalRow}>
-                                        <Text style={styles.grandTotalLabel}>Total Bayar</Text>
-                                        <Text style={styles.grandTotalValue}>{formatCurrency(selectedTx.total)}</Text>
+                                )}
+                                renderItem={({ item }) => (
+                                    <View style={styles.modalItemRow}>
+                                        <View style={styles.modalItemLeft}>
+                                            <View style={styles.modalQtyBadge}>
+                                                <Text style={styles.modalQtyText}>x{item.qty || item.quantity || 1}</Text>
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.modalItemName}>{item.name}</Text>
+                                                <Text style={styles.modalItemPrice}>@{formatCurrency(item.price)}</Text>
+                                            </View>
+                                        </View>
+                                        <Text style={styles.modalItemSubtotal}>{formatCurrency(item.price * (item.qty || item.quantity || 1))}</Text>
                                     </View>
-                                    <TouchableOpacity style={styles.printBtn}>
-                                        <Receipt size={20} color="#FFFFFF" />
-                                        <Text style={styles.printBtnText}>Cetak Struk</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            )}
-                        />
+                                )}
+                                ListFooterComponent={() => (
+                                    <View style={styles.modalFooter}>
+                                        <View style={styles.totalRow}>
+                                            <Text style={styles.grandTotalLabel}>Total Bayar</Text>
+                                            <Text style={styles.grandTotalValue}>{selectedTx ? formatCurrency(selectedTx.total) : '0'}</Text>
+                                        </View>
+                                        <TouchableOpacity
+                                            style={styles.printBtn}
+                                            onPress={() => setShowReceipt(true)}
+                                        >
+                                            <Receipt size={20} color="#FFFFFF" />
+                                            <Text style={styles.printBtnText}>Cetak Struk</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                )}
+                            />
+                        </View>
                     </View>
                 </View>
-            )}
+            </Modal>
+
+            {/* Receipt Preview Modal */}
+            <ReceiptModal
+                visible={showReceipt}
+                onClose={() => setShowReceipt(false)}
+                transaction={selectedTx}
+            />
         </View>
     );
 };
@@ -523,6 +543,7 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
         maxHeight: '90%',
+        width: '100%',
     },
     modalHeader: {
         flexDirection: 'row',

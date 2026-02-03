@@ -23,11 +23,17 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.traezkdev.kasirberkah88mobile"
     },
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "9fa48a0e-790d-4bc2-abc0-93f397944920"
+      }
     }
   }
 }
