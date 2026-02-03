@@ -239,9 +239,14 @@ export default function AuditorPage() {
                 </div>
             )}
 
-            <main className={`max-w-7xl mx-auto ${theme === 'default' ? 'px-4 lg:px-6 pt-6 lg:pt-16 pb-12' : 'p-0'}`}>
+            <main className={`${theme === 'default' ? 'w-full px-4 lg:px-8 pt-6 lg:pt-16 pb-12' : 'p-0'}`}>
                 <div className="hidden lg:block pt-2">
-                    <BreadcrumbNavigation customPath={[{ label: 'Audit', path: '/auditor', isActive: true }]} />
+                    <BreadcrumbNavigation
+                        customPath={[
+                            { label: userRole === 'owner' ? 'Dashboard Owner' : 'Dashboard', path: userRole === 'owner' ? '/owner-dashboard' : '/main-dashboard', isActive: false },
+                            { label: 'Audit', path: '/auditor', isActive: true }
+                        ]}
+                    />
                 </div>
 
                 <header className="hidden lg:block mb-8 lg:mb-6">
