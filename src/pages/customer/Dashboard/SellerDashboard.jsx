@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import authFetch from '../../../utils/authFetch';
@@ -51,7 +51,7 @@ const SellerDashboard = () => {
         }
     };
 
-    const handleUpdateStatus = async (orderId, newStatus, ignoreStock = false) => {
+    const handleUpdateStatus = useCallback(async (orderId, newStatus, ignoreStock = false) => {
         try {
             const response = await authFetch(`/api/orders/${orderId}/status`, {
                 method: 'PUT',
@@ -81,11 +81,11 @@ const SellerDashboard = () => {
         } catch (err) {
             toast.error(err.message);
         }
-    };
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         const handleScroll = () => {
-            setScrolled(window.scrollY > 50);
+            setScrolled(window.scrollY > 10);
         };
         window.addEventListener('scroll', handleScroll);
 
@@ -154,8 +154,47 @@ const SellerDashboard = () => {
 
     return (
         <>
+            {/* Mobile Sticky Header (Moved out of gpu-layer to fix positioning) */}
+            <div className="fixed top-0 left-0 right-0 z-50 lg:hidden">
+                {/* Background Layer - Opacity Transition */}
+                <div className={`absolute inset-0 bg-white transition-opacity duration-200 ease-in-out ${scrolled ? 'opacity-100 shadow-sm' : 'opacity-0'}`} />
+
+                {/* Content Layer */}
+                <div className={`relative z-10 px-6 flex justify-between items-center transition-all duration-200 ease-in-out ${scrolled ? 'py-3' : 'py-5'}`}>
+                    <span className={`font-bold transition-colors ${scrolled ? 'text-gray-800' : 'text-white text-xl'}`}>
+                        {scrolled ? 'Seller Center' : ''}
+                    </span>
+                    <div className="flex gap-2">
+                        {userRole === 'admin' && (
+                            <button
+                                onClick={() => navigate('/main-dashboard')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all ${scrolled ? 'bg-indigo-50 text-indigo-600' : 'bg-white/20 text-white'}`}
+                            >
+                                <Icon name="ArrowLeft" size={14} />
+                                Admin
+                            </button>
+                        )}
+                        <button
+                            onClick={() => navigate('/seller/chat')}
+                            className={`relative p-2 rounded-full transition-all active:scale-95 ${scrolled ? 'bg-gray-100 text-gray-600' : 'bg-white/20 text-white'}`}
+                        >
+                            <Icon name="MessageCircle" size={20} />
+                            {unreadCount > 0 && (
+                                <span className="absolute top-1.5 right-1.5 flex h-4 w-4">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500 text-[10px] font-bold text-white items-center justify-center">
+                                        {unreadCount}
+                                    </span>
+                                </span>
+                            )}
+                        </button>
+                        <NotificationBell to="/seller/orders" size={20} className={`${scrolled ? 'bg-gray-100 text-gray-600' : 'bg-white/20 text-white'}`} />
+                    </div>
+                </div>
+            </div>
+
             {/* Desktop UI */}
-            <div className="hidden lg:block pb-10">
+            <div className="hidden lg:block pb-10 gpu-layer smooth-antialiasing">
                 <header className="bg-white rounded-[2rem] p-8 shadow-sm border border-indigo-50/50 mb-8 flex justify-between items-center relative overflow-hidden">
                     <div className="relative z-10">
                         <div className="flex items-center gap-3 mb-2">
@@ -208,7 +247,7 @@ const SellerDashboard = () => {
 
                     <div className="col-span-8 space-y-8">
                         {/* Featured Items */}
-                        <section className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
+                        <section className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm optimize-render">
                             <div className="flex justify-between items-center mb-6">
                                 <h2 className="text-xl font-black text-gray-800">Menu Unggulan</h2>
                                 <button onClick={() => navigate('/seller/menu-management')} className="text-indigo-600 font-bold text-sm">Lihat Semua</button>
@@ -217,7 +256,7 @@ const SellerDashboard = () => {
                                 {featuredMenus.map(menu => (
                                     <div key={menu.id} className="group bg-gray-50 hover:bg-white p-4 rounded-3xl border border-transparent hover:border-gray-100 hover:shadow-lg transition-all flex items-center gap-4 cursor-pointer">
                                         <div className="w-20 h-20 bg-gray-200 rounded-2xl overflow-hidden flex-shrink-0">
-                                            {menu.image_url && <img src={`${import.meta.env.VITE_API_URL}${menu.image_url}`} className="w-full h-full object-cover" />}
+                                            {menu.image_url && <img src={`${import.meta.env.VITE_API_URL}${menu.image_url}`} className="w-full h-full object-cover" loading="lazy" />}
                                         </div>
                                         <div>
                                             <h4 className="font-bold text-gray-800 group-hover:text-indigo-600 transition-colors">{menu.name}</h4>
@@ -230,7 +269,7 @@ const SellerDashboard = () => {
                     </div>
 
                     <div className="col-span-4">
-                        <section className="bg-white rounded-[2.5rem] p-6 border border-gray-100 shadow-sm h-full">
+                        <section className="bg-white rounded-[2.5rem] p-6 border border-gray-100 shadow-sm h-full optimize-render">
                             <div className="flex justify-between items-center mb-6">
                                 <h2 className="text-xl font-black text-gray-800">Pesanan Masuk</h2>
                                 <Link to="/seller/orders" className="w-8 h-8 flex items-center justify-center bg-gray-50 rounded-full text-indigo-600"><Icon name="ArrowRight" size={16} /></Link>
@@ -262,41 +301,8 @@ const SellerDashboard = () => {
             </div>
 
             {/* Mobile UI */}
-            <div className="pb-24 -mx-4 -mt-4 overflow-x-hidden lg:hidden">
-                {/* Floating Top Nav (App Bar feel) */}
-                <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/80 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'} lg:hidden`}>
-                    <div className="px-6 flex justify-between items-center">
-                        <span className={`font-bold transition-colors ${scrolled ? 'text-gray-800' : 'text-white text-xl'}`}>
-                            {scrolled ? 'Seller Center' : ''}
-                        </span>
-                        <div className="flex gap-2">
-                            {userRole === 'admin' && (
-                                <button
-                                    onClick={() => navigate('/main-dashboard')}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all ${scrolled ? 'bg-indigo-50 text-indigo-600' : 'bg-white/20 text-white'}`}
-                                >
-                                    <Icon name="ArrowLeft" size={14} />
-                                    Admin
-                                </button>
-                            )}
-                            <button
-                                onClick={() => navigate('/seller/chat')}
-                                className={`relative p-2 rounded-full transition-all active:scale-95 ${scrolled ? 'bg-gray-100 text-gray-600' : 'bg-white/20 text-white'}`}
-                            >
-                                <Icon name="MessageCircle" size={20} />
-                                {unreadCount > 0 && (
-                                    <span className="absolute top-1.5 right-1.5 flex h-4 w-4">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-500 text-[10px] font-bold text-white items-center justify-center">
-                                            {unreadCount}
-                                        </span>
-                                    </span>
-                                )}
-                            </button>
-                            <NotificationBell to="/seller/orders" size={20} className={`${scrolled ? 'bg-gray-100 text-gray-600' : 'bg-white/20 text-white'}`} />
-                        </div>
-                    </div>
-                </div>
+            <div className="pb-24 -mx-4 -mt-4 overflow-x-hidden lg:hidden gpu-layer smooth-antialiasing">
+
 
                 {/* Header Section */}
                 {/* Header Section */}
@@ -368,7 +374,7 @@ const SellerDashboard = () => {
                 {/* Content Area */}
                 <main className="mt-20 px-6 space-y-10">
                     {/* Quick Actions Grid */}
-                    <section>
+                    <section className="optimize-render">
                         <div className="flex justify-between items-end mb-6">
                             <h2 className="text-xl font-black text-gray-800 tracking-tight">Aksi Cepat</h2>
                         </div>
@@ -394,7 +400,7 @@ const SellerDashboard = () => {
                     </section>
 
                     {/* Pending Orders Section */}
-                    <section>
+                    <section className="optimize-render">
                         <div className="flex justify-between items-center mb-6">
                             <div className="flex items-center gap-2">
                                 <h2 className="text-xl font-black text-gray-800 tracking-tight">Pesanan Baru</h2>
@@ -439,7 +445,7 @@ const SellerDashboard = () => {
                     </section>
 
                     {/* Featured Items List (Native style) */}
-                    <section>
+                    <section className="optimize-render">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-black text-gray-800 tracking-tight">Menu Unggulan</h2>
                             <button onClick={() => navigate('/seller/menu-management')} className="text-blue-600 font-bold text-sm">Lihat Semua</button>
@@ -458,7 +464,7 @@ const SellerDashboard = () => {
                                     >
                                         <div className="w-16 h-16 bg-gray-50 rounded-2xl overflow-hidden flex-shrink-0">
                                             {menu.image_url ? (
-                                                <img src={`${import.meta.env.VITE_API_URL}${menu.image_url}`} alt="" className="w-full h-full object-cover" />
+                                                <img src={`${import.meta.env.VITE_API_URL}${menu.image_url}`} alt="" className="w-full h-full object-cover" loading="lazy" />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-gray-300">
                                                     <Icon name="Utensils" size={24} />

@@ -18,10 +18,12 @@ const SellerTransactionHistory = () => {
         startDate: '',
         endDate: ''
     });
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     useEffect(() => {
         const handleScroll = () => {
-            setScrolled(window.scrollY > 50);
+            setScrolled(window.scrollY > 10);
         };
         window.addEventListener('scroll', handleScroll);
 
@@ -105,6 +107,19 @@ const SellerTransactionHistory = () => {
         });
     }, [transactions, searchTerm, dateRange]);
 
+    // Pagination Logic
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredTransactions.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+
+    // Reset pagination when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, dateRange]);
+
+    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
     // Stats Logic
     const stats = useMemo(() => {
         const total = filteredTransactions.reduce((acc, curr) => acc + parseFloat(curr.total || 0), 0);
@@ -115,6 +130,33 @@ const SellerTransactionHistory = () => {
 
     return (
         <div className="pb-10 animate-in fade-in duration-500 lg:static -mx-4 -mt-4 lg:mx-0 lg:mt-0">
+            {/* Mobile Sticky Header (Fixed at Root) */}
+            <div className="fixed top-0 left-0 right-0 z-50 lg:hidden">
+                <div className={`absolute inset-0 bg-white transition-opacity duration-200 ease-in-out ${scrolled ? 'opacity-100 shadow-sm' : 'opacity-0'}`} />
+                <div className={`relative z-10 px-6 flex justify-between items-center transition-all duration-200 ease-in-out ${scrolled ? 'py-3 text-gray-800' : 'py-5 text-white'}`}>
+                    <button onClick={() => navigate('/seller/dashboard')} className={`p-2 rounded-xl scale-110 active:scale-95 transition-all ${scrolled ? 'bg-gray-100 text-gray-600' : 'bg-white/20 text-white'}`}>
+                        <Icon name="ChevronLeft" size={24} />
+                    </button>
+                    <span className={`font-black tracking-tight flex-1 text-center transition-opacity duration-300 ${scrolled ? 'opacity-100 text-gray-800' : 'opacity-0 text-white'}`}>
+                        Transaksi
+                    </span>
+                    <div className="flex gap-2">
+                        {userRole === 'admin' && (
+                            <button
+                                onClick={() => navigate('/main-dashboard')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all ${scrolled ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-white/20 text-white border border-white/30'}`}
+                            >
+                                <Icon name="ArrowLeft" size={14} />
+                                Admin
+                            </button>
+                        )}
+                        <button onClick={fetchTransactions} className={`p-2 rounded-xl active:scale-90 transition-all ${scrolled ? 'bg-gray-100 text-gray-600' : 'bg-white/20 text-white'}`}>
+                            <Icon name="RefreshCw" size={20} className={isLoading ? 'animate-spin' : ''} />
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             {/* Desktop UI */}
             <div className="hidden lg:block pb-10">
                 <header className="bg-white rounded-[2rem] p-8 shadow-sm border border-indigo-50/50 mb-8 flex justify-between items-center relative overflow-hidden">
@@ -127,8 +169,12 @@ const SellerTransactionHistory = () => {
                         <p className="text-gray-500 font-medium">Pantau semua transaksi penjualan toko Anda.</p>
                     </div>
                     <div className="relative z-10 flex gap-4">
-                        <button onClick={fetchTransactions} className="px-6 py-3 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl shadow-sm hover:bg-gray-50 transition-all flex items-center gap-2">
-                            <Icon name="RefreshCw" size={18} /> Refresh
+                        <button
+                            onClick={fetchTransactions}
+                            className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all flex items-center gap-2"
+                        >
+                            <Icon name="RefreshCw" size={18} className={isLoading ? 'animate-spin' : ''} />
+                            Refresh Data
                         </button>
                     </div>
                 </header>
@@ -214,8 +260,8 @@ const SellerTransactionHistory = () => {
                                             <td className="py-4 pr-4"><div className="h-4 bg-gray-100 rounded w-24 ml-auto"></div></td>
                                         </tr>
                                     ))
-                                ) : filteredTransactions.length > 0 ? (
-                                    filteredTransactions.map((tx) => (
+                                ) : currentItems.length > 0 ? (
+                                    currentItems.map((tx) => (
                                         <tr key={tx.id} onClick={() => setSelectedTransaction(tx)} className="group hover:bg-gray-50 transition-colors cursor-pointer">
                                             <td className="py-5 pl-4">
                                                 <span className="font-bold text-gray-700 text-sm">#{tx.id}</span>
@@ -253,36 +299,34 @@ const SellerTransactionHistory = () => {
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Desktop Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex justify-center mt-8 gap-2">
+                            <button
+                                onClick={() => paginate(Math.max(1, currentPage - 1))}
+                                disabled={currentPage === 1}
+                                className={`p-2 rounded-xl transition-all ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white border border-gray-200 text-indigo-600 hover:bg-indigo-50'}`}
+                            >
+                                <Icon name="ChevronLeft" size={20} />
+                            </button>
+                            <span className="flex items-center px-4 font-bold text-gray-600">
+                                Halaman {currentPage} dari {totalPages}
+                            </span>
+                            <button
+                                onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
+                                disabled={currentPage === totalPages}
+                                className={`p-2 rounded-xl transition-all ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white border border-gray-200 text-indigo-600 hover:bg-indigo-50'}`}
+                            >
+                                <Icon name="ChevronRight" size={20} />
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* Mobile UI */}
             <div className="pb-24 overflow-x-hidden lg:hidden">
-                {/* Floating Top Nav (App Bar feel) */}
-                <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/80 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'} lg:hidden`}>
-                    <div className="px-6 flex justify-between items-center text-white">
-                        <button onClick={() => navigate('/seller/dashboard')} className={`p-2 rounded-xl scale-110 active:scale-95 transition-all ${scrolled ? 'bg-gray-100 text-gray-600' : 'bg-white/20 text-white'}`}>
-                            <Icon name="ChevronLeft" size={24} />
-                        </button>
-                        <span className={`font-black tracking-tight flex-1 text-center transition-opacity duration-300 ${scrolled ? 'text-gray-800 opacity-100' : 'opacity-0 text-xl'}`}>
-                            Transaksi
-                        </span>
-                        <div className="flex gap-2">
-                            {userRole === 'admin' && (
-                                <button
-                                    onClick={() => navigate('/main-dashboard')}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all ${scrolled ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-white/20 text-white border border-white/30'}`}
-                                >
-                                    <Icon name="ArrowLeft" size={14} />
-                                    Admin
-                                </button>
-                            )}
-                            <button onClick={fetchTransactions} className={`p-2 rounded-xl active:scale-90 transition-all ${scrolled ? 'bg-gray-100 text-gray-600' : 'bg-white/20 text-white'}`}>
-                                <Icon name="RefreshCw" size={20} className={isLoading ? 'animate-spin' : ''} />
-                            </button>
-                        </div>
-                    </div>
-                </div>
 
                 <header className="bg-gradient-to-br from-indigo-700 via-blue-600 to-indigo-500 pt-24 pb-12 px-6 rounded-b-[2.5rem] shadow-xl relative z-10">
                     <div className="absolute inset-0 overflow-hidden rounded-b-[2.5rem] pointer-events-none">
@@ -334,8 +378,8 @@ const SellerTransactionHistory = () => {
                     <div className="space-y-4">
                         {isLoading ? (
                             [1, 2, 3].map(i => <div key={i} className="h-32 bg-gray-100 rounded-3xl animate-pulse" />)
-                        ) : filteredTransactions.length > 0 ? (
-                            filteredTransactions.map((tx) => (
+                        ) : currentItems.length > 0 ? (
+                            currentItems.map((tx) => (
                                 <div key={tx.id} onClick={() => setSelectedTransaction(tx)} className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
                                     <div className="flex justify-between items-start mb-4">
                                         <div>
@@ -381,6 +425,35 @@ const SellerTransactionHistory = () => {
                             </div>
                         )}
                     </div>
+
+                    {/* Mobile Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex justify-center mt-6 gap-3 pb-8">
+                            <button
+                                onClick={() => {
+                                    paginate(Math.max(1, currentPage - 1));
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                                disabled={currentPage === 1}
+                                className={`p-3 rounded-xl transition-all shadow-sm ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-indigo-600 active:scale-95'}`}
+                            >
+                                <Icon name="ChevronLeft" size={24} />
+                            </button>
+                            <span className="flex items-center px-4 bg-white rounded-xl shadow-sm text-sm font-bold text-gray-800">
+                                {currentPage} / {totalPages}
+                            </span>
+                            <button
+                                onClick={() => {
+                                    paginate(Math.min(totalPages, currentPage + 1));
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                                disabled={currentPage === totalPages}
+                                className={`p-3 rounded-xl transition-all shadow-sm ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-indigo-600 active:scale-95'}`}
+                            >
+                                <Icon name="ChevronRight" size={24} />
+                            </button>
+                        </div>
+                    )}
                 </main>
             </div>
 

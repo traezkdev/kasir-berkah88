@@ -4,7 +4,6 @@ import Icon from '../../../components/AppIcon';
 import authFetch from '../../../utils/authFetch';
 import { toast } from 'react-hot-toast';
 import OptionSelectionModal from '../../sales-transaction-processing/components/OptionSelectionModal';
-import SellerHeader from '../../../components/ui/SellerHeader';
 
 const SellerTransactions = () => {
     const navigate = useNavigate();
@@ -19,13 +18,19 @@ const SellerTransactions = () => {
     const [selectedItemForOptions, setSelectedItemForOptions] = useState(null);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [userName, setUserName] = useState('Penjual');
+    const [scrolled, setScrolled] = useState(false);
 
     const apiUrl = import.meta.env.VITE_API_URL;
 
     useEffect(() => {
+        const handleScroll = () => setScrolled(window.scrollY > 20);
+        window.addEventListener('scroll', handleScroll);
+
         fetchData();
         const storedName = localStorage.getItem('username');
         if (storedName) setUserName(storedName);
+
+        return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
     const fetchData = async () => {
@@ -70,7 +75,9 @@ const SellerTransactions = () => {
             const existingItem = prevCart.find(i => i.cartItemId === cartItemId);
 
             const optionPriceAdjustment = selectedOptions.reduce((sum, opt) => sum + (opt.price_adjustment || 0), 0);
-            const priceAfterDiscount = item.discount > 0 ? parseFloat(item.price) * (1 - item.discount) : parseFloat(item.price);
+            // Normalize discount: jika > 1, anggap dalam format persentase (50), konversi ke desimal (0.50)
+            const discountDecimal = item.discount > 1 ? item.discount / 100 : item.discount;
+            const priceAfterDiscount = item.discount > 0 ? parseFloat(item.price) * (1 - discountDecimal) : parseFloat(item.price);
             const finalPrice = priceAfterDiscount + optionPriceAdjustment;
 
             if (existingItem) {
@@ -173,22 +180,68 @@ const SellerTransactions = () => {
     };
 
     return (
-        <div className="pb-24 -mx-4 -mt-4 lg:-mx-10 lg:-mt-10 overflow-x-hidden animate-fade-in" style={{ maxWidth: '100vw' }}>
-            <SellerHeader
-                title="Kasir Penjual"
-                subtitle="Pilih menu untuk memulai transaksi."
-                badgeText="Transaksi Baru"
-                stickyRightContent={(scrolled) => (
-                    <button
-                        onClick={() => navigate('/seller/transaction-history')}
-                        className={`p-2 rounded-xl flex-shrink-0 active:scale-95 transition-all ${scrolled ? 'bg-gray-100 text-gray-800' : 'bg-white/20 text-white'}`}
-                    >
-                        <Icon name="History" size={20} />
+        <div className="pb-24 -mx-4 -mt-4 lg:mx-0 lg:mt-0 lg:pb-10 lg:static">
+            {/* Mobile Sticky Header (Fixed at Root) */}
+            <div className="fixed top-0 left-0 right-0 z-50 lg:hidden">
+                <div className={`absolute inset-0 bg-white transition-opacity duration-200 ease-in-out ${scrolled ? 'opacity-100 shadow-sm' : 'opacity-0'}`} />
+                <div className={`relative z-10 px-6 flex justify-between items-center transition-all duration-200 ease-in-out ${scrolled ? 'py-3 text-gray-800' : 'py-5 text-white'}`}>
+                    <button onClick={() => navigate('/seller/dashboard')} className={`p-2 rounded-xl scale-110 active:scale-95 transition-all ${scrolled ? 'bg-gray-100 text-gray-600' : 'bg-white/20 text-white'}`}>
+                        <Icon name="ChevronLeft" size={24} />
                     </button>
-                )}
-            />
+                    <span className={`font-black tracking-tight flex-1 text-center transition-opacity duration-300 ${scrolled ? 'opacity-100 text-gray-800' : 'opacity-0 text-white'}`}>
+                        Kasir
+                    </span>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => navigate('/seller/transaction-history')}
+                            className={`p-2 rounded-xl flex-shrink-0 active:scale-95 transition-all ${scrolled ? 'bg-gray-100 text-gray-600' : 'bg-white/20 text-white'}`}
+                        >
+                            <Icon name="History" size={20} />
+                        </button>
+                    </div>
+                </div>
+            </div>
 
-            <main className="px-6 mt-8 space-y-6">
+            {/* Desktop UI */}
+            <div className="hidden lg:block">
+                <header className="bg-white rounded-[2rem] p-8 shadow-sm border border-indigo-50/50 mb-8 flex justify-between items-center relative overflow-hidden">
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="bg-indigo-100 p-2 rounded-xl text-indigo-600"><Icon name="ShoppingCart" size={20} /></div>
+                            <span className="text-indigo-600 font-bold text-sm uppercase tracking-wider">Transaksi Baru</span>
+                        </div>
+                        <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-2">Kasir Penjual</h1>
+                        <p className="text-gray-500 font-medium">Pilih menu untuk memulai transaksi penjualan.</p>
+                    </div>
+                    <div className="relative z-10 flex gap-4">
+                        <button
+                            onClick={() => navigate('/seller/transaction-history')}
+                            className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all flex items-center gap-2"
+                        >
+                            <Icon name="History" size={18} />
+                            Riwayat
+                        </button>
+                    </div>
+                </header>
+            </div>
+
+            {/* Mobile UI */}
+            <div className="lg:hidden">
+                <header className="bg-gradient-to-br from-indigo-800 via-blue-700 to-indigo-600 pt-24 pb-10 px-6 rounded-b-[2.5rem] shadow-xl relative z-10 mb-6">
+                    <div className="absolute inset-0 overflow-hidden rounded-b-[2.5rem] pointer-events-none">
+                        <div className="absolute top-[-20%] right-[-10%] w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
+                    </div>
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="text-blue-100 font-bold text-xs uppercase tracking-widest bg-white/10 px-3 py-1 rounded-full">Transaksi Baru</span>
+                        </div>
+                        <h1 className="text-3xl font-black text-white tracking-tight">Kasir Penjual</h1>
+                        <p className="text-blue-100/80 font-medium mt-1">Pilih menu untuk memulai transaksi.</p>
+                    </div>
+                </header>
+            </div>
+
+            <main className="px-6 space-y-6">
                 <section className="space-y-4">
                     <div className="bg-white rounded-2xl shadow-sm p-2 flex items-center gap-3 border border-gray-50 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
                         <div className="p-2 text-gray-400">
@@ -231,28 +284,33 @@ const SellerTransactions = () => {
                             return (
                                 <div
                                     key={item.id}
-                                    className={`bg-white rounded-[2rem] p-4 border shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group relative overflow-hidden cursor-pointer ${itemQty > 0 ? 'border-blue-500 ring-2 ring-blue-50' : 'border-gray-50'}`}
+                                    className={`bg-white rounded-2xl md:rounded-[2rem] p-3 md:p-5 border shadow-sm hover:shadow-2xl transition-all duration-300 flex flex-col group relative overflow-hidden cursor-pointer ${itemQty > 0 ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-100'}`}
                                     onClick={() => handleItemClick(item)}
                                 >
+                                    {/* Quantity Badge */}
                                     {itemQty > 0 && (
-                                        <div className="absolute top-2 left-2 z-[20] bg-blue-600 text-white min-w-[28px] h-7 flex items-center justify-center rounded-full text-[12px] font-black shadow-lg shadow-blue-200 animate-scale-up">
+                                        <div className="absolute top-2 left-2 md:top-3 md:left-3 z-[20] bg-blue-600 text-white min-w-[28px] md:min-w-[32px] h-7 md:h-8 px-1.5 md:px-2 flex items-center justify-center rounded-full text-xs md:text-sm font-black shadow-lg shadow-blue-300 animate-scale-up">
                                             {itemQty}
                                         </div>
                                     )}
 
+                                    {/* Featured Badge - Kanan Atas Card */}
                                     {item.is_featured === 1 && (
-                                        <div className="absolute top-4 right-4 z-10 bg-orange-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg animate-pulse">
-                                            Featured
-                                        </div>
-                                    )}
-                                    {item.discount > 0 && (
-                                        <div className="absolute top-3 right-3 bg-red-500 text-white text-[9px] font-black px-2.5 py-1.5 rounded-full shadow-lg shadow-red-200 uppercase">
-                                            -{item.discount * 100}%
+                                        <div className="absolute top-2 right-2 md:top-3 md:right-3 z-10 bg-gradient-to-r from-orange-500 to-orange-600 text-white w-7 h-7 md:w-8 md:h-8 rounded-full text-sm md:text-base font-black shadow-lg shadow-orange-200 flex items-center justify-center">
+                                            ⭐
                                         </div>
                                     )}
 
-                                    <div className="flex gap-4">
-                                        <div className="w-24 h-24 rounded-2xl overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-50">
+                                    <div className="flex gap-3 md:gap-5">
+                                        {/* Image */}
+                                        <div className="w-20 h-20 md:w-28 md:h-28 rounded-xl md:rounded-2xl overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 flex-shrink-0 border md:border-2 border-gray-100 shadow-sm relative">
+                                            {/* Discount Badge - Overlay pada Foto */}
+                                            {item.discount > 0 && (
+                                                <div className="absolute top-1.5 right-1.5 md:top-2 md:right-2 bg-gradient-to-r from-red-500 to-red-600 text-white text-[10px] md:text-xs font-black px-2 md:px-2.5 py-0.5 md:py-1 rounded-full shadow-lg shadow-red-900/50 uppercase z-10">
+                                                    -{item.discount > 1 ? Math.round(item.discount) : Math.round(item.discount * 100)}%
+                                                </div>
+                                            )}
+
                                             {item.image_url ? (
                                                 <img
                                                     src={`${apiUrl}${item.image_url}`}
@@ -261,19 +319,31 @@ const SellerTransactions = () => {
                                                 />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-gray-300 bg-gray-50">
-                                                    <Icon name="Image" size={32} />
+                                                    <Icon name="Image" size={28} className="md:w-9 md:h-9" />
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="flex-1 flex flex-col justify-between py-1 overflow-hidden">
-                                            <div>
-                                                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest block truncate">{item.category}</span>
-                                                <h3 className="font-black text-gray-800 text-lg leading-tight truncate">{item.name}</h3>
-                                                <p className="text-blue-600 font-black text-xl mt-1 tracking-tight truncate">{formatCurrency(item.price)}</p>
+
+                                        {/* Content */}
+                                        <div className="flex-1 flex flex-col justify-between py-0.5 md:py-1 overflow-hidden min-h-[80px] md:min-h-[112px]">
+                                            <div className="space-y-0.5 md:space-y-1.5">
+                                                <span className="text-[10px] md:text-[11px] font-black text-indigo-500 uppercase tracking-widest block truncate">
+                                                    {item.category}
+                                                </span>
+                                                <h3 className="font-black text-gray-900 text-base md:text-xl leading-tight line-clamp-2">
+                                                    {item.name}
+                                                </h3>
+                                                <p className="text-blue-600 font-black text-lg md:text-2xl tracking-tight">
+                                                    {formatCurrency(item.price)}
+                                                </p>
                                             </div>
-                                            <div className="flex items-center gap-2 mt-2">
-                                                <div className={`w-2 h-2 rounded-full ${item.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`} />
-                                                <span className="text-[11px] font-bold text-gray-500">Stok: <span className={item.stock > 0 ? 'text-gray-800' : 'text-red-500'}>{item.stock}</span></span>
+
+                                            {/* Stock Info */}
+                                            <div className="flex items-center gap-1.5 md:gap-2 mt-2 md:mt-3 pt-2 md:pt-3 border-t border-gray-100">
+                                                <div className={`w-2 h-2 md:w-2.5 md:h-2.5 rounded-full ${item.stock > 0 ? 'bg-green-500 shadow-sm shadow-green-200' : 'bg-red-500 shadow-sm shadow-red-200'}`} />
+                                                <span className="text-[10px] md:text-xs font-bold text-gray-500">
+                                                    Stok: <span className={`font-black ${item.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>{item.stock}</span>
+                                                </span>
                                             </div>
                                         </div>
                                     </div>

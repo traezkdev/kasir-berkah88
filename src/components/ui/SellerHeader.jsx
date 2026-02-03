@@ -36,7 +36,7 @@ const SellerHeader = ({
     return (
         <>
             {/* Fixed Sticky Header (Mobile Only) */}
-            <div className={`fixed top-0 left-0 right-0 z-[60] transition-all duration-300 overflow-hidden lg:hidden ${scrolled ? 'bg-white/80 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`} style={{ maxWidth: '100vw' }}>
+            <div className={`fixed top-0 left-0 right-0 z-[60] transition-all duration-300 overflow-hidden lg:hidden ${scrolled ? 'bg-white shadow-sm py-3' : 'bg-transparent py-5'}`} style={{ maxWidth: '100vw' }}>
                 <div className="px-6 flex items-center justify-between max-w-full">
                     <button
                         onClick={handleDefaultBack}

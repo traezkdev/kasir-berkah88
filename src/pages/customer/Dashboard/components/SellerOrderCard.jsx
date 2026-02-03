@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import Icon from '../../../../components/AppIcon';
 
 const SellerOrderCard = ({ order, onAccept, onReject }) => {
@@ -105,4 +105,4 @@ const SellerOrderCard = ({ order, onAccept, onReject }) => {
     );
 };
 
-export default SellerOrderCard;
+export default memo(SellerOrderCard);

@@ -270,7 +270,7 @@ const SellerReceipt = () => {
     return (
         <div className="min-h-screen bg-gray-100 flex flex-col font-sans">
             {/* Seller Header */}
-            <div className={`fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md shadow-sm transition-all duration-300`}>
+            <div className={`fixed top-0 left-0 right-0 z-50 bg-white shadow-sm transition-all duration-300`}>
                 <div className="px-4 py-4 flex items-center justify-between">
                     <button onClick={() => navigate(-1)} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition">
                         <ArrowLeft size={20} className="text-gray-700" />
