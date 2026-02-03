@@ -69,18 +69,27 @@
 
   /* GPU Acceleration for smooth scrolling and animations */
   .fixed,
-  .sticky {
+  .sticky,
+  .gpu-layer {
     transform: translateZ(0);
     will-change: transform;
     backface-visibility: hidden;
     perspective: 1000;
   }
 
-  /* Optimized Content Visibility */
+  /* Optimized Content Visibility for better scroll performance */
   main section,
-  .bg-card {
+  .optimize-render {
     content-visibility: auto;
-    contain-intrinsic-size: 0 500px;
+    contain-intrinsic-size: 1px 400px;
+    contain: content;
+  }
+
+  /* Anti-aliasing for smoother text during scroll */
+  .smooth-antialiasing {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transform: translateZ(0);
   }
 }
 
@@ -660,12 +669,12 @@
 }
 
 .glass-white {
-  background: rgba(255, 255, 255, 0.4) !important;
-  backdrop-filter: blur(8px) !important;
-  /* Kurangi blur agar GPU tidak berat */
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(4px) !important;
+  /* Reduced blur for performance */
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
   transform: translateZ(0);
-  /* Force GPU */
+  will-change: transform;
 }
 
 /* Optimization for low-end devices - disable blur if possible */

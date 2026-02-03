@@ -17,6 +17,13 @@ const SellerMenuManagement = () => {
     const [userRole, setUserRole] = useState(null);
     const [activeCategory, setActiveCategory] = useState('Semua');
     const [searchTerm, setSearchTerm] = useState('');
+    const [scrolled, setScrolled] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => setScrolled(window.scrollY > 20);
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -189,42 +196,141 @@ const SellerMenuManagement = () => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
     };
 
-    return (
-        <div className="pb-24 -mx-4 -mt-4 lg:-mx-10 lg:-mt-10 overflow-x-hidden animate-fade-in" style={{ maxWidth: '100vw' }}>
-            {/* Top Bar Floating */}
-            <SellerHeader
-                title="Katalog Menu"
-                subtitle="Kelola stok, harga, dan ketersediaan menu."
-                badgeText="Inventory System"
-                stickyTitle="Kelola Katalog"
-                showAdminButton={userRole === 'admin'}
-                stickyRightContent={(scrolled) => (
-                    <button
-                        onClick={() => handleOpenModal()}
-                        className={`p-2 rounded-xl flex-shrink-0 transition-all ${scrolled ? 'bg-blue-600 text-white' : 'bg-white/20 text-white'}`}
-                    >
-                        <Icon name="Plus" size={20} />
-                    </button>
-                )}
-                rightContent={
-                    <button
-                        onClick={() => handleOpenModal()}
-                        className="hidden lg:flex bg-white text-blue-700 px-8 py-3.5 rounded-2xl font-black shadow-xl shadow-blue-900/20 hover:scale-105 active:scale-95 transition-all items-center gap-2"
-                    >
-                        <Icon name="Plus" size={20} />
-                        Tambah Menu Baru
-                    </button>
-                }
-            />
+    const renderMenuGrid = () => (
+        isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-44 bg-gray-50 rounded-[2rem] animate-pulse" />)}
+            </div>
+        ) : filteredItems.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filteredItems.map((item) => (
+                    <div key={item.id} className="bg-white rounded-[2rem] p-4 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group relative overflow-hidden">
+                        {item.is_featured === 1 && (
+                            <div className="absolute top-4 right-4 z-10 bg-orange-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">
+                                Featured
+                            </div>
+                        )}
 
-            {/* Content Area */}
-            <main className="px-6 mt-8 space-y-6">
-                {/* Search and Filters */}
-                <section className="space-y-4">
-                    <div className="bg-white rounded-2xl shadow-sm p-2 flex items-center gap-3 border border-gray-50 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-                        <div className="p-2 text-gray-400">
-                            <Icon name="Search" size={20} />
+                        <div className="flex gap-4">
+                            <div className="w-24 h-24 rounded-2xl overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-50">
+                                {item.image_url ? (
+                                    <img
+                                        src={`${import.meta.env.VITE_API_URL}${item.image_url}`}
+                                        alt={item.name}
+                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-gray-300 bg-gray-50">
+                                        <Icon name="Image" size={32} />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex-1 flex flex-col justify-between py-1 overflow-hidden">
+                                <div>
+                                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest block truncate">{item.category}</span>
+                                    <h3 className="font-black text-gray-800 text-lg leading-tight truncate">{item.name}</h3>
+                                    <p className="text-blue-600 font-black text-xl mt-1 tracking-tight truncate">{formatCurrency(item.price)}</p>
+                                    {item.description && (
+                                        <p className="text-[10px] text-gray-400 font-medium mt-1 line-clamp-2 leading-tight">
+                                            {item.description}
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="flex items-center justify-between mt-2">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-2 h-2 rounded-full ${item.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`} />
+                                        <span className="text-[11px] font-bold text-gray-500">Stok: <span className={item.stock > 0 ? 'text-gray-800' : 'text-red-500'}>{item.stock}</span></span>
+                                    </div>
+                                    {item.total_reviews > 0 && (
+                                        <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100">
+                                            <Icon name="Star" size={10} className="text-amber-500 fill-current" />
+                                            <span className="text-[10px] font-black text-amber-700">{parseFloat(item.average_rating).toFixed(1)}</span>
+                                            <span className="text-[8px] text-amber-400 font-bold">({item.total_reviews})</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
+
+                        <div className="mt-4 pt-4 border-t border-gray-50 flex gap-2">
+                            <button
+                                onClick={() => handleOpenModal(item)}
+                                className="flex-1 bg-gray-50 hover:bg-blue-50 text-gray-500 hover:text-blue-600 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2"
+                            >
+                                <Icon name="Settings" size={18} />
+                                <span className="hidden sm:inline">Atur Menu</span>
+                                <span className="sm:hidden">Atur</span>
+                            </button>
+                            <button
+                                onClick={() => handleDelete(item.id)}
+                                className="p-3 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-2xl transition-all"
+                            >
+                                <Icon name="Trash2" size={18} />
+                            </button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        ) : (
+            <div className="text-center py-20 bg-gray-50 rounded-[2.5rem] border-dashed border-2 border-gray-200">
+                <div className="bg-white w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm text-blue-200">
+                    <Icon name="Pizza" size={40} />
+                </div>
+                <h3 className="text-xl font-black text-gray-800">Menu tidak ditemukan</h3>
+                <p className="text-gray-400 font-medium max-w-xs mx-auto text-sm mt-1 px-4">Coba cari dengan kata kunci lain atau tambahkan menu baru.</p>
+            </div>
+        )
+    );
+
+    return (
+        <div className="pb-24 -mx-4 -mt-4 lg:mx-0 lg:mt-0 lg:pb-10 lg:static">
+            {/* Mobile Sticky Header (Fixed at Root) */}
+            <div className="fixed top-0 left-0 right-0 z-50 lg:hidden">
+                <div className={`absolute inset-0 bg-white transition-opacity duration-200 ease-in-out ${scrolled ? 'opacity-100 shadow-sm' : 'opacity-0'}`} />
+                <div className={`relative z-10 px-6 flex justify-between items-center transition-all duration-200 ease-in-out ${scrolled ? 'py-3 text-gray-800' : 'py-5 text-white'}`}>
+                    <button onClick={() => navigate('/seller/dashboard')} className={`p-2 rounded-xl scale-110 active:scale-95 transition-all ${scrolled ? 'bg-gray-100 text-gray-600' : 'bg-white/20 text-white'}`}>
+                        <Icon name="ChevronLeft" size={24} />
+                    </button>
+                    <span className={`font-black tracking-tight flex-1 text-center transition-opacity duration-300 ${scrolled ? 'opacity-100 text-gray-800' : 'opacity-0 text-white'}`}>
+                        Katalog
+                    </span>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => handleOpenModal()}
+                            className={`p-2 rounded-xl flex-shrink-0 transition-all ${scrolled ? 'bg-blue-600 text-white' : 'bg-white/20 text-white'}`}
+                        >
+                            <Icon name="Plus" size={20} />
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Desktop UI */}
+            <div className="hidden lg:block">
+                <header className="bg-white rounded-[2rem] p-8 shadow-sm border border-indigo-50/50 mb-8 flex justify-between items-center relative overflow-hidden">
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="bg-indigo-100 p-2 rounded-xl text-indigo-600"><Icon name="List" size={20} /></div>
+                            <span className="text-indigo-600 font-bold text-sm uppercase tracking-wider">Inventory System</span>
+                        </div>
+                        <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-2">Katalog Menu</h1>
+                        <p className="text-gray-500 font-medium">Kelola stok, harga, dan ketersediaan menu resto Anda.</p>
+                    </div>
+                    <div className="relative z-10 flex gap-4">
+                        <button
+                            onClick={() => handleOpenModal()}
+                            className="bg-indigo-600 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all flex items-center gap-2"
+                        >
+                            <Icon name="Plus" size={20} />
+                            Tambah Menu
+                        </button>
+                    </div>
+                </header>
+
+                {/* Filters */}
+                <section className="mb-8 flex items-center justify-between">
+                    <div className="bg-white rounded-xl shadow-sm p-2 flex items-center gap-3 border border-gray-100 w-full max-w-md">
+                        <div className="p-2 text-gray-400"><Icon name="Search" size={20} /></div>
                         <input
                             type="text"
                             placeholder="Cari menu..."
@@ -233,14 +339,13 @@ const SellerMenuManagement = () => {
                             className="flex-1 bg-transparent border-none outline-none font-bold text-gray-700 placeholder:text-gray-300"
                         />
                     </div>
-
-                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                    <div className="flex gap-2">
                         {['Semua', ...categories.map(c => c.name)].map((cat) => (
                             <button
                                 key={cat}
                                 onClick={() => setActiveCategory(cat)}
-                                className={`px-6 py-2.5 rounded-full font-bold whitespace-nowrap transition-all ${activeCategory === cat
-                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-100 scale-105'
+                                className={`px-5 py-2.5 rounded-xl font-bold transition-all ${activeCategory === cat
+                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100'
                                     : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'
                                     }`}
                             >
@@ -250,100 +355,65 @@ const SellerMenuManagement = () => {
                     </div>
                 </section>
 
-                {/* Grid List */}
-                {isLoading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-44 bg-gray-50 rounded-[2rem] animate-pulse" />)}
-                    </div>
-                ) : filteredItems.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {filteredItems.map((item) => (
-                            <div key={item.id} className="bg-white rounded-[2rem] p-4 border border-gray-50 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group relative overflow-hidden">
-                                {item.is_featured === 1 && (
-                                    <div className="absolute top-4 right-4 z-10 bg-orange-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg animate-pulse">
-                                        Featured
-                                    </div>
-                                )}
+                {renderMenuGrid()}
+            </div>
 
-                                <div className="flex gap-4">
-                                    <div className="w-24 h-24 rounded-2xl overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-50">
-                                        {item.image_url ? (
-                                            <img
-                                                src={`${import.meta.env.VITE_API_URL}${item.image_url}`}
-                                                alt={item.name}
-                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-gray-300 bg-gray-50">
-                                                <Icon name="Image" size={32} />
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="flex-1 flex flex-col justify-between py-1 overflow-hidden">
-                                        <div>
-                                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest block truncate">{item.category}</span>
-                                            <h3 className="font-black text-gray-800 text-lg leading-tight truncate">{item.name}</h3>
-                                            <p className="text-blue-600 font-black text-xl mt-1 tracking-tight truncate">{formatCurrency(item.price)}</p>
-                                            {item.description && (
-                                                <p className="text-[10px] text-gray-400 font-medium mt-1 line-clamp-2 leading-tight">
-                                                    {item.description}
-                                                </p>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center justify-between mt-2">
-                                            <div className="flex items-center gap-2">
-                                                <div className={`w-2 h-2 rounded-full ${item.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`} />
-                                                <span className="text-[11px] font-bold text-gray-500">Stok: <span className={item.stock > 0 ? 'text-gray-800' : 'text-red-500'}>{item.stock}</span></span>
-                                            </div>
-                                            {item.total_reviews > 0 && (
-                                                <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100">
-                                                    <Icon name="Star" size={10} className="text-amber-500 fill-current" />
-                                                    <span className="text-[10px] font-black text-amber-700">{parseFloat(item.average_rating).toFixed(1)}</span>
-                                                    <span className="text-[8px] text-amber-400 font-bold">({item.total_reviews})</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="mt-4 pt-4 border-t border-gray-50 flex gap-2">
-                                    <button
-                                        onClick={() => handleOpenModal(item)}
-                                        className="flex-1 bg-gray-50 hover:bg-blue-50 text-gray-500 hover:text-blue-600 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <Icon name="Settings" size={18} />
-                                        <span className="hidden sm:inline">Atur Menu</span>
-                                        <span className="sm:hidden">Atur</span>
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(item.id)}
-                                        className="p-3 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-2xl transition-all"
-                                    >
-                                        <Icon name="Trash2" size={18} />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+            {/* Mobile UI */}
+            <div className="lg:hidden pb-24">
+                <header className="bg-gradient-to-br from-indigo-800 via-blue-700 to-indigo-600 pt-24 pb-10 px-6 rounded-b-[2.5rem] shadow-xl relative z-10 mb-6">
+                    <div className="absolute inset-0 overflow-hidden rounded-b-[2.5rem] pointer-events-none">
+                        <div className="absolute top-[-20%] right-[-10%] w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
                     </div>
-                ) : (
-                    <div className="text-center py-20 bg-gray-50 rounded-[2.5rem] border-2 border-dashed border-gray-200">
-                        <div className="bg-white w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm text-blue-200">
-                            <Icon name="Pizza" size={40} />
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="text-blue-100 font-bold text-xs uppercase tracking-widest bg-white/10 px-3 py-1 rounded-full">Inventory</span>
                         </div>
-                        <h3 className="text-xl font-black text-gray-800">Menu tidak ditemukan</h3>
-                        <p className="text-gray-400 font-medium max-w-xs mx-auto text-sm mt-1 px-4">Coba cari dengan kata kunci lain atau tambahkan menu baru.</p>
+                        <h1 className="text-3xl font-black text-white tracking-tight">Katalog Menu</h1>
+                        <p className="text-blue-100/80 font-medium mt-1">Kelola stok dan harga menu.</p>
                     </div>
-                )}
-            </main>
+                </header>
 
-            {/* Bottom Floating Action Button (Mobile) */}
-            <div className="fixed bottom-24 right-6 lg:hidden z-40">
-                <button
-                    onClick={() => handleOpenModal()}
-                    className="w-16 h-16 bg-blue-600 rounded-2xl text-white shadow-2xl shadow-blue-300 flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
-                >
-                    <Icon name="Plus" size={32} />
-                </button>
+                <main className="px-6 space-y-6">
+                    {/* Search and Filters Mobile */}
+                    <div className="space-y-4">
+                        <div className="bg-white rounded-2xl shadow-sm p-3 flex items-center gap-3 border border-gray-50">
+                            <Icon name="Search" size={20} className="text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Cari menu..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="flex-1 outline-none font-bold text-gray-700"
+                            />
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2">
+                            {['Semua', ...categories.map(c => c.name)].map((cat) => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setActiveCategory(cat)}
+                                    className={`px-5 py-2 rounded-full font-bold whitespace-nowrap transition-all text-sm ${activeCategory === cat
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-white text-gray-500 border border-gray-100'
+                                        }`}
+                                >
+                                    {cat}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {renderMenuGrid()}
+                </main>
+
+                {/* Bottom FAB Mobile */}
+                <div className="fixed bottom-24 right-6 lg:hidden z-40">
+                    <button
+                        onClick={() => handleOpenModal()}
+                        className="w-16 h-16 bg-blue-600 rounded-2xl text-white shadow-2xl shadow-blue-300 flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
+                    >
+                        <Icon name="Plus" size={32} />
+                    </button>
+                </div>
             </div>
 
             {/* Modal - Native style Sheet / Overlay */}

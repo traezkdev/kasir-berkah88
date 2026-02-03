@@ -147,7 +147,7 @@ const SellerBanners = () => {
     return (
         <div className="pb-24 -mx-4 -mt-4 lg:-mx-10 lg:-mt-10 overflow-x-hidden animate-fade-in">
             {/* Top Bar Floating */}
-            <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/80 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'} lg:hidden`}>
+            <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white shadow-sm py-3' : 'bg-transparent py-5'} lg:hidden`}>
                 <div className="px-6 flex items-center justify-between">
                     <button onClick={() => navigate(-1)} className={`p-2 rounded-xl ${scrolled ? 'bg-gray-100 text-gray-800' : 'bg-white/20 text-white'}`}>
                         <Icon name="ChevronLeft" size={24} />
