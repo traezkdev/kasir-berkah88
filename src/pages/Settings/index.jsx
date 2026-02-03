@@ -63,11 +63,11 @@ const Settings = () => {
       {/* Dynamic Background Elements (Visible but faint in idle) */}
       {!disabled && (
         <>
-          <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-500/[0.03] dark:bg-blue-500/[0.05] rounded-full blur-2xl group-hover:bg-blue-500/20 group-hover:scale-150 transition-all duration-1000 animate-blob"></div>
-          <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-indigo-500/[0.02] dark:bg-indigo-500/[0.04] rounded-full blur-2xl group-hover:bg-indigo-500/10 group-hover:scale-150 transition-all duration-1000 animate-blob animation-delay-2000"></div>
+          <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-500/[0.03] dark:bg-blue-500/[0.05] rounded-full blur-xl group-hover:bg-blue-500/20 group-hover:scale-150 transition-all duration-1000 animate-blob"></div>
+          <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-indigo-500/[0.02] dark:bg-indigo-500/[0.04] rounded-full blur-xl group-hover:bg-indigo-500/10 group-hover:scale-150 transition-all duration-1000 animate-blob animation-delay-2000"></div>
 
           {/* Subtle Grid Pattern */}
-          <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none"
+          <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none gpu-acceleration"
             style={{ backgroundImage: 'radial-gradient(circle, #138fea 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
         </>
       )}

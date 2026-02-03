@@ -52,14 +52,25 @@ const MainDashboard = ({ headerTitle }) => {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 50) {
-        setShowStickyHeader(true);
+      // Debounce logic for performance
+      if (window.requestAnimationFrame) {
+        window.requestAnimationFrame(() => {
+          if (window.scrollY > 50) {
+            setShowStickyHeader(true);
+          } else {
+            setShowStickyHeader(false);
+          }
+        });
       } else {
-        setShowStickyHeader(false);
+        if (window.scrollY > 50) {
+          setShowStickyHeader(true);
+        } else {
+          setShowStickyHeader(false);
+        }
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -839,7 +850,7 @@ const MainDashboard = ({ headerTitle }) => {
   return (
     <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50 dark:bg-slate-950' : 'bg-transparent'}`}>
       {/* Sticky Mobile Header */}
-      <div className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden shadow-sm py-3 ${showStickyHeader ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`} style={{ backgroundColor: '#148FEA' }}>
+      <div className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden shadow-sm py-3 gpu-acceleration ${showStickyHeader ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`} style={{ backgroundColor: '#148FEA' }}>
         <div className="px-6 flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}
@@ -879,7 +890,7 @@ const MainDashboard = ({ headerTitle }) => {
           <div className="flex justify-between items-center mb-10 relative z-10">
             <div className="flex items-center gap-4">
               <div
-                className="w-12 h-12 rounded-2xl bg-white/20 dark:bg-slate-800/40 backdrop-blur-md border border-white/30 dark:border-slate-700/50 flex items-center justify-center shadow-inner cursor-pointer active:scale-95 transition-transform"
+                className="w-12 h-12 rounded-2xl bg-white/20 dark:bg-slate-800/40 border border-white/30 dark:border-slate-700/50 flex items-center justify-center shadow-inner cursor-pointer active:scale-95 transition-transform"
                 onClick={() => navigate('/profile')}
               >
                 <Icon name="User" size={24} className="text-white" />
@@ -918,10 +929,10 @@ const MainDashboard = ({ headerTitle }) => {
             <>
               {/* Backdrop Blur Overlay */}
               <div
-                className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-40 lg:hidden animate-in fade-in duration-300"
+                className="fixed inset-0 bg-black/20 z-40 lg:hidden animate-in fade-in duration-300"
                 onClick={() => setIsMobileMenuOpen(false)}
               ></div>
-              <div className="lg:hidden absolute top-full left-0 right-0 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300 rounded-none mx-4 mt-2 overflow-hidden z-50">
+              <div className="lg:hidden absolute top-full left-0 right-0 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300 rounded-none mx-4 mt-2 overflow-hidden z-50 gpu-acceleration">
                 <nav className="p-4 grid grid-cols-3 gap-4">
                   {navigationItems.map((item) => (
                     <Link
@@ -963,25 +974,25 @@ const MainDashboard = ({ headerTitle }) => {
           {/* Main Action Grid (Icon + Label) */}
           <div className="grid grid-cols-4 gap-4 relative z-10">
             <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate(appMode === 'simple' ? '/transaksi-sederhana' : '/transaksi')}>
-              <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center backdrop-blur-md group-active:scale-95 transition-transform duration-200">
+              <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center group-active:scale-95 transition-transform duration-200">
                 <Icon name="ShoppingCart" size={32} />
               </div>
               <span className="text-[11px] font-black uppercase tracking-tight text-white/90 dark:text-gray-300">Transaksi</span>
             </div>
             <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate('/admin-uang-bisnis')}>
-              <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center backdrop-blur-md group-active:scale-95 transition-transform duration-200">
+              <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center group-active:scale-95 transition-transform duration-200">
                 <Icon name="Wallet" size={32} />
               </div>
               <span className="text-[11px] font-black uppercase tracking-tight text-white/90 dark:text-gray-300">Saldo</span>
             </div>
             <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate('/laporan')}>
-              <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center backdrop-blur-md group-active:scale-95 transition-transform duration-200">
+              <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center group-active:scale-95 transition-transform duration-200">
                 <Icon name="FileText" size={32} />
               </div>
               <span className="text-[11px] font-black uppercase tracking-tight text-white/90 dark:text-gray-300">Laporan</span>
             </div>
             <div className="flex flex-col items-center gap-2.5 group" onClick={() => navigate('/auditor')}>
-              <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center backdrop-blur-md group-active:scale-95 transition-transform duration-200">
+              <div className="w-full aspect-square bg-white/20 dark:bg-slate-800/40 rounded-[1.25rem] border border-white/20 dark:border-white/10 flex items-center justify-center group-active:scale-95 transition-transform duration-200">
                 <Icon name="SearchCheck" size={32} />
               </div>
               <span className="text-[11px] font-black uppercase tracking-tight text-white/90 dark:text-gray-300">Audit</span>
@@ -1027,12 +1038,12 @@ const MainDashboard = ({ headerTitle }) => {
         </section>
 
         {/* Stock Alert Banner (Mobile) */}
-        <section className="px-1 mt-2">
+        <section className="px-1 mt-2 optimize-scroll">
           <StockAlertBanner />
         </section>
 
         {/* Services Grid (Dana Look) */}
-        <section className="mt-10 px-5">
+        <section className="mt-10 px-5 optimize-scroll">
           <div className="flex items-center justify-between mb-5 px-1">
             <h3 className="text-sm font-extrabold text-gray-900 dark:text-white tracking-tighter uppercase">Layanan Kasir</h3>
             <span className="text-[11px] font-bold text-[#118eea] cursor-pointer" onClick={() => navigate('/all-features')}>
@@ -1063,7 +1074,7 @@ const MainDashboard = ({ headerTitle }) => {
         </section>
 
         {/* Recent Activity Feed */}
-        <section className="mt-10 px-5">
+        <section className="mt-10 px-5 optimize-scroll">
           <div className="flex items-center justify-between mb-5 px-1">
             <h3 className="text-sm font-extrabold text-gray-900 dark:text-white tracking-tighter uppercase">Aktivitas Terkini</h3>
             <span className="text-[11px] font-bold text-[#118eea]" onClick={handleViewAllTransactions}>Tampilkan Semua</span>
@@ -1103,7 +1114,7 @@ const MainDashboard = ({ headerTitle }) => {
         </section>
 
         {/* Promo / Banner dana style */}
-        <section className="mt-10 px-5 mb-8">
+        <section className="mt-10 px-5 mb-8 optimize-scroll">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Stok Menu Card */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-5 relative overflow-hidden group">

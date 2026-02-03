@@ -55,10 +55,10 @@ const MetricsCard = ({ title, value, icon, color = 'primary', trend = null, desc
   return (
     <div className={`bg-white dark:bg-slate-800 rounded-3xl p-6 lg:p-5 transition-all duration-300 h-full relative overflow-hidden group shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100/50 dark:border-slate-700 hover:shadow-2xl hover:-translate-y-1`}>
       {/* Background Glow Effect */}
-      <div className={`absolute -right-8 -bottom-8 w-32 h-32 rounded-full blur-3xl opacity-10 group-hover:opacity-25 transition-opacity duration-500 pointer-events-none ${activeGlow}`}></div>
+      <div className={`absolute -right-8 -bottom-8 w-32 h-32 rounded-full blur-xl opacity-10 group-hover:opacity-25 transition-opacity duration-500 pointer-events-none gpu-acceleration ${activeGlow}`}></div>
 
       {/* Subtle Background Icon Decor */}
-      <div className={`absolute -left-4 -bottom-4 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity duration-500 pointer-events-none text-slate-900 dark:text-white`}>
+      <div className={`absolute -left-4 -bottom-4 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity duration-500 pointer-events-none text-slate-900 dark:text-white gpu-acceleration`}>
         <Icon name={icon} size={100} />
       </div>
 
