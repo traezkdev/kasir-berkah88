@@ -48,12 +48,12 @@ const AdminMobileHeader = ({
             {/* Sticky Header */}
             <div
                 className={`fixed top-0 left-0 right-0 z-[100] transition-[background-color,padding,box-shadow] duration-300 will-change-[background-color,padding,box-shadow] ${scrolled ? 'shadow-sm py-3' : 'bg-transparent py-5'}`}
-                style={scrolled ? { backgroundColor: 'rgba(20, 143, 234, 0.95)' } : {}}
+                style={scrolled ? { backgroundColor: '#148FEA' } : {}}
             >
                 <div className="px-6 flex items-center justify-between">
                     <button
                         onClick={handleDefaultBack}
-                        className={`p-2 rounded-2xl transition-[transform,background-color] active:scale-95 ${scrolled ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white/20 text-white backdrop-blur-sm'}`}
+                        className={`p-2 rounded-2xl transition-[transform,background-color] active:scale-95 ${scrolled ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white/20 text-white'}`}
                     >
                         <Icon name="ChevronLeft" size={24} />
                     </button>

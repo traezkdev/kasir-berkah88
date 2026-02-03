@@ -844,7 +844,7 @@ const MainDashboard = ({ headerTitle }) => {
   return (
     <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50 dark:bg-slate-950' : 'bg-transparent'}`}>
       {/* Sticky Mobile Header */}
-      <div className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden backdrop-blur-md shadow-sm py-3 ${showStickyHeader ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`} style={{ backgroundColor: 'rgba(20, 143, 234, 0.95)' }}>
+      <div className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden shadow-sm py-3 ${showStickyHeader ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`} style={{ backgroundColor: '#148FEA' }}>
         <div className="px-6 flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}

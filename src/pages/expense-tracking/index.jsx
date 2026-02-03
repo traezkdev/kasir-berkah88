@@ -442,13 +442,13 @@ const ExpenseTracking = ({ headerTitle }) => {
 
           {/* Mobile Header */}
           <div
-            className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden ${showStickyHeader ? 'backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}
-            style={showStickyHeader ? { backgroundColor: 'rgba(20, 143, 234, 0.95)' } : {}}
+            className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 lg:hidden ${showStickyHeader ? 'shadow-sm py-3' : 'bg-transparent py-5'}`}
+            style={showStickyHeader ? { backgroundColor: '#148FEA' } : {}}
           >
             <div className="px-6 flex items-center justify-between">
               <button
                 onClick={() => navigate(-1)}
-                className={`p-2 rounded-2xl transition-all active:scale-95 ${showStickyHeader ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white/20 text-white backdrop-blur-md'}`}
+                className={`p-2 rounded-2xl transition-all active:scale-95 ${showStickyHeader ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white/20 text-white'}`}
               >
                 <Icon name="ChevronLeft" size={24} />
               </button>
@@ -458,7 +458,7 @@ const ExpenseTracking = ({ headerTitle }) => {
               </div>
 
               <div className="flex items-center gap-2">
-                <NotificationBell size={20} className={`${showStickyHeader ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white/20 text-white backdrop-blur-md'}`} />
+                <NotificationBell size={20} className={`${showStickyHeader ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white/20 text-white'}`} />
               </div>
             </div>
           </div>
