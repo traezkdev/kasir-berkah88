@@ -300,9 +300,15 @@ const ReceiptPage = () => {
   const subtotalAfterItemDiscounts = transaction.items.reduce((sum, item) => {
     const pricePerUnit = Number(item.price) || 0;
     const itemDiscount = Number(item.discount) || 0;
-    const effectivePricePerUnit = item.basePrice ? pricePerUnit : (itemDiscount > 0 ? pricePerUnit * (1 - itemDiscount) : pricePerUnit);
     const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
-    return sum + ((effectivePricePerUnit + optionAdjustment) * (Number(item.quantity) || 0));
+
+    // Jika ada basePrice, berarti item.price sudah merupakan harga akhir (setelah diskon + opsi)
+    // Jika tidak ada, kita hitung manual (diskon + opsi)
+    const effectivePriceWithOptions = item.basePrice
+      ? pricePerUnit
+      : (itemDiscount > 0 ? (pricePerUnit * (1 - itemDiscount)) + optionAdjustment : pricePerUnit + optionAdjustment);
+
+    return sum + (effectivePriceWithOptions * (Number(item.quantity) || 0));
   }, 0);
 
   return (
@@ -317,9 +323,9 @@ const ReceiptPage = () => {
              rounded-none lg:rounded-lg animate-in slide-in-from-bottom-full lg:zoom-in-95 duration-300 flex flex-col pointer-events-auto"
         >
           {/* Header Section (Synced with Modal) */}
-          <div className="flex justify-between items-center px-6 py-4 border-b border-blue-700 bg-blue-600 dark:bg-blue-700 z-10 shrink-0">
+          <div className="flex justify-between items-center px-6 py-4 border-b z-10 shrink-0" style={{ backgroundColor: '#148FEA', borderColor: '#0d6ebd' }}>
             <h2 className="text-xl font-semibold text-white">Detail Transaksi #{transaction?.id}</h2>
-            <Button variant="ghost" size="icon" onClick={() => navigate('/transaksi')} className="text-white hover:bg-blue-700 dark:hover:bg-blue-600">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/transaksi')} className="text-white hover:bg-white/10">
               <Icon name="X" size={20} />
             </Button>
           </div>
@@ -392,9 +398,12 @@ const ReceiptPage = () => {
                         {transaction.items.map((item, index) => {
                           const pricePerUnit = Number(item.price) || 0;
                           const itemDiscount = Number(item.discount) || 0;
-                          const effectivePricePerUnit = item.basePrice ? pricePerUnit : (itemDiscount > 0 ? pricePerUnit * (1 - itemDiscount) : pricePerUnit);
                           const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0) : 0;
-                          const lineTotalAfterDiscount = (effectivePricePerUnit + optionAdjustment) * (Number(item.quantity) || 0);
+
+                          // Logika yang sama: transaksi modern (punya basePrice) sudah menyertakan opsi di dalam item.price
+                          const lineTotalAfterDiscount = item.basePrice
+                            ? (pricePerUnit * (Number(item.quantity) || 0))
+                            : (((itemDiscount > 0 ? pricePerUnit * (1 - itemDiscount) : pricePerUnit) + optionAdjustment) * (Number(item.quantity) || 0));
 
                           return (
                             <div key={index} className="relative group pl-3">
@@ -488,7 +497,7 @@ const ReceiptPage = () => {
                     </div>
 
                     {/* Additional Payment Info (V2 Style) */}
-                    {(transaction.payment_method?.toLowerCase() === 'tunai' || transaction.payment_method?.toLowerCase() === 'cash') && (
+                    {(transaction.payment_method?.toLowerCase() === 'tunai' || transaction.payment_method?.toLowerCase() === 'cash') && transaction.cash_paid > 0 && (
                       <div className="flex gap-3 mb-8 px-2">
                         <div className="flex-1 px-4 py-3 bg-gray-50 rounded-2xl border border-gray-100 flex flex-col items-center">
                           <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">DIBAYAR</span>
@@ -619,9 +628,11 @@ const ReceiptPage = () => {
                         {transaction.items.map((item, index) => {
                           const pricePerUnit = Number(item.price) || 0;
                           const itemDiscount = Number(item.discount) || 0;
-                          const effectivePricePerUnit = item.basePrice ? pricePerUnit : (itemDiscount > 0 ? pricePerUnit * (1 - itemDiscount) : pricePerUnit);
                           const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0) : 0;
-                          const lineTotalAfterDiscount = (effectivePricePerUnit + optionAdjustment) * (Number(item.quantity) || 0);
+
+                          const lineTotalAfterDiscount = item.basePrice
+                            ? (pricePerUnit * (Number(item.quantity) || 0))
+                            : (((itemDiscount > 0 ? pricePerUnit * (1 - itemDiscount) : pricePerUnit) + optionAdjustment) * (Number(item.quantity) || 0));
 
                           const originalBasePrice = Number(item.basePrice || item.price) || 0;
                           const optionAdjustmentForOriginalPrice = Array.isArray(item.options) ? item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0) : 0;
@@ -715,7 +726,7 @@ const ReceiptPage = () => {
                     </div>
 
                     {/* Additional Payment Info */}
-                    {(transaction.payment_method?.toLowerCase() === 'tunai' || transaction.payment_method?.toLowerCase() === 'cash') && (
+                    {(transaction.payment_method?.toLowerCase() === 'tunai' || transaction.payment_method?.toLowerCase() === 'cash') && transaction.cash_paid > 0 && (
                       <div className="mt-6 flex justify-between gap-4 px-4">
                         <div className="flex-1 text-center py-2 bg-gray-50 rounded-xl border border-gray-100">
                           <span className="text-[8px] font-bold text-gray-400 uppercase block">DIBAYAR</span>

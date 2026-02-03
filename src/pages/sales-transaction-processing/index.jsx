@@ -534,11 +534,14 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
             onClick={() => setIsMobileSummaryOpen(false)}
           ></div>
           <div className="absolute inset-0 h-full w-full bg-white dark:bg-slate-900 shadow-2xl animate-in slide-in-from-bottom-full duration-300 flex flex-col">
-            <div className="sticky top-0 right-0 p-4 flex justify-between items-center bg-blue-600/95 dark:bg-blue-700/95 backdrop-blur-md z-10 border-b border-blue-700 dark:border-blue-800">
+            <div className="sticky top-0 right-0 p-4 flex justify-between items-center backdrop-blur-md z-10 border-b" style={{ backgroundColor: 'rgba(20, 143, 234, 0.95)', borderColor: '#0d6ebd' }}>
               <h3 className="font-black text-lg text-white ml-2">Ringkasan Pesanan</h3>
               <button
                 onClick={() => setIsMobileSummaryOpen(false)}
-                className="p-2 bg-blue-700 dark:bg-blue-600 rounded-md text-white hover:bg-blue-800 dark:hover:bg-blue-500 transition-colors"
+                className="p-2 rounded-md text-white transition-colors"
+                style={{ backgroundColor: 'rgba(13, 110, 189, 0.8)' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(13, 110, 189, 1)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(13, 110, 189, 0.8)'}
               >
                 <Icon name="X" size={20} />
               </button>
