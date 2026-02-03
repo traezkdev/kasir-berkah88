@@ -124,8 +124,10 @@ export default function AuditorPage() {
         }, 0);
 
         // Business Equity (Real Wealth)
+        // Profit Bersih = Pendapatan - (Pengeluaran - Stok yang masih ada)
+        // Target Equity = Modal Awal + Profit Bersih
         const netProfit = totalRevenue - totalExpenses;
-        const targetEquity = initialCapital + netProfit;
+        const targetEquity = expectedCash + stockValue;
         const currentEquity = physicalCash + stockValue;
         const equityDifference = currentEquity - targetEquity;
 
@@ -192,7 +194,7 @@ export default function AuditorPage() {
         return 'Rp ' + formatNumber(num);
     };
 
-    if (loading) {
+    if (loading || !data) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="flex flex-col items-center gap-4">
@@ -378,7 +380,19 @@ export default function AuditorPage() {
                             <div className="flex justify-between items-center p-4 bg-indigo-50 rounded-2xl">
                                 <span className="text-sm font-black uppercase tracking-widest">Kesehatan Bisnis</span>
                                 <span className="text-xl font-black text-indigo-600">
-                                    {((data.metrics.currentEquity / data.metrics.targetEquity) * 100).toFixed(1)}% <span className="text-xs">Sesuai</span>
+                                    {((data.metrics.currentEquity / data.metrics.targetEquity) * 100).toFixed(1)}%
+                                    <span className={`ml-2 text-xs px-2 py-0.5 rounded-lg ${Math.abs(data.metrics.equityDifference) <= 1000
+                                        ? 'bg-emerald-100 text-emerald-600'
+                                        : data.metrics.equityDifference > 0
+                                            ? 'bg-blue-100 text-blue-600'
+                                            : 'bg-rose-100 text-rose-600'
+                                        }`}>
+                                        {Math.abs(data.metrics.equityDifference) <= 1000
+                                            ? 'Akurat'
+                                            : data.metrics.equityDifference > 0
+                                                ? 'Surplus'
+                                                : 'Selisih'}
+                                    </span>
                                 </span>
                             </div>
                         </div>
