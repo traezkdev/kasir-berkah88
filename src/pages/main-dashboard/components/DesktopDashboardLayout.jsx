@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import Icon from '../../../components/AppIcon';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, eachWeekOfInterval, startOfMonth, endOfMonth } from 'date-fns';
@@ -110,6 +111,7 @@ const TargetForm = ({ targets, onSave, onCancel, formatCurrency }) => {
 };
 
 const DesktopDashboardLayout = ({ dashboardData, theme }) => {
+    const navigate = useNavigate();
     // State for chart filter
     const [chartFilter, setChartFilter] = useState('monthly'); // 'daily', 'weekly', 'monthly'
 
@@ -639,7 +641,10 @@ const DesktopDashboardLayout = ({ dashboardData, theme }) => {
                             </div>
                         </div>
                     </div>
-                    <div className="bg-muted/50 p-4 text-center text-xs font-bold uppercase tracking-wider text-text-secondary cursor-pointer hover:bg-muted transition-colors">
+                    <div
+                        onClick={() => navigate('/laporan')}
+                        className="bg-muted/50 p-4 text-center text-xs font-bold uppercase tracking-wider text-text-secondary cursor-pointer hover:bg-muted transition-colors"
+                    >
                         Lihat Detail Lengkap
                     </div>
                 </div>
