@@ -241,6 +241,8 @@ const RawMaterialStockDashboard = () => {
                 onClick: () => navigate('/main-critical-stock')
               }
             ]}
+            rightIcon="Settings"
+            onRightAction={() => setIsUnitSettingsOpen(true)}
           />
         </>
       )}
