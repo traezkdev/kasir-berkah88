@@ -242,7 +242,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
           </div>
         </div>
 
-        <div className="md:col-span-2 pt-6 border-t border-gray-50 dark:border-slate-700 mt-4">
+        <div className="md:col-span-2 pt-6 border-t border-gray-50 dark:border-slate-700 mt-4 pb-24 sm:pb-0">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[11px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest">Opsi / Topping Menu</h3>
             <button
@@ -294,7 +294,12 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 pt-8">
+        <div className="flex flex-col sm:flex-row gap-4 pt-8 
+          fixed sm:relative bottom-0 left-0 right-0 
+          bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sm:bg-transparent 
+          p-4 sm:p-0 border-t border-gray-100 dark:border-slate-800 sm:border-none 
+          z-50 sm:z-auto shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)] sm:shadow-none"
+        >
           <button
             type="submit"
             disabled={userRole === 'guest' || isSubmitting}

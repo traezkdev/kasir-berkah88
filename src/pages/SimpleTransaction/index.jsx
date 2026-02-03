@@ -193,7 +193,7 @@ export default function SimpleTransaction() { // Renamed component
       const optionPriceAdjustment = selectedOptions.reduce((sum, opt) => sum + (opt.price_adjustment || 0), 0);
       // Assuming item.price is the base price and discount needs to be applied first
       const priceBeforeDiscount = parseFloat(originalMenuItem.price) + optionPriceAdjustment;
-      const finalPrice = originalMenuItem.discount > 0 ? priceBeforeDiscount * (1 - originalMenuItem.discount) : priceBeforeDiscount;
+      const finalPrice = originalMenuItem.discount > 0 ? priceBeforeDiscount * (1 - originalMenuItem.discount / 100) : priceBeforeDiscount;
       if (existingItem) {
         if (!ignoreStock && existingItem.quantity + 1 > originalMenuItem.stock) {
           setTimeout(() => toast.error(`Stok ${originalMenuItem.name} tidak cukup! Tersedia: ${originalMenuItem.stock}`), 0);
@@ -536,7 +536,7 @@ export default function SimpleTransaction() { // Renamed component
                     {/* Discount Badge */}
                     {item.discount > 0 && (
                       <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-lg">
-                        -{item.discount * 100}%
+                        {Math.round(item.discount)}%
                       </div>
                     )}
 
@@ -566,7 +566,7 @@ export default function SimpleTransaction() { // Renamed component
                           )}
                           <p className="font-black text-primary text-sm whitespace-nowrap">
                             Rp{item.discount > 0
-                              ? (parseFloat(item.price) * (1 - item.discount)).toLocaleString('id-ID')
+                              ? (parseFloat(item.price) * (1 - item.discount / 100)).toLocaleString('id-ID')
                               : parseFloat(item.price).toLocaleString('id-ID')
                             }
                           </p>

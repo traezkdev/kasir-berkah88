@@ -225,9 +225,9 @@ const EditTransactionModal = ({
              rounded-none animate-in slide-in-from-bottom-full lg:zoom-in-95 duration-300 flex flex-col "
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center px-6 py-4 border-b border-border">
-          <h2 className="text-xl font-semibold text-foreground">Edit Transaksi #{transaction?.id}</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+        <div className="flex justify-between items-center px-6 py-4 border-b" style={{ backgroundColor: '#148FEA', borderColor: '#0d6ebd' }}>
+          <h2 className="text-xl font-semibold text-white">Edit Transaksi #{transaction?.id}</h2>
+          <Button variant="ghost" size="icon" onClick={onClose} className="text-white hover:bg-white/10">
             <Icon name="X" size={20} />
           </Button>
         </div>

@@ -232,9 +232,13 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
   const subtotalAfterItemDiscounts = transaction.items.reduce((sum, item) => {
     const pricePerUnit = Number(item.price) || 0;
     const itemDiscount = Number(item.discount) || 0;
-    const effectivePricePerUnit = item.basePrice ? pricePerUnit : (itemDiscount > 0 ? pricePerUnit * (1 - itemDiscount) : pricePerUnit);
     const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
-    return sum + ((effectivePricePerUnit + optionAdjustment) * (Number(item.quantity) || 0));
+
+    const effectivePriceWithOptions = item.basePrice
+      ? pricePerUnit
+      : (itemDiscount > 0 ? (pricePerUnit * (1 - itemDiscount)) + optionAdjustment : pricePerUnit + optionAdjustment);
+
+    return sum + (effectivePriceWithOptions * (Number(item.quantity) || 0));
   }, 0);
 
   return (
@@ -251,9 +255,9 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
              fixed lg:relative inset-0 h-full lg:h-auto
              rounded-none lg:rounded-lg animate-in slide-in-from-bottom-full lg:zoom-in-95 duration-300 flex flex-col"
         >
-          <div className="flex justify-between items-center px-6 py-4 border-b border-blue-700 bg-blue-600 dark:bg-blue-700">
+          <div className="flex justify-between items-center px-6 py-4 border-b" style={{ backgroundColor: '#148FEA', borderColor: '#0d6ebd' }}>
             <h2 className="text-xl font-semibold text-white">Detail Transaksi #{transaction?.id}</h2>
-            <Button variant="ghost" size="icon" onClick={onClose} className="text-white hover:bg-blue-700 dark:hover:bg-blue-600">
+            <Button variant="ghost" size="icon" onClick={onClose} className="text-white hover:bg-white/10">
               <Icon name="X" size={20} />
             </Button>
           </div>
@@ -324,9 +328,11 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
                       {transaction.items.map((item, index) => {
                         const pricePerUnit = Number(item.price) || 0;
                         const itemDiscount = Number(item.discount) || 0;
-                        const effectivePricePerUnit = item.basePrice ? pricePerUnit : (itemDiscount > 0 ? pricePerUnit * (1 - itemDiscount) : pricePerUnit);
                         const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0) : 0;
-                        const lineTotalAfterDiscount = (effectivePricePerUnit + optionAdjustment) * (Number(item.quantity) || 0);
+
+                        const lineTotalAfterDiscount = item.basePrice
+                          ? (pricePerUnit * (Number(item.quantity) || 0))
+                          : (((itemDiscount > 0 ? pricePerUnit * (1 - itemDiscount) : pricePerUnit) + optionAdjustment) * (Number(item.quantity) || 0));
 
                         return (
                           <div key={index} className="relative group pl-3">
@@ -549,18 +555,11 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
                       {transaction.items.map((item, index) => {
                         const pricePerUnit = Number(item.price) || 0;
                         const itemDiscount = Number(item.discount) || 0;
+                        const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0) : 0;
 
-                        let effectivePricePerUnit;
-                        if (item.basePrice) {
-                          effectivePricePerUnit = pricePerUnit;
-                        } else if (itemDiscount > 0) {
-                          effectivePricePerUnit = pricePerUnit * (1 - itemDiscount);
-                        } else {
-                          effectivePricePerUnit = pricePerUnit;
-                        }
-
-                        const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
-                        const lineTotalAfterDiscount = (effectivePricePerUnit + optionAdjustment) * (Number(item.quantity) || 0);
+                        const lineTotalAfterDiscount = item.basePrice
+                          ? (pricePerUnit * (Number(item.quantity) || 0))
+                          : (((itemDiscount > 0 ? pricePerUnit * (1 - itemDiscount) : pricePerUnit) + optionAdjustment) * (Number(item.quantity) || 0));
 
                         const originalBasePrice = Number(item.basePrice || item.price) || 0;
                         const optionAdjustmentForOriginalPrice = Array.isArray(item.options) ? item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0) : 0;

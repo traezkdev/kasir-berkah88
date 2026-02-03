@@ -72,9 +72,10 @@ const TransactionFilters = ({
           <button
             onClick={() => setIsFilterOpen(!isFilterOpen)}
             className={`flex-1 flex items-center justify-between px-4 lg:px-6 py-3 lg:py-4 rounded-2xl border transition-all duration-300 group text-left ${isFilterOpen
-              ? 'bg-blue-600 dark:bg-blue-500 text-white border-blue-600 dark:border-blue-500 shadow-xl shadow-blue-500/20'
+              ? 'text-white shadow-xl shadow-blue-500/20'
               : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-blue-200'
               }`}
+            style={isFilterOpen ? { backgroundColor: '#148FEA', borderColor: '#148FEA' } : {}}
           >
             <div className="flex items-center gap-3 lg:gap-4">
               <div className={`p-2.5 rounded-xl transition-colors ${isFilterOpen ? 'bg-white/20 text-white' : 'bg-blue-50 dark:bg-slate-700 text-blue-600 dark:text-blue-400 group-hover:bg-blue-100 dark:group-hover:bg-slate-600'}`}>
@@ -150,7 +151,8 @@ const TransactionFilters = ({
                     <button
                       key={method}
                       onClick={() => handleFilterChange('paymentMethod', method)}
-                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-200 ${activeFilters?.paymentMethod === method ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-200 ${activeFilters?.paymentMethod === method ? 'text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                      style={activeFilters?.paymentMethod === method ? { backgroundColor: '#148FEA' } : {}}
                     >
                       {method === 'all' ? 'Semua' : method}
                     </button>
@@ -171,7 +173,8 @@ const TransactionFilters = ({
                     <button
                       key={range?.value}
                       onClick={() => handleFilterChange('amountRange', range?.value)}
-                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-200 ${activeFilters?.amountRange === range?.value ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-200 ${activeFilters?.amountRange === range?.value ? 'text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                      style={activeFilters?.amountRange === range?.value ? { backgroundColor: '#148FEA' } : {}}
                     >
                       {range?.label}
                     </button>
