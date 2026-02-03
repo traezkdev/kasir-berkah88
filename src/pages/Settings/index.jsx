@@ -47,20 +47,72 @@ const Settings = () => {
   const { theme, toggleTheme, appStyle, setAppStyle } = useTheme();
   const { appMode, toggleAppMode, toggleSidebar } = useAppSettings();
 
-  // Reusable Card Component (Updated for DANA Style)
+  // Reusable Card Component (Updated for Ultra Premium Style)
   const SettingsCard = ({ icon, title, description, onClick, disabled = false }) => (
     <div
       onClick={!disabled ? onClick : undefined}
-      className={`dana-card p-6 h-full relative group active:scale-[0.98] transition-all duration-200 border-none shadow-lg shadow-gray-200/50 dark:shadow-none bg-card ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-xl hover:z-10'}`}
+      className={`
+        relative overflow-hidden p-6 h-full rounded-[2.5rem] bg-card border border-gray-100/80 dark:border-slate-800/50
+        transition-all duration-700 ease-out group
+        ${disabled
+          ? 'opacity-50 cursor-not-allowed grayscale'
+          : 'cursor-pointer hover:shadow-[0_20px_50px_rgba(19,143,234,0.15)] hover:border-blue-500/50 hover:-translate-y-3 active:scale-[0.96] bg-gradient-to-br from-white to-gray-50/30 dark:from-slate-900 dark:to-slate-950/50'
+        }
+      `}
     >
-      <div className="flex items-center gap-4 mb-3">
-        <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
-          <AppIcon name={icon} size={24} />
+      {/* Dynamic Background Elements (Visible but faint in idle) */}
+      {!disabled && (
+        <>
+          <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-500/[0.03] dark:bg-blue-500/[0.05] rounded-full blur-2xl group-hover:bg-blue-500/20 group-hover:scale-150 transition-all duration-1000 animate-blob"></div>
+          <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-indigo-500/[0.02] dark:bg-indigo-500/[0.04] rounded-full blur-2xl group-hover:bg-indigo-500/10 group-hover:scale-150 transition-all duration-1000 animate-blob animation-delay-2000"></div>
+
+          {/* Subtle Grid Pattern */}
+          <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none"
+            style={{ backgroundImage: 'radial-gradient(circle, #138fea 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+        </>
+      )}
+
+      <div className="relative z-10 flex flex-col gap-6 h-full justify-between">
+        <div>
+          <div className={`
+            w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-700 transform
+            ${disabled
+              ? 'bg-gray-100 dark:bg-gray-800 text-gray-400'
+              : 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-lg shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-slate-700 group-hover:scale-110 group-hover:-rotate-6 group-hover:bg-gradient-to-br group-hover:from-[#138FEA] group-hover:to-[#0A56B1] group-hover:text-white group-hover:shadow-2xl group-hover:shadow-blue-500/40 group-hover:border-transparent'
+            }
+          `}>
+            <AppIcon name={icon} size={30} />
+          </div>
+
+          <div className="mt-6 space-y-2">
+            <div className="flex items-center gap-2">
+              <h3 className="text-xl font-black text-text-primary tracking-tight uppercase leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                {title}
+              </h3>
+              {!disabled && (
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-20 group-hover:opacity-100 group-hover:scale-150 transition-all duration-500"></div>
+              )}
+            </div>
+            <p className="text-[10px] font-bold text-text-secondary uppercase tracking-[0.2em] leading-relaxed opacity-40 group-hover:opacity-100 transition-opacity">
+              {description}
+            </p>
+          </div>
         </div>
-        <div className="flex-1">
-          <h3 className="text-base font-black text-text-primary tracking-tighter uppercase">{title}</h3>
-          <p className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mt-0.5 leading-relaxed">{description}</p>
-        </div>
+
+        {/* Small Action Indicator */}
+        {!disabled && (
+          <div className="mt-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-tighter text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-all duration-700 transform translate-x-[-10px] group-hover:translate-x-0">
+              <span>Konfigurasi</span>
+              <AppIcon name="ArrowRight" size={14} />
+            </div>
+
+            {/* Visual Flair in Idle */}
+            <div className="w-8 h-1 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden group-hover:w-0 transition-all duration-500">
+              <div className="w-full h-full bg-blue-500/20 animate-pulse"></div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
