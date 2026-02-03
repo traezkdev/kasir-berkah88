@@ -13,6 +13,7 @@ import MetricsCard from '../main-dashboard/components/MetricsCard'; // Import Me
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation'; // Import BreadcrumbNavigation
 import Icon from '../../components/AppIcon'; // Import Icon
 import UnitSettingsModal from './UnitSettingsModal';
+import MaterialDetailModal from './MaterialDetailModal';
 import AdminMobileHeader from '../../components/ui/AdminMobileHeader';
 import { useToast } from '../../components/ui/ToastNotification';
 
@@ -39,6 +40,7 @@ const RawMaterialStockDashboard = () => {
   const [isStockOutModalOpen, setIsStockOutModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false); // Tambahkan state ini
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
 
   // State for Unit Settings
@@ -100,6 +102,11 @@ const RawMaterialStockDashboard = () => {
     setIsEditModalOpen(true);
   };
 
+  const handleViewDetail = (material) => {
+    setSelectedMaterial(material);
+    setIsDetailModalOpen(true);
+  };
+
   const handleAddMaterialClick = () => { // Fungsi baru untuk tombol tambah
     setIsAddModalOpen(true);
   };
@@ -110,6 +117,7 @@ const RawMaterialStockDashboard = () => {
     setIsEditModalOpen(false);
     setIsAddModalOpen(false); // Tambahkan ini
     setIsUnitSettingsOpen(false);
+    setIsDetailModalOpen(false);
     setSelectedMaterial(null);
     fetchRawMaterials(false); // Refresh data tanpa hard loading
     fetchUnits(); // Logic might change if units changed
@@ -375,8 +383,11 @@ const RawMaterialStockDashboard = () => {
               </thead>
               <tbody className="bg-card divide-y divide-gray-200">
                 {filteredRawMaterials.map((material) => (
-                  <tr key={material.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-card-foreground">
+                  <tr key={material.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                    <td
+                      className="px-6 py-4 whitespace-nowrap text-sm font-black text-[#118EEA] cursor-pointer hover:underline"
+                      onClick={() => handleViewDetail(material)}
+                    >
                       {material.name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
@@ -595,6 +606,12 @@ const RawMaterialStockDashboard = () => {
             onClose={handleCloseModals}
             showMessage={showMessage}
             showError={showError}
+          />
+
+          <MaterialDetailModal
+            isOpen={isDetailModalOpen}
+            onClose={handleCloseModals}
+            material={selectedMaterial}
           />
         </div>
       </main>
