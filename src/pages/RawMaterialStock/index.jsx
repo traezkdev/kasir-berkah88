@@ -156,12 +156,11 @@ const RawMaterialStockDashboard = () => {
 
   // Helper to check if unit is calculable
   const isUnitCalculable = (unitName) => {
-    // Default to true if units not loaded yet or logic fails, to be safe? Or strict? 
-    // Plan said: "If no, value = 0". So default false if not found? 
-    // But standard units like 'kg' might be missing from DB if not seeded correctly?
-    // Assuming DB is seeded.
+    // Jika satuan adalah gram, kita anggap tidak dikalikan (langsung ambil harga) sesuai permintaan user
+    if ((unitName || '').toLowerCase() === 'gram') return false;
+
     const unit = units.find(u => u.name.toLowerCase() === (unitName || '').toLowerCase());
-    return unit ? unit.is_calculable : true; // Default to true if unit not found in settings (fallback behavior)
+    return unit ? unit.is_calculable : true; // Default to true if unit not found in settings
   };
 
   // Calculate metrics
@@ -474,11 +473,11 @@ const RawMaterialStockDashboard = () => {
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                       <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Stok Mentah</p>
-                      <p className="text-lg font-black text-slate-900 dark:text-white">{Number(material.current_stock)}</p>
+                      <p className="text-lg font-black text-slate-900 dark:text-white">{Number(material.current_stock)} {material.unit}</p>
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                       <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Stok Menu</p>
-                      <p className="text-lg font-black text-slate-900 dark:text-white">{Number(material.menu_stock)}</p>
+                      <p className="text-lg font-black text-slate-900 dark:text-white">{Number(material.menu_stock)} {material.unit}</p>
                     </div>
                   </div>
 
@@ -486,7 +485,7 @@ const RawMaterialStockDashboard = () => {
                   <div className="mb-6">
                     <div className="flex justify-between items-end mb-2">
                       <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Kapasitas Stok</p>
-                      <p className="text-sm font-black text-slate-900 dark:text-white">{Number(totalStock)} / <span className="text-slate-400">{Number(material.stok_minimum)}</span></p>
+                      <p className="text-sm font-black text-slate-900 dark:text-white">{Number(totalStock)} {material.unit} / <span className="text-slate-400">{Number(material.stok_minimum)} {material.unit}</span></p>
                     </div>
                     <div className="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-200/50 dark:border-slate-700">
                       <div
@@ -501,7 +500,22 @@ const RawMaterialStockDashboard = () => {
                     <div>
                       <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Estimasi Nilai</p>
                       <p className="text-sm font-black text-blue-600 dark:text-blue-400">
-                        {formatCurrency((Number(material.current_stock) * Number(material.raw_stock_price)) + (Number(material.menu_stock) * Number(material.price_per_item)))}
+                        {(() => {
+                          const isCalculable = isUnitCalculable(material.unit);
+                          const rawStockPrice = Number(material.raw_stock_price) || 0;
+                          const currentStock = Number(material.current_stock) || 0;
+                          const menuStock = Number(material.menu_stock) || 0;
+                          const pricePerItem = Number(material.price_per_item) || 0;
+
+                          if (isCalculable) {
+                            return formatCurrency((currentStock * rawStockPrice) + (menuStock * pricePerItem));
+                          } else {
+                            // Jika tidak dikalikan (seperti gram), ambil harga langsung jika stok > 0
+                            const rawVal = currentStock > 0 ? rawStockPrice : 0;
+                            const menuVal = menuStock > 0 ? pricePerItem : 0;
+                            return formatCurrency(rawVal + menuVal);
+                          }
+                        })()}
                       </p>
                     </div>
                     <div className="flex gap-2">
