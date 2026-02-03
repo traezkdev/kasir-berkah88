@@ -14,6 +14,7 @@ import { Checkbox } from '../../components/ui/Checkbox';
 import OptionSelectionModal from '../CashierDashboard/components/OptionSelectionModal'; // Import the new modal, adjust path
 import LoadingScreen from '../../components/ui/LoadingScreen';
 import { savePendingTransaction } from '../../utils/offlinePersistence';
+import AppImage from '../../components/AppImage';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
