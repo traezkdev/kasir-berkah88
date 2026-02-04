@@ -198,6 +198,24 @@ export const OrderNotificationProvider = ({ children }) => {
         if (Platform.OS !== 'web') {
             loadSound();
             if (user) registerForPushNotifications();
+
+            // Handle notification that arrives while app is open
+            const foregroundSubscription = Notifications.addNotificationReceivedListener(notification => {
+                console.log('Notification received in foreground:', notification);
+                // Custom handling if needed
+            });
+
+            // Handle notification interaction (click)
+            const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
+                const data = response.notification.request.content.data;
+                console.log('Notification clicked:', data);
+                // We can use a global event or state to trigger navigation in AppNavigator
+            });
+
+            return () => {
+                foregroundSubscription.remove();
+                responseSubscription.remove();
+            };
         }
 
         return () => {
