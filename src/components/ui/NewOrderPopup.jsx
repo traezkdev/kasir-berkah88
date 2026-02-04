@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 const NewOrderPopup = ({ isOpen, onClose, orderData, userRole }) => {
     const navigate = useNavigate();
 
-    if (!orderData) return null;
+    if (!orderData || userRole === 'pelanggan') return null;
 
     const handleViewDetails = () => {
         // Navigasi berdasarkan role

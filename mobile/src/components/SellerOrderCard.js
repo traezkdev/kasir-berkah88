@@ -1,6 +1,8 @@
 import React, { useState, memo } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, LayoutAnimation, Platform, UIManager } from 'react-native';
-import { User, MapPin, Wallet, ShoppingBag, ChevronDown, X, ArrowRight } from 'lucide-react-native';
+import { User, MapPin, Wallet, ShoppingBag, ChevronDown, X, ArrowRight, MessageCircle, CheckCircle, Info } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useChat } from '../context/ChatContext';
 
 if (Platform.OS === 'android') {
     if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -8,8 +10,20 @@ if (Platform.OS === 'android') {
     }
 }
 
-const SellerOrderCard = ({ order, onAccept, onReject }) => {
+const SellerOrderCard = ({ order, onAccept, onReject, onComplete }) => {
     const [isExpanded, setIsExpanded] = useState(false);
+    const navigation = useNavigation();
+    const { setActiveChat, setActiveOrder } = useChat();
+
+    const handleChatCustomer = () => {
+        setActiveChat({
+            user_id: order.user_id,
+            username: order.customer_name,
+            avatar_url: null // Bisa ditambahkan jika ada di order
+        });
+        setActiveOrder(order);
+        navigation.navigate('ChatScreen');
+    };
 
     const formatCurrency = (val) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
@@ -46,14 +60,29 @@ const SellerOrderCard = ({ order, onAccept, onReject }) => {
                         <Text style={styles.customerName}>{order.customer_name}</Text>
                         <View style={styles.infoLine}>
                             <MapPin size={10} color="#94A3B8" />
-                            <Text style={styles.infoText}>{order.customer_address || 'Ambil di Toko'}</Text>
+                            <Text style={styles.infoText}>{order.customer_address || 'Alamat Pelanggan'}</Text>
                         </View>
                         <View style={styles.infoLine}>
                             <Wallet size={10} color="#22C55E" />
                             <Text style={[styles.infoText, { color: '#22C55E' }]}>{order.payment_method || 'Tunai'}</Text>
                         </View>
                     </View>
+                    <TouchableOpacity
+                        style={styles.chatCustomerBtn}
+                        onPress={handleChatCustomer}
+                    >
+                        <MessageCircle size={20} color="#138FEA" />
+                    </TouchableOpacity>
                 </View>
+
+                {/* Order Note */}
+                {order.note && (
+                    <View style={styles.noteContainer}>
+                        <Info size={16} color="#F59E0B" />
+                        <Text style={styles.noteText}>"{order.note}"</Text>
+                    </View>
+                )}
+
 
                 {/* Items Summary Toggle */}
                 <TouchableOpacity
@@ -93,14 +122,18 @@ const SellerOrderCard = ({ order, onAccept, onReject }) => {
                 )}
 
                 {/* Actions */}
-                {(onAccept && onReject) && (
-                    <View style={styles.actions}>
+                {/* Actions */}
+                <View style={styles.actions}>
+                    {onReject && (
                         <TouchableOpacity
                             onPress={onReject}
                             style={styles.rejectBtn}
                         >
                             <X size={20} color="#EF4444" strokeWidth={3} />
                         </TouchableOpacity>
+                    )}
+
+                    {onAccept && (
                         <TouchableOpacity
                             onPress={onAccept}
                             style={styles.acceptBtn}
@@ -108,8 +141,18 @@ const SellerOrderCard = ({ order, onAccept, onReject }) => {
                             <Text style={styles.acceptBtnText}>Terima Sekarang</Text>
                             <ArrowRight size={18} color="#FFFFFF" />
                         </TouchableOpacity>
-                    </View>
-                )}
+                    )}
+
+                    {onComplete && (
+                        <TouchableOpacity
+                            onPress={onComplete}
+                            style={styles.acceptBtn} // Reusing accept button style for primary action
+                        >
+                            <Text style={styles.acceptBtnText}>Selesaikan Pesanan</Text>
+                            <CheckCircle size={18} color="#FFFFFF" />
+                        </TouchableOpacity>
+                    )}
+                </View>
             </View>
         </View>
     );
@@ -294,6 +337,34 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 14,
         fontWeight: '900',
+    },
+    chatCustomerBtn: {
+        width: 40,
+        height: 40,
+        backgroundColor: '#F0F9FF',
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E0F2FE',
+    },
+    noteContainer: {
+        backgroundColor: '#FFFBEB',
+        padding: 12,
+        borderRadius: 12,
+        marginBottom: 16,
+        flexDirection: 'row',
+        gap: 10,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#FEF3C7',
+    },
+    noteText: {
+        fontSize: 13,
+        color: '#B45309',
+        flex: 1,
+        fontStyle: 'italic',
+        fontWeight: '500',
     }
 });
 

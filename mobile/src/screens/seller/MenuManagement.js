@@ -13,7 +13,8 @@ import {
     Modal,
     ScrollView,
     Switch,
-    RefreshControl
+    RefreshControl,
+    StatusBar
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -29,8 +30,11 @@ import {
     Camera
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
+import * as ImagePicker from 'expo-image-picker';
+import { useConfirm } from '../../context/ConfirmContext';
 
 const MenuManagement = ({ navigation }) => {
+    const { confirm } = useConfirm();
     const [menuItems, setMenuItems] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -51,6 +55,7 @@ const MenuManagement = ({ navigation }) => {
         is_featured: false,
         description: ''
     });
+    const [imageUri, setImageUri] = useState(null);
 
     const fetchData = async () => {
         setLoading(true);
@@ -87,6 +92,7 @@ const MenuManagement = ({ navigation }) => {
                 is_featured: item.is_featured === 1 || item.is_featured === true,
                 description: item.description || ''
             });
+            setImageUri(item.image_url ? `${API_URL}${item.image_url}` : null);
         } else {
             setEditingItem(null);
             setFormData({
@@ -99,8 +105,33 @@ const MenuManagement = ({ navigation }) => {
                 is_featured: false,
                 description: ''
             });
+            setImageUri(null);
         }
         setIsModalOpen(true);
+    };
+
+    const pickImage = async () => {
+        try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Izin Ditolak', 'Mohon izinkan akses galeri untuk memilih foto.');
+                return;
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
+            });
+
+            if (!result.canceled) {
+                setImageUri(result.assets[0].uri);
+            }
+        } catch (error) {
+            console.error('Error picking image:', error);
+            Alert.alert('Gagal', 'Terjadi kesalahan saat memilih gambar.');
+        }
     };
 
     const handleSubmit = async () => {
@@ -123,22 +154,39 @@ const MenuManagement = ({ navigation }) => {
         }
 
         try {
-            const dataToSubmit = {
-                ...formData,
-                id: editingItem ? editingItem.id : `M-${Date.now()}`,
-                price: priceNum,
-                stock: stockNum,
-                hpp: hppNum,
-                discount: discNum,
-                is_featured: formData.is_featured ? 1 : 0
-            };
+            const formDataToSend = new FormData();
+
+            // Append form fields
+            formDataToSend.append('name', formData.name);
+            formDataToSend.append('price', priceNum);
+            formDataToSend.append('stock', stockNum);
+            formDataToSend.append('category', formData.category);
+            formDataToSend.append('hpp', hppNum);
+            formDataToSend.append('discount', discNum);
+            formDataToSend.append('is_featured', formData.is_featured ? 1 : 0);
+            formDataToSend.append('description', formData.description || '');
+
+            // Append image if selected and it's a new image (not from server)
+            if (imageUri && !imageUri.startsWith('http')) {
+                const filename = imageUri.split('/').pop();
+                const match = /\.(\w+)$/.exec(filename);
+                const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+                formDataToSend.append('image', {
+                    uri: imageUri,
+                    name: filename,
+                    type
+                });
+            }
 
             const url = editingItem
                 ? `/api/menu-items/${editingItem.id}`
                 : `/api/menu-items`;
             const method = editingItem ? 'put' : 'post';
 
-            const response = await apiService[method](url, dataToSubmit);
+            const response = await apiService[method](url, formDataToSend, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
 
             if (response.status === 200 || response.status === 201) {
                 Alert.alert('Sukses', editingItem ? 'Menu diperbarui' : 'Menu ditambahkan');
@@ -153,26 +201,22 @@ const MenuManagement = ({ navigation }) => {
         }
     };
 
-    const handleDelete = (id) => {
-        Alert.alert(
-            'Hapus Menu',
-            'Apakah Anda yakin ingin menghapus menu ini?',
-            [
-                { text: 'Batal', style: 'cancel' },
-                {
-                    text: 'Hapus',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await apiService.delete(`/api/menu-items/${id}`);
-                            fetchData();
-                        } catch (error) {
-                            Alert.alert('Eror', 'Gagal menghapus menu');
-                        }
-                    }
-                }
-            ]
-        );
+    const handleDelete = async (id) => {
+        const accepted = await confirm({
+            title: 'Hapus Menu',
+            message: 'Apakah Anda yakin ingin menghapus menu ini? Tindakan ini tidak dapat dibatalkan.',
+            confirmText: 'Ya, Hapus',
+            type: 'danger'
+        });
+
+        if (accepted) {
+            try {
+                await apiService.delete(`/api/menu-items/${id}`);
+                fetchData();
+            } catch (error) {
+                console.error('Error deleting menu:', error);
+            }
+        }
     };
 
     const filteredItems = menuItems.filter(item => {
@@ -243,6 +287,7 @@ const MenuManagement = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
+            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -310,150 +355,157 @@ const MenuManagement = ({ navigation }) => {
                 />
             )}
 
-            {/* Modal Form */}
             <Modal
                 visible={isModalOpen}
                 animationType="slide"
-                transparent={true}
+                transparent={false}
                 onRequestClose={() => setIsModalOpen(false)}
             >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <View>
-                                <Text style={styles.modalTitle}>{editingItem ? 'Edit' : 'Tambah'} Menu</Text>
-                                <Text style={styles.modalSubtitle}>INFORMASI PRODUK</Text>
-                            </View>
-                            <TouchableOpacity onPress={() => setIsModalOpen(false)} style={styles.closeModalBtn}>
-                                <X size={24} color="#64748B" />
-                            </TouchableOpacity>
+                <View style={styles.modalContent}>
+                    <View style={styles.modalHeader}>
+                        <View>
+                            <Text style={styles.modalTitle}>{editingItem ? 'Edit' : 'Tambah'} Menu</Text>
+                            <Text style={styles.modalSubtitle}>INFORMASI PRODUK</Text>
                         </View>
+                        <TouchableOpacity onPress={() => setIsModalOpen(false)} style={styles.closeModalBtn}>
+                            <X size={24} color="#64748B" />
+                        </TouchableOpacity>
+                    </View>
 
-                        <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-                            {/* Placeholder for Image Upload */}
-                            <View style={styles.imageUploadArea}>
-                                <TouchableOpacity style={styles.imageCircle}>
+                    <ScrollView
+                        style={styles.modalBody}
+                        contentContainerStyle={{ paddingBottom: 40 }}
+                        showsVerticalScrollIndicator={false}
+                        decelerationRate="fast"
+                        scrollEventThrottle={16}
+                    >
+                        {/* Image Upload */}
+                        <View style={styles.imageUploadArea}>
+                            <TouchableOpacity style={styles.imageCircle} onPress={pickImage}>
+                                {imageUri ? (
+                                    <Image source={{ uri: imageUri }} style={styles.uploadedImage} />
+                                ) : (
                                     <View style={styles.imagePlaceholder}>
                                         <Camera size={32} color="#CBD5E1" />
                                         <Text style={styles.imagePlaceholderText}>FOTO MENU</Text>
                                     </View>
-                                    <View style={styles.cameraIconBadge}>
-                                        <Plus size={16} color="#FFFFFF" />
-                                    </View>
-                                </TouchableOpacity>
-                            </View>
-
-                            <View style={styles.formGroup}>
-                                <Text style={styles.label}>NAMA MENU</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Contoh: Kopi Susu"
-                                    value={formData.name}
-                                    onChangeText={(val) => setFormData({ ...formData, name: val })}
-                                />
-                            </View>
-
-                            <View style={styles.row}>
-                                <View style={[styles.formGroup, { flex: 1 }]}>
-                                    <Text style={styles.label}>HARGA JUAL</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder="15000"
-                                        keyboardType="numeric"
-                                        value={formData.price}
-                                        onChangeText={(val) => setFormData({ ...formData, price: val })}
-                                    />
+                                )}
+                                <View style={styles.cameraIconBadge}>
+                                    <Plus size={16} color="#FFFFFF" />
                                 </View>
-                                <View style={[styles.formGroup, { flex: 1 }]}>
-                                    <Text style={styles.label}>STOK</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder="100"
-                                        keyboardType="numeric"
-                                        value={formData.stock}
-                                        onChangeText={(val) => setFormData({ ...formData, stock: val })}
-                                    />
-                                </View>
-                            </View>
-
-                            <View style={styles.formGroup}>
-                                <Text style={styles.label}>KATEGORI</Text>
-                                <View style={styles.categoryPicker}>
-                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
-                                        {categories.map(cat => (
-                                            <TouchableOpacity
-                                                key={cat.id}
-                                                onPress={() => setFormData({ ...formData, category: cat.name })}
-                                                style={[styles.catPickBtn, formData.category === cat.name && styles.activeCatPickBtn]}
-                                            >
-                                                <Text style={[styles.catPickText, formData.category === cat.name && styles.activeCatPickText]}>{cat.name}</Text>
-                                            </TouchableOpacity>
-                                        ))}
-                                    </ScrollView>
-                                </View>
-                            </View>
-
-                            <View style={styles.formGroup}>
-                                <Text style={styles.label}>DESKRIPSI (OPSIONAL)</Text>
-                                <TextInput
-                                    style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
-                                    placeholder="Jelaskan detail menu..."
-                                    multiline
-                                    value={formData.description}
-                                    onChangeText={(val) => setFormData({ ...formData, description: val })}
-                                />
-                            </View>
-
-                            <View style={styles.row}>
-                                <View style={[styles.formGroup, { flex: 1 }]}>
-                                    <Text style={styles.label}>MODAL (HPP)</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder="8000"
-                                        keyboardType="numeric"
-                                        value={formData.hpp}
-                                        onChangeText={(val) => setFormData({ ...formData, hpp: val })}
-                                    />
-                                </View>
-                                <View style={[styles.formGroup, { flex: 1 }]}>
-                                    <Text style={styles.label}>DISKON (%)</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder="0"
-                                        keyboardType="numeric"
-                                        value={formData.discount.toString()}
-                                        onChangeText={(val) => setFormData({ ...formData, discount: val })}
-                                    />
-                                </View>
-                            </View>
-
-                            <View style={styles.featuredToggle}>
-                                <View>
-                                    <Text style={styles.toggleTitle}>Menu Unggulan</Text>
-                                    <Text style={styles.toggleSubtitle}>Tampilkan di halaman favorit</Text>
-                                </View>
-                                <Switch
-                                    value={formData.is_featured}
-                                    onValueChange={(val) => setFormData({ ...formData, is_featured: val })}
-                                    trackColor={{ false: '#E2E8F0', true: '#BFDBFE' }}
-                                    thumbColor={formData.is_featured ? '#2563EB' : '#94A3B8'}
-                                />
-                            </View>
-                        </ScrollView>
-
-                        <View style={styles.modalFooter}>
-                            <TouchableOpacity onPress={() => setIsModalOpen(false)} style={styles.cancelBtn}>
-                                <Text style={styles.cancelBtnText}>Batal</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={handleSubmit}
-                                disabled={isSaving}
-                                style={styles.saveBtn}
-                            >
-                                <Text style={styles.saveBtnText}>{isSaving ? 'Menyimpan...' : 'Simpan'}</Text>
-                                {!isSaving && <Check size={20} color="#FFFFFF" />}
                             </TouchableOpacity>
                         </View>
+
+                        <View style={styles.formGroup}>
+                            <Text style={styles.label}>NAMA MENU</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Contoh: Kopi Susu"
+                                value={formData.name}
+                                onChangeText={(val) => setFormData({ ...formData, name: val })}
+                            />
+                        </View>
+
+                        <View style={styles.row}>
+                            <View style={[styles.formGroup, { flex: 1 }]}>
+                                <Text style={styles.label}>HARGA JUAL</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="15000"
+                                    keyboardType="numeric"
+                                    value={formData.price}
+                                    onChangeText={(val) => setFormData({ ...formData, price: val })}
+                                />
+                            </View>
+                            <View style={[styles.formGroup, { flex: 1 }]}>
+                                <Text style={styles.label}>STOK</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="100"
+                                    keyboardType="numeric"
+                                    value={formData.stock}
+                                    onChangeText={(val) => setFormData({ ...formData, stock: val })}
+                                />
+                            </View>
+                        </View>
+
+                        <View style={styles.formGroup}>
+                            <Text style={styles.label}>KATEGORI</Text>
+                            <View style={styles.categoryPicker}>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+                                    {categories.map(cat => (
+                                        <TouchableOpacity
+                                            key={cat.id}
+                                            onPress={() => setFormData({ ...formData, category: cat.name })}
+                                            style={[styles.catPickBtn, formData.category === cat.name && styles.activeCatPickBtn]}
+                                        >
+                                            <Text style={[styles.catPickText, formData.category === cat.name && styles.activeCatPickText]}>{cat.name}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        </View>
+
+                        <View style={styles.formGroup}>
+                            <Text style={styles.label}>DESKRIPSI (OPSIONAL)</Text>
+                            <TextInput
+                                style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
+                                placeholder="Jelaskan detail menu..."
+                                multiline
+                                value={formData.description}
+                                onChangeText={(val) => setFormData({ ...formData, description: val })}
+                            />
+                        </View>
+
+                        <View style={styles.row}>
+                            <View style={[styles.formGroup, { flex: 1 }]}>
+                                <Text style={styles.label}>MODAL (HPP)</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="8000"
+                                    keyboardType="numeric"
+                                    value={formData.hpp}
+                                    onChangeText={(val) => setFormData({ ...formData, hpp: val })}
+                                />
+                            </View>
+                            <View style={[styles.formGroup, { flex: 1 }]}>
+                                <Text style={styles.label}>DISKON (%)</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="0"
+                                    keyboardType="numeric"
+                                    value={formData.discount.toString()}
+                                    onChangeText={(val) => setFormData({ ...formData, discount: val })}
+                                />
+                            </View>
+                        </View>
+
+                        <View style={styles.featuredToggle}>
+                            <View>
+                                <Text style={styles.toggleTitle}>Menu Unggulan</Text>
+                                <Text style={styles.toggleSubtitle}>Tampilkan di halaman favorit</Text>
+                            </View>
+                            <Switch
+                                value={formData.is_featured}
+                                onValueChange={(val) => setFormData({ ...formData, is_featured: val })}
+                                trackColor={{ false: '#E2E8F0', true: '#BFDBFE' }}
+                                thumbColor={formData.is_featured ? '#2563EB' : '#94A3B8'}
+                            />
+                        </View>
+                    </ScrollView>
+
+                    <View style={styles.modalFooter}>
+                        <TouchableOpacity onPress={() => setIsModalOpen(false)} style={styles.cancelBtn}>
+                            <Text style={styles.cancelBtnText}>Batal</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={handleSubmit}
+                            disabled={isSaving}
+                            style={styles.saveBtn}
+                        >
+                            <Text style={styles.saveBtnText}>{isSaving ? 'Menyimpan...' : 'Simpan'}</Text>
+                            {!isSaving && <Check size={20} color="#FFFFFF" />}
+                        </TouchableOpacity>
                     </View>
                 </View>
             </Modal>
@@ -471,7 +523,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 20,
-        paddingTop: Platform.OS === 'ios' ? 60 : 40,
+        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : (Platform.OS === 'web' ? 10 : 15),
         paddingBottom: 20,
         backgroundColor: '#FFFFFF',
     },
@@ -705,17 +757,17 @@ const styles = StyleSheet.create({
     },
     modalContent: {
         backgroundColor: '#FFFFFF',
-        borderTopLeftRadius: 32,
-        borderTopRightRadius: 32,
-        height: '92%',
+        flex: 1,
         width: '100%',
         display: 'flex',
+        flexDirection: 'column',
     },
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: 24,
+        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : (Platform.OS === 'web' ? 10 : 15), // Safe area for fullscreen
         borderBottomWidth: 1,
         borderBottomColor: '#F1F5F9',
     },
@@ -764,6 +816,11 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         color: '#CBD5E1',
         marginTop: 4,
+    },
+    uploadedImage: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 23,
     },
     cameraIconBadge: {
         position: 'absolute',
@@ -851,10 +908,23 @@ const styles = StyleSheet.create({
     modalFooter: {
         flexDirection: 'row',
         padding: 24,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 30,
         gap: 12,
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',
         backgroundColor: '#FFFFFF',
+        zIndex: 999,
+        elevation: 25,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -10 },
+                shadowOpacity: 0.1,
+                shadowRadius: 10,
+            },
+            android: { elevation: 25 },
+            web: { boxShadow: '0px -10px 20px rgba(0,0,0,0.05)' }
+        })
     },
     cancelBtn: {
         flex: 1,
@@ -878,11 +948,16 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         gap: 8,
-        shadowColor: '#1E40AF',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 4,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#1E40AF',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+            },
+            android: { elevation: 4 },
+            web: { boxShadow: '0px 4px 8px rgba(30, 64, 175, 0.2)' }
+        })
     },
     saveBtnText: {
         fontSize: 16,

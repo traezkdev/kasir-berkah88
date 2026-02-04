@@ -15,8 +15,10 @@ import {
     ScrollView,
     KeyboardAvoidingView,
     RefreshControl,
-    Switch
+    Switch,
+    StatusBar
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import {
     Search,
@@ -34,9 +36,65 @@ import {
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
 import ReceiptModal from '../../components/ReceiptModal';
+import { useConfirm } from '../../context/ConfirmContext';
 
 const { width, height } = Dimensions.get('window');
 const COLUMN_WIDTH = (width - 48) / 2;
+
+// Komponen Item yang dimemoize untuk performa (Anti-Delay)
+const ProductCardItem = React.memo(({ item, qty, addToCart, ignoreStock, formatCurrency, isOutOfStock }) => {
+    return (
+        <TouchableOpacity
+            activeOpacity={1}
+            style={[
+                styles.productCard,
+                isOutOfStock && !ignoreStock && styles.outOfStockCard,
+                qty > 0 && styles.selectedProductCard
+            ]}
+            onPress={() => (ignoreStock || !isOutOfStock) && addToCart(item)}
+            disabled={isOutOfStock && !ignoreStock}
+        >
+            <View style={styles.imageWrapper}>
+                {item.image_url ? (
+                    <Image
+                        source={{ uri: `${API_URL}${item.image_url}` }}
+                        style={styles.productImage}
+                    />
+                ) : (
+                    <View style={styles.placeholderImg}>
+                        <ShoppingCart size={30} color="#CBD5E1" />
+                    </View>
+                )}
+                {qty > 0 && (
+                    <View style={styles.qtyBadge}>
+                        <Text style={qtyBadgeTextStyles}>{qty}</Text>
+                    </View>
+                )}
+                {item.discount > 0 && (
+                    <View style={styles.discountBadge}>
+                        <Text style={styles.discountText}>{Math.round(item.discount)}%</Text>
+                    </View>
+                )}
+            </View>
+            <View style={styles.productInfo}>
+                <Text style={styles.productCat}>{item.category}</Text>
+                <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+                <Text style={styles.productPrice}>{formatCurrency(item.price)}</Text>
+                <View style={styles.stockInfo}>
+                    <View style={[styles.stockDot, { backgroundColor: isOutOfStock ? '#EF4444' : '#22C55E' }]} />
+                    <Text style={styles.stockText}>Stok: {item.stock ?? '∞'}</Text>
+                </View>
+            </View>
+        </TouchableOpacity>
+    );
+});
+
+// Styles khusus untuk didalam memo agar tidak error
+const qtyBadgeTextStyles = {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+};
 
 const SalesPOS = () => {
     const [menuItems, setMenuItems] = useState([]);
@@ -56,6 +114,32 @@ const SalesPOS = () => {
     // Receipt State
     const [showReceipt, setShowReceipt] = useState(false);
     const [lastTransaction, setLastTransaction] = useState(null);
+
+    const { confirm } = useConfirm();
+
+    // Load Ignore Stock from Local Storage
+    useEffect(() => {
+        const loadIgnoreStock = async () => {
+            try {
+                const val = await AsyncStorage.getItem('ignore_stock_setting');
+                if (val !== null) {
+                    setIgnoreStock(JSON.parse(val));
+                }
+            } catch (e) {
+                console.error('Error loading ignore stock setting:', e);
+            }
+        };
+        loadIgnoreStock();
+    }, []);
+
+    const toggleIgnoreStock = async (value) => {
+        setIgnoreStock(value);
+        try {
+            await AsyncStorage.setItem('ignore_stock_setting', JSON.stringify(value));
+        } catch (e) {
+            console.error('Error saving ignore stock setting:', e);
+        }
+    };
 
     const fetchData = async () => {
         setLoading(true);
@@ -88,7 +172,7 @@ const SalesPOS = () => {
         });
     }, [menuItems, activeCategory, searchTerm]);
 
-    const addToCart = (item) => {
+    const addToCart = useCallback((item) => {
         setCart(prevCart => {
             const existing = prevCart.find(i => i.id === item.id);
             if (existing) {
@@ -104,13 +188,13 @@ const SalesPOS = () => {
             }
             return [...prevCart, { ...item, quantity: 1 }];
         });
-    };
+    }, [ignoreStock]);
 
-    const removeFromCart = (id) => {
+    const removeFromCart = useCallback((id) => {
         setCart(prevCart => prevCart.filter(item => item.id !== id));
-    };
+    }, []);
 
-    const updateQuantity = (id, delta) => {
+    const updateQuantity = useCallback((id, delta) => {
         setCart(prevCart => {
             return prevCart.map(item => {
                 if (item.id === id) {
@@ -126,7 +210,7 @@ const SalesPOS = () => {
                 return item;
             }).filter(Boolean);
         });
-    };
+    }, [menuItems, ignoreStock]);
 
     const subtotal = useMemo(() => {
         return cart.reduce((acc, curr) => acc + (curr.price * curr.quantity), 0);
@@ -136,8 +220,22 @@ const SalesPOS = () => {
         return cart.reduce((acc, curr) => acc + curr.quantity, 0);
     }, [cart]);
 
-    const formatCurrency = (val) => {
+    const formatCurrency = useCallback((val) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
+    }, []);
+
+    const handleClearCart = async () => {
+        const accepted = await confirm({
+            title: 'Kosongkan Keranjang',
+            message: 'Apakah Anda yakin ingin menghapus semua menu yang dipilih?',
+            confirmText: 'Ya, Hapus Semua',
+            type: 'danger'
+        });
+
+        if (accepted) {
+            setCart([]);
+            setIsCartModalOpen(false);
+        }
     };
 
     const handleProcessTransaction = async () => {
@@ -193,54 +291,26 @@ const SalesPOS = () => {
 
     const quickCashOptions = [5000, 10000, 20000, 50000, 100000];
 
-    const renderMenuItem = ({ item }) => {
+    const renderMenuItem = useCallback(({ item }) => {
         const itemInCart = cart.find(i => i.id === item.id);
         const qty = itemInCart ? itemInCart.quantity : 0;
         const isOutOfStock = item.stock <= 0 && item.stock !== null;
 
         return (
-            <TouchableOpacity
-                style={[styles.productCard, isOutOfStock && !ignoreStock && styles.outOfStockCard]}
-                onPress={() => (ignoreStock || !isOutOfStock) && addToCart(item)}
-                disabled={isOutOfStock && !ignoreStock}
-            >
-                <View style={styles.imageWrapper}>
-                    {item.image_url ? (
-                        <Image
-                            source={{ uri: `${API_URL}${item.image_url}` }}
-                            style={styles.productImage}
-                        />
-                    ) : (
-                        <View style={styles.placeholderImg}>
-                            <ShoppingCart size={30} color="#CBD5E1" />
-                        </View>
-                    )}
-                    {qty > 0 && (
-                        <View style={styles.qtyBadge}>
-                            <Text style={styles.qtyBadgeText}>{qty}</Text>
-                        </View>
-                    )}
-                    {item.discount > 0 && (
-                        <View style={styles.discountBadge}>
-                            <Text style={styles.discountText}>{Math.round(item.discount)}%</Text>
-                        </View>
-                    )}
-                </View>
-                <View style={styles.productInfo}>
-                    <Text style={styles.productCat}>{item.category}</Text>
-                    <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
-                    <Text style={styles.productPrice}>{formatCurrency(item.price)}</Text>
-                    <View style={styles.stockInfo}>
-                        <View style={[styles.stockDot, { backgroundColor: isOutOfStock ? '#EF4444' : '#22C55E' }]} />
-                        <Text style={styles.stockText}>Stok: {item.stock ?? '∞'}</Text>
-                    </View>
-                </View>
-            </TouchableOpacity>
+            <ProductCardItem
+                item={item}
+                qty={qty}
+                addToCart={addToCart}
+                ignoreStock={ignoreStock}
+                formatCurrency={formatCurrency}
+                isOutOfStock={isOutOfStock}
+            />
         );
-    };
+    }, [cart, addToCart, ignoreStock, formatCurrency]);
 
     return (
         <View style={styles.container}>
+            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.headerTopRow}>
@@ -250,7 +320,7 @@ const SalesPOS = () => {
                         <Text style={[styles.switchLabel, ignoreStock && styles.switchLabelActive]}>Abaikan Stok</Text>
                         <Switch
                             value={ignoreStock}
-                            onValueChange={setIgnoreStock}
+                            onValueChange={toggleIgnoreStock}
                             trackColor={{ false: "#E2E8F0", true: "#BFDBFE" }}
                             thumbColor={ignoreStock ? "#2563EB" : "#94A3B8"}
                             style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
@@ -325,6 +395,12 @@ const SalesPOS = () => {
                     onPress={() => setIsCartModalOpen(true)}
                 >
                     <View style={styles.fabInfo}>
+                        <TouchableOpacity
+                            onPress={handleClearCart}
+                            style={styles.fabTrashBtn}
+                        >
+                            <Trash2 size={20} color="#EF4444" />
+                        </TouchableOpacity>
                         <View style={styles.fabCount}>
                             <Text style={styles.fabCountText}>{totalItemsCount}</Text>
                         </View>
@@ -344,145 +420,148 @@ const SalesPOS = () => {
             <Modal
                 visible={isCartModalOpen}
                 animationType="slide"
-                transparent={true}
+                transparent={false}
                 onRequestClose={() => setIsCartModalOpen(false)}
             >
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                    style={styles.modalOverlay}
+                    style={styles.modalContent}
                 >
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <View>
-                                <Text style={styles.modalTitle}>Detail Pesanan</Text>
-                                <Text style={styles.modalSubtitle}>{totalItemsCount} ITEM TERPILIH</Text>
-                            </View>
+                    <View style={styles.modalHeader}>
+                        <View>
+                            <Text style={styles.modalTitle}>Detail Pesanan</Text>
+                            <Text style={styles.modalSubtitle}>{totalItemsCount} ITEM TERPILIH</Text>
+                        </View>
+                        <View style={styles.headerActions}>
+                            <TouchableOpacity onPress={handleClearCart} style={[styles.closeBtn, { marginRight: 10 }]}>
+                                <Trash2 size={24} color="#EF4444" />
+                            </TouchableOpacity>
                             <TouchableOpacity onPress={() => setIsCartModalOpen(false)} style={styles.closeBtn}>
                                 <X size={24} color="#64748B" />
                             </TouchableOpacity>
                         </View>
+                    </View>
 
-                        <ScrollView style={styles.modalBody}>
-                            <View style={styles.cartList}>
-                                {cart.map(item => (
-                                    <View key={item.id} style={styles.cartItem}>
-                                        <View style={styles.cartItemLeft}>
-                                            <Text style={styles.cartItemName}>{item.name}</Text>
-                                            <Text style={styles.cartItemPrice}>{formatCurrency(item.price)}</Text>
-                                        </View>
-                                        <View style={styles.cartItemRight}>
-                                            <View style={styles.qtyControl}>
-                                                <TouchableOpacity
-                                                    onPress={() => updateQuantity(item.id, -1)}
-                                                    style={styles.qtyBtn}
-                                                >
-                                                    <Minus size={16} color="#64748B" />
-                                                </TouchableOpacity>
-                                                <Text style={styles.qtyText}>{item.quantity}</Text>
-                                                <TouchableOpacity
-                                                    onPress={() => updateQuantity(item.id, 1)}
-                                                    style={styles.qtyBtn}
-                                                >
-                                                    <Plus size={16} color="#64748B" />
-                                                </TouchableOpacity>
-                                            </View>
+                    <ScrollView style={styles.modalBody} contentContainerStyle={{ paddingBottom: 100 }}>
+                        <View style={styles.cartList}>
+                            {cart.map(item => (
+                                <View key={item.id} style={styles.cartItem}>
+                                    <View style={styles.cartItemLeft}>
+                                        <Text style={styles.cartItemName}>{item.name}</Text>
+                                        <Text style={styles.cartItemPrice}>{formatCurrency(item.price)}</Text>
+                                    </View>
+                                    <View style={styles.cartItemRight}>
+                                        <View style={styles.qtyControl}>
                                             <TouchableOpacity
-                                                onPress={() => removeFromCart(item.id)}
-                                                style={styles.trashBtn}
+                                                onPress={() => updateQuantity(item.id, -1)}
+                                                style={styles.qtyBtn}
                                             >
-                                                <Trash2 size={18} color="#EF4444" />
+                                                <Minus size={16} color="#64748B" />
+                                            </TouchableOpacity>
+                                            <Text style={styles.qtyText}>{item.quantity}</Text>
+                                            <TouchableOpacity
+                                                onPress={() => updateQuantity(item.id, 1)}
+                                                style={styles.qtyBtn}
+                                            >
+                                                <Plus size={16} color="#64748B" />
                                             </TouchableOpacity>
                                         </View>
+                                        <TouchableOpacity
+                                            onPress={() => removeFromCart(item.id)}
+                                            style={styles.trashBtn}
+                                        >
+                                            <Trash2 size={18} color="#EF4444" />
+                                        </TouchableOpacity>
                                     </View>
-                                ))}
-                            </View>
-
-                            <View style={styles.paymentSection}>
-                                <Text style={styles.sectionLabel}>METODE PEMBAYARAN</Text>
-                                <View style={styles.methodGrid}>
-                                    <TouchableOpacity
-                                        style={[styles.methodBtn, paymentMethod === 'tunai' && styles.activeMethod]}
-                                        onPress={() => setPaymentMethod('tunai')}
-                                    >
-                                        <Banknote size={24} color={paymentMethod === 'tunai' ? '#2563EB' : '#64748B'} />
-                                        <Text style={[styles.methodText, paymentMethod === 'tunai' && styles.activeMethodText]}>Tunai</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        style={[styles.methodBtn, paymentMethod === 'transfer' && styles.activeMethod]}
-                                        onPress={() => setPaymentMethod('transfer')}
-                                    >
-                                        <CreditCard size={24} color={paymentMethod === 'transfer' ? '#2563EB' : '#64748B'} />
-                                        <Text style={[styles.methodText, paymentMethod === 'transfer' && styles.activeMethodText]}>Transfer</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        style={[styles.methodBtn, paymentMethod === 'gojek' && styles.activeMethod]}
-                                        onPress={() => setPaymentMethod('gojek')}
-                                    >
-                                        <Smartphone size={24} color={paymentMethod === 'gojek' ? '#2563EB' : '#64748B'} />
-                                        <Text style={[styles.methodText, paymentMethod === 'gojek' && styles.activeMethodText]}>E-Wallet</Text>
-                                    </TouchableOpacity>
                                 </View>
-
-                                {paymentMethod === 'tunai' && (
-                                    <View style={styles.cashInputArea}>
-                                        <Text style={styles.sectionLabel}>UANG DIBAYAR</Text>
-                                        <View style={styles.cashInputWrapper}>
-                                            <Text style={styles.rpPrefix}>Rp</Text>
-                                            <TextInput
-                                                style={styles.cashInput}
-                                                placeholder="0"
-                                                keyboardType="numeric"
-                                                value={cashPaid}
-                                                onChangeText={setCashPaid}
-                                                autoFocus
-                                            />
-                                        </View>
-
-                                        <View style={styles.quickCashRow}>
-                                            {quickCashOptions.map(amount => (
-                                                <TouchableOpacity
-                                                    key={amount}
-                                                    onPress={() => setCashPaid(amount.toString())}
-                                                    style={styles.quickCashBtn}
-                                                >
-                                                    <Text style={styles.quickCashText}>{amount / 1000}k</Text>
-                                                </TouchableOpacity>
-                                            ))}
-                                            <TouchableOpacity
-                                                onPress={() => setCashPaid(subtotal.toString())}
-                                                style={[styles.quickCashBtn, { backgroundColor: '#EFF6FF', borderColor: '#2563EB' }]}
-                                            >
-                                                <Text style={[styles.quickCashText, { color: '#2563EB' }]}>Pas</Text>
-                                            </TouchableOpacity>
-                                        </View>
-
-                                        {parseFloat(cashPaid || 0) >= subtotal && (
-                                            <View style={styles.changeInfo}>
-                                                <Text style={styles.changeLabel}>Kembalian</Text>
-                                                <Text style={styles.changeValue}>{formatCurrency(parseFloat(cashPaid) - subtotal)}</Text>
-                                            </View>
-                                        )}
-                                    </View>
-                                )}
-                            </View>
-                        </ScrollView>
-
-                        <View style={styles.modalFooter}>
-                            <View style={styles.totalRow}>
-                                <Text style={styles.totalLabel}>Total Tagihan</Text>
-                                <Text style={styles.totalValue}>{formatCurrency(subtotal)}</Text>
-                            </View>
-                            <TouchableOpacity
-                                style={[styles.payBtn, (isProcessing || (paymentMethod === 'tunai' && parseFloat(cashPaid || 0) < subtotal)) && styles.disabledBtn]}
-                                disabled={isProcessing || (paymentMethod === 'tunai' && parseFloat(cashPaid || 0) < subtotal)}
-                                onPress={handleProcessTransaction}
-                            >
-                                <Text style={styles.payBtnText}>
-                                    {isProcessing ? 'Memproses...' : 'KONFIRMASI PEMBAYARAN'}
-                                </Text>
-                                {!isProcessing && <Check size={20} color="#FFFFFF" />}
-                            </TouchableOpacity>
+                            ))}
                         </View>
+
+                        <View style={styles.paymentSection}>
+                            <Text style={styles.sectionLabel}>METODE PEMBAYARAN</Text>
+                            <View style={styles.methodGrid}>
+                                <TouchableOpacity
+                                    style={[styles.methodBtn, paymentMethod === 'tunai' && styles.activeMethod]}
+                                    onPress={() => setPaymentMethod('tunai')}
+                                >
+                                    <Banknote size={24} color={paymentMethod === 'tunai' ? '#2563EB' : '#64748B'} />
+                                    <Text style={[styles.methodText, paymentMethod === 'tunai' && styles.activeMethodText]}>Tunai</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.methodBtn, paymentMethod === 'transfer' && styles.activeMethod]}
+                                    onPress={() => setPaymentMethod('transfer')}
+                                >
+                                    <CreditCard size={24} color={paymentMethod === 'transfer' ? '#2563EB' : '#64748B'} />
+                                    <Text style={[styles.methodText, paymentMethod === 'transfer' && styles.activeMethodText]}>Transfer</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.methodBtn, paymentMethod === 'gojek' && styles.activeMethod]}
+                                    onPress={() => setPaymentMethod('gojek')}
+                                >
+                                    <Smartphone size={24} color={paymentMethod === 'gojek' ? '#2563EB' : '#64748B'} />
+                                    <Text style={[styles.methodText, paymentMethod === 'gojek' && styles.activeMethodText]}>E-Wallet</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            {paymentMethod === 'tunai' && (
+                                <View style={styles.cashInputArea}>
+                                    <Text style={styles.sectionLabel}>UANG DIBAYAR</Text>
+                                    <View style={styles.cashInputWrapper}>
+                                        <Text style={styles.rpPrefix}>Rp</Text>
+                                        <TextInput
+                                            style={styles.cashInput}
+                                            placeholder="0"
+                                            keyboardType="numeric"
+                                            value={cashPaid}
+                                            onChangeText={setCashPaid}
+                                            autoFocus
+                                        />
+                                    </View>
+
+                                    <View style={styles.quickCashRow}>
+                                        {quickCashOptions.map(amount => (
+                                            <TouchableOpacity
+                                                key={amount}
+                                                onPress={() => setCashPaid(amount.toString())}
+                                                style={styles.quickCashBtn}
+                                            >
+                                                <Text style={styles.quickCashText}>{amount / 1000}k</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                        <TouchableOpacity
+                                            onPress={() => setCashPaid(subtotal.toString())}
+                                            style={[styles.quickCashBtn, { backgroundColor: '#EFF6FF', borderColor: '#2563EB' }]}
+                                        >
+                                            <Text style={[styles.quickCashText, { color: '#2563EB' }]}>Pas</Text>
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    {parseFloat(cashPaid || 0) >= subtotal && (
+                                        <View style={styles.changeInfo}>
+                                            <Text style={styles.changeLabel}>Kembalian</Text>
+                                            <Text style={styles.changeValue}>{formatCurrency(parseFloat(cashPaid) - subtotal)}</Text>
+                                        </View>
+                                    )}
+                                </View>
+                            )}
+                        </View>
+                    </ScrollView>
+
+                    <View style={styles.modalFooter}>
+                        <View style={styles.totalRow}>
+                            <Text style={styles.totalLabel}>Total Tagihan</Text>
+                            <Text style={styles.totalValue}>{formatCurrency(subtotal)}</Text>
+                        </View>
+                        <TouchableOpacity
+                            style={[styles.payBtn, (isProcessing || (paymentMethod === 'tunai' && parseFloat(cashPaid || 0) < subtotal)) && styles.disabledBtn]}
+                            disabled={isProcessing || (paymentMethod === 'tunai' && parseFloat(cashPaid || 0) < subtotal)}
+                            onPress={handleProcessTransaction}
+                        >
+                            <Text style={styles.payBtnText}>
+                                {isProcessing ? 'Memproses...' : 'KONFIRMASI PEMBAYARAN'}
+                            </Text>
+                            {!isProcessing && <Check size={20} color="#FFFFFF" />}
+                        </TouchableOpacity>
                     </View>
                 </KeyboardAvoidingView>
             </Modal>
@@ -509,7 +588,7 @@ const styles = StyleSheet.create({
     },
     header: {
         backgroundColor: '#FFFFFF',
-        paddingTop: Platform.OS === 'ios' ? 60 : 40,
+        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : (Platform.OS === 'web' ? 15 : 20),
         paddingHorizontal: 20,
         paddingBottom: 15,
         borderBottomWidth: 1,
@@ -580,6 +659,11 @@ const styles = StyleSheet.create({
             web: { boxShadow: '0px 2px 8px rgba(0,0,0,0.05)' },
             android: { elevation: 2 }
         })
+    },
+    selectedProductCard: {
+        borderColor: '#2563EB',
+        borderWidth: 2,
+        backgroundColor: '#F0F7FF',
     },
     outOfStockCard: {
         opacity: 0.6,
@@ -693,21 +777,31 @@ const styles = StyleSheet.create({
             },
             android: { elevation: 10 },
             web: { boxShadow: '0px 10px 15px rgba(0,0,0,0.3)' }
-        })
+        }),
+        zIndex: 100,
     },
     fabInfo: {
         flexDirection: 'row',
         alignItems: 'center',
         flex: 1,
     },
+    fabTrashBtn: {
+        width: 44,
+        height: 44,
+        backgroundColor: 'rgba(239, 68, 68, 0.12)',
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 4,
+    },
     fabCount: {
-        width: 36,
-        height: 36,
+        width: 38,
+        height: 38,
         backgroundColor: '#2563EB',
         borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
-        marginHorizontal: 8,
+        marginHorizontal: 10,
     },
     fabCountText: {
         color: '#FFFFFF',
@@ -752,16 +846,9 @@ const styles = StyleSheet.create({
     },
 
     // Modal Styles
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'flex-end',
-    },
     modalContent: {
         backgroundColor: '#FFFFFF',
-        borderTopLeftRadius: 30,
-        borderTopRightRadius: 30,
-        height: '90%',
+        flex: 1,
         width: '100%',
     },
     modalHeader: {
@@ -769,8 +856,10 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: 24,
+        paddingTop: 15,
         borderBottomWidth: 1,
         borderBottomColor: '#F1F5F9',
+        zIndex: 100,
     },
     modalTitle: {
         fontSize: 22,
@@ -787,6 +876,10 @@ const styles = StyleSheet.create({
         padding: 8,
         backgroundColor: '#F1F5F9',
         borderRadius: 12,
+    },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     modalBody: {
         flex: 1,
@@ -970,9 +1063,22 @@ const styles = StyleSheet.create({
     },
     modalFooter: {
         padding: 24,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 30,
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',
         backgroundColor: '#FFFFFF',
+        zIndex: 999,
+        elevation: 25,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -10 },
+                shadowOpacity: 0.1,
+                shadowRadius: 10,
+            },
+            android: { elevation: 25 },
+            web: { boxShadow: '0px -10px 20px rgba(0,0,0,0.05)' }
+        })
     },
     totalRow: {
         flexDirection: 'row',

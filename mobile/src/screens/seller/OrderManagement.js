@@ -7,7 +7,8 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     Platform,
-    RefreshControl
+    RefreshControl,
+    StatusBar
 } from 'react-native';
 import {
     ChevronLeft,
@@ -20,12 +21,16 @@ import {
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 import SellerOrderCard from '../../components/SellerOrderCard';
+import { useConfirm } from '../../context/ConfirmContext';
+import { useOrderNotification } from '../../context/OrderNotificationContext';
 
 const OrderManagement = ({ navigation }) => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [activeTab, setActiveTab] = useState('pending');
+    const { confirm } = useConfirm();
+    const { refreshTrigger } = useOrderNotification();
 
     const fetchOrders = useCallback(async (isRefresh = false) => {
         if (!isRefresh) setLoading(true);
@@ -42,7 +47,7 @@ const OrderManagement = ({ navigation }) => {
 
     useEffect(() => {
         fetchOrders();
-    }, [fetchOrders]);
+    }, [fetchOrders, refreshTrigger]);
 
     const onRefresh = () => {
         setRefreshing(true);
@@ -60,13 +65,15 @@ const OrderManagement = ({ navigation }) => {
 
     const tabs = [
         { id: 'pending', label: 'Baru', icon: Clock },
-        { id: 'accepted', label: 'Diterima', icon: CheckCircle },
+        { id: 'accepted', label: 'Diproses', icon: ShoppingBag },
+        { id: 'completed', label: 'Selesai', icon: CheckCircle },
         { id: 'rejected', label: 'Ditolak', icon: XCircle },
         { id: 'cancelled', label: 'Batal', icon: Slash },
     ];
 
     return (
         <View style={styles.container}>
+            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -122,8 +129,39 @@ const OrderManagement = ({ navigation }) => {
                     renderItem={({ item }) => (
                         <SellerOrderCard
                             order={item}
-                            onAccept={activeTab === 'pending' ? () => handleUpdateStatus(item.id, 'accepted') : null}
-                            onReject={activeTab === 'pending' ? () => handleUpdateStatus(item.id, 'rejected') : null}
+                            onAccept={activeTab === 'pending' ? async () => {
+                                const accepted = await confirm({
+                                    title: 'Terima Pesanan',
+                                    message: `Terima pesanan dari ${item.customer_name}?`,
+                                    confirmText: 'Ya, Terima',
+                                    type: 'primary'
+                                });
+                                if (accepted) {
+                                    handleUpdateStatus(item.id, 'accepted');
+                                }
+                            } : null}
+                            onComplete={activeTab === 'accepted' ? async () => {
+                                const completed = await confirm({
+                                    title: 'Selesaikan Pesanan',
+                                    message: `Pesanan #${item.id} sudah selesai dan siap diambil/diantar?`,
+                                    confirmText: 'Ya, Selesai',
+                                    type: 'primary'
+                                });
+                                if (completed) {
+                                    handleUpdateStatus(item.id, 'completed');
+                                }
+                            } : null}
+                            onReject={activeTab === 'pending' || activeTab === 'accepted' ? async () => {
+                                const rejected = await confirm({
+                                    title: 'Batalkan Pesanan',
+                                    message: `Apakah Anda yakin ingin membatalkan pesanan #${item.id}?`,
+                                    confirmText: 'Ya, Batalkan',
+                                    type: 'danger'
+                                });
+                                if (rejected) {
+                                    handleUpdateStatus(item.id, 'cancelled');
+                                }
+                            } : null}
                         />
                     )}
                 />
@@ -142,7 +180,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 20,
-        paddingTop: Platform.OS === 'ios' ? 60 : 40,
+        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : (Platform.OS === 'web' ? 15 : 20),
         paddingBottom: 20,
         backgroundColor: '#FFFFFF',
     },

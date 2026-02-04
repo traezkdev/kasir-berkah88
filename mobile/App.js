@@ -6,6 +6,11 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ToastProvider } from './src/context/ToastContext';
+import { OrderNotificationProvider } from './src/context/OrderNotificationContext';
+import { ConfirmProvider } from './src/context/ConfirmContext';
+import { ChatProvider } from './src/context/ChatContext';
+import { CartProvider } from './src/context/CartContext';
+import { AppSettingsProvider } from './src/context/AppSettingsContext';
 
 const MainApp = () => {
   const { user, loading } = useAuth();
@@ -34,11 +39,21 @@ const MainApp = () => {
 export default function App() {
   return (
     <ToastProvider>
-      <SafeAreaProvider>
-        <AuthProvider>
-          <MainApp />
-        </AuthProvider>
-      </SafeAreaProvider>
+      <ConfirmProvider>
+        <SafeAreaProvider>
+          <AppSettingsProvider>
+            <AuthProvider>
+              <OrderNotificationProvider>
+                <CartProvider>
+                  <ChatProvider>
+                    <MainApp />
+                  </ChatProvider>
+                </CartProvider>
+              </OrderNotificationProvider>
+            </AuthProvider>
+          </AppSettingsProvider>
+        </SafeAreaProvider>
+      </ConfirmProvider>
     </ToastProvider>
   );
 }

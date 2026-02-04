@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
 import Icon from '../../../components/AppIcon';
 import authFetch from '../../../utils/authFetch';
 import { useChat } from '../../../contexts/ChatContext';
@@ -56,7 +57,22 @@ const CustomerOrderConfirmation = () => {
 
     useEffect(() => {
         fetchOrders(1);
-    }, [fetchOrders]);
+
+        // Socket.io Realtime Implementation
+        const socket = io(API_URL, {
+            transports: ['websocket'],
+            forceNew: true
+        });
+
+        socket.on('order_update', (data) => {
+            console.log('Realtime Order Update (Customer Tracking):', data);
+            fetchOrders(1);
+        });
+
+        return () => {
+            socket.disconnect();
+        };
+    }, [fetchOrders, API_URL]);
 
     const formatCurrency = (val) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);

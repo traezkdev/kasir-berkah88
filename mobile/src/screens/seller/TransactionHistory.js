@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
     StyleSheet,
     Text,
@@ -10,7 +10,10 @@ import {
     TextInput,
     Dimensions,
     RefreshControl,
-    Modal
+    Modal,
+    Pressable,
+    Animated,
+    StatusBar
 } from 'react-native';
 import {
     ChevronLeft,
@@ -18,12 +21,13 @@ import {
     RefreshCw,
     Search,
     Wallet,
-    Receipt,
-    TrendingUp,
     Calendar,
     ChevronRight,
     X,
-    MapPin
+    MapPin,
+    Download,
+    TrendingUp,
+    Receipt
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 import ReceiptModal from '../../components/ReceiptModal';
@@ -33,47 +37,88 @@ const { width } = Dimensions.get('window');
 const TransactionHistory = ({ navigation }) => {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [selectedTx, setSelectedTx] = useState(null);
     const [showReceipt, setShowReceipt] = useState(false);
 
-    const fetchTransactions = async (isRefresh = false) => {
-        if (!isRefresh) setLoading(true);
+    // Pagination state
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const [totalAmount, setTotalAmount] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+
+    const fetchTransactions = useCallback(async (pageNum = 1, isRefresh = false, search = '') => {
+        if (pageNum === 1 && !isRefresh) setLoading(true);
+        if (pageNum > 1) setLoadingMore(true);
+
         try {
-            const response = await apiService.get('/api/transactions?limit=1000');
+            const response = await apiService.get(`/api/transactions?page=${pageNum}&limit=10&search=${search}`);
             if (response.data && response.data.message === 'success') {
-                const parsedData = response.data.data.map(t => ({
+                const newData = response.data.data.map(t => ({
                     ...t,
                     timestamp: new Date(t.timestamp),
                     items: typeof t.items === 'string' ? JSON.parse(t.items || '[]') : (t.items || [])
                 }));
-                // Sort newest first
-                parsedData.sort((a, b) => b.timestamp - a.timestamp);
-                setTransactions(parsedData);
+
+                if (pageNum === 1) {
+                    setTransactions(newData);
+                } else {
+                    setTransactions(prev => [...prev, ...newData]);
+                }
+
+                const pagination = response.data.pagination;
+                setTotalPages(pagination.totalPages);
+                setTotalItems(pagination.totalItems);
+                setTotalAmount(pagination.totalAmount || 0);
+                setHasMore(pageNum < pagination.totalPages);
             }
         } catch (error) {
             console.error('Error fetching transactions:', error);
         } finally {
             setLoading(false);
+            setLoadingMore(false);
             setRefreshing(false);
         }
-    };
-
-    useEffect(() => {
-        fetchTransactions();
     }, []);
+
+    // Debounce search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    // Fetch when page or debounced search changes
+    useEffect(() => {
+        setPage(1);
+        fetchTransactions(1, false, debouncedSearch);
+    }, [debouncedSearch, fetchTransactions]);
 
     const onRefresh = () => {
         setRefreshing(true);
-        fetchTransactions(true);
+        setPage(1);
+        fetchTransactions(1, true, debouncedSearch);
+    };
+
+    const handleLoadMore = () => {
+        if (!loadingMore && hasMore && !loading) {
+            const nextPage = page + 1;
+            setPage(nextPage);
+            fetchTransactions(nextPage, false, debouncedSearch);
+        }
     };
 
     const formatCurrency = (val) => {
-        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val || 0);
     };
 
     const formatDate = (date) => {
+        if (!date) return '-';
         return new Intl.DateTimeFormat('id-ID', {
             day: 'numeric',
             month: 'short',
@@ -83,62 +128,93 @@ const TransactionHistory = ({ navigation }) => {
         }).format(date);
     };
 
-    const filteredTransactions = useMemo(() => {
-        return transactions.filter(t =>
-            t.id.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
-            t.items.some(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
-        );
-    }, [transactions, searchTerm]);
+    const TransactionCard = ({ item, setSelectedTx, formatDate, formatCurrency }) => {
+        const scale = React.useRef(new Animated.Value(1)).current;
 
-    const stats = useMemo(() => {
-        const total = filteredTransactions.reduce((acc, curr) => acc + parseFloat(curr.total || 0), 0);
-        const count = filteredTransactions.length;
-        return { total, count };
-    }, [filteredTransactions]);
+        const handlePressIn = () => {
+            Animated.spring(scale, {
+                toValue: 0.98,
+                useNativeDriver: Platform.OS !== 'web',
+                speed: 50,
+                bounciness: 4
+            }).start();
+        };
+
+        const handlePressOut = () => {
+            Animated.spring(scale, {
+                toValue: 1,
+                useNativeDriver: Platform.OS !== 'web',
+                speed: 50,
+                bounciness: 4
+            }).start();
+        };
+
+        return (
+            <Pressable
+                onPressIn={handlePressIn}
+                onPressOut={handlePressOut}
+                onPress={() => setSelectedTx(item)}
+            >
+                <Animated.View style={[styles.txCard, { transform: [{ scale }] }]}>
+                    <View style={styles.cardHeader}>
+                        <View>
+                            <View style={styles.idBadge}>
+                                <Text style={styles.idText}>#{item.id}</Text>
+                            </View>
+                            <Text style={styles.dateText}>{formatDate(item.timestamp)}</Text>
+                        </View>
+                        <View style={[styles.methodBadge, { backgroundColor: (item.payment_method?.toLowerCase() === 'cash' || item.payment_method?.toLowerCase() === 'tunai') ? '#F0FDF4' : '#EFF6FF' }]}>
+                            <Text style={[styles.methodText, { color: (item.payment_method?.toLowerCase() === 'cash' || item.payment_method?.toLowerCase() === 'tunai') ? '#166534' : '#1E40AF' }]}>
+                                {(item.payment_method || 'Tunai').toUpperCase()}
+                            </Text>
+                        </View>
+                    </View>
+
+                    <View style={styles.divider} />
+
+                    <View style={styles.itemsPreview}>
+                        {item.items.slice(0, 2).map((prod, idx) => (
+                            <View key={idx} style={styles.previewRow}>
+                                <Text style={styles.previewName} numberOfLines={1}>{prod.name}</Text>
+                                <Text style={styles.previewQty}>x{prod.qty || prod.quantity || 1}</Text>
+                            </View>
+                        ))}
+                        {item.items.length > 2 && (
+                            <Text style={styles.moreItemsText}>+ {item.items.length - 2} item lainnya</Text>
+                        )}
+                    </View>
+
+                    <View style={styles.cardFooter}>
+                        <Text style={styles.totalLabel}>Total Bayar</Text>
+                        <Text style={styles.totalValue}>{formatCurrency(item.total)}</Text>
+                    </View>
+                </Animated.View>
+            </Pressable>
+        );
+    };
 
     const renderItem = ({ item }) => (
-        <TouchableOpacity
-            style={styles.txCard}
-            onPress={() => setSelectedTx(item)}
-            activeOpacity={0.7}
-        >
-            <View style={styles.cardHeader}>
-                <View>
-                    <View style={styles.idBadge}>
-                        <Text style={styles.idText}>#{item.id}</Text>
-                    </View>
-                    <Text style={styles.dateText}>{formatDate(item.timestamp)}</Text>
-                </View>
-                <View style={[styles.methodBadge, { backgroundColor: item.payment_method === 'cash' ? '#F0FDF4' : '#EFF6FF' }]}>
-                    <Text style={[styles.methodText, { color: item.payment_method === 'cash' ? '#166534' : '#1E40AF' }]}>
-                        {(item.payment_method || 'Tunai').toUpperCase()}
-                    </Text>
-                </View>
-            </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.itemsPreview}>
-                {item.items.slice(0, 2).map((prod, idx) => (
-                    <View key={idx} style={styles.previewRow}>
-                        <Text style={styles.previewName} numberOfLines={1}>{prod.name}</Text>
-                        <Text style={styles.previewQty}>x{prod.qty || prod.quantity || 1}</Text>
-                    </View>
-                ))}
-                {item.items.length > 2 && (
-                    <Text style={styles.moreItemsText}>+ {item.items.length - 2} item lainnya</Text>
-                )}
-            </View>
-
-            <View style={styles.cardFooter}>
-                <Text style={styles.totalLabel}>Total Bayar</Text>
-                <Text style={styles.totalValue}>{formatCurrency(item.total)}</Text>
-            </View>
-        </TouchableOpacity>
+        <TransactionCard
+            item={item}
+            setSelectedTx={setSelectedTx}
+            formatDate={formatDate}
+            formatCurrency={formatCurrency}
+        />
     );
+
+    const renderFooter = () => {
+        if (!loadingMore) return <View style={{ height: 20 }} />;
+        return (
+            <View style={styles.loaderFooter}>
+                <ActivityIndicator size="small" color="#1E40AF" />
+                <Text style={styles.loaderText}>Memuat lebih banyak...</Text>
+            </View>
+        );
+    };
 
     return (
         <View style={styles.container}>
+            <StatusBar barStyle="light-content" backgroundColor="#1E40AF" />
             {/* Native Fixed Header Bar */}
             <View style={styles.topNavbar}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -146,7 +222,7 @@ const TransactionHistory = ({ navigation }) => {
                 </TouchableOpacity>
                 <View>
                     <Text style={styles.headerTitle}>Riwayat Transaksi</Text>
-                    <Text style={styles.headerSubtitle}>{stats.count} Transaksi tercatat</Text>
+                    <Text style={styles.headerSubtitle}>{totalItems} Transaksi tercatat</Text>
                 </View>
             </View>
 
@@ -157,7 +233,7 @@ const TransactionHistory = ({ navigation }) => {
                         <View style={styles.mainStat}>
                             <View>
                                 <Text style={styles.statLabel}>TOTAL PENDAPATAN</Text>
-                                <Text style={styles.statValue}>{formatCurrency(stats.total)}</Text>
+                                <Text style={styles.statValue}>{formatCurrency(totalAmount)}</Text>
                             </View>
                             <View style={styles.statIconContainer}>
                                 <TrendingUp size={24} color="#FFFFFF" />
@@ -172,7 +248,7 @@ const TransactionHistory = ({ navigation }) => {
                 <View style={styles.searchBar}>
                     <Search size={18} color="#94A3B8" />
                     <TextInput
-                        placeholder="Cari transaksi..."
+                        placeholder="Cari ID atau Menu..."
                         style={styles.searchInput}
                         value={searchTerm}
                         onChangeText={setSearchTerm}
@@ -186,17 +262,20 @@ const TransactionHistory = ({ navigation }) => {
             </View>
 
             {/* Content */}
-            {loading && !refreshing ? (
+            {loading ? (
                 <View style={styles.loadingArea}>
                     <ActivityIndicator size="large" color="#1E40AF" />
                 </View>
             ) : (
                 <FlatList
-                    data={filteredTransactions}
+                    data={transactions}
                     keyExtractor={item => item.id.toString()}
                     contentContainerStyle={styles.listContainer}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#1E40AF']} />}
                     renderItem={renderItem}
+                    onEndReached={handleLoadMore}
+                    onEndReachedThreshold={0.5}
+                    ListFooterComponent={renderFooter}
                     ListEmptyComponent={
                         <View style={styles.emptyArea}>
                             <Receipt size={60} color="#E2E8F0" />
@@ -210,74 +289,71 @@ const TransactionHistory = ({ navigation }) => {
             <Modal
                 visible={!!selectedTx}
                 animationType="slide"
-                transparent={true}
+                transparent={false}
                 onRequestClose={() => setSelectedTx(null)}
             >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <View>
-                                <Text style={styles.modalTitle}>Detail Transaksi</Text>
-                                <Text style={styles.modalId}>#{selectedTx?.id}</Text>
-                            </View>
-                            <TouchableOpacity onPress={() => setSelectedTx(null)} style={styles.closeBtn}>
-                                <X size={20} color="#94A3B8" />
-                            </TouchableOpacity>
+                <View style={styles.modalContent}>
+                    <View style={styles.modalHeader}>
+                        <View>
+                            <Text style={styles.modalTitle}>Detail Transaksi</Text>
+                            <Text style={styles.modalId}>#{selectedTx?.id}</Text>
                         </View>
+                        <TouchableOpacity onPress={() => setSelectedTx(null)} style={styles.closeBtn}>
+                            <X size={20} color="#94A3B8" />
+                        </TouchableOpacity>
+                    </View>
 
-                        <View style={{ flex: 1 }}>
-                            <FlatList
-                                data={selectedTx?.items || []}
-                                keyExtractor={(_, i) => i.toString()}
-                                style={styles.modalScroll}
-                                ListHeaderComponent={() => (
-                                    <View style={styles.txInfoCard}>
-                                        <View style={styles.txInfoRow}>
-                                            <Text style={styles.txInfoLabel}>Waktu</Text>
-                                            <Text style={styles.txInfoValue}>{selectedTx ? formatDate(selectedTx.timestamp) : ''}</Text>
+                    <View style={{ flex: 1 }}>
+                        <FlatList
+                            data={selectedTx?.items || []}
+                            keyExtractor={(_, i) => i.toString()}
+                            style={styles.modalScroll}
+                            contentContainerStyle={{ paddingBottom: 24 }}
+                            ListHeaderComponent={() => (
+                                <View style={styles.txInfoCard}>
+                                    <View style={styles.txInfoRow}>
+                                        <Text style={styles.txInfoLabel}>Waktu</Text>
+                                        <Text style={styles.txInfoValue}>{selectedTx ? formatDate(selectedTx.timestamp) : ''}</Text>
+                                    </View>
+                                    <View style={styles.txInfoRow}>
+                                        <Text style={styles.txInfoLabel}>Metode Pembayaran</Text>
+                                        <Text style={[styles.txInfoValue, { color: '#1E40AF', fontWeight: '900' }]}>{(selectedTx?.payment_method || 'Tunai').toUpperCase()}</Text>
+                                    </View>
+                                </View>
+                            )}
+                            renderItem={({ item }) => (
+                                <View style={styles.modalItemRow}>
+                                    <View style={styles.modalItemLeft}>
+                                        <View style={styles.modalQtyBadge}>
+                                            <Text style={styles.modalQtyText}>x{item.qty || item.quantity || 1}</Text>
                                         </View>
-                                        <View style={styles.txInfoRow}>
-                                            <Text style={styles.txInfoLabel}>Metode Pembayaran</Text>
-                                            <Text style={[styles.txInfoValue, { color: '#1E40AF', fontWeight: '900' }]}>{(selectedTx?.payment_method || 'Tunai').toUpperCase()}</Text>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.modalItemName}>{item.name}</Text>
+                                            <Text style={styles.modalItemPrice}>@{formatCurrency(item.price)}</Text>
                                         </View>
                                     </View>
-                                )}
-                                renderItem={({ item }) => (
-                                    <View style={styles.modalItemRow}>
-                                        <View style={styles.modalItemLeft}>
-                                            <View style={styles.modalQtyBadge}>
-                                                <Text style={styles.modalQtyText}>x{item.qty || item.quantity || 1}</Text>
-                                            </View>
-                                            <View style={{ flex: 1 }}>
-                                                <Text style={styles.modalItemName}>{item.name}</Text>
-                                                <Text style={styles.modalItemPrice}>@{formatCurrency(item.price)}</Text>
-                                            </View>
-                                        </View>
-                                        <Text style={styles.modalItemSubtotal}>{formatCurrency(item.price * (item.qty || item.quantity || 1))}</Text>
-                                    </View>
-                                )}
-                                ListFooterComponent={() => (
-                                    <View style={styles.modalFooter}>
-                                        <View style={styles.totalRow}>
-                                            <Text style={styles.grandTotalLabel}>Total Bayar</Text>
-                                            <Text style={styles.grandTotalValue}>{selectedTx ? formatCurrency(selectedTx.total) : '0'}</Text>
-                                        </View>
-                                        <TouchableOpacity
-                                            style={styles.printBtn}
-                                            onPress={() => setShowReceipt(true)}
-                                        >
-                                            <Receipt size={20} color="#FFFFFF" />
-                                            <Text style={styles.printBtnText}>Cetak Struk</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                )}
-                            />
+                                    <Text style={styles.modalItemSubtotal}>{formatCurrency(item.price * (item.qty || item.quantity || 1))}</Text>
+                                </View>
+                            )}
+                        />
+                    </View>
+
+                    <View style={styles.modalFooter}>
+                        <View style={styles.totalRow}>
+                            <Text style={styles.grandTotalLabel}>Total Bayar</Text>
+                            <Text style={styles.grandTotalValue}>{selectedTx ? formatCurrency(selectedTx.total) : '0'}</Text>
                         </View>
+                        <TouchableOpacity
+                            style={styles.printBtn}
+                            onPress={() => setShowReceipt(true)}
+                        >
+                            <Download size={20} color="#FFFFFF" />
+                            <Text style={styles.printBtnText}>Unduh Struk</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
             </Modal>
 
-            {/* Receipt Preview Modal */}
             <ReceiptModal
                 visible={showReceipt}
                 onClose={() => setShowReceipt(false)}
@@ -344,16 +420,22 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 5,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 5,
+            },
+            android: { elevation: 4 },
+            web: { boxShadow: '0px 4px 5px rgba(0,0,0,0.2)' }
+        })
     },
     topNavbar: {
         backgroundColor: '#1E40AF',
         flexDirection: 'row',
         alignItems: 'center',
-        paddingTop: Platform.OS === 'ios' ? 60 : 40,
+        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : (Platform.OS === 'web' ? 15 : 20),
         paddingBottom: 20,
         paddingHorizontal: 20,
         zIndex: 10,
@@ -363,22 +445,22 @@ const styles = StyleSheet.create({
     },
     heroBackground: {
         backgroundColor: '#1E40AF',
-        paddingBottom: 60, // Sesuaikan padding agar proporsional
+        paddingBottom: 60,
         paddingHorizontal: 20,
         borderBottomLeftRadius: 48,
         borderBottomRightRadius: 48,
         marginTop: -1,
-        position: 'relative', // Penting untuk koordinat kartu melayang
+        position: 'relative',
     },
     statsContainer: {
         position: 'absolute',
-        bottom: -35, // Membuat kartu berada di tengah antara biru dan putih
+        bottom: -35,
         left: 20,
         right: 20,
-        zIndex: 20, // Memastikan berada di atas filter section
+        zIndex: 20,
     },
     filterSection: {
-        marginTop: 55, // Memberikan ruang agar tidak tertutup kartu melayang
+        marginTop: 55,
         paddingHorizontal: 20,
         flexDirection: 'row',
         gap: 10,
@@ -531,23 +613,30 @@ const styles = StyleSheet.create({
         color: '#94A3B8',
         fontWeight: 'bold',
     },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'flex-end',
+    loaderFooter: {
+        paddingVertical: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        gap: 10,
+    },
+    loaderText: {
+        fontSize: 13,
+        color: '#64748B',
+        fontWeight: 'bold',
     },
     modalContent: {
         backgroundColor: '#FFFFFF',
-        borderTopLeftRadius: 32,
-        borderTopRightRadius: 32,
-        height: '90%',
+        flex: 1,
         width: '100%',
+        flexDirection: 'column',
     },
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: 24,
+        paddingTop: 15,
         borderBottomWidth: 1,
         borderBottomColor: '#F1F5F9',
     },
@@ -635,16 +724,29 @@ const styles = StyleSheet.create({
         marginLeft: 10,
     },
     modalFooter: {
-        paddingVertical: 24,
+        paddingHorizontal: 24,
+        paddingTop: 16,
+        paddingBottom: Platform.OS === 'ios' ? 35 : 25,
         borderTopWidth: 1,
         borderColor: '#F1F5F9',
-        marginTop: 8,
+        backgroundColor: '#FFFFFF',
+        zIndex: 999,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -10 },
+                shadowOpacity: 0.1,
+                shadowRadius: 10,
+            },
+            android: { elevation: 25 },
+            web: { boxShadow: '0px -10px 20px rgba(0,0,0,0.05)' }
+        })
     },
     totalRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: 12,
     },
     grandTotalLabel: {
         fontSize: 16,
@@ -658,13 +760,12 @@ const styles = StyleSheet.create({
     },
     printBtn: {
         backgroundColor: '#1E40AF',
-        height: 56,
-        borderRadius: 18,
+        height: 50,
+        borderRadius: 16,
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
         gap: 10,
-        marginBottom: 30,
     },
     printBtnText: {
         color: '#FFFFFF',

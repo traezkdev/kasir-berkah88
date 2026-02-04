@@ -13,9 +13,11 @@ import {
     ActivityIndicator,
     Alert
 } from 'react-native';
-import { X, Printer, Share2, CheckCircle2, ShoppingCart, MessageSquare, Zap, ShieldCheck } from 'lucide-react-native';
+import { X, Printer, Share2, CheckCircle2, ShoppingCart, MessageSquare, Zap, ShieldCheck, Download } from 'lucide-react-native';
 import apiService, { API_URL } from '../api/apiService';
-import BluetoothPrinter from '../utils/BluetoothPrinter';
+import { captureRef } from 'react-native-view-shot';
+import * as MediaLibrary from 'expo-media-library';
+import * as Sharing from 'expo-sharing'; // Import Sharing
 
 const { width } = Dimensions.get('window');
 
@@ -26,7 +28,8 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
         restaurant_url: 'www.berkah88.id',
     });
     const [logoUrl, setLogoUrl] = useState(null);
-    const [isPrinting, setIsPrinting] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const receiptRef = React.useRef();
 
     useEffect(() => {
         if (visible) {
@@ -34,14 +37,54 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
         }
     }, [visible]);
 
-    const handlePrint = async () => {
+    const handleSaveImage = async () => {
         try {
-            setIsPrinting(true);
-            await BluetoothPrinter.printReceipt(settings, transaction);
+            setIsSaving(true);
+
+            if (Platform.OS === 'web') {
+                const html2canvas = require('html2canvas');
+                // Pada React Native Web, ref.current adalah elemen DOM
+                const canvas = await html2canvas(receiptRef.current, {
+                    backgroundColor: '#FFFFFF', // Set White background explicit for download
+                    scale: 2 // Higher resolution
+                });
+
+                const uri = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = `struk-${transaction.id}.png`;
+                link.href = uri;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                // Native Logic
+                const { captureRef } = require('react-native-view-shot');
+                const MediaLibrary = require('expo-media-library');
+
+                // Request permission
+                const { status } = await MediaLibrary.requestPermissionsAsync();
+
+                if (status !== 'granted') {
+                    Alert.alert('Izin Ditolak', 'Mohon izinkan akses galeri untuk menyimpan struk.');
+                    setIsSaving(false);
+                    return;
+                }
+
+                const uri = await captureRef(receiptRef, {
+                    format: 'png',
+                    quality: 1,
+                    result: 'tmpfile',
+                    backgroundColor: '#FFFFFF'
+                });
+
+                await MediaLibrary.saveToLibraryAsync(uri);
+                Alert.alert('Sukses', 'Struk berhasil disimpan ke galeri!');
+            }
         } catch (error) {
-            Alert.alert('Gagal Mencetak', error.message || 'Terjadi kesalahan saat membuat struk.');
+            console.error('Error saving receipt:', error);
+            Alert.alert('Gagal', 'Terjadi kesalahan saat menyimpan struk.');
         } finally {
-            setIsPrinting(false);
+            setIsSaving(false);
         }
     };
 
@@ -81,6 +124,39 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
         }).format(val || 0);
     };
 
+    const handleShareImage = async () => {
+        try {
+            if (Platform.OS === 'web') {
+                // Web Share API
+                if (navigator.share) {
+                    await handleShareText(); // Fallback to text share for web simplicity or implement blob share
+                } else {
+                    Alert.alert('Info', 'Fitur share tidak didukung di browser ini.');
+                }
+                return;
+            }
+
+            // Native Share Image
+            const { captureRef } = require('react-native-view-shot');
+            const uri = await captureRef(receiptRef, {
+                format: 'png',
+                quality: 1,
+                result: 'tmpfile',
+                backgroundColor: '#FFFFFF'
+            });
+
+            if (!(await Sharing.isAvailableAsync())) {
+                Alert.alert('Gagal', 'Fitur sharing tidak tersedia di perangkat ini.');
+                return;
+            }
+
+            await Sharing.shareAsync(uri);
+        } catch (error) {
+            console.error('Error sharing receipt:', error);
+            Alert.alert('Gagal', 'Terjadi kesalahan saat membagikan struk.');
+        }
+    };
+
     const handleShareText = async () => {
         let message = `*${settings.restaurant_name.toUpperCase()}*\n`;
         message += `${settings.restaurant_slogan}\n`;
@@ -112,149 +188,160 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
         <Modal
             visible={visible}
             animationType="slide"
-            transparent={true}
+            transparent={false}
             onRequestClose={onClose}
         >
-            <View style={styles.overlay}>
-                <View style={styles.modalContainer}>
-                    <View style={styles.topHeader}>
-                        <Text style={styles.topHeaderText}>Bukti Transaksi</Text>
-                        <TouchableOpacity onPress={onClose} style={styles.closeHeaderBtn}>
-                            <X size={20} color="#FFFFFF" />
-                        </TouchableOpacity>
-                    </View>
+            <View style={styles.modalContainer}>
+                <View style={styles.topHeader}>
+                    <Text style={styles.topHeaderText}>Bukti Transaksi</Text>
+                    <TouchableOpacity onPress={onClose} style={styles.closeHeaderBtn}>
+                        <X size={20} color="#64748B" />
+                    </TouchableOpacity>
+                </View>
 
-                    <ScrollView style={styles.scrollBody} showsVerticalScrollIndicator={false}>
-                        <View style={styles.receiptBody}>
-                            <View style={styles.receiptHeader}>
-                                <View style={styles.logoContainer}>
-                                    {logoUrl ? (
-                                        <Image source={{ uri: logoUrl }} style={styles.logoImage} />
-                                    ) : (
-                                        <View style={styles.logoPlaceholder}>
-                                            <Text style={styles.logoText}>{settings.restaurant_name.charAt(0)}</Text>
-                                        </View>
-                                    )}
-                                </View>
-                                <Text style={styles.restaurantName}>{settings.restaurant_name}</Text>
-                                <Text style={styles.restaurantSlogan}>{settings.restaurant_slogan.toUpperCase()}</Text>
-
-                                <View style={styles.dividerRow}>
-                                    <View style={styles.dividerLine} />
-                                    <View style={styles.dividerDot} />
-                                    <View style={styles.dividerLine} />
-                                </View>
-                            </View>
-
-                            <View style={styles.infoBar}>
-                                <View>
-                                    <Text style={styles.infoLabel}>ID REFERENSI</Text>
-                                    <View style={styles.idRow}>
-                                        <View style={styles.activeDot} />
-                                        <Text style={styles.idValue}>#{transaction.id.toString().slice(-6).toUpperCase()}</Text>
+                <ScrollView
+                    style={styles.scrollBody}
+                    showsVerticalScrollIndicator={false}
+                    decelerationRate="fast"
+                    scrollEventThrottle={16}
+                >
+                    <View style={[styles.receiptBody, { backgroundColor: '#FFFFFF' }]} ref={receiptRef} collapsable={false}>
+                        <View style={[styles.receiptHeader, { backgroundColor: '#FFFFFF' }]}>
+                            <View style={[
+                                styles.logoContainer,
+                                logoUrl && {
+                                    backgroundColor: 'transparent',
+                                    elevation: 0,
+                                    shadowOpacity: 0,
+                                    borderWidth: 0
+                                }
+                            ]}>
+                                {logoUrl ? (
+                                    <Image source={{ uri: logoUrl }} style={styles.logoImage} />
+                                ) : (
+                                    <View style={styles.logoPlaceholder}>
+                                        <Text style={styles.logoText}>{settings.restaurant_name.charAt(0)}</Text>
                                     </View>
-                                </View>
-                                <View style={styles.infoRight}>
-                                    <Text style={styles.infoLabel}>WAKTU</Text>
-                                    <Text style={styles.dateValue}>{formatDate(transaction.timestamp)}</Text>
+                                )}
+                            </View>
+                            <Text style={styles.restaurantName}>{settings.restaurant_name}</Text>
+                            <Text style={styles.restaurantSlogan}>{settings.restaurant_slogan.toUpperCase()}</Text>
+
+                            <View style={styles.dividerRow}>
+                                <View style={styles.dividerLine} />
+                                <View style={styles.dividerDot} />
+                                <View style={styles.dividerLine} />
+                            </View>
+                        </View>
+
+                        <View style={styles.infoBar}>
+                            <View>
+                                <Text style={styles.infoLabel}>ID REFERENSI</Text>
+                                <View style={styles.idRow}>
+                                    <View style={styles.activeDot} />
+                                    <Text style={styles.idValue}>#{transaction.id.toString().slice(-6).toUpperCase()}</Text>
                                 </View>
                             </View>
-
-                            <View style={styles.sectionHeader}>
-                                <View style={styles.sectionTitleRow}>
-                                    <ShoppingCart size={14} color="#1E40AF" />
-                                    <Text style={styles.sectionTitle}>DETAIL PEMBELIAN</Text>
-                                </View>
-                                <View style={styles.itemCountBadge}>
-                                    <Text style={styles.itemCountText}>{(transaction.items || []).length} ITEM</Text>
-                                </View>
+                            <View style={styles.infoRight}>
+                                <Text style={styles.infoLabel}>WAKTU</Text>
+                                <Text style={styles.dateValue}>{formatDate(transaction.timestamp)}</Text>
                             </View>
+                        </View>
 
-                            <View style={styles.itemsContainer}>
-                                {(transaction.items || []).map((item, index) => (
-                                    <View key={index} style={styles.itemRow}>
-                                        <View style={styles.itemLeft}>
-                                            <View style={styles.itemIndicator} />
-                                            <View>
-                                                <View style={styles.itemNameRow}>
-                                                    <Text style={styles.itemName}>{item.name}</Text>
-                                                    <View style={styles.itemQtyBadge}>
-                                                        <Text style={styles.itemQtyText}>x{item.quantity || item.qty}</Text>
-                                                    </View>
+                        <View style={styles.sectionHeader}>
+                            <View style={styles.sectionTitleRow}>
+                                <ShoppingCart size={14} color="#1E40AF" />
+                                <Text style={styles.sectionTitle}>DETAIL PEMBELIAN</Text>
+                            </View>
+                            <View style={styles.itemCountBadge}>
+                                <Text style={styles.itemCountText}>{(transaction.items || []).length} ITEM</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.itemsContainer}>
+                            {(transaction.items || []).map((item, index) => (
+                                <View key={index} style={styles.itemRow}>
+                                    <View style={styles.itemLeft}>
+                                        <View style={styles.itemIndicator} />
+                                        <View>
+                                            <View style={styles.itemNameRow}>
+                                                <Text style={styles.itemName}>{item.name}</Text>
+                                                <View style={styles.itemQtyBadge}>
+                                                    <Text style={styles.itemQtyText}>x{item.quantity || item.qty}</Text>
                                                 </View>
                                             </View>
                                         </View>
-                                        <View style={styles.itemRight}>
-                                            <Text style={styles.itemSublabel}>Subtotal</Text>
-                                            <Text style={styles.itemPriceText}>{formatCurrency(item.price * (item.quantity || item.qty))}</Text>
-                                        </View>
                                     </View>
-                                ))}
-                            </View>
-
-                            <View style={styles.summaryCard}>
-                                <View style={styles.summaryGlow} />
-                                <View style={styles.summaryContent}>
-                                    <View style={styles.summaryRow}>
-                                        <Text style={styles.summaryLabel}>Harga Dasar</Text>
-                                        <Text style={styles.summaryValue}>{formatCurrency(transaction.total - (transaction.ppn || 0))}</Text>
-                                    </View>
-                                    <View style={styles.thickDivider} />
-                                    <View style={styles.totalSection}>
-                                        <Text style={styles.totalLabel}>TOTAL TAGIHAN</Text>
-                                        <View style={styles.totalValueRow}>
-                                            <Text style={styles.rpLabel}>Rp</Text>
-                                            <Text style={styles.totalFinalValue}>{formatCurrency(transaction.total).replace('Rp', '').trim()}</Text>
-                                        </View>
-                                        <View style={styles.successBadge}>
-                                            <CheckCircle2 size={12} color="#FFFFFF" strokeWidth={3} />
-                                            <Text style={styles.successText}>PEMBAYARAN BERHASIL</Text>
-                                        </View>
+                                    <View style={styles.itemRight}>
+                                        <Text style={styles.itemSublabel}>Subtotal</Text>
+                                        <Text style={styles.itemPriceText}>{formatCurrency(item.price * (item.quantity || item.qty))}</Text>
                                     </View>
                                 </View>
-                            </View>
+                            ))}
+                        </View>
 
-                            <View style={styles.paymentPill}>
-                                <View style={styles.pillPart}>
-                                    <Text style={styles.pillLabel}>METODE</Text>
-                                    <Text style={styles.pillValue}>{(transaction.payment_method || 'Tunai').toUpperCase()}</Text>
+                        <View style={styles.summaryCard}>
+                            <View style={styles.summaryGlow} />
+                            <View style={styles.summaryContent}>
+                                <View style={styles.summaryRow}>
+                                    <Text style={styles.summaryLabel}>Harga Dasar</Text>
+                                    <Text style={styles.summaryValue}>{formatCurrency(transaction.total - (transaction.ppn || 0))}</Text>
                                 </View>
-                                <View style={[styles.pillPart, styles.pillBorder]}>
-                                    <Text style={styles.pillLabel}>STATUS</Text>
-                                    <ShieldCheck size={14} color="#10B981" />
+                                <View style={styles.thickDivider} />
+                                <View style={styles.totalSection}>
+                                    <Text style={styles.totalLabel}>TOTAL TAGIHAN</Text>
+                                    <View style={styles.totalValueRow}>
+                                        <Text style={styles.rpLabel}>Rp</Text>
+                                        <Text style={styles.totalFinalValue}>{formatCurrency(transaction.total).replace('Rp', '').trim()}</Text>
+                                    </View>
+                                    <View style={styles.successBadge}>
+                                        <CheckCircle2 size={12} color="#FFFFFF" strokeWidth={3} />
+                                        <Text style={styles.successText}>PEMBAYARAN BERHASIL</Text>
+                                    </View>
                                 </View>
-                            </View>
-
-                            <View style={styles.receiptFooter}>
-                                <View style={styles.footerDecoration}>
-                                    <Zap size={12} color="#E2E8F0" fill="#E2E8F0" />
-                                </View>
-                                <Text style={styles.footerMainText}>TERIMA KASIH</Text>
-                                <Text style={styles.footerSubText}>SEMOGA BERKAH</Text>
                             </View>
                         </View>
-                    </ScrollView>
 
-                    <View style={styles.actionFooter}>
-                        <TouchableOpacity style={styles.actionBtnOutline} onPress={handleShareText}>
-                            <Share2 size={20} color="#64748B" />
-                            <Text style={styles.actionBtnTextOutline}>Share</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.actionBtnPrimary, isPrinting && { opacity: 0.7 }]}
-                            onPress={handlePrint}
-                            disabled={isPrinting}
-                        >
-                            {isPrinting ? (
-                                <ActivityIndicator color="#FFFFFF" size="small" />
-                            ) : (
-                                <Printer size={20} color="#FFFFFF" />
-                            )}
-                            <Text style={styles.actionBtnTextPrimary}>
-                                {isPrinting ? 'Memproses...' : 'Cetak Struk'}
-                            </Text>
-                        </TouchableOpacity>
+                        <View style={styles.paymentPill}>
+                            <View style={styles.pillPart}>
+                                <Text style={styles.pillLabel}>METODE</Text>
+                                <Text style={styles.pillValue}>{(transaction.payment_method || 'Tunai').toUpperCase()}</Text>
+                            </View>
+                            <View style={[styles.pillPart, styles.pillBorder]}>
+                                <Text style={styles.pillLabel}>STATUS</Text>
+                                <ShieldCheck size={14} color="#10B981" />
+                            </View>
+                        </View>
+
+                        <View style={styles.receiptFooter}>
+                            <View style={styles.footerDecoration}>
+                                <Zap size={12} color="#E2E8F0" fill="#E2E8F0" />
+                            </View>
+                            <Text style={styles.footerMainText}>TERIMA KASIH</Text>
+                            <Text style={styles.footerSubText}>SEMOGA BERKAH</Text>
+                        </View>
                     </View>
+                </ScrollView>
+
+                <View style={styles.actionFooter}>
+                    <TouchableOpacity style={styles.actionBtnOutline} onPress={handleShareImage}>
+                        <Share2 size={20} color="#64748B" />
+                        <Text style={styles.actionBtnTextOutline}>Share</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.actionBtnPrimary, isSaving && { opacity: 0.7 }]}
+                        onPress={handleSaveImage}
+                        disabled={isSaving}
+                    >
+                        {isSaving ? (
+                            <ActivityIndicator color="#FFFFFF" size="small" />
+                        ) : (
+                            <Download size={20} color="#FFFFFF" />
+                        )}
+                        <Text style={styles.actionBtnTextPrimary}>
+                            {isSaving ? 'Menyimpan...' : 'Unduh Struk'}
+                        </Text>
+                    </TouchableOpacity>
                 </View>
             </View>
         </Modal>
@@ -269,30 +356,32 @@ const styles = StyleSheet.create({
     },
     modalContainer: {
         backgroundColor: '#F8FAFC',
-        height: '92%',
-        borderTopLeftRadius: 32,
-        borderTopRightRadius: 32,
-        overflow: 'hidden',
+        flex: 1,
+        flexDirection: 'column',
     },
     topHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: 20,
-        backgroundColor: '#148FEA',
+        paddingTop: Platform.OS === 'ios' ? 20 : 15, // Reduced padding for tighter look
+        backgroundColor: '#FFFFFF',
+        borderBottomWidth: 1,
+        borderBottomColor: '#F1F5F9',
     },
     topHeaderText: {
-        color: '#FFFFFF',
+        color: '#1E293B',
         fontSize: 18,
         fontWeight: 'bold',
     },
     closeHeaderBtn: {
         padding: 8,
-        backgroundColor: 'rgba(255,255,255,0.2)',
+        backgroundColor: '#F1F5F9',
         borderRadius: 12,
     },
     scrollBody: {
         flex: 1,
+        backgroundColor: '#F8FAFC',
     },
     receiptBody: {
         padding: 24,
@@ -635,10 +724,23 @@ const styles = StyleSheet.create({
     actionFooter: {
         flexDirection: 'row',
         padding: 20,
+        paddingBottom: Platform.OS === 'ios' ? 35 : 25, // Increased padding for safety
         backgroundColor: '#FFFFFF',
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',
         gap: 12,
+        zIndex: 999,
+        elevation: 25,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -10 },
+                shadowOpacity: 0.1,
+                shadowRadius: 10,
+            },
+            android: { elevation: 25 },
+            web: { boxShadow: '0px -10px 20px rgba(0,0,0,0.1)' }
+        })
     },
     actionBtnOutline: {
         flex: 1,

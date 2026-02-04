@@ -161,6 +161,28 @@ const setupDatabase = async () => {
       console.log('Added payment_method column to orders table.');
     }
 
+    // Check and add note to orders
+    const checkOrderNoteColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'note';
+    `;
+    const [noteOrdersRows] = await connection.query(checkOrderNoteColumn);
+    if (noteOrdersRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE orders ADD COLUMN note TEXT DEFAULT NULL");
+      console.log('Added note column to orders table.');
+    }
+
+    // Check and add customer_address to orders
+    const checkOrderAddrColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'customer_address';
+    `;
+    const [addrOrdersRows] = await connection.query(checkOrderAddrColumn);
+    if (addrOrdersRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE orders ADD COLUMN customer_address TEXT DEFAULT NULL");
+      console.log('Added customer_address column to orders table.');
+    }
+
     const createEmployeesTable = `
       CREATE TABLE IF NOT EXISTS employees(
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -183,6 +205,17 @@ const setupDatabase = async () => {
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'role';
     `;
+
+    // Check and add address to users
+    const checkUserAddrColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'address';
+    `;
+    const [addrUsersRows] = await connection.query(checkUserAddrColumn);
+    if (addrUsersRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE users ADD COLUMN address TEXT DEFAULT NULL");
+      console.log('Added address column to users table.');
+    }
 
     // Execute the create table statements
     await connection.query(createMenuItemsTable);
@@ -845,6 +878,20 @@ const setupDatabase = async () => {
     if (addressRows[0]['COUNT(*)'] === 0) {
       await connection.query(addAddressColumn);
       console.log('Added address column to users table.');
+    }
+
+    // Check and add push_token column to users if it doesn't exist
+    const checkPushTokenColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'push_token';
+    `;
+    const addPushTokenColumn = `
+      ALTER TABLE users ADD COLUMN push_token VARCHAR(255) DEFAULT NULL;
+    `;
+    const [pushTokenRows] = await connection.query(checkPushTokenColumn);
+    if (pushTokenRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addPushTokenColumn);
+      console.log('Added push_token column to users table.');
     }
 
     const addUpdatedAtToMenuItems = `

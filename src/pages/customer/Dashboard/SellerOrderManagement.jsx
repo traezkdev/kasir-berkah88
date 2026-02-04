@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
 import Icon from '../../../components/AppIcon';
 import authFetch from '../../../utils/authFetch';
 import { jwtDecode } from 'jwt-decode';
@@ -57,7 +58,32 @@ const SellerOrderManagement = () => {
         }
 
         fetchOrders();
-        return () => window.removeEventListener('scroll', handleScroll);
+
+        // Socket.io Realtime Implementation
+        const API_URL = import.meta.env.VITE_API_URL || '';
+        const socket = io(API_URL, {
+            transports: ['websocket'],
+            forceNew: true
+        });
+
+        socket.on('connect', () => {
+            console.log('Web Socket Connected');
+        });
+
+        socket.on('new_order', (order) => {
+            console.log('Realtime New Order:', order);
+            fetchOrders();
+        });
+
+        socket.on('order_update', (data) => {
+            console.log('Realtime Order Update:', data);
+            fetchOrders();
+        });
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            socket.disconnect();
+        };
     }, [fetchOrders]);
 
     const handleUpdateStatus = async (orderId, newStatus, ignoreStock = false) => {

@@ -43,6 +43,20 @@ export const OrderNotificationProvider = ({ children }) => {
         const token = localStorage.getItem('token');
         if (!token) return;
 
+        let currentRole = userRole;
+        if (!currentRole) {
+            try {
+                const decoded = jwtDecode(token);
+                currentRole = decoded.role;
+                setUserRole(currentRole);
+            } catch (e) {
+                return;
+            }
+        }
+
+        // Jangan proses untuk pelanggan
+        if (currentRole === 'pelanggan') return;
+
         try {
             const response = await authFetch('/api/orders?status=pending&limit=1');
             if (response.ok) {
@@ -60,7 +74,7 @@ export const OrderNotificationProvider = ({ children }) => {
                     });
 
                     // Tampilkan Popup jika role sesuai
-                    if (['admin', 'penjual', 'owner'].includes(userRole)) {
+                    if (['admin', 'penjual', 'owner'].includes(currentRole)) {
                         fetchLatestOrder();
                     }
                 }

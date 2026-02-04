@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     StyleSheet,
     Text,
@@ -8,7 +8,10 @@ import {
     ActivityIndicator,
     Dimensions,
     RefreshControl,
-    Platform
+    Platform,
+    Animated,
+    Easing,
+    StatusBar
 } from 'react-native';
 import {
     Store,
@@ -24,12 +27,15 @@ import {
     XCircle,
     PlayCircle,
     ChevronRight,
-    Clock
+    Clock,
+    User,
+    Image as ImageIcon
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import SellerOrderCard from '../../components/SellerOrderCard';
+import { useChat } from '../../context/ChatContext';
 
 const { width } = Dimensions.get('window');
 
@@ -46,6 +52,33 @@ const SellerDashboard = ({ navigation }) => {
     const [pendingOrders, setPendingOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const { unreadCount } = useChat();
+
+    // Animation for unread badge
+    const pulseAnim = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+        if (unreadCount > 0) {
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(pulseAnim, {
+                        toValue: 1.2,
+                        duration: 800,
+                        useNativeDriver: true,
+                        easing: Easing.inOut(Easing.ease)
+                    }),
+                    Animated.timing(pulseAnim, {
+                        toValue: 1,
+                        duration: 800,
+                        useNativeDriver: true,
+                        easing: Easing.inOut(Easing.ease)
+                    })
+                ])
+            ).start();
+        } else {
+            pulseAnim.setValue(1);
+        }
+    }, [unreadCount]);
 
     const fetchData = useCallback(async () => {
         try {
@@ -120,6 +153,7 @@ const SellerDashboard = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
+            <StatusBar barStyle="light-content" backgroundColor="#1E40AF" />
             {/* Fixed Gradient Header */}
             <View style={styles.header}>
                 <View style={styles.headerTop}>
@@ -132,8 +166,26 @@ const SellerDashboard = ({ navigation }) => {
                         <Text style={styles.subtitleText}>Pantau tokomu hari ini</Text>
                     </View>
                     <View style={styles.headerActions}>
-                        <TouchableOpacity style={styles.iconBtn}>
+                        <TouchableOpacity
+                            style={styles.iconBtn}
+                            onPress={() => navigation.navigate('ChatScreen')}
+                        >
                             <MessageCircle size={22} color="#FFFFFF" />
+                            {unreadCount > 0 && (
+                                <Animated.View style={[
+                                    styles.unreadBadge,
+                                    { transform: [{ scale: pulseAnim }] }
+                                ]}>
+                                    <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
+                                </Animated.View>
+                            )}
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.iconBtn, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
+                            onPress={() => navigation.navigate('ProfileScreen')}
+                        >
+                            <User size={22} color="#FFFFFF" />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -191,45 +243,41 @@ const SellerDashboard = ({ navigation }) => {
                         <Text style={styles.statNum}>{pendingOrders.length}</Text>
                         <Text style={styles.statLabel}>Pesanan</Text>
                     </View>
-                    <View style={styles.statItem}>
+                    <TouchableOpacity
+                        style={styles.statItem}
+                        onPress={() => navigation.navigate('CategoryManagement')}
+                    >
                         <View style={[styles.statIcon, { backgroundColor: '#FAF5FF' }]}><BarChart3 size={20} color="#A855F7" /></View>
                         <Text style={styles.statNum}>{stats.categories}</Text>
                         <Text style={styles.statLabel}>Kategori</Text>
-                    </View>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Quick Actions */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Aksi Cepat</Text>
                     <View style={styles.actionGrid}>
-                        <TouchableOpacity
-                            style={styles.actionItem}
-                            onPress={() => navigation.navigate('Pesanan')}
-                        >
-                            <View style={[styles.actionIcon, { backgroundColor: '#F1F5F9' }]}><ShoppingBag size={24} color="#64748B" /></View>
-                            <Text style={styles.actionLabel}>Pesanan</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.actionItem}
-                            onPress={() => navigation.navigate('Jual')}
-                        >
-                            <View style={[styles.actionIcon, { backgroundColor: '#2563EB' }]}><ShoppingCart size={24} color="#FFFFFF" /></View>
-                            <Text style={styles.actionLabel}>Jual</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.actionItem}
-                            onPress={() => navigation.navigate('Katalog')}
-                        >
-                            <View style={[styles.actionIcon, { backgroundColor: '#F1F5F9' }]}><PlusCircle size={24} color="#64748B" /></View>
-                            <Text style={styles.actionLabel}>Katalog</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.actionItem}
-                            onPress={() => navigation.navigate('Transaksi')}
-                        >
-                            <View style={[styles.actionIcon, { backgroundColor: '#F1F5F9' }]}><History size={24} color="#64748B" /></View>
-                            <Text style={styles.actionLabel}>Riwayat</Text>
-                        </TouchableOpacity>
+                        {[
+                            { label: 'Chat', icon: MessageCircle, color: '#3B82F6', bgColor: '#EFF6FF', target: 'ChatScreen' },
+                            { label: 'Jual', icon: ShoppingCart, color: '#FFFFFF', bgColor: '#138FEA', target: 'Jual' },
+                            { label: 'Katalog', icon: PlusCircle, color: '#10B981', bgColor: '#ECFDF5', target: 'Katalog' },
+                            { label: 'Kategori', icon: BarChart3, color: '#A855F7', bgColor: '#FAF5FF', target: 'CategoryManagement' },
+                            { label: 'Banner', icon: ImageIcon, color: '#F59E0B', bgColor: '#FFFBEB', target: 'Banners' },
+                            { label: 'Pesanan', icon: ShoppingBag, color: '#6366F1', bgColor: '#EEF2FF', target: 'Pesanan' },
+                            { label: 'Riwayat', icon: History, color: '#8B5CF6', bgColor: '#F5F3FF', target: 'Transaksi' },
+                            { label: 'Profil', icon: User, color: '#64748B', bgColor: '#F1F5F9', target: 'ProfileScreen' },
+                        ].map((action, index) => (
+                            <TouchableOpacity
+                                key={index}
+                                style={styles.actionItem}
+                                onPress={() => navigation.navigate(action.target)}
+                            >
+                                <View style={[styles.actionIcon, { backgroundColor: action.bgColor }]}>
+                                    <action.icon size={25} color={action.color} />
+                                </View>
+                                <Text style={styles.actionLabel}>{action.label}</Text>
+                            </TouchableOpacity>
+                        ))}
                     </View>
                 </View>
 
@@ -278,7 +326,7 @@ const styles = StyleSheet.create({
     },
     header: {
         backgroundColor: '#1E40AF',
-        paddingTop: Platform.OS === 'ios' ? 60 : 40,
+        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : (Platform.OS === 'web' ? 15 : 20),
         paddingBottom: 80,
         paddingHorizontal: 25,
         borderBottomLeftRadius: 32,
@@ -336,6 +384,25 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
+        position: 'relative',
+    },
+    unreadBadge: {
+        position: 'absolute',
+        top: -5,
+        right: -5,
+        backgroundColor: '#EF4444',
+        width: 18,
+        height: 18,
+        borderRadius: 9,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#1E40AF',
+    },
+    unreadBadgeText: {
+        color: '#FFFFFF',
+        fontSize: 8,
+        fontWeight: 'bold',
     },
     statusCard: {
         position: 'absolute',
@@ -442,22 +509,24 @@ const styles = StyleSheet.create({
     },
     actionGrid: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         justifyContent: 'space-between',
     },
     actionItem: {
         alignItems: 'center',
         width: (width - 40) / 4,
+        marginBottom: 20,
     },
     actionIcon: {
-        width: 55,
-        height: 55,
-        borderRadius: 15,
+        width: 60,
+        height: 60,
+        borderRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 8,
         ...Platform.select({
-            web: { boxShadow: '0px 4px 10px rgba(0,0,0,0.05)' },
-            android: { elevation: 2 }
+            web: { boxShadow: '0px 8px 16px rgba(0,0,0,0.06)' },
+            android: { elevation: 3 }
         })
     },
     actionLabel: {
