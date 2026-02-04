@@ -78,13 +78,23 @@ export const CartProvider = ({ children }) => {
 
     const updateQuantity = useCallback((cartId, delta) => {
         setCart(prev => {
-            return prev.map(item => {
+            const newCart = [];
+            let found = false;
+
+            for (const item of prev) {
                 if (item.cartId === cartId) {
-                    const newQty = Math.max(0, item.quantity + delta);
-                    return { ...item, quantity: newQty };
+                    found = true;
+                    const newQty = item.quantity + delta;
+                    if (newQty > 0) {
+                        newCart.push({ ...item, quantity: newQty });
+                    }
+                    // If newQty <= 0, item is removed (not pushed)
+                } else {
+                    newCart.push(item);
                 }
-                return item;
-            }).filter(i => i.quantity > 0);
+            }
+
+            return found ? newCart : prev;
         });
     }, []);
 

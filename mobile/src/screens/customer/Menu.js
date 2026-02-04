@@ -486,28 +486,31 @@ const CustomerMenu = ({ navigation, route }) => {
                                         </TouchableOpacity>
                                     );
                                 } else {
+                                    const currentQty = getVariantQuantity(selectedItem.id, selectedOptions);
+                                    const cartId = getCartId(selectedItem.id, selectedOptions);
+
                                     return (
                                         <View style={styles.qtyControlRow}>
                                             <View style={styles.qtyBox}>
                                                 <TouchableOpacity
                                                     style={styles.qtyBtn}
+                                                    activeOpacity={0.7}
                                                     onPress={() => {
-                                                        const cartId = getCartId(selectedItem.id, selectedOptions);
                                                         if (cartId) updateQuantity(cartId, -1);
                                                     }}
                                                 >
                                                     <Minus size={20} color="#1E293B" />
                                                 </TouchableOpacity>
-                                                <Text style={styles.qtyVal}>{getVariantQuantity(selectedItem.id, selectedOptions)}</Text>
+                                                <Text style={styles.qtyVal}>{currentQty}</Text>
                                                 <TouchableOpacity
                                                     style={[
                                                         styles.qtyBtn,
                                                         { backgroundColor: modalIsOutOfStock ? '#E2E8F0' : '#059669' }
                                                     ]}
+                                                    activeOpacity={0.7}
                                                     disabled={modalIsOutOfStock}
                                                     onPress={() => {
-                                                        const cartId = getCartId(selectedItem.id, selectedOptions);
-                                                        if (cartId) updateQuantity(cartId, 1);
+                                                        if (cartId && !modalIsOutOfStock) updateQuantity(cartId, 1);
                                                     }}
                                                 >
                                                     <Plus size={20} color={modalIsOutOfStock ? "#94A3B8" : "#FFFFFF"} />
@@ -515,6 +518,7 @@ const CustomerMenu = ({ navigation, route }) => {
                                             </View>
                                             <TouchableOpacity
                                                 style={styles.saveBtn}
+                                                activeOpacity={0.8}
                                                 onPress={() => setSelectedItem(null)}
                                             >
                                                 <Text style={styles.saveBtnText}>Simpan</Text>

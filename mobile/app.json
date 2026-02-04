@@ -41,6 +41,14 @@
             "targetSdkVersion": 35
           }
         }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Izinkan Kasir Berkah88 mengakses galeri Anda.",
+          "savePhotosPermission": "Izinkan Kasir Berkah88 menyimpan gambar ke galeri.",
+          "isAccessMediaLocationEnabled": true
+        }
       ]
     ],
     "extra": {

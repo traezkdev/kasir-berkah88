@@ -228,28 +228,48 @@ const SellerDashboard = ({ navigation }) => {
 
                 {/* Quick Stats */}
                 <View style={styles.statsGrid}>
-                    <View style={styles.statItem}>
-                        <View style={[styles.statIcon, { backgroundColor: '#EFF6FF' }]}><Package size={20} color="#3B82F6" /></View>
-                        <Text style={styles.statNum}>{stats.totalItems}</Text>
-                        <Text style={styles.statLabel}>Produk</Text>
+                    <View style={[styles.statItem, { backgroundColor: '#EFF6FF', borderColor: '#DBEAFE' }]}>
+                        <View style={{ zIndex: 1 }}>
+                            <View style={[styles.statIcon, { backgroundColor: '#FFFFFF' }]}><Package size={20} color="#3B82F6" /></View>
+                            <Text style={[styles.statNum, { color: '#1E3A8A' }]}>{stats.totalItems}</Text>
+                            <Text style={[styles.statLabel, { color: '#3B82F6' }]}>Produk</Text>
+                        </View>
+                        <View style={styles.statDecor}>
+                            <Package size={80} color="#3B82F6" opacity={0.3} />
+                        </View>
                     </View>
-                    <View style={styles.statItem}>
-                        <View style={[styles.statIcon, { backgroundColor: '#FFF7ED' }]}><Star size={20} color="#F97316" /></View>
-                        <Text style={styles.statNum}>{stats.featuredItems}</Text>
-                        <Text style={styles.statLabel}>Unggulan</Text>
+                    <View style={[styles.statItem, { backgroundColor: '#FFF7ED', borderColor: '#FFEDD5' }]}>
+                        <View style={{ zIndex: 1 }}>
+                            <View style={[styles.statIcon, { backgroundColor: '#FFFFFF' }]}><Star size={20} color="#F97316" /></View>
+                            <Text style={[styles.statNum, { color: '#7C2D12' }]}>{stats.featuredItems}</Text>
+                            <Text style={[styles.statLabel, { color: '#F97316' }]}>Unggulan</Text>
+                        </View>
+                        <View style={styles.statDecor}>
+                            <Star size={80} color="#F97316" opacity={0.3} />
+                        </View>
                     </View>
-                    <View style={styles.statItem}>
-                        <View style={[styles.statIcon, { backgroundColor: '#F0FDF4' }]}><ShoppingBag size={20} color="#22C55E" /></View>
-                        <Text style={styles.statNum}>{pendingOrders.length}</Text>
-                        <Text style={styles.statLabel}>Pesanan</Text>
+                    <View style={[styles.statItem, { backgroundColor: '#F0FDF4', borderColor: '#DCFCE7' }]}>
+                        <View style={{ zIndex: 1 }}>
+                            <View style={[styles.statIcon, { backgroundColor: '#FFFFFF' }]}><ShoppingBag size={20} color="#22C55E" /></View>
+                            <Text style={[styles.statNum, { color: '#14532D' }]}>{pendingOrders.length}</Text>
+                            <Text style={[styles.statLabel, { color: '#22C55E' }]}>Pesanan</Text>
+                        </View>
+                        <View style={styles.statDecor}>
+                            <ShoppingBag size={80} color="#22C55E" opacity={0.3} />
+                        </View>
                     </View>
                     <TouchableOpacity
-                        style={styles.statItem}
+                        style={[styles.statItem, { backgroundColor: '#FAF5FF', borderColor: '#F3E8FF' }]}
                         onPress={() => navigation.navigate('CategoryManagement')}
                     >
-                        <View style={[styles.statIcon, { backgroundColor: '#FAF5FF' }]}><BarChart3 size={20} color="#A855F7" /></View>
-                        <Text style={styles.statNum}>{stats.categories}</Text>
-                        <Text style={styles.statLabel}>Kategori</Text>
+                        <View style={{ zIndex: 1 }}>
+                            <View style={[styles.statIcon, { backgroundColor: '#FFFFFF' }]}><BarChart3 size={20} color="#A855F7" /></View>
+                            <Text style={[styles.statNum, { color: '#581C87' }]}>{stats.categories}</Text>
+                            <Text style={[styles.statLabel, { color: '#A855F7' }]}>Kategori</Text>
+                        </View>
+                        <View style={styles.statDecor}>
+                            <BarChart3 size={80} color="#A855F7" opacity={0.3} />
+                        </View>
                     </TouchableOpacity>
                 </View>
 
@@ -467,6 +487,14 @@ const styles = StyleSheet.create({
         padding: 15,
         borderWidth: 1,
         borderColor: '#F1F5F9',
+        overflow: 'hidden',
+        position: 'relative',
+    },
+    statDecor: {
+        position: 'absolute',
+        bottom: -20,
+        right: -20,
+        zIndex: 0,
     },
     statIcon: {
         width: 36,

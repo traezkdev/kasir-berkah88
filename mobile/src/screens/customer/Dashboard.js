@@ -146,6 +146,39 @@ const CustomerDashboard = ({ navigation }) => {
         }).format(val || 0);
     };
 
+    const getBannerColor = (colorClass) => {
+        switch (colorClass) {
+            case 'bg-indigo-600':
+                return '#4F46E5';
+            case 'bg-blue-600':
+                return '#2563EB';
+            case 'bg-sky-500':
+                return '#0EA5E9';
+            case 'bg-emerald-600':
+            case 'bg-green-600':
+                return '#059669';
+            case 'bg-amber-500':
+                return '#F59E0B';
+            case 'bg-orange-500':
+            case 'bg-orange-600':
+                return '#F97316';
+            case 'bg-rose-500':
+                return '#F43F5E';
+            case 'bg-purple-600':
+                return '#9333EA';
+            case 'bg-red-600':
+                return '#DC2626';
+            case 'bg-yellow-600':
+                return '#CA8A04';
+            case 'bg-pink-600':
+                return '#DB2777';
+            case 'bg-teal-600':
+                return '#0D9488';
+            default:
+                return '#059669'; // Default green
+        }
+    };
+
     const headerOpacity = scrollY.interpolate({
         inputRange: [0, 100],
         outputRange: [1, 0],
@@ -329,17 +362,20 @@ const CustomerDashboard = ({ navigation }) => {
                         <ChevronRight size={12} color="#94A3B8" />
                     </View>
                 </View>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} pagingEnabled snapToInterval={width * 0.9 + 16} deaccelerationRate="fast">
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    pagingEnabled
+                    snapToInterval={width * 0.9 + 16}
+                    decelerationRate="fast"
+                    contentContainerStyle={{ paddingRight: width * 0.05 + 4 }}
+                >
                     {banners.map((banner) => (
                         <TouchableOpacity
                             key={banner.id}
                             style={[
                                 styles.bannerCard,
-                                {
-                                    backgroundColor: banner.color_class === 'bg-green-600' ? '#059669' :
-                                        banner.color_class === 'bg-blue-600' ? '#2563EB' :
-                                            banner.color_class === 'bg-purple-600' ? '#9333EA' : '#059669'
-                                }
+                                { backgroundColor: getBannerColor(banner.color_class) }
                             ]}
                         >
                             <View style={styles.bannerInfo}>

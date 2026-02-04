@@ -266,7 +266,7 @@ const sendUniversalNotification = async (userIds, message, heading, data = {}, e
             let params = [];
 
             if (data.type === 'new_order') {
-                sql = "SELECT push_token FROM users WHERE role IN ('admin', 'penjual', 'owner') AND push_token IS NOT NULL";
+                sql = "SELECT push_token FROM users WHERE role IN ('admin', 'penjual', 'owner', 'kasir') AND push_token IS NOT NULL";
             }
 
             if (excludedUserId) {
@@ -3150,17 +3150,21 @@ app.post("/api/orders", (req, res, next) => {
         const params = [userId, customer_name, customer_address, JSON.stringify(orderItemsWithDetails), calculatedTotal, 'pending', paymentMethodValue, orderNote];
         const [result] = await db.query(sql, params);
 
-        // Kirim Notifikasi Push via OneSignal
-        sendUniversalNotification(
-            null, // Kirim ke admin/penjual (ditentukan di helper untuk new_order)
-            `Pesanan baru dari ${customer_name} sebesar Rp ${calculatedTotal.toLocaleString('id-ID')}`,
-            'Pesanan Masuk! 🔔',
-            { orderId: result.insertId, type: 'new_order' }
-        );
+        const orderId = result.insertId;
 
-        // Realtime Update via Socket.io
+        // Kirim Notifikasi Push (async, tidak menunggu selesai agar response cepat)
+        setImmediate(() => {
+            sendUniversalNotification(
+                null, // Kirim ke admin/penjual/kasir (ditentukan di helper untuk new_order)
+                `Pesanan baru dari ${customer_name} sebesar Rp ${calculatedTotal.toLocaleString('id-ID')}`,
+                'Pesanan Masuk! 🔔',
+                { orderId, type: 'new_order' }
+            ).catch(err => console.error('Push notification error:', err));
+        });
+
+        // Realtime Update via Socket.io (instant)
         req.app.get('io').emit('new_order', {
-            id: result.insertId,
+            id: orderId,
             customer_name,
             total: calculatedTotal,
             status: 'pending'
@@ -3317,7 +3321,7 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
             const updateSql = 'UPDATE orders SET status = ? WHERE id = ?';
             await connection.query(updateSql, [status, id]);
 
-            // Kirim Notifikasi ke Pelanggan
+            // Kirim Notifikasi ke Pelanggan (async)
             if (order.user_id) {
                 let statusMsg = '';
                 let title = 'Update Pesanan 📦';
@@ -3331,12 +3335,15 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
                     title = 'Pesanan Selesai! ✨';
                 }
 
-                sendUniversalNotification([order.user_id], statusMsg, title, { orderId: id, status });
+                setImmediate(() => {
+                    sendUniversalNotification([order.user_id], statusMsg, title, { orderId: id, status })
+                        .catch(err => console.error('Push notification error:', err));
+                });
             }
 
             await connection.commit();
 
-            // Realtime Update via Socket.io
+            // Realtime Update via Socket.io (instant)
             req.app.get('io').emit('order_update', { id, status });
 
             return res.json({ message: `Order ${id} has been ${status}.` });
@@ -3548,20 +3555,22 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
             // 5. Update the order status to 'accepted'
             await connection.query('UPDATE orders SET status = ? WHERE id = ?', ['accepted', id]);
 
-            // Kirim Notifikasi ke Pelanggan - Pesanan Diterima
+            // Kirim Notifikasi ke Pelanggan - Pesanan Diterima (async)
             if (order.user_id) {
-                sendUniversalNotification(
-                    [order.user_id],
-                    'Pesanan Anda telah diterima dan sedang diproses!',
-                    'Pesanan Diterima! ✅',
-                    { orderId: id, status: 'accepted' }
-                );
+                setImmediate(() => {
+                    sendUniversalNotification(
+                        [order.user_id],
+                        'Pesanan Anda telah diterima dan sedang diproses!',
+                        'Pesanan Diterima! ✅',
+                        { orderId: id, status: 'accepted' }
+                    ).catch(err => console.error('Push notification error:', err));
+                });
             }
 
             // 6. Commit the transaction
             await connection.commit();
 
-            // Realtime Update via Socket.io
+            // Realtime Update via Socket.io (instant)
             req.app.get('io').emit('order_update', { id, status: 'accepted' });
 
             res.json({ message: `Order ${id} has been accepted and transaction ${newTransactionId} created.` });

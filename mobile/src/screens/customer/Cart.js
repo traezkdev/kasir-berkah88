@@ -12,7 +12,8 @@ import {
     StatusBar,
     SafeAreaView,
     TextInput,
-    Alert
+    Alert,
+    Modal
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -27,8 +28,13 @@ import {
     Ticket,
     Info,
     CheckCircle2,
-    Banknote
+    Banknote,
+    QrCode,
+    X,
+    Download
 } from 'lucide-react-native';
+import * as MediaLibrary from 'expo-media-library';
+import { Asset } from 'expo-asset';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -48,7 +54,7 @@ const CartItem = React.memo(({ item, updateQuantity, handleRemoveItem, formatCur
             <View style={styles.itemInfo}>
                 <View style={styles.itemNameRow}>
                     <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-                    <TouchableOpacity onPress={() => handleRemoveItem(item.cartId, item.name)}>
+                    <TouchableOpacity onPress={() => handleRemoveItem(item.cartId, item.name)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                         <Trash2 size={14} color="#EF4444" />
                     </TouchableOpacity>
                 </View>
@@ -66,6 +72,8 @@ const CartItem = React.memo(({ item, updateQuantity, handleRemoveItem, formatCur
                     <View style={styles.qtyBox}>
                         <TouchableOpacity
                             style={styles.qtyBtn}
+                            activeOpacity={0.6}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                             onPress={() => updateQuantity(item.cartId, -1)}
                         >
                             <Minus size={14} color="#64748B" />
@@ -73,6 +81,8 @@ const CartItem = React.memo(({ item, updateQuantity, handleRemoveItem, formatCur
                         <Text style={styles.qtyVal}>{item.quantity}</Text>
                         <TouchableOpacity
                             style={[styles.qtyBtn, { backgroundColor: '#059669' }]}
+                            activeOpacity={0.6}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                             onPress={() => updateQuantity(item.cartId, 1)}
                         >
                             <Plus size={14} color="#FFFFFF" />
@@ -101,6 +111,7 @@ const CustomerCart = ({ navigation }) => {
     const [customerAddress, setCustomerAddress] = useState('');
     const [savedAddress, setSavedAddress] = useState(null);
     const [paymentMethod, setPaymentMethod] = useState('cash');
+    const [showQrisModal, setShowQrisModal] = useState(false);
 
     // Maukkan alamat tersimpan dari Profile
     useEffect(() => {
@@ -111,16 +122,6 @@ const CustomerCart = ({ navigation }) => {
 
     // Muat alamat terakhir dari storage saat buka keranjang
     useEffect(() => {
-        const loadLastAddress = async () => {
-            try {
-                const lastAddr = await AsyncStorage.getItem('last_delivery_address');
-                if (lastAddr) {
-                    setCustomerAddress(lastAddr);
-                }
-            } catch (e) {
-                console.error("Gagal muat alamat:", e);
-            }
-        };
         loadLastAddress();
     }, []);
 
@@ -130,6 +131,36 @@ const CustomerCart = ({ navigation }) => {
             AsyncStorage.setItem('last_delivery_address', customerAddress);
         }
     }, [customerAddress]);
+
+    const loadLastAddress = async () => {
+        try {
+            const lastAddr = await AsyncStorage.getItem('last_delivery_address');
+            if (lastAddr) {
+                setCustomerAddress(lastAddr);
+            }
+        } catch (e) {
+            console.error("Gagal muat alamat:", e);
+        }
+    };
+
+    const handleDownloadQris = async () => {
+        try {
+            const { status } = await MediaLibrary.requestPermissionsAsync(true);
+            if (status !== 'granted') {
+                Alert.alert('Izin Ditolak', 'Maaf, kami membutuhkan izin akses galeri untuk menyimpan gambar.');
+                return;
+            }
+
+            const asset = Asset.fromModule(require('../../../assets/qris.jpeg'));
+            await asset.downloadAsync();
+            await MediaLibrary.saveToLibraryAsync(asset.localUri || asset.uri);
+
+            Alert.alert('Berhasil', 'Gambar QRIS berhasil disimpan ke galeri!');
+        } catch (error) {
+            console.error('Download error:', error);
+            Alert.alert('Gagal', 'Terjadi kesalahan saat menyimpan gambar.');
+        }
+    };
 
     const formatCurrency = (val) => {
         return new Intl.NumberFormat('id-ID', {
@@ -316,29 +347,52 @@ const CustomerCart = ({ navigation }) => {
                                 <Banknote size={20} color={paymentMethod === 'cash' ? "#059669" : "#64748B"} />
                             </View>
                             <View>
-                                <Text style={[styles.paymentName, paymentMethod === 'cash' && { color: '#059669' }]}>Bayar di Kasir (Cash)</Text>
-                                <Text style={styles.paymentDesc}>Bayar setelah pesanan selesai</Text>
+                                <Text style={[styles.paymentName, paymentMethod === 'cash' && { color: '#059669' }]}>Bayar Tunai</Text>
+                                <Text style={styles.paymentDesc}>bayar ketika makanan sudah sampai</Text>
                             </View>
                         </View>
                         {paymentMethod === 'cash' && <CheckCircle2 size={20} color="#059669" />}
                     </TouchableOpacity>
 
-                    {/* Opsi Transfer */}
+                    {/* Opsi Qris (Mapped to Transfer internally) */}
                     <TouchableOpacity
                         style={[styles.paymentOption, paymentMethod === 'transfer' && styles.paymentOptionActive]}
                         onPress={() => setPaymentMethod('transfer')}
                     >
                         <View style={styles.paymentLeft}>
                             <View style={[styles.paymentIconWrap, paymentMethod === 'transfer' && { backgroundColor: '#EFF6FF' }]}>
-                                <CreditCard size={20} color={paymentMethod === 'transfer' ? "#2563EB" : "#64748B"} />
+                                <QrCode size={20} color={paymentMethod === 'transfer' ? "#2563EB" : "#64748B"} />
                             </View>
                             <View>
-                                <Text style={[styles.paymentName, paymentMethod === 'transfer' && { color: '#2563EB' }]}>Transfer Bank</Text>
-                                <Text style={styles.paymentDesc}>BCA, Mandiri, BRI, dll</Text>
+                                <Text style={[styles.paymentName, paymentMethod === 'transfer' && { color: '#2563EB' }]}>Bayar dengan Qris</Text>
+                                <Text style={styles.paymentDesc}>Bayar dengan scan qris</Text>
                             </View>
                         </View>
                         {paymentMethod === 'transfer' && <CheckCircle2 size={20} color="#2563EB" />}
                     </TouchableOpacity>
+
+                    {/* QRIS Display */}
+                    {paymentMethod === 'transfer' && (
+                        <View style={styles.qrisContainer}>
+                            <Text style={styles.qrisTitle}>Scan Kode QRIS</Text>
+                            <TouchableOpacity
+                                style={styles.qrisImageWrapper}
+                                onPress={() => setShowQrisModal(true)}
+                                activeOpacity={0.9}
+                            >
+                                <Image
+                                    source={require('../../../assets/qris.jpeg')}
+                                    style={styles.qrisImage}
+                                    resizeMode="contain"
+                                />
+                            </TouchableOpacity>
+                            <Text style={styles.qrisInstruction}>
+                                1. Buka aplikasi e-wallet atau mobile banking{'\n'}
+                                2. Scan kode QRIS di atas{'\n'}
+                                3. Periksa nominal dan selesaikan pembayaran
+                            </Text>
+                        </View>
+                    )}
                 </View>
 
                 {/* Summary */}
@@ -381,6 +435,41 @@ const CustomerCart = ({ navigation }) => {
                     )}
                 </TouchableOpacity>
             </View>
+
+            {/* Full Screen QRIS Modal */}
+            <Modal
+                visible={showQrisModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowQrisModal(false)}
+            >
+                <View style={styles.modalContainer}>
+                    <TouchableOpacity
+                        style={styles.modalBackdrop}
+                        activeOpacity={1}
+                        onPress={() => setShowQrisModal(false)}
+                    />
+                    <View style={styles.fullImageWrapper}>
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={() => setShowQrisModal(false)}
+                        >
+                            <X size={24} color="#FFFFFF" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.downloadButton}
+                            onPress={handleDownloadQris}
+                        >
+                            <Download size={24} color="#FFFFFF" />
+                        </TouchableOpacity>
+                        <Image
+                            source={require('../../../assets/qris.jpeg')}
+                            style={styles.fullImage}
+                            resizeMode="contain"
+                        />
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -444,36 +533,50 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#F1F5F9',
         ...Platform.select({
-            web: { boxShadow: '0px 2px 8px rgba(0,0,0,0.03)' },
-            android: { elevation: 2 }
-        })
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 4,
+            },
+            android: {
+                elevation: 2,
+            },
+        }),
     },
     itemImage: {
         width: 80,
         height: 80,
         borderRadius: 12,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: '#F1F5F9',
     },
     itemInfo: {
         flex: 1,
         marginLeft: 12,
-        justifyContent: 'space-between',
+        justifyContent: 'center',
     },
     itemNameRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'flex-start',
     },
     itemName: {
-        fontSize: 15,
-        fontWeight: '900',
+        fontSize: 14,
+        fontWeight: 'bold',
         color: '#1E293B',
-        flex: 1,
+        maxWidth: '85%',
+        marginBottom: 4,
     },
     itemOptions: {
-        fontSize: 10,
-        color: '#94A3B8',
-        fontWeight: 'bold',
+        fontSize: 11,
+        color: '#64748B',
+        fontWeight: '500',
+        marginTop: 2,
+    },
+    itemNote: {
+        fontSize: 11,
+        color: '#F59E0B',
+        fontStyle: 'italic',
         marginTop: 2,
     },
     itemFooter: {
@@ -563,6 +666,89 @@ const styles = StyleSheet.create({
         fontSize: 10,
         color: '#94A3B8',
         fontWeight: 'bold',
+    },
+    qrisContainer: {
+        backgroundColor: '#FFFFFF',
+        padding: 16,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    qrisTitle: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#1E293B',
+        marginBottom: 12,
+    },
+    qrisImageWrapper: {
+        width: 200,
+        height: 200,
+        marginBottom: 12,
+        backgroundColor: '#FFFFFF',
+        padding: 10,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    qrisImage: {
+        width: '100%',
+        height: '100%',
+    },
+    qrisInstruction: {
+        fontSize: 12,
+        color: '#64748B',
+        textAlign: 'center',
+        lineHeight: 18,
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    },
+    modalBackdrop: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+    },
+    fullImageWrapper: {
+        width: width - 20,
+        height: 500,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 20,
+        padding: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    fullImage: {
+        width: '100%',
+        height: '100%',
+    },
+    closeButton: {
+        position: 'absolute',
+        top: -50,
+        right: 0,
+        width: 40,
+        height: 40,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    downloadButton: {
+        position: 'absolute',
+        top: -50,
+        left: 0,
+        width: 40,
+        height: 40,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     summaryBox: {
         backgroundColor: '#F8FAFC',

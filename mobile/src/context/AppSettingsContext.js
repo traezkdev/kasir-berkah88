@@ -10,6 +10,7 @@ export const AppSettingsProvider = ({ children }) => {
     const [isOpen, setIsOpen] = useState(true);
     const [ignoreStock, setIgnoreStock] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [logoUrl, setLogoUrl] = useState(null);
 
     const fetchSettings = async () => {
         try {
@@ -18,6 +19,12 @@ export const AppSettingsProvider = ({ children }) => {
             if (response.data && response.data.data) {
                 setIsOpen(!!response.data.data.is_open);
                 setIgnoreStock(!!response.data.data.ignore_stock);
+            }
+
+            // Fetch logo
+            const logoResponse = await apiService.get('/api/settings/logo');
+            if (logoResponse.data && logoResponse.data.data && logoResponse.data.data.logo_url) {
+                setLogoUrl(logoResponse.data.data.logo_url);
             }
         } catch (error) {
             console.error('Error fetching app settings:', error);
@@ -47,6 +54,7 @@ export const AppSettingsProvider = ({ children }) => {
         isOpen,
         ignoreStock,
         loading,
+        logoUrl,
         refreshSettings: fetchSettings,
         toggleIgnoreStock
     };

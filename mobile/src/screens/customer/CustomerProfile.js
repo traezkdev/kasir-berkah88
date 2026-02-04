@@ -208,6 +208,7 @@ const CustomerProfile = ({ navigation }) => {
 
                 <View style={styles.footerInfo}>
                     <Text style={styles.versionText}>BERKAH88 • VERSI 2.0.4</Text>
+                    <Text style={styles.developerText}>by traezkdev</Text>
                 </View>
 
                 <View style={{ height: 40 }} />
@@ -459,6 +460,13 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         color: '#CBD5E1',
         letterSpacing: 3,
+    },
+    developerText: {
+        fontSize: 9,
+        fontWeight: '600',
+        color: '#94A3B8',
+        letterSpacing: 1,
+        marginTop: 4,
     },
     modalOverlay: {
         flex: 1,

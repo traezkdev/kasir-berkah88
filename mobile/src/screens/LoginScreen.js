@@ -9,18 +9,22 @@ import {
     Platform,
     ActivityIndicator,
     Alert,
-    Dimensions
+    Dimensions,
+    Image
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useAppSettings } from '../context/AppSettingsContext';
 import { User, Lock, LogIn } from 'lucide-react-native';
+import { API_URL } from '../api/apiService';
 
 const { width } = Dimensions.get('window');
 
-const LoginScreen = () => {
+const LoginScreen = ({ navigation }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const { login } = useAuth();
+    const { logoUrl } = useAppSettings();
 
     const handleLogin = async () => {
         if (!username || !password) {
@@ -37,6 +41,12 @@ const LoginScreen = () => {
         }
     };
 
+    const getLogoSource = () => {
+        if (!logoUrl) return null;
+        if (logoUrl.startsWith('http')) return { uri: logoUrl };
+        return { uri: `${API_URL}${logoUrl}` };
+    };
+
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -45,8 +55,16 @@ const LoginScreen = () => {
             <View style={styles.inner}>
                 {/* Header Section */}
                 <View style={styles.header}>
-                    <View style={styles.logoPlaceholder}>
-                        <LogIn size={40} color="#138FEA" />
+                    <View style={[styles.logoPlaceholder, logoUrl && styles.logoPlaceholderImage]}>
+                        {logoUrl ? (
+                            <Image
+                                source={getLogoSource()}
+                                style={styles.logoImage}
+                                resizeMode="contain"
+                            />
+                        ) : (
+                            <LogIn size={40} color="#138FEA" />
+                        )}
                     </View>
                     <Text style={styles.title}>Kasir Berkah88</Text>
                     <Text style={styles.subtitle}>Selamat datang kembali, silakan login ke akun Anda.</Text>
@@ -93,6 +111,13 @@ const LoginScreen = () => {
                     <TouchableOpacity style={styles.forgotPass}>
                         <Text style={styles.forgotPassText}>Lupa Password?</Text>
                     </TouchableOpacity>
+
+                    <View style={styles.registerContainer}>
+                        <Text style={styles.registerText}>Belum punya akun? </Text>
+                        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                            <Text style={styles.registerBtn}>Daftar Disini</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Footer */}
@@ -127,6 +152,15 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 16,
+    },
+    logoPlaceholderImage: {
+        backgroundColor: 'transparent', // Or keep white
+        padding: 0,
+        overflow: 'hidden',
+    },
+    logoImage: {
+        width: '100%',
+        height: '100%',
     },
     title: {
         fontSize: 28,
@@ -201,6 +235,21 @@ const styles = StyleSheet.create({
         color: '#138FEA',
         fontSize: 14,
         fontWeight: '500',
+    },
+    registerContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginTop: 20,
+        alignItems: 'center',
+    },
+    registerText: {
+        color: '#64748B',
+        fontSize: 14,
+    },
+    registerBtn: {
+        color: '#138FEA',
+        fontWeight: 'bold',
+        fontSize: 14,
     },
     footer: {
         position: 'absolute',

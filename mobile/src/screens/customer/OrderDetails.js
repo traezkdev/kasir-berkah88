@@ -90,6 +90,14 @@ const OrderDetails = ({ navigation, route }) => {
                     icon: XCircle,
                     desc: 'Maaf, penjual tidak dapat menerima pesanan Anda saat ini.'
                 };
+            case 'cancelled':
+                return {
+                    label: 'PESANAN DIBATALKAN',
+                    color: '#94A3B8',
+                    bg: '#F8FAFC',
+                    icon: XCircle,
+                    desc: 'Pesanan ini telah dibatalkan.'
+                };
             case 'completed':
                 return {
                     label: 'PESANAN SELESAI',
