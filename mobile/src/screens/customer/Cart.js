@@ -14,6 +14,7 @@ import {
     TextInput,
     Alert
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     ArrowLeft,
     Trash2,
@@ -36,6 +37,53 @@ import apiService, { API_URL } from '../../api/apiService';
 
 const { width } = Dimensions.get('window');
 
+// Memoized Cart Item to prevent full list re-renders (Anti-Delay)
+const CartItem = React.memo(({ item, updateQuantity, handleRemoveItem, formatCurrency }) => {
+    return (
+        <View style={styles.cartItem}>
+            <Image
+                source={{ uri: item.image_url ? `${API_URL}${item.image_url}` : 'https://via.placeholder.com/150' }}
+                style={styles.itemImage}
+            />
+            <View style={styles.itemInfo}>
+                <View style={styles.itemNameRow}>
+                    <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
+                    <TouchableOpacity onPress={() => handleRemoveItem(item.cartId, item.name)}>
+                        <Trash2 size={14} color="#EF4444" />
+                    </TouchableOpacity>
+                </View>
+
+                {item.selectedOptions && item.selectedOptions.length > 0 && (
+                    <Text style={styles.itemOptions}>
+                        {item.selectedOptions.map(o => o.name).join(', ')}
+                    </Text>
+                )}
+
+                <View style={styles.itemFooter}>
+                    <Text style={styles.itemPrice}>
+                        {formatCurrency((item.price * (1 - (item.discount || 0) / 100)) + (item.selectedOptions?.reduce((acc, o) => acc + (parseFloat(o.price_adjustment) || 0), 0) || 0))}
+                    </Text>
+                    <View style={styles.qtyBox}>
+                        <TouchableOpacity
+                            style={styles.qtyBtn}
+                            onPress={() => updateQuantity(item.cartId, -1)}
+                        >
+                            <Minus size={14} color="#64748B" />
+                        </TouchableOpacity>
+                        <Text style={styles.qtyVal}>{item.quantity}</Text>
+                        <TouchableOpacity
+                            style={[styles.qtyBtn, { backgroundColor: '#059669' }]}
+                            onPress={() => updateQuantity(item.cartId, 1)}
+                        >
+                            <Plus size={14} color="#FFFFFF" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </View>
+        </View>
+    );
+});
+
 const CustomerCart = ({ navigation }) => {
     const {
         cart,
@@ -54,13 +102,34 @@ const CustomerCart = ({ navigation }) => {
     const [savedAddress, setSavedAddress] = useState(null);
     const [paymentMethod, setPaymentMethod] = useState('cash');
 
+    // Maukkan alamat tersimpan dari Profile
     useEffect(() => {
         if (user) {
-            // Simulasi ambil alamat dari profil user
-            // Idealnya: const res = await apiService.get('/api/users/profile'); setSavedAddress(res.data.address);
             setSavedAddress(user.address || 'Arradea blok Q 15');
         }
     }, [user]);
+
+    // Muat alamat terakhir dari storage saat buka keranjang
+    useEffect(() => {
+        const loadLastAddress = async () => {
+            try {
+                const lastAddr = await AsyncStorage.getItem('last_delivery_address');
+                if (lastAddr) {
+                    setCustomerAddress(lastAddr);
+                }
+            } catch (e) {
+                console.error("Gagal muat alamat:", e);
+            }
+        };
+        loadLastAddress();
+    }, []);
+
+    // Simpan alamat ke storage setiap kali berubah (Local Storage)
+    useEffect(() => {
+        if (customerAddress) {
+            AsyncStorage.setItem('last_delivery_address', customerAddress);
+        }
+    }, [customerAddress]);
 
     const formatCurrency = (val) => {
         return new Intl.NumberFormat('id-ID', {
@@ -174,47 +243,13 @@ const CustomerCart = ({ navigation }) => {
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Item Pesanan</Text>
                     {cart.map((item) => (
-                        <View key={item.cartId} style={styles.cartItem}>
-                            <Image
-                                source={{ uri: item.image_url ? `${API_URL}${item.image_url}` : 'https://via.placeholder.com/150' }}
-                                style={styles.itemImage}
-                            />
-                            <View style={styles.itemInfo}>
-                                <View style={styles.itemNameRow}>
-                                    <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-                                    <TouchableOpacity onPress={() => handleRemoveItem(item.cartId, item.name)}>
-                                        <Trash2 size={14} color="#EF4444" />
-                                    </TouchableOpacity>
-                                </View>
-
-                                {item.selectedOptions && item.selectedOptions.length > 0 && (
-                                    <Text style={styles.itemOptions}>
-                                        {item.selectedOptions.map(o => o.name).join(', ')}
-                                    </Text>
-                                )}
-
-                                <View style={styles.itemFooter}>
-                                    <Text style={styles.itemPrice}>
-                                        {formatCurrency((item.price * (1 - (item.discount || 0) / 100)) + (item.selectedOptions?.reduce((acc, o) => acc + (parseFloat(o.price_adjustment) || 0), 0) || 0))}
-                                    </Text>
-                                    <View style={styles.qtyBox}>
-                                        <TouchableOpacity
-                                            style={styles.qtyBtn}
-                                            onPress={() => updateQuantity(item.cartId, -1)}
-                                        >
-                                            <Minus size={14} color="#64748B" />
-                                        </TouchableOpacity>
-                                        <Text style={styles.qtyVal}>{item.quantity}</Text>
-                                        <TouchableOpacity
-                                            style={[styles.qtyBtn, { backgroundColor: '#059669' }]}
-                                            onPress={() => updateQuantity(item.cartId, 1)}
-                                        >
-                                            <Plus size={14} color="#FFFFFF" />
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
-                            </View>
-                        </View>
+                        <CartItem
+                            key={item.cartId}
+                            item={item}
+                            updateQuantity={updateQuantity}
+                            handleRemoveItem={handleRemoveItem}
+                            formatCurrency={formatCurrency}
+                        />
                     ))}
                 </View>
 

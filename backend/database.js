@@ -1217,6 +1217,20 @@ const setupDatabase = async () => {
       console.log('Added is_open column to app_settings table.');
     }
 
+    // Check and add ignore_stock column to app_settings if it doesn't exist
+    const checkIgnoreStockGlobalColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'app_settings' AND COLUMN_NAME = 'ignore_stock';
+    `;
+    const addIgnoreStockGlobalColumn = `
+      ALTER TABLE app_settings ADD COLUMN ignore_stock TINYINT(1) DEFAULT 0;
+    `;
+    const [ignoreStockGlobalRows] = await connection.query(checkIgnoreStockGlobalColumn);
+    if (ignoreStockGlobalRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addIgnoreStockGlobalColumn);
+      console.log('Added ignore_stock column to app_settings table.');
+    }
+
     // --- Optimasi: Tambahkan Indeks untuk Peningkatan Performa ---
     const addIndexIfNotExists = async (connection, tableName, indexName, columns) => {
       const checkIndexQuery = `

@@ -37,6 +37,7 @@ import {
 import apiService, { API_URL } from '../../api/apiService';
 import ReceiptModal from '../../components/ReceiptModal';
 import { useConfirm } from '../../context/ConfirmContext';
+import { useAppSettings } from '../../context/AppSettingsContext';
 
 const { width, height } = Dimensions.get('window');
 const COLUMN_WIDTH = (width - 48) / 2;
@@ -109,37 +110,11 @@ const SalesPOS = () => {
     const [paymentMethod, setPaymentMethod] = useState('tunai');
     const [cashPaid, setCashPaid] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
-    const [ignoreStock, setIgnoreStock] = useState(false);
-
-    // Receipt State
-    const [showReceipt, setShowReceipt] = useState(false);
     const [lastTransaction, setLastTransaction] = useState(null);
+    const [showReceipt, setShowReceipt] = useState(false);
 
     const { confirm } = useConfirm();
-
-    // Load Ignore Stock from Local Storage
-    useEffect(() => {
-        const loadIgnoreStock = async () => {
-            try {
-                const val = await AsyncStorage.getItem('ignore_stock_setting');
-                if (val !== null) {
-                    setIgnoreStock(JSON.parse(val));
-                }
-            } catch (e) {
-                console.error('Error loading ignore stock setting:', e);
-            }
-        };
-        loadIgnoreStock();
-    }, []);
-
-    const toggleIgnoreStock = async (value) => {
-        setIgnoreStock(value);
-        try {
-            await AsyncStorage.setItem('ignore_stock_setting', JSON.stringify(value));
-        } catch (e) {
-            console.error('Error saving ignore stock setting:', e);
-        }
-    };
+    const { ignoreStock, toggleIgnoreStock } = useAppSettings();
 
     const fetchData = async () => {
         setLoading(true);

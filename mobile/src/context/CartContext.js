@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CartContext = createContext();
@@ -14,7 +14,7 @@ export const CartProvider = ({ children }) => {
         loadCart();
     }, []);
 
-    const loadCart = async () => {
+    const loadCart = useCallback(async () => {
         try {
             const saved = await AsyncStorage.getItem('customer_cart');
             if (saved) {
@@ -37,7 +37,7 @@ export const CartProvider = ({ children }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     // Save to storage on change
     useEffect(() => {
@@ -46,7 +46,7 @@ export const CartProvider = ({ children }) => {
         }
     }, [cart, loading]);
 
-    const addToCart = (item, quantity = 1, selectedOptions = []) => {
+    const addToCart = useCallback((item, quantity = 1, selectedOptions = []) => {
         setCart(prev => {
             // Sort options to ensure uniqueness key is consistent
             const sortedOptions = [...selectedOptions].sort((a, b) => a.id - b.id);
@@ -70,13 +70,13 @@ export const CartProvider = ({ children }) => {
                 cartId: `${item.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
             }];
         });
-    };
+    }, []);
 
-    const removeFromCart = (cartId) => {
+    const removeFromCart = useCallback((cartId) => {
         setCart(prev => prev.filter(i => i.cartId !== cartId));
-    };
+    }, []);
 
-    const updateQuantity = (cartId, delta) => {
+    const updateQuantity = useCallback((cartId, delta) => {
         setCart(prev => {
             return prev.map(item => {
                 if (item.cartId === cartId) {
@@ -86,9 +86,9 @@ export const CartProvider = ({ children }) => {
                 return item;
             }).filter(i => i.quantity > 0);
         });
-    };
+    }, []);
 
-    const clearCart = () => setCart([]);
+    const clearCart = useCallback(() => setCart([]), []);
 
     const cartTotal = cart.reduce((acc, item) => {
         const optionsTotal = (item.selectedOptions || []).reduce((sum, opt) => sum + (parseFloat(opt.price_adjustment) || 0), 0);
@@ -99,28 +99,28 @@ export const CartProvider = ({ children }) => {
     const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
     // Get total quantity for a menu item ID (across all variants)
-    const getItemQuantity = (itemId) => {
+    const getItemQuantity = useCallback((itemId) => {
         return cart.filter(i => i.id === itemId).reduce((acc, i) => acc + i.quantity, 0);
-    };
+    }, [cart]);
 
     // Get quantity for a specific variant
-    const getVariantQuantity = (itemId, selectedOptions = []) => {
+    const getVariantQuantity = useCallback((itemId, selectedOptions = []) => {
         const optionsKey = JSON.stringify([...selectedOptions].sort((a, b) => a.id - b.id));
         const item = cart.find(i =>
             i.id === itemId &&
             JSON.stringify(i.selectedOptions || []) === optionsKey
         );
         return item ? item.quantity : 0;
-    };
+    }, [cart]);
 
-    const getCartId = (itemId, selectedOptions = []) => {
+    const getCartId = useCallback((itemId, selectedOptions = []) => {
         const optionsKey = JSON.stringify([...selectedOptions].sort((a, b) => a.id - b.id));
         const item = cart.find(i =>
             i.id === itemId &&
             JSON.stringify(i.selectedOptions || []) === optionsKey
         );
         return item ? item.cartId : null;
-    };
+    }, [cart]);
 
     return (
         <CartContext.Provider value={{

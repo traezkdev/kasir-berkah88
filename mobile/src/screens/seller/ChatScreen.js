@@ -239,31 +239,32 @@ const ChatScreen = ({ navigation }) => {
 
     if (activeChat) {
         return (
-            <SafeAreaView style={styles.container}>
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                    style={styles.container}
-                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-                >
-                    {/* Message Header */}
-                    <View style={styles.header}>
-                        <View style={styles.headerLeft}>
-                            <TouchableOpacity onPress={() => (user?.role === 'pelanggan' || user?.role === 'user') ? navigation.goBack() : setActiveChat(null)} style={styles.backBtn}>
-                                <ArrowLeft size={24} color="#1E293B" />
-                            </TouchableOpacity>
-                            <View style={styles.headerInfo}>
-                                <Text style={styles.headerTitle}>{activeChat.username}</Text>
-                                <View style={styles.onlineStatus}>
-                                    <View style={styles.onlineDot} />
-                                    <Text style={styles.onlineText}>ONLINE</Text>
-                                </View>
+            <View style={styles.container}>
+                {/* Message Header - Tetap di Atas */}
+                <View style={styles.header}>
+                    <View style={styles.headerLeft}>
+                        <TouchableOpacity onPress={() => (user?.role === 'pelanggan' || user?.role === 'user') ? navigation.goBack() : setActiveChat(null)} style={styles.backBtn}>
+                            <ArrowLeft size={24} color="#1E293B" />
+                        </TouchableOpacity>
+                        <View style={styles.headerInfo}>
+                            <Text style={styles.headerTitle}>{activeChat.username}</Text>
+                            <View style={styles.onlineStatus}>
+                                <View style={styles.onlineDot} />
+                                <Text style={styles.onlineText}>ONLINE</Text>
                             </View>
                         </View>
-                        <TouchableOpacity onPress={handleDeleteHistory} style={styles.moreBtn}>
-                            <Trash2 size={20} color="#EF4444" />
-                        </TouchableOpacity>
                     </View>
+                    <TouchableOpacity onPress={handleDeleteHistory} style={styles.moreBtn}>
+                        <Trash2 size={20} color="#EF4444" />
+                    </TouchableOpacity>
+                </View>
 
+                {/* Body & Input */}
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={{ flex: 1 }}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+                >
                     {/* Active Order Widget if exists */}
                     {activeOrder && (
                         <View style={styles.orderWidget}>
@@ -308,7 +309,7 @@ const ChatScreen = ({ navigation }) => {
                         </TouchableOpacity>
                     </View>
                 </KeyboardAvoidingView>
-            </SafeAreaView>
+            </View>
         );
     }
 

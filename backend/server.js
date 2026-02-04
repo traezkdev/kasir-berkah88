@@ -239,9 +239,18 @@ const logActivity = async (userId, action, targetType = null, targetId = null, d
  * @param {string} heading - Judul
  * @param {object} data - Data tambahan
  */
-const sendUniversalNotification = async (userIds, message, heading, data = {}) => {
+const sendUniversalNotification = async (userIds, message, heading, data = {}, excludedUserId = null) => {
     // 1. OneSignal (Existing)
-    const normalizedUserIds = userIds ? (Array.isArray(userIds) ? userIds : [userIds]) : null;
+    let normalizedUserIds = userIds ? (Array.isArray(userIds) ? userIds : [userIds]) : null;
+
+    // Filter out the excluded user
+    if (normalizedUserIds && excludedUserId) {
+        normalizedUserIds = normalizedUserIds.filter(id => id.toString() !== excludedUserId.toString());
+    }
+
+    // Don't send if no targets left
+    if (normalizedUserIds !== null && normalizedUserIds.length === 0) return;
+
     sendPushNotification(message, heading, data, normalizedUserIds).catch(e => console.error('OneSignal Error:', e));
 
     // 2. Expo Push
@@ -253,15 +262,20 @@ const sendUniversalNotification = async (userIds, message, heading, data = {}) =
             pushTokens = rows.map(r => r.push_token);
         } else {
             // Ambil semua token jika userIds null (Broadcast)
-            // Namun untuk efisiensi, sebaiknya broadcast hanya ke role tertentu jika relevan
-            // Misal: Pesanan baru hanya ke admin/penjual
+            let sql = "SELECT push_token FROM users WHERE push_token IS NOT NULL";
+            let params = [];
+
             if (data.type === 'new_order') {
-                const [rows] = await db.query("SELECT push_token FROM users WHERE role IN ('admin', 'penjual', 'owner') AND push_token IS NOT NULL");
-                pushTokens = rows.map(r => r.push_token);
-            } else {
-                const [rows] = await db.query('SELECT push_token FROM users WHERE push_token IS NOT NULL');
-                pushTokens = rows.map(r => r.push_token);
+                sql = "SELECT push_token FROM users WHERE role IN ('admin', 'penjual', 'owner') AND push_token IS NOT NULL";
             }
+
+            if (excludedUserId) {
+                sql += (sql.includes('WHERE') ? ' AND ' : ' WHERE ') + "id != ?";
+                params.push(excludedUserId);
+            }
+
+            const [rows] = await db.query(sql, params);
+            pushTokens = rows.map(r => r.push_token);
         }
 
         if (pushTokens.length > 0) {
@@ -1658,7 +1672,7 @@ app.put('/api/settings/ppn', authenticateToken, authorizeRoles('admin'), async (
 // Get restaurant settings (public)
 app.get('/api/restaurant-settings', async (req, res) => {
     try {
-        const sql = "SELECT restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open FROM app_settings ORDER BY id LIMIT 1";
+        const sql = "SELECT restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, ignore_stock FROM app_settings ORDER BY id LIMIT 1";
         const [rows] = await db.query(sql);
         if (rows.length > 0) {
             res.json({
@@ -1675,7 +1689,8 @@ app.get('/api/restaurant-settings', async (req, res) => {
                     restaurant_url: 'www.berkah88.id',
                     owner_phone: null,
                     show_stock_alert: 1,
-                    is_open: 1
+                    is_open: 1,
+                    ignore_stock: 0
                 }
             });
         }
@@ -1687,33 +1702,51 @@ app.get('/api/restaurant-settings', async (req, res) => {
 // Update restaurant settings (admin only)
 app.put('/api/restaurant-settings', authenticateToken, authorizeRoles('admin'), async (req, res) => {
     try {
-        const { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open } = req.body;
+        const { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, ignore_stock } = req.body;
         if (!restaurant_name || !restaurant_slogan) {
             return res.status(400).json({ "error": "Restaurant name and slogan are required." });
         }
 
-        const sql = `UPDATE app_settings SET restaurant_name = ?, restaurant_slogan = ?, restaurant_url = ?, owner_phone = ?, show_stock_alert = ?, is_open = ? WHERE id = (SELECT id FROM (SELECT id FROM app_settings ORDER BY id LIMIT 1) as t)`;
+        const sql = `UPDATE app_settings SET restaurant_name = ?, restaurant_slogan = ?, restaurant_url = ?, owner_phone = ?, show_stock_alert = ?, is_open = ?, ignore_stock = ? WHERE id = (SELECT id FROM (SELECT id FROM app_settings ORDER BY id LIMIT 1) as t)`;
         const params = [
             restaurant_name,
             restaurant_slogan,
             restaurant_url || 'www.berkah88.id',
             owner_phone || null,
             show_stock_alert !== undefined ? show_stock_alert : 1,
-            is_open !== undefined ? is_open : 1
+            is_open !== undefined ? is_open : 1,
+            ignore_stock !== undefined ? ignore_stock : 0
         ];
         const [result] = await db.query(sql, params);
 
         if (result.affectedRows === 0) {
             // If no rows were affected, it might mean no settings exist yet. Insert them.
-            const insertSql = 'INSERT INTO app_settings (restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, og_title) VALUES (?, ?, ?, ?, ?, ?, ?)';
+            const insertSql = 'INSERT INTO app_settings (restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, ignore_stock, og_title) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
             await db.query(insertSql, [...params, 'Kasir Berkah 88']);
-            res.json({ message: "Restaurant settings inserted successfully!", data: { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open } });
+            res.json({ message: "Restaurant settings inserted successfully!", data: { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, ignore_stock } });
         } else {
-            res.json({ message: "Restaurant settings updated successfully!", data: { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open } });
+            res.json({ message: "Restaurant settings updated successfully!", data: { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, ignore_stock } });
         }
 
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// Toggle Ignore Stock status (admin)
+app.patch('/api/restaurant-settings/ignore-stock', authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { ignore_stock } = req.body;
+        if (ignore_stock === undefined) {
+            return res.status(400).json({ error: "ignore_stock status is required" });
+        }
+
+        const sql = `UPDATE app_settings SET ignore_stock = ? WHERE id = (SELECT id FROM (SELECT id FROM app_settings ORDER BY id LIMIT 1) as t)`;
+        await db.query(sql, [ignore_stock ? 1 : 0]);
+
+        res.json({ message: `Abaikan Stok berhasil ${ignore_stock ? 'diaktifkan' : 'dinonaktifkan'}`, data: { ignore_stock } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -2034,7 +2067,7 @@ app.get("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
 app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'pelanggan'), async (req, res, next) => {
     let connection;
     try {
-        const { items, total: frontendTotal, ppn: frontendPpn, ignoreStock, cashPaid, change, isEmployeeMeal, payment_method, manual_discount, catatan } = req.body;
+        const { items, total: frontendTotal, ppn: frontendPpn, cashPaid, change, isEmployeeMeal, payment_method, manual_discount, catatan } = req.body;
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ "error": "No items specified" });
@@ -2043,7 +2076,16 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
         connection = await db.getConnection();
         await connection.beginTransaction();
 
-        if (!ignoreStock) {
+        const { ignoreStock: reqIgnoreStock } = req.body;
+
+        // Get global ignore_stock setting as fallback
+        const [settingsRows] = await connection.query('SELECT ignore_stock FROM app_settings ORDER BY id LIMIT 1');
+        const globalIgnoreStock = settingsRows.length > 0 ? !!settingsRows[0].ignore_stock : false;
+
+        // If ignoreStock is passed in body, it takes precedence, otherwise use global setting.
+        const effectivelyIgnoreStock = reqIgnoreStock !== undefined ? reqIgnoreStock : globalIgnoreStock;
+
+        if (!effectivelyIgnoreStock) {
             // --- STOCK VALIDATION BEFORE TRANSACTION (WITH LOCK) ---
             for (const cartItem of items) {
                 const [rows] = await connection.query('SELECT stock FROM menu_items WHERE id = ? FOR UPDATE', [cartItem.id]);
@@ -2097,7 +2139,7 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
         const timestamp = new Date();
         const serializedItems = JSON.stringify(itemsWithDetails);
         const finalIsEmployeeMeal = isEmployeeMeal ? 1 : 0;
-        const finalIgnoreStock = ignoreStock ? 1 : 0;
+        const finalIgnoreStock = effectivelyIgnoreStock ? 1 : 0;
         const finalPaymentMethod = payment_method || 'tunai';
         const finalUserId = req.user ? req.user.userId : null;
 
@@ -2120,10 +2162,9 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
 
         await connection.query(sql, params);
 
-        if (!ignoreStock) {
-            for (const item of itemsWithDetails) {
-                await connection.query('UPDATE menu_items SET stock = stock - ? WHERE id = ?', [item.quantity, item.id]);
-            }
+        // Stock should always be reduced, even if ignoring stock for validation
+        for (const item of itemsWithDetails) {
+            await connection.query('UPDATE menu_items SET stock = stock - ? WHERE id = ?', [item.quantity, item.id]);
         }
 
         await connection.commit();
@@ -3046,12 +3087,22 @@ app.post("/api/orders", (req, res, next) => {
         let calculatedTotal = 0;
         const orderItemsWithDetails = [];
 
+        // Get global ignore_stock setting
+        const [settingsRows] = await db.query('SELECT ignore_stock FROM app_settings ORDER BY id LIMIT 1');
+        const globalIgnoreStock = settingsRows.length > 0 ? !!settingsRows[0].ignore_stock : false;
+
         for (const item of items) {
-            const [menuItemRows] = await db.query('SELECT id, name, price, discount FROM menu_items WHERE id = ?', [item.id]);
+            const [menuItemRows] = await db.query('SELECT id, name, price, discount, stock FROM menu_items WHERE id = ?', [item.id]);
             if (menuItemRows.length === 0) {
                 return res.status(400).json({ error: `Menu item with ID ${item.id} not found.` });
             }
             const menuItem = menuItemRows[0];
+
+            // Stock validation if NOT ignoring stock
+            if (!globalIgnoreStock && menuItem.stock !== null && menuItem.stock < item.quantity) {
+                return res.status(400).json({ error: `Stok tidak mencukupi untuk ${menuItem.name}. (Tersedia: ${menuItem.stock})` });
+            }
+
             const itemPrice = parseFloat(menuItem.price);
             const itemDiscount = parseFloat(menuItem.discount || 0);
 
@@ -3220,11 +3271,12 @@ app.get("/api/orders/:id", authenticateToken, authorizeRoles('admin', 'user', 'p
 });
 
 // Update an order's status
-app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'user', 'kasir', 'penjual', 'pelanggan'), async (req, res) => {
+app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'user', 'kasir', 'penjual', 'pelanggan', 'owner'), async (req, res) => {
     const { status } = req.body;
     const { id } = req.params;
 
     if (!status || !['accepted', 'rejected', 'cancelled', 'completed'].includes(status)) {
+        console.error(`[Order] Invalid status update attempt: ${status} for ID ${id}`);
         return res.status(400).json({ error: "Invalid status provided. Must be 'accepted', 'rejected', 'cancelled', or 'completed'." });
     }
 
@@ -3294,7 +3346,15 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
 
         // Handle 'accepted' status
         if (status === 'accepted') {
-            const { ignoreStock } = req.body;
+            const { ignoreStock: reqIgnoreStock } = req.body;
+
+            // Get global ignore_stock setting as fallback
+            const [settingsRows] = await connection.query('SELECT ignore_stock FROM app_settings ORDER BY id LIMIT 1');
+            const globalIgnoreStock = settingsRows.length > 0 ? !!settingsRows[0].ignore_stock : false;
+
+            // If ignoreStock is passed in body, it takes precedence (e.g. from specific SalesPOS action),
+            // otherwise use global setting.
+            const effectivelyIgnoreStock = reqIgnoreStock !== undefined ? reqIgnoreStock : globalIgnoreStock;
 
             if (order.status !== 'pending') {
                 await connection.rollback();
@@ -3306,7 +3366,7 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
 
 
             // 2. Stock Validation
-            if (!ignoreStock) {
+            if (!effectivelyIgnoreStock) {
 
 
 
@@ -3394,6 +3454,7 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
 
 
 
+                    console.error(`[Order] Stock validation failed for order ${id}: ${errorMessage}`);
                     return res.status(400).json({ error: errorMessage.trim() });
 
 
@@ -3466,7 +3527,8 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
                 ppn: ppnAmount,
                 isEmployeeMeal: 0,
                 payment_method: 'Tunai',
-                order_id: id
+                order_id: id,
+                ignore_stock: effectivelyIgnoreStock ? 1 : 0
             };
 
             const transactionParams = [
@@ -3477,10 +3539,11 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
                 transactionData.ppn,
                 transactionData.isEmployeeMeal,
                 transactionData.payment_method,
-                transactionData.order_id
+                transactionData.order_id,
+                transactionData.ignore_stock
             ];
 
-            await connection.query('INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, order_id) VALUES (?,?,?,?,?,?,?,?)', transactionParams);
+            await connection.query('INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, order_id, ignore_stock) VALUES (?,?,?,?,?,?,?,?,?)', transactionParams);
 
             // 5. Update the order status to 'accepted'
             await connection.query('UPDATE orders SET status = ? WHERE id = ?', ['accepted', id]);
@@ -3762,6 +3825,10 @@ app.post("/api/users/push-token", authenticateToken, async (req, res) => {
             return res.status(400).json({ error: "pushToken is required" });
         }
 
+        // 1. Hapus token ini dari user lain agar tidak terjadi duplikasi notifikasi pada satu device
+        await db.query("UPDATE users SET push_token = NULL WHERE push_token = ? AND id != ?", [pushToken, userId]);
+
+        // 2. Update token untuk user saat ini
         const sql = 'UPDATE users SET push_token = ? WHERE id = ?';
         await db.query(sql, [pushToken, userId]);
 
@@ -4876,12 +4943,27 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
         const sql = "INSERT INTO messages (sender_id, receiver_id, message, order_id) VALUES (?, ?, ?, ?)";
         const [result] = await db.query(sql, [sender_id, receiver_id, message, order_id || null]);
 
-        // Kirim Notifikasi Push ke Penerima
+        // Kirim Notifikasi Push
+        // 1. Cek peran penerima
+        const [receiverRows] = await db.query("SELECT role FROM users WHERE id = ?", [receiver_id]);
+        const receiverRole = receiverRows[0]?.role;
+        const sellerRoles = ['admin', 'owner', 'penjual', 'kasir'];
+
+        let targetUserIds = [receiver_id];
+
+        // 2. Jika pesan ditujukan ke salah satu tim seller, notifikasi ke SELURUH tim seller
+        if (sellerRoles.includes(receiverRole)) {
+            const [allSellers] = await db.query("SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')");
+            targetUserIds = allSellers.map(s => s.id);
+        }
+
+        // 3. Jalankan pengiriman notifikasi (kecuali ke pengirim sendiri)
         sendUniversalNotification(
-            [receiver_id],
+            targetUserIds,
             message,
             `Pesan dari ${req.user.username}`,
-            { type: 'chat', senderId: sender_id, orderId: order_id }
+            { type: 'chat', senderId: sender_id, orderId: order_id },
+            sender_id // excludedUserId
         );
 
         res.status(201).json({
@@ -5035,13 +5117,15 @@ app.put("/api/messages/read/:senderId", authenticateToken, async (req, res) => {
 
         let sql;
         if (isSeller) {
-            // Jika dibaca oleh salah satu seller, tandai sudah dibaca untuk SELURUH tim seller
+            // Jika dibaca oleh salah satu SELLER, tandai pesan dari PELANGGAN ini (senderId) sudah dibaca oleh TIM SELLER
             sql = "UPDATE messages SET is_read = 1 WHERE sender_id = ? AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND is_read = 0";
+            await db.query(sql, [senderId]);
         } else {
-            sql = "UPDATE messages SET is_read = 1 WHERE sender_id = ? AND receiver_id = ? AND is_read = 0";
+            // Jika dibaca oleh PELANGGAN, tandai SEMUA pesan dari SELURUH TIM SELLER ke Pelanggan ini sebagai sudah dibaca
+            sql = "UPDATE messages SET is_read = 1 WHERE sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND receiver_id = ? AND is_read = 0";
+            await db.query(sql, [myId]);
         }
 
-        await db.query(sql, isSeller ? [senderId] : [senderId, myId]);
         res.json({ message: "Pesan ditandai sudah dibaca" });
     } catch (err) {
         res.status(500).json({ error: err.message });

@@ -23,6 +23,7 @@ import apiService from '../../api/apiService';
 import SellerOrderCard from '../../components/SellerOrderCard';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useOrderNotification } from '../../context/OrderNotificationContext';
+import { useToast } from '../../context/ToastContext';
 
 const OrderManagement = ({ navigation }) => {
     const [orders, setOrders] = useState([]);
@@ -31,6 +32,7 @@ const OrderManagement = ({ navigation }) => {
     const [activeTab, setActiveTab] = useState('pending');
     const { confirm } = useConfirm();
     const { refreshTrigger } = useOrderNotification();
+    const { showToast } = useToast();
 
     const fetchOrders = useCallback(async (isRefresh = false) => {
         if (!isRefresh) setLoading(true);
@@ -57,8 +59,11 @@ const OrderManagement = ({ navigation }) => {
     const handleUpdateStatus = async (orderId, status) => {
         try {
             await apiService.put(`/api/orders/${orderId}/status`, { status });
+            showToast('Status berhasil diperbarui', 'success');
             fetchOrders(true);
         } catch (error) {
+            const errorMsg = error.response?.data?.error || 'Gagal memperbarui status';
+            showToast(errorMsg, 'error');
             console.error('Error updating status:', error);
         }
     };

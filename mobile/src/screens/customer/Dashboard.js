@@ -36,14 +36,16 @@ import apiService, { API_URL } from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { useCart } from '../../context/CartContext';
+import { useChat } from '../../context/ChatContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
 const CustomerDashboard = ({ navigation }) => {
     const { user } = useAuth();
-    const { isOpen } = useAppSettings();
+    const { isOpen, ignoreStock } = useAppSettings();
     const { cartCount } = useCart();
+    const { unreadCount } = useChat();
 
     const [menus, setMenus] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -179,7 +181,14 @@ const CustomerDashboard = ({ navigation }) => {
                         <Text style={styles.compactSearchText}>Cari menu favorit...</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => navigation.navigate('ChatScreen')}>
-                        <MessageCircle size={20} color="#64748B" />
+                        <View>
+                            <MessageCircle size={20} color="#64748B" />
+                            {unreadCount > 0 && (
+                                <View style={[styles.statusBadge, { top: -6, right: -6, width: 14, height: 14, borderRadius: 7, borderWidth: 1.5 }]}>
+                                    <Text style={[styles.statusBadgeText, { fontSize: 7 }]}>{unreadCount}</Text>
+                                </View>
+                            )}
+                        </View>
                     </TouchableOpacity>
                 </View>
             </Animated.View>
@@ -204,7 +213,14 @@ const CustomerDashboard = ({ navigation }) => {
                             style={styles.notificationBtn}
                             onPress={() => navigation.navigate('ChatScreen')}
                         >
-                            <MessageCircle size={22} color="#FFFFFF" />
+                            <View>
+                                <MessageCircle size={22} color="#FFFFFF" />
+                                {unreadCount > 0 && (
+                                    <View style={[styles.statusBadge, { top: -5, right: -5 }]}>
+                                        <Text style={styles.statusBadgeText}>{unreadCount}</Text>
+                                    </View>
+                                )}
+                            </View>
                         </TouchableOpacity>
                     </View>
 
@@ -372,64 +388,79 @@ const CustomerDashboard = ({ navigation }) => {
                     <Text style={styles.recommendationTitle}>Rekomendasi Pilihan</Text>
                 </View>
                 <View style={styles.menuGrid}>
-                    {menus.map((menu) => (
-                        <TouchableOpacity
-                            key={menu.id}
-                            style={[styles.menuCard, !isOpen && styles.menuCardClosed]}
-                            onPress={() => isOpen && navigation.navigate('Menu', { itemId: menu.id })}
-                        >
-                            <View style={styles.menuImageContainer}>
-                                {menu.image_url ? (
-                                    <Image
-                                        source={{ uri: `${API_URL}${menu.image_url}` }}
-                                        style={styles.menuImage}
-                                        onError={(e) => {
-                                            console.log(`Image 404 for ${menu.name}`);
-                                            // Since we can't easily change the menu object here without re-rendering everything,
-                                            // we can use a component level state or just ignore.
-                                            // The best way in a map is a custom Image component.
+                    {menus.map((menu) => {
+                        const isOutOfStock = !ignoreStock && menu.stock <= 0;
+                        return (
+                            <TouchableOpacity
+                                key={menu.id}
+                                style={[
+                                    styles.menuCard,
+                                    (!isOpen || isOutOfStock) && styles.menuCardClosed,
+                                    isOutOfStock && styles.menuCardOutOfStock
+                                ]}
+                                onPress={() => isOpen && !isOutOfStock && navigation.navigate('Menu', { itemId: menu.id })}
+                                disabled={!isOpen || (isOutOfStock && !isOpen)}
+                            >
+                                <View style={styles.menuImageContainer}>
+                                    {menu.image_url ? (
+                                        <Image
+                                            source={{ uri: `${API_URL}${menu.image_url}` }}
+                                            style={styles.menuImage}
+                                            onError={(e) => {
+                                                console.log(`Image 404 for ${menu.name}`);
+                                            }}
+                                        />
+                                    ) : (
+                                        <View style={styles.menuImagePlaceholder}>
+                                            <Package size={30} color="#CBD5E1" />
+                                        </View>
+                                    )}
+                                    {menu.discount > 0 && (
+                                        <View style={styles.discountBadge}>
+                                            <Zap size={10} color="#FFFFFF" fill="#FFFFFF" />
+                                            <Text style={styles.discountText}>PROMO {parseFloat(menu.discount).toFixed(0)}%</Text>
+                                        </View>
+                                    )}
+                                    {isOutOfStock && (
+                                        <View style={styles.outOfStockBadge}>
+                                            <Text style={styles.outOfStockText}>HABIS</Text>
+                                        </View>
+                                    )}
+                                    <TouchableOpacity
+                                        style={[styles.quickAddBtn, isOutOfStock && { opacity: 0.5 }]}
+                                        onPress={(e) => {
+                                            e.stopPropagation();
+                                            if (isOpen && !isOutOfStock) {
+                                                navigation.navigate('Menu', { itemId: menu.id });
+                                            }
                                         }}
-                                    />
-                                ) : (
-                                    <View style={styles.menuImagePlaceholder}>
-                                        <Package size={30} color="#CBD5E1" />
-                                    </View>
-                                )}
-                                {menu.discount > 0 && (
-                                    <View style={styles.discountBadge}>
-                                        <Zap size={10} color="#FFFFFF" fill="#FFFFFF" />
-                                        <Text style={styles.discountText}>PROMO {parseFloat(menu.discount).toFixed(0)}%</Text>
-                                    </View>
-                                )}
-                                <TouchableOpacity
-                                    style={styles.quickAddBtn}
-                                    onPress={(e) => { e.stopPropagation(); isOpen && navigation.navigate('Menu', { itemId: menu.id }); }}
-                                    disabled={!isOpen}
-                                >
-                                    <Plus size={16} color="#059669" />
-                                </TouchableOpacity>
-                            </View>
-                            <View style={styles.menuInfo}>
-                                <Text style={styles.menuName} numberOfLines={2}>{menu.name}</Text>
-                                <View style={styles.menuFooter}>
-                                    <View>
-                                        {menu.discount > 0 ? (
-                                            <>
-                                                <Text style={styles.oldPrice}>{formatCurrency(menu.price)}</Text>
-                                                <Text style={styles.newPrice}>{formatCurrency(Math.round(menu.price * (1 - menu.discount / 100)))}</Text>
-                                            </>
-                                        ) : (
-                                            <Text style={styles.newPrice}>{formatCurrency(menu.price)}</Text>
-                                        )}
-                                    </View>
-                                    <View style={styles.ratingWrap}>
-                                        <Star size={10} color="#FBBF24" fill="#FBBF24" />
-                                        <Text style={styles.ratingVal}>{menu.average_rating ? parseFloat(menu.average_rating).toFixed(1) : '0.0'}</Text>
+                                        disabled={!isOpen || isOutOfStock}
+                                    >
+                                        <Plus size={16} color={isOutOfStock ? "#94A3B8" : "#059669"} />
+                                    </TouchableOpacity>
+                                </View>
+                                <View style={styles.menuInfo}>
+                                    <Text style={[styles.menuName, isOutOfStock && styles.textMuted]} numberOfLines={2}>{menu.name}</Text>
+                                    <View style={styles.menuFooter}>
+                                        <View>
+                                            {menu.discount > 0 ? (
+                                                <>
+                                                    <Text style={styles.oldPrice}>{formatCurrency(menu.price)}</Text>
+                                                    <Text style={styles.newPrice}>{formatCurrency(Math.round(menu.price * (1 - menu.discount / 100)))}</Text>
+                                                </>
+                                            ) : (
+                                                <Text style={styles.newPrice}>{formatCurrency(menu.price)}</Text>
+                                            )}
+                                        </View>
+                                        <View style={styles.ratingWrap}>
+                                            <Star size={10} color="#FBBF24" fill="#FBBF24" />
+                                            <Text style={styles.ratingVal}>{menu.average_rating ? parseFloat(menu.average_rating).toFixed(1) : '0.0'}</Text>
+                                        </View>
                                     </View>
                                 </View>
-                            </View>
-                        </TouchableOpacity>
-                    ))}
+                            </TouchableOpacity>
+                        );
+                    })}
                 </View>
 
                 {/* Footer Padding */}
@@ -926,6 +957,28 @@ const styles = StyleSheet.create({
         fontSize: 10,
         fontWeight: 'bold',
         color: '#64748B',
+    },
+    menuCardOutOfStock: {
+        opacity: 0.6,
+    },
+    outOfStockBadge: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    outOfStockText: {
+        color: '#FFFFFF',
+        fontSize: 8,
+        fontWeight: '900',
+        letterSpacing: 1,
+    },
+    textMuted: {
+        color: '#94A3B8',
     }
 });
 

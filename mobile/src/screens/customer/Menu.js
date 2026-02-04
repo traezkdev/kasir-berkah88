@@ -37,6 +37,85 @@ import { useAppSettings } from '../../context/AppSettingsContext';
 
 const { width, height } = Dimensions.get('window');
 
+// Memoized Menu Card Item for maximum performance
+const MenuCardItem = React.memo(({ item, qty, isOpen, ignoreStock, onOpenDetail, formatCurrency }) => {
+    const priceAfterDiscount = item.discount > 0 ? Math.round(item.price * (1 - item.discount / 100)) : item.price;
+    const isOutOfStock = !ignoreStock && item.stock <= 0;
+
+    return (
+        <TouchableOpacity
+            style={[styles.menuRow, (!isOpen || isOutOfStock) && styles.menuRowClosed]}
+            activeOpacity={0.7}
+            onPress={() => isOpen && !isOutOfStock && onOpenDetail(item)}
+        >
+            <View style={styles.menuImageContainer}>
+                {item.image_url ? (
+                    <Image
+                        source={{ uri: `${API_URL}${item.image_url}` }}
+                        style={styles.menuImage}
+                        onError={() => console.log(`Menu image 404: ${item.name}`)}
+                    />
+                ) : (
+                    <View style={styles.menuImagePlaceholder}>
+                        <ImageIcon size={24} color="#CBD5E1" />
+                    </View>
+                )}
+                {item.discount > 0 && (
+                    <View style={styles.rowDiscountBadge}>
+                        <Text style={styles.rowDiscountText}>{parseFloat(item.discount).toFixed(0)}% OFF</Text>
+                    </View>
+                )}
+                {isOutOfStock && (
+                    <View style={styles.outOfStockBadge}>
+                        <Text style={styles.outOfStockText}>HABIS</Text>
+                    </View>
+                )}
+            </View>
+
+            <View style={styles.menuInfoContainer}>
+                <View>
+                    <View style={styles.rowNameHeader}>
+                        <Text style={[styles.rowName, isOutOfStock && styles.textMuted]} numberOfLines={1}>{item.name}</Text>
+                        {item.average_rating > 0 && (
+                            <View style={styles.rowRating}>
+                                <Star size={10} color="#FBBF24" fill="#FBBF24" />
+                                <Text style={styles.rowRatingText}>{parseFloat(item.average_rating).toFixed(1)}</Text>
+                            </View>
+                        )}
+                    </View>
+                    <Text style={styles.rowDesc} numberOfLines={2}>{item.description || 'Tidak ada deskripsi'}</Text>
+                </View>
+
+                <View style={styles.rowFooter}>
+                    <View>
+                        {item.discount > 0 && <Text style={styles.rowOldPrice}>{formatCurrency(item.price)}</Text>}
+                        <Text style={styles.rowPrice}>{formatCurrency(priceAfterDiscount)}</Text>
+                    </View>
+
+                    {qty > 0 ? (
+                        <View style={styles.rowQtyBadge}>
+                            <Text style={styles.rowQtyText}>{qty}x</Text>
+                        </View>
+                    ) : (
+                        <TouchableOpacity
+                            disabled={!isOpen || isOutOfStock}
+                            style={[
+                                styles.rowAddBtn,
+                                (!isOpen || isOutOfStock) && styles.rowAddBtnDisabled
+                            ]}
+                            onPress={() => onOpenDetail(item)}
+                        >
+                            <Text style={[styles.rowAddText, isOutOfStock && styles.textMuted]}>
+                                {isOutOfStock ? 'Habis' : 'Tambah'}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </View>
+        </TouchableOpacity>
+    );
+});
+
 const CustomerMenu = ({ navigation, route }) => {
     const { categoryId, itemId, filter } = route.params || {};
     const {
@@ -48,7 +127,7 @@ const CustomerMenu = ({ navigation, route }) => {
         cartTotal,
         cartCount
     } = useCart();
-    const { isOpen } = useAppSettings();
+    const { isOpen, ignoreStock } = useAppSettings();
 
     const [menus, setMenus] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -140,73 +219,19 @@ const CustomerMenu = ({ navigation, route }) => {
         }).format(val || 0);
     };
 
-    const renderMenuCard = ({ item }) => {
+    const renderMenuCard = useCallback(({ item }) => {
         const qty = getItemQuantity(item.id);
-        const priceAfterDiscount = item.discount > 0 ? Math.round(item.price * (1 - item.discount / 100)) : item.price;
-
         return (
-            <TouchableOpacity
-                style={[styles.menuRow, !isOpen && styles.menuRowClosed]}
-                activeOpacity={0.7}
-                onPress={() => isOpen && handleOpenDetail(item)}
-            >
-                <View style={styles.menuImageContainer}>
-                    {item.image_url ? (
-                        <Image
-                            source={{ uri: `${API_URL}${item.image_url}` }}
-                            style={styles.menuImage}
-                            onError={() => console.log(`Menu image 404: ${item.name}`)}
-                        />
-                    ) : (
-                        <View style={styles.menuImagePlaceholder}>
-                            <ImageIcon size={24} color="#CBD5E1" />
-                        </View>
-                    )}
-                    {item.discount > 0 && (
-                        <View style={styles.rowDiscountBadge}>
-                            <Text style={styles.rowDiscountText}>{parseFloat(item.discount).toFixed(0)}% OFF</Text>
-                        </View>
-                    )}
-                </View>
-
-                <View style={styles.menuInfoContainer}>
-                    <View>
-                        <View style={styles.rowNameHeader}>
-                            <Text style={styles.rowName} numberOfLines={1}>{item.name}</Text>
-                            {item.average_rating > 0 && (
-                                <View style={styles.rowRating}>
-                                    <Star size={10} color="#FBBF24" fill="#FBBF24" />
-                                    <Text style={styles.rowRatingText}>{parseFloat(item.average_rating).toFixed(1)}</Text>
-                                </View>
-                            )}
-                        </View>
-                        <Text style={styles.rowDesc} numberOfLines={2}>{item.description || 'Tidak ada deskripsi'}</Text>
-                    </View>
-
-                    <View style={styles.rowFooter}>
-                        <View>
-                            {item.discount > 0 && <Text style={styles.rowOldPrice}>{formatCurrency(item.price)}</Text>}
-                            <Text style={styles.rowPrice}>{formatCurrency(priceAfterDiscount)}</Text>
-                        </View>
-
-                        {qty > 0 ? (
-                            <View style={styles.rowQtyBadge}>
-                                <Text style={styles.rowQtyText}>{qty}x</Text>
-                            </View>
-                        ) : (
-                            <TouchableOpacity
-                                disabled={!isOpen}
-                                style={[styles.rowAddBtn, !isOpen && styles.rowAddBtnDisabled]}
-                                onPress={() => handleOpenDetail(item)}
-                            >
-                                <Text style={styles.rowAddText}>Tambah</Text>
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                </View>
-            </TouchableOpacity>
+            <MenuCardItem
+                item={item}
+                qty={qty}
+                isOpen={isOpen}
+                ignoreStock={ignoreStock}
+                onOpenDetail={handleOpenDetail}
+                formatCurrency={formatCurrency}
+            />
         );
-    };
+    }, [getItemQuantity, isOpen, ignoreStock, handleOpenDetail, formatCurrency]);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -433,56 +458,71 @@ const CustomerMenu = ({ navigation, route }) => {
 
                         {/* Modal Footer */}
                         <View style={styles.modalFooter}>
-                            {getVariantQuantity(selectedItem?.id, selectedOptions) === 0 ? (
-                                <TouchableOpacity
-                                    style={[
-                                        styles.addToCartLarge,
-                                        (selectedItem?.options?.length > 0 && selectedOptions.length === 0) && styles.addToCartDisabled
-                                    ]}
-                                    disabled={selectedItem?.options?.length > 0 && selectedOptions.length === 0}
-                                    onPress={() => {
-                                        addToCart(selectedItem, 1, selectedOptions);
-                                    }}
-                                >
-                                    <Text style={styles.addToCartText}>Tambah ke Keranjang</Text>
-                                    <Text style={styles.addToCartLargePrice}>
-                                        {formatCurrency(Math.round(
-                                            (selectedItem?.discount > 0 ? selectedItem.price * (1 - selectedItem.discount / 100) : selectedItem?.price) +
-                                            selectedOptions.reduce((acc, opt) => acc + (parseFloat(opt.price_adjustment) || 0), 0)
-                                        ))}
-                                    </Text>
-                                </TouchableOpacity>
-                            ) : (
-                                <View style={styles.qtyControlRow}>
-                                    <View style={styles.qtyBox}>
+                            {(() => {
+                                const modalIsOutOfStock = !ignoreStock && selectedItem?.stock <= 0;
+
+                                if (getVariantQuantity(selectedItem?.id, selectedOptions) === 0) {
+                                    const isAddDisabled = (selectedItem?.options?.length > 0 && selectedOptions.length === 0) || modalIsOutOfStock;
+                                    return (
                                         <TouchableOpacity
-                                            style={styles.qtyBtn}
+                                            style={[
+                                                styles.addToCartLarge,
+                                                isAddDisabled && styles.addToCartDisabled
+                                            ]}
+                                            disabled={isAddDisabled}
                                             onPress={() => {
-                                                const cartId = getCartId(selectedItem.id, selectedOptions);
-                                                if (cartId) updateQuantity(cartId, -1);
+                                                addToCart(selectedItem, 1, selectedOptions);
                                             }}
                                         >
-                                            <Minus size={20} color="#1E293B" />
+                                            <Text style={styles.addToCartText}>{modalIsOutOfStock ? 'Stok Habis' : 'Tambah ke Keranjang'}</Text>
+                                            {!modalIsOutOfStock && (
+                                                <Text style={styles.addToCartLargePrice}>
+                                                    {formatCurrency(Math.round(
+                                                        (selectedItem?.discount > 0 ? selectedItem.price * (1 - selectedItem.discount / 100) : selectedItem?.price) +
+                                                        selectedOptions.reduce((acc, opt) => acc + (parseFloat(opt.price_adjustment) || 0), 0)
+                                                    ))}
+                                                </Text>
+                                            )}
                                         </TouchableOpacity>
-                                        <Text style={styles.qtyVal}>{getVariantQuantity(selectedItem.id, selectedOptions)}</Text>
-                                        <TouchableOpacity
-                                            style={[styles.qtyBtn, { backgroundColor: '#059669' }]}
-                                            onPress={() => {
-                                                const cartId = getCartId(selectedItem.id, selectedOptions);
-                                                if (cartId) updateQuantity(cartId, 1);
-                                            }}
-                                        >
-                                            <Plus size={20} color="#FFFFFF" />
-                                        </TouchableOpacity>
-                                    </View>
-                                    <TouchableOpacity
-                                        style={styles.saveBtn}
-                                        onPress={() => setSelectedItem(null)}
-                                    >
-                                        <Text style={styles.saveBtnText}>Simpan</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            )}
+                                    );
+                                } else {
+                                    return (
+                                        <View style={styles.qtyControlRow}>
+                                            <View style={styles.qtyBox}>
+                                                <TouchableOpacity
+                                                    style={styles.qtyBtn}
+                                                    onPress={() => {
+                                                        const cartId = getCartId(selectedItem.id, selectedOptions);
+                                                        if (cartId) updateQuantity(cartId, -1);
+                                                    }}
+                                                >
+                                                    <Minus size={20} color="#1E293B" />
+                                                </TouchableOpacity>
+                                                <Text style={styles.qtyVal}>{getVariantQuantity(selectedItem.id, selectedOptions)}</Text>
+                                                <TouchableOpacity
+                                                    style={[
+                                                        styles.qtyBtn,
+                                                        { backgroundColor: modalIsOutOfStock ? '#E2E8F0' : '#059669' }
+                                                    ]}
+                                                    disabled={modalIsOutOfStock}
+                                                    onPress={() => {
+                                                        const cartId = getCartId(selectedItem.id, selectedOptions);
+                                                        if (cartId) updateQuantity(cartId, 1);
+                                                    }}
+                                                >
+                                                    <Plus size={20} color={modalIsOutOfStock ? "#94A3B8" : "#FFFFFF"} />
+                                                </TouchableOpacity>
+                                            </View>
+                                            <TouchableOpacity
+                                                style={styles.saveBtn}
+                                                onPress={() => setSelectedItem(null)}
+                                            >
+                                                <Text style={styles.saveBtnText}>Simpan</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    );
+                                }
+                            })()}
                         </View>
                     </View>
                 </View>
@@ -1124,6 +1164,25 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 15,
         fontWeight: '900',
+    },
+    outOfStockBadge: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    outOfStockText: {
+        color: '#FFFFFF',
+        fontSize: 10,
+        fontWeight: '900',
+        letterSpacing: 1,
+    },
+    textMuted: {
+        color: '#94A3B8',
     }
 });
 
