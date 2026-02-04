@@ -5020,6 +5020,7 @@ app.get("/api/messages/history/:otherUserId", authenticateToken, async (req, res
         const [rows] = await db.query(sql, params);
         res.json({ data: rows });
     } catch (err) {
+        console.error("Error fetching history:", err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -5029,15 +5030,28 @@ app.delete("/api/messages/history/:otherUserId", authenticateToken, async (req, 
     try {
         const { otherUserId } = req.params;
         const myId = req.user.userId;
+        const myRole = req.user.role;
+        const sellerRoles = ['admin', 'owner', 'penjual', 'kasir'];
+        const isSeller = sellerRoles.includes(myRole);
 
+        // Target user ID adalah pelanggan (jika saya seller, itu otherUserId. Jika saya pelanggan, itu myId)
+        const targetCustomerId = isSeller ? otherUserId : myId;
+
+        // Hapus SEMUA pesan antara pelanggan tersebut dengan SELURUH Tim Seller
+        // Gunakan hard delete sesuai kode asli agar benar-benar hilang dari DB
         const sql = `
             DELETE FROM messages 
-            WHERE (sender_id = ? AND receiver_id = ?) 
-               OR (sender_id = ? AND receiver_id = ?)
+            WHERE (sender_id = ? AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')))
+               OR (sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND receiver_id = ?)
         `;
-        await db.query(sql, [myId, otherUserId, otherUserId, myId]);
-        res.json({ message: "Riwayat obrolan berhasil dihapus" });
+        await db.query(sql, [targetCustomerId, targetCustomerId]);
+
+        // Log aktivitas penghapusan riwayat
+        await logActivity(myId, 'Hapus Riwayat Chat', 'chat', targetCustomerId, `Menghapus riwayat chat dengan user ID ${targetCustomerId}`);
+
+        res.json({ message: "Riwayat obrolan tim berhasil dihapus" });
     } catch (err) {
+        console.error("Error deleting history:", err);
         res.status(500).json({ error: err.message });
     }
 });

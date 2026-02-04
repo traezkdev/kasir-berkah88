@@ -402,6 +402,9 @@ const ChatScreen = ({ navigation }) => {
                                 if (accepted) {
                                     try {
                                         await apiService.delete(`/api/messages/history/${selectedConv.user_id}`);
+                                        if (activeChat?.user_id === selectedConv.user_id) {
+                                            setMessages([]);
+                                        }
                                         fetchConversations();
                                     } catch (e) {
                                         console.error("Error deleting history:", e);
