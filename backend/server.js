@@ -5238,6 +5238,61 @@ app.get("/api/messages/active-order/:userId", authenticateToken, async (req, res
     }
 });
 
+// Get user notification settings
+app.get("/api/user/notification-settings", authenticateToken, async (req, res) => {
+    try {
+        const sql = 'SELECT notification_settings FROM users WHERE id = ?';
+        const [rows] = await db.query(sql, [req.user.userId]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Default settings if not set
+        const defaultSettings = {
+            orders: true,
+            chat: true,
+            promo: false
+        };
+
+        const settings = rows[0].notification_settings
+            ? JSON.parse(rows[0].notification_settings)
+            : defaultSettings;
+
+        res.json({
+            message: "success",
+            data: settings
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update user notification settings
+app.put("/api/user/notification-settings", authenticateToken, async (req, res) => {
+    try {
+        const { orders, chat, promo } = req.body;
+
+        const settings = {
+            orders: orders !== undefined ? orders : true,
+            chat: chat !== undefined ? chat : true,
+            promo: promo !== undefined ? promo : false
+        };
+
+        const sql = 'UPDATE users SET notification_settings = ? WHERE id = ?';
+        await db.query(sql, [JSON.stringify(settings), req.user.userId]);
+
+        await logActivity(req.user.userId, 'Update Notification Settings', 'user', req.user.userId, `User mengubah pengaturan notifikasi`);
+
+        res.json({
+            message: "success",
+            data: settings
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get("/api/guest/menu-items", async (req, res) => {
     try {
         const sql = "SELECT id, name, price, stock, category, image_url, discount FROM menu_items";

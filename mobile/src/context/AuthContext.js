@@ -56,6 +56,34 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const refreshUser = async () => {
+        try {
+            const response = await apiService.get('/api/user/profile');
+            if (response.data && response.data.message === 'success') {
+                const profile = response.data.data;
+                const updatedUser = {
+                    ...user,
+                    id: profile.id,
+                    name: profile.username,
+                    role: profile.role,
+                    avatar_url: profile.avatar_url,
+                    phone: profile.phone,
+                    address: profile.address
+                };
+                await AsyncStorage.setItem('userData', JSON.stringify(updatedUser));
+                setUser(updatedUser);
+            }
+        } catch (error) {
+            console.error('Failed to refresh user data', error);
+        }
+    };
+
+    const updateUser = async (updatedFields) => {
+        const newUser = { ...user, ...updatedFields };
+        await AsyncStorage.setItem('userData', JSON.stringify(newUser));
+        setUser(newUser);
+    };
+
     const logout = async () => {
         await AsyncStorage.removeItem('userToken');
         await AsyncStorage.removeItem('userData');
@@ -63,7 +91,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, logout, refreshUser, updateUser, loading }}>
             {children}
         </AuthContext.Provider>
     );

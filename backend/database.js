@@ -905,6 +905,20 @@ const setupDatabase = async () => {
       console.log('Added push_token column to users table.');
     }
 
+    // Check and add notification_settings column to users if it doesn't exist
+    const checkNotificationSettingsColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'notification_settings';
+    `;
+    const addNotificationSettingsColumn = `
+      ALTER TABLE users ADD COLUMN notification_settings JSON DEFAULT NULL;
+    `;
+    const [notificationSettingsRows] = await connection.query(checkNotificationSettingsColumn);
+    if (notificationSettingsRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addNotificationSettingsColumn);
+      console.log('Added notification_settings column to users table.');
+    }
+
     const addUpdatedAtToMenuItems = `
       ALTER TABLE menu_items ADD COLUMN updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
     `;

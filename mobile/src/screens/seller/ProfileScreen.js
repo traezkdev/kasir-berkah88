@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     StyleSheet,
     View,
@@ -8,7 +8,12 @@ import {
     SafeAreaView,
     StatusBar,
     ScrollView,
-    Platform
+    Platform,
+    Modal,
+    TextInput,
+    Alert,
+    ActivityIndicator,
+    Switch
 } from 'react-native';
 import {
     User,
@@ -20,14 +25,175 @@ import {
     HelpCircle,
     Store,
     Clock,
-    UserCircle
+    UserCircle,
+    X
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useConfirm } from '../../context/ConfirmContext';
+import { useToast } from '../../context/ToastContext';
+import apiService, { API_URL } from '../../api/apiService';
+import { Check, Camera } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 
 const ProfileScreen = ({ navigation }) => {
-    const { user, logout } = useAuth();
+    const { user, logout, refreshUser, updateUser } = useAuth();
     const { confirm } = useConfirm();
+    const { showToast } = useToast();
+
+    // Modal States
+    const [activeModal, setActiveModal] = useState(null); // 'info', 'security', 'notif'
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Form States
+    const [formData, setFormData] = useState({
+        username: user?.name || '',
+        phone: user?.phone || '',
+        address: user?.address || ''
+    });
+
+    const [securityData, setSecurityData] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+
+    const [notifSettings, setNotifSettings] = useState({
+        orders: true,
+        chat: true,
+        promo: false
+    });
+
+    React.useEffect(() => {
+        if (user) {
+            setFormData({
+                username: user.name || '',
+                phone: user.phone || '',
+                address: user.address || ''
+            });
+        }
+    }, [user]);
+
+    React.useEffect(() => {
+        loadNotificationSettings();
+    }, []);
+
+    const loadNotificationSettings = async () => {
+        try {
+            const response = await apiService.get('/api/user/notification-settings');
+            if (response.data && response.data.message === 'success') {
+                setNotifSettings(response.data.data);
+            }
+        } catch (error) {
+            console.error('Failed to load notification settings:', error);
+        }
+    };
+
+    const handleUpdateProfile = async () => {
+        if (!formData.username.trim()) {
+            showToast('Username tidak boleh kosong', 'error');
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            // Update Username
+            if (formData.username !== user.name) {
+                await apiService.put('/api/user/profile/username', { username: formData.username });
+            }
+
+            // Update Phone & Address
+            await apiService.put('/api/user/profile', {
+                phone: formData.phone,
+                address: formData.address
+            });
+
+            await refreshUser();
+            showToast('Profil berhasil diperbaharui', 'success');
+            setActiveModal(null);
+        } catch (error) {
+            console.error('Update profile error:', error);
+            showToast(error.response?.data?.error || 'Gagal memperbaharui profil', 'error');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleChangePassword = async () => {
+        if (!securityData.currentPassword || !securityData.newPassword) {
+            showToast('Semua kolom wajib diisi', 'error');
+            return;
+        }
+
+        if (securityData.newPassword !== securityData.confirmPassword) {
+            showToast('Konfirmasi password tidak cocok', 'error');
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            await apiService.put('/api/user/profile/password', {
+                currentPassword: securityData.currentPassword,
+                newPassword: securityData.newPassword
+            });
+            showToast('Password berhasil diganti', 'success');
+            setActiveModal(null);
+            setSecurityData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        } catch (error) {
+            showToast(error.response?.data?.error || 'Gagal mengganti password', 'error');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handlePickImage = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            showToast('Izin akses galeri diperlukan', 'error');
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+
+        if (!result.canceled) {
+            uploadAvatar(result.assets[0].uri);
+        }
+    };
+
+    const uploadAvatar = async (uri) => {
+        setIsSaving(true);
+        try {
+            const formData = new FormData();
+            const fileName = uri.split('/').pop();
+            const fileType = fileName.split('.').pop();
+
+            formData.append('avatar', {
+                uri: Platform.OS === 'ios' ? uri.replace('file://', '') : uri,
+                name: fileName,
+                type: `image/${fileType}`,
+            });
+
+            const response = await apiService.post('/api/user/profile/avatar', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            if (response.data && response.data.data) {
+                await refreshUser();
+                showToast('Foto profil diperbarui', 'success');
+            }
+        } catch (error) {
+            console.error('Upload avatar error:', error);
+            showToast('Gagal mengunggah foto profil', 'error');
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const handleLogout = async () => {
         const accepted = await confirm({
@@ -73,14 +239,14 @@ const ProfileScreen = ({ navigation }) => {
                 <View style={styles.profileCard}>
                     <View style={styles.avatarContainer}>
                         {user?.avatar_url ? (
-                            <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
+                            <Image source={{ uri: `${API_URL}${user.avatar_url}` }} style={styles.avatar} />
                         ) : (
                             <View style={styles.avatarPlaceholder}>
                                 <UserCircle size={60} color="#FFFFFF" strokeWidth={1.5} />
                             </View>
                         )}
-                        <TouchableOpacity style={styles.editBadge}>
-                            <Settings size={14} color="#FFFFFF" />
+                        <TouchableOpacity style={styles.editBadge} onPress={handlePickImage} disabled={isSaving}>
+                            {isSaving ? <ActivityIndicator size={14} color="#FFFFFF" /> : <Camera size={14} color="#FFFFFF" />}
                         </TouchableOpacity>
                     </View>
 
@@ -89,7 +255,7 @@ const ProfileScreen = ({ navigation }) => {
                         <Shield size={12} color="#138FEA" />
                         <Text style={styles.roleText}>{user?.role?.toUpperCase() || 'SELLER'}</Text>
                     </View>
-                    <Text style={styles.userEmail}>{user?.email || 'email@example.com'}</Text>
+                    <Text style={styles.userEmail}>{user?.phone || 'Belum ada nomor telepon'}</Text>
                 </View>
 
                 {/* Stats / Info Summary */}
@@ -102,17 +268,17 @@ const ProfileScreen = ({ navigation }) => {
                     <View style={styles.divider} />
                     <View style={styles.statBox}>
                         <Clock size={20} color="#138FEA" />
-                        <Text style={styles.statLabel}>Bergabung</Text>
-                        <Text style={styles.statValue}>Feb 2024</Text>
+                        <Text style={styles.statLabel}>Beroperasi</Text>
+                        <Text style={styles.statValue}>Sejak 2025</Text>
                     </View>
                 </View>
 
                 {/* Menu Sections */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>PENGATURAN AKUN</Text>
-                    {renderMenuItem(<User size={20} color="#138FEA" />, 'Informasi Pribadi', 'Nama, Email, dan Foto Profil', () => { }, '#138FEA')}
-                    {renderMenuItem(<Shield size={20} color="#10B981" />, 'Keamanan', 'Kata sandi dan Autentikasi', () => { }, '#10B981')}
-                    {renderMenuItem(<Bell size={20} color="#F59E0B" />, 'Notifikasi', 'Pengaturan pemberitahuan', () => { }, '#F59E0B')}
+                    {renderMenuItem(<User size={20} color="#138FEA" />, 'Informasi Pribadi', 'Nama, Email, dan Foto Profil', () => setActiveModal('info'), '#138FEA')}
+                    {renderMenuItem(<Shield size={20} color="#10B981" />, 'Keamanan', 'Kata sandi dan Autentikasi', () => setActiveModal('security'), '#10B981')}
+                    {renderMenuItem(<Bell size={20} color="#F59E0B" />, 'Notifikasi', 'Pengaturan pemberitahuan', () => setActiveModal('notif'), '#F59E0B')}
                 </View>
 
                 <View style={styles.section}>
@@ -127,8 +293,178 @@ const ProfileScreen = ({ navigation }) => {
                 </TouchableOpacity>
 
                 <Text style={styles.versionText}>Versi 2.1.0 (Alpha)</Text>
+                <Text style={styles.developerText}>Develop By traezkdev</Text>
                 <View style={{ height: 50 }} />
             </ScrollView>
+
+            {/* Modal Informasi Pribadi */}
+            <Modal visible={activeModal === 'info'} animationType="slide" transparent={true}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContentExtended}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Informasi Pribadi</Text>
+                            <TouchableOpacity onPress={() => setActiveModal(null)} style={styles.closeBtn}>
+                                <X size={20} color="#64748B" />
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView style={styles.modalBody}>
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>USERNAME</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={formData.username}
+                                    onChangeText={(val) => setFormData({ ...formData, username: val })}
+                                    placeholder="Masukkan username"
+                                />
+                            </View>
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>NOMOR TELEPON</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={formData.phone}
+                                    onChangeText={(val) => setFormData({ ...formData, phone: val })}
+                                    placeholder="Contoh: 08123456789"
+                                    keyboardType="phone-pad"
+                                />
+                            </View>
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>ALAMAT</Text>
+                                <TextInput
+                                    style={[styles.input, { height: 100, textAlignVertical: 'top', paddingTop: 15 }]}
+                                    value={formData.address}
+                                    onChangeText={(val) => setFormData({ ...formData, address: val })}
+                                    placeholder="Alamat lengkap Anda"
+                                    multiline={true}
+                                />
+                            </View>
+                        </ScrollView>
+                        <View style={styles.modalFooter}>
+                            <TouchableOpacity style={styles.saveBtn} onPress={handleUpdateProfile} disabled={isSaving}>
+                                {isSaving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.saveBtnText}>Simpan Perubahan</Text>}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Modal Keamanan */}
+            <Modal visible={activeModal === 'security'} animationType="slide" transparent={true}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContentExtended}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Keamanan Akun</Text>
+                            <TouchableOpacity onPress={() => setActiveModal(null)} style={styles.closeBtn}>
+                                <X size={20} color="#64748B" />
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.modalBody}>
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>PASSWORD SAAT INI</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    secureTextEntry={true}
+                                    value={securityData.currentPassword}
+                                    onChangeText={(val) => setSecurityData({ ...securityData, currentPassword: val })}
+                                    placeholder="••••••••"
+                                />
+                            </View>
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>PASSWORD BARU</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    secureTextEntry={true}
+                                    value={securityData.newPassword}
+                                    onChangeText={(val) => setSecurityData({ ...securityData, newPassword: val })}
+                                    placeholder="Minimal 6 karakter"
+                                />
+                            </View>
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>KONFIRMASI PASSWORD BARU</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    secureTextEntry={true}
+                                    value={securityData.confirmPassword}
+                                    onChangeText={(val) => setSecurityData({ ...securityData, confirmPassword: val })}
+                                    placeholder="Masukkan ulang password baru"
+                                />
+                            </View>
+                        </View>
+                        <View style={styles.modalFooter}>
+                            <TouchableOpacity style={styles.saveBtn} onPress={handleChangePassword} disabled={isSaving}>
+                                {isSaving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.saveBtnText}>Ganti Password</Text>}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Modal Notifikasi */}
+            <Modal visible={activeModal === 'notif'} animationType="slide" transparent={true}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContentExtended}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Pengaturan Notifikasi</Text>
+                            <TouchableOpacity onPress={() => setActiveModal(null)} style={styles.closeBtn}>
+                                <X size={20} color="#64748B" />
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.modalBody}>
+                            <View style={styles.notifRow}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.notifTitle}>Pesanan Baru</Text>
+                                    <Text style={styles.notifSubtitle}>Terima notifikasi saat ada pesanan masuk</Text>
+                                </View>
+                                <Switch
+                                    value={notifSettings.orders}
+                                    onValueChange={(val) => setNotifSettings({ ...notifSettings, orders: val })}
+                                    trackColor={{ false: '#E2E8F0', true: '#BFDBFE' }}
+                                    thumbColor={notifSettings.orders ? '#138FEA' : '#94A3B8'}
+                                />
+                            </View>
+                            <View style={styles.notifRow}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.notifTitle}>Pesan Chat</Text>
+                                    <Text style={styles.notifSubtitle}>Terima notifikasi saat ada chat dari pembeli</Text>
+                                </View>
+                                <Switch
+                                    value={notifSettings.chat}
+                                    onValueChange={(val) => setNotifSettings({ ...notifSettings, chat: val })}
+                                    trackColor={{ false: '#E2E8F0', true: '#BFDBFE' }}
+                                    thumbColor={notifSettings.chat ? '#138FEA' : '#94A3B8'}
+                                />
+                            </View>
+                            <View style={styles.notifRow}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.notifTitle}>Promo & Update</Text>
+                                    <Text style={styles.notifSubtitle}>Info terbaru tentang fitur dan promo</Text>
+                                </View>
+                                <Switch
+                                    value={notifSettings.promo}
+                                    onValueChange={(val) => setNotifSettings({ ...notifSettings, promo: val })}
+                                    trackColor={{ false: '#E2E8F0', true: '#BFDBFE' }}
+                                    thumbColor={notifSettings.promo ? '#138FEA' : '#94A3B8'}
+                                />
+                            </View>
+                        </View>
+                        <View style={styles.modalFooter}>
+                            <TouchableOpacity style={styles.saveBtn} onPress={async () => {
+                                setIsSaving(true);
+                                try {
+                                    await apiService.put('/api/user/notification-settings', notifSettings);
+                                    showToast('Pengaturan notifikasi disimpan', 'success');
+                                    setActiveModal(null);
+                                } catch (error) {
+                                    showToast('Gagal menyimpan pengaturan', 'error');
+                                } finally {
+                                    setIsSaving(false);
+                                }
+                            }} disabled={isSaving}>
+                                {isSaving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.saveBtnText}>Simpan Pengaturan</Text>}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -322,6 +658,106 @@ const styles = StyleSheet.create({
         color: '#CBD5E1',
         fontSize: 11,
         fontWeight: 'bold',
+    },
+    developerText: {
+        textAlign: 'center',
+        marginTop: 5,
+        color: '#94A3B8',
+        fontSize: 10,
+        fontWeight: '600',
+        letterSpacing: 0.5,
+    },
+    // Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalContentExtended: {
+        backgroundColor: '#FFFFFF',
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+        maxHeight: '90%',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 24,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F1F5F9',
+    },
+    closeBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: '#F8FAFC',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#1E293B',
+    },
+    modalBody: {
+        padding: 24,
+    },
+    inputGroup: {
+        marginBottom: 20,
+    },
+    inputLabel: {
+        fontSize: 11,
+        fontWeight: '900',
+        color: '#94A3B8',
+        letterSpacing: 1,
+        marginBottom: 8,
+    },
+    input: {
+        backgroundColor: '#F8FAFC',
+        borderRadius: 16,
+        paddingHorizontal: 20,
+        paddingVertical: 14,
+        fontSize: 15,
+        fontWeight: 'bold',
+        color: '#1E293B',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    modalFooter: {
+        padding: 24,
+        paddingTop: 0,
+    },
+    saveBtn: {
+        backgroundColor: '#1E293B',
+        paddingVertical: 16,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    saveBtnText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '900',
+    },
+    notifRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F1F5F9',
+    },
+    notifTitle: {
+        fontSize: 15,
+        fontWeight: '900',
+        color: '#1E293B',
+    },
+    notifSubtitle: {
+        fontSize: 12,
+        color: '#94A3B8',
+        marginTop: 2,
     }
 });
 
