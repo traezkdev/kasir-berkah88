@@ -4245,17 +4245,23 @@ app.get("/api/user/profile", authenticateToken, async (req, res) => {
 });
 
 // Update Profile Info (Phone & Address)
+// Update Profile Info (Phone & Address)
 app.put("/api/user/profile", authenticateToken, async (req, res) => {
     try {
         const { phone, address } = req.body;
-        const sql = 'UPDATE users SET phone = ?, address = ? WHERE id = ?';
-        const [result] = await db.query(sql, [phone || null, address || null, req.user.userId]);
 
-        if (result.affectedRows > 0) {
-            res.json({ message: "Profile updated successfully" });
-        } else {
-            res.status(404).json({ error: "User not found or nothing changed" });
+        // Check if user exists first
+        const [userCheck] = await db.query('SELECT id FROM users WHERE id = ?', [req.user.userId]);
+        if (userCheck.length === 0) {
+            return res.status(404).json({ error: "User not found" });
         }
+
+        const sql = 'UPDATE users SET phone = ?, address = ? WHERE id = ?';
+        await db.query(sql, [phone || null, address || null, req.user.userId]);
+
+        // Always return "success" so the frontend can handle it correctly
+        // (CustomerProfile.js expects response.data.message === 'success')
+        res.json({ message: "success" });
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
     }

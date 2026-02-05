@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     StyleSheet,
     View,
@@ -33,6 +33,7 @@ import {
     X,
     Download
 } from 'lucide-react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import * as MediaLibrary from 'expo-media-library';
 import { Asset } from 'expo-asset';
 import { useCart } from '../../context/CartContext';
@@ -113,12 +114,27 @@ const CustomerCart = ({ navigation }) => {
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [showQrisModal, setShowQrisModal] = useState(false);
 
-    // Maukkan alamat tersimpan dari Profile
-    useEffect(() => {
-        if (user) {
-            setSavedAddress(user.address || 'Arradea blok Q 15');
-        }
-    }, [user]);
+    // Fetch user profile to get saved address
+    useFocusEffect(
+        useCallback(() => {
+            const fetchUserProfile = async () => {
+                try {
+                    const response = await apiService.get('/api/user/profile');
+                    if (response.data.message === 'success' && response.data.data.address) {
+                        setSavedAddress(response.data.data.address);
+                    } else {
+                        setSavedAddress(null);
+                    }
+                } catch (error) {
+                    console.error("Error fetching profile address:", error);
+                }
+            };
+
+            if (user) {
+                fetchUserProfile();
+            }
+        }, [user])
+    );
 
     // Muat alamat terakhir dari storage saat buka keranjang
     useEffect(() => {
