@@ -277,7 +277,12 @@ const CustomerDashboard = ({ navigation }) => {
                     </TouchableOpacity>
 
                     {/* Quick Shortcuts */}
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.shortcutsScroll}>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        style={styles.shortcutsScroll}
+                        contentContainerStyle={{ paddingHorizontal: 20 }}
+                    >
                         {[
                             { label: 'Sedang Promo', icon: Zap, color: '#FBBF24' },
                             { label: 'Paling Laris', icon: TrendingUp, color: '#F43F5E' },
@@ -627,7 +632,6 @@ const styles = StyleSheet.create({
     },
     shortcutsScroll: {
         marginHorizontal: -20,
-        paddingHorizontal: 20,
     },
     shortcutChip: {
         flexDirection: 'row',

@@ -3295,7 +3295,7 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
         await connection.beginTransaction();
 
         // Get the order to check ownership and current status
-        const [orderRows] = await connection.query('SELECT user_id, status, customer_name, items, total FROM orders WHERE id = ? FOR UPDATE', [id]);
+        const [orderRows] = await connection.query('SELECT user_id, status, customer_name, items, total, payment_method FROM orders WHERE id = ? FOR UPDATE', [id]);
 
         if (orderRows.length === 0) {
             await connection.rollback();
@@ -3533,7 +3533,7 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
                 total: totalWithPpn,
                 ppn: ppnAmount,
                 isEmployeeMeal: 0,
-                payment_method: 'Tunai',
+                payment_method: order.payment_method || 'Tunai',
                 order_id: id,
                 ignore_stock: effectivelyIgnoreStock ? 1 : 0
             };
