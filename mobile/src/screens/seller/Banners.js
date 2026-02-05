@@ -250,6 +250,17 @@ const Banners = ({ navigation }) => {
         return (
             <View style={styles.bannerCard}>
                 <View style={[styles.bannerPreview, { backgroundColor: bgColor }]}>
+                    {/* Background Image */}
+                    {item.image_url && (
+                        <Image
+                            source={{ uri: `${API_URL}${item.image_url}` }}
+                            style={styles.bannerBackgroundImage}
+                            resizeMode="cover"
+                        />
+                    )}
+                    {/* Overlay untuk memastikan text tetap terbaca */}
+                    {item.image_url && <View style={styles.bannerOverlay} />}
+
                     <View style={styles.bannerContent}>
                         <View style={styles.bannerText}>
                             <Text style={styles.bannerTitle} numberOfLines={1}>{item.title}</Text>
@@ -372,6 +383,17 @@ const Banners = ({ navigation }) => {
                             {/* Live Preview */}
                             <Text style={styles.labelGroup}>PRATINJAU LANGSUNG</Text>
                             <View style={[styles.bannerPreview, { backgroundColor: COLOR_MAP[formData.color_class] || '#4F46E5', marginBottom: 30 }]}>
+                                {/* Background Image */}
+                                {imageUri && (
+                                    <Image
+                                        source={{ uri: imageUri }}
+                                        style={styles.bannerBackgroundImage}
+                                        resizeMode="cover"
+                                    />
+                                )}
+                                {/* Overlay untuk memastikan text tetap terbaca */}
+                                {imageUri && <View style={styles.bannerOverlay} />}
+
                                 <View style={styles.bannerContent}>
                                     <View style={styles.bannerText}>
                                         <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '900' }}>{formData.title || 'Judul Banner'}</Text>
@@ -406,6 +428,37 @@ const Banners = ({ navigation }) => {
                                         value={formData.title}
                                         onChangeText={(val) => setFormData({ ...formData, title: val })}
                                     />
+                                </View>
+
+                                {/* Upload Background Image */}
+                                <View style={styles.formGroup}>
+                                    <Text style={styles.label}>GAMBAR LATAR BELAKANG (OPSIONAL)</Text>
+                                    <TouchableOpacity onPress={pickImage} style={styles.imageUploadBox}>
+                                        {imageUri ? (
+                                            <View style={styles.imagePreviewContainer}>
+                                                <Image source={{ uri: imageUri }} style={styles.imagePreview} resizeMode="cover" />
+                                                <View style={styles.imageOverlay}>
+                                                    <Camera size={24} color="#FFFFFF" />
+                                                    <Text style={styles.imageOverlayText}>Ganti Gambar</Text>
+                                                </View>
+                                            </View>
+                                        ) : (
+                                            <View style={styles.uploadPlaceholder}>
+                                                <ImageIcon size={32} color="#94A3B8" />
+                                                <Text style={styles.uploadText}>Pilih Gambar</Text>
+                                                <Text style={styles.uploadHint}>Rasio 16:9 • Max 2MB</Text>
+                                            </View>
+                                        )}
+                                    </TouchableOpacity>
+                                    {imageUri && (
+                                        <TouchableOpacity
+                                            onPress={() => setImageUri(null)}
+                                            style={styles.removeImageBtn}
+                                        >
+                                            <X size={16} color="#EF4444" />
+                                            <Text style={styles.removeImageText}>Hapus Gambar</Text>
+                                        </TouchableOpacity>
+                                    )}
                                 </View>
 
                                 <View style={styles.formGroup}>
@@ -846,7 +899,95 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '900',
         color: '#FFFFFF',
-    }
+    },
+    // Background Image Styles
+    bannerBackgroundImage: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100%',
+        height: '100%',
+        borderRadius: 20,
+    },
+    bannerOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.3)',
+        borderRadius: 20,
+    },
+    // Image Upload Styles
+    imageUploadBox: {
+        borderWidth: 2,
+        borderColor: '#E2E8F0',
+        borderRadius: 16,
+        borderStyle: 'dashed',
+        overflow: 'hidden',
+        backgroundColor: '#F8FAFC',
+    },
+    imagePreviewContainer: {
+        width: '100%',
+        height: 180,
+        position: 'relative',
+    },
+    imagePreview: {
+        width: '100%',
+        height: '100%',
+    },
+    imageOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 8,
+    },
+    imageOverlayText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    uploadPlaceholder: {
+        paddingVertical: 40,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+    },
+    uploadText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#64748B',
+        marginTop: 8,
+    },
+    uploadHint: {
+        fontSize: 12,
+        color: '#94A3B8',
+    },
+    removeImageBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        marginTop: 12,
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        backgroundColor: '#FEF2F2',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#FEE2E2',
+    },
+    removeImageText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#EF4444',
+    },
 });
 
 export default Banners;

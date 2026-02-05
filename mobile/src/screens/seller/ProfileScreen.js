@@ -286,16 +286,18 @@ const ProfileScreen = ({ navigation }) => {
                     {renderMenuItem(<HelpCircle size={20} color="#6366F1" />, 'Pusat Bantuan', 'FAQ dan Kontak Admin', () => { }, '#6366F1')}
                 </View>
 
-                {/* Logout Button */}
+                <Text style={styles.versionText}>Versi 2.1.0 (Alpha)</Text>
+                <Text style={styles.developerText}>Develop By traezkdev</Text>
+                <View style={{ height: 100 }} />
+            </ScrollView>
+
+            {/* Fixed Logout Button */}
+            <View style={styles.fixedFooter}>
                 <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
                     <LogOut size={20} color="#EF4444" />
                     <Text style={styles.logoutText}>Keluar dari Akun</Text>
                 </TouchableOpacity>
-
-                <Text style={styles.versionText}>Versi 2.1.0 (Alpha)</Text>
-                <Text style={styles.developerText}>Develop By traezkdev</Text>
-                <View style={{ height: 50 }} />
-            </ScrollView>
+            </View>
 
             {/* Modal Informasi Pribadi */}
             <Modal visible={activeModal === 'info'} animationType="slide" transparent={true}>
@@ -640,17 +642,42 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#FEF2F2',
-        marginHorizontal: 20,
-        paddingVertical: 16,
-        borderRadius: 18,
         gap: 10,
-        marginTop: 10,
+        backgroundColor: '#FEF2F2',
+        paddingVertical: 16,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#FEE2E2',
     },
     logoutText: {
         fontSize: 15,
         fontWeight: '900',
         color: '#EF4444',
+    },
+    fixedFooter: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#FFFFFF',
+        padding: 20,
+        paddingBottom: Platform.OS === 'ios' ? 30 : 20,
+        borderTopWidth: 1,
+        borderTopColor: '#F1F5F9',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -4 },
+                shadowOpacity: 0.1,
+                shadowRadius: 8,
+            },
+            android: {
+                elevation: 8,
+            },
+            web: {
+                boxShadow: '0px -4px 12px rgba(0, 0, 0, 0.08)',
+            },
+        }),
     },
     versionText: {
         textAlign: 'center',
@@ -727,7 +754,24 @@ const styles = StyleSheet.create({
     },
     modalFooter: {
         padding: 24,
-        paddingTop: 0,
+        paddingTop: 16,
+        backgroundColor: '#FFFFFF',
+        borderTopWidth: 1,
+        borderTopColor: '#F1F5F9',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -4 },
+                shadowOpacity: 0.1,
+                shadowRadius: 8,
+            },
+            android: {
+                elevation: 8,
+            },
+            web: {
+                boxShadow: '0px -4px 12px rgba(0, 0, 0, 0.08)',
+            },
+        }),
     },
     saveBtn: {
         backgroundColor: '#1E293B',
@@ -735,6 +779,22 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
+        flexDirection: 'row',
+        gap: 8,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#1E293B',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+            },
+            android: {
+                elevation: 4,
+            },
+            web: {
+                boxShadow: '0px 4px 12px rgba(30, 41, 59, 0.2)',
+            },
+        }),
     },
     saveBtnText: {
         color: '#FFFFFF',
