@@ -12,7 +12,8 @@ import {
     Share,
     ActivityIndicator,
     Alert,
-    StatusBar
+    StatusBar,
+    useWindowDimensions
 } from 'react-native';
 import { X, Printer, Share2, CheckCircle2, ShoppingCart, MessageSquare, Zap, ShieldCheck, Download, Copy, User, Phone, MapPin } from 'lucide-react-native';
 import apiService, { API_URL } from '../api/apiService';
@@ -24,6 +25,7 @@ import * as Sharing from 'expo-sharing'; // Import Sharing
 const { width } = Dimensions.get('window');
 
 const ReceiptModal = ({ visible, onClose, transaction }) => {
+    const { width, height } = useWindowDimensions();
     const [settings, setSettings] = useState({
         restaurant_name: 'Berkah 88',
         restaurant_slogan: 'Kasir Pintar & Berkah',
@@ -340,7 +342,7 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
             transparent={false}
             onRequestClose={onClose}
         >
-            <View style={styles.modalContainer}>
+            <View style={[styles.modalContainer, { height: height }]}>
                 <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
                 <View style={styles.topHeader}>
                     <Text style={styles.topHeaderText}>Bukti Transaksi</Text>
@@ -539,8 +541,10 @@ const styles = StyleSheet.create({
     modalContainer: {
         backgroundColor: '#F8FAFC',
         flex: 1,
+        width: '100%',
         flexDirection: 'column',
-        zIndex: 9999, // Super high z-index to overlay everything
+        zIndex: 9999,
+        overflow: 'hidden',
     },
     topHeader: {
         flexDirection: 'row',
