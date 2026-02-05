@@ -29,9 +29,8 @@ import {
     X,
     Check,
     ChevronDown,
-    CreditCard,
+    QrCode,
     Banknote,
-    Smartphone,
     PackageX
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
@@ -402,6 +401,7 @@ const SalesPOS = () => {
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                     style={styles.modalContent}
                 >
+                    <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
                     <View style={styles.modalHeader}>
                         <View>
                             <Text style={styles.modalTitle}>Detail Pesanan</Text>
@@ -463,18 +463,11 @@ const SalesPOS = () => {
                                     <Text style={[styles.methodText, paymentMethod === 'tunai' && styles.activeMethodText]}>Tunai</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    style={[styles.methodBtn, paymentMethod === 'transfer' && styles.activeMethod]}
-                                    onPress={() => setPaymentMethod('transfer')}
+                                    style={[styles.methodBtn, paymentMethod === 'qris' && styles.activeMethod]}
+                                    onPress={() => setPaymentMethod('qris')}
                                 >
-                                    <CreditCard size={24} color={paymentMethod === 'transfer' ? '#2563EB' : '#64748B'} />
-                                    <Text style={[styles.methodText, paymentMethod === 'transfer' && styles.activeMethodText]}>Transfer</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.methodBtn, paymentMethod === 'gojek' && styles.activeMethod]}
-                                    onPress={() => setPaymentMethod('gojek')}
-                                >
-                                    <Smartphone size={24} color={paymentMethod === 'gojek' ? '#2563EB' : '#64748B'} />
-                                    <Text style={[styles.methodText, paymentMethod === 'gojek' && styles.activeMethodText]}>E-Wallet</Text>
+                                    <QrCode size={24} color={paymentMethod === 'qris' ? '#2563EB' : '#64748B'} />
+                                    <Text style={[styles.methodText, paymentMethod === 'qris' && styles.activeMethodText]}>QRIS</Text>
                                 </TouchableOpacity>
                             </View>
 
@@ -542,11 +535,13 @@ const SalesPOS = () => {
             </Modal>
 
             {/* Receipt Modal */}
-            <ReceiptModal
-                visible={showReceipt}
-                onClose={() => setShowReceipt(false)}
-                transaction={lastTransaction}
-            />
+            {showReceipt && (
+                <ReceiptModal
+                    visible={showReceipt}
+                    onClose={() => setShowReceipt(false)}
+                    transaction={lastTransaction}
+                />
+            )}
         </View>
     );
 };
@@ -831,7 +826,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: 24,
-        paddingTop: 15,
+        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 15 : (Platform.OS === 'ios' ? 50 : 25),
         borderBottomWidth: 1,
         borderBottomColor: '#F1F5F9',
         zIndex: 100,
@@ -955,21 +950,23 @@ const styles = StyleSheet.create({
     methodBtn: {
         flex: 1,
         backgroundColor: '#F8FAFC',
-        paddingVertical: 15,
+        paddingVertical: 12,
         borderRadius: 15,
+        flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
         borderWidth: 1,
         borderColor: '#E2E8F0',
+        gap: 10,
     },
     activeMethod: {
         backgroundColor: '#EFF6FF',
         borderColor: '#2563EB',
     },
     methodText: {
-        fontSize: 11,
+        fontSize: 14,
         fontWeight: 'bold',
         color: '#64748B',
-        marginTop: 8,
     },
     activeMethodText: {
         color: '#2563EB',

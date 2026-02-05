@@ -193,6 +193,7 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
             onRequestClose={onClose}
         >
             <View style={styles.modalContainer}>
+                <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
                 <View style={styles.topHeader}>
                     <Text style={styles.topHeaderText}>Bukti Transaksi</Text>
                     <TouchableOpacity onPress={onClose} style={styles.closeHeaderBtn}>
@@ -359,6 +360,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#F8FAFC',
         flex: 1,
         flexDirection: 'column',
+        zIndex: 9999, // Super high z-index to overlay everything
     },
     topHeader: {
         flexDirection: 'row',

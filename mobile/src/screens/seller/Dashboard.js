@@ -229,46 +229,54 @@ const SellerDashboard = ({ navigation }) => {
                 {/* Quick Stats */}
                 <View style={styles.statsGrid}>
                     <View style={[styles.statItem, { backgroundColor: '#EFF6FF', borderColor: '#DBEAFE' }]}>
-                        <View style={{ zIndex: 1 }}>
-                            <View style={[styles.statIcon, { backgroundColor: '#FFFFFF' }]}><Package size={20} color="#3B82F6" /></View>
-                            <Text style={[styles.statNum, { color: '#1E3A8A' }]}>{stats.totalItems}</Text>
-                            <Text style={[styles.statLabel, { color: '#3B82F6' }]}>Produk</Text>
+                        <View style={styles.statContent}>
+                            <View style={[styles.statIcon, { backgroundColor: '#FFFFFF' }]}><Package size={18} color="#3B82F6" /></View>
+                            <View>
+                                <Text style={[styles.statNum, { color: '#1E3A8A' }]}>{stats.totalItems}</Text>
+                                <Text style={[styles.statLabel, { color: '#3B82F6' }]}>Produk</Text>
+                            </View>
                         </View>
                         <View style={styles.statDecor}>
-                            <Package size={80} color="#3B82F6" opacity={0.3} />
+                            <Package size={50} color="#3B82F6" opacity={0.2} />
                         </View>
                     </View>
                     <View style={[styles.statItem, { backgroundColor: '#FFF7ED', borderColor: '#FFEDD5' }]}>
-                        <View style={{ zIndex: 1 }}>
-                            <View style={[styles.statIcon, { backgroundColor: '#FFFFFF' }]}><Star size={20} color="#F97316" /></View>
-                            <Text style={[styles.statNum, { color: '#7C2D12' }]}>{stats.featuredItems}</Text>
-                            <Text style={[styles.statLabel, { color: '#F97316' }]}>Unggulan</Text>
+                        <View style={styles.statContent}>
+                            <View style={[styles.statIcon, { backgroundColor: '#FFFFFF' }]}><Star size={18} color="#F97316" /></View>
+                            <View>
+                                <Text style={[styles.statNum, { color: '#7C2D12' }]}>{stats.featuredItems}</Text>
+                                <Text style={[styles.statLabel, { color: '#F97316' }]}>Unggulan</Text>
+                            </View>
                         </View>
                         <View style={styles.statDecor}>
-                            <Star size={80} color="#F97316" opacity={0.3} />
+                            <Star size={50} color="#F97316" opacity={0.2} />
                         </View>
                     </View>
                     <View style={[styles.statItem, { backgroundColor: '#F0FDF4', borderColor: '#DCFCE7' }]}>
-                        <View style={{ zIndex: 1 }}>
-                            <View style={[styles.statIcon, { backgroundColor: '#FFFFFF' }]}><ShoppingBag size={20} color="#22C55E" /></View>
-                            <Text style={[styles.statNum, { color: '#14532D' }]}>{pendingOrders.length}</Text>
-                            <Text style={[styles.statLabel, { color: '#22C55E' }]}>Pesanan</Text>
+                        <View style={styles.statContent}>
+                            <View style={[styles.statIcon, { backgroundColor: '#FFFFFF' }]}><ShoppingBag size={18} color="#22C55E" /></View>
+                            <View>
+                                <Text style={[styles.statNum, { color: '#14532D' }]}>{pendingOrders.length}</Text>
+                                <Text style={[styles.statLabel, { color: '#22C55E' }]}>Pesanan</Text>
+                            </View>
                         </View>
                         <View style={styles.statDecor}>
-                            <ShoppingBag size={80} color="#22C55E" opacity={0.3} />
+                            <ShoppingBag size={50} color="#22C55E" opacity={0.2} />
                         </View>
                     </View>
                     <TouchableOpacity
                         style={[styles.statItem, { backgroundColor: '#FAF5FF', borderColor: '#F3E8FF' }]}
                         onPress={() => navigation.navigate('CategoryManagement')}
                     >
-                        <View style={{ zIndex: 1 }}>
-                            <View style={[styles.statIcon, { backgroundColor: '#FFFFFF' }]}><BarChart3 size={20} color="#A855F7" /></View>
-                            <Text style={[styles.statNum, { color: '#581C87' }]}>{stats.categories}</Text>
-                            <Text style={[styles.statLabel, { color: '#A855F7' }]}>Kategori</Text>
+                        <View style={styles.statContent}>
+                            <View style={[styles.statIcon, { backgroundColor: '#FFFFFF' }]}><BarChart3 size={18} color="#A855F7" /></View>
+                            <View>
+                                <Text style={[styles.statNum, { color: '#581C87' }]}>{stats.categories}</Text>
+                                <Text style={[styles.statLabel, { color: '#A855F7' }]}>Kategori</Text>
+                            </View>
                         </View>
                         <View style={styles.statDecor}>
-                            <BarChart3 size={80} color="#A855F7" opacity={0.3} />
+                            <BarChart3 size={50} color="#A855F7" opacity={0.2} />
                         </View>
                     </TouchableOpacity>
                 </View>
@@ -480,39 +488,45 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
     },
     statItem: {
-        width: (width - 60) / 2,
+        width: (width - 50) / 2,
         backgroundColor: '#FFFFFF',
-        margin: 7,
-        borderRadius: 15,
-        padding: 15,
+        margin: 5,
+        borderRadius: 12,
+        padding: 12,
         borderWidth: 1,
         borderColor: '#F1F5F9',
         overflow: 'hidden',
         position: 'relative',
+        justifyContent: 'center',
+    },
+    statContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        zIndex: 1,
     },
     statDecor: {
         position: 'absolute',
-        bottom: -20,
-        right: -20,
+        bottom: -10,
+        right: -10,
         zIndex: 0,
     },
     statIcon: {
-        width: 36,
-        height: 36,
-        borderRadius: 10,
+        width: 32,
+        height: 32,
+        borderRadius: 8,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 10,
+        marginRight: 10,
     },
     statNum: {
-        fontSize: 20,
+        fontSize: 16,
         fontWeight: 'bold',
         color: '#1E293B',
     },
     statLabel: {
-        fontSize: 12,
+        fontSize: 10,
         color: '#94A3B8',
-        fontWeight: '500',
+        fontWeight: '600',
     },
     section: {
         marginTop: 25,

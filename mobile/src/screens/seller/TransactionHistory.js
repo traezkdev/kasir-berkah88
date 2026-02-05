@@ -293,6 +293,7 @@ const TransactionHistory = ({ navigation }) => {
                 onRequestClose={() => setSelectedTx(null)}
             >
                 <View style={styles.modalContent}>
+                    <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
                     <View style={styles.modalHeader}>
                         <View>
                             <Text style={styles.modalTitle}>Detail Transaksi</Text>
@@ -354,11 +355,13 @@ const TransactionHistory = ({ navigation }) => {
                 </View>
             </Modal>
 
-            <ReceiptModal
-                visible={showReceipt}
-                onClose={() => setShowReceipt(false)}
-                transaction={selectedTx}
-            />
+            {showReceipt && (
+                <ReceiptModal
+                    visible={showReceipt}
+                    onClose={() => setShowReceipt(false)}
+                    transaction={selectedTx}
+                />
+            )}
         </View>
     );
 };
