@@ -77,34 +77,15 @@ const CustomerDashboard = ({ navigation }) => {
             const ordersRes = await apiService.get('/api/orders?limit=10');
             if (ordersRes.data.data) {
                 const currentOrders = ordersRes.data.data;
-                const seenOrderStatesRaw = await AsyncStorage.getItem('seenOrderStates');
-                const seenOrderStates = JSON.parse(seenOrderStatesRaw || '{}');
 
-                const unreadOrders = currentOrders.filter(order => {
-                    // Completed orders are never notifications
-                    if (order.status === 'completed') return false;
+                // Hitung pesanan aktif (pending atau accepted)
+                const activeOrders = currentOrders.filter(order =>
+                    ['pending', 'accepted'].includes(order.status)
+                );
 
-                    // Pending orders are always notifications until processed
-                    if (order.status === 'pending') return true;
-
-                    // For Rejected/Cancelled: automatically clear after 24 hours
-                    if (['rejected', 'cancelled'].includes(order.status)) {
-                        const orderTime = new Date(order.updated_at || order.created_at).getTime();
-                        const oneDay = 24 * 60 * 60 * 1000;
-                        if (Date.now() - orderTime > oneDay) return false;
-                    }
-
-                    // Check if status changed since last seen
-                    if (['accepted', 'rejected', 'cancelled'].includes(order.status)) {
-                        const lastSeenStatus = seenOrderStates[order.id];
-                        return lastSeenStatus !== order.status;
-                    }
-                    return false;
-                });
-                setOrderNotificationCount(unreadOrders.length);
+                setOrderNotificationCount(activeOrders.length);
 
                 // Set latest active order (pending or accepted)
-                const activeOrders = currentOrders.filter(o => ['pending', 'accepted'].includes(o.status));
                 if (activeOrders.length > 0) {
                     setLatestOrder(activeOrders[0]);
                 } else {
