@@ -561,6 +561,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         letterSpacing: 0.5,
     },
+
     cartItem: {
         flexDirection: 'row',
         backgroundColor: '#FFFFFF',

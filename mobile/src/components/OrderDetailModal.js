@@ -75,148 +75,153 @@ const OrderDetailModal = ({ visible, onClose, order }) => {
                         </TouchableOpacity>
                     </View>
 
-                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollBody}>
-
-                        {/* Status Badge */}
-                        <View style={styles.statusSection}>
-                            <View style={styles.statusBadge}>
-                                <Clock size={14} color="#1E40AF" />
-                                <Text style={styles.statusText}>{(order.status || 'PENDING').toUpperCase()}</Text>
-                            </View>
-                            <Text style={styles.timestamp}>{formatDate(order.created_at || new Date())}</Text>
-                        </View>
-
-                        {/* Customer Info Card */}
-                        <View style={styles.sectionCard}>
-                            <View style={styles.sectionHeader}>
-                                <User size={18} color="#1E40AF" />
-                                <Text style={styles.sectionLabel}>INFORMASI PELANGGAN</Text>
-                            </View>
-
-                            <View style={styles.infoRow}>
-                                <Text style={styles.infoName}>{order.customer_name || 'Pelanggan'}</Text>
-                            </View>
-
-                            <View style={styles.divider} />
-
-                            <View style={styles.infoLine}>
-                                <MapPin size={16} color="#94A3B8" />
-                                <View style={styles.infoValueContainer}>
-                                    <Text style={styles.infoValueTitle}>Alamat Pengiriman</Text>
-                                    <Text style={styles.infoValueText}>{order.customer_address || 'Ambil di Toko'}</Text>
+                    <View style={styles.modalScrollContainer}>
+                        <ScrollView
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={styles.scrollBody}
+                            bounces={true}
+                            overScrollMode="always"
+                        >
+                            {/* Status Badge */}
+                            <View style={styles.statusSection}>
+                                <View style={styles.statusBadge}>
+                                    <Clock size={14} color="#1E40AF" />
+                                    <Text style={styles.statusText}>{(order.status || 'PENDING').toUpperCase()}</Text>
                                 </View>
+                                <Text style={styles.timestamp}>{formatDate(order.created_at || new Date())}</Text>
                             </View>
 
-                            <View style={styles.infoLine}>
-                                <CreditCard size={16} color="#94A3B8" />
-                                <View style={styles.infoValueContainer}>
-                                    <Text style={styles.infoValueTitle}>Metode Pembayaran</Text>
-                                    <Text style={styles.infoValueText}>{(order.payment_method || 'TUNAI').toUpperCase()}</Text>
+                            {/* Customer Info Card */}
+                            <View style={styles.sectionCard}>
+                                <View style={styles.sectionHeader}>
+                                    <User size={18} color="#1E40AF" />
+                                    <Text style={styles.sectionLabel}>INFORMASI PELANGGAN</Text>
                                 </View>
-                            </View>
-                        </View>
 
-                        {/* Order Items Section */}
-                        <View style={[styles.sectionCard, { marginTop: 16 }]}>
-                            <View style={styles.sectionHeader}>
-                                <Package size={18} color="#1E40AF" />
-                                <Text style={styles.sectionLabel}>RINGKASAN PESANAN</Text>
-                            </View>
+                                <View style={styles.infoRow}>
+                                    <Text style={styles.infoName}>{order.customer_name || 'Pelanggan'}</Text>
+                                </View>
 
-                            {parsedItems.map((item, index) => {
-                                const qty = Number(item.quantity || item.qty) || 0;
-                                const originalBasePrice = Number(item.basePrice || item.price) || 0;
-                                const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0) : 0;
-                                const originalPricePerUnit = originalBasePrice + optionAdjustment;
+                                <View style={styles.divider} />
 
-                                return (
-                                    <View key={index} style={styles.itemRow}>
-                                        <View style={styles.itemQtyContainer}>
-                                            <Text style={styles.itemQty}>{qty}x</Text>
-                                        </View>
-                                        <View style={styles.itemMain}>
-                                            <Text style={styles.itemName}>{item.name}</Text>
-                                            <Text style={styles.itemPrice}>{formatCurrency(originalPricePerUnit)}</Text>
-                                        </View>
-                                        <Text style={styles.itemTotal}>{formatCurrency(originalPricePerUnit * qty)}</Text>
+                                <View style={styles.infoLine}>
+                                    <MapPin size={16} color="#94A3B8" />
+                                    <View style={styles.infoValueContainer}>
+                                        <Text style={styles.infoValueTitle}>Alamat Pengiriman</Text>
+                                        <Text style={styles.infoValueText}>{order.customer_address || 'Ambil di Toko'}</Text>
                                     </View>
-                                );
-                            })}
+                                </View>
 
-                            <View style={styles.totalDivider} />
+                                <View style={styles.infoLine}>
+                                    <CreditCard size={16} color="#94A3B8" />
+                                    <View style={styles.infoValueContainer}>
+                                        <Text style={styles.infoValueTitle}>Metode Pembayaran</Text>
+                                        <Text style={styles.infoValueText}>{(order.payment_method || 'TUNAI').toUpperCase()}</Text>
+                                    </View>
+                                </View>
+                            </View>
 
-                            {(() => {
-                                // Logic Perhitungan
-                                const subtotalGross = parsedItems.reduce((sum, item) => {
+                            {/* Order Items Section */}
+                            <View style={[styles.sectionCard, { marginTop: 16 }]}>
+                                <View style={styles.sectionHeader}>
+                                    <Package size={18} color="#1E40AF" />
+                                    <Text style={styles.sectionLabel}>RINGKASAN PESANAN</Text>
+                                </View>
+
+                                {parsedItems.map((item, index) => {
                                     const qty = Number(item.quantity || item.qty) || 0;
                                     const originalBasePrice = Number(item.basePrice || item.price) || 0;
-                                    const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
-                                    return sum + ((originalBasePrice + optionAdjustment) * qty);
-                                }, 0);
+                                    const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0) : 0;
+                                    const originalPricePerUnit = originalBasePrice + optionAdjustment;
 
-                                const subtotalNetItems = parsedItems.reduce((sum, item) => {
-                                    const qty = Number(item.quantity || item.qty) || 0;
-                                    const itemPrice = Number(item.price) || 0;
-                                    const itemDiscount = Number(item.discount) || 0;
-                                    const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
-
-                                    const effectivePrice = item.basePrice
-                                        ? itemPrice
-                                        : (itemDiscount > 0 ? (itemPrice * (1 - itemDiscount / 100)) + optionAdjustment : itemPrice + optionAdjustment);
-
-                                    return sum + (effectivePrice * qty);
-                                }, 0);
-
-                                const itemDiscountAmount = subtotalGross - subtotalNetItems;
-                                const manualDiscount = Number(order.manual_discount || 0);
-                                const ppnAmount = Number(order.ppn || 0);
-
-                                return (
-                                    <>
-                                        <View style={styles.totalRow}>
-                                            <Text style={styles.totalLabel}>Subtotal</Text>
-                                            <Text style={styles.totalValue}>{formatCurrency(subtotalGross)}</Text>
+                                    return (
+                                        <View key={index} style={styles.itemRow}>
+                                            <View style={styles.itemQtyContainer}>
+                                                <Text style={styles.itemQty}>{qty}x</Text>
+                                            </View>
+                                            <View style={styles.itemMain}>
+                                                <Text style={styles.itemName}>{item.name}</Text>
+                                                <Text style={styles.itemPrice}>{formatCurrency(originalPricePerUnit)}</Text>
+                                            </View>
+                                            <Text style={styles.itemTotal}>{formatCurrency(originalPricePerUnit * qty)}</Text>
                                         </View>
+                                    );
+                                })}
 
-                                        {itemDiscountAmount > 0 && (
+                                <View style={styles.totalDivider} />
+
+                                {(() => {
+                                    // Logic Perhitungan
+                                    const subtotalGross = parsedItems.reduce((sum, item) => {
+                                        const qty = Number(item.quantity || item.qty) || 0;
+                                        const originalBasePrice = Number(item.basePrice || item.price) || 0;
+                                        const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+                                        return sum + ((originalBasePrice + optionAdjustment) * qty);
+                                    }, 0);
+
+                                    const subtotalNetItems = parsedItems.reduce((sum, item) => {
+                                        const qty = Number(item.quantity || item.qty) || 0;
+                                        const itemPrice = Number(item.price) || 0;
+                                        const itemDiscount = Number(item.discount) || 0;
+                                        const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+
+                                        const effectivePrice = item.basePrice
+                                            ? itemPrice
+                                            : (itemDiscount > 0 ? (itemPrice * (1 - itemDiscount / 100)) + optionAdjustment : itemPrice + optionAdjustment);
+
+                                        return sum + (effectivePrice * qty);
+                                    }, 0);
+
+                                    const itemDiscountAmount = subtotalGross - subtotalNetItems;
+                                    const manualDiscount = Number(order.manual_discount || 0);
+                                    const ppnAmount = Number(order.ppn || 0);
+
+                                    return (
+                                        <>
                                             <View style={styles.totalRow}>
-                                                <Text style={[styles.totalLabel, { color: '#EF4444' }]}>Diskon Item</Text>
-                                                <Text style={[styles.totalValue, { color: '#EF4444' }]}>-{formatCurrency(itemDiscountAmount)}</Text>
+                                                <Text style={styles.totalLabel}>Subtotal</Text>
+                                                <Text style={styles.totalValue}>{formatCurrency(subtotalGross)}</Text>
                                             </View>
-                                        )}
 
-                                        {manualDiscount > 0 && (
-                                            <View style={styles.totalRow}>
-                                                <Text style={[styles.totalLabel, { color: '#EF4444' }]}>Diskon Tambahan</Text>
-                                                <Text style={[styles.totalValue, { color: '#EF4444' }]}>-{formatCurrency(manualDiscount)}</Text>
+                                            {itemDiscountAmount > 0 && (
+                                                <View style={styles.totalRow}>
+                                                    <Text style={[styles.totalLabel, { color: '#EF4444' }]}>Diskon Item</Text>
+                                                    <Text style={[styles.totalValue, { color: '#EF4444' }]}>-{formatCurrency(itemDiscountAmount)}</Text>
+                                                </View>
+                                            )}
+
+                                            {manualDiscount > 0 && (
+                                                <View style={styles.totalRow}>
+                                                    <Text style={[styles.totalLabel, { color: '#EF4444' }]}>Diskon Tambahan</Text>
+                                                    <Text style={[styles.totalValue, { color: '#EF4444' }]}>-{formatCurrency(manualDiscount)}</Text>
+                                                </View>
+                                            )}
+
+                                            {ppnAmount > 0 && (
+                                                <View style={styles.totalRow}>
+                                                    <Text style={styles.totalLabel}>Pajak/PPN</Text>
+                                                    <Text style={styles.totalValue}>{formatCurrency(ppnAmount)}</Text>
+                                                </View>
+                                            )}
+
+                                            <View style={[styles.totalRow, { marginTop: 12 }]}>
+                                                <Text style={styles.grandTotalLabel}>TOTAL BAYAR</Text>
+                                                <Text style={styles.grandTotalValue}>{formatCurrency(Number(order.total))}</Text>
                                             </View>
-                                        )}
-
-                                        {ppnAmount > 0 && (
-                                            <View style={styles.totalRow}>
-                                                <Text style={styles.totalLabel}>Pajak/PPN</Text>
-                                                <Text style={styles.totalValue}>{formatCurrency(ppnAmount)}</Text>
-                                            </View>
-                                        )}
-
-                                        <View style={[styles.totalRow, { marginTop: 12 }]}>
-                                            <Text style={styles.grandTotalLabel}>TOTAL BAYAR</Text>
-                                            <Text style={styles.grandTotalValue}>{formatCurrency(Number(order.total))}</Text>
-                                        </View>
-                                    </>
-                                );
-                            })()}
-                        </View>
-
-                        {/* Logistics info or note if applicable */}
-                        {order.note && (
-                            <View style={styles.noteBox}>
-                                <Text style={styles.noteTitle}>Catatan Pesanan:</Text>
-                                <Text style={styles.noteContent}>"{order.note}"</Text>
+                                        </>
+                                    );
+                                })()}
                             </View>
-                        )}
 
-                    </ScrollView>
+                            {/* Logistics info or note if applicable */}
+                            {order.note && (
+                                <View style={styles.noteBox}>
+                                    <Text style={styles.noteTitle}>Catatan Pesanan:</Text>
+                                    <Text style={styles.noteContent}>"{order.note}"</Text>
+                                </View>
+                            )}
+                        </ScrollView>
+                    </View>
 
                     {/* Footer Actions */}
                     <View style={styles.footer}>
@@ -281,6 +286,10 @@ const styles = StyleSheet.create({
     },
     scrollBody: {
         padding: 24,
+        flexGrow: 1,
+    },
+    modalScrollContainer: {
+        flex: 1,
     },
     statusSection: {
         flexDirection: 'row',
@@ -452,11 +461,33 @@ const styles = StyleSheet.create({
     },
     footer: {
         padding: 24,
-        backgroundColor: '#FFFFFF',
+        paddingBottom: Platform.OS === 'ios' ? 40 : 30,
+        flexDirection: 'row',
+        gap: 12,
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',
+        backgroundColor: '#FFFFFF',
+        zIndex: 999,
+        elevation: 20,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -10 },
+                shadowOpacity: 0.1,
+                shadowRadius: 10,
+            },
+            android: {
+                elevation: 20,
+                borderTopWidth: 0,
+            },
+            web: {
+                boxShadow: '0px -15px 30px rgba(0,0,0,0.08)',
+                borderTopWidth: 0,
+            }
+        })
     },
     closePrimaryBtn: {
+        flex: 1,
         backgroundColor: '#1E293B',
         paddingVertical: 16,
         borderRadius: 16,

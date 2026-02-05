@@ -349,12 +349,13 @@ const TransactionHistory = ({ navigation }) => {
                         </TouchableOpacity>
                     </View>
 
-                    <View style={{ flex: 1 }}>
+                    <View style={styles.modalScrollContainer}>
                         <FlatList
                             data={selectedTx?.items || []}
                             keyExtractor={(_, i) => i.toString()}
                             style={styles.modalScroll}
-                            contentContainerStyle={{ paddingBottom: 24 }}
+                            contentContainerStyle={styles.modalScrollContent}
+                            showsVerticalScrollIndicator={false}
                             ListHeaderComponent={() => (
                                 <View style={styles.txInfoCard}>
                                     <View style={styles.txInfoRow}>
@@ -874,7 +875,16 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     modalScroll: {
+        flex: 1,
         paddingHorizontal: 24,
+    },
+    modalScrollContainer: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+    },
+    modalScrollContent: {
+        paddingBottom: 40,
+        flexGrow: 1,
     },
     txInfoCard: {
         backgroundColor: '#F8FAFC',
@@ -938,13 +948,13 @@ const styles = StyleSheet.create({
         marginLeft: 10,
     },
     modalFooter: {
-        paddingHorizontal: 24,
-        paddingTop: 16,
-        paddingBottom: Platform.OS === 'ios' ? 35 : 25,
-        borderTopWidth: 1,
-        borderColor: '#F1F5F9',
+        padding: 24,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 30,
         backgroundColor: '#FFFFFF',
+        borderTopWidth: 1,
+        borderTopColor: '#F1F5F9',
         zIndex: 999,
+        elevation: 20,
         ...Platform.select({
             ios: {
                 shadowColor: '#000',
@@ -952,8 +962,14 @@ const styles = StyleSheet.create({
                 shadowOpacity: 0.1,
                 shadowRadius: 10,
             },
-            android: { elevation: 25 },
-            web: { boxShadow: '0px -10px 20px rgba(0,0,0,0.05)' }
+            android: {
+                elevation: 20,
+                borderTopWidth: 0,
+            },
+            web: {
+                boxShadow: '0px -15px 30px rgba(0,0,0,0.08)',
+                borderTopWidth: 0,
+            }
         })
     },
     totalRow: {

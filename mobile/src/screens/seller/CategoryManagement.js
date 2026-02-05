@@ -398,11 +398,31 @@ const styles = StyleSheet.create({
         borderColor: '#E2E8F0',
     },
     modalFooter: {
-        padding: 20,
+        padding: 24,
+        paddingBottom: Platform.OS === 'ios' ? 35 : 25,
         flexDirection: 'row',
         gap: 12,
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',
+        backgroundColor: '#FFFFFF',
+        zIndex: 999,
+        elevation: 20,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -10 },
+                shadowOpacity: 0.1,
+                shadowRadius: 10,
+            },
+            android: {
+                elevation: 20,
+                borderTopWidth: 0,
+            },
+            web: {
+                boxShadow: '0px -15px 30px rgba(0,0,0,0.08)',
+                borderTopWidth: 0,
+            }
+        })
     },
     cancelBtn: {
         flex: 1,

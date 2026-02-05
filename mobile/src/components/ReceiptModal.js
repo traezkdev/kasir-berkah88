@@ -349,154 +349,157 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                     </TouchableOpacity>
                 </View>
 
-                <ScrollView
-                    style={styles.scrollBody}
-                    showsVerticalScrollIndicator={false}
-                    decelerationRate="fast"
-                    scrollEventThrottle={16}
-                >
-                    <View style={[styles.receiptBody, { backgroundColor: '#FFFFFF' }]} ref={receiptRef} collapsable={false}>
-                        <View style={[styles.receiptHeader, { backgroundColor: '#FFFFFF' }]}>
-                            <View style={[
-                                styles.logoContainer,
-                                logoUrl && {
-                                    backgroundColor: 'transparent',
-                                    elevation: 0,
-                                    shadowOpacity: 0,
-                                    borderWidth: 0
-                                }
-                            ]}>
-                                {logoUrl ? (
-                                    <Image source={{ uri: logoUrl }} style={styles.logoImage} />
-                                ) : (
-                                    <View style={styles.logoPlaceholder}>
-                                        <Text style={styles.logoText}>{settings.restaurant_name.charAt(0)}</Text>
-                                    </View>
-                                )}
-                            </View>
-                            <Text style={styles.restaurantName}>{settings.restaurant_name}</Text>
-                            <Text style={styles.restaurantSlogan}>{settings.restaurant_slogan.toUpperCase()}</Text>
+                <View style={styles.modalScrollContainer}>
+                    <ScrollView
+                        style={styles.scrollBody}
+                        showsVerticalScrollIndicator={false}
+                        decelerationRate="fast"
+                        scrollEventThrottle={16}
+                        contentContainerStyle={styles.scrollBodyContent}
+                    >
+                        <View style={[styles.receiptBody, { backgroundColor: '#FFFFFF' }]} ref={receiptRef} collapsable={false}>
+                            <View style={[styles.receiptHeader, { backgroundColor: '#FFFFFF' }]}>
+                                <View style={[
+                                    styles.logoContainer,
+                                    logoUrl && {
+                                        backgroundColor: 'transparent',
+                                        elevation: 0,
+                                        shadowOpacity: 0,
+                                        borderWidth: 0
+                                    }
+                                ]}>
+                                    {logoUrl ? (
+                                        <Image source={{ uri: logoUrl }} style={styles.logoImage} />
+                                    ) : (
+                                        <View style={styles.logoPlaceholder}>
+                                            <Text style={styles.logoText}>{settings.restaurant_name.charAt(0)}</Text>
+                                        </View>
+                                    )}
+                                </View>
+                                <Text style={styles.restaurantName}>{settings.restaurant_name}</Text>
+                                <Text style={styles.restaurantSlogan}>{settings.restaurant_slogan.toUpperCase()}</Text>
 
-                            <View style={styles.dividerRow}>
-                                <View style={styles.dividerLine} />
-                                <View style={styles.dividerDot} />
-                                <View style={styles.dividerLine} />
-                            </View>
-                        </View>
-
-                        <View style={styles.infoBar}>
-                            <View>
-                                <Text style={styles.infoLabel}>ID REFERENSI</Text>
-                                <View style={styles.idRow}>
-                                    <View style={styles.activeDot} />
-                                    <Text style={styles.idValue}>#{transaction.id.toString().slice(-6).toUpperCase()}</Text>
+                                <View style={styles.dividerRow}>
+                                    <View style={styles.dividerLine} />
+                                    <View style={styles.dividerDot} />
+                                    <View style={styles.dividerLine} />
                                 </View>
                             </View>
-                            <View style={styles.infoRight}>
-                                <Text style={styles.infoLabel}>WAKTU</Text>
-                                <Text style={styles.dateValue}>{formatDate(transaction.timestamp)}</Text>
-                            </View>
-                        </View>
 
-                        <View style={styles.sectionHeader}>
-                            <View style={styles.sectionTitleRow}>
-                                <ShoppingCart size={14} color="#1E40AF" />
-                                <Text style={styles.sectionTitle}>DETAIL PEMBELIAN</Text>
+                            <View style={styles.infoBar}>
+                                <View>
+                                    <Text style={styles.infoLabel}>ID REFERENSI</Text>
+                                    <View style={styles.idRow}>
+                                        <View style={styles.activeDot} />
+                                        <Text style={styles.idValue}>#{transaction.id.toString().slice(-6).toUpperCase()}</Text>
+                                    </View>
+                                </View>
+                                <View style={styles.infoRight}>
+                                    <Text style={styles.infoLabel}>WAKTU</Text>
+                                    <Text style={styles.dateValue}>{formatDate(transaction.timestamp)}</Text>
+                                </View>
                             </View>
-                            <View style={styles.itemCountBadge}>
-                                <Text style={styles.itemCountText}>{(transaction.items || []).length} ITEM</Text>
-                            </View>
-                        </View>
 
-                        {/* Customer Info Section */}
-                        {(transaction.customer_name || transaction.customer_phone || transaction.customer_address) && (
-                            <View style={styles.customerSection}>
-                                <Text style={styles.customerSectionTitle}>Penerima / Pelanggan:</Text>
-                                {transaction.customer_name && (
-                                    <View style={styles.customerInfoRow}>
-                                        <User size={12} color="#64748B" />
-                                        <Text style={styles.customerInfoText}>{transaction.customer_name}</Text>
-                                    </View>
-                                )}
-                                {transaction.customer_phone && (
-                                    <View style={styles.customerInfoRow}>
-                                        <Phone size={12} color="#64748B" />
-                                        <Text style={styles.customerInfoText}>{transaction.customer_phone}</Text>
-                                    </View>
-                                )}
-                                {transaction.customer_address && (
-                                    <View style={styles.customerInfoRow}>
-                                        <MapPin size={12} color="#64748B" />
-                                        <Text style={styles.customerInfoText}>{transaction.customer_address}</Text>
-                                    </View>
-                                )}
+                            <View style={styles.sectionHeader}>
+                                <View style={styles.sectionTitleRow}>
+                                    <ShoppingCart size={14} color="#1E40AF" />
+                                    <Text style={styles.sectionTitle}>DETAIL PEMBELIAN</Text>
+                                </View>
+                                <View style={styles.itemCountBadge}>
+                                    <Text style={styles.itemCountText}>{(transaction.items || []).length} ITEM</Text>
+                                </View>
                             </View>
-                        )}
 
-                        <View style={styles.itemsContainer}>
-                            {(transaction.items || []).map((item, index) => (
-                                <View key={index} style={styles.itemRow}>
-                                    <View style={styles.itemLeft}>
-                                        <View style={styles.itemIndicator} />
-                                        <View>
-                                            <View style={styles.itemNameRow}>
-                                                <Text style={styles.itemName}>{item.name}</Text>
-                                                <View style={styles.itemQtyBadge}>
-                                                    <Text style={styles.itemQtyText}>x{item.quantity || item.qty}</Text>
+                            {/* Customer Info Section */}
+                            {(transaction.customer_name || transaction.customer_phone || transaction.customer_address) && (
+                                <View style={styles.customerSection}>
+                                    <Text style={styles.customerSectionTitle}>Penerima / Pelanggan:</Text>
+                                    {transaction.customer_name && (
+                                        <View style={styles.customerInfoRow}>
+                                            <User size={12} color="#64748B" />
+                                            <Text style={styles.customerInfoText}>{transaction.customer_name}</Text>
+                                        </View>
+                                    )}
+                                    {transaction.customer_phone && (
+                                        <View style={styles.customerInfoRow}>
+                                            <Phone size={12} color="#64748B" />
+                                            <Text style={styles.customerInfoText}>{transaction.customer_phone}</Text>
+                                        </View>
+                                    )}
+                                    {transaction.customer_address && (
+                                        <View style={styles.customerInfoRow}>
+                                            <MapPin size={12} color="#64748B" />
+                                            <Text style={styles.customerInfoText}>{transaction.customer_address}</Text>
+                                        </View>
+                                    )}
+                                </View>
+                            )}
+
+                            <View style={styles.itemsContainer}>
+                                {(transaction.items || []).map((item, index) => (
+                                    <View key={index} style={styles.itemRow}>
+                                        <View style={styles.itemLeft}>
+                                            <View style={styles.itemIndicator} />
+                                            <View>
+                                                <View style={styles.itemNameRow}>
+                                                    <Text style={styles.itemName}>{item.name}</Text>
+                                                    <View style={styles.itemQtyBadge}>
+                                                        <Text style={styles.itemQtyText}>x{item.quantity || item.qty}</Text>
+                                                    </View>
                                                 </View>
                                             </View>
                                         </View>
+                                        <View style={styles.itemRight}>
+                                            <Text style={styles.itemSublabel}>Subtotal</Text>
+                                            <Text style={styles.itemPriceText}>{formatCurrency(item.price * (item.quantity || item.qty))}</Text>
+                                        </View>
                                     </View>
-                                    <View style={styles.itemRight}>
-                                        <Text style={styles.itemSublabel}>Subtotal</Text>
-                                        <Text style={styles.itemPriceText}>{formatCurrency(item.price * (item.quantity || item.qty))}</Text>
+                                ))}
+                            </View>
+
+                            <View style={styles.summaryCard}>
+                                <View style={styles.summaryGlow} />
+                                <View style={styles.summaryContent}>
+                                    <View style={styles.summaryRow}>
+                                        <Text style={styles.summaryLabel}>Harga Dasar</Text>
+                                        <Text style={styles.summaryValue}>{formatCurrency(transaction.total - (transaction.ppn || 0))}</Text>
+                                    </View>
+                                    <View style={styles.thickDivider} />
+                                    <View style={styles.totalSection}>
+                                        <Text style={styles.totalLabel}>TOTAL TAGIHAN</Text>
+                                        <View style={styles.totalValueRow}>
+                                            <Text style={styles.rpLabel}>Rp</Text>
+                                            <Text style={styles.totalFinalValue}>{formatCurrency(transaction.total).replace('Rp', '').trim()}</Text>
+                                        </View>
+                                        <View style={styles.successBadge}>
+                                            <CheckCircle2 size={12} color="#FFFFFF" strokeWidth={3} />
+                                            <Text style={styles.successText}>PEMBAYARAN BERHASIL</Text>
+                                        </View>
                                     </View>
                                 </View>
-                            ))}
-                        </View>
+                            </View>
 
-                        <View style={styles.summaryCard}>
-                            <View style={styles.summaryGlow} />
-                            <View style={styles.summaryContent}>
-                                <View style={styles.summaryRow}>
-                                    <Text style={styles.summaryLabel}>Harga Dasar</Text>
-                                    <Text style={styles.summaryValue}>{formatCurrency(transaction.total - (transaction.ppn || 0))}</Text>
+                            <View style={styles.paymentPill}>
+                                <View style={styles.pillPart}>
+                                    <Text style={styles.pillLabel}>METODE</Text>
+                                    <Text style={styles.pillValue}>{(transaction.payment_method || 'Tunai').toUpperCase()}</Text>
                                 </View>
-                                <View style={styles.thickDivider} />
-                                <View style={styles.totalSection}>
-                                    <Text style={styles.totalLabel}>TOTAL TAGIHAN</Text>
-                                    <View style={styles.totalValueRow}>
-                                        <Text style={styles.rpLabel}>Rp</Text>
-                                        <Text style={styles.totalFinalValue}>{formatCurrency(transaction.total).replace('Rp', '').trim()}</Text>
-                                    </View>
-                                    <View style={styles.successBadge}>
-                                        <CheckCircle2 size={12} color="#FFFFFF" strokeWidth={3} />
-                                        <Text style={styles.successText}>PEMBAYARAN BERHASIL</Text>
-                                    </View>
+                                <View style={[styles.pillPart, styles.pillBorder]}>
+                                    <Text style={styles.pillLabel}>STATUS</Text>
+                                    <ShieldCheck size={14} color="#10B981" />
                                 </View>
                             </View>
-                        </View>
 
-                        <View style={styles.paymentPill}>
-                            <View style={styles.pillPart}>
-                                <Text style={styles.pillLabel}>METODE</Text>
-                                <Text style={styles.pillValue}>{(transaction.payment_method || 'Tunai').toUpperCase()}</Text>
-                            </View>
-                            <View style={[styles.pillPart, styles.pillBorder]}>
-                                <Text style={styles.pillLabel}>STATUS</Text>
-                                <ShieldCheck size={14} color="#10B981" />
+                            <View style={styles.receiptFooter}>
+                                <View style={styles.footerDecoration}>
+                                    <Zap size={12} color="#E2E8F0" fill="#E2E8F0" />
+                                </View>
+                                <Text style={styles.footerMainText}>TERIMA KASIH</Text>
+                                <Text style={styles.footerSubText}>SEMOGA BERKAH</Text>
                             </View>
                         </View>
-
-                        <View style={styles.receiptFooter}>
-                            <View style={styles.footerDecoration}>
-                                <Zap size={12} color="#E2E8F0" fill="#E2E8F0" />
-                            </View>
-                            <Text style={styles.footerMainText}>TERIMA KASIH</Text>
-                            <Text style={styles.footerSubText}>SEMOGA BERKAH</Text>
-                        </View>
-                    </View>
-                </ScrollView>
+                    </ScrollView>
+                </View>
 
                 <View style={styles.actionFooter}>
                     <TouchableOpacity style={styles.actionBtnOutline} onPress={handleShareImage}>
@@ -522,8 +525,8 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                         </Text>
                     </TouchableOpacity>
                 </View>
-            </View>
-        </Modal>
+            </View >
+        </Modal >
     );
 };
 
@@ -562,6 +565,12 @@ const styles = StyleSheet.create({
     scrollBody: {
         flex: 1,
         backgroundColor: '#F8FAFC',
+    },
+    modalScrollContainer: {
+        flex: 1,
+    },
+    scrollBodyContent: {
+        paddingBottom: 20,
     },
     receiptBody: {
         padding: 24,

@@ -160,7 +160,7 @@ const SellerDashboard = ({ navigation }) => {
                     <View>
                         <View style={styles.roleBadge}>
                             <Store size={14} color="#FFFFFF" />
-                            <Text style={styles.roleText}>SELLER CENTER</Text>
+                            <Text style={styles.roleText}>Kerongkongan berkah 88</Text>
                         </View>
                         <Text style={styles.welcomeText}>Halo, {user?.name}!</Text>
                         <Text style={styles.subtitleText}>Pantau tokomu hari ini</Text>

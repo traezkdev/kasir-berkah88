@@ -361,106 +361,114 @@ const Banners = ({ navigation }) => {
                         </TouchableOpacity>
                     </View>
 
-                    <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-                        {/* Live Preview */}
-                        <Text style={styles.labelGroup}>PRATINJAU LANGSUNG</Text>
-                        <View style={[styles.bannerPreview, { backgroundColor: COLOR_MAP[formData.color_class] || '#4F46E5', marginBottom: 30 }]}>
-                            <View style={styles.bannerContent}>
-                                <View style={styles.bannerText}>
-                                    <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '900' }}>{formData.title || 'Judul Banner'}</Text>
-                                    <Text style={{ color: '#FFFFFF', fontSize: 13, opacity: 0.8, marginTop: 2 }}>{formData.subtitle || 'Sub-titel banner Anda'}</Text>
+                    <View style={styles.modalScrollContainer}>
+                        <ScrollView
+                            style={styles.scrollBody}
+                            showsVerticalScrollIndicator={false}
+                            decelerationRate="fast"
+                            scrollEventThrottle={16}
+                            contentContainerStyle={styles.scrollBodyContent}
+                        >
+                            {/* Live Preview */}
+                            <Text style={styles.labelGroup}>PRATINJAU LANGSUNG</Text>
+                            <View style={[styles.bannerPreview, { backgroundColor: COLOR_MAP[formData.color_class] || '#4F46E5', marginBottom: 30 }]}>
+                                <View style={styles.bannerContent}>
+                                    <View style={styles.bannerText}>
+                                        <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '900' }}>{formData.title || 'Judul Banner'}</Text>
+                                        <Text style={{ color: '#FFFFFF', fontSize: 13, opacity: 0.8, marginTop: 2 }}>{formData.subtitle || 'Sub-titel banner Anda'}</Text>
+                                    </View>
+                                    <View style={styles.bannerIconBadge}>
+                                        {React.createElement(ICON_MAP[formData.icon_name] || Percent, { size: 24, color: '#FFFFFF', strokeWidth: 2.5 })}
+                                    </View>
                                 </View>
-                                <View style={styles.bannerIconBadge}>
-                                    {React.createElement(ICON_MAP[formData.icon_name] || Percent, { size: 24, color: '#FFFFFF', strokeWidth: 2.5 })}
+                                <View style={styles.bannerFooter}>
+                                    <View style={styles.footerLine} />
+                                    <View style={styles.arrowCircle}>
+                                        <ArrowRight size={14} color="#1E293B" />
+                                    </View>
                                 </View>
+                                {React.createElement(ICON_MAP[formData.icon_name] || Percent, {
+                                    size: 120,
+                                    color: '#FFFFFF',
+                                    style: styles.bgDecoration,
+                                    strokeWidth: 1,
+                                    opacity: 0.1
+                                })}
                             </View>
-                            <View style={styles.bannerFooter}>
-                                <View style={styles.footerLine} />
-                                <View style={styles.arrowCircle}>
-                                    <ArrowRight size={14} color="#1E293B" />
+
+                            {/* Form Inputs */}
+                            <View style={styles.formSection}>
+                                <View style={styles.formGroup}>
+                                    <Text style={styles.label}>JUDUL KONTEN</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="Contoh: Diskon Kopi 50%"
+                                        value={formData.title}
+                                        onChangeText={(val) => setFormData({ ...formData, title: val })}
+                                    />
                                 </View>
-                            </View>
-                            {React.createElement(ICON_MAP[formData.icon_name] || Percent, {
-                                size: 120,
-                                color: '#FFFFFF',
-                                style: styles.bgDecoration,
-                                strokeWidth: 1,
-                                opacity: 0.1
-                            })}
-                        </View>
 
-                        {/* Form Inputs */}
-                        <View style={styles.formSection}>
-                            <View style={styles.formGroup}>
-                                <Text style={styles.label}>JUDUL KONTEN</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Contoh: Diskon Kopi 50%"
-                                    value={formData.title}
-                                    onChangeText={(val) => setFormData({ ...formData, title: val })}
-                                />
-                            </View>
+                                <View style={styles.formGroup}>
+                                    <Text style={styles.label}>DESKRIPSI / SUB-TITEL</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="Contoh: Berlaku s/d jam 10 pagi"
+                                        value={formData.subtitle}
+                                        onChangeText={(val) => setFormData({ ...formData, subtitle: val })}
+                                    />
+                                </View>
 
-                            <View style={styles.formGroup}>
-                                <Text style={styles.label}>DESKRIPSI / SUB-TITEL</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Contoh: Berlaku s/d jam 10 pagi"
-                                    value={formData.subtitle}
-                                    onChangeText={(val) => setFormData({ ...formData, subtitle: val })}
-                                />
-                            </View>
-
-                            <View style={styles.formGroup}>
-                                <Text style={styles.label}>WARNA UTAMA</Text>
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.colorGrid}>
-                                    {colors.map(color => (
-                                        <TouchableOpacity
-                                            key={color.class}
-                                            onPress={() => setFormData({ ...formData, color_class: color.class })}
-                                            style={[
-                                                styles.colorCircle,
-                                                { backgroundColor: COLOR_MAP[color.class] },
-                                                formData.color_class === color.class && styles.activeColor
-                                            ]}
-                                        />
-                                    ))}
-                                </ScrollView>
-                            </View>
-
-                            <View style={styles.formGroup}>
-                                <Text style={styles.label}>IKON ILUSTRASI</Text>
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.iconGrid}>
-                                    {icons.map(iconName => {
-                                        const IconComp = ICON_MAP[iconName];
-                                        const isActive = formData.icon_name === iconName;
-                                        return (
+                                <View style={styles.formGroup}>
+                                    <Text style={styles.label}>WARNA UTAMA</Text>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.colorGrid}>
+                                        {colors.map(color => (
                                             <TouchableOpacity
-                                                key={iconName}
-                                                onPress={() => setFormData({ ...formData, icon_name: iconName })}
-                                                style={[styles.iconBox, isActive && styles.activeIconBox]}
-                                            >
-                                                <IconComp size={20} color={isActive ? '#FFFFFF' : '#94A3B8'} />
-                                            </TouchableOpacity>
-                                        );
-                                    })}
-                                </ScrollView>
-                            </View>
-
-                            <View style={styles.toggleRow}>
-                                <View>
-                                    <Text style={styles.toggleTitle}>Status Banner</Text>
-                                    <Text style={styles.toggleSubtitle}>Tampilkan ke pelanggan</Text>
+                                                key={color.class}
+                                                onPress={() => setFormData({ ...formData, color_class: color.class })}
+                                                style={[
+                                                    styles.colorCircle,
+                                                    { backgroundColor: COLOR_MAP[color.class] },
+                                                    formData.color_class === color.class && styles.activeColor
+                                                ]}
+                                            />
+                                        ))}
+                                    </ScrollView>
                                 </View>
-                                <Switch
-                                    value={formData.is_active}
-                                    onValueChange={(val) => setFormData({ ...formData, is_active: val })}
-                                    trackColor={{ false: '#E2E8F0', true: '#BFDBFE' }}
-                                    thumbColor={formData.is_active ? '#2563EB' : '#94A3B8'}
-                                />
+
+                                <View style={styles.formGroup}>
+                                    <Text style={styles.label}>IKON ILUSTRASI</Text>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.iconGrid}>
+                                        {icons.map(iconName => {
+                                            const IconComp = ICON_MAP[iconName];
+                                            const isActive = formData.icon_name === iconName;
+                                            return (
+                                                <TouchableOpacity
+                                                    key={iconName}
+                                                    onPress={() => setFormData({ ...formData, icon_name: iconName })}
+                                                    style={[styles.iconBox, isActive && styles.activeIconBox]}
+                                                >
+                                                    <IconComp size={20} color={isActive ? '#FFFFFF' : '#94A3B8'} />
+                                                </TouchableOpacity>
+                                            );
+                                        })}
+                                    </ScrollView>
+                                </View>
+
+                                <View style={styles.toggleRow}>
+                                    <View>
+                                        <Text style={styles.toggleTitle}>Status Banner</Text>
+                                        <Text style={styles.toggleSubtitle}>Tampilkan ke pelanggan</Text>
+                                    </View>
+                                    <Switch
+                                        value={formData.is_active}
+                                        onValueChange={(val) => setFormData({ ...formData, is_active: val })}
+                                        trackColor={{ false: '#E2E8F0', true: '#BFDBFE' }}
+                                        thumbColor={formData.is_active ? '#2563EB' : '#94A3B8'}
+                                    />
+                                </View>
                             </View>
-                        </View>
-                    </ScrollView>
+                        </ScrollView>
+                    </View>
 
                     <View style={styles.modalFooter}>
                         <TouchableOpacity onPress={() => setIsModalOpen(false)} style={styles.cancelBtn}>
@@ -687,8 +695,19 @@ const styles = StyleSheet.create({
         padding: 8,
         borderRadius: 12,
     },
-    modalBody: {
+    scrollBody: {
         flex: 1,
+        backgroundColor: '#F8FAFC',
+    },
+    modalScrollContainer: {
+        flex: 1,
+    },
+    scrollBodyContent: {
+        paddingBottom: 20,
+        padding: 24,
+        flexGrow: 1,
+    },
+    receiptBody: {
         padding: 24,
     },
     labelGroup: {
@@ -775,11 +794,30 @@ const styles = StyleSheet.create({
     },
     modalFooter: {
         padding: 24,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 25,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 30,
         flexDirection: 'row',
         gap: 12,
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',
+        backgroundColor: '#FFFFFF',
+        zIndex: 999,
+        elevation: 20,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -10 },
+                shadowOpacity: 0.1,
+                shadowRadius: 10,
+            },
+            android: {
+                elevation: 20,
+                borderTopWidth: 0,
+            },
+            web: {
+                boxShadow: '0px -15px 30px rgba(0,0,0,0.08)',
+                borderTopWidth: 0,
+            }
+        })
     },
     cancelBtn: {
         flex: 1,
