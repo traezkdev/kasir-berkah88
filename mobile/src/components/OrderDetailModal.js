@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
     StyleSheet,
     View,
@@ -6,7 +6,7 @@ import {
     Modal,
     TouchableOpacity,
     ScrollView,
-    Dimensions,
+    useWindowDimensions,
     Platform,
     StatusBar
 } from 'react-native';
@@ -26,7 +26,8 @@ import {
 } from 'lucide-react-native';
 import { useToast } from '../context/ToastContext';
 
-const { width } = Dimensions.get('window');
+
+import BottomModalTemplate from './templates/BottomModalTemplate';
 
 const OrderDetailModal = ({ visible, onClose, order }) => {
     const { showToast } = useToast();
@@ -51,246 +52,168 @@ const OrderDetailModal = ({ visible, onClose, order }) => {
     };
 
     return (
-        <Modal
+        <BottomModalTemplate
             visible={visible}
-            animationType="slide"
-            transparent={true}
-            onRequestClose={onClose}
+            onClose={onClose}
+            title={`Detail Pesanan #${order.id}`}
+            footer={
+                <TouchableOpacity
+                    style={styles.closePrimaryBtn}
+                    onPress={onClose}
+                >
+                    <Text style={styles.closePrimaryBtnText}>Tutup</Text>
+                </TouchableOpacity>
+            }
         >
-            <View style={styles.overlay}>
-                <View style={styles.modalContent}>
-                    <StatusBar barStyle="dark-content" backgroundColor="rgba(0,0,0,0.5)" />
+            {/* Scrollable Content */}
+            <View style={{ width: '100%', paddingBottom: 20 }}>
+                {/* Status Badge */}
+                <View style={styles.statusSection}>
+                    <View style={styles.statusBadge}>
+                        <Clock size={14} color="#1E40AF" />
+                        <Text style={styles.statusText}>{(order.status || 'PENDING').toUpperCase()}</Text>
+                    </View>
+                    <Text style={styles.timestamp}>{formatDate(order.created_at || new Date())}</Text>
+                </View>
 
-                    {/* Header */}
-                    <View style={styles.header}>
-                        <View>
-                            <Text style={styles.headerTitle}>Detail Pesanan</Text>
-                            <View style={styles.orderIdContainer}>
-                                <Hash size={12} color="#64748B" />
-                                <Text style={styles.orderIdText}>{order.id}</Text>
-                            </View>
+                {/* Customer Info Card */}
+                <View style={styles.sectionCard}>
+                    <View style={styles.sectionHeader}>
+                        <User size={18} color="#1E40AF" />
+                        <Text style={styles.sectionLabel}>INFORMASI PELANGGAN</Text>
+                    </View>
+
+                    <View style={styles.infoRow}>
+                        <Text style={styles.infoName}>{order.customer_name || 'Pelanggan'}</Text>
+                    </View>
+
+                    <View style={styles.divider} />
+
+                    <View style={styles.infoLine}>
+                        <MapPin size={16} color="#94A3B8" />
+                        <View style={styles.infoValueContainer}>
+                            <Text style={styles.infoValueTitle}>Alamat Pengiriman</Text>
+                            <Text style={styles.infoValueText}>{order.customer_address || 'Ambil di Toko'}</Text>
                         </View>
-                        <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-                            <X size={20} color="#1E293B" />
-                        </TouchableOpacity>
                     </View>
 
-                    <View style={styles.modalScrollContainer}>
-                        <ScrollView
-                            showsVerticalScrollIndicator={false}
-                            contentContainerStyle={styles.scrollBody}
-                            bounces={true}
-                            overScrollMode="always"
-                        >
-                            {/* Status Badge */}
-                            <View style={styles.statusSection}>
-                                <View style={styles.statusBadge}>
-                                    <Clock size={14} color="#1E40AF" />
-                                    <Text style={styles.statusText}>{(order.status || 'PENDING').toUpperCase()}</Text>
-                                </View>
-                                <Text style={styles.timestamp}>{formatDate(order.created_at || new Date())}</Text>
-                            </View>
-
-                            {/* Customer Info Card */}
-                            <View style={styles.sectionCard}>
-                                <View style={styles.sectionHeader}>
-                                    <User size={18} color="#1E40AF" />
-                                    <Text style={styles.sectionLabel}>INFORMASI PELANGGAN</Text>
-                                </View>
-
-                                <View style={styles.infoRow}>
-                                    <Text style={styles.infoName}>{order.customer_name || 'Pelanggan'}</Text>
-                                </View>
-
-                                <View style={styles.divider} />
-
-                                <View style={styles.infoLine}>
-                                    <MapPin size={16} color="#94A3B8" />
-                                    <View style={styles.infoValueContainer}>
-                                        <Text style={styles.infoValueTitle}>Alamat Pengiriman</Text>
-                                        <Text style={styles.infoValueText}>{order.customer_address || 'Ambil di Toko'}</Text>
-                                    </View>
-                                </View>
-
-                                <View style={styles.infoLine}>
-                                    <CreditCard size={16} color="#94A3B8" />
-                                    <View style={styles.infoValueContainer}>
-                                        <Text style={styles.infoValueTitle}>Metode Pembayaran</Text>
-                                        <Text style={styles.infoValueText}>{(order.payment_method || 'TUNAI').toUpperCase()}</Text>
-                                    </View>
-                                </View>
-                            </View>
-
-                            {/* Order Items Section */}
-                            <View style={[styles.sectionCard, { marginTop: 16 }]}>
-                                <View style={styles.sectionHeader}>
-                                    <Package size={18} color="#1E40AF" />
-                                    <Text style={styles.sectionLabel}>RINGKASAN PESANAN</Text>
-                                </View>
-
-                                {parsedItems.map((item, index) => {
-                                    const qty = Number(item.quantity || item.qty) || 0;
-                                    const originalBasePrice = Number(item.basePrice || item.price) || 0;
-                                    const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0) : 0;
-                                    const originalPricePerUnit = originalBasePrice + optionAdjustment;
-
-                                    return (
-                                        <View key={index} style={styles.itemRow}>
-                                            <View style={styles.itemQtyContainer}>
-                                                <Text style={styles.itemQty}>{qty}x</Text>
-                                            </View>
-                                            <View style={styles.itemMain}>
-                                                <Text style={styles.itemName}>{item.name}</Text>
-                                                <Text style={styles.itemPrice}>{formatCurrency(originalPricePerUnit)}</Text>
-                                            </View>
-                                            <Text style={styles.itemTotal}>{formatCurrency(originalPricePerUnit * qty)}</Text>
-                                        </View>
-                                    );
-                                })}
-
-                                <View style={styles.totalDivider} />
-
-                                {(() => {
-                                    // Logic Perhitungan
-                                    const subtotalGross = parsedItems.reduce((sum, item) => {
-                                        const qty = Number(item.quantity || item.qty) || 0;
-                                        const originalBasePrice = Number(item.basePrice || item.price) || 0;
-                                        const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
-                                        return sum + ((originalBasePrice + optionAdjustment) * qty);
-                                    }, 0);
-
-                                    const subtotalNetItems = parsedItems.reduce((sum, item) => {
-                                        const qty = Number(item.quantity || item.qty) || 0;
-                                        const itemPrice = Number(item.price) || 0;
-                                        const itemDiscount = Number(item.discount) || 0;
-                                        const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
-
-                                        const effectivePrice = item.basePrice
-                                            ? itemPrice
-                                            : (itemDiscount > 0 ? (itemPrice * (1 - itemDiscount / 100)) + optionAdjustment : itemPrice + optionAdjustment);
-
-                                        return sum + (effectivePrice * qty);
-                                    }, 0);
-
-                                    const itemDiscountAmount = subtotalGross - subtotalNetItems;
-                                    const manualDiscount = Number(order.manual_discount || 0);
-                                    const ppnAmount = Number(order.ppn || 0);
-
-                                    return (
-                                        <>
-                                            <View style={styles.totalRow}>
-                                                <Text style={styles.totalLabel}>Subtotal</Text>
-                                                <Text style={styles.totalValue}>{formatCurrency(subtotalGross)}</Text>
-                                            </View>
-
-                                            {itemDiscountAmount > 0 && (
-                                                <View style={styles.totalRow}>
-                                                    <Text style={[styles.totalLabel, { color: '#EF4444' }]}>Diskon Item</Text>
-                                                    <Text style={[styles.totalValue, { color: '#EF4444' }]}>-{formatCurrency(itemDiscountAmount)}</Text>
-                                                </View>
-                                            )}
-
-                                            {manualDiscount > 0 && (
-                                                <View style={styles.totalRow}>
-                                                    <Text style={[styles.totalLabel, { color: '#EF4444' }]}>Diskon Tambahan</Text>
-                                                    <Text style={[styles.totalValue, { color: '#EF4444' }]}>-{formatCurrency(manualDiscount)}</Text>
-                                                </View>
-                                            )}
-
-                                            {ppnAmount > 0 && (
-                                                <View style={styles.totalRow}>
-                                                    <Text style={styles.totalLabel}>Pajak/PPN</Text>
-                                                    <Text style={styles.totalValue}>{formatCurrency(ppnAmount)}</Text>
-                                                </View>
-                                            )}
-
-                                            <View style={[styles.totalRow, { marginTop: 12 }]}>
-                                                <Text style={styles.grandTotalLabel}>TOTAL BAYAR</Text>
-                                                <Text style={styles.grandTotalValue}>{formatCurrency(Number(order.total))}</Text>
-                                            </View>
-                                        </>
-                                    );
-                                })()}
-                            </View>
-
-                            {/* Logistics info or note if applicable */}
-                            {order.note && (
-                                <View style={styles.noteBox}>
-                                    <Text style={styles.noteTitle}>Catatan Pesanan:</Text>
-                                    <Text style={styles.noteContent}>"{order.note}"</Text>
-                                </View>
-                            )}
-                        </ScrollView>
-                    </View>
-
-                    {/* Footer Actions */}
-                    <View style={styles.footer}>
-                        <TouchableOpacity
-                            style={styles.closePrimaryBtn}
-                            onPress={onClose}
-                        >
-                            <Text style={styles.closePrimaryBtnText}>Tutup</Text>
-                        </TouchableOpacity>
+                    <View style={styles.infoLine}>
+                        <CreditCard size={16} color="#94A3B8" />
+                        <View style={styles.infoValueContainer}>
+                            <Text style={styles.infoValueTitle}>Metode Pembayaran</Text>
+                            <Text style={styles.infoValueText}>{(order.payment_method || 'TUNAI').toUpperCase()}</Text>
+                        </View>
                     </View>
                 </View>
+
+                {/* Order Items Section */}
+                <View style={[styles.sectionCard, { marginTop: 16 }]}>
+                    <View style={styles.sectionHeader}>
+                        <Package size={18} color="#1E40AF" />
+                        <Text style={styles.sectionLabel}>RINGKASAN PESANAN</Text>
+                    </View>
+
+                    {parsedItems.map((item, index) => {
+                        const qty = Number(item.quantity || item.qty) || 0;
+                        const originalBasePrice = Number(item.basePrice || item.price) || 0;
+                        const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0) : 0;
+                        const originalPricePerUnit = originalBasePrice + optionAdjustment;
+
+                        return (
+                            <View key={index} style={styles.itemRow}>
+                                <View style={styles.itemQtyContainer}>
+                                    <Text style={styles.itemQty}>{qty}x</Text>
+                                </View>
+                                <View style={styles.itemMain}>
+                                    <Text style={styles.itemName}>{item.name}</Text>
+                                    <Text style={styles.itemPrice}>{formatCurrency(originalPricePerUnit)}</Text>
+                                </View>
+                                <Text style={styles.itemTotal}>{formatCurrency(originalPricePerUnit * qty)}</Text>
+                            </View>
+                        );
+                    })}
+
+                    <View style={styles.totalDivider} />
+
+                    {(() => {
+                        const subtotalGross = parsedItems.reduce((sum, item) => {
+                            const qty = Number(item.quantity || item.qty) || 0;
+                            const originalBasePrice = Number(item.basePrice || item.price) || 0;
+                            const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+                            return sum + ((originalBasePrice + optionAdjustment) * qty);
+                        }, 0);
+
+                        const subtotalNetItems = parsedItems.reduce((sum, item) => {
+                            const qty = Number(item.quantity || item.qty) || 0;
+                            const itemPrice = Number(item.price) || 0;
+                            const itemDiscount = Number(item.discount) || 0;
+                            const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+
+                            const effectivePrice = item.basePrice
+                                ? itemPrice
+                                : (itemDiscount > 0 ? (itemPrice * (1 - itemDiscount / 100)) + optionAdjustment : itemPrice + optionAdjustment);
+
+                            return sum + (effectivePrice * qty);
+                        }, 0);
+
+                        const itemDiscountAmount = subtotalGross - subtotalNetItems;
+                        const manualDiscount = Number(order.manual_discount || 0);
+                        const ppnAmount = Number(order.ppn || 0);
+
+                        return (
+                            <>
+                                <View style={styles.totalRow}>
+                                    <Text style={styles.totalLabel}>Subtotal</Text>
+                                    <Text style={styles.totalValue}>{formatCurrency(subtotalGross)}</Text>
+                                </View>
+
+                                {itemDiscountAmount > 0 && (
+                                    <View style={styles.totalRow}>
+                                        <Text style={[styles.totalLabel, { color: '#EF4444' }]}>Diskon Item</Text>
+                                        <Text style={[styles.totalValue, { color: '#EF4444' }]}>-{formatCurrency(itemDiscountAmount)}</Text>
+                                    </View>
+                                )}
+
+                                {manualDiscount > 0 && (
+                                    <View style={styles.totalRow}>
+                                        <Text style={[styles.totalLabel, { color: '#EF4444' }]}>Diskon Tambahan</Text>
+                                        <Text style={[styles.totalValue, { color: '#EF4444' }]}>-{formatCurrency(manualDiscount)}</Text>
+                                    </View>
+                                )}
+
+                                {ppnAmount > 0 && (
+                                    <View style={styles.totalRow}>
+                                        <Text style={styles.totalLabel}>Pajak/PPN</Text>
+                                        <Text style={styles.totalValue}>{formatCurrency(ppnAmount)}</Text>
+                                    </View>
+                                )}
+
+                                <View style={[styles.totalRow, { marginTop: 12 }]}>
+                                    <Text style={styles.grandTotalLabel}>TOTAL BAYAR</Text>
+                                    <Text style={styles.grandTotalValue}>{formatCurrency(Number(order.total))}</Text>
+                                </View>
+                            </>
+                        );
+                    })()}
+                </View>
+
+                {/* Logistics info or note if applicable */}
+                {order.note && (
+                    <View style={styles.noteBox}>
+                        <Text style={styles.noteTitle}>Catatan Pesanan:</Text>
+                        <Text style={styles.noteContent}>"{order.note}"</Text>
+                    </View>
+                )}
+
+                <View style={{ height: 20 }} />
             </View>
-        </Modal>
+        </BottomModalTemplate>
     );
 };
 
 const styles = StyleSheet.create({
-    overlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'flex-end',
-    },
-    modalContent: {
-        backgroundColor: '#F8FAFC',
-        borderTopLeftRadius: 32,
-        borderTopRightRadius: 32,
-        height: '85%',
-        width: '100%',
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 24,
-        paddingVertical: 20,
-        backgroundColor: '#FFFFFF',
-        borderTopLeftRadius: 32,
-        borderTopRightRadius: 32,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F1F5F9',
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '900',
-        color: '#1E293B',
-    },
-    orderIdContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 2,
-    },
-    orderIdText: {
-        fontSize: 12,
-        color: '#64748B',
-        fontWeight: 'bold',
-        marginLeft: 4,
-    },
-    closeBtn: {
-        padding: 8,
-        backgroundColor: '#F1F5F9',
-        borderRadius: 12,
-    },
-    scrollBody: {
-        padding: 24,
-        flexGrow: 1,
-    },
-    modalScrollContainer: {
-        flex: 1,
-    },
+    // Styles that were handled by layout/template logic are removed.
+    // Keeping content-specific styles below.
     statusSection: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -459,45 +382,22 @@ const styles = StyleSheet.create({
         color: '#92400E',
         fontStyle: 'italic',
     },
-    footer: {
-        padding: 24,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 30,
-        flexDirection: 'row',
-        gap: 12,
-        borderTopWidth: 1,
-        borderTopColor: '#F1F5F9',
-        backgroundColor: '#FFFFFF',
-        zIndex: 999,
-        elevation: 20,
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: -10 },
-                shadowOpacity: 0.1,
-                shadowRadius: 10,
-            },
-            android: {
-                elevation: 20,
-                borderTopWidth: 0,
-            },
-            web: {
-                boxShadow: '0px -15px 30px rgba(0,0,0,0.08)',
-                borderTopWidth: 0,
-            }
-        })
-    },
+
     closePrimaryBtn: {
-        flex: 1,
+        width: '100%',
+        height: 56,
         backgroundColor: '#1E293B',
-        paddingVertical: 16,
         borderRadius: 16,
         alignItems: 'center',
+        justifyContent: 'center',
+        elevation: 2,
     },
     closePrimaryBtnText: {
         color: '#FFFFFF',
         fontSize: 16,
-        fontWeight: '900',
-    }
+        fontWeight: 'bold',
+        zIndex: 10,
+    },
 });
 
 export default OrderDetailModal;
