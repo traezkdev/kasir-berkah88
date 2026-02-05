@@ -27,6 +27,7 @@ const SellerLayout = () => {
         { name: 'Transaksi', path: '/seller/transactions', icon: 'ShoppingCart', label: 'Jual' },
         { name: 'Menu', path: '/seller/menu-management', icon: 'Utensils', label: 'Katalog' },
         { name: 'Riwayat', path: '/seller/transaction-history', icon: 'History', label: 'Transaksi' },
+        { name: 'Banner', path: '/seller/banners', icon: 'Image', label: 'Banner' },
     ];
 
     const handleLogout = () => {
@@ -106,7 +107,7 @@ const SellerLayout = () => {
             {currentPath !== '/seller/receipt' && (
                 <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-gray-100 z-50 px-6 pb-safe">
                     <div className="flex justify-around items-center h-20">
-                        {menuItems.map((item) => {
+                        {menuItems.slice(0, 5).map((item) => {
                             const isActive = currentPath === item.path;
                             return (
                                 <Link

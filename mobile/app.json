@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "Kasir Berkah88",
+    "slug": "kasir-berkah88-mobile",
+    "version": "1.0.1",
+    "orientation": "portrait",
+    "icon": "./assets/logo.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.traezkdev.kasirberkah88mobile",
+      "googleServicesFile": "./google-services.json"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "./with-min-sdk-fix",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 24,
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35
+          }
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Izinkan Kasir Berkah88 mengakses galeri Anda.",
+          "savePhotosPermission": "Izinkan Kasir Berkah88 menyimpan gambar ke galeri.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "62f9fb68-21b9-4aca-9206-5ed3e86b51b1"
+      }
+    }
+  }
+}

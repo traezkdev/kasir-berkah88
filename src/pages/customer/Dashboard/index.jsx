@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
 import Icon from '../../../components/AppIcon';
 import authFetch from '../../../utils/authFetch';
 import { useAppSettings } from '../../../contexts/AppSettingsContext';
@@ -87,9 +88,22 @@ const CustomerDashboard = () => {
         fetchData();
         const pollInterval = setInterval(fetchData, 10000); // Poll every 10s for better responsiveness
 
+        // Socket.io Realtime Implementation
+        const API_URL = import.meta.env.VITE_API_URL || '';
+        const socket = io(API_URL, {
+            transports: ['websocket'],
+            forceNew: true
+        });
+
+        socket.on('order_update', (data) => {
+            console.log('Realtime Order Update (Customer Dash):', data);
+            fetchData();
+        });
+
         return () => {
             window.removeEventListener('scroll', handleScroll);
             clearInterval(pollInterval);
+            socket.disconnect();
         };
     }, []);
 

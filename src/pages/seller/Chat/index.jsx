@@ -9,6 +9,7 @@ import { useChat } from '../../../contexts/ChatContext';
 import authFetch from '../../../utils/authFetch';
 import OrderPinWidget from '../../../components/ui/OrderPinWidget';
 import { useNavigate } from 'react-router-dom';
+import { useOrderNotification } from '../../../contexts/OrderNotificationContext';
 
 const SellerChatPage = () => {
     const navigate = useNavigate();
@@ -22,6 +23,7 @@ const SellerChatPage = () => {
         activeOrder,
         setActiveOrder
     } = useChat();
+    const { onlineUsers } = useOrderNotification();
 
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
@@ -160,6 +162,20 @@ const SellerChatPage = () => {
         }
     };
 
+    const isPartnerOnline = (partner) => {
+        if (!partner) return false;
+        const partnerRole = partner.role;
+        const partnerId = partner.user_id || partner.id;
+
+        // Jika partner adalah staff (admin/owner/penjual/kasir)
+        if (['admin', 'owner', 'kasir', 'penjual'].includes(partnerRole)) {
+            return onlineUsers.some(u => ['admin', 'owner', 'kasir', 'penjual'].includes(u.role));
+        }
+
+        // Jika partner adalah pelanggan
+        return onlineUsers.some(u => String(u.userId) === String(partnerId));
+    };
+
     const filteredConversations = conversations.filter(c =>
         c.username.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -239,6 +255,9 @@ const SellerChatPage = () => {
                                                     {contact.unread_count}
                                                 </span>
                                             )}
+                                            {isPartnerOnline(contact) && (
+                                                <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></span>
+                                            )}
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <div className="flex items-center justify-between mb-0.5">
@@ -280,10 +299,12 @@ const SellerChatPage = () => {
                                     </div>
                                     <div>
                                         <h4 className="text-base font-black text-gray-900 dark:text-white tracking-tight">{activeChat.username}</h4>
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                                            <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest leading-none">Online</span>
-                                        </div>
+                                        {isPartnerOnline(activeChat) && (
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                                                <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest leading-none">Online</span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">

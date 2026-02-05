@@ -215,6 +215,9 @@ const SellerDashboard = () => {
                             <Icon name={isOpen ? "XCircle" : "PlayCircle"} size={18} />
                             {isOpen ? "Tutup Toko" : "Buka Toko"}
                         </button>
+                        <button onClick={() => navigate('/seller/banners')} className="px-6 py-3 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl shadow-sm hover:bg-gray-50 transition-all flex items-center gap-2">
+                            <Icon name="Image" size={18} /> Edit Banner
+                        </button>
                         <button onClick={() => navigate('/seller/menu-management')} className="px-6 py-3 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl shadow-sm hover:bg-gray-50 transition-all flex items-center gap-2">
                             <Icon name="PlusCircle" size={18} /> Tambah Menu
                         </button>
@@ -378,19 +381,21 @@ const SellerDashboard = () => {
                         <div className="flex justify-between items-end mb-6">
                             <h2 className="text-xl font-black text-gray-800 tracking-tight">Aksi Cepat</h2>
                         </div>
-                        <div className="grid grid-cols-4 gap-4">
+                        <div className="grid grid-cols-3 gap-6">
                             {[
                                 { label: 'Obrolan', icon: 'MessageCircle', color: 'bg-blue-600 text-white shadow-blue-200', path: '/seller/chat' },
-                                { label: 'Transaksi', icon: 'ShoppingCart', color: 'bg-blue-50 text-blue-600', path: '/seller/transactions' },
-                                { label: 'Tambah Menu', icon: 'PlusCircle', color: 'bg-green-50 text-green-600', path: '/seller/menu-management' },
-                                { label: 'Riwayat', icon: 'History', color: 'bg-purple-50 text-purple-600', path: '/seller/transaction-history' }
+                                { label: 'Jual', icon: 'ShoppingCart', color: 'bg-blue-50 text-blue-600', path: '/seller/transactions' },
+                                { label: 'Katalog', icon: 'Utensils', color: 'bg-green-50 text-green-600', path: '/seller/menu-management' },
+                                { label: 'Banner', icon: 'Image', color: 'bg-orange-50 text-orange-600', path: '/seller/banners' },
+                                { label: 'Riwayat', icon: 'History', color: 'bg-purple-50 text-purple-600', path: '/seller/transaction-history' },
+                                { label: 'Pesanan', icon: 'ShoppingBag', color: 'bg-indigo-50 text-indigo-600', path: '/seller/orders' }
                             ].map((action, i) => (
                                 <button
                                     key={i}
                                     onClick={() => navigate(action.path)}
                                     className="flex flex-col items-center gap-3 group"
                                 >
-                                    <div className={`w-16 h-16 ${action.color} rounded-[1.5rem] flex items-center justify-center shadow-sm group-hover:scale-110 group-active:scale-95 transition-all duration-300`}>
+                                    <div className={`w-16 h-16 ${action.color} rounded-[2rem] flex items-center justify-center shadow-sm group-hover:scale-110 group-active:scale-95 transition-all duration-300`}>
                                         <Icon name={action.icon} size={24} />
                                     </div>
                                     <span className="text-[11px] font-bold text-gray-600 text-center leading-tight">{action.label}</span>

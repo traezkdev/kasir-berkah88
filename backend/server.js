@@ -1,5 +1,7 @@
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
+const { Server } = require("socket.io");
 const cors = require('cors');
 const db = require('./database.js'); // db is now the promisePool
 const bcrypt = require('bcryptjs'); // Import bcryptjs
@@ -24,8 +26,63 @@ const {
     deleteMenuRecipe,
 } = require('./rawMaterialsDb');
 const { sendPushNotification } = require('./utils/oneSignal');
+const { sendExpoPushNotification } = require('./utils/expoPush');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+    }
+});
+app.set('io', io);
+
+// Socket.io Connection Logic
+// Socket.io Connection Logic
+const onlineUsers = new Map(); // userId -> { role, sockets: Set<socketId> }
+
+io.on('connection', (socket) => {
+    console.log('A client connected:', socket.id);
+
+    socket.on('user_connected', (userData) => {
+        console.log('Received user_connected:', userData);
+        if (!userData || !userData.userId) return;
+        const { userId, role } = userData;
+
+        if (!onlineUsers.has(userId)) {
+            onlineUsers.set(userId, { role, sockets: new Set() });
+        }
+        onlineUsers.get(userId).sockets.add(socket.id);
+
+        // Broadcast to all that this user is online (including role)
+        io.emit('user_status', { userId, role, status: 'online' });
+
+        // Send current online users list to this client
+        const onlineList = Array.from(onlineUsers.entries()).map(([id, data]) => ({
+            userId: id,
+            role: data.role
+        }));
+        socket.emit('online_users', onlineList);
+
+        // Store on socket for disconnect handling
+        socket.userId = userId;
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Client disconnected:', socket.id);
+        if (socket.userId && onlineUsers.has(socket.userId)) {
+            const userData = onlineUsers.get(socket.userId);
+            userData.sockets.delete(socket.id);
+            if (userData.sockets.size === 0) {
+                const role = userData.role;
+                onlineUsers.delete(socket.userId);
+                io.emit('user_status', { userId: socket.userId, role, status: 'offline' });
+            }
+        }
+    });
+});
+
 app.set('trust proxy', 1); // Trust first proxy (fix for express-rate-limit behind proxy)
 
 // Ensure uploads directory exists
@@ -133,7 +190,7 @@ const upload = multer({
 });
 
 const PORT = 4000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
 
@@ -207,6 +264,61 @@ const logActivity = async (userId, action, targetType = null, targetId = null, d
     } catch (err) {
         console.error('FAILED TO LOG ACTIVITY:', err.message);
         // We don't want to crash the request if logging fails, but we should know about it.
+    }
+};
+
+// --- NOTIFICATION HELPER ---
+/**
+ * Mengirim notifikasi ke user tertentu via OneSignal dan Expo Push
+ * @param {Array|number|null} userIds - ID user (atau null untuk semua)
+ * @param {string} message - Isi pesan
+ * @param {string} heading - Judul
+ * @param {object} data - Data tambahan
+ */
+const sendUniversalNotification = async (userIds, message, heading, data = {}, excludedUserId = null) => {
+    // 1. OneSignal (Existing)
+    let normalizedUserIds = userIds ? (Array.isArray(userIds) ? userIds : [userIds]) : null;
+
+    // Filter out the excluded user
+    if (normalizedUserIds && excludedUserId) {
+        normalizedUserIds = normalizedUserIds.filter(id => id.toString() !== excludedUserId.toString());
+    }
+
+    // Don't send if no targets left
+    if (normalizedUserIds !== null && normalizedUserIds.length === 0) return;
+
+    sendPushNotification(message, heading, data, normalizedUserIds).catch(e => console.error('OneSignal Error:', e));
+
+    // 2. Expo Push
+    try {
+        let pushTokens = [];
+        if (normalizedUserIds && normalizedUserIds.length > 0) {
+            // Ambil token dari DB untuk user ID tertentu
+            const [rows] = await db.query('SELECT push_token FROM users WHERE id IN (?) AND push_token IS NOT NULL', [normalizedUserIds]);
+            pushTokens = rows.map(r => r.push_token);
+        } else {
+            // Ambil semua token jika userIds null (Broadcast)
+            let sql = "SELECT push_token FROM users WHERE push_token IS NOT NULL";
+            let params = [];
+
+            if (data.type === 'new_order') {
+                sql = "SELECT push_token FROM users WHERE role IN ('admin', 'penjual', 'owner', 'kasir') AND push_token IS NOT NULL";
+            }
+
+            if (excludedUserId) {
+                sql += (sql.includes('WHERE') ? ' AND ' : ' WHERE ') + "id != ?";
+                params.push(excludedUserId);
+            }
+
+            const [rows] = await db.query(sql, params);
+            pushTokens = rows.map(r => r.push_token);
+        }
+
+        if (pushTokens.length > 0) {
+            await sendExpoPushNotification(pushTokens, heading, message, data);
+        }
+    } catch (e) {
+        console.error('Expo Push Helper Error:', e);
     }
 };
 
@@ -1596,7 +1708,7 @@ app.put('/api/settings/ppn', authenticateToken, authorizeRoles('admin'), async (
 // Get restaurant settings (public)
 app.get('/api/restaurant-settings', async (req, res) => {
     try {
-        const sql = "SELECT restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open FROM app_settings ORDER BY id LIMIT 1";
+        const sql = "SELECT restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, ignore_stock FROM app_settings ORDER BY id LIMIT 1";
         const [rows] = await db.query(sql);
         if (rows.length > 0) {
             res.json({
@@ -1613,7 +1725,8 @@ app.get('/api/restaurant-settings', async (req, res) => {
                     restaurant_url: 'www.berkah88.id',
                     owner_phone: null,
                     show_stock_alert: 1,
-                    is_open: 1
+                    is_open: 1,
+                    ignore_stock: 0
                 }
             });
         }
@@ -1625,33 +1738,51 @@ app.get('/api/restaurant-settings', async (req, res) => {
 // Update restaurant settings (admin only)
 app.put('/api/restaurant-settings', authenticateToken, authorizeRoles('admin'), async (req, res) => {
     try {
-        const { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open } = req.body;
+        const { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, ignore_stock } = req.body;
         if (!restaurant_name || !restaurant_slogan) {
             return res.status(400).json({ "error": "Restaurant name and slogan are required." });
         }
 
-        const sql = `UPDATE app_settings SET restaurant_name = ?, restaurant_slogan = ?, restaurant_url = ?, owner_phone = ?, show_stock_alert = ?, is_open = ? WHERE id = (SELECT id FROM (SELECT id FROM app_settings ORDER BY id LIMIT 1) as t)`;
+        const sql = `UPDATE app_settings SET restaurant_name = ?, restaurant_slogan = ?, restaurant_url = ?, owner_phone = ?, show_stock_alert = ?, is_open = ?, ignore_stock = ? WHERE id = (SELECT id FROM (SELECT id FROM app_settings ORDER BY id LIMIT 1) as t)`;
         const params = [
             restaurant_name,
             restaurant_slogan,
             restaurant_url || 'www.berkah88.id',
             owner_phone || null,
             show_stock_alert !== undefined ? show_stock_alert : 1,
-            is_open !== undefined ? is_open : 1
+            is_open !== undefined ? is_open : 1,
+            ignore_stock !== undefined ? ignore_stock : 0
         ];
         const [result] = await db.query(sql, params);
 
         if (result.affectedRows === 0) {
             // If no rows were affected, it might mean no settings exist yet. Insert them.
-            const insertSql = 'INSERT INTO app_settings (restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, og_title) VALUES (?, ?, ?, ?, ?, ?, ?)';
+            const insertSql = 'INSERT INTO app_settings (restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, ignore_stock, og_title) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
             await db.query(insertSql, [...params, 'Kasir Berkah 88']);
-            res.json({ message: "Restaurant settings inserted successfully!", data: { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open } });
+            res.json({ message: "Restaurant settings inserted successfully!", data: { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, ignore_stock } });
         } else {
-            res.json({ message: "Restaurant settings updated successfully!", data: { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open } });
+            res.json({ message: "Restaurant settings updated successfully!", data: { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, ignore_stock } });
         }
 
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// Toggle Ignore Stock status (admin)
+app.patch('/api/restaurant-settings/ignore-stock', authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { ignore_stock } = req.body;
+        if (ignore_stock === undefined) {
+            return res.status(400).json({ error: "ignore_stock status is required" });
+        }
+
+        const sql = `UPDATE app_settings SET ignore_stock = ? WHERE id = (SELECT id FROM (SELECT id FROM app_settings ORDER BY id LIMIT 1) as t)`;
+        await db.query(sql, [ignore_stock ? 1 : 0]);
+
+        res.json({ message: `Abaikan Stok berhasil ${ignore_stock ? 'diaktifkan' : 'dinonaktifkan'}`, data: { ignore_stock } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -1728,7 +1859,7 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
     try {
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 20;
-        const { startDate, endDate, paymentMethod, minTotal, maxTotal } = req.query; // Extract paymentMethod and Amount Range
+        const { startDate, endDate, paymentMethod, minTotal, maxTotal, search } = req.query; // Extract paymentMethod and Amount Range
         const offset = (page - 1) * limit;
 
         let whereClauses = ['t.deleted_at IS NULL'];
@@ -1767,12 +1898,19 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
             queryParams.push(maxTotal);
         }
 
+        // Search Filtering
+        if (search) {
+            whereClauses.push('(t.id LIKE ? OR t.items LIKE ?)');
+            queryParams.push(`%${search}%`, `%${search}%`);
+        }
+
         const whereSql = `WHERE ${whereClauses.join(' AND ')}`;
 
-        // Query to get total count of transactions
-        const countSql = `SELECT COUNT(*) as totalItems FROM transactions t ${whereSql}`;
+        // Query to get total count and total amount
+        const countSql = `SELECT COUNT(*) as totalItems, SUM(total) as totalAmount FROM transactions t ${whereSql}`;
         const [countRows] = await db.query(countSql, queryParams);
         const totalItems = countRows[0].totalItems;
+        const totalAmount = countRows[0].totalAmount || 0;
         const totalPages = Math.ceil(totalItems / limit);
 
         // Query to get paginated transactions
@@ -1801,6 +1939,7 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
                 "currentPage": page,
                 "totalPages": totalPages,
                 "totalItems": totalItems,
+                "totalAmount": totalAmount,
                 "limit": limit
             }
         });
@@ -1964,7 +2103,7 @@ app.get("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
 app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'pelanggan'), async (req, res, next) => {
     let connection;
     try {
-        const { items, total: frontendTotal, ppn: frontendPpn, ignoreStock, cashPaid, change, isEmployeeMeal, payment_method, manual_discount, catatan } = req.body;
+        const { items, total: frontendTotal, ppn: frontendPpn, cashPaid, change, isEmployeeMeal, payment_method, manual_discount, catatan, customer_name, customer_phone, customer_address } = req.body;
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ "error": "No items specified" });
@@ -1973,7 +2112,16 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
         connection = await db.getConnection();
         await connection.beginTransaction();
 
-        if (!ignoreStock) {
+        const { ignoreStock: reqIgnoreStock } = req.body;
+
+        // Get global ignore_stock setting as fallback
+        const [settingsRows] = await connection.query('SELECT ignore_stock FROM app_settings ORDER BY id LIMIT 1');
+        const globalIgnoreStock = settingsRows.length > 0 ? !!settingsRows[0].ignore_stock : false;
+
+        // If ignoreStock is passed in body, it takes precedence, otherwise use global setting.
+        const effectivelyIgnoreStock = reqIgnoreStock !== undefined ? reqIgnoreStock : globalIgnoreStock;
+
+        if (!effectivelyIgnoreStock) {
             // --- STOCK VALIDATION BEFORE TRANSACTION (WITH LOCK) ---
             for (const cartItem of items) {
                 const [rows] = await connection.query('SELECT stock FROM menu_items WHERE id = ? FOR UPDATE', [cartItem.id]);
@@ -2027,11 +2175,11 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
         const timestamp = new Date();
         const serializedItems = JSON.stringify(itemsWithDetails);
         const finalIsEmployeeMeal = isEmployeeMeal ? 1 : 0;
-        const finalIgnoreStock = ignoreStock ? 1 : 0;
+        const finalIgnoreStock = effectivelyIgnoreStock ? 1 : 0;
         const finalPaymentMethod = payment_method || 'tunai';
         const finalUserId = req.user ? req.user.userId : null;
 
-        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock, cash_paid, `change`, user_id, manual_discount, catatan) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)';
+        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock, cash_paid, `change`, user_id, manual_discount, catatan, customer_name, customer_phone, customer_address) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
         const params = [
             newTransactionId,
             timestamp,
@@ -2045,15 +2193,17 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
             parseFloat(change || 0).toFixed(2),
             finalUserId,
             parseFloat(manual_discount || 0).toFixed(2),
-            catatan || null
+            catatan || null,
+            customer_name || null,
+            customer_phone || null,
+            customer_address || null
         ];
 
         await connection.query(sql, params);
 
-        if (!ignoreStock) {
-            for (const item of itemsWithDetails) {
-                await connection.query('UPDATE menu_items SET stock = stock - ? WHERE id = ?', [item.quantity, item.id]);
-            }
+        // Stock should always be reduced, even if ignoring stock for validation
+        for (const item of itemsWithDetails) {
+            await connection.query('UPDATE menu_items SET stock = stock - ? WHERE id = ?', [item.quantity, item.id]);
         }
 
         await connection.commit();
@@ -2968,7 +3118,7 @@ app.post("/api/orders", (req, res, next) => {
     }
 }, async (req, res) => {
     try {
-        const { customer_name, customer_address, items, payment_method } = req.body; // 'total' will be calculated on backend
+        const { customer_name, customer_address, customer_phone, items, payment_method, note, notes } = req.body; // 'total' will be calculated on backend
         if (!customer_name || !items || items.length === 0) {
             return res.status(400).json({ error: "Missing required fields: customer_name, items" });
         }
@@ -2976,33 +3126,24 @@ app.post("/api/orders", (req, res, next) => {
         let calculatedTotal = 0;
         const orderItemsWithDetails = [];
 
+        // Get global ignore_stock setting
+        const [settingsRows] = await db.query('SELECT ignore_stock FROM app_settings ORDER BY id LIMIT 1');
+        const globalIgnoreStock = settingsRows.length > 0 ? !!settingsRows[0].ignore_stock : false;
+
         for (const item of items) {
-            const [menuItemRows] = await db.query('SELECT id, name, price, discount FROM menu_items WHERE id = ?', [item.id]);
+            const [menuItemRows] = await db.query('SELECT id, name, price, discount, stock FROM menu_items WHERE id = ?', [item.id]);
             if (menuItemRows.length === 0) {
                 return res.status(400).json({ error: `Menu item with ID ${item.id} not found.` });
             }
             const menuItem = menuItemRows[0];
+
+            // Stock validation if NOT ignoring stock
+            if (!globalIgnoreStock && menuItem.stock !== null && menuItem.stock < item.quantity) {
+                return res.status(400).json({ error: `Stok tidak mencukupi untuk ${menuItem.name}. (Tersedia: ${menuItem.stock})` });
+            }
+
             const itemPrice = parseFloat(menuItem.price);
             const itemDiscount = parseFloat(menuItem.discount || 0);
-
-            const discountedPrice = itemPrice - (itemPrice * (itemDiscount / 100)); // Fix: Discount is usually percentage here? Let's check previous logic. previous was price * (1 - discount). If discount is 0.1 (10%), it works. If discount is 10 (10%), it fails.
-            // Looking at previous code: `const discountedPrice = itemPrice * (1 - itemDiscount);`
-            // If discount is stored as decimal (0.1), that's correct.
-            // Let's assume stored as decimal for now based on previous code.
-
-            // Re-read previous code: `const discountedPrice = itemPrice * (1 - itemDiscount);`
-            // But wait, in `SellerMenuManagement`, I saw input placeholder "0" for discount (%).
-            // If user enters 10, it saves 10.
-            // If DB stores 10, then `1 - 10` = -9. That's wrong.
-            // Let's assume discount is 0-1 range OR fix it here.
-            // Safe bet: if discount > 1, treat as percentage (divide by 100). If <= 1, treat as decimal?
-            // Existing logic was `itemPrice * (1 - itemDiscount)`.
-            // Let's stick to existing logic for now to minimalize regressions, assuming it's correct.
-            // BUT wait, look at my previous read of `SellerMenuManagement`:
-            // 455:                                             <input ... placeholder="0" ... /> (Label says Diskon (%))
-            // If I enter 10, it saves 10. `hpp` and `discount` were added recently.
-            // If I save 10, logic `itemPrice * (1 - 10)` is definitely wrong.
-            // I should fix this logic to be safer: `const effectiveDiscount = itemDiscount > 1 ? itemDiscount / 100 : itemDiscount;`
 
             let effectiveDiscount = itemDiscount;
             if (itemDiscount > 1) {
@@ -3042,16 +3183,31 @@ app.post("/api/orders", (req, res, next) => {
 
         const userId = req.user ? req.user.userId : null;
         const paymentMethodValue = payment_method || 'Tunai';
-        const sql = 'INSERT INTO orders (user_id, customer_name, customer_address, items, total, status, payment_method) VALUES (?, ?, ?, ?, ?, ?, ?)';
-        const params = [userId, customer_name, customer_address, JSON.stringify(orderItemsWithDetails), calculatedTotal, 'pending', paymentMethodValue];
+        const orderNote = note || notes || null;
+
+        const sql = 'INSERT INTO orders (user_id, customer_name, customer_address, customer_phone, items, total, status, payment_method, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        const params = [userId, customer_name, customer_address, customer_phone || null, JSON.stringify(orderItemsWithDetails), calculatedTotal, 'pending', paymentMethodValue, orderNote];
         const [result] = await db.query(sql, params);
 
-        // Kirim Notifikasi Push via OneSignal
-        sendPushNotification(
-            `Pesanan baru dari ${customer_name} sebesar Rp ${calculatedTotal.toLocaleString('id-ID')}`,
-            'Pesanan Masuk! 🔔',
-            { orderId: result.insertId, type: 'new_order' }
-        ).catch(e => console.error('Gagal mengirim notifikasi OneSignal:', e));
+        const orderId = result.insertId;
+
+        // Kirim Notifikasi Push (async, tidak menunggu selesai agar response cepat)
+        setImmediate(() => {
+            sendUniversalNotification(
+                null, // Kirim ke admin/penjual/kasir (ditentukan di helper untuk new_order)
+                `Pesanan baru dari ${customer_name} sebesar Rp ${calculatedTotal.toLocaleString('id-ID')}`,
+                'Pesanan Masuk! 🔔',
+                { orderId, type: 'new_order' }
+            ).catch(err => console.error('Push notification error:', err));
+        });
+
+        // Realtime Update via Socket.io (instant)
+        req.app.get('io').emit('new_order', {
+            id: orderId,
+            customer_name,
+            total: calculatedTotal,
+            status: 'pending'
+        });
 
         res.status(201).json({
             message: "Order created successfully and is pending verification.",
@@ -3120,13 +3276,51 @@ app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user', 'pelan
     }
 });
 
+// Get a single order by ID
+app.get("/api/orders/:id", authenticateToken, authorizeRoles('admin', 'user', 'pelanggan', 'penjual', 'kasir', 'owner'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const isManagement = ['admin', 'user', 'kasir', 'penjual', 'owner'].includes(req.user.role);
+
+        let sql = 'SELECT * FROM orders WHERE id = ?';
+        let queryParams = [id];
+
+        if (!isManagement) {
+            sql += ' AND user_id = ?';
+            queryParams.push(req.user.userId);
+        }
+
+        const [rows] = await db.query(sql, queryParams);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Order not found or unauthorized access." });
+        }
+
+        const order = rows[0];
+        // Parse items JSON string
+        try {
+            order.items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+        } catch (e) {
+            console.error("Error parsing order items:", e);
+        }
+
+        res.json({
+            message: "success",
+            data: order
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Update an order's status
-app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'user', 'kasir', 'penjual', 'pelanggan'), async (req, res) => {
+app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'user', 'kasir', 'penjual', 'pelanggan', 'owner'), async (req, res) => {
     const { status } = req.body;
     const { id } = req.params;
 
-    if (!status || !['accepted', 'rejected', 'cancelled'].includes(status)) {
-        return res.status(400).json({ error: "Invalid status provided. Must be 'accepted', 'rejected', or 'cancelled'." });
+    if (!status || !['accepted', 'rejected', 'cancelled', 'completed'].includes(status)) {
+        console.error(`[Order] Invalid status update attempt: ${status} for ID ${id}`);
+        return res.status(400).json({ error: "Invalid status provided. Must be 'accepted', 'rejected', 'cancelled', or 'completed'." });
     }
 
     // If role is pelanggan, they can only set to 'cancelled' and only if it's their own order
@@ -3134,15 +3328,13 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
         return res.status(403).json({ error: "Pelanggan hanya diperbolehkan membatalkan pesanan." });
     }
 
-
-
     const connection = await db.getConnection();
 
     try {
         await connection.beginTransaction();
 
         // Get the order to check ownership and current status
-        const [orderRows] = await connection.query('SELECT user_id, status FROM orders WHERE id = ? FOR UPDATE', [id]);
+        const [orderRows] = await connection.query('SELECT user_id, status, customer_name, customer_address, customer_phone, items, total, payment_method FROM orders WHERE id = ? FOR UPDATE', [id]);
 
         if (orderRows.length === 0) {
             await connection.rollback();
@@ -3163,42 +3355,64 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
             }
         }
 
-        // Handle 'rejected' or 'cancelled' status: just update and finish
-        if (status === 'rejected' || status === 'cancelled') {
+        // Handle 'rejected', 'cancelled', or 'completed' status: just update and finish
+        if (status === 'rejected' || status === 'cancelled' || status === 'completed') {
             const updateSql = 'UPDATE orders SET status = ? WHERE id = ?';
             await connection.query(updateSql, [status, id]);
 
-            // Kirim Notifikasi ke Pelanggan
+            // Kirim Notifikasi ke Pelanggan (async)
             if (order.user_id) {
-                const statusMsg = status === 'rejected' ? 'Maaf, pesanan Anda ditolak/dibatalkan oleh penjual.' : 'Pesanan Anda telah dibatalkan.';
-                sendPushNotification(statusMsg, 'Update Pesanan 📦', { orderId: id, status }, [order.user_id])
-                    .catch(e => console.error('OneSignal Error:', e));
+                let statusMsg = '';
+                let title = 'Update Pesanan 📦';
+
+                if (status === 'rejected') {
+                    statusMsg = 'Maaf, pesanan Anda ditolak oleh penjual.';
+                } else if (status === 'cancelled') {
+                    statusMsg = 'Pesanan Anda telah dibatalkan.';
+                } else if (status === 'completed') {
+                    statusMsg = 'Pesanan Anda telah selesai. Terima kasih!';
+                    title = 'Pesanan Selesai! ✨';
+                }
+
+                setImmediate(() => {
+                    sendUniversalNotification([order.user_id], statusMsg, title, { orderId: id, status })
+                        .catch(err => console.error('Push notification error:', err));
+                });
             }
 
             await connection.commit();
+
+            // Realtime Update via Socket.io (instant)
+            req.app.get('io').emit('order_update', { id, status });
+
             return res.json({ message: `Order ${id} has been ${status}.` });
         }
 
 
 
-        // Handle 'accepted' status: the complex transaction
-
+        // Handle 'accepted' status
         if (status === 'accepted') {
-            const { ignoreStock } = req.body;
+            const { ignoreStock: reqIgnoreStock } = req.body;
 
-            // 1. Get the order and lock the row to prevent concurrent modifications
-            const [orderRows] = await connection.query('SELECT * FROM orders WHERE id = ? AND status = \'pending\' FOR UPDATE', [id]);
+            // Get global ignore_stock setting as fallback
+            const [settingsRows] = await connection.query('SELECT ignore_stock FROM app_settings ORDER BY id LIMIT 1');
+            const globalIgnoreStock = settingsRows.length > 0 ? !!settingsRows[0].ignore_stock : false;
 
-            if (orderRows.length === 0) {
+            // If ignoreStock is passed in body, it takes precedence (e.g. from specific SalesPOS action),
+            // otherwise use global setting.
+            const effectivelyIgnoreStock = reqIgnoreStock !== undefined ? reqIgnoreStock : globalIgnoreStock;
+
+            if (order.status !== 'pending') {
                 await connection.rollback();
                 return res.status(404).json({ error: "Order not found or not in pending state." });
             }
 
-            const order = orderRows[0];
-            const items = JSON.parse(order.items); // Items are stored as JSON string in the DB
+            const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+
+
 
             // 2. Stock Validation
-            if (!ignoreStock) {
+            if (!effectivelyIgnoreStock) {
 
 
 
@@ -3286,6 +3500,7 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
 
 
 
+                    console.error(`[Order] Stock validation failed for order ${id}: ${errorMessage}`);
                     return res.status(400).json({ error: errorMessage.trim() });
 
 
@@ -3303,12 +3518,12 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
                     const [owners] = await connection.query('SELECT id FROM users WHERE role = ?', ['owner']);
                     const ownerIds = owners.map(o => o.id);
                     if (ownerIds.length > 0) {
-                        sendPushNotification(
+                        sendUniversalNotification(
+                            ownerIds,
                             `Stok ${updatedStock[0].name} hampir habis (Tersisa: ${updatedStock[0].stock})`,
                             'Peringatan Stok! ⚠️',
-                            { itemId: item.id },
-                            ownerIds
-                        ).catch(e => console.error('OneSignal Owner Alert Error:', e));
+                            { itemId: item.id }
+                        );
                     }
                 }
             }
@@ -3354,16 +3569,12 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
                 timestamp: new Date(),
 
                 items: JSON.stringify(items),
-
-                total: totalWithPpn, // Assuming order.total does not include PPN
-
+                total: totalWithPpn,
                 ppn: ppnAmount,
-
                 isEmployeeMeal: 0,
-
-                payment_method: 'Tunai',
-                order_id: id
-
+                payment_method: order.payment_method || 'Tunai',
+                order_id: id,
+                ignore_stock: effectivelyIgnoreStock ? 1 : 0
             };
 
             const transactionParams = [
@@ -3374,44 +3585,45 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
                 transactionData.ppn,
                 transactionData.isEmployeeMeal,
                 transactionData.payment_method,
-                transactionData.order_id
+                transactionData.order_id,
+                transactionData.ignore_stock,
+                order.customer_name || null,
+                order.customer_phone || null,
+                order.customer_address || null
             ];
 
-            await connection.query('INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, order_id) VALUES (?,?,?,?,?,?,?,?)', transactionParams);
-
-
+            await connection.query('INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, order_id, ignore_stock, customer_name, customer_phone, customer_address) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)', transactionParams);
 
             // 5. Update the order status to 'accepted'
             await connection.query('UPDATE orders SET status = ? WHERE id = ?', ['accepted', id]);
 
-            // Kirim Notifikasi ke Pelanggan - Pesanan Diterima
+            // Kirim Notifikasi ke Pelanggan - Pesanan Diterima (async)
             if (order.user_id) {
-                sendPushNotification(
-                    'Pesanan Anda telah diterima dan sedang diproses!',
-                    'Pesanan Diterima! ✅',
-                    { orderId: id, status: 'accepted' },
-                    [order.user_id]
-                ).catch(e => console.error('OneSignal Accept Notif Error:', e));
+                setImmediate(() => {
+                    sendUniversalNotification(
+                        [order.user_id],
+                        'Pesanan Anda telah diterima dan sedang diproses!',
+                        'Pesanan Diterima! ✅',
+                        { orderId: id, status: 'accepted' }
+                    ).catch(err => console.error('Push notification error:', err));
+                });
             }
 
             // 6. Commit the transaction
             await connection.commit();
+
+            // Realtime Update via Socket.io (instant)
+            req.app.get('io').emit('order_update', { id, status: 'accepted' });
+
             res.json({ message: `Order ${id} has been accepted and transaction ${newTransactionId} created.` });
 
         }
-
     } catch (err) {
-
-        await connection.rollback();
-
+        if (connection) await connection.rollback();
         res.status(500).json({ error: "Transaction failed: " + err.message, stack: err.stack });
-
     } finally {
-
-        connection.release();
-
+        if (connection) connection.release();
     }
-
 });
 
 
@@ -3651,6 +3863,29 @@ app.post("/api/login", async (req, res) => {
         res.json({ message: "Login successful", token });
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// Save User Push Token
+app.post("/api/users/push-token", authenticateToken, async (req, res) => {
+    try {
+        const { pushToken } = req.body;
+        const userId = req.user.userId;
+
+        if (!pushToken) {
+            return res.status(400).json({ error: "pushToken is required" });
+        }
+
+        // 1. Hapus token ini dari user lain agar tidak terjadi duplikasi notifikasi pada satu device
+        await db.query("UPDATE users SET push_token = NULL WHERE push_token = ? AND id != ?", [pushToken, userId]);
+
+        // 2. Update token untuk user saat ini
+        const sql = 'UPDATE users SET push_token = ? WHERE id = ?';
+        await db.query(sql, [pushToken, userId]);
+
+        res.json({ message: "Push token updated successfully" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -4052,17 +4287,23 @@ app.get("/api/user/profile", authenticateToken, async (req, res) => {
 });
 
 // Update Profile Info (Phone & Address)
+// Update Profile Info (Phone & Address)
 app.put("/api/user/profile", authenticateToken, async (req, res) => {
     try {
         const { phone, address } = req.body;
-        const sql = 'UPDATE users SET phone = ?, address = ? WHERE id = ?';
-        const [result] = await db.query(sql, [phone || null, address || null, req.user.userId]);
 
-        if (result.affectedRows > 0) {
-            res.json({ message: "Profile updated successfully" });
-        } else {
-            res.status(404).json({ error: "User not found or nothing changed" });
+        // Check if user exists first
+        const [userCheck] = await db.query('SELECT id FROM users WHERE id = ?', [req.user.userId]);
+        if (userCheck.length === 0) {
+            return res.status(404).json({ error: "User not found" });
         }
+
+        const sql = 'UPDATE users SET phone = ?, address = ? WHERE id = ?';
+        await db.query(sql, [phone || null, address || null, req.user.userId]);
+
+        // Always return "success" so the frontend can handle it correctly
+        // (CustomerProfile.js expects response.data.message === 'success')
+        res.json({ message: "success" });
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
     }
@@ -4727,11 +4968,11 @@ app.post("/api/admin/send-daily-summary", authenticateToken, authorizeRoles('adm
         const ownerIds = owners.map(o => o.id);
 
         if (ownerIds.length > 0) {
-            await sendPushNotification(
+            await sendUniversalNotification(
+                ownerIds,
                 `Laporan Penjualan Hari Ini (${today}): Rp ${totalSales.toLocaleString('id-ID')} dengan total ${totalTransactions} transaksi.`,
                 'Ringkasan Harian 📊',
-                { date: today, type: 'daily_summary' },
-                ownerIds
+                { date: today, type: 'daily_summary' }
             );
             await logActivity(req.user.userId, 'Kirim Summary Harian', 'notification', 'all_owners', `Admin mengirim ringkasan harian ke semua owner via push notification`);
             res.json({ message: "Laporan harian berhasil dikirim ke semua Owner." });
@@ -4759,13 +5000,28 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
         const sql = "INSERT INTO messages (sender_id, receiver_id, message, order_id) VALUES (?, ?, ?, ?)";
         const [result] = await db.query(sql, [sender_id, receiver_id, message, order_id || null]);
 
-        // Kirim Notifikasi Push ke Penerima
-        sendPushNotification(
+        // Kirim Notifikasi Push
+        // 1. Cek peran penerima
+        const [receiverRows] = await db.query("SELECT role FROM users WHERE id = ?", [receiver_id]);
+        const receiverRole = receiverRows[0]?.role;
+        const sellerRoles = ['admin', 'owner', 'penjual', 'kasir'];
+
+        let targetUserIds = [receiver_id];
+
+        // 2. Jika pesan ditujukan ke salah satu tim seller, notifikasi ke SELURUH tim seller
+        if (sellerRoles.includes(receiverRole)) {
+            const [allSellers] = await db.query("SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')");
+            targetUserIds = allSellers.map(s => s.id);
+        }
+
+        // 3. Jalankan pengiriman notifikasi (kecuali ke pengirim sendiri)
+        sendUniversalNotification(
+            targetUserIds,
             message,
             `Pesan dari ${req.user.username}`,
             { type: 'chat', senderId: sender_id, orderId: order_id },
-            [receiver_id]
-        ).catch(e => console.error('OneSignal Chat Notif Error:', e));
+            sender_id // excludedUserId
+        );
 
         res.status(201).json({
             message: "Pesan terkirim",
@@ -4786,16 +5042,42 @@ app.get("/api/messages/history/:otherUserId", authenticateToken, async (req, res
     try {
         const { otherUserId } = req.params;
         const myId = req.user.userId;
+        const myRole = req.user.role;
+        const sellerRoles = ['admin', 'owner', 'penjual', 'kasir'];
+        const isSeller = sellerRoles.includes(myRole);
 
-        const sql = `
-            SELECT * FROM messages 
-            WHERE (sender_id = ? AND receiver_id = ?) 
-               OR (sender_id = ? AND receiver_id = ?)
-            ORDER BY created_at ASC
-        `;
-        const [rows] = await db.query(sql, [myId, otherUserId, otherUserId, myId]);
+        let sql;
+        let params;
+
+        if (isSeller) {
+            // Jika Seller, lihat semua chat antara pelanggan (otherUserId) dengan SELURUH Tim Seller
+            sql = `
+                SELECT m.*, u.username as sender_name 
+                FROM messages m
+                JOIN users u ON m.sender_id = u.id
+                WHERE (m.sender_id = ? AND m.receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')))
+                   OR (m.sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND m.receiver_id = ?)
+                ORDER BY m.created_at ASC
+            `;
+            params = [otherUserId, otherUserId];
+        } else {
+            // Jika Pelanggan, lihat chat antara SAYA dengan SELURUH Tim Seller
+            // (Agar balasan dari Kasir/Admin/Owner semuanya muncul di satu layar)
+            sql = `
+                SELECT m.*, u.username as sender_name 
+                FROM messages m
+                JOIN users u ON m.sender_id = u.id
+                WHERE (m.sender_id = ? AND m.receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')))
+                   OR (m.sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND m.receiver_id = ?)
+                ORDER BY m.created_at ASC
+            `;
+            params = [myId, myId];
+        }
+
+        const [rows] = await db.query(sql, params);
         res.json({ data: rows });
     } catch (err) {
+        console.error("Error fetching history:", err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -4805,15 +5087,28 @@ app.delete("/api/messages/history/:otherUserId", authenticateToken, async (req, 
     try {
         const { otherUserId } = req.params;
         const myId = req.user.userId;
+        const myRole = req.user.role;
+        const sellerRoles = ['admin', 'owner', 'penjual', 'kasir'];
+        const isSeller = sellerRoles.includes(myRole);
 
+        // Target user ID adalah pelanggan (jika saya seller, itu otherUserId. Jika saya pelanggan, itu myId)
+        const targetCustomerId = isSeller ? otherUserId : myId;
+
+        // Hapus SEMUA pesan antara pelanggan tersebut dengan SELURUH Tim Seller
+        // Gunakan hard delete sesuai kode asli agar benar-benar hilang dari DB
         const sql = `
             DELETE FROM messages 
-            WHERE (sender_id = ? AND receiver_id = ?) 
-               OR (sender_id = ? AND receiver_id = ?)
+            WHERE (sender_id = ? AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')))
+               OR (sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND receiver_id = ?)
         `;
-        await db.query(sql, [myId, otherUserId, otherUserId, myId]);
-        res.json({ message: "Riwayat obrolan berhasil dihapus" });
+        await db.query(sql, [targetCustomerId, targetCustomerId]);
+
+        // Log aktivitas penghapusan riwayat
+        await logActivity(myId, 'Hapus Riwayat Chat', 'chat', targetCustomerId, `Menghapus riwayat chat dengan user ID ${targetCustomerId}`);
+
+        res.json({ message: "Riwayat obrolan tim berhasil dihapus" });
     } catch (err) {
+        console.error("Error deleting history:", err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -4823,40 +5118,62 @@ app.get("/api/messages/conversations", authenticateToken, async (req, res) => {
     try {
         const myId = req.user.userId;
         const myRole = req.user.role;
+        const sellerRoles = ['admin', 'owner', 'penjual', 'kasir'];
+        const isSeller = sellerRoles.includes(myRole);
 
-        let roleFilter = "";
-        if (myRole === 'pelanggan') {
-            roleFilter = "AND u.role IN ('admin', 'owner', 'penjual')";
-        } else if (['admin', 'owner', 'penjual'].includes(myRole)) {
-            roleFilter = "AND u.role = 'pelanggan'";
+        let sql;
+        let params;
+
+        if (isSeller) {
+            // Logika Universal Inbox untuk Tim Seller
+            sql = `
+                SELECT 
+                    u.id as user_id, 
+                    u.username, 
+                    u.role,
+                    u.avatar_url,
+                    m.message as last_message, 
+                    m.created_at as last_message_time,
+                    (SELECT COUNT(*) FROM messages WHERE sender_id = u.id AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND is_read = 0) as unread_count
+                FROM users u
+                JOIN messages m ON m.id = (
+                    SELECT MAX(id) 
+                    FROM messages 
+                    WHERE (sender_id = u.id AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')))
+                       OR (sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND receiver_id = u.id)
+                )
+                WHERE u.role NOT IN ('admin', 'owner', 'penjual', 'kasir')
+                ORDER BY m.created_at DESC
+            `;
+            params = [];
+        } else {
+            // Logika Inbox untuk Pelanggan (Hanya menampilkan satu entitas "Toko")
+            sql = `
+                SELECT 
+                    u.id as user_id, 
+                    'Pusat Bantuan (Toko)' as username, 
+                    u.role,
+                    u.avatar_url,
+                    m.message as last_message, 
+                    m.created_at as last_message_time,
+                    (SELECT COUNT(*) FROM messages WHERE sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND receiver_id = ? AND is_read = 0) as unread_count
+                FROM users u
+                JOIN messages m ON m.id = (
+                    SELECT MAX(id) 
+                    FROM messages 
+                    WHERE (sender_id = ? AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')))
+                       OR (sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND receiver_id = ?)
+                )
+                WHERE u.id = m.sender_id OR u.id = m.receiver_id
+                LIMIT 1
+            `;
+            params = [myId, myId, myId];
         }
 
-        const sql = `
-            SELECT 
-                u.id as user_id, 
-                u.username, 
-                u.role,
-                u.avatar_url,
-                m.message as last_message, 
-                m.created_at as last_message_time,
-                (SELECT COUNT(*) FROM messages WHERE sender_id = u.id AND receiver_id = ? AND is_read = 0) as unread_count
-            FROM users u
-            JOIN (
-                SELECT 
-                    CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END as contact_id,
-                    MAX(created_at) as latest_msg_time
-                FROM messages
-                WHERE sender_id = ? OR receiver_id = ?
-                GROUP BY contact_id
-            ) last_msgs ON u.id = last_msgs.contact_id
-            JOIN messages m ON m.created_at = last_msgs.latest_msg_time 
-                AND ((m.sender_id = ? AND m.receiver_id = u.id) OR (m.sender_id = u.id AND m.receiver_id = ?))
-            WHERE 1=1 ${roleFilter}
-            ORDER BY m.created_at DESC
-        `;
-        const [rows] = await db.query(sql, [myId, myId, myId, myId, myId, myId]);
+        const [rows] = await db.query(sql, params);
         res.json({ data: rows });
     } catch (err) {
+        console.error("Error fetching conversations:", err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -4866,8 +5183,20 @@ app.put("/api/messages/read/:senderId", authenticateToken, async (req, res) => {
     try {
         const { senderId } = req.params;
         const myId = req.user.userId;
-        const sql = "UPDATE messages SET is_read = 1 WHERE sender_id = ? AND receiver_id = ? AND is_read = 0";
-        await db.query(sql, [senderId, myId]);
+        const myRole = req.user.role;
+        const isSeller = ['admin', 'owner', 'penjual', 'kasir'].includes(myRole);
+
+        let sql;
+        if (isSeller) {
+            // Jika dibaca oleh salah satu SELLER, tandai pesan dari PELANGGAN ini (senderId) sudah dibaca oleh TIM SELLER
+            sql = "UPDATE messages SET is_read = 1 WHERE sender_id = ? AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND is_read = 0";
+            await db.query(sql, [senderId]);
+        } else {
+            // Jika dibaca oleh PELANGGAN, tandai SEMUA pesan dari SELURUH TIM SELLER ke Pelanggan ini sebagai sudah dibaca
+            sql = "UPDATE messages SET is_read = 1 WHERE sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND receiver_id = ? AND is_read = 0";
+            await db.query(sql, [myId]);
+        }
+
         res.json({ message: "Pesan ditandai sudah dibaca" });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -4878,12 +5207,12 @@ app.put("/api/messages/read/:senderId", authenticateToken, async (req, res) => {
 app.get("/api/messages/contacts", authenticateToken, async (req, res) => {
     try {
         let sql;
-        if (req.user.role === 'pelanggan') {
-            // Pelanggan hanya bisa melihat Admin, Owner, dan Penjual
-            sql = "SELECT id, username, role, avatar_url FROM users WHERE role IN ('admin', 'owner', 'penjual')";
+        if (req.user.role === 'pelanggan' || req.user.role === 'user' || req.user.role === 'keluarga') {
+            // Pelanggan/User/Keluarga hanya bisa melihat Admin, Owner, Penjual, dan Kasir
+            sql = "SELECT id, username, role, avatar_url FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')";
         } else {
-            // Admin/Owner/Penjual hanya bisa melihat Pelanggan
-            sql = "SELECT id, username, role, avatar_url FROM users WHERE role = 'pelanggan'";
+            // Admin/Owner/Penjual/Kasir bisa melihat semua tipe pelanggan
+            sql = "SELECT id, username, role, avatar_url FROM users WHERE role IN ('pelanggan', 'user', 'keluarga', 'guest')";
         }
         const [rows] = await db.query(sql);
         res.json({ data: rows });
@@ -4904,6 +5233,61 @@ app.get("/api/messages/active-order/:userId", authenticateToken, async (req, res
         `;
         const [rows] = await db.query(sql, [userId]);
         res.json({ data: rows[0] || null });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get user notification settings
+app.get("/api/user/notification-settings", authenticateToken, async (req, res) => {
+    try {
+        const sql = 'SELECT notification_settings FROM users WHERE id = ?';
+        const [rows] = await db.query(sql, [req.user.userId]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Default settings if not set
+        const defaultSettings = {
+            orders: true,
+            chat: true,
+            promo: false
+        };
+
+        const settings = rows[0].notification_settings
+            ? JSON.parse(rows[0].notification_settings)
+            : defaultSettings;
+
+        res.json({
+            message: "success",
+            data: settings
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update user notification settings
+app.put("/api/user/notification-settings", authenticateToken, async (req, res) => {
+    try {
+        const { orders, chat, promo } = req.body;
+
+        const settings = {
+            orders: orders !== undefined ? orders : true,
+            chat: chat !== undefined ? chat : true,
+            promo: promo !== undefined ? promo : false
+        };
+
+        const sql = 'UPDATE users SET notification_settings = ? WHERE id = ?';
+        await db.query(sql, [JSON.stringify(settings), req.user.userId]);
+
+        await logActivity(req.user.userId, 'Update Notification Settings', 'user', req.user.userId, `User mengubah pengaturan notifikasi`);
+
+        res.json({
+            message: "success",
+            data: settings
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
