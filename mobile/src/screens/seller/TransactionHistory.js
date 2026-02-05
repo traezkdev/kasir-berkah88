@@ -239,13 +239,26 @@ const TransactionHistory = ({ navigation }) => {
             <StatusBar barStyle="light-content" backgroundColor="#1E40AF" />
             {/* Native Fixed Header Bar */}
             <View style={styles.topNavbar}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <ChevronLeft size={24} color="#FFFFFF" />
-                </TouchableOpacity>
-                <View>
-                    <Text style={styles.headerTitle}>Riwayat Transaksi</Text>
-                    <Text style={styles.headerSubtitle}>{totalItems} Transaksi tercatat</Text>
+                <View style={styles.headerTitleArea}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                        <ChevronLeft size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+                    <View>
+                        <Text style={styles.headerTitle}>Riwayat Transaksi</Text>
+                        <Text style={styles.headerSubtitle}>{totalItems} Transaksi tercatat</Text>
+                    </View>
                 </View>
+                <TouchableOpacity
+                    onPress={onRefresh}
+                    style={styles.refreshBtn}
+                    disabled={refreshing || loading}
+                >
+                    {refreshing || loading ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                        <RefreshCw size={20} color="#FFFFFF" />
+                    )}
+                </TouchableOpacity>
             </View>
 
             <View style={styles.heroArea}>
@@ -544,10 +557,23 @@ const styles = StyleSheet.create({
         backgroundColor: '#1E40AF',
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 15 : (Platform.OS === 'ios' ? 50 : 25),
         paddingBottom: 20,
         paddingHorizontal: 20,
         zIndex: 10,
+    },
+    headerTitleArea: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    refreshBtn: {
+        width: 40,
+        height: 40,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     heroArea: {
         backgroundColor: '#F8FAFC',

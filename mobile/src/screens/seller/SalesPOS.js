@@ -111,6 +111,9 @@ const SalesPOS = () => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [lastTransaction, setLastTransaction] = useState(null);
     const [showReceipt, setShowReceipt] = useState(false);
+    const [customerName, setCustomerName] = useState('');
+    const [customerPhone, setCustomerPhone] = useState('');
+    const [customerAddress, setCustomerAddress] = useState('');
 
     const { confirm } = useConfirm();
     const { ignoreStock, toggleIgnoreStock } = useAppSettings();
@@ -135,8 +138,38 @@ const SalesPOS = () => {
     useFocusEffect(
         useCallback(() => {
             fetchData();
+            loadLastCustomer();
         }, [])
     );
+
+    const loadLastCustomer = async () => {
+        try {
+            const [lastCName, lastCPhone, lastCAddr] = await Promise.all([
+                AsyncStorage.getItem('pos_last_customer_name'),
+                AsyncStorage.getItem('pos_last_customer_phone'),
+                AsyncStorage.getItem('pos_last_customer_address')
+            ]);
+            if (lastCName) setCustomerName(lastCName);
+            if (lastCPhone) setCustomerPhone(lastCPhone);
+            if (lastCAddr) setCustomerAddress(lastCAddr);
+        } catch (e) {
+            console.error("Error loading last customer data:", e);
+        }
+    };
+
+    // Save Customer Data on Change
+    useEffect(() => {
+        const saveCustomerData = async () => {
+            try {
+                if (customerName !== undefined) await AsyncStorage.setItem('pos_last_customer_name', customerName);
+                if (customerPhone !== undefined) await AsyncStorage.setItem('pos_last_customer_phone', customerPhone);
+                if (customerAddress !== undefined) await AsyncStorage.setItem('pos_last_customer_address', customerAddress);
+            } catch (e) {
+                console.error("Error saving customer data:", e);
+            }
+        };
+        saveCustomerData();
+    }, [customerName, customerPhone, customerAddress]);
 
     const filteredItems = useMemo(() => {
         return menuItems.filter(item => {
@@ -239,6 +272,9 @@ const SalesPOS = () => {
                 change: paid - total,
                 payment_method: paymentMethod,
                 ignoreStock: ignoreStock,
+                customer_name: customerName || null,
+                customer_phone: customerPhone || null,
+                customer_address: customerAddress || null,
                 timestamp: new Date()
             };
 
@@ -253,6 +289,9 @@ const SalesPOS = () => {
             setCart([]);
             setIsCartModalOpen(false);
             setCashPaid('');
+            setCustomerName('');
+            setCustomerPhone('');
+            setCustomerAddress('');
             setShowReceipt(true);
             fetchData();
         } catch (error) {
@@ -453,6 +492,33 @@ const SalesPOS = () => {
                         </View>
 
                         <View style={styles.paymentSection}>
+                            <Text style={styles.sectionLabel}>DATA PELANGGAN (OPSIONAL)</Text>
+                            <View style={styles.customerInputContainer}>
+                                <TextInput
+                                    style={styles.customerInput}
+                                    placeholder="Nama Pelanggan"
+                                    value={customerName}
+                                    onChangeText={setCustomerName}
+                                    placeholderTextColor="#94A3B8"
+                                />
+                                <TextInput
+                                    style={styles.customerInput}
+                                    placeholder="Nomor HP / WhatsApp"
+                                    value={customerPhone}
+                                    onChangeText={setCustomerPhone}
+                                    keyboardType="phone-pad"
+                                    placeholderTextColor="#94A3B8"
+                                />
+                                <TextInput
+                                    style={[styles.customerInput, { height: 60, textAlignVertical: 'top', paddingTop: 10 }]}
+                                    placeholder="Alamat Pelanggan"
+                                    value={customerAddress}
+                                    onChangeText={setCustomerAddress}
+                                    multiline
+                                    placeholderTextColor="#94A3B8"
+                                />
+                            </View>
+
                             <Text style={styles.sectionLabel}>METODE PEMBAYARAN</Text>
                             <View style={styles.methodGrid}>
                                 <TouchableOpacity
@@ -1084,7 +1150,23 @@ const styles = StyleSheet.create({
     },
     disabledBtn: {
         backgroundColor: '#CBD5E1',
-    }
+    },
+    // Customer Input Styles
+    customerInputContainer: {
+        marginBottom: 20,
+        gap: 10,
+    },
+    customerInput: {
+        backgroundColor: '#F1F5F9',
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#1E293B',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
 });
 
 export default SalesPOS;

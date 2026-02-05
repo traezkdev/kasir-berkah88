@@ -2103,7 +2103,7 @@ app.get("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
 app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'pelanggan'), async (req, res, next) => {
     let connection;
     try {
-        const { items, total: frontendTotal, ppn: frontendPpn, cashPaid, change, isEmployeeMeal, payment_method, manual_discount, catatan } = req.body;
+        const { items, total: frontendTotal, ppn: frontendPpn, cashPaid, change, isEmployeeMeal, payment_method, manual_discount, catatan, customer_name, customer_phone, customer_address } = req.body;
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ "error": "No items specified" });
@@ -2179,7 +2179,7 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
         const finalPaymentMethod = payment_method || 'tunai';
         const finalUserId = req.user ? req.user.userId : null;
 
-        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock, cash_paid, `change`, user_id, manual_discount, catatan) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)';
+        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock, cash_paid, `change`, user_id, manual_discount, catatan, customer_name, customer_phone, customer_address) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
         const params = [
             newTransactionId,
             timestamp,
@@ -2193,7 +2193,10 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
             parseFloat(change || 0).toFixed(2),
             finalUserId,
             parseFloat(manual_discount || 0).toFixed(2),
-            catatan || null
+            catatan || null,
+            customer_name || null,
+            customer_phone || null,
+            customer_address || null
         ];
 
         await connection.query(sql, params);
@@ -3115,7 +3118,7 @@ app.post("/api/orders", (req, res, next) => {
     }
 }, async (req, res) => {
     try {
-        const { customer_name, customer_address, items, payment_method, note, notes } = req.body; // 'total' will be calculated on backend
+        const { customer_name, customer_address, customer_phone, items, payment_method, note, notes } = req.body; // 'total' will be calculated on backend
         if (!customer_name || !items || items.length === 0) {
             return res.status(400).json({ error: "Missing required fields: customer_name, items" });
         }
@@ -3182,8 +3185,8 @@ app.post("/api/orders", (req, res, next) => {
         const paymentMethodValue = payment_method || 'Tunai';
         const orderNote = note || notes || null;
 
-        const sql = 'INSERT INTO orders (user_id, customer_name, customer_address, items, total, status, payment_method, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-        const params = [userId, customer_name, customer_address, JSON.stringify(orderItemsWithDetails), calculatedTotal, 'pending', paymentMethodValue, orderNote];
+        const sql = 'INSERT INTO orders (user_id, customer_name, customer_address, customer_phone, items, total, status, payment_method, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        const params = [userId, customer_name, customer_address, customer_phone || null, JSON.stringify(orderItemsWithDetails), calculatedTotal, 'pending', paymentMethodValue, orderNote];
         const [result] = await db.query(sql, params);
 
         const orderId = result.insertId;
@@ -3331,7 +3334,7 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
         await connection.beginTransaction();
 
         // Get the order to check ownership and current status
-        const [orderRows] = await connection.query('SELECT user_id, status, customer_name, items, total, payment_method FROM orders WHERE id = ? FOR UPDATE', [id]);
+        const [orderRows] = await connection.query('SELECT user_id, status, customer_name, customer_address, customer_phone, items, total, payment_method FROM orders WHERE id = ? FOR UPDATE', [id]);
 
         if (orderRows.length === 0) {
             await connection.rollback();
@@ -3583,10 +3586,13 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
                 transactionData.isEmployeeMeal,
                 transactionData.payment_method,
                 transactionData.order_id,
-                transactionData.ignore_stock
+                transactionData.ignore_stock,
+                order.customer_name || null,
+                order.customer_phone || null,
+                order.customer_address || null
             ];
 
-            await connection.query('INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, order_id, ignore_stock) VALUES (?,?,?,?,?,?,?,?,?)', transactionParams);
+            await connection.query('INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, order_id, ignore_stock, customer_name, customer_phone, customer_address) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)', transactionParams);
 
             // 5. Update the order status to 'accepted'
             await connection.query('UPDATE orders SET status = ? WHERE id = ?', ['accepted', id]);

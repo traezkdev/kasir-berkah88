@@ -110,6 +110,7 @@ const CustomerCart = ({ navigation }) => {
     const [loading, setLoading] = useState(false);
     const [notes, setNotes] = useState('');
     const [customerAddress, setCustomerAddress] = useState('');
+    const [customerPhone, setCustomerPhone] = useState('');
     const [savedAddress, setSavedAddress] = useState(null);
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [showQrisModal, setShowQrisModal] = useState(false);
@@ -136,28 +137,35 @@ const CustomerCart = ({ navigation }) => {
         }, [user])
     );
 
-    // Muat alamat terakhir dari storage saat buka keranjang
+    // Muat data terakhir dari storage saat buka keranjang
     useEffect(() => {
-        loadLastAddress();
+        const loadLastData = async () => {
+            try {
+                const [lastAddr, lastPhone] = await Promise.all([
+                    AsyncStorage.getItem('last_delivery_address'),
+                    AsyncStorage.getItem('last_customer_phone')
+                ]);
+                if (lastAddr) setCustomerAddress(lastAddr);
+                if (lastPhone) setCustomerPhone(lastPhone);
+            } catch (e) {
+                console.error("Gagal muat data terakhir:", e);
+            }
+        };
+        loadLastData();
     }, []);
 
-    // Simpan alamat ke storage setiap kali berubah (Local Storage)
+    // Simpan data setiap kali berubah
     useEffect(() => {
-        if (customerAddress) {
-            AsyncStorage.setItem('last_delivery_address', customerAddress);
-        }
-    }, [customerAddress]);
-
-    const loadLastAddress = async () => {
-        try {
-            const lastAddr = await AsyncStorage.getItem('last_delivery_address');
-            if (lastAddr) {
-                setCustomerAddress(lastAddr);
+        const saveData = async () => {
+            try {
+                if (customerAddress) await AsyncStorage.setItem('last_delivery_address', customerAddress);
+                if (customerPhone) await AsyncStorage.setItem('last_customer_phone', customerPhone);
+            } catch (e) {
+                console.error("Gagal simpan data:", e);
             }
-        } catch (e) {
-            console.error("Gagal muat alamat:", e);
-        }
-    };
+        };
+        saveData();
+    }, [customerAddress, customerPhone]);
 
     const handleDownloadQris = async () => {
         try {
@@ -229,6 +237,7 @@ const CustomerCart = ({ navigation }) => {
                 payment_method: paymentMethod === 'cash' ? 'Tunai' : (paymentMethod === 'transfer' ? 'Transfer' : paymentMethod),
                 notes: notes,
                 customer_address: customerAddress || null,
+                customer_phone: customerPhone || null,
                 customer_name: user?.username || user?.name || 'Pelanggan'
             };
 
@@ -318,12 +327,24 @@ const CustomerCart = ({ navigation }) => {
                 {/* Delivery Address */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>
-                        Alamat Pengiriman <Text style={{ color: '#EF4444' }}>*</Text>
+                        Data Pengiriman <Text style={{ color: '#EF4444' }}>*</Text>
                     </Text>
+
+                    {/* Phone Input */}
+                    <View style={[styles.notesInputRow, { marginBottom: 12 }]}>
+                        <CreditCard size={16} color="#94A3B8" />
+                        <TextInput
+                            placeholder="Nomor Telepon / WhatsApp"
+                            style={[styles.notesInput, { height: 40 }]}
+                            value={customerPhone}
+                            onChangeText={setCustomerPhone}
+                            keyboardType="phone-pad"
+                        />
+                    </View>
 
                     {savedAddress && (
                         <TouchableOpacity
-                            style={styles.savedAddressCard}
+                            style={[styles.savedAddressCard, { marginBottom: 12 }]}
                             onPress={() => setCustomerAddress(savedAddress)}
                         >
                             <View style={styles.savedAddressIcon}>

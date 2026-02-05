@@ -14,7 +14,7 @@ import {
     Alert,
     StatusBar
 } from 'react-native';
-import { X, Printer, Share2, CheckCircle2, ShoppingCart, MessageSquare, Zap, ShieldCheck, Download, Copy } from 'lucide-react-native';
+import { X, Printer, Share2, CheckCircle2, ShoppingCart, MessageSquare, Zap, ShieldCheck, Download, Copy, User, Phone, MapPin } from 'lucide-react-native';
 import apiService, { API_URL } from '../api/apiService';
 import { useToast } from '../context/ToastContext';
 import { captureRef } from 'react-native-view-shot';
@@ -194,6 +194,15 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
         text += `ID: ${transaction.id}\n`;
         text += `Tanggal: ${formatDateFull(transaction.timestamp)}\n`;
         text += `Kasir: ${transaction.cashier_name || transaction.seller_name || 'SISTEM'}\n`;
+        text += `--------------------------------\n`;
+
+        if (transaction.customer_name || transaction.customer_phone || transaction.customer_address) {
+            text += `PENERIMA / PELANGGAN:\n`;
+            if (transaction.customer_name) text += ` Nama  : ${transaction.customer_name}\n`;
+            if (transaction.customer_phone) text += ` Telp  : ${transaction.customer_phone}\n`;
+            if (transaction.customer_address) text += ` Alamat: ${transaction.customer_address}\n`;
+            text += `--------------------------------\n`;
+        }
 
         const paymentMethodText = transaction.payment_method === 'employee_meal'
             ? 'MAKAN KARYAWAN'
@@ -398,6 +407,31 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                 <Text style={styles.itemCountText}>{(transaction.items || []).length} ITEM</Text>
                             </View>
                         </View>
+
+                        {/* Customer Info Section */}
+                        {(transaction.customer_name || transaction.customer_phone || transaction.customer_address) && (
+                            <View style={styles.customerSection}>
+                                <Text style={styles.customerSectionTitle}>Penerima / Pelanggan:</Text>
+                                {transaction.customer_name && (
+                                    <View style={styles.customerInfoRow}>
+                                        <User size={12} color="#64748B" />
+                                        <Text style={styles.customerInfoText}>{transaction.customer_name}</Text>
+                                    </View>
+                                )}
+                                {transaction.customer_phone && (
+                                    <View style={styles.customerInfoRow}>
+                                        <Phone size={12} color="#64748B" />
+                                        <Text style={styles.customerInfoText}>{transaction.customer_phone}</Text>
+                                    </View>
+                                )}
+                                {transaction.customer_address && (
+                                    <View style={styles.customerInfoRow}>
+                                        <MapPin size={12} color="#64748B" />
+                                        <Text style={styles.customerInfoText}>{transaction.customer_address}</Text>
+                                    </View>
+                                )}
+                            </View>
+                        )}
 
                         <View style={styles.itemsContainer}>
                             {(transaction.items || []).map((item, index) => (
@@ -934,6 +968,34 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: 'bold',
         color: '#FFFFFF',
+    },
+    // Customer Section Styles
+    customerSection: {
+        backgroundColor: '#FFFFFF',
+        padding: 16,
+        borderRadius: 16,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+    },
+    customerSectionTitle: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#94A3B8',
+        letterSpacing: 0.5,
+        marginBottom: 8,
+        textTransform: 'uppercase',
+    },
+    customerInfoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 4,
+        gap: 8,
+    },
+    customerInfoText: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        color: '#1E293B',
     },
 });
 

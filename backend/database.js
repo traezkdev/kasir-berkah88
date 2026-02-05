@@ -183,6 +183,17 @@ const setupDatabase = async () => {
       console.log('Added customer_address column to orders table.');
     }
 
+    // Check and add customer_phone to orders
+    const checkOrderPhoneColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'customer_phone';
+    `;
+    const [phoneOrdersRows] = await connection.query(checkOrderPhoneColumn);
+    if (phoneOrdersRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE orders ADD COLUMN customer_phone VARCHAR(25) DEFAULT NULL");
+      console.log('Added customer_phone column to orders table.');
+    }
+
     const createEmployeesTable = `
       CREATE TABLE IF NOT EXISTS employees(
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1007,18 +1018,37 @@ const setupDatabase = async () => {
       console.log('Added is_permanent_delete column to transactions table.');
     }
 
-    // Check and add catatan column to transactions if it doesn't exist
-    const checkCatatanColumn = `
+    // Check and add customer_name column to transactions if it doesn't exist
+    const checkCustNameColumn = `
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'catatan';
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'customer_name';
     `;
-    const addCatatanColumn = `
-      ALTER TABLE transactions ADD COLUMN catatan TEXT DEFAULT NULL;
+    const [custNameRows] = await connection.query(checkCustNameColumn);
+    if (custNameRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE transactions ADD COLUMN customer_name VARCHAR(255) DEFAULT NULL");
+      console.log('Added customer_name column to transactions table.');
+    }
+
+    // Check and add customer_phone column to transactions if it doesn't exist
+    const checkCustPhoneColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'customer_phone';
     `;
-    const [catatanRows] = await connection.query(checkCatatanColumn);
-    if (catatanRows[0]['COUNT(*)'] === 0) {
-      await connection.query(addCatatanColumn);
-      console.log('Added catatan column to transactions table.');
+    const [custPhoneRows] = await connection.query(checkCustPhoneColumn);
+    if (custPhoneRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE transactions ADD COLUMN customer_phone VARCHAR(25) DEFAULT NULL");
+      console.log('Added customer_phone column to transactions table.');
+    }
+
+    // Check and add customer_address column to transactions if it doesn't exist
+    const checkCustAddrColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'customer_address';
+    `;
+    const [custAddrRows] = await connection.query(checkCustAddrColumn);
+    if (custAddrRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE transactions ADD COLUMN customer_address TEXT DEFAULT NULL");
+      console.log('Added customer_address column to transactions table.');
     }
 
     // Check and add hpp column to menu_items if it doesn't exist
