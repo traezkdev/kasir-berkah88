@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, TouchableOpacity, LayoutAnimation, Platform, UI
 import { User, MapPin, Wallet, ShoppingBag, ChevronDown, X, ArrowRight, MessageCircle, CheckCircle, Info, Banknote, QrCode, CreditCard } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useChat } from '../context/ChatContext';
+import { useConfirm } from '../context/ConfirmContext';
 
 if (Platform.OS === 'android') {
     if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -14,6 +15,37 @@ const SellerOrderCard = ({ order, onAccept, onReject, onComplete, onViewDetail }
     const [isExpanded, setIsExpanded] = useState(false);
     const navigation = useNavigation();
     const { setActiveChat, setActiveOrder } = useChat();
+    const { confirm } = useConfirm();
+
+    const handleAccept = async () => {
+        const ok = await confirm({
+            title: 'Terima Pesanan',
+            message: `Apakah Anda yakin ingin menerima pesanan #${order.id}?`,
+            confirmText: 'Terima Sekarang',
+            type: 'primary'
+        });
+        if (ok && onAccept) onAccept();
+    };
+
+    const handleReject = async () => {
+        const ok = await confirm({
+            title: 'Tolak Pesanan',
+            message: `Apakah Anda yakin ingin menolak pesanan #${order.id}? Tindakan ini tidak dapat dibatalkan.`,
+            confirmText: 'Ya, Tolak',
+            type: 'danger'
+        });
+        if (ok && onReject) onReject();
+    };
+
+    const handleComplete = async () => {
+        const ok = await confirm({
+            title: 'Selesaikan Pesanan',
+            message: `Apakah pesanan #${order.id} sudah benar-benar selesai?`,
+            confirmText: 'Ya, Selesai',
+            type: 'primary'
+        });
+        if (ok && onComplete) onComplete();
+    };
 
     const handleChatCustomer = () => {
         setActiveChat({
@@ -78,7 +110,7 @@ const SellerOrderCard = ({ order, onAccept, onReject, onComplete, onViewDetail }
                         <Text style={styles.customerName}>{order.customer_name}</Text>
                         <View style={styles.infoLine}>
                             <MapPin size={10} color="#94A3B8" />
-                            <Text style={styles.infoText}>{order.customer_address || 'Alamat Pelanggan'}</Text>
+                            <Text style={styles.infoText} numberOfLines={1}>{order.customer_address || 'Alamat Pelanggan'}</Text>
                         </View>
                         <View style={styles.infoLine}>
                             <Wallet size={10} color="#22C55E" />
@@ -153,7 +185,7 @@ const SellerOrderCard = ({ order, onAccept, onReject, onComplete, onViewDetail }
                 <View style={styles.actions}>
                     {onReject && (
                         <TouchableOpacity
-                            onPress={onReject}
+                            onPress={handleReject}
                             style={styles.rejectBtn}
                         >
                             <X size={20} color="#EF4444" strokeWidth={3} />
@@ -162,7 +194,7 @@ const SellerOrderCard = ({ order, onAccept, onReject, onComplete, onViewDetail }
 
                     {onAccept && (
                         <TouchableOpacity
-                            onPress={onAccept}
+                            onPress={handleAccept}
                             style={styles.acceptBtn}
                         >
                             <Text style={styles.acceptBtnText}>Terima Sekarang</Text>
@@ -172,7 +204,7 @@ const SellerOrderCard = ({ order, onAccept, onReject, onComplete, onViewDetail }
 
                     {onComplete && (
                         <TouchableOpacity
-                            onPress={onComplete}
+                            onPress={handleComplete}
                             style={styles.acceptBtn} // Reusing accept button style for primary action
                         >
                             <Text style={styles.acceptBtnText}>Selesaikan Pesanan</Text>
@@ -255,6 +287,7 @@ const styles = StyleSheet.create({
     customerInfo: {
         marginLeft: 12,
         flex: 1,
+        paddingRight: 10, // Safe gap so text doesn't touch buttons
     },
     customerName: {
         fontSize: 16,
@@ -271,6 +304,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#94A3B8',
         marginLeft: 4,
+        flex: 1, // Ensure text stays within bounds
     },
     expandButton: {
         flexDirection: 'row',

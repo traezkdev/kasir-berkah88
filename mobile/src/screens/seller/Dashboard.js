@@ -35,6 +35,7 @@ import apiService from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import SellerOrderCard from '../../components/SellerOrderCard';
+import OrderDetailModal from '../../components/OrderDetailModal';
 import { useChat } from '../../context/ChatContext';
 
 const { width } = Dimensions.get('window');
@@ -53,6 +54,10 @@ const SellerDashboard = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const { unreadCount } = useChat();
+
+    // Modal State
+    const [selectedOrderForDetail, setSelectedOrderForDetail] = useState(null);
+    const [showDetailModal, setShowDetailModal] = useState(false);
 
     // Animation for unread badge
     const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -141,6 +146,11 @@ const SellerDashboard = ({ navigation }) => {
         } catch (error) {
             showToast(error.response?.data?.error || 'Gagal memperbarui status pesanan', 'error');
         }
+    };
+
+    const handleViewDetail = (order) => {
+        setSelectedOrderForDetail(order);
+        setShowDetailModal(true);
     };
 
     if (loading && !refreshing) {
@@ -325,6 +335,7 @@ const SellerDashboard = ({ navigation }) => {
                                 order={order}
                                 onAccept={() => handleUpdateStatus(order.id, 'accepted')}
                                 onReject={() => handleUpdateStatus(order.id, 'rejected')}
+                                onViewDetail={handleViewDetail}
                             />
                         ))
                     ) : (
@@ -338,6 +349,15 @@ const SellerDashboard = ({ navigation }) => {
 
                 <View style={{ height: 40 }} />
             </ScrollView>
+
+            {/* Order Detail Modal */}
+            {selectedOrderForDetail && (
+                <OrderDetailModal
+                    visible={showDetailModal}
+                    onClose={() => setShowDetailModal(false)}
+                    order={selectedOrderForDetail}
+                />
+            )}
         </View>
     );
 };
