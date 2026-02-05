@@ -21,6 +21,8 @@ import {
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 import SellerOrderCard from '../../components/SellerOrderCard';
+import ReceiptModal from '../../components/ReceiptModal';
+import OrderDetailModal from '../../components/OrderDetailModal';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useOrderNotification } from '../../context/OrderNotificationContext';
 import { useToast } from '../../context/ToastContext';
@@ -33,6 +35,12 @@ const OrderManagement = ({ navigation }) => {
     const { confirm } = useConfirm();
     const { refreshTrigger } = useOrderNotification();
     const { showToast } = useToast();
+
+    // Receipt & Detail Modal State
+    const [selectedOrderForReceipt, setSelectedOrderForReceipt] = useState(null);
+    const [showReceiptModal, setShowReceiptModal] = useState(false);
+    const [selectedOrderForDetail, setSelectedOrderForDetail] = useState(null);
+    const [showDetailModal, setShowDetailModal] = useState(false);
 
     const fetchOrders = useCallback(async (isRefresh = false) => {
         if (!isRefresh) setLoading(true);
@@ -66,6 +74,28 @@ const OrderManagement = ({ navigation }) => {
             showToast(errorMsg, 'error');
             console.error('Error updating status:', error);
         }
+    };
+
+    const handleViewReceipt = (order) => {
+        // Tetap simpan ini jika nanti ingin mencetak struk dari sini
+        const transactionFormat = {
+            id: order.id,
+            timestamp: order.created_at,
+            items: typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []),
+            total: order.total,
+            payment_method: order.payment_method || 'TRANSFER',
+            seller_name: order.customer_name,
+            notes: order.note || order.customer_address,
+            cash_paid: order.total,
+            change: 0
+        };
+        setSelectedOrderForReceipt(transactionFormat);
+        setShowReceiptModal(true);
+    };
+
+    const handleViewDetail = (order) => {
+        setSelectedOrderForDetail(order);
+        setShowDetailModal(true);
     };
 
     const tabs = [
@@ -134,6 +164,7 @@ const OrderManagement = ({ navigation }) => {
                     renderItem={({ item }) => (
                         <SellerOrderCard
                             order={item}
+                            onViewDetail={handleViewDetail}
                             onAccept={activeTab === 'pending' ? async () => {
                                 const accepted = await confirm({
                                     title: 'Terima Pesanan',
@@ -169,6 +200,24 @@ const OrderManagement = ({ navigation }) => {
                             } : null}
                         />
                     )}
+                />
+            )}
+
+            {/* Receipt Modal */}
+            {selectedOrderForReceipt && (
+                <ReceiptModal
+                    visible={showReceiptModal}
+                    onClose={() => setShowReceiptModal(false)}
+                    transaction={selectedOrderForReceipt}
+                />
+            )}
+
+            {/* Order Detail Modal (Modern Card View) */}
+            {selectedOrderForDetail && (
+                <OrderDetailModal
+                    visible={showDetailModal}
+                    onClose={() => setShowDetailModal(false)}
+                    order={selectedOrderForDetail}
                 />
             )}
         </View>

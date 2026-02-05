@@ -10,7 +10,7 @@ if (Platform.OS === 'android') {
     }
 }
 
-const SellerOrderCard = ({ order, onAccept, onReject, onComplete }) => {
+const SellerOrderCard = ({ order, onAccept, onReject, onComplete, onViewDetail }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const navigation = useNavigation();
     const { setActiveChat, setActiveOrder } = useChat();
@@ -25,12 +25,18 @@ const SellerOrderCard = ({ order, onAccept, onReject, onComplete }) => {
         navigation.navigate('ChatScreen');
     };
 
+    const handleViewDetail = () => {
+        if (onViewDetail) {
+            onViewDetail(order);
+        }
+    };
+
     const formatCurrency = (val) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
     };
 
     const parsedItems = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
-    const totalQty = parsedItems.reduce((acc, item) => acc + (item.quantity || 0), 0);
+    const totalQty = parsedItems.reduce((acc, item) => acc + (item.quantity || item.qty || 0), 0);
 
     const toggleExpand = () => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -67,12 +73,21 @@ const SellerOrderCard = ({ order, onAccept, onReject, onComplete }) => {
                             <Text style={[styles.infoText, { color: '#22C55E' }]}>{order.payment_method || 'Tunai'}</Text>
                         </View>
                     </View>
-                    <TouchableOpacity
-                        style={styles.chatCustomerBtn}
-                        onPress={handleChatCustomer}
-                    >
-                        <MessageCircle size={20} color="#138FEA" />
-                    </TouchableOpacity>
+
+                    <View style={styles.customerActions}>
+                        <TouchableOpacity
+                            style={styles.detailBtn}
+                            onPress={handleViewDetail}
+                        >
+                            <Info size={20} color="#64748B" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.chatCustomerBtn}
+                            onPress={handleChatCustomer}
+                        >
+                            <MessageCircle size={20} color="#138FEA" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Order Note */}
@@ -347,6 +362,20 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderWidth: 1,
         borderColor: '#E0F2FE',
+    },
+    customerActions: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    detailBtn: {
+        width: 40,
+        height: 40,
+        backgroundColor: '#F8FAFC',
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
     },
     noteContainer: {
         backgroundColor: '#FFFBEB',

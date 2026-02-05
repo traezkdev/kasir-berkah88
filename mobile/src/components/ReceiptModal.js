@@ -14,8 +14,9 @@ import {
     Alert,
     StatusBar
 } from 'react-native';
-import { X, Printer, Share2, CheckCircle2, ShoppingCart, MessageSquare, Zap, ShieldCheck, Download } from 'lucide-react-native';
+import { X, Printer, Share2, CheckCircle2, ShoppingCart, MessageSquare, Zap, ShieldCheck, Download, Copy } from 'lucide-react-native';
 import apiService, { API_URL } from '../api/apiService';
+import { useToast } from '../context/ToastContext';
 import { captureRef } from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing'; // Import Sharing
@@ -30,6 +31,7 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
     });
     const [logoUrl, setLogoUrl] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
+    const { showToast } = useToast();
     const receiptRef = React.useRef();
 
     useEffect(() => {
@@ -66,7 +68,7 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                 const { status } = await MediaLibrary.requestPermissionsAsync();
 
                 if (status !== 'granted') {
-                    Alert.alert('Izin Ditolak', 'Mohon izinkan akses galeri untuk menyimpan struk.');
+                    showToast('Mohon izinkan akses galeri untuk menyimpan struk.', 'error');
                     setIsSaving(false);
                     return;
                 }
@@ -79,11 +81,11 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                 });
 
                 await MediaLibrary.saveToLibraryAsync(uri);
-                Alert.alert('Sukses', 'Struk berhasil disimpan ke galeri!');
+                showToast('Struk berhasil disimpan ke galeri!', 'success');
             }
         } catch (error) {
             console.error('Error saving receipt:', error);
-            Alert.alert('Gagal', 'Terjadi kesalahan saat menyimpan struk.');
+            showToast('Terjadi kesalahan saat menyimpan struk.', 'error');
         } finally {
             setIsSaving(false);
         }
@@ -111,6 +113,15 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
 
     if (!transaction) return null;
 
+    const formatDateFull = (dateStr) => {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('id-ID', {
+            day: 'numeric', month: 'numeric', year: 'numeric'
+        }) + ', ' + date.toLocaleTimeString('id-ID', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit'
+        }).replace(/\./g, ':');
+    };
+
     const formatDate = (dateStr) => {
         const date = new Date(dateStr);
         return date.toLocaleDateString('id-ID', {
@@ -132,7 +143,7 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                 if (navigator.share) {
                     await handleShareText(); // Fallback to text share for web simplicity or implement blob share
                 } else {
-                    Alert.alert('Info', 'Fitur share tidak didukung di browser ini.');
+                    showToast('Fitur share tidak didukung di browser ini.', 'info');
                 }
                 return;
             }
@@ -147,41 +158,169 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
             });
 
             if (!(await Sharing.isAvailableAsync())) {
-                Alert.alert('Gagal', 'Fitur sharing tidak tersedia di perangkat ini.');
+                showToast('Fitur sharing tidak tersedia di perangkat ini.', 'error');
                 return;
             }
 
             await Sharing.shareAsync(uri);
         } catch (error) {
             console.error('Error sharing receipt:', error);
-            Alert.alert('Gagal', 'Terjadi kesalahan saat membagikan struk.');
+            showToast('Terjadi kesalahan saat membagikan struk.', 'error');
         }
     };
 
     const handleShareText = async () => {
-        let message = `*${settings.restaurant_name.toUpperCase()}*\n`;
-        message += `${settings.restaurant_slogan}\n`;
-        message += `--------------------------\n`;
-        message += `ID: ${transaction.id}\n`;
-        message += `Tanggal: ${formatDate(transaction.timestamp)}\n`;
-        message += `--------------------------\n`;
-
-        transaction.items.forEach(item => {
-            message += `${item.name} x${item.quantity || item.qty}\n`;
-            message += `Rp ${formatCurrency(item.price)} -> Rp ${formatCurrency(item.price * (item.quantity || item.qty))}\n`;
-        });
-
-        message += `--------------------------\n`;
-        message += `*TOTAL: ${formatCurrency(transaction.total)}*\n`;
-        message += `Bayar: ${formatCurrency(transaction.cash_paid || transaction.cashPaid || transaction.total)}\n`;
-        message += `Kembali: ${formatCurrency(transaction.change || 0)}\n`;
-        message += `--------------------------\n`;
-        message += `Terima Kasih!\n${settings.restaurant_url}`;
-
+        const message = getReceiptText();
         try {
             await Share.share({ message });
         } catch (error) {
             console.error(error);
+        }
+    };
+
+    const getReceiptText = () => {
+        const centerText = (text, width = 32) => {
+            const padding = Math.max(0, Math.floor((width - text.length) / 2));
+            return ' '.repeat(padding) + text;
+        };
+
+        const restaurantName = settings.restaurant_name || 'BERKAH 88';
+        const restaurantSlogan = settings.restaurant_slogan || '';
+        const restaurantUrl = settings.restaurant_url || 'www.berkah88.id';
+
+        let text = `${centerText(restaurantName.toUpperCase())}\n`;
+        text += `${centerText(restaurantSlogan)}\n`;
+        text += `--------------------------------\n`;
+        text += `ID: ${transaction.id}\n`;
+        text += `Tanggal: ${formatDateFull(transaction.timestamp)}\n`;
+        text += `Kasir: ${transaction.cashier_name || transaction.seller_name || 'SISTEM'}\n`;
+
+        const paymentMethodText = transaction.payment_method === 'employee_meal'
+            ? 'MAKAN KARYAWAN'
+            : (transaction.payment_method === 'cash' || transaction.payment_method === 'tunai' || transaction.payment_method === 'Tunai')
+                ? 'TUNAI'
+                : (transaction.payment_method || 'TUNAI').toUpperCase();
+        text += `Metode: ${paymentMethodText}\n`;
+        text += `--------------------------------\n`;
+
+        // Calculate subtotals like website
+        const subtotalBeforeAllDiscounts = transaction.items.reduce((sum, item) => {
+            const originalBasePrice = Number(item.basePrice || item.price) || 0;
+            const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+            const pricePerUnitBeforeDiscount = originalBasePrice + optionAdjustment;
+            return sum + (pricePerUnitBeforeDiscount * (Number(item.quantity || item.qty) || 0));
+        }, 0);
+
+        const subtotalAfterItemDiscounts = transaction.items.reduce((sum, item) => {
+            const pricePerUnit = Number(item.price) || 0;
+            const itemDiscount = Number(item.discount) || 0; // percentage
+            const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+
+            const effectivePriceWithOptions = item.basePrice
+                ? pricePerUnit
+                : (itemDiscount > 0 ? (pricePerUnit * (1 - itemDiscount / 100)) + optionAdjustment : pricePerUnit + optionAdjustment);
+
+            return sum + (effectivePriceWithOptions * (Number(item.quantity || item.qty) || 0));
+        }, 0);
+
+        transaction.items.forEach(item => {
+            text += `${item.name.substring(0, 32)}\n`;
+            const qtyVal = Number(item.quantity || item.qty) || 1;
+
+            // Gunakan harga ASLI (sebelum diskon) untuk rincian per item
+            const originalBasePrice = Number(item.basePrice || item.price) || 0;
+            const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+            const originalPricePerUnit = originalBasePrice + optionAdjustment;
+
+            const subtotalLine = (originalPricePerUnit * qtyVal).toLocaleString("id-ID");
+            const qtyPrice = `${qtyVal} x ${originalPricePerUnit.toLocaleString("id-ID")}`;
+            const spaces = 32 - qtyPrice.length - subtotalLine.length;
+            text += `${qtyPrice}${" ".repeat(Math.max(1, spaces))}${subtotalLine}\n`;
+
+            if (item.notes || item.catatan) {
+                text += ` + ${item.notes || item.catatan}\n`;
+            }
+            if (item.options && Array.isArray(item.options) && item.options.length > 0) {
+                item.options.forEach(opt => text += ` + ${opt.name}\n`);
+            }
+        });
+
+        text += `--------------------------------\n`;
+
+        // Subtotal
+        const subtotalLabel = "SUBTOTAL";
+        const subtotalValue = `Rp ${Number(subtotalBeforeAllDiscounts).toLocaleString("id-ID")}`;
+        text += `${subtotalLabel}${" ".repeat(Math.max(1, 32 - subtotalLabel.length - subtotalValue.length))}${subtotalValue}\n`;
+
+        // Item Discounts
+        const itemsDiscountAmount = subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts;
+        if (itemsDiscountAmount > 0) {
+            const discLabel = "DISKON ITEM";
+            const discValue = `-Rp ${itemsDiscountAmount.toLocaleString("id-ID")}`;
+            text += `${discLabel}${" ".repeat(Math.max(1, 32 - discLabel.length - discValue.length))}${discValue}\n`;
+        }
+
+        // Manual Discount
+        const manualDiscountAmount = Number(transaction.manual_discount) || 0;
+        if (manualDiscountAmount > 0) {
+            const manualDiscLabel = "DISKON TAMBAHAN";
+            const manualDiscVal = `-Rp ${manualDiscountAmount.toLocaleString("id-ID")}`;
+            text += `${manualDiscLabel}${" ".repeat(Math.max(1, 32 - manualDiscLabel.length - manualDiscVal.length))}${manualDiscVal}\n`;
+        }
+
+        // PPN
+        const ppnAmount = Number(transaction.ppn) || 0;
+        if (ppnAmount > 0) {
+            const ppnLabel = "PPN/TAX";
+            const ppnVal = `Rp ${ppnAmount.toLocaleString("id-ID")}`;
+            text += `${ppnLabel}${" ".repeat(Math.max(1, 32 - ppnLabel.length - ppnVal.length))}${ppnVal}\n`;
+        }
+
+        text += `--------------------------------\n`;
+
+        // Total
+        const totalLabel = "TOTAL";
+        const totalValue = `Rp ${Number(transaction.total).toLocaleString("id-ID")}`;
+        text += `${totalLabel}${" ".repeat(Math.max(1, 32 - totalLabel.length - totalValue.length))}${totalValue}\n`;
+
+        // Cash details
+        if (((transaction.payment_method || 'tunai').toLowerCase() === 'tunai' || (transaction.payment_method || 'tunai').toLowerCase() === 'cash') && (transaction.cash_paid || transaction.cashPaid) > 0) {
+            text += `--------------------------------\n`;
+            const bayarLabel = "BAYAR";
+            const bayarVal = `Rp ${Number(transaction.cash_paid || transaction.cashPaid || 0).toLocaleString("id-ID")}`;
+            text += `${bayarLabel}${" ".repeat(Math.max(1, 32 - bayarLabel.length - bayarVal.length))}${bayarVal}\n`;
+
+            const kembaliLabel = "KEMBALI";
+            const kembaliVal = `Rp ${Number(transaction.change || 0).toLocaleString("id-ID")}`;
+            text += `${kembaliLabel}${" ".repeat(Math.max(1, 32 - kembaliLabel.length - kembaliVal.length))}${kembaliVal}\n`;
+        }
+
+        if (transaction.catatan || transaction.notes) {
+            text += `--------------------------------\n`;
+            text += `CATATAN:\n`;
+            text += `"${transaction.catatan || transaction.notes}"\n`;
+        }
+
+        text += `--------------------------------\n`;
+        text += `${centerText('TERIMA KASIH')}\n`;
+        text += `${centerText(restaurantUrl)}`;
+
+        return text;
+    };
+
+    const handleCopyText = async () => {
+        const message = getReceiptText();
+        try {
+            if (Platform.OS === 'web') {
+                await navigator.clipboard.writeText(message);
+            } else {
+                const { Clipboard } = require('react-native');
+                Clipboard.setString(message);
+            }
+            showToast('Teks struk berhasil disalin!', 'success');
+        } catch (error) {
+            console.error('Copy error:', error);
+            showToast('Gagal menyalin teks.', 'error');
         }
     };
 
@@ -327,8 +466,12 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
 
                 <View style={styles.actionFooter}>
                     <TouchableOpacity style={styles.actionBtnOutline} onPress={handleShareImage}>
-                        <Share2 size={20} color="#64748B" />
+                        <Share2 size={18} color="#64748B" />
                         <Text style={styles.actionBtnTextOutline}>Share</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.actionBtnCopy} onPress={handleCopyText}>
+                        <Copy size={18} color="#EA580C" />
+                        <Text style={styles.actionBtnTextCopy}>Salin Teks</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.actionBtnPrimary, isSaving && { opacity: 0.7 }]}
@@ -338,10 +481,10 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                         {isSaving ? (
                             <ActivityIndicator color="#FFFFFF" size="small" />
                         ) : (
-                            <Download size={20} color="#FFFFFF" />
+                            <Download size={18} color="#FFFFFF" />
                         )}
                         <Text style={styles.actionBtnTextPrimary}>
-                            {isSaving ? 'Menyimpan...' : 'Unduh Struk'}
+                            {isSaving ? '...' : 'Unduh'}
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -756,12 +899,29 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     actionBtnTextOutline: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: 'bold',
         color: '#64748B',
     },
+    actionBtnCopy: {
+        flex: 1.5,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 14,
+        borderRadius: 16,
+        backgroundColor: '#FFF7ED',
+        borderWidth: 1,
+        borderColor: '#FFEDD5',
+        gap: 6,
+    },
+    actionBtnTextCopy: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        color: '#EA580C',
+    },
     actionBtnPrimary: {
-        flex: 2,
+        flex: 1.5,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -771,7 +931,7 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     actionBtnTextPrimary: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: 'bold',
         color: '#FFFFFF',
     },

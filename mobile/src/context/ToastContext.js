@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
         padding: 16,
         flexDirection: 'row',
         alignItems: 'center',
-        zIndex: 9999,
+        zIndex: 999999, // Sangat tinggi agar muncul di atas modal dan elemen lainnya
         borderLeftWidth: 6,
         ...Platform.select({
             ios: {
