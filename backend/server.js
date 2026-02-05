@@ -39,11 +39,47 @@ const io = new Server(server, {
 app.set('io', io);
 
 // Socket.io Connection Logic
+// Socket.io Connection Logic
+const onlineUsers = new Map(); // userId -> { role, sockets: Set<socketId> }
+
 io.on('connection', (socket) => {
     console.log('A client connected:', socket.id);
 
+    socket.on('user_connected', (userData) => {
+        console.log('Received user_connected:', userData);
+        if (!userData || !userData.userId) return;
+        const { userId, role } = userData;
+
+        if (!onlineUsers.has(userId)) {
+            onlineUsers.set(userId, { role, sockets: new Set() });
+        }
+        onlineUsers.get(userId).sockets.add(socket.id);
+
+        // Broadcast to all that this user is online (including role)
+        io.emit('user_status', { userId, role, status: 'online' });
+
+        // Send current online users list to this client
+        const onlineList = Array.from(onlineUsers.entries()).map(([id, data]) => ({
+            userId: id,
+            role: data.role
+        }));
+        socket.emit('online_users', onlineList);
+
+        // Store on socket for disconnect handling
+        socket.userId = userId;
+    });
+
     socket.on('disconnect', () => {
         console.log('Client disconnected:', socket.id);
+        if (socket.userId && onlineUsers.has(socket.userId)) {
+            const userData = onlineUsers.get(socket.userId);
+            userData.sockets.delete(socket.id);
+            if (userData.sockets.size === 0) {
+                const role = userData.role;
+                onlineUsers.delete(socket.userId);
+                io.emit('user_status', { userId: socket.userId, role, status: 'offline' });
+            }
+        }
     });
 });
 

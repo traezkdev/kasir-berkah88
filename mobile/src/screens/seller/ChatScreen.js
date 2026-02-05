@@ -30,6 +30,7 @@ import { useChat } from '../../context/ChatContext';
 import apiService, { API_URL } from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
 import { useConfirm } from '../../context/ConfirmContext';
+import { useOrderNotification } from '../../context/OrderNotificationContext';
 
 const ChatScreen = ({ navigation }) => {
     const { user } = useAuth();
@@ -44,6 +45,7 @@ const ChatScreen = ({ navigation }) => {
         setActiveOrder,
         fetchConversations
     } = useChat();
+    const { onlineUsers } = useOrderNotification();
 
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
@@ -174,6 +176,27 @@ const ChatScreen = ({ navigation }) => {
         c.username.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const getDisplayName = (contact) => {
+        if (['admin', 'owner', 'kasir', 'penjual'].includes(contact.role)) {
+            return 'Staf Berkah 88';
+        }
+        return contact.username;
+    };
+
+    const isPartnerOnline = (partner) => {
+        if (!partner) return false;
+        const partnerRole = partner.role;
+        const partnerId = partner.user_id || partner.id;
+
+        // Jika partner adalah staff, Toko dianggap online jika ADA salah satu staff yang online
+        if (['admin', 'owner', 'kasir', 'penjual'].includes(partnerRole)) {
+            return onlineUsers.some(u => ['admin', 'owner', 'kasir', 'penjual'].includes(u.role));
+        }
+
+        // Jika partner adalah pelanggan, cek ID spesifik
+        return onlineUsers.some(u => String(u.userId) === String(partnerId));
+    };
+
     const renderConversationItem = ({ item }) => (
         <TouchableOpacity
             style={[
@@ -199,10 +222,13 @@ const ChatScreen = ({ navigation }) => {
                         <Text style={styles.unreadBadgeText}>{item.unread_count}</Text>
                     </View>
                 )}
+                {isPartnerOnline(item) && (
+                    <View style={styles.onlineBadge} />
+                )}
             </View>
             <View style={styles.convDetails}>
                 <View style={styles.convHeader}>
-                    <Text style={styles.convName}>{item.username}</Text>
+                    <Text style={styles.convName}>{getDisplayName(item)}</Text>
                     <Text style={styles.convTime}>
                         {item.last_message_time ? formatTime(item.last_message_time) : ''}
                     </Text>
@@ -247,11 +273,13 @@ const ChatScreen = ({ navigation }) => {
                             <ArrowLeft size={24} color="#1E293B" />
                         </TouchableOpacity>
                         <View style={styles.headerInfo}>
-                            <Text style={styles.headerTitle}>{activeChat.username}</Text>
-                            <View style={styles.onlineStatus}>
-                                <View style={styles.onlineDot} />
-                                <Text style={styles.onlineText}>ONLINE</Text>
-                            </View>
+                            <Text style={styles.headerTitle}>{getDisplayName(activeChat)}</Text>
+                            {isPartnerOnline(activeChat) && (
+                                <View style={styles.onlineStatus}>
+                                    <View style={styles.onlineDot} />
+                                    <Text style={styles.onlineText}>ONLINE</Text>
+                                </View>
+                            )}
                         </View>
                     </View>
                     <TouchableOpacity onPress={handleDeleteHistory} style={styles.moreBtn}>
@@ -576,6 +604,17 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 10,
         fontWeight: 'bold',
+    },
+    onlineBadge: {
+        position: 'absolute',
+        bottom: 2,
+        right: 2,
+        backgroundColor: '#22C55E',
+        width: 14,
+        height: 14,
+        borderRadius: 7,
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
     },
     convDetails: {
         flex: 1,

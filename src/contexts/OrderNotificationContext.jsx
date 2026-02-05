@@ -2,6 +2,9 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import authFetch from '../utils/authFetch';
 import NewOrderPopup from '../components/ui/NewOrderPopup';
 import { jwtDecode } from 'jwt-decode';
+import { io } from 'socket.io-client';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 const OrderNotificationContext = createContext();
 
@@ -11,6 +14,9 @@ export const OrderNotificationProvider = ({ children }) => {
     const [isPopupOpen, setIsPopupOpen] = useState(false);
     const [latestOrder, setLatestOrder] = useState(null);
     const [userRole, setUserRole] = useState(null);
+    const [onlineUsers, setOnlineUsers] = useState([]); // [{id, role}]
+    const [socket, setSocket] = useState(null);
+    const [userId, setUserId] = useState(null);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -18,6 +24,7 @@ export const OrderNotificationProvider = ({ children }) => {
             try {
                 const decoded = jwtDecode(token);
                 setUserRole(decoded.role);
+                setUserId(decoded.userId);
             } catch (e) {
                 console.error("Error decoding token in NotificationContext:", e);
             }
@@ -93,8 +100,62 @@ export const OrderNotificationProvider = ({ children }) => {
         return () => clearInterval(interval);
     }, [fetchPendingCount]);
 
+    // Socket Initialization
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token || !userId) return;
+
+        const newSocket = io(API_BASE_URL, {
+            transports: ['websocket', 'polling'],
+            reconnection: true,
+            auth: { token }
+        });
+
+        newSocket.on('connect', () => {
+            console.log('Web Dashboard Socket connected:', newSocket.id);
+            newSocket.emit('user_connected', { userId, role: userRole });
+        });
+
+        newSocket.on('online_users', (users) => {
+            setOnlineUsers(users);
+        });
+
+        newSocket.on('user_status', ({ userId: statusUserId, role, status }) => {
+            setOnlineUsers(prev => {
+                if (status === 'online') {
+                    const otherUsers = prev.filter(u => String(u.userId) !== String(statusUserId));
+                    return [...otherUsers, { userId: statusUserId, role }];
+                } else {
+                    return prev.filter(u => String(u.userId) !== String(statusUserId));
+                }
+            });
+        });
+
+        newSocket.on('new_order', (order) => {
+            if (['admin', 'penjual', 'owner'].includes(userRole)) {
+                // Play Sound
+                const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+                audio.play().catch(() => { });
+
+                setLatestOrder(order);
+                setIsPopupOpen(true);
+                fetchPendingCount();
+            }
+        });
+
+        newSocket.on('order_update', () => {
+            fetchPendingCount();
+        });
+
+        setSocket(newSocket);
+
+        return () => {
+            newSocket.disconnect();
+        };
+    }, [userId, userRole, fetchPendingCount]);
+
     return (
-        <OrderNotificationContext.Provider value={{ pendingCount, fetchPendingCount, lastSync }}>
+        <OrderNotificationContext.Provider value={{ pendingCount, fetchPendingCount, lastSync, onlineUsers }}>
             {children}
             <NewOrderPopup
                 isOpen={isPopupOpen}

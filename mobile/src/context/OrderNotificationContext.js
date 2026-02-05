@@ -34,6 +34,7 @@ export const OrderNotificationProvider = ({ children }) => {
     const [newOrder, setNewOrder] = useState(null);
     const [showPopup, setShowPopup] = useState(false);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [onlineUsers, setOnlineUsers] = useState([]); // Store online user objects {userId, role}
     const soundRef = useRef(null);
     const pollingInterval = useRef(null);
     const socketRef = useRef(null);
@@ -268,6 +269,11 @@ export const OrderNotificationProvider = ({ children }) => {
 
         socket.on('connect', () => {
             console.log('Socket.io connected:', socket.id);
+            // Register user presence
+            // AuthContext stores id as user.id, but sometimes we might have userId from raw token decoding
+            const activeUserId = user.id || user.userId;
+            console.log('Emitting user_connected for:', activeUserId);
+            socket.emit('user_connected', { userId: activeUserId, role: user.role });
         });
 
         socket.on('connect_error', (error) => {
@@ -279,6 +285,26 @@ export const OrderNotificationProvider = ({ children }) => {
             if (reason === 'io server disconnect') {
                 // Server memutuskan koneksi, reconnect manual
                 socket.connect();
+            }
+        });
+
+        socket.on('online_users', (users) => {
+            if (isMounted.current) {
+                setOnlineUsers(users);
+            }
+        });
+
+        socket.on('user_status', ({ userId, role, status }) => {
+            if (isMounted.current) {
+                setOnlineUsers(prev => {
+                    if (status === 'online') {
+                        // Filter out existing to avoid duplicates
+                        const otherUsers = prev.filter(u => String(u.userId) !== String(userId));
+                        return [...otherUsers, { userId, role }];
+                    } else {
+                        return prev.filter(u => String(u.userId) !== String(userId));
+                    }
+                });
             }
         });
 
@@ -326,7 +352,8 @@ export const OrderNotificationProvider = ({ children }) => {
             newOrder,
             showPopup,
             closePopup,
-            refreshTrigger
+            refreshTrigger,
+            onlineUsers
         }}>
             {children}
         </OrderNotificationContext.Provider>
