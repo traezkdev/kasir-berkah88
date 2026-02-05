@@ -27,7 +27,10 @@ import {
     MapPin,
     Download,
     TrendingUp,
-    Receipt
+    Receipt,
+    Banknote,
+    QrCode,
+    CreditCard
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 import ReceiptModal from '../../components/ReceiptModal';
@@ -50,13 +53,19 @@ const TransactionHistory = ({ navigation }) => {
     const [totalItems, setTotalItems] = useState(0);
     const [totalAmount, setTotalAmount] = useState(0);
     const [hasMore, setHasMore] = useState(true);
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]); // Default ke hari ini
+    const [showFilterModal, setShowFilterModal] = useState(false);
 
-    const fetchTransactions = useCallback(async (pageNum = 1, isRefresh = false, search = '') => {
+    const fetchTransactions = useCallback(async (pageNum = 1, isRefresh = false, search = '', date = null) => {
         if (pageNum === 1 && !isRefresh) setLoading(true);
         if (pageNum > 1) setLoadingMore(true);
 
         try {
-            const response = await apiService.get(`/api/transactions?page=${pageNum}&limit=10&search=${search}`);
+            let url = `/api/transactions?page=${pageNum}&limit=10&search=${search}`;
+            if (date) {
+                url += `&startDate=${date}&endDate=${date}`;
+            }
+            const response = await apiService.get(url);
             if (response.data && response.data.message === 'success') {
                 const newData = response.data.data.map(t => ({
                     ...t,
@@ -93,23 +102,23 @@ const TransactionHistory = ({ navigation }) => {
         return () => clearTimeout(timer);
     }, [searchTerm]);
 
-    // Fetch when page or debounced search changes
+    // Fetch when page or debounced search or date changes
     useEffect(() => {
         setPage(1);
-        fetchTransactions(1, false, debouncedSearch);
-    }, [debouncedSearch, fetchTransactions]);
+        fetchTransactions(1, false, debouncedSearch, selectedDate);
+    }, [debouncedSearch, selectedDate, fetchTransactions]);
 
     const onRefresh = () => {
         setRefreshing(true);
         setPage(1);
-        fetchTransactions(1, true, debouncedSearch);
+        fetchTransactions(1, true, debouncedSearch, selectedDate);
     };
 
     const handleLoadMore = () => {
         if (!loadingMore && hasMore && !loading) {
             const nextPage = page + 1;
             setPage(nextPage);
-            fetchTransactions(nextPage, false, debouncedSearch);
+            fetchTransactions(nextPage, false, debouncedSearch, selectedDate);
         }
     };
 
@@ -149,6 +158,14 @@ const TransactionHistory = ({ navigation }) => {
             }).start();
         };
 
+        const getMethodIcon = () => {
+            const method = (item.payment_method || '').toLowerCase();
+            if (method.includes('transfer')) return <Wallet size={120} color="#3B82F6" />;
+            if (method.includes('cash') || method.includes('tunai')) return <Banknote size={120} color="#22C55E" />;
+            if (method.includes('qris')) return <QrCode size={120} color="#3B82F6" />;
+            return <CreditCard size={120} color="#3B82F6" />;
+        };
+
         return (
             <Pressable
                 onPressIn={handlePressIn}
@@ -156,6 +173,11 @@ const TransactionHistory = ({ navigation }) => {
                 onPress={() => setSelectedTx(item)}
             >
                 <Animated.View style={[styles.txCard, { transform: [{ scale }] }]}>
+                    {/* Background Icon */}
+                    <View style={styles.cardBgIcon}>
+                        {getMethodIcon()}
+                    </View>
+
                     <View style={styles.cardHeader}>
                         <View>
                             <View style={styles.idBadge}>
@@ -255,9 +277,19 @@ const TransactionHistory = ({ navigation }) => {
                         placeholderTextColor="#94A3B8"
                     />
                 </View>
-                <TouchableOpacity style={styles.datePickerBtn}>
-                    <Calendar size={18} color="#64748B" />
-                    <Text style={styles.dateLabel}>Filter Tanggal</Text>
+                <TouchableOpacity
+                    style={[styles.datePickerBtn, selectedDate && styles.datePickerBtnActive]}
+                    onPress={() => setShowFilterModal(true)}
+                >
+                    <Calendar size={18} color={selectedDate ? "#FFFFFF" : "#64748B"} />
+                    <Text style={[styles.dateLabel, selectedDate && styles.dateLabelActive]}>
+                        {selectedDate ? selectedDate : "Filter Tanggal"}
+                    </Text>
+                    {selectedDate && (
+                        <TouchableOpacity onPress={() => setSelectedDate(null)} style={styles.clearDateBtn}>
+                            <X size={14} color="#FFFFFF" />
+                        </TouchableOpacity>
+                    )}
                 </TouchableOpacity>
             </View>
 
@@ -362,6 +394,80 @@ const TransactionHistory = ({ navigation }) => {
                     transaction={selectedTx}
                 />
             )}
+
+            {/* Date Filter Modal */}
+            <Modal
+                visible={showFilterModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowFilterModal(false)}
+            >
+                <Pressable
+                    style={styles.modalOverlay}
+                    onPress={() => setShowFilterModal(false)}
+                >
+                    <Animated.View style={styles.filterModalContent}>
+                        <View style={styles.filterHeader}>
+                            <Text style={styles.filterTitle}>Pilih Rentang Waktu</Text>
+                            <TouchableOpacity onPress={() => setShowFilterModal(false)}>
+                                <X size={20} color="#64748B" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.filterOptions}>
+                            <TouchableOpacity
+                                style={[styles.filterOption, !selectedDate && styles.filterOptionActive]}
+                                onPress={() => {
+                                    setSelectedDate(null);
+                                    setShowFilterModal(false);
+                                }}
+                            >
+                                <History size={20} color={!selectedDate ? "#1E40AF" : "#64748B"} />
+                                <Text style={[styles.filterOptionText, !selectedDate && styles.filterOptionTextActive]}>Semua Waktu</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.filterOption, selectedDate === new Date().toISOString().split('T')[0] && styles.filterOptionActive]}
+                                onPress={() => {
+                                    setSelectedDate(new Date().toISOString().split('T')[0]);
+                                    setShowFilterModal(false);
+                                }}
+                            >
+                                <Calendar size={20} color={selectedDate === new Date().toISOString().split('T')[0] ? "#1E40AF" : "#64748B"} />
+                                <Text style={[styles.filterOptionText, selectedDate === new Date().toISOString().split('T')[0] && styles.filterOptionTextActive]}>Hari Ini</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.filterOption, selectedDate === new Date(Date.now() - 86400000).toISOString().split('T')[0] && styles.filterOptionActive]}
+                                onPress={() => {
+                                    setSelectedDate(new Date(Date.now() - 86400000).toISOString().split('T')[0]);
+                                    setShowFilterModal(false);
+                                }}
+                            >
+                                <Calendar size={20} color={selectedDate === new Date(Date.now() - 86400000).toISOString().split('T')[0] ? "#1E40AF" : "#64748B"} />
+                                <Text style={[styles.filterOptionText, selectedDate === new Date(Date.now() - 86400000).toISOString().split('T')[0] && styles.filterOptionTextActive]}>Kemarin</Text>
+                            </TouchableOpacity>
+
+                            <View style={styles.filterDivider} />
+
+                            <Text style={styles.filterSubLabel}>Bulan Ini</Text>
+
+                            <TouchableOpacity
+                                style={styles.filterOption}
+                                onPress={() => {
+                                    // Set to today for simplicity if they want "month" it would need range support
+                                    // For now just presets that the backend supports via startDate=endDate
+                                    setSelectedDate(new Date().toISOString().split('T')[0]);
+                                    setShowFilterModal(false);
+                                }}
+                            >
+                                <TrendingUp size={20} color="#64748B" />
+                                <Text style={styles.filterOptionText}>Kembali ke Hari Ini</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </Animated.View>
+                </Pressable>
+            </Modal>
         </View>
     );
 };
@@ -502,6 +608,77 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#64748B',
     },
+    datePickerBtnActive: {
+        backgroundColor: '#1E40AF',
+        borderColor: '#1E40AF',
+    },
+    dateLabelActive: {
+        color: '#FFFFFF',
+    },
+    clearDateBtn: {
+        marginLeft: 4,
+        padding: 4,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    filterModalContent: {
+        backgroundColor: '#FFFFFF',
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
+        padding: 24,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    },
+    filterHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    filterTitle: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#1E293B',
+    },
+    filterOptions: {
+        gap: 12,
+    },
+    filterOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        backgroundColor: '#F8FAFC',
+        borderRadius: 16,
+        gap: 12,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+    },
+    filterOptionActive: {
+        backgroundColor: '#EFF6FF',
+        borderColor: '#1E40AF',
+    },
+    filterOptionText: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#64748B',
+    },
+    filterOptionTextActive: {
+        color: '#1E40AF',
+    },
+    filterDivider: {
+        height: 1,
+        backgroundColor: '#F1F5F9',
+        marginVertical: 8,
+    },
+    filterSubLabel: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#94A3B8',
+        letterSpacing: 1,
+        marginBottom: 4,
+    },
     loadingArea: {
         flex: 1,
         justifyContent: 'center',
@@ -517,10 +694,18 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         borderWidth: 1,
         borderColor: '#F1F5F9',
+        overflow: 'hidden', // Penting agar icon latar belakang tidak keluar kartu
         ...Platform.select({
             web: { boxShadow: '0px 4px 12px rgba(0,0,0,0.03)' },
             android: { elevation: 2 }
         })
+    },
+    cardBgIcon: {
+        position: 'absolute',
+        right: -20,
+        top: -20,
+        opacity: 0.08,
+        transform: [{ rotate: '-15deg' }],
     },
     cardHeader: {
         flexDirection: 'row',

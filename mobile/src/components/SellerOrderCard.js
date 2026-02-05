@@ -1,6 +1,6 @@
 import React, { useState, memo } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, LayoutAnimation, Platform, UIManager } from 'react-native';
-import { User, MapPin, Wallet, ShoppingBag, ChevronDown, X, ArrowRight, MessageCircle, CheckCircle, Info } from 'lucide-react-native';
+import { User, MapPin, Wallet, ShoppingBag, ChevronDown, X, ArrowRight, MessageCircle, CheckCircle, Info, Banknote, QrCode, CreditCard } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useChat } from '../context/ChatContext';
 
@@ -43,8 +43,20 @@ const SellerOrderCard = ({ order, onAccept, onReject, onComplete, onViewDetail }
         setIsExpanded(!isExpanded);
     };
 
+    const getMethodIcon = () => {
+        const method = (order.payment_method || '').toLowerCase();
+        if (method.includes('transfer')) return <Wallet size={120} color="#3B82F6" />;
+        if (method.includes('cash') || method.includes('tunai')) return <Banknote size={120} color="#22C55E" />;
+        if (method.includes('qris')) return <QrCode size={120} color="#3B82F6" />;
+        return <CreditCard size={120} color="#3B82F6" />;
+    };
+
     return (
         <View style={styles.card}>
+            {/* Background Icon */}
+            <View style={styles.cardBgIcon}>
+                {getMethodIcon()}
+            </View>
             {/* Top Info Bar */}
             <View style={styles.topBar}>
                 <View style={styles.orderIdGroup}>
@@ -185,6 +197,14 @@ const styles = StyleSheet.create({
             web: { boxShadow: '0px 4px 12px rgba(0,0,0,0.05)' },
             android: { elevation: 3 }
         })
+    },
+    cardBgIcon: {
+        position: 'absolute',
+        right: -20,
+        top: -20,
+        opacity: 0.08,
+        transform: [{ rotate: '-15deg' }],
+        zIndex: 0,
     },
     topBar: {
         backgroundColor: '#F1F5F9',
