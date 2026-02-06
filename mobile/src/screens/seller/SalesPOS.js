@@ -674,7 +674,7 @@ const SalesPOS = () => {
                         </View>
                     </KeyboardAvoidingView>
 
-                    <View style={styles.modalFooter}>
+                    <View style={[styles.modalFooter, { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F1F5F9' }]}>
                         {parseFloat(manualDiscount || 0) > 0 && (
                             <View style={[styles.totalRow, { marginBottom: 6 }]}>
                                 <Text style={[styles.totalLabel, { fontSize: 13 }]}>Subtotal</Text>
@@ -1061,7 +1061,7 @@ const styles = StyleSheet.create({
     },
     modalBodyContent: {
         padding: 24,
-        paddingBottom: 40,
+        paddingBottom: 180, // Tambahkan padding besar agar konten tidak tertutup footer absolute
         flexGrow: 1,
     },
     cartList: {

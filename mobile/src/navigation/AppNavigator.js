@@ -32,6 +32,7 @@ import SalesPOS from '../screens/seller/SalesPOS';
 import Banners from '../screens/seller/Banners';
 import CategoryManagement from '../screens/seller/CategoryManagement';
 import CustomerDetails from '../screens/seller/CustomerDetails';
+import PointManagement from '../screens/seller/PointManagement';
 
 // Customer Screens
 import CustomerMenu from '../screens/customer/Menu';
@@ -150,6 +151,7 @@ const SellerRootStack = () => (
         <Stack.Screen name="Banners" component={Banners} />
         <Stack.Screen name="CategoryManagement" component={CategoryManagement} />
         <Stack.Screen name="CustomerDetails" component={CustomerDetails} />
+        <Stack.Screen name="PointManagement" component={PointManagement} />
     </Stack.Navigator>
 );
 

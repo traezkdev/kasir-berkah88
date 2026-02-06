@@ -295,164 +295,170 @@ const CustomerCart = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Item Pesanan</Text>
-                    {cart.map((item) => (
-                        <CartItem
-                            key={item.cartId}
-                            item={item}
-                            updateQuantity={updateQuantity}
-                            handleRemoveItem={handleRemoveItem}
-                            formatCurrency={formatCurrency}
-                        />
-                    ))}
-                </View>
-
-                {/* Delivery Notes */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Catatan Pesanan (Optional)</Text>
-                    <View style={styles.notesInputRow}>
-                        <Info size={16} color="#94A3B8" />
-                        <TextInput
-                            placeholder="Contoh: Jangan terlalu pedas ya..."
-                            style={styles.notesInput}
-                            value={notes}
-                            onChangeText={setNotes}
-                            multiline
-                        />
-                    </View>
-                </View>
-
-                {/* Delivery Address */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>
-                        Data Pengiriman <Text style={{ color: '#EF4444' }}>*</Text>
-                    </Text>
-
-                    {/* Phone Input */}
-                    <View style={[styles.notesInputRow, { marginBottom: 12 }]}>
-                        <CreditCard size={16} color="#94A3B8" />
-                        <TextInput
-                            placeholder="Nomor Telepon / WhatsApp"
-                            style={[styles.notesInput, { height: 40 }]}
-                            value={customerPhone}
-                            onChangeText={setCustomerPhone}
-                            keyboardType="phone-pad"
-                        />
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+            >
+                <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Item Pesanan</Text>
+                        {cart.map((item) => (
+                            <CartItem
+                                key={item.cartId}
+                                item={item}
+                                updateQuantity={updateQuantity}
+                                handleRemoveItem={handleRemoveItem}
+                                formatCurrency={formatCurrency}
+                            />
+                        ))}
                     </View>
 
-                    {savedAddress && (
-                        <TouchableOpacity
-                            style={[styles.savedAddressCard, { marginBottom: 12 }]}
-                            onPress={() => setCustomerAddress(savedAddress)}
-                        >
-                            <View style={styles.savedAddressIcon}>
-                                <MapPin size={22} color="#3B82F6" strokeWidth={2} />
-                            </View>
-                            <View style={styles.savedAddressInfo}>
-                                <Text style={styles.savedAddressTitle}>Alamat Tersimpan</Text>
-                                <Text style={styles.savedAddressText}>{savedAddress}</Text>
-                            </View>
-                            <ChevronRight size={18} color="#CBD5E1" />
-                        </TouchableOpacity>
-                    )}
-
-                    <View style={styles.notesInputRow}>
-                        <MapPin size={16} color="#94A3B8" />
-                        <TextInput
-                            placeholder="Alamat lengkap (Nama jalan, No. Rumah, dll)"
-                            style={styles.notesInput}
-                            value={customerAddress}
-                            onChangeText={setCustomerAddress}
-                            multiline
-                        />
-                    </View>
-                </View>
-
-                {/* Payment Method */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Metode Pembayaran</Text>
-
-                    {/* Opsi Tunai */}
-                    <TouchableOpacity
-                        style={[styles.paymentOption, paymentMethod === 'cash' && styles.paymentOptionActive]}
-                        onPress={() => setPaymentMethod('cash')}
-                    >
-                        <View style={styles.paymentLeft}>
-                            <View style={[styles.paymentIconWrap, paymentMethod === 'cash' && { backgroundColor: '#ECFDF5' }]}>
-                                <Banknote size={20} color={paymentMethod === 'cash' ? "#059669" : "#64748B"} />
-                            </View>
-                            <View>
-                                <Text style={[styles.paymentName, paymentMethod === 'cash' && { color: '#059669' }]}>Bayar Tunai</Text>
-                                <Text style={styles.paymentDesc}>bayar ketika makanan sudah sampai</Text>
-                            </View>
+                    {/* Delivery Notes */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Catatan Pesanan (Optional)</Text>
+                        <View style={styles.notesInputRow}>
+                            <Info size={16} color="#94A3B8" />
+                            <TextInput
+                                placeholder="Contoh: Jangan terlalu pedas ya..."
+                                style={styles.notesInput}
+                                value={notes}
+                                onChangeText={setNotes}
+                                multiline
+                            />
                         </View>
-                        {paymentMethod === 'cash' && <CheckCircle2 size={20} color="#059669" />}
-                    </TouchableOpacity>
+                    </View>
 
-                    {/* Opsi Qris (Mapped to Transfer internally) */}
-                    <TouchableOpacity
-                        style={[styles.paymentOption, paymentMethod === 'transfer' && styles.paymentOptionActive]}
-                        onPress={() => setPaymentMethod('transfer')}
-                    >
-                        <View style={styles.paymentLeft}>
-                            <View style={[styles.paymentIconWrap, paymentMethod === 'transfer' && { backgroundColor: '#EFF6FF' }]}>
-                                <QrCode size={20} color={paymentMethod === 'transfer' ? "#2563EB" : "#64748B"} />
-                            </View>
-                            <View>
-                                <Text style={[styles.paymentName, paymentMethod === 'transfer' && { color: '#2563EB' }]}>Bayar dengan Qris</Text>
-                                <Text style={styles.paymentDesc}>Bayar dengan scan qris</Text>
-                            </View>
+                    {/* Delivery Address */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>
+                            Data Pengiriman <Text style={{ color: '#EF4444' }}>*</Text>
+                        </Text>
+
+                        {/* Phone Input */}
+                        <View style={[styles.notesInputRow, { marginBottom: 12 }]}>
+                            <CreditCard size={16} color="#94A3B8" />
+                            <TextInput
+                                placeholder="Nomor Telepon / WhatsApp"
+                                style={[styles.notesInput, { height: 40 }]}
+                                value={customerPhone}
+                                onChangeText={setCustomerPhone}
+                                keyboardType="phone-pad"
+                            />
                         </View>
-                        {paymentMethod === 'transfer' && <CheckCircle2 size={20} color="#2563EB" />}
-                    </TouchableOpacity>
 
-                    {/* QRIS Display */}
-                    {paymentMethod === 'transfer' && (
-                        <View style={styles.qrisContainer}>
-                            <Text style={styles.qrisTitle}>Scan Kode QRIS</Text>
+                        {savedAddress && (
                             <TouchableOpacity
-                                style={styles.qrisImageWrapper}
-                                onPress={() => setShowQrisModal(true)}
-                                activeOpacity={0.9}
+                                style={[styles.savedAddressCard, { marginBottom: 12 }]}
+                                onPress={() => setCustomerAddress(savedAddress)}
                             >
-                                <Image
-                                    source={require('../../../assets/qris.jpeg')}
-                                    style={styles.qrisImage}
-                                    resizeMode="contain"
-                                />
+                                <View style={styles.savedAddressIcon}>
+                                    <MapPin size={22} color="#3B82F6" strokeWidth={2} />
+                                </View>
+                                <View style={styles.savedAddressInfo}>
+                                    <Text style={styles.savedAddressTitle}>Alamat Tersimpan</Text>
+                                    <Text style={styles.savedAddressText}>{savedAddress}</Text>
+                                </View>
+                                <ChevronRight size={18} color="#CBD5E1" />
                             </TouchableOpacity>
-                            <Text style={styles.qrisInstruction}>
-                                1. Buka aplikasi e-wallet atau mobile banking{'\n'}
-                                2. Scan kode QRIS di atas{'\n'}
-                                3. Periksa nominal dan selesaikan pembayaran
-                            </Text>
+                        )}
+
+                        <View style={styles.notesInputRow}>
+                            <MapPin size={16} color="#94A3B8" />
+                            <TextInput
+                                placeholder="Alamat lengkap (Nama jalan, No. Rumah, dll)"
+                                style={styles.notesInput}
+                                value={customerAddress}
+                                onChangeText={setCustomerAddress}
+                                multiline
+                            />
                         </View>
-                    )}
-                </View>
+                    </View>
 
-                {/* Summary */}
-                <View style={styles.summaryBox}>
-                    <View style={styles.summaryRow}>
-                        <Text style={styles.summaryLabel}>Subtotal</Text>
-                        <Text style={styles.summaryValue}>{formatCurrency(cartTotal)}</Text>
-                    </View>
-                    <View style={styles.summaryRow}>
-                        <Text style={styles.summaryLabel}>Biaya Layanan</Text>
-                        <Text style={styles.summaryValue}>Rp 0</Text>
-                    </View>
-                    <View style={[styles.summaryRow, styles.totalRow]}>
-                        <Text style={styles.totalLabel}>Total Pembayaran</Text>
-                        <Text style={styles.totalValue}>{formatCurrency(cartTotal)}</Text>
-                    </View>
-                </View>
+                    {/* Payment Method */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Metode Pembayaran</Text>
 
-                <View style={{ height: 40 }} />
-            </ScrollView>
+                        {/* Opsi Tunai */}
+                        <TouchableOpacity
+                            style={[styles.paymentOption, paymentMethod === 'cash' && styles.paymentOptionActive]}
+                            onPress={() => setPaymentMethod('cash')}
+                        >
+                            <View style={styles.paymentLeft}>
+                                <View style={[styles.paymentIconWrap, paymentMethod === 'cash' && { backgroundColor: '#ECFDF5' }]}>
+                                    <Banknote size={20} color={paymentMethod === 'cash' ? "#059669" : "#64748B"} />
+                                </View>
+                                <View>
+                                    <Text style={[styles.paymentName, paymentMethod === 'cash' && { color: '#059669' }]}>Bayar Tunai</Text>
+                                    <Text style={styles.paymentDesc}>bayar ketika makanan sudah sampai</Text>
+                                </View>
+                            </View>
+                            {paymentMethod === 'cash' && <CheckCircle2 size={20} color="#059669" />}
+                        </TouchableOpacity>
+
+                        {/* Opsi Qris (Mapped to Transfer internally) */}
+                        <TouchableOpacity
+                            style={[styles.paymentOption, paymentMethod === 'transfer' && styles.paymentOptionActive]}
+                            onPress={() => setPaymentMethod('transfer')}
+                        >
+                            <View style={styles.paymentLeft}>
+                                <View style={[styles.paymentIconWrap, paymentMethod === 'transfer' && { backgroundColor: '#EFF6FF' }]}>
+                                    <QrCode size={20} color={paymentMethod === 'transfer' ? "#2563EB" : "#64748B"} />
+                                </View>
+                                <View>
+                                    <Text style={[styles.paymentName, paymentMethod === 'transfer' && { color: '#2563EB' }]}>Bayar dengan Qris</Text>
+                                    <Text style={styles.paymentDesc}>Bayar dengan scan qris</Text>
+                                </View>
+                            </View>
+                            {paymentMethod === 'transfer' && <CheckCircle2 size={20} color="#2563EB" />}
+                        </TouchableOpacity>
+
+                        {/* QRIS Display */}
+                        {paymentMethod === 'transfer' && (
+                            <View style={styles.qrisContainer}>
+                                <Text style={styles.qrisTitle}>Scan Kode QRIS</Text>
+                                <TouchableOpacity
+                                    style={styles.qrisImageWrapper}
+                                    onPress={() => setShowQrisModal(true)}
+                                    activeOpacity={0.9}
+                                >
+                                    <Image
+                                        source={require('../../../assets/qris.jpeg')}
+                                        style={styles.qrisImage}
+                                        resizeMode="contain"
+                                    />
+                                </TouchableOpacity>
+                                <Text style={styles.qrisInstruction}>
+                                    1. Buka aplikasi e-wallet atau mobile banking{'\n'}
+                                    2. Scan kode QRIS di atas{'\n'}
+                                    3. Periksa nominal dan selesaikan pembayaran
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+
+                    {/* Summary */}
+                    <View style={styles.summaryBox}>
+                        <View style={styles.summaryRow}>
+                            <Text style={styles.summaryLabel}>Subtotal</Text>
+                            <Text style={styles.summaryValue}>{formatCurrency(cartTotal)}</Text>
+                        </View>
+                        <View style={styles.summaryRow}>
+                            <Text style={styles.summaryLabel}>Biaya Layanan</Text>
+                            <Text style={styles.summaryValue}>Rp 0</Text>
+                        </View>
+                        <View style={[styles.summaryRow, styles.totalRow]}>
+                            <Text style={styles.totalLabel}>Total Pembayaran</Text>
+                            <Text style={styles.totalValue}>{formatCurrency(cartTotal)}</Text>
+                        </View>
+                    </View>
+
+                    <View style={{ height: 40 }} />
+                </ScrollView>
+            </KeyboardAvoidingView>
 
             {/* Sticky Checkout Button */}
-            <View style={styles.footer}>
+            <View style={[styles.footer, { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F1F5F9' }]}>
                 <View style={styles.footerLeft}>
                     <Text style={styles.footerLabel}>Total Bayar</Text>
                     <Text style={styles.footerValue}>{formatCurrency(cartTotal)}</Text>
@@ -550,6 +556,7 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         padding: 16,
+        marginBottom: 80, // Beri ruang untuk footer absolute
     },
     section: {
         marginBottom: 24,

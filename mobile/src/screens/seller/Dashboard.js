@@ -29,6 +29,7 @@ import {
     ChevronRight,
     Clock,
     User,
+    Gift,
     Image as ImageIcon
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
@@ -301,9 +302,9 @@ const SellerDashboard = ({ navigation }) => {
                             { label: 'Katalog', icon: PlusCircle, color: '#10B981', bgColor: '#ECFDF5', target: 'Katalog' },
                             { label: 'Kategori', icon: BarChart3, color: '#A855F7', bgColor: '#FAF5FF', target: 'CategoryManagement' },
                             { label: 'Banner', icon: ImageIcon, color: '#F59E0B', bgColor: '#FFFBEB', target: 'Banners' },
+                            { label: 'Poin', icon: Gift, color: '#138FEA', bgColor: '#F0F9FF', target: 'PointManagement' },
                             { label: 'Pesanan', icon: ShoppingBag, color: '#6366F1', bgColor: '#EEF2FF', target: 'Pesanan' },
                             { label: 'Riwayat', icon: History, color: '#8B5CF6', bgColor: '#F5F3FF', target: 'Transaksi' },
-                            { label: 'Profil', icon: User, color: '#64748B', bgColor: '#F1F5F9', target: 'ProfileScreen' },
                         ].map((action, index) => (
                             <TouchableOpacity
                                 key={index}

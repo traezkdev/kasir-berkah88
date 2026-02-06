@@ -1456,7 +1456,8 @@ const setupDatabase = async () => {
     // Ensure points_per_item setting exists
     const ensurePointsSetting = `
       INSERT IGNORE INTO settings(\`key\`, \`value\`) VALUES
-      ('points_per_item', '100');
+      ('points_per_item', '100'),
+      ('point_system_enabled', '1');
     `;
     await connection.query(ensurePointsSetting);
 
