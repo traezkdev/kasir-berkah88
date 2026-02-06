@@ -34,10 +34,12 @@ import {
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 import ReceiptModal from '../../components/ReceiptModal';
+import { useOrderNotification } from '../../context/OrderNotificationContext';
 
 const { width } = Dimensions.get('window');
 
 const TransactionHistory = ({ navigation }) => {
+    const { refreshTrigger } = useOrderNotification();
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -53,7 +55,15 @@ const TransactionHistory = ({ navigation }) => {
     const [totalItems, setTotalItems] = useState(0);
     const [totalAmount, setTotalAmount] = useState(0);
     const [hasMore, setHasMore] = useState(true);
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]); // Default ke hari ini
+    // Helper to get local date string (YYYY-MM-DD)
+    const getLocalDateString = (date = new Date()) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const [selectedDate, setSelectedDate] = useState(getLocalDateString()); // Default ke hari ini (Local Time)
     const [showFilterModal, setShowFilterModal] = useState(false);
 
     const fetchTransactions = useCallback(async (pageNum = 1, isRefresh = false, search = '', date = null) => {
@@ -93,6 +103,15 @@ const TransactionHistory = ({ navigation }) => {
             setRefreshing(false);
         }
     }, []);
+
+    // Real-time update listener
+    useEffect(() => {
+        // Refresh data when a new order/transaction is detected globally via Socket
+        if (refreshTrigger > 0) {
+            console.log('Real-time update: Refreshing transactions...');
+            fetchTransactions(1, true, debouncedSearch, selectedDate);
+        }
+    }, [refreshTrigger]);
 
     // Debounce search
     useEffect(() => {
@@ -441,25 +460,25 @@ const TransactionHistory = ({ navigation }) => {
                             </TouchableOpacity>
 
                             <TouchableOpacity
-                                style={[styles.filterOption, selectedDate === new Date().toISOString().split('T')[0] && styles.filterOptionActive]}
+                                style={[styles.filterOption, selectedDate === getLocalDateString() && styles.filterOptionActive]}
                                 onPress={() => {
-                                    setSelectedDate(new Date().toISOString().split('T')[0]);
+                                    setSelectedDate(getLocalDateString());
                                     setShowFilterModal(false);
                                 }}
                             >
-                                <Calendar size={20} color={selectedDate === new Date().toISOString().split('T')[0] ? "#1E40AF" : "#64748B"} />
-                                <Text style={[styles.filterOptionText, selectedDate === new Date().toISOString().split('T')[0] && styles.filterOptionTextActive]}>Hari Ini</Text>
+                                <Calendar size={20} color={selectedDate === getLocalDateString() ? "#1E40AF" : "#64748B"} />
+                                <Text style={[styles.filterOptionText, selectedDate === getLocalDateString() && styles.filterOptionTextActive]}>Hari Ini</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity
-                                style={[styles.filterOption, selectedDate === new Date(Date.now() - 86400000).toISOString().split('T')[0] && styles.filterOptionActive]}
+                                style={[styles.filterOption, selectedDate === getLocalDateString(new Date(Date.now() - 86400000)) && styles.filterOptionActive]}
                                 onPress={() => {
-                                    setSelectedDate(new Date(Date.now() - 86400000).toISOString().split('T')[0]);
+                                    setSelectedDate(getLocalDateString(new Date(Date.now() - 86400000)));
                                     setShowFilterModal(false);
                                 }}
                             >
-                                <Calendar size={20} color={selectedDate === new Date(Date.now() - 86400000).toISOString().split('T')[0] ? "#1E40AF" : "#64748B"} />
-                                <Text style={[styles.filterOptionText, selectedDate === new Date(Date.now() - 86400000).toISOString().split('T')[0] && styles.filterOptionTextActive]}>Kemarin</Text>
+                                <Calendar size={20} color={selectedDate === getLocalDateString(new Date(Date.now() - 86400000)) ? "#1E40AF" : "#64748B"} />
+                                <Text style={[styles.filterOptionText, selectedDate === getLocalDateString(new Date(Date.now() - 86400000)) && styles.filterOptionTextActive]}>Kemarin</Text>
                             </TouchableOpacity>
 
                             <View style={styles.filterDivider} />
@@ -469,9 +488,7 @@ const TransactionHistory = ({ navigation }) => {
                             <TouchableOpacity
                                 style={styles.filterOption}
                                 onPress={() => {
-                                    // Set to today for simplicity if they want "month" it would need range support
-                                    // For now just presets that the backend supports via startDate=endDate
-                                    setSelectedDate(new Date().toISOString().split('T')[0]);
+                                    setSelectedDate(getLocalDateString());
                                     setShowFilterModal(false);
                                 }}
                             >

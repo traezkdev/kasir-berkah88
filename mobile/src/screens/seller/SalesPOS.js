@@ -125,8 +125,42 @@ const SalesPOS = () => {
                 apiService.get('/api/menu-items/all'),
                 apiService.get('/api/categories')
             ]);
-            setMenuItems(menuRes.data.data || []);
-            setCategories(catRes.data.data || []);
+
+            const fetchedMenuItems = menuRes.data.data || [];
+            const fetchedCategories = catRes.data.data || [];
+
+            const uniqueCatMap = new Map();
+
+            // 1. Masukkan kategori RESMI dari backend (Prioritas Utama)
+            fetchedCategories.forEach(c => {
+                if (c.name) {
+                    const nameTrimmed = c.name.trim();
+                    // Gunakan lowercase sebagai KEY agar "ayam" dan "Ayam" dianggap sama
+                    uniqueCatMap.set(nameTrimmed.toLowerCase(), {
+                        id: c.id,
+                        name: nameTrimmed
+                    });
+                }
+            });
+
+            // 2. Deteksi kategori dari Menu (hanya jika benar-benar belum ada di backend)
+            fetchedMenuItems.forEach(item => {
+                if (item.category) {
+                    const catName = item.category.trim();
+                    const normalized = catName.toLowerCase();
+                    if (!uniqueCatMap.has(normalized)) {
+                        uniqueCatMap.set(normalized, { id: 'temp-' + catName, name: catName });
+                    }
+                }
+            });
+
+            // 3. Urutkan secara alfabet
+            const sortedCategories = Array.from(uniqueCatMap.values()).sort((a, b) =>
+                a.name.localeCompare(b.name)
+            );
+
+            setMenuItems(fetchedMenuItems);
+            setCategories(sortedCategories);
         } catch (error) {
             console.error('Error fetching POS data:', error);
             Alert.alert('Error', 'Gagal memuat data menu');
@@ -173,7 +207,9 @@ const SalesPOS = () => {
 
     const filteredItems = useMemo(() => {
         return menuItems.filter(item => {
-            const matchesCategory = activeCategory === 'Semua' || item.category === activeCategory;
+            // Cocokkan secara case-insensitive agar produk dengan kategori "ayam" muncul saat filter "Ayam" diklik
+            const matchesCategory = activeCategory === 'Semua' ||
+                (item.category && item.category.trim().toLowerCase() === activeCategory.toLowerCase());
             const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
             return matchesCategory && matchesSearch;
         });
@@ -364,9 +400,17 @@ const SalesPOS = () => {
                         <TouchableOpacity
                             key={cat.id}
                             onPress={() => setActiveCategory(cat.name)}
-                            style={[styles.catBtn, activeCategory === cat.name && styles.activeCatBtn]}
+                            style={[
+                                styles.catBtn,
+                                activeCategory === cat.name && styles.activeCatBtn
+                            ]}
                         >
-                            <Text style={[styles.catBtnText, activeCategory === cat.name && styles.activeCatBtnText]}>{cat.name}</Text>
+                            <Text style={[
+                                styles.catBtnText,
+                                activeCategory === cat.name && styles.activeCatBtnText
+                            ]}>
+                                {cat.name}
+                            </Text>
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
