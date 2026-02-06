@@ -1,0 +1,836 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+    StyleSheet,
+    Text,
+    View,
+    TouchableOpacity,
+    TextInput,
+    ScrollView,
+    ActivityIndicator,
+    Alert,
+    Platform,
+    Modal as RNModal,
+    KeyboardAvoidingView,
+    StatusBar
+} from 'react-native';
+import {
+    X,
+    Plus,
+    Minus,
+    Trash2,
+    Save,
+    User,
+    Calendar,
+    CreditCard,
+    DollarSign,
+    FileText,
+    MapPin,
+    Phone,
+    Banknote,
+    Settings,
+    Search,
+    CheckCircle2
+} from 'lucide-react-native';
+import apiService from '../../api/apiService';
+
+const EditTransactionModal = ({ visible, onClose, transaction, onSave }) => {
+    const [loading, setLoading] = useState(false);
+    const [menuItems, setMenuItems] = useState([]);
+    const [fetchingMenu, setFetchingMenu] = useState(false);
+    const [cart, setCart] = useState([]);
+    const [manualDiscount, setManualDiscount] = useState('0');
+    const [ppn, setPpn] = useState('0');
+    const [notes, setNotes] = useState('');
+    const [paymentMethod, setPaymentMethod] = useState('Tunai');
+    const [customerName, setCustomerName] = useState('');
+    const [customerPhone, setCustomerPhone] = useState('');
+    const [customerAddress, setCustomerAddress] = useState('');
+    const [cashPaid, setCashPaid] = useState('0');
+    const [change, setChange] = useState('0');
+    const [timestamp, setTimestamp] = useState('');
+    const [menuSearch, setMenuSearch] = useState('');
+    const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [pickerMode, setPickerMode] = useState('date');
+    const [dateValue, setDateValue] = useState(new Date());
+
+    useEffect(() => {
+        if (visible && transaction) {
+            setCart(transaction.items || []);
+            setManualDiscount(String(transaction.manual_discount || 0));
+            setPpn(String(transaction.ppn || 0));
+            setNotes(transaction.catatan || '');
+            setPaymentMethod(transaction.payment_method || 'Tunai');
+            setCustomerName(transaction.customer_name || '');
+            setCustomerPhone(transaction.customer_phone || '');
+            setCustomerAddress(transaction.customer_address || '');
+            setCashPaid(String(transaction.cash_paid || 0));
+            setChange(String(transaction.change || 0));
+
+            const date = new Date(transaction.timestamp);
+            setDateValue(date);
+            // Format YYYY-MM-DD HH:mm
+            const pad = (n) => String(n).padStart(2, '0');
+            const formattedDate = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+            setTimestamp(formattedDate);
+
+            fetchMenuItems();
+        }
+    }, [visible, transaction]);
+
+    const showPicker = () => {
+        // Fallback: Alert or just focus the input if it were a real input
+        Alert.alert(
+            "Info",
+            "Fitur Pilih Waktu otomatis memerlukan build aplikasi baru. Untuk saat ini, silakan masukkan waktu secara manual dengan format: YYYY-MM-DD HH:mm",
+            [{ text: "OK" }]
+        );
+    };
+
+    const fetchMenuItems = async () => {
+        setFetchingMenu(true);
+        try {
+            const response = await apiService.get('/api/menu-items/all');
+            if (response.data && response.data.message === 'success') {
+                setMenuItems(response.data.data);
+            }
+        } catch (error) {
+            console.error('Error fetching menu items:', error);
+        } finally {
+            setFetchingMenu(false);
+        }
+    };
+
+    const filteredMenuItems = menuItems.filter(item =>
+        item.name.toLowerCase().includes(menuSearch.toLowerCase())
+    );
+
+    const subtotal = cart.reduce((acc, item) => acc + (item.price * (item.quantity || item.qty || 1)), 0);
+    const total = subtotal + Number(ppn || 0) - Number(manualDiscount || 0);
+
+    useEffect(() => {
+        if (paymentMethod === 'Tunai' || paymentMethod === 'Cash') {
+            const c = Math.max(0, Number(cashPaid || 0) - total);
+            setChange(String(c));
+        } else {
+            setChange('0');
+        }
+    }, [cashPaid, total, paymentMethod]);
+
+    const updateQty = (id, delta) => {
+        setCart(prev => prev.map(item => {
+            if (item.id === id) {
+                const currentQty = item.quantity || item.qty || 1;
+                const newQty = currentQty + delta;
+                return { ...item, quantity: Math.max(1, newQty), qty: Math.max(1, newQty) };
+            }
+            return item;
+        }));
+    };
+
+    const removeItem = (id) => {
+        setCart(prev => prev.filter(item => item.id !== id));
+    };
+
+    const addItem = (item) => {
+        const existing = cart.find(i => i.id === item.id);
+        if (existing) {
+            updateQty(item.id, 1);
+        } else {
+            setCart([...cart, {
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                quantity: 1,
+                qty: 1,
+                category: item.category
+            }]);
+        }
+    };
+
+    const handleTotalChange = (text) => {
+        const val = parseInt(text.replace(/[^0-9]/g, ''), 10) || 0;
+        // Formula: total = subtotal + ppn - manualDiscount
+        // Jadi: manualDiscount = subtotal + ppn - total
+        const newDiscount = subtotal + Number(ppn || 0) - val;
+        setManualDiscount(String(newDiscount));
+    };
+
+    const handleSave = async () => {
+        if (cart.length === 0) {
+            Alert.alert('Gagal', 'Keranjang tidak boleh kosong');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const payload = {
+                items: cart,
+                total: total,
+                ppn: Number(ppn || 0),
+                manual_discount: Number(manualDiscount || 0),
+                catatan: notes,
+                payment_method: paymentMethod,
+                customer_name: customerName,
+                customer_phone: customerPhone,
+                customer_address: customerAddress,
+                cash_paid: (paymentMethod === 'Tunai' || paymentMethod === 'Cash') ? Number(cashPaid || 0) : 0,
+                change: (paymentMethod === 'Tunai' || paymentMethod === 'Cash') ? Number(change || 0) : 0,
+                timestamp: timestamp
+            };
+
+            const response = await apiService.put(`/api/transactions/${transaction.id}`, payload);
+            if (response.data && response.data.message === 'success') {
+                setShowSuccessPopup(true);
+            } else {
+                Alert.alert('Gagal', response.data.error || 'Terjadi kesalahan');
+            }
+        } catch (error) {
+            console.error('Error updating transaction:', error);
+            Alert.alert('Error', 'Gagal memperbarui transaksi');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const formatCurrency = (val) => {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val || 0);
+    };
+
+    return (
+        <RNModal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
+            <View style={styles.container}>
+                <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={onClose} style={styles.backBtn}>
+                        <X size={24} color="#1E293B" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Edit Transaksi</Text>
+                    <TouchableOpacity onPress={handleSave} disabled={loading} style={styles.saveBtn}>
+                        {loading ? <ActivityIndicator size="small" color="#1E40AF" /> : <Save size={24} color="#1E40AF" />}
+                    </TouchableOpacity>
+                </View>
+
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                    style={{ flex: 1 }}
+                >
+                    <ScrollView
+                        style={styles.content}
+                        contentContainerStyle={{ paddingBottom: 20 }}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        <View style={styles.section}>
+                            <View style={styles.sectionHeader}>
+                                <FileText size={18} color="#1E40AF" />
+                                <Text style={styles.sectionTitle}>Item Transaksi</Text>
+                            </View>
+
+                            {cart.map((item, idx) => (
+                                <View key={idx} style={styles.itemRow}>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.itemName}>{item.name}</Text>
+                                        <Text style={styles.itemPrice}>{formatCurrency(item.price)}</Text>
+                                    </View>
+                                    <View style={styles.qtyContainer}>
+                                        <TouchableOpacity onPress={() => updateQty(item.id, -1)} style={styles.qtyBtn}>
+                                            <Minus size={16} color="#475569" />
+                                        </TouchableOpacity>
+                                        <Text style={styles.qtyText}>{item.quantity || item.qty || 1}</Text>
+                                        <TouchableOpacity onPress={() => updateQty(item.id, 1)} style={styles.qtyBtn}>
+                                            <Plus size={16} color="#475569" />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity onPress={() => removeItem(item.id)} style={[styles.qtyBtn, { marginLeft: 10, backgroundColor: '#FEE2E2' }]}>
+                                            <Trash2 size={16} color="#EF4444" />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            ))}
+
+                            <View style={styles.addSection}>
+                                <View style={styles.sectionHeader}>
+                                    <Plus size={16} color="#1E40AF" />
+                                    <Text style={styles.addLabel}>Tambah Menu ke Transaksi:</Text>
+                                </View>
+
+                                {/* Search Bar for Menu */}
+                                <View style={styles.menuSearchContainer}>
+                                    <Search size={16} color="#94A3B8" />
+                                    <TextInput
+                                        style={styles.menuSearchInput}
+                                        placeholder="Cari menu..."
+                                        value={menuSearch}
+                                        onChangeText={setMenuSearch}
+                                        placeholderTextColor="#94A3B8"
+                                    />
+                                    {menuSearch !== '' && (
+                                        <TouchableOpacity onPress={() => setMenuSearch('')}>
+                                            <X size={16} color="#94A3B8" />
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.menuHorizontalList}>
+                                    {fetchingMenu ? (
+                                        <View style={styles.menuLoader}>
+                                            <ActivityIndicator size="small" color="#1E40AF" />
+                                        </View>
+                                    ) : (
+                                        filteredMenuItems.length > 0 ? (
+                                            filteredMenuItems.map((m, idx) => (
+                                                <TouchableOpacity key={idx} style={styles.menuMiniCard} onPress={() => addItem(m)}>
+                                                    <Text style={styles.menuMiniName} numberOfLines={1}>{m.name}</Text>
+                                                    <Text style={styles.menuMiniStock}>Stok: {m.stock ?? '∞'}</Text>
+                                                    <Text style={styles.menuMiniPrice}>{formatCurrency(m.price)}</Text>
+                                                </TouchableOpacity>
+                                            ))
+                                        ) : (
+                                            <View style={styles.emptyMenuSearch}>
+                                                <Text style={styles.emptyMenuSearchText}>Menu tidak ditemukan</Text>
+                                            </View>
+                                        )
+                                    )}
+                                </ScrollView>
+                            </View>
+                        </View>
+
+                        <View style={styles.section}>
+                            <View style={styles.sectionHeader}>
+                                <User size={18} color="#1E40AF" />
+                                <Text style={styles.sectionTitle}>Data Pelanggan</Text>
+                            </View>
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Nama Pelanggan</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={customerName}
+                                    onChangeText={setCustomerName}
+                                    placeholder="Masukkan nama..."
+                                />
+                            </View>
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>No. Handphone</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={customerPhone}
+                                    onChangeText={setCustomerPhone}
+                                    placeholder="0812..."
+                                    keyboardType="phone-pad"
+                                />
+                            </View>
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Alamat</Text>
+                                <TextInput
+                                    style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
+                                    value={customerAddress}
+                                    onChangeText={setCustomerAddress}
+                                    placeholder="Alamat lengkap..."
+                                    multiline
+                                />
+                            </View>
+                        </View>
+
+                        <View style={styles.section}>
+                            <View style={styles.sectionHeader}>
+                                <Banknote size={18} color="#1E40AF" />
+                                <Text style={styles.sectionTitle}>Rincian Biaya & Pembayaran</Text>
+                            </View>
+
+                            <View style={styles.summaryRow}>
+                                <Text style={styles.summaryLabel}>Subtotal</Text>
+                                <Text style={styles.summaryValue}>{formatCurrency(subtotal)}</Text>
+                            </View>
+
+                            <View style={styles.inputRow}>
+                                <View style={{ flex: 1, marginRight: 10 }}>
+                                    <Text style={styles.inputLabel}>PPN</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={ppn}
+                                        onChangeText={setPpn}
+                                        keyboardType="numeric"
+                                    />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.inputLabel}>Diskon</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={manualDiscount}
+                                        onChangeText={setManualDiscount}
+                                        keyboardType="numeric"
+                                    />
+                                </View>
+                            </View>
+
+                            <View style={[styles.summaryRow, { marginTop: 10 }]}>
+                                <Text style={[styles.summaryLabel, { fontSize: 16, color: '#1E293B' }]}>Total Akhir</Text>
+                                <View style={styles.totalInputWrapper}>
+                                    <Text style={[styles.summaryValue, { fontSize: 20, color: '#1E40AF', marginRight: 4 }]}>Rp</Text>
+                                    <TextInput
+                                        style={[styles.summaryValue, { fontSize: 20, color: '#1E40AF', minWidth: 80, textAlign: 'right', padding: 0 }]}
+                                        value={String(total)}
+                                        onChangeText={handleTotalChange}
+                                        keyboardType="numeric"
+                                    />
+                                </View>
+                            </View>
+
+                            <View style={styles.divider} />
+
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Metode Pembayaran</Text>
+                                <View style={styles.methodRow}>
+                                    {['Tunai', 'Gojek', 'Transfer', 'QRIS'].map((m) => (
+                                        <TouchableOpacity
+                                            key={m}
+                                            style={[styles.methodBtn, paymentMethod === m && styles.methodBtnActive]}
+                                            onPress={() => setPaymentMethod(m)}
+                                        >
+                                            <Text style={[styles.methodBtnText, paymentMethod === m && styles.methodBtnTextActive]}>{m}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+
+                            {(paymentMethod === 'Tunai' || paymentMethod === 'Cash') && (
+                                <View style={styles.inputRow}>
+                                    <View style={{ flex: 1, marginRight: 10 }}>
+                                        <Text style={styles.inputLabel}>Uang Dibayar</Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            value={cashPaid}
+                                            onChangeText={setCashPaid}
+                                            keyboardType="numeric"
+                                        />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.inputLabel}>Kembalian</Text>
+                                        <TextInput
+                                            style={[styles.input, { backgroundColor: '#F8FAFC' }]}
+                                            value={formatCurrency(Number(change))}
+                                            editable={false}
+                                        />
+                                    </View>
+                                </View>
+                            )}
+
+                            <View style={styles.inputGroup}>
+                                <View style={styles.sectionHeader}>
+                                    <Calendar size={18} color="#1E40AF" />
+                                    <Text style={styles.sectionTitle}>Waktu Transaksi</Text>
+                                </View>
+                                <TextInput
+                                    style={styles.input}
+                                    value={timestamp}
+                                    onChangeText={setTimestamp}
+                                    placeholder="YYYY-MM-DD HH:mm"
+                                />
+                                <Text style={{ fontSize: 10, color: '#94A3B8', marginTop: 4, fontStyle: 'italic' }}>
+                                    Format: Tahun-Bulan-Tanggal Jam:Menit (Contoh: 2024-02-07 14:30)
+                                </Text>
+                            </View>
+
+                            <View style={styles.inputGroup}>
+                                <View style={styles.sectionHeader}>
+                                    <Settings size={18} color="#1E40AF" />
+                                    <Text style={styles.sectionTitle}>Catatan</Text>
+                                </View>
+                                <TextInput
+                                    style={[styles.input, { height: 60, textAlignVertical: 'top' }]}
+                                    value={notes}
+                                    onChangeText={setNotes}
+                                    placeholder="Tambahkan catatan..."
+                                    multiline
+                                />
+                            </View>
+                        </View>
+                    </ScrollView>
+
+                    <View style={styles.footer}>
+                        <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
+                            <Text style={styles.cancelBtnText}>Batal</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.confirmBtn} onPress={handleSave} disabled={loading}>
+                            {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.confirmBtnText}>Simpan Perubahan</Text>}
+                        </TouchableOpacity>
+                    </View>
+                </KeyboardAvoidingView>
+            </View>
+
+            {/* Success Popup */}
+            <RNModal visible={showSuccessPopup} transparent animationType="fade">
+                <View style={styles.popupOverlay}>
+                    <View style={styles.popupContent}>
+                        <View style={styles.successIconBg}>
+                            <CheckCircle2 size={40} color="#FFFFFF" strokeWidth={3} />
+                        </View>
+                        <Text style={styles.popupTitle}>Berhasil Diperbarui!</Text>
+                        <Text style={styles.popupSub}>Detail transaksi telah berhasil disimpan ke sistem.</Text>
+                        <TouchableOpacity
+                            style={styles.popupBtn}
+                            onPress={() => {
+                                setShowSuccessPopup(false);
+                                onSave();
+                                onClose();
+                            }}
+                        >
+                            <Text style={styles.popupBtnText}>Selesai</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </RNModal>
+        </RNModal>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 24,
+        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 15 : (Platform.OS === 'ios' ? 50 : 30),
+        paddingBottom: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F1F5F9',
+    },
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#1E293B',
+    },
+    backBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#F1F5F9',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    saveBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#EFF6FF',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    content: {
+        flex: 1,
+    },
+    section: {
+        padding: 24,
+        borderBottomWidth: 8,
+        borderBottomColor: '#F8FAFC',
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+        gap: 10,
+    },
+    sectionTitle: {
+        fontSize: 15,
+        fontWeight: '900',
+        color: '#1E293B',
+    },
+    itemRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F1F5F9',
+    },
+    itemName: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#334155',
+    },
+    itemPrice: {
+        fontSize: 12,
+        color: '#94A3B8',
+        fontWeight: 'bold',
+        marginTop: 2,
+    },
+    qtyContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    qtyBtn: {
+        width: 34,
+        height: 34,
+        borderRadius: 10,
+        backgroundColor: '#F1F5F9',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    qtyText: {
+        fontSize: 14,
+        fontWeight: '900',
+        marginHorizontal: 12,
+        color: '#1E293B',
+    },
+    addSection: {
+        marginTop: 20,
+    },
+    addLabel: {
+        fontSize: 13,
+        fontWeight: '900',
+        color: '#1E40AF',
+    },
+    menuHorizontalList: {
+        marginTop: 5,
+    },
+    menuLoader: {
+        padding: 20,
+        alignItems: 'center',
+    },
+    menuSearchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        height: 40,
+        marginBottom: 10,
+    },
+    menuSearchInput: {
+        flex: 1,
+        marginLeft: 8,
+        fontSize: 13,
+        color: '#334155',
+        fontWeight: 'bold',
+        padding: 0,
+    },
+    emptyMenuSearch: {
+        padding: 20,
+        width: 150,
+    },
+    emptyMenuSearchText: {
+        fontSize: 12,
+        color: '#94A3B8',
+        fontStyle: 'italic',
+    },
+    menuMiniCard: {
+        width: 140,
+        padding: 14,
+        backgroundColor: '#F8FAFC',
+        borderRadius: 16,
+        marginRight: 12,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+    },
+    menuMiniName: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        color: '#334155',
+        marginBottom: 2,
+    },
+    menuMiniStock: {
+        fontSize: 10,
+        color: '#64748B',
+        fontWeight: 'bold',
+        marginBottom: 4,
+    },
+    menuMiniPrice: {
+        fontSize: 12,
+        color: '#1E40AF',
+        fontWeight: '900',
+    },
+    inputGroup: {
+        marginBottom: 18,
+    },
+    inputLabel: {
+        fontSize: 12,
+        fontWeight: '900',
+        color: '#64748B',
+        marginBottom: 8,
+    },
+    input: {
+        height: 52,
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+        borderRadius: 14,
+        paddingHorizontal: 18,
+        fontSize: 14,
+        color: '#334155',
+        fontWeight: 'bold',
+    },
+    inputRow: {
+        flexDirection: 'row',
+        marginBottom: 18,
+    },
+    dateSelectorBtn: {
+        height: 52,
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+        borderRadius: 14,
+        paddingHorizontal: 18,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    dateSelectorText: {
+        fontSize: 14,
+        color: '#334155',
+        fontWeight: 'bold',
+    },
+    summaryRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    summaryLabel: {
+        fontSize: 14,
+        color: '#64748B',
+        fontWeight: 'bold',
+    },
+    summaryValue: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: '#1E293B',
+    },
+    totalInputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#EFF6FF',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#DBEAFE',
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#F1F5F9',
+        marginVertical: 18,
+        borderStyle: 'dashed',
+    },
+    methodRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+    },
+    methodBtn: {
+        paddingHorizontal: 18,
+        paddingVertical: 12,
+        borderRadius: 12,
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+    },
+    methodBtnActive: {
+        backgroundColor: '#1E40AF',
+        borderColor: '#1E40AF',
+    },
+    methodBtnText: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        color: '#64748B',
+    },
+    methodBtnTextActive: {
+        color: '#FFFFFF',
+    },
+    footer: {
+        flexDirection: 'row',
+        padding: 24,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 25,
+        backgroundColor: '#FFFFFF',
+        borderTopWidth: 1,
+        borderTopColor: '#F1F5F9',
+        gap: 15,
+    },
+    cancelBtn: {
+        flex: 1,
+        height: 54,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#F1F5F9',
+    },
+    cancelBtnText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#64748B',
+    },
+    confirmBtn: {
+        flex: 2,
+        height: 54,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#1E40AF',
+    },
+    confirmBtnText: {
+        fontSize: 16,
+        fontWeight: '900',
+        color: '#FFFFFF',
+    },
+    // Popup Styles
+    popupOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(15, 23, 42, 0.8)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+    },
+    popupContent: {
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 32,
+        padding: 40,
+        alignItems: 'center',
+        elevation: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.25,
+        shadowRadius: 20,
+    },
+    successIconBg: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: '#10B981',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    popupTitle: {
+        fontSize: 22,
+        fontWeight: '900',
+        color: '#1E293B',
+        marginBottom: 12,
+    },
+    popupSub: {
+        fontSize: 14,
+        color: '#64748B',
+        textAlign: 'center',
+        lineHeight: 22,
+        marginBottom: 32,
+        fontWeight: 'bold',
+    },
+    popupBtn: {
+        width: '100%',
+        height: 56,
+        backgroundColor: '#1E40AF',
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    popupBtnText: {
+        fontSize: 16,
+        fontWeight: '900',
+        color: '#FFFFFF',
+    }
+});
+
+export default EditTransactionModal;

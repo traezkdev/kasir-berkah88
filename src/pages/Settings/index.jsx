@@ -1040,7 +1040,7 @@ const Settings = () => {
         <ExpenseCategorySettings onClose={handleModalClose} />
       </SettingsModal>
 
-      <RestaurantSettingsModal isOpen={activeModal === 'restaurantSettings'} onClose={handleModalClose} onSave={handleSaveRestaurantSettings} />
+      <RestaurantSettingsModal isOpen={activeModal === 'restaurantSettings'} onClose={handleModalClose} onSave={handleSaveRestaurantSettings} initialSettings={restaurantSettings} />
 
       <SettingsModal title="Mode Aplikasi" isOpen={activeModal === 'appMode'} onClose={handleModalClose}>
         <div className="space-y-4">

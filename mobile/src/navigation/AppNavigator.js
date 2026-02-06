@@ -31,6 +31,7 @@ import TransactionHistory from '../screens/seller/TransactionHistory';
 import SalesPOS from '../screens/seller/SalesPOS';
 import Banners from '../screens/seller/Banners';
 import CategoryManagement from '../screens/seller/CategoryManagement';
+import CustomerDetails from '../screens/seller/CustomerDetails';
 
 // Customer Screens
 import CustomerMenu from '../screens/customer/Menu';
@@ -38,6 +39,7 @@ import CustomerCart from '../screens/customer/Cart';
 import OrderHistory from '../screens/customer/OrderHistory';
 import OrderDetails from '../screens/customer/OrderDetails';
 import CustomerProfile from '../screens/customer/CustomerProfile';
+import PointsHistory from '../screens/customer/PointsHistory';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -147,6 +149,7 @@ const SellerRootStack = () => (
         <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
         <Stack.Screen name="Banners" component={Banners} />
         <Stack.Screen name="CategoryManagement" component={CategoryManagement} />
+        <Stack.Screen name="CustomerDetails" component={CustomerDetails} />
     </Stack.Navigator>
 );
 
@@ -212,6 +215,7 @@ const CustomerRootStack = () => (
         <Stack.Screen name="Cart" component={CustomerCart} />
         <Stack.Screen name="OrderDetails" component={OrderDetails} />
         <Stack.Screen name="ChatScreen" component={ChatScreen} />
+        <Stack.Screen name="PointsHistory" component={PointsHistory} />
     </Stack.Navigator>
 );
 

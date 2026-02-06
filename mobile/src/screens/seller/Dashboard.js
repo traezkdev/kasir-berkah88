@@ -586,10 +586,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 8,
-        ...Platform.select({
-            web: { boxShadow: '0px 8px 16px rgba(0,0,0,0.06)' },
-            android: { elevation: 3 }
-        })
     },
     actionLabel: {
         fontSize: 11,

@@ -1,0 +1,45 @@
+
+--- TRANSACTION ERROR ---
+Time: 2026-02-06T21:04:49.449Z
+Error: Unknown column 'name' in 'field list'
+Stack: Error: Unknown column 'name' in 'field list'
+    at PromisePoolConnection.query (C:\Users\alfin pc\Documents\projek website\kasir-berkah88\backend\node_modules\mysql2\lib\promise\connection.js:29:22)
+    at C:\Users\alfin pc\Documents\projek website\kasir-berkah88\backend\server.js:2217:49
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------------
+
+--- TRANSACTION ERROR ---
+Time: 2026-02-06T21:05:00.346Z
+Error: Unknown column 'name' in 'field list'
+Stack: Error: Unknown column 'name' in 'field list'
+    at PromisePoolConnection.query (C:\Users\alfin pc\Documents\projek website\kasir-berkah88\backend\node_modules\mysql2\lib\promise\connection.js:29:22)
+    at C:\Users\alfin pc\Documents\projek website\kasir-berkah88\backend\server.js:2217:49
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------------
+
+--- TRANSACTION ERROR ---
+Time: 2026-02-06T21:05:23.370Z
+Error: Unknown column 'name' in 'field list'
+Stack: Error: Unknown column 'name' in 'field list'
+    at PromisePoolConnection.query (C:\Users\alfin pc\Documents\projek website\kasir-berkah88\backend\node_modules\mysql2\lib\promise\connection.js:29:22)
+    at C:\Users\alfin pc\Documents\projek website\kasir-berkah88\backend\server.js:2217:49
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------------
+
+--- TRANSACTION ERROR ---
+Time: 2026-02-06T21:06:29.960Z
+Error: Unknown column 'name' in 'field list'
+Stack: Error: Unknown column 'name' in 'field list'
+    at PromisePoolConnection.query (C:\Users\alfin pc\Documents\projek website\kasir-berkah88\backend\node_modules\mysql2\lib\promise\connection.js:29:22)
+    at C:\Users\alfin pc\Documents\projek website\kasir-berkah88\backend\server.js:2217:49
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------------
+
+--- TRANSACTION ERROR ---
+Time: 2026-02-06T21:08:58.434Z
+Error: Unknown column 'name' in 'field list'
+Stack: Error: Unknown column 'name' in 'field list'
+    at PromisePoolConnection.query (C:\Users\alfin pc\Documents\projek website\kasir-berkah88\backend\node_modules\mysql2\lib\promise\connection.js:29:22)
+    at C:\Users\alfin pc\Documents\projek website\kasir-berkah88\backend\server.js:2217:49
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------------

@@ -21,6 +21,8 @@ import { useToast } from '../context/ToastContext';
 import { captureRef } from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing'; // Import Sharing
+import BluetoothPrinter from '../utils/BluetoothPrinter';
+import PrinterSelectionModal from './PrinterSelectionModal';
 
 const { width } = Dimensions.get('window');
 
@@ -34,6 +36,7 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
     const [logoUrl, setLogoUrl] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
     const { showToast } = useToast();
+    const [showPrinterModal, setShowPrinterModal] = useState(false);
     const receiptRef = React.useRef();
 
     useEffect(() => {
@@ -90,6 +93,177 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
             showToast('Terjadi kesalahan saat menyimpan struk.', 'error');
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleConnectAndPrint = async () => {
+        try {
+            const isConnected = await BluetoothPrinter.isConnected();
+            if (!isConnected) {
+                setShowPrinterModal(true);
+                return;
+            }
+
+            await executePrint();
+        } catch (error) {
+            console.error('Print trigger error:', error);
+            showToast('Gagal memproses cetak.', 'error');
+        }
+    };
+
+    const executePrint = async () => {
+        try {
+            // Siapkan Data Print
+            const printData = [];
+            const restaurantName = settings.restaurant_name || 'BERKAH 88';
+            const restaurantSlogan = settings.restaurant_slogan || 'Kasir Pintar & Berkah';
+            const restaurantUrl = settings.restaurant_url || 'www.berkah88.id';
+
+            printData.push({ text: restaurantName.toUpperCase(), align: 'center', bold: true, size: 'large' });
+            if (restaurantSlogan) printData.push({ text: restaurantSlogan, align: 'center', bold: false, size: 'normal' });
+            printData.push({ text: '--------------------------------', align: 'center' });
+
+            printData.push({ text: `ID: ${transaction.id}`, align: 'left' });
+            printData.push({ text: `Waktu: ${formatDateFull(transaction.timestamp)}`, align: 'left' });
+            printData.push({ text: `Kasir: ${transaction.cashier_name || transaction.seller_name || 'System'}`, align: 'left' });
+            printData.push({ text: '--------------------------------', align: 'center' });
+
+            if (transaction.customer_name || transaction.customer_phone || transaction.customer_address) {
+                printData.push({ text: 'PELANGGAN:', align: 'left', bold: true });
+                if (transaction.customer_name) printData.push({ text: `Nama  : ${transaction.customer_name}`, align: 'left' });
+                if (transaction.customer_phone) printData.push({ text: `Telp  : ${transaction.customer_phone}`, align: 'left' });
+                if (transaction.customer_address) printData.push({ text: `Alamat: ${transaction.customer_address}`, align: 'left' });
+                printData.push({ text: '--------------------------------', align: 'center' });
+            }
+
+            const paymentMethodText = transaction.payment_method === 'employee_meal'
+                ? 'MAKAN KARYAWAN'
+                : (transaction.payment_method === 'cash' || transaction.payment_method === 'tunai' || transaction.payment_method === 'Tunai')
+                    ? 'TUNAI'
+                    : (transaction.payment_method || 'TUNAI').toUpperCase();
+
+            printData.push({ text: `METODE: ${paymentMethodText}`, align: 'left' });
+            printData.push({ text: 'STATUS: LUNAS', align: 'left' });
+            printData.push({ text: '--------------------------------', align: 'center' });
+
+            // Calculate subtotals like website
+            const subtotalBeforeAllDiscounts = transaction.items.reduce((sum, item) => {
+                const originalBasePrice = Number(item.basePrice || item.price) || 0;
+                const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+                const pricePerUnitBeforeDiscount = originalBasePrice + optionAdjustment;
+                return sum + (pricePerUnitBeforeDiscount * (Number(item.quantity || item.qty) || 0));
+            }, 0);
+
+            const subtotalAfterItemDiscounts = transaction.items.reduce((sum, item) => {
+                const pricePerUnit = Number(item.price) || 0;
+                const itemDiscount = Number(item.discount) || 0;
+                const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+                const effectivePriceWithOptions = item.basePrice
+                    ? pricePerUnit
+                    : (itemDiscount > 0 ? (pricePerUnit * (1 - itemDiscount / 100)) + optionAdjustment : pricePerUnit + optionAdjustment);
+                return sum + (effectivePriceWithOptions * (Number(item.quantity || item.qty) || 0));
+            }, 0);
+
+            // Items
+            transaction.items.forEach(item => {
+                const qtyVal = Number(item.quantity || item.qty) || 1;
+                const originalBasePrice = Number(item.basePrice || item.price) || 0;
+                const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+                const originalPricePerUnit = originalBasePrice + optionAdjustment;
+
+                printData.push({ text: item.name.substring(0, 32), align: 'left', bold: true });
+                printData.push({
+                    text: BluetoothPrinter.formatColumns(`${qtyVal} x ${originalPricePerUnit.toLocaleString('id-ID')}`, (qtyVal * originalPricePerUnit).toLocaleString('id-ID')),
+                    align: 'left'
+                });
+
+                if (item.notes || item.catatan) {
+                    printData.push({ text: ` + Catatan: ${item.notes || item.catatan}`, align: 'left' });
+                }
+                if (item.options && Array.isArray(item.options) && item.options.length > 0) {
+                    item.options.forEach(opt => {
+                        const priceAdjustment = Number(opt.price_adjustment) || 0;
+                        printData.push({ text: ` + ${opt.name}${priceAdjustment > 0 ? ` (+Rp ${priceAdjustment.toLocaleString('id-ID')})` : ''}`, align: 'left' });
+                    });
+                }
+            });
+
+            printData.push({ text: '--------------------------------', align: 'center' });
+
+            // Subtotal
+            printData.push({
+                text: BluetoothPrinter.formatColumns('SUBTOTAL', `Rp ${Number(subtotalBeforeAllDiscounts).toLocaleString("id-ID")}`),
+                align: 'left'
+            });
+
+            // Item Discounts
+            const itemsDiscountAmount = subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts;
+            if (itemsDiscountAmount > 0) {
+                printData.push({
+                    text: BluetoothPrinter.formatColumns('DISKON ITEM', `-Rp ${itemsDiscountAmount.toLocaleString("id-ID")}`),
+                    align: 'left'
+                });
+            }
+
+            // Manual Discount
+            const manualDiscountAmount = Number(transaction.manual_discount) || 0;
+            if (manualDiscountAmount > 0) {
+                printData.push({
+                    text: BluetoothPrinter.formatColumns('DISKON TRANS', `-Rp ${manualDiscountAmount.toLocaleString("id-ID")}`),
+                    align: 'left'
+                });
+            }
+
+            // PPN
+            const ppnAmount = Number(transaction.ppn) || 0;
+            if (ppnAmount > 0) {
+                printData.push({
+                    text: BluetoothPrinter.formatColumns('PPN/TAX', `Rp ${ppnAmount.toLocaleString("id-ID")}`),
+                    align: 'left'
+                });
+            }
+
+            printData.push({ text: '--------------------------------', align: 'center' });
+
+            // Total
+            printData.push({
+                text: BluetoothPrinter.formatColumns('TOTAL', `Rp ${Number(transaction.total).toLocaleString("id-ID")}`),
+                align: 'left',
+                bold: true
+            });
+
+            // Cash details
+            const methodAttr = (transaction.payment_method || 'tunai').toLowerCase();
+            const cashValue = Number(transaction.cash_paid || transaction.cashPaid || 0);
+            if ((methodAttr === 'tunai' || methodAttr === 'cash') && cashValue > 0) {
+                printData.push({ text: '--------------------------------', align: 'center' });
+                printData.push({
+                    text: BluetoothPrinter.formatColumns('BAYAR', `Rp ${cashValue.toLocaleString("id-ID")}`),
+                    align: 'left'
+                });
+                printData.push({
+                    text: BluetoothPrinter.formatColumns('KEMBALI', `Rp ${Number(transaction.change || 0).toLocaleString("id-ID")}`),
+                    align: 'left'
+                });
+            }
+
+            if (transaction.catatan || transaction.notes) {
+                printData.push({ text: '--------------------------------', align: 'center' });
+                printData.push({ text: 'CATATAN TRANSAKSI:', align: 'left' });
+                printData.push({ text: `"${transaction.catatan || transaction.notes}"`, align: 'left' });
+            }
+
+            printData.push({ text: '--------------------------------', align: 'center' });
+            printData.push({ text: 'TERIMA KASIH', align: 'center', bold: true });
+            if (settings.owner_phone) printData.push({ text: `WA: ${settings.owner_phone}`, align: 'center' });
+            printData.push({ text: restaurantUrl, align: 'center' });
+
+            await BluetoothPrinter.printReceipt(printData);
+            await BluetoothPrinter.cut();
+            showToast('Sedang mencetak struk...', 'success');
+        } catch (error) {
+            console.error('Print error:', error);
+            showToast('Gagal mencetak struk. Pastikan printer menyala.', 'error');
         }
     };
 
@@ -191,13 +365,14 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
         const restaurantUrl = settings.restaurant_url || 'www.berkah88.id';
 
         let text = `${centerText(restaurantName.toUpperCase())}\n`;
-        text += `${centerText(restaurantSlogan)}\n`;
+        if (restaurantSlogan) text += `${centerText(restaurantSlogan)}\n`;
         text += `--------------------------------\n`;
         text += `ID: ${transaction.id}\n`;
-        text += `Tanggal: ${formatDateFull(transaction.timestamp)}\n`;
-        text += `Kasir: ${transaction.cashier_name || transaction.seller_name || 'SISTEM'}\n`;
+        text += `Waktu: ${formatDateFull(transaction.timestamp)}\n`;
+        text += `Kasir: ${transaction.cashier_name || transaction.seller_name || 'System'}\n`;
         text += `--------------------------------\n`;
 
+        // Customer Info Section
         if (transaction.customer_name || transaction.customer_phone || transaction.customer_address) {
             text += `PENERIMA / PELANGGAN:\n`;
             if (transaction.customer_name) text += ` Nama  : ${transaction.customer_name}\n`;
@@ -211,7 +386,9 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
             : (transaction.payment_method === 'cash' || transaction.payment_method === 'tunai' || transaction.payment_method === 'Tunai')
                 ? 'TUNAI'
                 : (transaction.payment_method || 'TUNAI').toUpperCase();
-        text += `Metode: ${paymentMethodText}\n`;
+
+        text += `Metode Bayar: ${paymentMethodText}\n`;
+        text += `Status: LUNAS\n`;
         text += `--------------------------------\n`;
 
         // Calculate subtotals like website
@@ -238,7 +415,6 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
             text += `${item.name.substring(0, 32)}\n`;
             const qtyVal = Number(item.quantity || item.qty) || 1;
 
-            // Gunakan harga ASLI (sebelum diskon) untuk rincian per item
             const originalBasePrice = Number(item.basePrice || item.price) || 0;
             const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
             const originalPricePerUnit = originalBasePrice + optionAdjustment;
@@ -249,10 +425,13 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
             text += `${qtyPrice}${" ".repeat(Math.max(1, spaces))}${subtotalLine}\n`;
 
             if (item.notes || item.catatan) {
-                text += ` + ${item.notes || item.catatan}\n`;
+                text += ` + Catatan: ${item.notes || item.catatan}\n`;
             }
             if (item.options && Array.isArray(item.options) && item.options.length > 0) {
-                item.options.forEach(opt => text += ` + ${opt.name}\n`);
+                item.options.forEach(opt => {
+                    const priceAdjustment = Number(opt.price_adjustment) || 0;
+                    text += ` + ${opt.name}${priceAdjustment > 0 ? ` (+Rp ${priceAdjustment.toLocaleString('id-ID')})` : ''}\n`;
+                });
             }
         });
 
@@ -274,7 +453,7 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
         // Manual Discount
         const manualDiscountAmount = Number(transaction.manual_discount) || 0;
         if (manualDiscountAmount > 0) {
-            const manualDiscLabel = "DISKON TAMBAHAN";
+            const manualDiscLabel = "DISKON TRANSAKSI";
             const manualDiscVal = `-Rp ${manualDiscountAmount.toLocaleString("id-ID")}`;
             text += `${manualDiscLabel}${" ".repeat(Math.max(1, 32 - manualDiscLabel.length - manualDiscVal.length))}${manualDiscVal}\n`;
         }
@@ -295,10 +474,12 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
         text += `${totalLabel}${" ".repeat(Math.max(1, 32 - totalLabel.length - totalValue.length))}${totalValue}\n`;
 
         // Cash details
-        if (((transaction.payment_method || 'tunai').toLowerCase() === 'tunai' || (transaction.payment_method || 'tunai').toLowerCase() === 'cash') && (transaction.cash_paid || transaction.cashPaid) > 0) {
+        const method = (transaction.payment_method || 'tunai').toLowerCase();
+        const cashValue = Number(transaction.cash_paid || transaction.cashPaid || 0);
+        if ((method === 'tunai' || method === 'cash') && cashValue > 0) {
             text += `--------------------------------\n`;
             const bayarLabel = "BAYAR";
-            const bayarVal = `Rp ${Number(transaction.cash_paid || transaction.cashPaid || 0).toLocaleString("id-ID")}`;
+            const bayarVal = `Rp ${cashValue.toLocaleString("id-ID")}`;
             text += `${bayarLabel}${" ".repeat(Math.max(1, 32 - bayarLabel.length - bayarVal.length))}${bayarVal}\n`;
 
             const kembaliLabel = "KEMBALI";
@@ -308,12 +489,13 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
 
         if (transaction.catatan || transaction.notes) {
             text += `--------------------------------\n`;
-            text += `CATATAN:\n`;
+            text += `CATATAN TRANSAKSI:\n`;
             text += `"${transaction.catatan || transaction.notes}"\n`;
         }
 
         text += `--------------------------------\n`;
         text += `${centerText('TERIMA KASIH')}\n`;
+        if (settings.owner_phone) text += `${centerText(`WA: ${settings.owner_phone}`)}\n`;
         text += `${centerText(restaurantUrl)}`;
 
         return text;
@@ -346,9 +528,15 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                 <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
                 <View style={styles.topHeader}>
                     <Text style={styles.topHeaderText}>Bukti Transaksi</Text>
-                    <TouchableOpacity onPress={onClose} style={styles.closeHeaderBtn}>
-                        <X size={20} color="#64748B" />
-                    </TouchableOpacity>
+                    <View style={styles.headerActions}>
+                        <TouchableOpacity style={styles.headerPrintBtn} onPress={handleConnectAndPrint}>
+                            <Printer size={18} color="#1E40AF" />
+                            <Text style={styles.headerPrintText}>Cetak</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={onClose} style={styles.closeHeaderBtn}>
+                            <X size={20} color="#64748B" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 <View style={styles.modalScrollContainer}>
@@ -422,12 +610,14 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                             <Text style={styles.customerInfoText}>{transaction.customer_name}</Text>
                                         </View>
                                     )}
+                                    {transaction.customer_name && (transaction.customer_phone || transaction.customer_address) && <View style={styles.customerInfoDivider} />}
                                     {transaction.customer_phone && (
                                         <View style={styles.customerInfoRow}>
                                             <Phone size={12} color="#64748B" />
                                             <Text style={styles.customerInfoText}>{transaction.customer_phone}</Text>
                                         </View>
                                     )}
+                                    {transaction.customer_phone && transaction.customer_address && <View style={styles.customerInfoDivider} />}
                                     {transaction.customer_address && (
                                         <View style={styles.customerInfoRow}>
                                             <MapPin size={12} color="#64748B" />
@@ -492,6 +682,16 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                 </View>
                             </View>
 
+                            {(transaction.catatan || transaction.notes) && (
+                                <View style={styles.notesContainer}>
+                                    <View style={styles.notesHeader}>
+                                        <MessageSquare size={10} color="#94A3B8" />
+                                        <Text style={styles.notesLabel}>CATATAN TRANSAKSI</Text>
+                                    </View>
+                                    <Text style={styles.notesText}>"{transaction.catatan || transaction.notes}"</Text>
+                                </View>
+                            )}
+
                             <View style={styles.receiptFooter}>
                                 <View style={styles.footerDecoration}>
                                     <Zap size={12} color="#E2E8F0" fill="#E2E8F0" />
@@ -510,7 +710,7 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.actionBtnCopy} onPress={handleCopyText}>
                         <Copy size={18} color="#EA580C" />
-                        <Text style={styles.actionBtnTextCopy}>Salin Teks</Text>
+                        <Text style={styles.actionBtnTextCopy}>Teks</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.actionBtnPrimary, isSaving && { opacity: 0.7 }]}
@@ -528,6 +728,15 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                     </TouchableOpacity>
                 </View>
             </View >
+
+            <PrinterSelectionModal
+                visible={showPrinterModal}
+                onClose={() => setShowPrinterModal(false)}
+                onSelect={() => {
+                    showToast('Printer terhubung!', 'success');
+                    executePrint();
+                }}
+            />
         </Modal >
     );
 };
@@ -565,6 +774,27 @@ const styles = StyleSheet.create({
         padding: 8,
         backgroundColor: '#F1F5F9',
         borderRadius: 12,
+    },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    headerPrintBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#EFF6FF',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 10,
+        gap: 6,
+        borderWidth: 1,
+        borderColor: '#DBEAFE',
+    },
+    headerPrintText: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        color: '#1E40AF',
     },
     scrollBody: {
         flex: 1,
@@ -725,53 +955,59 @@ const styles = StyleSheet.create({
     itemRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 16,
-        paddingLeft: 4,
+        alignItems: 'center',
+        marginBottom: 10,
+        backgroundColor: '#F8FAFC',
+        padding: 12,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
     },
     itemLeft: {
         flexDirection: 'row',
         flex: 1,
+        alignItems: 'center',
     },
     itemIndicator: {
-        width: 2,
-        height: '100%',
-        backgroundColor: '#E2E8F0',
-        borderRadius: 2,
-        marginRight: 10,
+        width: 4,
+        height: 24,
+        backgroundColor: '#138FEA',
+        borderRadius: 4,
+        marginRight: 12,
     },
     itemNameRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
+        gap: 8,
     },
     itemName: {
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: '900',
         color: '#1E293B',
     },
     itemQtyBadge: {
-        backgroundColor: '#F1F5F9',
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 6,
+        backgroundColor: '#1E293B',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 8,
     },
     itemQtyText: {
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: '900',
-        color: '#64748B',
+        color: '#FFFFFF',
     },
     itemRight: {
         alignItems: 'flex-end',
     },
     itemSublabel: {
-        fontSize: 8,
+        fontSize: 9,
         fontWeight: '900',
         color: '#94A3B8',
         marginBottom: 2,
+        textTransform: 'uppercase',
     },
     itemPriceText: {
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: '900',
         color: '#1E293B',
     },
@@ -982,6 +1218,23 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#FFFFFF',
     },
+    actionBtnPrint: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 14,
+        borderRadius: 16,
+        backgroundColor: '#EFF6FF',
+        borderWidth: 1,
+        borderColor: '#BFDBFE',
+        gap: 8,
+    },
+    actionBtnTextPrint: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        color: '#1E40AF',
+    },
     // Customer Section Styles
     customerSection: {
         backgroundColor: '#FFFFFF',
@@ -1002,13 +1255,49 @@ const styles = StyleSheet.create({
     customerInfoRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 4,
         gap: 8,
     },
     customerInfoText: {
         fontSize: 13,
         fontWeight: 'bold',
         color: '#1E293B',
+    },
+    customerInfoDivider: {
+        height: 1,
+        backgroundColor: '#F1F5F9',
+        marginVertical: 8,
+    },
+    // Notes Section Styles
+    notesContainer: {
+        backgroundColor: '#F8FAFC',
+        padding: 14,
+        borderRadius: 16,
+        borderStyle: 'dashed',
+        borderWidth: 1,
+        borderColor: '#CBD5E1',
+        marginBottom: 25,
+        marginHorizontal: 10,
+    },
+    notesHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        marginBottom: 6,
+    },
+    notesLabel: {
+        fontSize: 8,
+        fontWeight: '900',
+        color: '#94A3B8',
+        letterSpacing: 1.5,
+    },
+    notesText: {
+        fontSize: 12,
+        color: '#475569',
+        fontStyle: 'italic',
+        fontWeight: 'bold',
+        textAlign: 'center',
+        lineHeight: 18,
     },
 });
 

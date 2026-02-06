@@ -50,6 +50,7 @@ const CustomerDashboard = ({ navigation }) => {
     const [menus, setMenus] = useState([]);
     const [categories, setCategories] = useState([]);
     const [banners, setBanners] = useState([]);
+    const [points, setPoints] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [orderNotificationCount, setOrderNotificationCount] = useState(0);
@@ -68,6 +69,14 @@ const CustomerDashboard = ({ navigation }) => {
             // Fetch Categories
             const catRes = await apiService.get('/api/categories');
             if (catRes.data.data) setCategories(catRes.data.data.slice(0, 5));
+
+            // Fetch Points
+            try {
+                const pointsRes = await apiService.get('/api/customer/points');
+                if (pointsRes.data.data) setPoints(pointsRes.data.data.points);
+            } catch (pErr) {
+                console.log("Error fetching points:", pErr.message);
+            }
 
             // Fetch Recommended Menus (Top 6)
             const menuRes = await apiService.get('/api/menu-items?limit=6');
@@ -289,7 +298,7 @@ const CustomerDashboard = ({ navigation }) => {
                     <View style={styles.saldoRow}>
                         <View>
                             <Text style={styles.saldoLabel}>BERKAHPAY</Text>
-                            <Text style={styles.saldoValue}>Rp 0</Text>
+                            <Text style={styles.saldoValue}>{new Intl.NumberFormat('id-ID').format(points)} Poin</Text>
                         </View>
                         <View style={styles.saldoActions}>
                             <TouchableOpacity style={styles.saldoBtn}>
@@ -298,7 +307,10 @@ const CustomerDashboard = ({ navigation }) => {
                                 </View>
                                 <Text style={styles.saldoBtnText}>TOP UP</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.saldoBtn}>
+                            <TouchableOpacity
+                                style={styles.saldoBtn}
+                                onPress={() => navigation.navigate('PointsHistory')}
+                            >
                                 <View style={[styles.saldoIconWrap, { backgroundColor: '#EFF6FF' }]}>
                                     <History size={20} color="#3B82F6" />
                                 </View>

@@ -31,7 +31,8 @@ import {
     ChevronDown,
     QrCode,
     Banknote,
-    PackageX
+    PackageX,
+    ArrowRight
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
 import ReceiptModal from '../../components/ReceiptModal';
@@ -114,6 +115,7 @@ const SalesPOS = () => {
     const [customerName, setCustomerName] = useState('');
     const [customerPhone, setCustomerPhone] = useState('');
     const [customerAddress, setCustomerAddress] = useState('');
+    const [manualDiscount, setManualDiscount] = useState('');
 
     const { confirm } = useConfirm();
     const { ignoreStock, toggleIgnoreStock } = useAppSettings();
@@ -259,6 +261,11 @@ const SalesPOS = () => {
         return cart.reduce((acc, curr) => acc + (curr.price * curr.quantity), 0);
     }, [cart]);
 
+    const finalTotal = useMemo(() => {
+        const discountVal = parseFloat(manualDiscount || 0);
+        return Math.max(0, subtotal - discountVal);
+    }, [subtotal, manualDiscount]);
+
     const totalItemsCount = useMemo(() => {
         return cart.reduce((acc, curr) => acc + curr.quantity, 0);
     }, [cart]);
@@ -284,7 +291,7 @@ const SalesPOS = () => {
     const handleProcessTransaction = async () => {
         if (cart.length === 0) return;
 
-        const total = subtotal;
+        const total = finalTotal;
         const paid = paymentMethod === 'tunai' ? parseFloat(cashPaid || 0) : total;
 
         if (paymentMethod === 'tunai' && paid < total) {
@@ -302,6 +309,8 @@ const SalesPOS = () => {
                     quantity: item.quantity,
                     discount: item.discount || 0
                 })),
+                subtotal: subtotal,
+                discount: parseFloat(manualDiscount || 0),
                 total: total,
                 ppn: 0,
                 cashPaid: paid,
@@ -325,6 +334,7 @@ const SalesPOS = () => {
             setCart([]);
             setIsCartModalOpen(false);
             setCashPaid('');
+            setManualDiscount('');
             setCustomerName('');
             setCustomerPhone('');
             setCustomerAddress('');
@@ -445,32 +455,48 @@ const SalesPOS = () => {
                 />
             )}
 
-            {/* Floating Cart Button */}
+            {/* Sleek & Premium Floating Cart Bar */}
             {cart.length > 0 && (
-                <TouchableOpacity
-                    style={styles.fab}
-                    onPress={() => setIsCartModalOpen(true)}
-                >
-                    <View style={styles.fabInfo}>
-                        <TouchableOpacity
-                            onPress={handleClearCart}
-                            style={styles.fabTrashBtn}
-                        >
-                            <Trash2 size={20} color="#EF4444" />
-                        </TouchableOpacity>
-                        <View style={styles.fabCount}>
-                            <Text style={styles.fabCountText}>{totalItemsCount}</Text>
+                <View style={styles.fabWrapper}>
+                    <TouchableOpacity
+                        activeOpacity={0.9}
+                        style={styles.fabMain}
+                        onPress={() => setIsCartModalOpen(true)}
+                    >
+                        {/* Info Section */}
+                        <View style={styles.fabInfoSection}>
+                            <View style={styles.cartIconCircle}>
+                                <ShoppingCart size={20} color="#FFFFFF" />
+                                <View style={styles.cartBadgeMini}>
+                                    <Text style={styles.cartBadgeText}>{totalItemsCount}</Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.priceContainer}>
+                                <Text style={styles.labelSubtotal}>Subtotal</Text>
+                                <Text style={styles.valueSubtotal}>{formatCurrency(subtotal)}</Text>
+                            </View>
                         </View>
-                        <View>
-                            <Text style={styles.fabTotalLabel}>Total Belanja</Text>
-                            <Text style={styles.fabTotalValue}>{formatCurrency(subtotal)}</Text>
+
+                        {/* Action Section */}
+                        <View style={styles.fabActionGroup}>
+                            <TouchableOpacity
+                                onPress={handleClearCart}
+                                style={styles.miniTrashBtn}
+                                activeOpacity={0.7}
+                            >
+                                <Trash2 size={18} color="#EF4444" />
+                            </TouchableOpacity>
+
+                            <View style={styles.actionDivider} />
+
+                            <View style={styles.payBtnCompact}>
+                                <Text style={styles.payBtnCompactText}>BAYAR</Text>
+                                <ArrowRight size={16} color="#FFFFFF" strokeWidth={3} />
+                            </View>
                         </View>
-                    </View>
-                    <View style={styles.fabAction}>
-                        <Text style={styles.fabActionText}>BAYAR</Text>
-                        <ChevronDown size={20} color="#FFFFFF" style={{ transform: [{ rotate: '-90deg' }] }} />
-                    </View>
-                </TouchableOpacity>
+                    </TouchableOpacity>
+                </View>
             )}
 
             {/* Cart Modal */}
@@ -480,11 +506,7 @@ const SalesPOS = () => {
                 transparent={false}
                 onRequestClose={() => setIsCartModalOpen(false)}
             >
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : (Platform.OS === 'web' ? 'height' : 'height')}
-                    style={styles.modalContent}
-                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-                >
+                <View style={styles.modalContent}>
                     <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
                     <View style={styles.modalHeader}>
                         <View>
@@ -493,166 +515,185 @@ const SalesPOS = () => {
                         </View>
                         <View style={styles.headerActions}>
                             <TouchableOpacity
-                                activeOpacity={0.7}
-                                onPress={handleClearCart}
-                                style={[styles.closeBtn, { marginRight: 10, backgroundColor: '#FEF2F2' }]}
-                            >
-                                <Trash2 size={22} color="#EF4444" />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                activeOpacity={0.7}
-                                onPress={() => setIsCartModalOpen(false)}
                                 style={styles.closeBtn}
+                                onPress={() => setIsCartModalOpen(false)}
                             >
-                                <X size={22} color="#64748B" />
+                                <X size={24} color="#64748B" />
                             </TouchableOpacity>
                         </View>
                     </View>
 
-                    <View style={styles.modalScrollContainer}>
-                        <ScrollView
-                            style={styles.modalBody}
-                            contentContainerStyle={styles.modalBodyContent}
-                            showsVerticalScrollIndicator={false}
-                            bounces={true}
-                            overScrollMode="always"
-                        >
-                            <View style={styles.cartList}>
-                                {cart.map(item => (
-                                    <View key={item.id} style={styles.cartItem}>
-                                        <View style={styles.cartItemLeft}>
-                                            <Text style={styles.cartItemName}>{item.name}</Text>
-                                            <Text style={styles.cartItemPrice}>{formatCurrency(item.price)}</Text>
-                                        </View>
-                                        <View style={styles.cartItemRight}>
-                                            <View style={styles.qtyControl}>
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                        style={{ flex: 1 }}
+                        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                    >
+                        <View style={styles.modalScrollContainer}>
+                            <ScrollView
+                                showsVerticalScrollIndicator={false}
+                                contentContainerStyle={styles.modalBodyContent}
+                                keyboardShouldPersistTaps="handled"
+                            >
+                                <View style={styles.cartList}>
+                                    {cart.map(item => (
+                                        <View key={item.id} style={styles.cartItem}>
+                                            <View style={styles.cartItemLeft}>
+                                                <Text style={styles.cartItemName}>{item.name}</Text>
+                                                <Text style={styles.cartItemPrice}>{formatCurrency(item.price)}</Text>
+                                            </View>
+                                            <View style={styles.cartItemRight}>
+                                                <View style={styles.qtyControl}>
+                                                    <TouchableOpacity
+                                                        style={styles.qtyBtn}
+                                                        onPress={() => updateQuantity(item.id, -1)}
+                                                    >
+                                                        <Minus size={16} color="#64748B" />
+                                                    </TouchableOpacity>
+                                                    <Text style={styles.qtyText}>{item.quantity}</Text>
+                                                    <TouchableOpacity
+                                                        style={styles.qtyBtn}
+                                                        onPress={() => updateQuantity(item.id, 1)}
+                                                    >
+                                                        <Plus size={16} color="#64748B" />
+                                                    </TouchableOpacity>
+                                                </View>
                                                 <TouchableOpacity
-                                                    activeOpacity={0.7}
-                                                    onPress={() => updateQuantity(item.id, -1)}
-                                                    style={styles.qtyBtn}
+                                                    style={styles.trashBtn}
+                                                    onPress={() => removeFromCart(item.id)}
                                                 >
-                                                    <Minus size={16} color="#64748B" />
-                                                </TouchableOpacity>
-                                                <Text style={styles.qtyText}>{item.quantity}</Text>
-                                                <TouchableOpacity
-                                                    activeOpacity={0.7}
-                                                    onPress={() => updateQuantity(item.id, 1)}
-                                                    style={styles.qtyBtn}
-                                                >
-                                                    <Plus size={16} color="#64748B" />
+                                                    <Trash2 size={18} color="#EF4444" />
                                                 </TouchableOpacity>
                                             </View>
-                                            <TouchableOpacity
-                                                activeOpacity={0.7}
-                                                onPress={() => removeFromCart(item.id)}
-                                                style={styles.trashBtn}
-                                            >
-                                                <Trash2 size={18} color="#EF4444" />
-                                            </TouchableOpacity>
                                         </View>
+                                    ))}
+                                </View>
+
+                                <View style={styles.paymentSection}>
+                                    <Text style={styles.sectionLabel}>DATA PELANGGAN (OPSIONAL)</Text>
+                                    <View style={styles.customerInputContainer}>
+                                        <TextInput
+                                            style={styles.customerInput}
+                                            placeholder="Nama Pelanggan"
+                                            value={customerName}
+                                            onChangeText={setCustomerName}
+                                            placeholderTextColor="#94A3B8"
+                                        />
+                                        <TextInput
+                                            style={styles.customerInput}
+                                            placeholder="Nomor HP / WhatsApp"
+                                            value={customerPhone}
+                                            onChangeText={setCustomerPhone}
+                                            keyboardType="phone-pad"
+                                            placeholderTextColor="#94A3B8"
+                                        />
+                                        <TextInput
+                                            style={[styles.customerInput, { height: 60, textAlignVertical: 'top', paddingTop: 10 }]}
+                                            placeholder="Alamat Pelanggan"
+                                            value={customerAddress}
+                                            onChangeText={setCustomerAddress}
+                                            multiline
+                                            placeholderTextColor="#94A3B8"
+                                        />
                                     </View>
-                                ))}
-                            </View>
 
-                            <View style={styles.paymentSection}>
-                                <Text style={styles.sectionLabel}>DATA PELANGGAN (OPSIONAL)</Text>
-                                <View style={styles.customerInputContainer}>
-                                    <TextInput
-                                        style={styles.customerInput}
-                                        placeholder="Nama Pelanggan"
-                                        value={customerName}
-                                        onChangeText={setCustomerName}
-                                        placeholderTextColor="#94A3B8"
-                                    />
-                                    <TextInput
-                                        style={styles.customerInput}
-                                        placeholder="Nomor HP / WhatsApp"
-                                        value={customerPhone}
-                                        onChangeText={setCustomerPhone}
-                                        keyboardType="phone-pad"
-                                        placeholderTextColor="#94A3B8"
-                                    />
-                                    <TextInput
-                                        style={[styles.customerInput, { height: 60, textAlignVertical: 'top', paddingTop: 10 }]}
-                                        placeholder="Alamat Pelanggan"
-                                        value={customerAddress}
-                                        onChangeText={setCustomerAddress}
-                                        multiline
-                                        placeholderTextColor="#94A3B8"
-                                    />
-                                </View>
-
-                                <Text style={styles.sectionLabel}>METODE PEMBAYARAN</Text>
-                                <View style={styles.methodGrid}>
-                                    <TouchableOpacity
-                                        style={[styles.methodBtn, paymentMethod === 'tunai' && styles.activeMethod]}
-                                        onPress={() => setPaymentMethod('tunai')}
-                                    >
-                                        <Banknote size={24} color={paymentMethod === 'tunai' ? '#2563EB' : '#64748B'} />
-                                        <Text style={[styles.methodText, paymentMethod === 'tunai' && styles.activeMethodText]}>Tunai</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        style={[styles.methodBtn, paymentMethod === 'qris' && styles.activeMethod]}
-                                        onPress={() => setPaymentMethod('qris')}
-                                    >
-                                        <QrCode size={24} color={paymentMethod === 'qris' ? '#2563EB' : '#64748B'} />
-                                        <Text style={[styles.methodText, paymentMethod === 'qris' && styles.activeMethodText]}>QRIS</Text>
-                                    </TouchableOpacity>
-                                </View>
-
-                                {paymentMethod === 'tunai' && (
-                                    <View style={styles.cashInputArea}>
-                                        <Text style={styles.sectionLabel}>UANG DIBAYAR</Text>
-                                        <View style={styles.cashInputWrapper}>
-                                            <Text style={styles.rpPrefix}>Rp</Text>
-                                            <TextInput
-                                                style={styles.cashInput}
-                                                placeholder="0"
-                                                keyboardType="numeric"
-                                                value={cashPaid}
-                                                onChangeText={setCashPaid}
-                                                autoFocus
-                                            />
+                                    <Text style={styles.sectionLabel}>DISKON MANUAL</Text>
+                                    <View style={[styles.cashInputWrapper, { paddingHorizontal: 0, marginBottom: 20 }]}>
+                                        <View style={styles.manualDiscountIconArea}>
+                                            <Text style={styles.discountIconText}>%</Text>
                                         </View>
+                                        <TextInput
+                                            style={[styles.cashInput, { paddingLeft: 12 }]}
+                                            placeholder="0"
+                                            keyboardType="numeric"
+                                            value={manualDiscount}
+                                            onChangeText={setManualDiscount}
+                                        />
+                                    </View>
 
-                                        <View style={styles.quickCashRow}>
-                                            {quickCashOptions.map(amount => (
-                                                <TouchableOpacity
-                                                    key={amount}
-                                                    onPress={() => setCashPaid(amount.toString())}
-                                                    style={styles.quickCashBtn}
-                                                >
-                                                    <Text style={styles.quickCashText}>{amount / 1000}k</Text>
-                                                </TouchableOpacity>
-                                            ))}
-                                            <TouchableOpacity
-                                                onPress={() => setCashPaid(subtotal.toString())}
-                                                style={[styles.quickCashBtn, { backgroundColor: '#EFF6FF', borderColor: '#2563EB' }]}
-                                            >
-                                                <Text style={[styles.quickCashText, { color: '#2563EB' }]}>Pas</Text>
-                                            </TouchableOpacity>
-                                        </View>
+                                    <Text style={styles.sectionLabel}>METODE PEMBAYARAN</Text>
+                                    <View style={styles.methodGrid}>
+                                        <TouchableOpacity
+                                            style={[styles.methodBtn, paymentMethod === 'tunai' && styles.activeMethod]}
+                                            onPress={() => setPaymentMethod('tunai')}
+                                        >
+                                            <Banknote size={24} color={paymentMethod === 'tunai' ? '#2563EB' : '#64748B'} />
+                                            <Text style={[styles.methodText, paymentMethod === 'tunai' && styles.activeMethodText]}>Tunai</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={[styles.methodBtn, paymentMethod === 'qris' && styles.activeMethod]}
+                                            onPress={() => setPaymentMethod('qris')}
+                                        >
+                                            <QrCode size={24} color={paymentMethod === 'qris' ? '#2563EB' : '#64748B'} />
+                                            <Text style={[styles.methodText, paymentMethod === 'qris' && styles.activeMethodText]}>QRIS</Text>
+                                        </TouchableOpacity>
+                                    </View>
 
-                                        {parseFloat(cashPaid || 0) >= subtotal && (
-                                            <View style={styles.changeInfo}>
-                                                <Text style={styles.changeLabel}>Kembalian</Text>
-                                                <Text style={styles.changeValue}>{formatCurrency(parseFloat(cashPaid) - subtotal)}</Text>
+                                    {paymentMethod === 'tunai' && (
+                                        <View style={styles.cashInputArea}>
+                                            <Text style={styles.sectionLabel}>UANG DIBAYAR</Text>
+                                            <View style={styles.cashInputWrapper}>
+                                                <Text style={styles.rpPrefix}>Rp</Text>
+                                                <TextInput
+                                                    style={styles.cashInput}
+                                                    placeholder="0"
+                                                    keyboardType="numeric"
+                                                    value={cashPaid}
+                                                    onChangeText={setCashPaid}
+                                                    autoFocus
+                                                />
                                             </View>
-                                        )}
-                                    </View>
-                                )}
-                            </View>
-                        </ScrollView>
-                    </View>
+
+                                            <View style={styles.quickCashRow}>
+                                                {quickCashOptions.map(amount => (
+                                                    <TouchableOpacity
+                                                        key={amount}
+                                                        onPress={() => setCashPaid(amount.toString())}
+                                                        style={styles.quickCashBtn}
+                                                    >
+                                                        <Text style={styles.quickCashText}>{amount / 1000}k</Text>
+                                                    </TouchableOpacity>
+                                                ))}
+                                                <TouchableOpacity
+                                                    onPress={() => setCashPaid(finalTotal.toString())}
+                                                    style={[styles.quickCashBtn, { backgroundColor: '#EFF6FF', borderColor: '#2563EB' }]}
+                                                >
+                                                    <Text style={[styles.quickCashText, { color: '#2563EB' }]}>Pas</Text>
+                                                </TouchableOpacity>
+                                            </View>
+
+                                            {parseFloat(cashPaid || 0) >= finalTotal && parseFloat(cashPaid || 0) > 0 && (
+                                                <View style={styles.changeInfo}>
+                                                    <Text style={styles.changeLabel}>Kembalian</Text>
+                                                    <Text style={styles.changeValue}>{formatCurrency(parseFloat(cashPaid) - finalTotal)}</Text>
+                                                </View>
+                                            )}
+                                        </View>
+                                    )}
+                                </View>
+                            </ScrollView>
+                        </View>
+                    </KeyboardAvoidingView>
 
                     <View style={styles.modalFooter}>
+                        {parseFloat(manualDiscount || 0) > 0 && (
+                            <View style={[styles.totalRow, { marginBottom: 6 }]}>
+                                <Text style={[styles.totalLabel, { fontSize: 13 }]}>Subtotal</Text>
+                                <Text style={[styles.totalLabel, { fontSize: 13 }]}>{formatCurrency(subtotal)}</Text>
+                            </View>
+                        )}
+                        {parseFloat(manualDiscount || 0) > 0 && (
+                            <View style={[styles.totalRow, { marginBottom: 10 }]}>
+                                <Text style={[styles.totalLabel, { color: '#EF4444', fontSize: 13 }]}>Diskon</Text>
+                                <Text style={[styles.totalLabel, { color: '#EF4444', fontSize: 13 }]}>-{formatCurrency(parseFloat(manualDiscount))}</Text>
+                            </View>
+                        )}
                         <View style={styles.totalRow}>
                             <Text style={styles.totalLabel}>Total Tagihan</Text>
-                            <Text style={styles.totalValue}>{formatCurrency(subtotal)}</Text>
+                            <Text style={styles.totalValue}>{formatCurrency(finalTotal)}</Text>
                         </View>
                         <TouchableOpacity
-                            style={[styles.payBtn, (isProcessing || (paymentMethod === 'tunai' && parseFloat(cashPaid || 0) < subtotal)) && styles.disabledBtn]}
-                            disabled={isProcessing || (paymentMethod === 'tunai' && parseFloat(cashPaid || 0) < subtotal)}
+                            style={[styles.payBtn, (isProcessing || (paymentMethod === 'tunai' && parseFloat(cashPaid || 0) < finalTotal)) && styles.disabledBtn]}
+                            disabled={isProcessing || (paymentMethod === 'tunai' && parseFloat(cashPaid || 0) < finalTotal)}
                             onPress={handleProcessTransaction}
                         >
                             <Text style={styles.payBtnText}>
@@ -661,7 +702,7 @@ const SalesPOS = () => {
                             {!isProcessing && <Check size={20} color="#FFFFFF" />}
                         </TouchableOpacity>
                     </View>
-                </KeyboardAvoidingView>
+                </View>
             </Modal>
 
             {/* Receipt Modal */}
@@ -856,82 +897,112 @@ const styles = StyleSheet.create({
         color: '#64748B',
         fontWeight: 'bold',
     },
-    fab: {
+    fabWrapper: {
         position: 'absolute',
-        bottom: 20,
+        bottom: 30,
         left: 20,
         right: 20,
-        backgroundColor: '#1E293B',
-        height: 64,
+        zIndex: 1000,
+    },
+    fabMain: {
+        backgroundColor: '#1E293B', // Deep Slate
+        height: 70,
         borderRadius: 20,
         flexDirection: 'row',
-        padding: 8,
+        paddingHorizontal: 12,
         alignItems: 'center',
         justifyContent: 'space-between',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
         ...Platform.select({
             ios: {
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 10 },
+                shadowOffset: { width: 0, height: 8 },
                 shadowOpacity: 0.3,
-                shadowRadius: 15,
+                shadowRadius: 12,
             },
-            android: { elevation: 10 },
-            web: { boxShadow: '0px 10px 15px rgba(0,0,0,0.3)' }
+            android: { elevation: 12 },
+            web: { boxShadow: '0px 10px 30px rgba(0,0,0,0.3)' }
         }),
-        zIndex: 100,
     },
-    fabInfo: {
+    fabInfoSection: {
         flexDirection: 'row',
         alignItems: 'center',
-        flex: 1,
+        gap: 12,
     },
-    fabTrashBtn: {
+    cartIconCircle: {
         width: 44,
         height: 44,
-        backgroundColor: 'rgba(239, 68, 68, 0.12)',
+        backgroundColor: '#138FEA',
         borderRadius: 14,
         justifyContent: 'center',
         alignItems: 'center',
-        marginLeft: 4,
+        position: 'relative',
     },
-    fabCount: {
-        width: 38,
-        height: 38,
-        backgroundColor: '#2563EB',
-        borderRadius: 12,
+    cartBadgeMini: {
+        position: 'absolute',
+        top: -6,
+        right: -6,
+        backgroundColor: '#EF4444',
+        minWidth: 20,
+        height: 20,
+        borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center',
-        marginHorizontal: 10,
+        borderWidth: 2,
+        borderColor: '#1E293B',
+        paddingHorizontal: 4,
     },
-    fabCountText: {
+    cartBadgeText: {
         color: '#FFFFFF',
+        fontSize: 10,
         fontWeight: '900',
-        fontSize: 14,
     },
-    fabTotalLabel: {
+    priceContainer: {
+        justifyContent: 'center',
+    },
+    labelSubtotal: {
         color: '#94A3B8',
         fontSize: 10,
         fontWeight: 'bold',
         textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
-    fabTotalValue: {
+    valueSubtotal: {
         color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '900',
+        fontSize: 18,
+        fontWeight: 'bold',
     },
-    fabAction: {
-        backgroundColor: '#138FEA',
-        height: '100%',
-        paddingHorizontal: 20,
-        borderRadius: 15,
+    fabActionGroup: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 5,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        padding: 6,
+        borderRadius: 16,
+        gap: 10,
     },
-    fabActionText: {
+    miniTrashBtn: {
+        padding: 8,
+    },
+    actionDivider: {
+        width: 1,
+        height: 20,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+    },
+    payBtnCompact: {
+        backgroundColor: '#138FEA',
+        height: 44,
+        paddingHorizontal: 16,
+        borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    payBtnCompactText: {
         color: '#FFFFFF',
         fontWeight: '900',
-        fontSize: 13,
+        fontSize: 14,
+        letterSpacing: 1,
     },
     emptyContainer: {
         alignItems: 'center',
@@ -1172,13 +1243,11 @@ const styles = StyleSheet.create({
         color: '#166534',
     },
     modalFooter: {
-        padding: 24,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 30,
+        padding: 20,
+        paddingBottom: Platform.OS === 'ios' ? 25 : 15,
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',
         backgroundColor: '#FFFFFF',
-        zIndex: 999,
-        elevation: 10,
         ...Platform.select({
             ios: {
                 shadowColor: '#000',
@@ -1195,6 +1264,20 @@ const styles = StyleSheet.create({
                 borderTopWidth: 0,
             }
         })
+    },
+    manualDiscountIconArea: {
+        backgroundColor: '#EF4444',
+        width: 50,
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderTopLeftRadius: 14,
+        borderBottomLeftRadius: 14,
+    },
+    discountIconText: {
+        color: '#FFFFFF',
+        fontWeight: 'bold',
+        fontSize: 18,
     },
     totalRow: {
         flexDirection: 'row',

@@ -1900,8 +1900,8 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
 
         // Search Filtering
         if (search) {
-            whereClauses.push('(t.id LIKE ? OR t.items LIKE ?)');
-            queryParams.push(`%${search}%`, `%${search}%`);
+            whereClauses.push('(t.id LIKE ? OR t.items LIKE ? OR t.customer_name LIKE ? OR t.customer_phone LIKE ? OR t.customer_address LIKE ?)');
+            queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
         }
 
         const whereSql = `WHERE ${whereClauses.join(' AND ')}`;
@@ -2206,6 +2206,86 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
             await connection.query('UPDATE menu_items SET stock = stock - ? WHERE id = ?', [item.quantity, item.id]);
         }
 
+        // --- Points Awarding Logic ---
+        // Award points to the user who made the transaction (if they are a customer)
+        try {
+            let pointsAwarded = false;
+
+            // Priority 1: Check if logged-in user is a customer
+            if (finalUserId) {
+                console.log(`[POINTS] Checking points for logged-in user ID: ${finalUserId}`);
+
+                const [userRows] = await connection.query('SELECT id, points, username, role FROM users WHERE id = ?', [finalUserId]);
+
+                if (userRows.length > 0 && userRows[0].role === 'pelanggan') {
+                    const customerId = userRows[0].id;
+                    const customerName = userRows[0].username;
+                    console.log(`[POINTS] ✓ User is a customer: ${customerName} (ID: ${customerId})`);
+
+                    const [pointsSetting] = await connection.query("SELECT value FROM settings WHERE `key` = ?", ['points_per_item']);
+                    const pointsPerItem = pointsSetting.length > 0 ? parseFloat(pointsSetting[0].value) : 100;
+
+                    const totalItemsCount = itemsWithDetails.reduce((sum, item) => sum + item.quantity, 0);
+                    const pointsEarned = totalItemsCount * pointsPerItem;
+
+                    console.log(`[POINTS] Calculation: ${totalItemsCount} items × ${pointsPerItem} = ${pointsEarned} points`);
+
+                    if (pointsEarned > 0) {
+                        await connection.query('UPDATE users SET points = points + ? WHERE id = ?', [pointsEarned, customerId]);
+                        await connection.query(
+                            'INSERT INTO points_history (user_id, transaction_id, amount, type, description) VALUES (?, ?, ?, ?, ?)',
+                            [customerId, newTransactionId, pointsEarned, 'earn', `Beli ${totalItemsCount} item`]
+                        );
+                        console.log(`[POINTS] ✅ Awarded ${pointsEarned} points to ${customerName}`);
+                        pointsAwarded = true;
+                    }
+                } else if (userRows.length > 0) {
+                    console.log(`[POINTS] ⚠️ User is not a customer (role: ${userRows[0].role})`);
+                }
+            }
+
+            // Priority 2: If no points awarded yet and customer_phone provided, try to find customer by phone
+            if (!pointsAwarded && customer_phone) {
+                console.log(`[POINTS] Checking customer by phone: ${customer_phone}`);
+
+                const [customerRows] = await connection.query('SELECT id, points, username, role FROM users WHERE phone = ? AND role = "pelanggan"', [customer_phone]);
+
+                if (customerRows.length > 0) {
+                    const customerId = customerRows[0].id;
+                    const customerName = customerRows[0].username;
+                    console.log(`[POINTS] ✓ Found customer by phone: ${customerName} (ID: ${customerId})`);
+
+                    const [pointsSetting] = await connection.query("SELECT value FROM settings WHERE `key` = ?", ['points_per_item']);
+                    const pointsPerItem = pointsSetting.length > 0 ? parseFloat(pointsSetting[0].value) : 100;
+
+                    const totalItemsCount = itemsWithDetails.reduce((sum, item) => sum + item.quantity, 0);
+                    const pointsEarned = totalItemsCount * pointsPerItem;
+
+                    console.log(`[POINTS] Calculation: ${totalItemsCount} items × ${pointsPerItem} = ${pointsEarned} points`);
+
+                    if (pointsEarned > 0) {
+                        await connection.query('UPDATE users SET points = points + ? WHERE id = ?', [pointsEarned, customerId]);
+                        await connection.query(
+                            'INSERT INTO points_history (user_id, transaction_id, amount, type, description) VALUES (?, ?, ?, ?, ?)',
+                            [customerId, newTransactionId, pointsEarned, 'earn', `Beli ${totalItemsCount} item`]
+                        );
+                        console.log(`[POINTS] ✅ Awarded ${pointsEarned} points to ${customerName} (via phone)`);
+                        pointsAwarded = true;
+                    }
+                } else {
+                    console.log(`[POINTS] ⚠️ No customer found with phone: ${customer_phone}`);
+                }
+            }
+
+            if (!pointsAwarded) {
+                console.log(`[POINTS] ℹ️ No points awarded for this transaction`);
+            }
+        } catch (pointsError) {
+            console.error(`[POINTS] ❌ Error in points logic:`, pointsError);
+            // Don't fail the transaction if points fail - just log the error
+        }
+        // --- End Points Logic ---
+
         await connection.commit();
 
         await logActivity(finalUserId, 'Membuat Transaksi', 'transaction', newTransactionId, `Transaksi baru ${newTransactionId} senilai Rp ${parseFloat(finalTotal).toLocaleString('id-ID')}`);
@@ -2292,6 +2372,101 @@ app.delete("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'a
         res.json({ "message": "deleted", changes: result.affectedRows });
     } catch (err) {
         res.status(400).json({ "error": err.message });
+    }
+});
+
+// --- Points System Endpoints ---
+
+// Get current user's points (Pelanggan)
+app.get("/api/customer/points", authenticateToken, authorizeRoles('pelanggan', 'user', 'admin'), async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT points FROM users WHERE id = ?', [req.user.userId]);
+        if (rows.length === 0) return res.status(404).json({ error: "User not found" });
+        res.json({ message: "success", data: { points: rows[0].points } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get current user's point history (Pelanggan)
+app.get("/api/customer/points/history", authenticateToken, authorizeRoles('pelanggan', 'user', 'admin'), async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM points_history WHERE user_id = ? ORDER BY created_at DESC', [req.user.userId]);
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get all customers with points (Seller/Admin)
+app.get("/api/points/customers", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT id, username, name, phone, points FROM users WHERE role = "pelanggan" ORDER BY points DESC');
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Top up points manually (Seller/Admin)
+app.post("/api/points/topup", authenticateToken, authorizeRoles('admin', 'owner', 'penjual'), async (req, res) => {
+    let connection;
+    try {
+        const { userId, amount, description } = req.body;
+        if (!userId || !amount) {
+            return res.status(400).json({ error: "userId and amount are required" });
+        }
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // Update user's points
+        await connection.query('UPDATE users SET points = points + ? WHERE id = ?', [amount, userId]);
+
+        // Log to points_history
+        await connection.query(
+            'INSERT INTO points_history (user_id, amount, type, description) VALUES (?, ?, ?, ?)',
+            [userId, amount, 'earn', description || 'Top up manual oleh seller']
+        );
+
+        await connection.commit();
+        await logActivity(req.user.userId, 'Top Up Poin', 'user', userId, `Top up poin sebesar ${amount} untuk user ID ${userId}`);
+
+        res.json({ message: "Points topped up successfully", data: { userId, amount } });
+    } catch (err) {
+        if (connection) await connection.rollback();
+        res.status(500).json({ error: err.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// Get points setting
+app.get("/api/points/settings", authenticateToken, authorizeRoles('admin', 'owner', 'penjual'), async (req, res) => {
+    try {
+        const [rows] = await db.query("SELECT value FROM settings WHERE `key` = 'points_per_item'");
+        const pointsPerItem = rows.length > 0 ? parseFloat(rows[0].value) : 500;
+        res.json({ message: "success", data: { points_per_item: pointsPerItem } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update points setting
+app.post("/api/points/settings", authenticateToken, authorizeRoles('admin', 'owner', 'penjual'), async (req, res) => {
+    try {
+        const { points_per_item } = req.body;
+        if (points_per_item === undefined) {
+            return res.status(400).json({ error: "points_per_item is required" });
+        }
+
+        const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+        await db.query(sql, ['points_per_item', points_per_item.toString()]);
+
+        await logActivity(req.user.userId, 'Update Pengaturan Poin', 'settings', null, `Mengubah poin per menu menjadi ${points_per_item}`);
+        res.json({ message: "Points setting updated successfully", data: { points_per_item } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -3191,6 +3366,47 @@ app.post("/api/orders", (req, res, next) => {
 
         const orderId = result.insertId;
 
+        // --- Points Awarding Logic for Orders ---
+        if (userId) {
+            console.log(`[POINTS-ORDER] Checking points for user ID: ${userId}`);
+
+            try {
+                const [userRows] = await db.query('SELECT id, points, name, role FROM users WHERE id = ?', [userId]);
+
+                if (userRows.length > 0 && userRows[0].role === 'pelanggan') {
+                    const customerId = userRows[0].id;
+                    const customerName = userRows[0].name;
+                    console.log(`[POINTS-ORDER] ✓ User is a customer: ${customerName} (ID: ${customerId})`);
+
+                    const [pointsSetting] = await db.query("SELECT value FROM settings WHERE `key` = ?", ['points_per_item']);
+                    const pointsPerItem = pointsSetting.length > 0 ? parseFloat(pointsSetting[0].value) : 100;
+
+                    // Calculate total items from order
+                    const totalItemsCount = orderItemsWithDetails.reduce((sum, item) => sum + item.quantity, 0);
+                    const pointsEarned = totalItemsCount * pointsPerItem;
+
+                    console.log(`[POINTS-ORDER] Calculation: ${totalItemsCount} items × ${pointsPerItem} = ${pointsEarned} points`);
+
+                    if (pointsEarned > 0) {
+                        await db.query('UPDATE users SET points = points + ? WHERE id = ?', [pointsEarned, customerId]);
+                        await db.query(
+                            'INSERT INTO points_history (user_id, transaction_id, amount, type, description) VALUES (?, ?, ?, ?, ?)',
+                            [customerId, `ORDER-${orderId}`, pointsEarned, 'earn', `Beli ${totalItemsCount} item (Order #${orderId})`]
+                        );
+                        console.log(`[POINTS-ORDER] ✅ Awarded ${pointsEarned} points to ${customerName}`);
+                    }
+                } else if (userRows.length > 0) {
+                    console.log(`[POINTS-ORDER] ⚠️ User is not a customer (role: ${userRows[0].role})`);
+                }
+            } catch (pointsError) {
+                console.error(`[POINTS-ORDER] ❌ Error awarding points:`, pointsError);
+                // Don't fail the order creation if points fail
+            }
+        } else {
+            console.log(`[POINTS-ORDER] ℹ️ No user ID in order (guest order)`);
+        }
+        // --- End Points Logic ---
+
         // Kirim Notifikasi Push (async, tidak menunggu selesai agar response cepat)
         setImmediate(() => {
             sendUniversalNotification(
@@ -3246,6 +3462,13 @@ app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user', 'pelan
         if (status) {
             whereClauses.push('status = ?');
             queryParams.push(status);
+        }
+
+        const { search } = req.query;
+        if (search) {
+            whereClauses.push('(customer_name LIKE ? OR customer_phone LIKE ? OR customer_address LIKE ? OR items LIKE ?)');
+            const searchPattern = `%${search}%`;
+            queryParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
         }
 
         const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
@@ -3334,7 +3557,7 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
         await connection.beginTransaction();
 
         // Get the order to check ownership and current status
-        const [orderRows] = await connection.query('SELECT user_id, status, customer_name, customer_address, customer_phone, items, total, payment_method FROM orders WHERE id = ? FOR UPDATE', [id]);
+        const [orderRows] = await connection.query('SELECT user_id, status, customer_name, customer_address, customer_phone, items, total, payment_method, note FROM orders WHERE id = ? FOR UPDATE', [id]);
 
         if (orderRows.length === 0) {
             await connection.rollback();
@@ -3359,6 +3582,46 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
         if (status === 'rejected' || status === 'cancelled' || status === 'completed') {
             const updateSql = 'UPDATE orders SET status = ? WHERE id = ?';
             await connection.query(updateSql, [status, id]);
+
+            // --- Points Awarding Logic for Completed Orders ---
+            if (status === 'completed' && order.user_id) {
+                console.log(`[POINTS-ORDER] Order #${id} completed, checking points for user ID: ${order.user_id}`);
+
+                try {
+                    const [userRows] = await connection.query('SELECT id, points, username, role FROM users WHERE id = ?', [order.user_id]);
+
+                    if (userRows.length > 0 && userRows[0].role === 'pelanggan') {
+                        const customerId = userRows[0].id;
+                        const customerName = userRows[0].username;
+                        console.log(`[POINTS-ORDER] ✓ User is a customer: ${customerName} (ID: ${customerId})`);
+
+                        const [pointsSetting] = await connection.query("SELECT value FROM settings WHERE `key` = ?", ['points_per_item']);
+                        const pointsPerItem = pointsSetting.length > 0 ? parseFloat(pointsSetting[0].value) : 100;
+
+                        // Parse items from order
+                        const orderItems = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+                        const totalItemsCount = orderItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                        const pointsEarned = totalItemsCount * pointsPerItem;
+
+                        console.log(`[POINTS-ORDER] Calculation: ${totalItemsCount} items × ${pointsPerItem} = ${pointsEarned} points`);
+
+                        if (pointsEarned > 0) {
+                            await connection.query('UPDATE users SET points = points + ? WHERE id = ?', [pointsEarned, customerId]);
+                            await connection.query(
+                                'INSERT INTO points_history (user_id, transaction_id, amount, type, description) VALUES (?, ?, ?, ?, ?)',
+                                [customerId, `ORDER-${id}`, pointsEarned, 'earn', `Order #${id} selesai (${totalItemsCount} item)`]
+                            );
+                            console.log(`[POINTS-ORDER] ✅ Awarded ${pointsEarned} points to ${customerName}`);
+                        }
+                    } else if (userRows.length > 0) {
+                        console.log(`[POINTS-ORDER] ⚠️ User is not a customer (role: ${userRows[0].role})`);
+                    }
+                } catch (pointsError) {
+                    console.error(`[POINTS-ORDER] ❌ Error awarding points:`, pointsError);
+                    // Don't fail the order update if points fail
+                }
+            }
+            // --- End Points Logic ---
 
             // Kirim Notifikasi ke Pelanggan (async)
             if (order.user_id) {
@@ -3589,10 +3852,11 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
                 transactionData.ignore_stock,
                 order.customer_name || null,
                 order.customer_phone || null,
-                order.customer_address || null
+                order.customer_address || null,
+                order.note || null
             ];
 
-            await connection.query('INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, order_id, ignore_stock, customer_name, customer_phone, customer_address) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)', transactionParams);
+            await connection.query('INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, order_id, ignore_stock, customer_name, customer_phone, customer_address, catatan) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)', transactionParams);
 
             // 5. Update the order status to 'accepted'
             await connection.query('UPDATE orders SET status = ? WHERE id = ?', ['accepted', id]);

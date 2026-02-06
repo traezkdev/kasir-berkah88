@@ -10,6 +10,7 @@ import {
     Platform,
     StatusBar
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import {
     X,
     User,
@@ -22,7 +23,8 @@ import {
     Calendar,
     Hash,
     Clock,
-    CreditCard
+    CreditCard,
+    ArrowRight
 } from 'lucide-react-native';
 import { useToast } from '../context/ToastContext';
 
@@ -31,6 +33,7 @@ import BottomModalTemplate from './templates/BottomModalTemplate';
 
 const OrderDetailModal = ({ visible, onClose, order }) => {
     const { showToast } = useToast();
+    const navigation = useNavigation();
 
     if (!order) return null;
 
@@ -84,7 +87,24 @@ const OrderDetailModal = ({ visible, onClose, order }) => {
                     </View>
 
                     <View style={styles.infoRow}>
-                        <Text style={styles.infoName}>{order.customer_name || 'Pelanggan'}</Text>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.infoName}>{order.customer_name || 'Pelanggan'}</Text>
+                            <Text style={styles.infoPhone}>{order.customer_phone || '-'}</Text>
+                        </View>
+                        <TouchableOpacity
+                            style={styles.viewProfileBtn}
+                            onPress={() => {
+                                onClose();
+                                navigation.navigate('CustomerDetails', {
+                                    customerName: order.customer_name,
+                                    customerPhone: order.customer_phone,
+                                    customerAddress: order.customer_address
+                                });
+                            }}
+                        >
+                            <Text style={styles.viewProfileText}>Lihat Profil</Text>
+                            <ArrowRight size={14} color="#138FEA" />
+                        </TouchableOpacity>
                     </View>
 
                     <View style={styles.divider} />
@@ -263,11 +283,36 @@ const styles = StyleSheet.create({
         color: '#64748B',
         letterSpacing: 1,
     },
+    infoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: 4,
+    },
     infoName: {
         fontSize: 18,
         fontWeight: '900',
         color: '#1E293B',
-        marginBottom: 4,
+    },
+    infoPhone: {
+        fontSize: 12,
+        color: '#94A3B8',
+        fontWeight: 'bold',
+        marginTop: 2,
+    },
+    viewProfileBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F0F9FF',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 12,
+        gap: 6,
+    },
+    viewProfileText: {
+        fontSize: 12,
+        fontWeight: '900',
+        color: '#138FEA',
     },
     divider: {
         height: 1,
@@ -298,35 +343,41 @@ const styles = StyleSheet.create({
     itemRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: 10,
+        backgroundColor: '#F8FAFC',
+        padding: 12,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
     },
     itemQtyContainer: {
-        backgroundColor: '#F1F5F9',
+        backgroundColor: '#1E293B',
         paddingHorizontal: 8,
         paddingVertical: 4,
-        borderRadius: 8,
+        borderRadius: 10,
         marginRight: 12,
     },
     itemQty: {
         fontSize: 12,
         fontWeight: '900',
-        color: '#1E40AF',
+        color: '#FFFFFF',
     },
     itemMain: {
         flex: 1,
     },
     itemName: {
-        fontSize: 14,
-        fontWeight: 'bold',
+        fontSize: 15,
+        fontWeight: '900',
         color: '#1E293B',
     },
     itemPrice: {
         fontSize: 12,
         color: '#64748B',
-        fontWeight: '500',
+        fontWeight: 'bold',
+        marginTop: 2,
     },
     itemTotal: {
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: '900',
         color: '#1E293B',
     },

@@ -165,39 +165,9 @@ const OrderManagement = ({ navigation }) => {
                         <SellerOrderCard
                             order={item}
                             onViewDetail={handleViewDetail}
-                            onAccept={activeTab === 'pending' ? async () => {
-                                const accepted = await confirm({
-                                    title: 'Terima Pesanan',
-                                    message: `Terima pesanan dari ${item.customer_name}?`,
-                                    confirmText: 'Ya, Terima',
-                                    type: 'primary'
-                                });
-                                if (accepted) {
-                                    handleUpdateStatus(item.id, 'accepted');
-                                }
-                            } : null}
-                            onComplete={activeTab === 'accepted' ? async () => {
-                                const completed = await confirm({
-                                    title: 'Selesaikan Pesanan',
-                                    message: `Pesanan #${item.id} sudah selesai dan siap diambil/diantar?`,
-                                    confirmText: 'Ya, Selesai',
-                                    type: 'primary'
-                                });
-                                if (completed) {
-                                    handleUpdateStatus(item.id, 'completed');
-                                }
-                            } : null}
-                            onReject={activeTab === 'pending' || activeTab === 'accepted' ? async () => {
-                                const rejected = await confirm({
-                                    title: 'Batalkan Pesanan',
-                                    message: `Apakah Anda yakin ingin membatalkan pesanan #${item.id}?`,
-                                    confirmText: 'Ya, Batalkan',
-                                    type: 'danger'
-                                });
-                                if (rejected) {
-                                    handleUpdateStatus(item.id, 'cancelled');
-                                }
-                            } : null}
+                            onAccept={activeTab === 'pending' ? () => handleUpdateStatus(item.id, 'accepted') : null}
+                            onComplete={activeTab === 'accepted' ? () => handleUpdateStatus(item.id, 'completed') : null}
+                            onReject={(activeTab === 'pending' || activeTab === 'accepted') ? () => handleUpdateStatus(item.id, 'cancelled') : null}
                         />
                     )}
                 />

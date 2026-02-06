@@ -30,10 +30,14 @@ import {
     Receipt,
     Banknote,
     QrCode,
-    CreditCard
+    CreditCard,
+    User,
+    ArrowRight,
+    MessageSquare
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 import ReceiptModal from '../../components/ReceiptModal';
+import EditTransactionModal from './EditTransactionModal';
 import { useOrderNotification } from '../../context/OrderNotificationContext';
 
 const { width } = Dimensions.get('window');
@@ -48,6 +52,7 @@ const TransactionHistory = ({ navigation }) => {
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [selectedTx, setSelectedTx] = useState(null);
     const [showReceipt, setShowReceipt] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
 
     // Pagination state
     const [page, setPage] = useState(1);
@@ -385,6 +390,50 @@ const TransactionHistory = ({ navigation }) => {
                                         <Text style={styles.txInfoLabel}>Metode Pembayaran</Text>
                                         <Text style={[styles.txInfoValue, { color: '#1E40AF', fontWeight: '900' }]}>{(selectedTx?.payment_method || 'Tunai').toUpperCase()}</Text>
                                     </View>
+
+                                    {/* Customer Info Card if available */}
+                                    {(selectedTx?.customer_name) && (
+                                        <View style={styles.sectionCard}>
+                                            <View style={styles.sectionHeader}>
+                                                <User size={16} color="#1E40AF" />
+                                                <Text style={styles.sectionLabel}>INFORMASI PELANGGAN</Text>
+                                            </View>
+
+                                            <View style={styles.infoRow}>
+                                                <View style={{ flex: 1 }}>
+                                                    <Text style={styles.infoName}>{selectedTx.customer_name}</Text>
+                                                    <Text style={styles.infoPhone}>{selectedTx.customer_phone || '-'}</Text>
+                                                </View>
+                                                <TouchableOpacity
+                                                    style={styles.viewProfileBtn}
+                                                    onPress={() => {
+                                                        setSelectedTx(null);
+                                                        navigation.navigate('CustomerDetails', {
+                                                            customerName: selectedTx.customer_name,
+                                                            customerPhone: selectedTx.customer_phone,
+                                                            customerAddress: selectedTx.customer_address
+                                                        });
+                                                    }}
+                                                >
+                                                    <Text style={styles.viewProfileText}>Profil</Text>
+                                                    <ArrowRight size={12} color="#138FEA" />
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    )}
+
+                                    {/* Transaction Note if available */}
+                                    {(selectedTx?.catatan || selectedTx?.notes) && (
+                                        <View style={[styles.sectionCard, { backgroundColor: '#FFFBEB', borderColor: '#FEF3C7' }]}>
+                                            <View style={styles.sectionHeader}>
+                                                <MessageSquare size={16} color="#B45309" />
+                                                <Text style={[styles.sectionLabel, { color: '#B45309' }]}>CATATAN TRANSAKSI</Text>
+                                            </View>
+                                            <Text style={{ fontSize: 14, color: '#92400E', fontStyle: 'italic', fontWeight: '500' }}>
+                                                "{selectedTx.catatan || selectedTx.notes}"
+                                            </Text>
+                                        </View>
+                                    )}
                                 </View>
                             )}
                             renderItem={({ item }) => (
@@ -409,13 +458,22 @@ const TransactionHistory = ({ navigation }) => {
                             <Text style={styles.grandTotalLabel}>Total Bayar</Text>
                             <Text style={styles.grandTotalValue}>{selectedTx ? formatCurrency(selectedTx.total) : '0'}</Text>
                         </View>
-                        <TouchableOpacity
-                            style={styles.printBtn}
-                            onPress={() => setShowReceipt(true)}
-                        >
-                            <Download size={20} color="#FFFFFF" />
-                            <Text style={styles.printBtnText}>Unduh Struk</Text>
-                        </TouchableOpacity>
+                        <View style={styles.modalActionButtons}>
+                            <TouchableOpacity
+                                style={styles.editBtn}
+                                onPress={() => setShowEditModal(true)}
+                            >
+                                <RefreshCw size={20} color="#1E40AF" />
+                                <Text style={styles.editBtnText}>Edit Transaksi</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.printBtn}
+                                onPress={() => setShowReceipt(true)}
+                            >
+                                <Download size={20} color="#FFFFFF" />
+                                <Text style={styles.printBtnText}>Unduh Struk</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
             </Modal>
@@ -425,6 +483,18 @@ const TransactionHistory = ({ navigation }) => {
                     visible={showReceipt}
                     onClose={() => setShowReceipt(false)}
                     transaction={selectedTx}
+                />
+            )}
+
+            {showEditModal && (
+                <EditTransactionModal
+                    visible={showEditModal}
+                    onClose={() => setShowEditModal(false)}
+                    transaction={selectedTx}
+                    onSave={() => {
+                        fetchTransactions(1, true, debouncedSearch, selectedDate);
+                        setSelectedTx(null);
+                    }}
                 />
             )}
 
@@ -964,6 +1034,61 @@ const styles = StyleSheet.create({
         color: '#1E293B',
         marginLeft: 10,
     },
+    // Customer Info Card Styles
+    sectionCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 16,
+        marginTop: 16,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+        ...Platform.select({
+            web: { boxShadow: '0px 4px 12px rgba(0,0,0,0.05)' },
+            android: { elevation: 2 }
+        })
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 12,
+    },
+    sectionLabel: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#64748B',
+        letterSpacing: 1,
+    },
+    infoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    infoName: {
+        fontSize: 15,
+        fontWeight: '900',
+        color: '#1E293B',
+    },
+    infoPhone: {
+        fontSize: 11,
+        color: '#94A3B8',
+        fontWeight: 'bold',
+        marginTop: 2,
+    },
+    viewProfileBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F0F9FF',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 10,
+        gap: 4,
+    },
+    viewProfileText: {
+        fontSize: 11,
+        fontWeight: '900',
+        color: '#138FEA',
+    },
     modalFooter: {
         padding: 24,
         paddingBottom: Platform.OS === 'ios' ? 40 : 30,
@@ -1005,7 +1130,34 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         color: '#1E40AF',
     },
+    printBtnText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '900',
+    },
+    modalActionButtons: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    editBtn: {
+        flex: 1,
+        backgroundColor: '#EFF6FF',
+        height: 50,
+        borderRadius: 16,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 10,
+        borderWidth: 1,
+        borderColor: '#BFDBFE',
+    },
+    editBtnText: {
+        color: '#1E40AF',
+        fontSize: 16,
+        fontWeight: '900',
+    },
     printBtn: {
+        flex: 1,
         backgroundColor: '#1E40AF',
         height: 50,
         borderRadius: 16,
@@ -1014,11 +1166,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 10,
     },
-    printBtnText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '900',
-    }
 });
 
 export default TransactionHistory;

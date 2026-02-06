@@ -1065,6 +1065,17 @@ const setupDatabase = async () => {
       console.log('Added customer_address column to transactions table.');
     }
 
+    // Check and add catatan column to transactions if it doesn't exist
+    const checkCatatanColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'catatan';
+    `;
+    const [catatanRows] = await connection.query(checkCatatanColumn);
+    if (catatanRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE transactions ADD COLUMN catatan TEXT DEFAULT NULL");
+      console.log('Added catatan column to transactions table.');
+    }
+
     // Check and add hpp column to menu_items if it doesn't exist
     const checkHppColumn = `
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
@@ -1429,6 +1440,42 @@ const setupDatabase = async () => {
     `;
     await connection.query(createMenuReviewsTable);
     console.log('menu_reviews table is ready.');
+
+    // --- Points System Migration ---
+    // Check and add points column to users if it doesn't exist
+    const checkPointsColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'points';
+    `;
+    const [pointsRows] = await connection.query(checkPointsColumn);
+    if (pointsRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE users ADD COLUMN points DECIMAL(10, 2) DEFAULT 0.00");
+      console.log('Added points column to users table.');
+    }
+
+    // Ensure points_per_item setting exists
+    const ensurePointsSetting = `
+      INSERT IGNORE INTO settings(\`key\`, \`value\`) VALUES
+      ('points_per_item', '100');
+    `;
+    await connection.query(ensurePointsSetting);
+
+    // Create points_history table
+    const createPointsHistoryTable = `
+      CREATE TABLE IF NOT EXISTS points_history (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        transaction_id VARCHAR(255) NULL,
+        amount DECIMAL(10, 2) NOT NULL,
+        type ENUM('earn', 'spend') NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE SET NULL
+      );
+    `;
+    await connection.query(createPointsHistoryTable);
+    console.log('points_history table is ready.');
 
     connection.release();
 
