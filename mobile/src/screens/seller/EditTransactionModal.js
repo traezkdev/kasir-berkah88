@@ -36,6 +36,7 @@ import {
     ArrowRight
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const EditTransactionModal = ({ visible, onClose, transaction, onSave }) => {
     const [loading, setLoading] = useState(false);
@@ -69,7 +70,13 @@ const EditTransactionModal = ({ visible, onClose, transaction, onSave }) => {
             setManualDiscount(String(transaction.manual_discount || 0));
             setPpn(String(transaction.ppn || 0));
             setNotes(transaction.catatan || '');
-            setPaymentMethod(transaction.payment_method || 'Tunai');
+
+            // Normalize payment method to match UI options (Tunai, Gojek, etc.)
+            const methods = ['Tunai', 'Gojek', 'Transfer', 'QRIS'];
+            const backendMethod = transaction.payment_method || 'Tunai';
+            const matchedMethod = methods.find(m => m.toLowerCase() === backendMethod.toLowerCase()) || 'Tunai';
+            setPaymentMethod(matchedMethod);
+
             setCustomerName(transaction.customer_name || '');
             setCustomerPhone(transaction.customer_phone || '');
             setCustomerAddress(transaction.customer_address || '');
@@ -91,12 +98,39 @@ const EditTransactionModal = ({ visible, onClose, transaction, onSave }) => {
     }, [visible, transaction]);
 
     const showPicker = () => {
-        // Fallback: Alert or just focus the input if it were a real input
-        Alert.alert(
-            "Info",
-            "Fitur Pilih Waktu otomatis memerlukan build aplikasi baru. Untuk saat ini, silakan masukkan waktu secara manual dengan format: YYYY-MM-DD HH:mm",
-            [{ text: "OK" }]
-        );
+        setPickerMode('date');
+        setShowDatePicker(true);
+    };
+
+    const onDateChange = (event, selectedDate) => {
+        if (event.type === 'dismissed') {
+            setShowDatePicker(false);
+            return;
+        }
+
+        const currentDate = selectedDate || dateValue;
+
+        if (Platform.OS === 'android') {
+            setShowDatePicker(false);
+            setDateValue(currentDate);
+
+            if (pickerMode === 'date') {
+                setPickerMode('time');
+                setTimeout(() => setShowDatePicker(true), 100);
+            } else {
+                const pad = (n) => String(n).padStart(2, '0');
+                const formatted = `${currentDate.getFullYear()}-${pad(currentDate.getMonth() + 1)}-${pad(currentDate.getDate())} ${pad(currentDate.getHours())}:${pad(currentDate.getMinutes())}`;
+                setTimestamp(formatted);
+                setPickerMode('date');
+            }
+        } else {
+            // iOS logic
+            setDateValue(currentDate);
+            const pad = (n) => String(n).padStart(2, '0');
+            const formatted = `${currentDate.getFullYear()}-${pad(currentDate.getMonth() + 1)}-${pad(currentDate.getDate())} ${pad(currentDate.getHours())}:${pad(currentDate.getMinutes())}`;
+            setTimestamp(formatted);
+            if (event.type === 'set') setShowDatePicker(false); // Close on selection if using modal style
+        }
     };
 
     const fetchMenuItems = async () => {
@@ -538,16 +572,23 @@ const EditTransactionModal = ({ visible, onClose, transaction, onSave }) => {
                                     <Calendar size={18} color="#1E40AF" />
                                     <Text style={styles.sectionTitle}>Waktu Transaksi</Text>
                                 </View>
-                                <TextInput
-                                    style={styles.input}
-                                    value={timestamp}
-                                    onChangeText={setTimestamp}
-                                    placeholder="YYYY-MM-DD HH:mm"
-                                />
+                                <TouchableOpacity onPress={showPicker} style={[styles.input, { justifyContent: 'center' }]}>
+                                    <Text style={{ color: '#1E293B' }}>{timestamp || 'Pilih Waktu'}</Text>
+                                </TouchableOpacity>
                                 <Text style={{ fontSize: 10, color: '#94A3B8', marginTop: 4, fontStyle: 'italic' }}>
-                                    Format: Tahun-Bulan-Tanggal Jam:Menit (Contoh: 2024-02-07 14:30)
+                                    Ketuk untuk mengubah tanggal dan jam
                                 </Text>
                             </View>
+
+                            {showDatePicker && (
+                                <DateTimePicker
+                                    value={dateValue}
+                                    mode={pickerMode}
+                                    is24Hour={true}
+                                    display="default"
+                                    onChange={onDateChange}
+                                />
+                            )}
 
                             <View style={styles.inputGroup}>
                                 <View style={styles.sectionHeader}>

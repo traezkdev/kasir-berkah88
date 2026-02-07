@@ -47,9 +47,11 @@ const DeveloperCreditsScreen = ({ navigation }) => {
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                 {/* Logo / Mascot Area */}
                 <View style={styles.logoArea}>
-                    <View style={styles.logoCircle}>
-                        <Code2 size={50} color="#FFFFFF" strokeWidth={2.5} />
-                    </View>
+                    <Image
+                        source={require('../../assets/logo.png')}
+                        style={{ width: 120, height: 120 }}
+                        resizeMode="contain"
+                    />
                     <Text style={styles.appName}>Kasir Berkah88</Text>
                     <Text style={styles.appVersion}>Versi 2.1.0 (Alpha)</Text>
                 </View>
@@ -191,7 +193,7 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: '900',
         color: '#1E293B',
-        marginTop: 20,
+        marginTop: 5,
     },
     appVersion: {
         fontSize: 12,

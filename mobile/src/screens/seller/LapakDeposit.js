@@ -220,11 +220,20 @@ const LapakDeposit = ({ navigation }) => {
         setShowFilterModal(false);
     }, []);
 
+    // Helper for local date string YYYY-MM-DD to avoid timezone issues
+    const getLocalDateString = () => {
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     const handleAddDeposit = useCallback(() => {
         setFormData({
             amount: '',
             description: '',
-            date: new Date().toISOString().split('T')[0]
+            date: getLocalDateString()
         });
         setIsDepositModalOpen(true);
     }, []);
@@ -233,7 +242,7 @@ const LapakDeposit = ({ navigation }) => {
         setFormData({
             amount: '',
             description: '',
-            date: new Date().toISOString().split('T')[0]
+            date: getLocalDateString()
         });
         setIsExpenseModalOpen(true);
     }, []);
@@ -278,17 +287,35 @@ const LapakDeposit = ({ navigation }) => {
         }
 
         try {
+            setLoading(true); // Prevent double submit
+            // Ensure date includes time component for proper ordering
+            const selectedDate = new Date(formData.date);
+            const now = new Date();
+            selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
+
+            // Format as local YYYY-MM-DD HH:mm:ss to prevent backend UTC conversion issues
+            const year = selectedDate.getFullYear();
+            const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+            const day = String(selectedDate.getDate()).padStart(2, '0');
+            const hours = String(selectedDate.getHours()).padStart(2, '0');
+            const minutes = String(selectedDate.getMinutes()).padStart(2, '0');
+            const seconds = String(selectedDate.getSeconds()).padStart(2, '0');
+            const localDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
             await apiService.post('/api/accounts/deposit', {
                 account_name: 'lapak_deposit',
-                amount: formData.amount,
+                amount: parseFloat(formData.amount),
                 description: formData.description,
-                created_at: formData.date
+                created_at: localDateTime
             });
             showToast('Deposit berhasil ditambahkan', 'success');
             setIsDepositModalOpen(false);
             fetchLapakAccountData();
         } catch (error) {
-            showToast('Gagal menambahkan deposit', 'error');
+            console.error('Error saving deposit:', error.response?.data || error.message);
+            showToast(error.response?.data?.error || 'Gagal menambahkan deposit', 'error');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -299,17 +326,33 @@ const LapakDeposit = ({ navigation }) => {
         }
 
         try {
+            setLoading(true);
+            const selectedDate = new Date(formData.date);
+            const now = new Date();
+            selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
+
+            const year = selectedDate.getFullYear();
+            const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+            const day = String(selectedDate.getDate()).padStart(2, '0');
+            const hours = String(selectedDate.getHours()).padStart(2, '0');
+            const minutes = String(selectedDate.getMinutes()).padStart(2, '0');
+            const seconds = String(selectedDate.getSeconds()).padStart(2, '0');
+            const localDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
             await apiService.post('/api/accounts/expense', {
                 account_name: 'lapak_deposit',
-                amount: formData.amount,
+                amount: parseFloat(formData.amount),
                 description: formData.description,
-                created_at: formData.date
+                created_at: localDateTime
             });
             showToast('Pengeluaran berhasil dicatat', 'success');
             setIsExpenseModalOpen(false);
             fetchLapakAccountData();
         } catch (error) {
-            showToast('Gagal mencatat pengeluaran', 'error');
+            console.error('Error saving expense:', error.response?.data || error.message);
+            showToast(error.response?.data?.error || 'Gagal mencatat pengeluaran', 'error');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -353,7 +396,11 @@ const LapakDeposit = ({ navigation }) => {
                         onChange={(event, selectedDate) => {
                             setShowPickerState(false);
                             if (selectedDate) {
-                                onDateChange(selectedDate.toISOString().split('T')[0]);
+                                // Use local time components to avoid timezone shifts
+                                const year = selectedDate.getFullYear();
+                                const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                                const day = String(selectedDate.getDate()).padStart(2, '0');
+                                onDateChange(`${year}-${month}-${day}`);
                             }
                         }}
                     />
@@ -644,6 +691,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         borderBottomLeftRadius: 32,
         borderBottomRightRadius: 32,
+        zIndex: 10, // Ensure balance card stays on top of content
     },
     headerTop: {
         flexDirection: 'row',

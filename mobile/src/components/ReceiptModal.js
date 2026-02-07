@@ -15,9 +15,9 @@ import {
     StatusBar,
     useWindowDimensions
 } from 'react-native';
-import { X, Printer, Share2, CheckCircle2, ShoppingCart, MessageSquare, Zap, ShieldCheck, Download, Copy, User, Phone, MapPin } from 'lucide-react-native';
+import { X, Printer, Share2, CheckCircle2, ShoppingCart, MessageSquare, Zap, ShieldCheck, Download, Copy, User, Phone, MapPin, AlertCircle, XCircle, Info } from 'lucide-react-native';
 import apiService, { API_URL } from '../api/apiService';
-import { useToast } from '../context/ToastContext';
+// import { useToast } from '../context/ToastContext';
 import { captureRef } from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing'; // Import Sharing
@@ -35,7 +35,13 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
     });
     const [logoUrl, setLogoUrl] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
-    const { showToast } = useToast();
+    // const { showToast } = useToast();
+    const [localToast, setLocalToast] = useState({ visible: false, message: '', type: 'success' });
+
+    const showToast = (message, type = 'success') => {
+        setLocalToast({ visible: true, message, type });
+        setTimeout(() => setLocalToast(prev => ({ ...prev, visible: false })), 3000);
+    };
     const [showPrinterModal, setShowPrinterModal] = useState(false);
     const receiptRef = React.useRef();
 
@@ -773,6 +779,25 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                     executePrint();
                 }}
             />
+            {/* Local Toast UI */}
+            {localToast.visible && (
+                <View style={[styles.toastContainer, { borderLeftColor: localToast.type === 'error' ? '#EF4444' : (localToast.type === 'warning' ? '#F59E0B' : '#10B981') }]}>
+                    <View style={styles.toastContent}>
+                        <View style={styles.iconArea}>
+                            {localToast.type === 'error' ? <XCircle size={24} color="#EF4444" /> :
+                                localToast.type === 'warning' ? <AlertCircle size={24} color="#F59E0B" /> :
+                                    <CheckCircle2 size={24} color="#10B981" />}
+                        </View>
+                        <View style={styles.textArea}>
+                            <Text style={styles.toastTitle}>{localToast.type.toUpperCase()}</Text>
+                            <Text style={styles.toastMessage}>{localToast.message}</Text>
+                        </View>
+                        <TouchableOpacity onPress={() => setLocalToast(prev => ({ ...prev, visible: false }))} style={styles.closeBtn}>
+                            <X size={18} color="#94A3B8" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            )}
         </Modal >
     );
 };
@@ -1340,6 +1365,54 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         lineHeight: 18,
     },
+    // Local Toast Styles
+    toastContainer: {
+        position: 'absolute',
+        top: 40,
+        left: 20,
+        right: 20,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        zIndex: 999999, // High z-index inside Modal
+        elevation: 50,
+        borderLeftWidth: 6,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        // Android elevation hack
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.05)',
+    },
+    toastContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    iconArea: {
+        marginRight: 12,
+    },
+    textArea: {
+        flex: 1,
+    },
+    toastTitle: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#94A3B8',
+        letterSpacing: 1,
+        marginBottom: 2,
+    },
+    toastMessage: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#1E293B',
+    },
+    closeBtn: {
+        padding: 4,
+    }
 });
 
 export default ReceiptModal;

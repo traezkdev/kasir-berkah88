@@ -122,13 +122,22 @@ const ExpenseManagement = ({ navigation }) => {
         category: ''
     });
 
+    // Helper for local date string YYYY-MM-DD to avoid timezone issues
+    const getLocalDateString = () => {
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     // Form States
     const [formData, setFormData] = useState({
         name: '',
         amount: '',
         category: 'Operasional',
         notes: '',
-        date: new Date().toISOString().split('T')[0]
+        date: getLocalDateString()
     });
 
     const [categories, setCategories] = useState(['Bahan Baku & Supplies', 'Listrik & Air', 'Pembelian Stok', 'Peralatan', 'Perawatan & Perbaikan', 'Transportasi', 'Promosi & Marketing', 'Operasional Lainnya', 'Lain-lain', 'Gaji']);
@@ -186,7 +195,11 @@ const ExpenseManagement = ({ navigation }) => {
                         onChange={(event, selectedDate) => {
                             setShowPickerState(false);
                             if (selectedDate) {
-                                onDateChange(selectedDate.toISOString().split('T')[0]);
+                                // Use local time components to avoid timezone shifts
+                                const year = selectedDate.getFullYear();
+                                const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                                const day = String(selectedDate.getDate()).padStart(2, '0');
+                                onDateChange(`${year}-${month}-${day}`);
                             }
                         }}
                     />
@@ -308,7 +321,7 @@ const ExpenseManagement = ({ navigation }) => {
             amount: '',
             category: 'Operasional',
             notes: '',
-            date: new Date().toISOString().split('T')[0]
+            date: getLocalDateString()
         });
         setShowModal(true);
     };
@@ -364,17 +377,27 @@ const ExpenseManagement = ({ navigation }) => {
         try {
             let finalData = { ...formData };
 
-            // Jika sedang edit, coba pertahankan waktu asli (HH:mm:ss) 
-            // kecuali user sengaja mengubah tanggalnya
-            if (isEditing && originalFullDate) {
-                const originalDatePart = originalFullDate.split(' ')[0];
-                const originalTimePart = originalFullDate.split(' ')[1] || '00:00:00';
+            // Handle DateTime for backend (YYYY-MM-DD HH:mm:ss Local)
+            if (formData.date) {
+                const selectedDate = new Date(formData.date);
+                // Default to current time if creating new or if date changed
+                const now = new Date();
+                let hours = String(now.getHours()).padStart(2, '0');
+                let minutes = String(now.getMinutes()).padStart(2, '0');
+                let seconds = String(now.getSeconds()).padStart(2, '0');
 
-                // Jika tanggal di form masih sama dengan tanggal asli, gunakan waktu asli
-                if (formData.date === originalDatePart) {
-                    finalData.date = `${formData.date} ${originalTimePart}`;
+                // If editing and date hasn't changed, try to preserve original time
+                if (isEditing && originalFullDate) {
+                    const originalDatePart = originalFullDate.split(' ')[0];
+                    if (formData.date === originalDatePart) {
+                        const originalTimePart = originalFullDate.split(' ')[1] || '00:00:00';
+                        hours = originalTimePart.split(':')[0] || '00';
+                        minutes = originalTimePart.split(':')[1] || '00';
+                        seconds = originalTimePart.split(':')[2] || '00';
+                    }
                 }
-                // Jika tanggal berubah, biarkan backend menangani (biasanya default ke 00:00:00 atau current time)
+
+                finalData.date = `${formData.date} ${hours}:${minutes}:${seconds}`;
             }
 
             if (isEditing) {
@@ -850,10 +873,8 @@ const styles = StyleSheet.create({
         borderRadius: 18,
         paddingHorizontal: 15,
         height: 54,
-        ...Platform.select({
-            android: { elevation: 8 },
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10 }
-        })
+        borderWidth: 1,
+        borderColor: '#E2E8F0', // Add explicit border for visibility sans shadow
     },
     searchInput: {
         flex: 1,
@@ -876,11 +897,7 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         padding: 20,
         borderWidth: 1,
-        borderColor: '#F1F5F9',
-        ...Platform.select({
-            android: { elevation: 3 },
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 }
-        })
+        borderColor: '#E2E8F0',
     },
     summaryHeader: {
         flexDirection: 'row',
@@ -983,11 +1000,7 @@ const styles = StyleSheet.create({
         padding: 16,
         marginBottom: 16,
         borderWidth: 1,
-        borderColor: '#F1F5F9',
-        ...Platform.select({
-            android: { elevation: 2 },
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5 }
-        })
+        borderColor: '#E2E8F0',
     },
     cardHeader: {
         flexDirection: 'row',

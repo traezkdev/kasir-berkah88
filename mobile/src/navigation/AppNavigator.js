@@ -37,6 +37,8 @@ import CustomerManagement from '../screens/seller/CustomerManagement';
 import SellerMenu from '../screens/seller/SellerMenu';
 import ExpenseManagement from '../screens/seller/ExpenseManagement';
 import LapakDeposit from '../screens/seller/LapakDeposit';
+import CashReconciliation from '../screens/seller/CashReconciliation';
+import DailyReport from '../screens/seller/DailyReport';
 import DeveloperCreditsScreen from '../screens/DeveloperCreditsScreen';
 
 // Customer Screens
@@ -115,6 +117,8 @@ const SellerRootStack = () => (
         <Stack.Screen name="SellerMenu" component={SellerMenu} />
         <Stack.Screen name="ExpenseManagement" component={ExpenseManagement} />
         <Stack.Screen name="LapakDeposit" component={LapakDeposit} />
+        <Stack.Screen name="CashReconciliation" component={CashReconciliation} />
+        <Stack.Screen name="DailyReport" component={DailyReport} />
         <Stack.Screen name="DeveloperCreditsScreen" component={DeveloperCreditsScreen} />
     </Stack.Navigator>
 );

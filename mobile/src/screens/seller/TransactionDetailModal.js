@@ -16,7 +16,8 @@ import {
     MessageSquare,
     RefreshCw,
     Download,
-    ArrowRight
+    ArrowRight,
+    FileText
 } from 'lucide-react-native';
 
 const TransactionDetailModal = ({
@@ -171,8 +172,8 @@ const TransactionDetailModal = ({
                             <Text style={styles.editBtnText}>Edit Transaksi</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.printBtn} onPress={onPrint}>
-                            <Download size={20} color="#FFFFFF" />
-                            <Text style={styles.printBtnText}>Unduh Struk</Text>
+                            <FileText size={20} color="#FFFFFF" />
+                            <Text style={styles.printBtnText}>Lihat Struk</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
