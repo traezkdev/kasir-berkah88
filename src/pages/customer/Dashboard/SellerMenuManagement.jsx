@@ -54,7 +54,9 @@ const SellerMenuManagement = () => {
     }, []);
 
     const fetchData = async () => {
-        setIsLoading(true);
+        if (menuItems.length === 0) {
+            setIsLoading(true);
+        }
         try {
             const [menuRes, catRes] = await Promise.all([
                 authFetch(`${import.meta.env.VITE_API_URL}/api/menu-items/all`),

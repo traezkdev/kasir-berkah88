@@ -9,11 +9,12 @@ import {
     Dimensions,
     Platform,
     StatusBar,
-    SafeAreaView,
     Image,
     TextInput,
     Modal
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import {
     User,
     MapPin,
@@ -27,9 +28,12 @@ import {
     Phone,
     UserCircle,
     Shield,
-    Bell
+    Bell,
+    Banknote
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
+
+
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
@@ -115,7 +119,7 @@ const CustomerProfile = ({ navigation }) => {
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
             <StatusBar barStyle="light-content" backgroundColor="#059669" />
 
             {/* Header Premium */}
@@ -146,6 +150,23 @@ const CustomerProfile = ({ navigation }) => {
                         <Text style={styles.userPhone}>{userData.phone || 'Belum ada nomor HP'}</Text>
                     </View>
                 </View>
+
+                {/* Points Card */}
+                {userData.role !== 'admin' && (
+                    <TouchableOpacity
+                        style={styles.pointsCard}
+                        onPress={() => navigation.navigate('PointsHistory')}
+                    >
+                        <View style={styles.pointsIconWrap}>
+                            <Banknote size={24} color="#138FEA" />
+                        </View>
+                        <View style={styles.pointsContent}>
+                            <Text style={styles.pointsLabel}>Poin Berkah88</Text>
+                            <Text style={styles.pointsValue}>{Math.floor(userData.points || 0)} Poin</Text>
+                        </View>
+                        <ChevronRight size={20} color="#CBD5E1" />
+                    </TouchableOpacity>
+                )}
 
                 {/* Menu List */}
                 <View style={styles.menuBox}>
@@ -206,10 +227,14 @@ const CustomerProfile = ({ navigation }) => {
                     <Text style={styles.logoutText}>Keluar dari Aplikasi</Text>
                 </TouchableOpacity>
 
-                <View style={styles.footerInfo}>
-                    <Text style={styles.versionText}>BERKAH88 • VERSI 2.0.4</Text>
+                <TouchableOpacity
+                    style={styles.footerInfo}
+                    onPress={() => navigation.navigate('DeveloperCreditsScreen')}
+                    activeOpacity={0.7}
+                >
+                    <Text style={styles.versionText}>BERKAH88 • VERSI 2.1.0</Text>
                     <Text style={styles.developerText}>by traezkdev</Text>
-                </View>
+                </TouchableOpacity>
 
                 <View style={{ height: 40 }} />
             </ScrollView>
@@ -230,48 +255,55 @@ const CustomerProfile = ({ navigation }) => {
                             </TouchableOpacity>
                         </View>
 
-                        <View style={styles.modalBody}>
-                            <View style={styles.inputGroup}>
-                                <Text style={styles.inputLabel}>NOMOR TELEPON</Text>
-                                <View style={styles.inputWrap}>
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder="Contoh: 08123456789"
-                                        value={tempPhone}
-                                        onChangeText={setTempPhone}
-                                        keyboardType="phone-pad"
-                                    />
-                                    <Phone size={18} color="#94A3B8" />
+                        <KeyboardAwareScrollView
+                            showsVerticalScrollIndicator={false}
+                            keyboardShouldPersistTaps="handled"
+                            enableOnAndroid={true}
+                            extraScrollHeight={20}
+                        >
+                            <View style={styles.modalBody}>
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.inputLabel}>NOMOR TELEPON</Text>
+                                    <View style={styles.inputWrap}>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Contoh: 08123456789"
+                                            value={tempPhone}
+                                            onChangeText={setTempPhone}
+                                            keyboardType="phone-pad"
+                                        />
+                                        <Phone size={18} color="#94A3B8" />
+                                    </View>
                                 </View>
-                            </View>
 
-                            <View style={styles.inputGroup}>
-                                <Text style={styles.inputLabel}>ALAMAT LENGKAP</Text>
-                                <View style={[styles.inputWrap, styles.textAreaWrap]}>
-                                    <TextInput
-                                        style={[styles.input, styles.textArea]}
-                                        placeholder="Masukkan alamat pengiriman..."
-                                        value={tempAddress}
-                                        onChangeText={setTempAddress}
-                                        multiline
-                                        numberOfLines={4}
-                                    />
-                                    <MapPin size={18} color="#94A3B8" style={{ marginTop: 12 }} />
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.inputLabel}>ALAMAT LENGKAP</Text>
+                                    <View style={[styles.inputWrap, styles.textAreaWrap]}>
+                                        <TextInput
+                                            style={[styles.input, styles.textArea]}
+                                            placeholder="Masukkan alamat pengiriman..."
+                                            value={tempAddress}
+                                            onChangeText={setTempAddress}
+                                            multiline
+                                            numberOfLines={4}
+                                        />
+                                        <MapPin size={18} color="#94A3B8" style={{ marginTop: 12 }} />
+                                    </View>
                                 </View>
-                            </View>
 
-                            <TouchableOpacity
-                                onPress={handleUpdateProfile}
-                                disabled={isLoading}
-                                style={[styles.saveBtn, isLoading && styles.saveBtnDisabled]}
-                            >
-                                {isLoading ? (
-                                    <ActivityIndicator color="#FFFFFF" size="small" />
-                                ) : (
-                                    <Text style={styles.saveBtnText}>Simpan Perubahan</Text>
-                                )}
-                            </TouchableOpacity>
-                        </View>
+                                <TouchableOpacity
+                                    onPress={handleUpdateProfile}
+                                    disabled={isLoading}
+                                    style={[styles.saveBtn, isLoading && styles.saveBtnDisabled]}
+                                >
+                                    {isLoading ? (
+                                        <ActivityIndicator color="#FFFFFF" size="small" />
+                                    ) : (
+                                        <Text style={styles.saveBtnText}>Simpan Perubahan</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+                        </KeyboardAwareScrollView>
                     </View>
                 </View>
             </Modal>
@@ -533,6 +565,44 @@ const styles = StyleSheet.create({
         height: 120,
         textAlignVertical: 'top',
         paddingTop: 16,
+    },
+    // Points Styles
+    pointsCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 24,
+        padding: 20,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: '#E0F2FE',
+        ...Platform.select({
+            web: { boxShadow: '0px 4px 15px rgba(0,0,0,0.03)' },
+            android: { elevation: 3 }
+        })
+    },
+    pointsIconWrap: {
+        width: 50,
+        height: 50,
+        borderRadius: 18,
+        backgroundColor: '#F0F9FF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 16,
+    },
+    pointsContent: {
+        flex: 1,
+    },
+    pointsLabel: {
+        fontSize: 12,
+        color: '#64748B',
+        fontWeight: 'bold',
+        marginBottom: 2,
+    },
+    pointsValue: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#0284C7',
     },
     saveBtn: {
         backgroundColor: '#059669',

@@ -10,11 +10,13 @@ import {
     Dimensions,
     Platform,
     StatusBar,
-    SafeAreaView,
     TextInput,
     Alert,
-    Modal
+    Modal,
+    Switch
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     ArrowLeft,
@@ -31,7 +33,8 @@ import {
     Banknote,
     QrCode,
     X,
-    Download
+    Download,
+    Phone
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import * as MediaLibrary from 'expo-media-library';
@@ -115,19 +118,51 @@ const CustomerCart = ({ navigation }) => {
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [showQrisModal, setShowQrisModal] = useState(false);
 
-    // Fetch user profile to get saved address
+    // Points System
+    const [points, setPoints] = useState(0);
+    const [usePoints, setUsePoints] = useState(false);
+
+    // Calculate points to use
+    const pointsToUse = usePoints
+        ? Math.min(points, cartTotal)
+        : 0;
+
+    const finalTotal = Math.max(0, cartTotal - pointsToUse);
+
+    // Fetch user profile to get saved address and points
     useFocusEffect(
         useCallback(() => {
             const fetchUserProfile = async () => {
                 try {
                     const response = await apiService.get('/api/user/profile');
-                    if (response.data.message === 'success' && response.data.data.address) {
-                        setSavedAddress(response.data.data.address);
+                    if (response.data.message === 'success') {
+                        if (response.data.data.address) {
+                            setSavedAddress(response.data.data.address);
+                        }
+                        // Fetch fresh user data (points are in users table, but profile endpoint returns user data)
+                        // Actually typically profile returns points too if columns are selected.
+                        // Let's check server.js profile endpoint. It returns: id, username, role, avatar_url, phone, address
+                        // It does NOT return points. I need to fetch points separately or update profile endpoint.
+                        // Alternatively, use /api/customers/search logic? 
+                        // Or just update profile endpoint.
+                        // Let's try to update profile endpoint in next step if needed, but for now I'll assume I can fetch it.
+                        // Wait, I can't fetch points from profile endpoint as strictly seen in server.js earlier.
+                        // I will add points to the SELECT query in server.js as a quick fix or use a separate call.
+                        // Better: make a specific call or rely on valid endpoint.
+                        // Let's try fetching from /api/user/profile again, assuming I will update backend to include points.
+                        if (response.data.data.points !== undefined) {
+                            setPoints(parseFloat(response.data.data.points));
+                        }
                     } else {
                         setSavedAddress(null);
                     }
+
+                    // Separate call to be sure if profile doesn't have it yet? 
+                    // Let's use a specialized endpoint if we can, but profile is best place.
+                    // I will add 'points' to the profile endpoint in server.js in a separate tool call if needed.
+                    // Actually, let's just do it.
                 } catch (error) {
-                    console.error("Error fetching profile address:", error);
+                    console.error("Error fetching profile:", error);
                 }
             };
 
@@ -216,7 +251,7 @@ const CustomerCart = ({ navigation }) => {
 
         const accepted = await confirm({
             title: 'Konfirmasi Pesanan',
-            message: `Total belanja Anda adalah ${formatCurrency(cartTotal)}. Lanjutkan pemesanan?`,
+            message: `Total belanja Anda adalah ${formatCurrency(finalTotal)} ${usePoints ? `(Hemat ${formatCurrency(pointsToUse)})` : ''}. Lanjutkan pemesanan?`,
             confirmText: 'Pesan Sekarang',
             type: 'primary'
         });
@@ -238,7 +273,8 @@ const CustomerCart = ({ navigation }) => {
                 notes: notes,
                 customer_address: customerAddress || null,
                 customer_phone: customerPhone || null,
-                customer_name: user?.username || user?.name || 'Pelanggan'
+                customer_name: user?.username || user?.name || 'Pelanggan',
+                pointsUsed: usePoints ? pointsToUse : 0
             };
 
             const response = await apiService.post('/api/orders', payload);
@@ -281,7 +317,7 @@ const CustomerCart = ({ navigation }) => {
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
             <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
             {/* Header */}
@@ -295,173 +331,243 @@ const CustomerCart = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            <KeyboardAwareScrollView
                 style={{ flex: 1 }}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                enableOnAndroid={true}
+                extraScrollHeight={100} // Memberikan ruang ekstra di atas keyboard
             >
-                <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Item Pesanan</Text>
-                        {cart.map((item) => (
-                            <CartItem
-                                key={item.cartId}
-                                item={item}
-                                updateQuantity={updateQuantity}
-                                handleRemoveItem={handleRemoveItem}
-                                formatCurrency={formatCurrency}
-                            />
-                        ))}
+                <View style={styles.section}>
+                    <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Item Pesanan</Text>
+                    {cart.map((item) => (
+                        <CartItem
+                            key={item.cartId}
+                            item={item}
+                            updateQuantity={updateQuantity}
+                            handleRemoveItem={handleRemoveItem}
+                            formatCurrency={formatCurrency}
+                        />
+                    ))}
+                </View>
+
+                {/* Delivery Notes */}
+                <View style={styles.section}>
+                    <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Catatan Pesanan (Optional)</Text>
+                    <View style={[styles.notesInputRow, { alignItems: 'flex-start', paddingVertical: 14 }]}>
+                        <Info size={18} color="#94A3B8" style={{ marginTop: 12 }} />
+                        <TextInput
+                            placeholder="Contoh: Jangan terlalu pedas ya..."
+                            style={[styles.notesInput, { minHeight: 80, textAlignVertical: 'top', paddingTop: 8 }]}
+                            value={notes}
+                            onChangeText={setNotes}
+                            multiline
+                        />
+                    </View>
+                </View>
+
+                {/* Delivery Address */}
+                <View style={styles.section}>
+                    <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>
+                        Data Pengiriman <Text style={{ color: '#EF4444' }}>*</Text>
+                    </Text>
+
+                    {/* Phone Input */}
+                    <View style={[styles.notesInputRow, { marginBottom: 10 }]}>
+                        <Phone size={18} color="#94A3B8" />
+                        <TextInput
+                            placeholder="Nomor Telepon / WhatsApp"
+                            style={[styles.notesInput, { height: 48, paddingVertical: 0 }]}
+                            value={customerPhone}
+                            onChangeText={setCustomerPhone}
+                            keyboardType="phone-pad"
+                        />
                     </View>
 
-                    {/* Delivery Notes */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Catatan Pesanan (Optional)</Text>
-                        <View style={styles.notesInputRow}>
-                            <Info size={16} color="#94A3B8" />
-                            <TextInput
-                                placeholder="Contoh: Jangan terlalu pedas ya..."
-                                style={styles.notesInput}
-                                value={notes}
-                                onChangeText={setNotes}
-                                multiline
-                            />
-                        </View>
+                    {savedAddress && (
+                        <TouchableOpacity
+                            style={[styles.savedAddressCard, { marginBottom: 10, padding: 16 }]}
+                            onPress={() => setCustomerAddress(savedAddress)}
+                        >
+                            <View style={styles.savedAddressIcon}>
+                                <MapPin size={22} color="#3B82F6" strokeWidth={2} />
+                            </View>
+                            <View style={styles.savedAddressInfo}>
+                                <Text style={styles.savedAddressTitle}>Alamat Tersimpan</Text>
+                                <Text style={styles.savedAddressText}>{savedAddress}</Text>
+                            </View>
+                            <ChevronRight size={18} color="#CBD5E1" />
+                        </TouchableOpacity>
+                    )}
+
+                    <View style={[styles.notesInputRow, { alignItems: 'flex-start', paddingVertical: 14 }]}>
+                        <MapPin size={18} color="#94A3B8" style={{ marginTop: 12 }} />
+                        <TextInput
+                            placeholder="Alamat lengkap (Nama jalan, No. Rumah, dll)"
+                            style={[styles.notesInput, { minHeight: 100, textAlignVertical: 'top', paddingTop: 8 }]}
+                            value={customerAddress}
+                            onChangeText={setCustomerAddress}
+                            multiline
+                        />
                     </View>
+                </View>
 
-                    {/* Delivery Address */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>
-                            Data Pengiriman <Text style={{ color: '#EF4444' }}>*</Text>
-                        </Text>
+                {/* Payment Method */}
+                <View style={styles.section}>
+                    <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Metode Pembayaran</Text>
 
-                        {/* Phone Input */}
-                        <View style={[styles.notesInputRow, { marginBottom: 12 }]}>
-                            <CreditCard size={16} color="#94A3B8" />
-                            <TextInput
-                                placeholder="Nomor Telepon / WhatsApp"
-                                style={[styles.notesInput, { height: 40 }]}
-                                value={customerPhone}
-                                onChangeText={setCustomerPhone}
-                                keyboardType="phone-pad"
-                            />
+                    {/* Opsi Tunai */}
+                    <TouchableOpacity
+                        style={[styles.paymentOption, paymentMethod === 'cash' && styles.paymentOptionActive]}
+                        onPress={() => setPaymentMethod('cash')}
+                    >
+                        <View style={styles.paymentLeft}>
+                            <View style={[styles.paymentIconWrap, paymentMethod === 'cash' && { backgroundColor: '#ECFDF5' }]}>
+                                <Banknote size={20} color={paymentMethod === 'cash' ? "#059669" : "#64748B"} />
+                            </View>
+                            <View>
+                                <Text style={[styles.paymentName, paymentMethod === 'cash' && { color: '#059669' }]}>Bayar Tunai</Text>
+                                <Text style={styles.paymentDesc}>bayar ketika makanan sudah sampai</Text>
+                            </View>
                         </View>
+                        {paymentMethod === 'cash' && <CheckCircle2 size={20} color="#059669" />}
+                    </TouchableOpacity>
 
-                        {savedAddress && (
+                    {/* Opsi Qris (Mapped to Transfer internally) */}
+                    <TouchableOpacity
+                        style={[styles.paymentOption, paymentMethod === 'transfer' && styles.paymentOptionActive]}
+                        onPress={() => setPaymentMethod('transfer')}
+                    >
+                        <View style={styles.paymentLeft}>
+                            <View style={[styles.paymentIconWrap, paymentMethod === 'transfer' && { backgroundColor: '#EFF6FF' }]}>
+                                <QrCode size={20} color={paymentMethod === 'transfer' ? "#2563EB" : "#64748B"} />
+                            </View>
+                            <View>
+                                <Text style={[styles.paymentName, paymentMethod === 'transfer' && { color: '#2563EB' }]}>Bayar dengan Qris</Text>
+                                <Text style={styles.paymentDesc}>Bayar dengan scan qris</Text>
+                            </View>
+                        </View>
+                        {paymentMethod === 'transfer' && <CheckCircle2 size={20} color="#2563EB" />}
+                    </TouchableOpacity>
+
+                    {/* QRIS Display */}
+                    {paymentMethod === 'transfer' && (
+                        <View style={styles.qrisContainer}>
+                            <Text style={styles.qrisTitle}>Scan Kode QRIS</Text>
                             <TouchableOpacity
-                                style={[styles.savedAddressCard, { marginBottom: 12 }]}
-                                onPress={() => setCustomerAddress(savedAddress)}
+                                style={styles.qrisImageWrapper}
+                                onPress={() => setShowQrisModal(true)}
+                                activeOpacity={0.9}
                             >
-                                <View style={styles.savedAddressIcon}>
-                                    <MapPin size={22} color="#3B82F6" strokeWidth={2} />
-                                </View>
-                                <View style={styles.savedAddressInfo}>
-                                    <Text style={styles.savedAddressTitle}>Alamat Tersimpan</Text>
-                                    <Text style={styles.savedAddressText}>{savedAddress}</Text>
-                                </View>
-                                <ChevronRight size={18} color="#CBD5E1" />
+                                <Image
+                                    source={require('../../../assets/qris.jpeg')}
+                                    style={styles.qrisImage}
+                                    resizeMode="contain"
+                                />
                             </TouchableOpacity>
-                        )}
-
-                        <View style={styles.notesInputRow}>
-                            <MapPin size={16} color="#94A3B8" />
-                            <TextInput
-                                placeholder="Alamat lengkap (Nama jalan, No. Rumah, dll)"
-                                style={styles.notesInput}
-                                value={customerAddress}
-                                onChangeText={setCustomerAddress}
-                                multiline
-                            />
+                            <Text style={styles.qrisInstruction}>
+                                1. Buka aplikasi e-wallet atau mobile banking{'\n'}
+                                2. Scan kode QRIS di atas{'\n'}
+                                3. Periksa nominal dan selesaikan pembayaran
+                            </Text>
                         </View>
-                    </View>
+                    )}
+                </View>
 
-                    {/* Payment Method */}
+                {/* Points Redemption Section */}
+                {points > 0 && (
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Metode Pembayaran</Text>
+                        <View style={styles.pointsSectionHeader}>
+                            <View style={styles.pointsHeaderIcon}>
+                                <Text style={styles.pointsHeaderEmoji}>💎</Text>
+                            </View>
+                            <View style={styles.pointsHeaderText}>
+                                <Text style={styles.sectionTitle}>Tukar Poin Berkah88</Text>
+                                <Text style={styles.pointsHeaderSubtitle}>Hemat lebih banyak dengan poin!</Text>
+                            </View>
+                        </View>
 
-                        {/* Opsi Tunai */}
-                        <TouchableOpacity
-                            style={[styles.paymentOption, paymentMethod === 'cash' && styles.paymentOptionActive]}
-                            onPress={() => setPaymentMethod('cash')}
-                        >
-                            <View style={styles.paymentLeft}>
-                                <View style={[styles.paymentIconWrap, paymentMethod === 'cash' && { backgroundColor: '#ECFDF5' }]}>
-                                    <Banknote size={20} color={paymentMethod === 'cash' ? "#059669" : "#64748B"} />
-                                </View>
-                                <View>
-                                    <Text style={[styles.paymentName, paymentMethod === 'cash' && { color: '#059669' }]}>Bayar Tunai</Text>
-                                    <Text style={styles.paymentDesc}>bayar ketika makanan sudah sampai</Text>
+                        <View style={styles.pointsCard}>
+                            <View style={styles.pointsCardGradient}>
+                                <View style={styles.pointsCardContent}>
+                                    <View style={styles.pointsMainRow}>
+                                        <View style={styles.pointsLeft}>
+                                            <View style={styles.pointsBadge}>
+                                                <Text style={styles.pointsBadgeText}>SALDO POIN</Text>
+                                            </View>
+                                            <Text style={styles.pointsValue}>{points.toLocaleString('id-ID')}</Text>
+                                            <Text style={styles.pointsValueLabel}>Poin Tersedia</Text>
+                                        </View>
+
+                                        <View style={styles.pointsRight}>
+                                            <View style={styles.switchContainer}>
+                                                <Text style={styles.switchLabel}>{usePoints ? 'AKTIF' : 'NONAKTIF'}</Text>
+                                                <Switch
+                                                    value={usePoints}
+                                                    onValueChange={setUsePoints}
+                                                    trackColor={{ false: '#CBD5E1', true: '#34D399' }}
+                                                    thumbColor={usePoints ? '#FFFFFF' : '#F1F5F9'}
+                                                    ios_backgroundColor="#CBD5E1"
+                                                />
+                                            </View>
+                                        </View>
+                                    </View>
+
+                                    <View style={styles.pointsEquivalentBox}>
+                                        <Text style={styles.pointsEquivalentLabel}>Setara dengan</Text>
+                                        <Text style={styles.pointsEquivalent}>{formatCurrency(points)}</Text>
+                                    </View>
                                 </View>
                             </View>
-                            {paymentMethod === 'cash' && <CheckCircle2 size={20} color="#059669" />}
-                        </TouchableOpacity>
+                        </View>
 
-                        {/* Opsi Qris (Mapped to Transfer internally) */}
-                        <TouchableOpacity
-                            style={[styles.paymentOption, paymentMethod === 'transfer' && styles.paymentOptionActive]}
-                            onPress={() => setPaymentMethod('transfer')}
-                        >
-                            <View style={styles.paymentLeft}>
-                                <View style={[styles.paymentIconWrap, paymentMethod === 'transfer' && { backgroundColor: '#EFF6FF' }]}>
-                                    <QrCode size={20} color={paymentMethod === 'transfer' ? "#2563EB" : "#64748B"} />
+                        {usePoints && pointsToUse > 0 && (
+                            <View style={styles.pointsActiveNotice}>
+                                <View style={styles.pointsActiveIcon}>
+                                    <Text style={styles.pointsActiveIconText}>✓</Text>
                                 </View>
-                                <View>
-                                    <Text style={[styles.paymentName, paymentMethod === 'transfer' && { color: '#2563EB' }]}>Bayar dengan Qris</Text>
-                                    <Text style={styles.paymentDesc}>Bayar dengan scan qris</Text>
+                                <View style={styles.pointsActiveContent}>
+                                    <Text style={styles.pointsActiveTitle}>Poin Digunakan</Text>
+                                    <Text style={styles.pointsActiveDesc}>
+                                        Kamu menghemat <Text style={styles.pointsActiveAmount}>{formatCurrency(pointsToUse)}</Text> dengan {pointsToUse.toLocaleString('id-ID')} poin
+                                    </Text>
                                 </View>
-                            </View>
-                            {paymentMethod === 'transfer' && <CheckCircle2 size={20} color="#2563EB" />}
-                        </TouchableOpacity>
-
-                        {/* QRIS Display */}
-                        {paymentMethod === 'transfer' && (
-                            <View style={styles.qrisContainer}>
-                                <Text style={styles.qrisTitle}>Scan Kode QRIS</Text>
-                                <TouchableOpacity
-                                    style={styles.qrisImageWrapper}
-                                    onPress={() => setShowQrisModal(true)}
-                                    activeOpacity={0.9}
-                                >
-                                    <Image
-                                        source={require('../../../assets/qris.jpeg')}
-                                        style={styles.qrisImage}
-                                        resizeMode="contain"
-                                    />
-                                </TouchableOpacity>
-                                <Text style={styles.qrisInstruction}>
-                                    1. Buka aplikasi e-wallet atau mobile banking{'\n'}
-                                    2. Scan kode QRIS di atas{'\n'}
-                                    3. Periksa nominal dan selesaikan pembayaran
-                                </Text>
                             </View>
                         )}
                     </View>
+                )}
 
-                    {/* Summary */}
-                    <View style={styles.summaryBox}>
-                        <View style={styles.summaryRow}>
-                            <Text style={styles.summaryLabel}>Subtotal</Text>
-                            <Text style={styles.summaryValue}>{formatCurrency(cartTotal)}</Text>
-                        </View>
-                        <View style={styles.summaryRow}>
-                            <Text style={styles.summaryLabel}>Biaya Layanan</Text>
-                            <Text style={styles.summaryValue}>Rp 0</Text>
-                        </View>
-                        <View style={[styles.summaryRow, styles.totalRow]}>
-                            <Text style={styles.totalLabel}>Total Pembayaran</Text>
-                            <Text style={styles.totalValue}>{formatCurrency(cartTotal)}</Text>
-                        </View>
+                {/* Summary */}
+                <View style={styles.summaryBox}>
+                    <View style={styles.summaryRow}>
+                        <Text style={styles.summaryLabel}>Subtotal</Text>
+                        <Text style={styles.summaryValue}>{formatCurrency(cartTotal)}</Text>
                     </View>
+                    <View style={styles.summaryRow}>
+                        <Text style={styles.summaryLabel}>Biaya Layanan</Text>
+                        <Text style={styles.summaryValue}>Rp 0</Text>
+                    </View>
+                    {usePoints && pointsToUse > 0 && (
+                        <View style={styles.summaryRow}>
+                            <Text style={[styles.summaryLabel, { color: '#0284C7' }]}>Potongan Poin</Text>
+                            <Text style={[styles.summaryValue, { color: '#0284C7' }]}>-{formatCurrency(pointsToUse)}</Text>
+                        </View>
+                    )}
+                    <View style={[styles.summaryRow, styles.totalRow]}>
+                        <Text style={styles.totalLabel}>Total Pembayaran</Text>
+                        <Text style={styles.totalValue}>{formatCurrency(finalTotal)}</Text>
+                    </View>
+                </View>
 
-                    <View style={{ height: 40 }} />
-                </ScrollView>
-            </KeyboardAvoidingView>
+                <View style={{ height: 40 }} />
+            </KeyboardAwareScrollView>
 
-            {/* Sticky Checkout Button */}
-            <View style={[styles.footer, { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F1F5F9' }]}>
+            {/* Sticky Checkout Button - Outside Scroll, but inside SafeArea */}
+            <View style={styles.footer}>
                 <View style={styles.footerLeft}>
                     <Text style={styles.footerLabel}>Total Bayar</Text>
-                    <Text style={styles.footerValue}>{formatCurrency(cartTotal)}</Text>
+                    <Text style={styles.footerValue}>{formatCurrency(finalTotal)}</Text>
                 </View>
                 <TouchableOpacity
                     style={[styles.checkoutBtn, loading && styles.checkoutBtnDisabled]}
@@ -517,6 +623,7 @@ const CustomerCart = ({ navigation }) => {
     );
 };
 
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -555,8 +662,11 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        padding: 16,
-        marginBottom: 80, // Beri ruang untuk footer absolute
+    },
+    scrollContent: {
+        paddingHorizontal: 20, // Tambahkan padding horizontal agar tidak nempel layar
+        paddingTop: 16,
+        paddingBottom: 40,
     },
     section: {
         marginBottom: 24,
@@ -565,7 +675,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '900',
         color: '#1E293B',
-        marginBottom: 16,
         letterSpacing: 0.5,
     },
 
@@ -660,19 +769,21 @@ const styles = StyleSheet.create({
     },
     notesInputRow: {
         flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: '#F8FAFC',
         borderRadius: 18,
-        padding: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
         borderWidth: 1,
         borderColor: '#F1F5F9',
-        gap: 10,
+        gap: 12,
     },
     notesInput: {
         flex: 1,
-        fontSize: 13,
+        fontSize: 14,
         color: '#1E293B',
-        height: 60,
-        textAlignVertical: 'top',
+        fontWeight: '600',
+        paddingVertical: 8,
     },
     paymentOption: {
         flexDirection: 'row',
@@ -899,6 +1010,154 @@ const styles = StyleSheet.create({
     },
     footerValue: {
         fontSize: 20,
+        fontWeight: '900',
+        color: '#059669',
+    },
+    // Points Styles - Premium Design
+    pointsSectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+        gap: 12,
+    },
+    pointsHeaderIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 16,
+        backgroundColor: '#FEF3C7',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    pointsHeaderEmoji: {
+        fontSize: 24,
+    },
+    pointsHeaderText: {
+        flex: 1,
+    },
+    pointsHeaderSubtitle: {
+        fontSize: 11,
+        color: '#64748B',
+        fontWeight: '600',
+    },
+    pointsCard: {
+        borderRadius: 24,
+        overflow: 'hidden',
+    },
+    pointsCardGradient: {
+        backgroundColor: '#FFFFFF',
+        borderWidth: 2,
+        borderColor: '#E0F2FE',
+        borderRadius: 24,
+    },
+    pointsCardContent: {
+        padding: 20,
+    },
+    pointsMainRow: {
+        flexDirection: 'row',
+        gap: 16,
+        marginBottom: 16,
+    },
+    pointsLeft: {
+        flex: 1,
+    },
+    pointsBadge: {
+        backgroundColor: '#DBEAFE',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+        alignSelf: 'flex-start',
+        marginBottom: 12,
+    },
+    pointsBadgeText: {
+        fontSize: 9,
+        fontWeight: '900',
+        color: '#1E40AF',
+        letterSpacing: 1,
+    },
+    pointsValue: {
+        fontSize: 32,
+        fontWeight: '900',
+        color: '#0284C7',
+        marginBottom: 4,
+    },
+    pointsValueLabel: {
+        fontSize: 12,
+        color: '#64748B',
+        fontWeight: '600',
+        marginBottom: 12,
+    },
+    pointsEquivalentBox: {
+        backgroundColor: '#F0F9FF',
+        padding: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#BAE6FD',
+    },
+    pointsEquivalentLabel: {
+        fontSize: 10,
+        color: '#0369A1',
+        fontWeight: '600',
+        marginBottom: 4,
+    },
+    pointsEquivalent: {
+        fontSize: 16,
+        fontWeight: '900',
+        color: '#0284C7',
+    },
+    pointsRight: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    switchContainer: {
+        alignItems: 'center',
+        gap: 8,
+    },
+    switchLabel: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#64748B',
+        letterSpacing: 1,
+    },
+    pointsActiveNotice: {
+        flexDirection: 'row',
+        backgroundColor: '#ECFDF5',
+        padding: 16,
+        borderRadius: 16,
+        marginTop: 12,
+        borderWidth: 1,
+        borderColor: '#A7F3D0',
+        gap: 12,
+    },
+    pointsActiveIcon: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#10B981',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    pointsActiveIconText: {
+        fontSize: 16,
+        color: '#FFFFFF',
+        fontWeight: '900',
+    },
+    pointsActiveContent: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    pointsActiveTitle: {
+        fontSize: 13,
+        fontWeight: '900',
+        color: '#059669',
+        marginBottom: 4,
+    },
+    pointsActiveDesc: {
+        fontSize: 12,
+        color: '#047857',
+        fontWeight: '600',
+        lineHeight: 18,
+    },
+    pointsActiveAmount: {
         fontWeight: '900',
         color: '#059669',
     },

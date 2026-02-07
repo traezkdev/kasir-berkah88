@@ -38,9 +38,89 @@ import {
 import apiService from '../../api/apiService';
 import ReceiptModal from '../../components/ReceiptModal';
 import EditTransactionModal from './EditTransactionModal';
+import TransactionDetailModal from './TransactionDetailModal';
+import ModernLoader from '../../components/ModernLoader';
 import { useOrderNotification } from '../../context/OrderNotificationContext';
 
 const { width } = Dimensions.get('window');
+
+const TransactionCard = React.memo(({ item, setSelectedTx, formatDate, formatCurrency }) => {
+    const scale = React.useRef(new Animated.Value(1)).current;
+
+    const handlePressIn = () => {
+        Animated.spring(scale, {
+            toValue: 0.98,
+            useNativeDriver: Platform.OS !== 'web',
+            speed: 50,
+            bounciness: 4
+        }).start();
+    };
+
+    const handlePressOut = () => {
+        Animated.spring(scale, {
+            toValue: 1,
+            useNativeDriver: Platform.OS !== 'web',
+            speed: 50,
+            bounciness: 4
+        }).start();
+    };
+
+    const getMethodIcon = () => {
+        const method = (item.payment_method || '').toLowerCase();
+        if (method.includes('transfer')) return <Wallet size={120} color="#3B82F6" />;
+        if (method.includes('cash') || method.includes('tunai')) return <Banknote size={120} color="#22C55E" />;
+        if (method.includes('qris')) return <QrCode size={120} color="#3B82F6" />;
+        return <CreditCard size={120} color="#3B82F6" />;
+    };
+
+    return (
+        <Pressable
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+            onPress={() => setSelectedTx(item)}
+        >
+            <Animated.View style={[styles.txCard, { transform: [{ scale }] }]}>
+                {/* Background Icon */}
+                <View style={styles.cardBgIcon}>
+                    {getMethodIcon()}
+                </View>
+
+                <View style={styles.cardHeader}>
+                    <View>
+                        <View style={styles.idBadge}>
+                            <Text style={styles.idText}>#{item.id}</Text>
+                        </View>
+                        <Text style={styles.dateText}>{formatDate(item.timestamp)}</Text>
+                    </View>
+                    <View style={[styles.methodBadge, { backgroundColor: (item.payment_method?.toLowerCase() === 'cash' || item.payment_method?.toLowerCase() === 'tunai') ? '#F0FDF4' : '#EFF6FF' }]}>
+                        <Text style={[styles.methodText, { color: (item.payment_method?.toLowerCase() === 'cash' || item.payment_method?.toLowerCase() === 'tunai') ? '#166534' : '#1E40AF' }]}>
+                            {(item.payment_method || 'Tunai').toUpperCase()}
+                        </Text>
+                    </View>
+                </View>
+
+                <View style={styles.divider} />
+
+                <View style={styles.itemsPreview}>
+                    {item.items.slice(0, 2).map((prod, idx) => (
+                        <View key={idx} style={styles.previewRow}>
+                            <Text style={styles.previewName} numberOfLines={1}>{prod.name}</Text>
+                            <Text style={styles.previewQty}>x{prod.qty || prod.quantity || 1}</Text>
+                        </View>
+                    ))}
+                    {item.items.length > 2 && (
+                        <Text style={styles.moreItemsText}>+ {item.items.length - 2} item lainnya</Text>
+                    )}
+                </View>
+
+                <View style={styles.cardFooter}>
+                    <Text style={styles.totalLabel}>Total Bayar</Text>
+                    <Text style={styles.totalValue}>{formatCurrency(item.total)}</Text>
+                </View>
+            </Animated.View>
+        </Pressable>
+    );
+});
 
 const TransactionHistory = ({ navigation }) => {
     const { refreshTrigger } = useOrderNotification();
@@ -146,11 +226,11 @@ const TransactionHistory = ({ navigation }) => {
         }
     };
 
-    const formatCurrency = (val) => {
+    const formatCurrency = useCallback((val) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val || 0);
-    };
+    }, []);
 
-    const formatDate = (date) => {
+    const formatDate = useCallback((date) => {
         if (!date) return '-';
         return new Intl.DateTimeFormat('id-ID', {
             day: 'numeric',
@@ -159,94 +239,17 @@ const TransactionHistory = ({ navigation }) => {
             hour: '2-digit',
             minute: '2-digit'
         }).format(date);
-    };
+    }, []);
 
-    const TransactionCard = ({ item, setSelectedTx, formatDate, formatCurrency }) => {
-        const scale = React.useRef(new Animated.Value(1)).current;
 
-        const handlePressIn = () => {
-            Animated.spring(scale, {
-                toValue: 0.98,
-                useNativeDriver: Platform.OS !== 'web',
-                speed: 50,
-                bounciness: 4
-            }).start();
-        };
-
-        const handlePressOut = () => {
-            Animated.spring(scale, {
-                toValue: 1,
-                useNativeDriver: Platform.OS !== 'web',
-                speed: 50,
-                bounciness: 4
-            }).start();
-        };
-
-        const getMethodIcon = () => {
-            const method = (item.payment_method || '').toLowerCase();
-            if (method.includes('transfer')) return <Wallet size={120} color="#3B82F6" />;
-            if (method.includes('cash') || method.includes('tunai')) return <Banknote size={120} color="#22C55E" />;
-            if (method.includes('qris')) return <QrCode size={120} color="#3B82F6" />;
-            return <CreditCard size={120} color="#3B82F6" />;
-        };
-
-        return (
-            <Pressable
-                onPressIn={handlePressIn}
-                onPressOut={handlePressOut}
-                onPress={() => setSelectedTx(item)}
-            >
-                <Animated.View style={[styles.txCard, { transform: [{ scale }] }]}>
-                    {/* Background Icon */}
-                    <View style={styles.cardBgIcon}>
-                        {getMethodIcon()}
-                    </View>
-
-                    <View style={styles.cardHeader}>
-                        <View>
-                            <View style={styles.idBadge}>
-                                <Text style={styles.idText}>#{item.id}</Text>
-                            </View>
-                            <Text style={styles.dateText}>{formatDate(item.timestamp)}</Text>
-                        </View>
-                        <View style={[styles.methodBadge, { backgroundColor: (item.payment_method?.toLowerCase() === 'cash' || item.payment_method?.toLowerCase() === 'tunai') ? '#F0FDF4' : '#EFF6FF' }]}>
-                            <Text style={[styles.methodText, { color: (item.payment_method?.toLowerCase() === 'cash' || item.payment_method?.toLowerCase() === 'tunai') ? '#166534' : '#1E40AF' }]}>
-                                {(item.payment_method || 'Tunai').toUpperCase()}
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.divider} />
-
-                    <View style={styles.itemsPreview}>
-                        {item.items.slice(0, 2).map((prod, idx) => (
-                            <View key={idx} style={styles.previewRow}>
-                                <Text style={styles.previewName} numberOfLines={1}>{prod.name}</Text>
-                                <Text style={styles.previewQty}>x{prod.qty || prod.quantity || 1}</Text>
-                            </View>
-                        ))}
-                        {item.items.length > 2 && (
-                            <Text style={styles.moreItemsText}>+ {item.items.length - 2} item lainnya</Text>
-                        )}
-                    </View>
-
-                    <View style={styles.cardFooter}>
-                        <Text style={styles.totalLabel}>Total Bayar</Text>
-                        <Text style={styles.totalValue}>{formatCurrency(item.total)}</Text>
-                    </View>
-                </Animated.View>
-            </Pressable>
-        );
-    };
-
-    const renderItem = ({ item }) => (
+    const renderItem = useCallback(({ item }) => (
         <TransactionCard
             item={item}
             setSelectedTx={setSelectedTx}
             formatDate={formatDate}
             formatCurrency={formatCurrency}
         />
-    );
+    ), [formatDate, formatCurrency]);
 
     const renderFooter = () => {
         if (!loadingMore) return <View style={{ height: 20 }} />;
@@ -331,10 +334,8 @@ const TransactionHistory = ({ navigation }) => {
             </View>
 
             {/* Content */}
-            {loading ? (
-                <View style={styles.loadingArea}>
-                    <ActivityIndicator size="large" color="#1E40AF" />
-                </View>
+            {loading && transactions.length === 0 ? (
+                <ModernLoader type="list" />
             ) : (
                 <FlatList
                     data={transactions}
@@ -355,128 +356,16 @@ const TransactionHistory = ({ navigation }) => {
             )}
 
             {/* Detail Modal Overlay */}
-            <Modal
+            <TransactionDetailModal
                 visible={!!selectedTx}
-                animationType="slide"
-                transparent={false}
-                onRequestClose={() => setSelectedTx(null)}
-            >
-                <View style={styles.modalContent}>
-                    <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-                    <View style={styles.modalHeader}>
-                        <View>
-                            <Text style={styles.modalTitle}>Detail Transaksi</Text>
-                            <Text style={styles.modalId}>#{selectedTx?.id}</Text>
-                        </View>
-                        <TouchableOpacity onPress={() => setSelectedTx(null)} style={styles.closeBtn}>
-                            <X size={20} color="#94A3B8" />
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.modalScrollContainer}>
-                        <FlatList
-                            data={selectedTx?.items || []}
-                            keyExtractor={(_, i) => i.toString()}
-                            style={styles.modalScroll}
-                            contentContainerStyle={styles.modalScrollContent}
-                            showsVerticalScrollIndicator={false}
-                            ListHeaderComponent={() => (
-                                <View style={styles.txInfoCard}>
-                                    <View style={styles.txInfoRow}>
-                                        <Text style={styles.txInfoLabel}>Waktu</Text>
-                                        <Text style={styles.txInfoValue}>{selectedTx ? formatDate(selectedTx.timestamp) : ''}</Text>
-                                    </View>
-                                    <View style={styles.txInfoRow}>
-                                        <Text style={styles.txInfoLabel}>Metode Pembayaran</Text>
-                                        <Text style={[styles.txInfoValue, { color: '#1E40AF', fontWeight: '900' }]}>{(selectedTx?.payment_method || 'Tunai').toUpperCase()}</Text>
-                                    </View>
-
-                                    {/* Customer Info Card if available */}
-                                    {(selectedTx?.customer_name) && (
-                                        <View style={styles.sectionCard}>
-                                            <View style={styles.sectionHeader}>
-                                                <User size={16} color="#1E40AF" />
-                                                <Text style={styles.sectionLabel}>INFORMASI PELANGGAN</Text>
-                                            </View>
-
-                                            <View style={styles.infoRow}>
-                                                <View style={{ flex: 1 }}>
-                                                    <Text style={styles.infoName}>{selectedTx.customer_name}</Text>
-                                                    <Text style={styles.infoPhone}>{selectedTx.customer_phone || '-'}</Text>
-                                                </View>
-                                                <TouchableOpacity
-                                                    style={styles.viewProfileBtn}
-                                                    onPress={() => {
-                                                        setSelectedTx(null);
-                                                        navigation.navigate('CustomerDetails', {
-                                                            customerName: selectedTx.customer_name,
-                                                            customerPhone: selectedTx.customer_phone,
-                                                            customerAddress: selectedTx.customer_address
-                                                        });
-                                                    }}
-                                                >
-                                                    <Text style={styles.viewProfileText}>Profil</Text>
-                                                    <ArrowRight size={12} color="#138FEA" />
-                                                </TouchableOpacity>
-                                            </View>
-                                        </View>
-                                    )}
-
-                                    {/* Transaction Note if available */}
-                                    {(selectedTx?.catatan || selectedTx?.notes) && (
-                                        <View style={[styles.sectionCard, { backgroundColor: '#FFFBEB', borderColor: '#FEF3C7' }]}>
-                                            <View style={styles.sectionHeader}>
-                                                <MessageSquare size={16} color="#B45309" />
-                                                <Text style={[styles.sectionLabel, { color: '#B45309' }]}>CATATAN TRANSAKSI</Text>
-                                            </View>
-                                            <Text style={{ fontSize: 14, color: '#92400E', fontStyle: 'italic', fontWeight: '500' }}>
-                                                "{selectedTx.catatan || selectedTx.notes}"
-                                            </Text>
-                                        </View>
-                                    )}
-                                </View>
-                            )}
-                            renderItem={({ item }) => (
-                                <View style={styles.modalItemRow}>
-                                    <View style={styles.modalItemLeft}>
-                                        <View style={styles.modalQtyBadge}>
-                                            <Text style={styles.modalQtyText}>x{item.qty || item.quantity || 1}</Text>
-                                        </View>
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={styles.modalItemName}>{item.name}</Text>
-                                            <Text style={styles.modalItemPrice}>@{formatCurrency(item.price)}</Text>
-                                        </View>
-                                    </View>
-                                    <Text style={styles.modalItemSubtotal}>{formatCurrency(item.price * (item.qty || item.quantity || 1))}</Text>
-                                </View>
-                            )}
-                        />
-                    </View>
-
-                    <View style={styles.modalFooter}>
-                        <View style={styles.totalRow}>
-                            <Text style={styles.grandTotalLabel}>Total Bayar</Text>
-                            <Text style={styles.grandTotalValue}>{selectedTx ? formatCurrency(selectedTx.total) : '0'}</Text>
-                        </View>
-                        <View style={styles.modalActionButtons}>
-                            <TouchableOpacity
-                                style={styles.editBtn}
-                                onPress={() => setShowEditModal(true)}
-                            >
-                                <RefreshCw size={20} color="#1E40AF" />
-                                <Text style={styles.editBtnText}>Edit Transaksi</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.printBtn}
-                                onPress={() => setShowReceipt(true)}
-                            >
-                                <Download size={20} color="#FFFFFF" />
-                                <Text style={styles.printBtnText}>Unduh Struk</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+                transaction={selectedTx}
+                onClose={() => setSelectedTx(null)}
+                onEdit={() => setShowEditModal(true)}
+                onPrint={() => setShowReceipt(true)}
+                navigation={navigation}
+                formatCurrency={formatCurrency}
+                formatDate={formatDate}
+            />
 
             {showReceipt && (
                 <ReceiptModal
@@ -926,245 +815,6 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: '#64748B',
         fontWeight: 'bold',
-    },
-    modalContent: {
-        backgroundColor: '#FFFFFF',
-        flex: 1,
-        width: '100%',
-        flexDirection: 'column',
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 24,
-        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 15 : (Platform.OS === 'ios' ? 50 : 25),
-        borderBottomWidth: 1,
-        borderBottomColor: '#F1F5F9',
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: '900',
-        color: '#1E293B',
-    },
-    modalId: {
-        fontSize: 12,
-        fontWeight: 'bold',
-        color: '#94A3B8',
-        marginTop: 2,
-    },
-    closeBtn: {
-        width: 44,
-        height: 44,
-        backgroundColor: '#F1F5F9',
-        borderRadius: 22,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalScroll: {
-        flex: 1,
-        paddingHorizontal: 24,
-    },
-    modalScrollContainer: {
-        flex: 1,
-        backgroundColor: '#FFFFFF',
-    },
-    modalScrollContent: {
-        paddingBottom: 40,
-        flexGrow: 1,
-    },
-    txInfoCard: {
-        backgroundColor: '#F8FAFC',
-        padding: 16,
-        borderRadius: 20,
-        marginTop: 16,
-        marginBottom: 24,
-    },
-    txInfoRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 8,
-    },
-    txInfoLabel: {
-        fontSize: 12,
-        fontWeight: 'bold',
-        color: '#64748B',
-    },
-    txInfoValue: {
-        fontSize: 12,
-        fontWeight: 'bold',
-        color: '#1E293B',
-    },
-    modalItemRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    modalItemLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-    },
-    modalQtyBadge: {
-        backgroundColor: '#EFF6FF',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
-        marginRight: 12,
-    },
-    modalQtyText: {
-        fontSize: 11,
-        fontWeight: '900',
-        color: '#1E40AF',
-    },
-    modalItemName: {
-        fontSize: 14,
-        fontWeight: '900',
-        color: '#1E293B',
-    },
-    modalItemPrice: {
-        fontSize: 11,
-        color: '#94A3B8',
-        fontWeight: 'bold',
-    },
-    modalItemSubtotal: {
-        fontSize: 14,
-        fontWeight: '900',
-        color: '#1E293B',
-        marginLeft: 10,
-    },
-    // Customer Info Card Styles
-    sectionCard: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 16,
-        padding: 16,
-        marginTop: 16,
-        borderWidth: 1,
-        borderColor: '#F1F5F9',
-        ...Platform.select({
-            web: { boxShadow: '0px 4px 12px rgba(0,0,0,0.05)' },
-            android: { elevation: 2 }
-        })
-    },
-    sectionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        marginBottom: 12,
-    },
-    sectionLabel: {
-        fontSize: 10,
-        fontWeight: '900',
-        color: '#64748B',
-        letterSpacing: 1,
-    },
-    infoRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    infoName: {
-        fontSize: 15,
-        fontWeight: '900',
-        color: '#1E293B',
-    },
-    infoPhone: {
-        fontSize: 11,
-        color: '#94A3B8',
-        fontWeight: 'bold',
-        marginTop: 2,
-    },
-    viewProfileBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#F0F9FF',
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        borderRadius: 10,
-        gap: 4,
-    },
-    viewProfileText: {
-        fontSize: 11,
-        fontWeight: '900',
-        color: '#138FEA',
-    },
-    modalFooter: {
-        padding: 24,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 30,
-        backgroundColor: '#FFFFFF',
-        borderTopWidth: 1,
-        borderTopColor: '#F1F5F9',
-        zIndex: 999,
-        elevation: 20,
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: -10 },
-                shadowOpacity: 0.1,
-                shadowRadius: 10,
-            },
-            android: {
-                elevation: 20,
-                borderTopWidth: 0,
-            },
-            web: {
-                boxShadow: '0px -15px 30px rgba(0,0,0,0.08)',
-                borderTopWidth: 0,
-            }
-        })
-    },
-    totalRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    grandTotalLabel: {
-        fontSize: 16,
-        fontWeight: '900',
-        color: '#1E293B',
-    },
-    grandTotalValue: {
-        fontSize: 24,
-        fontWeight: '900',
-        color: '#1E40AF',
-    },
-    printBtnText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '900',
-    },
-    modalActionButtons: {
-        flexDirection: 'row',
-        gap: 12,
-    },
-    editBtn: {
-        flex: 1,
-        backgroundColor: '#EFF6FF',
-        height: 50,
-        borderRadius: 16,
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 10,
-        borderWidth: 1,
-        borderColor: '#BFDBFE',
-    },
-    editBtnText: {
-        color: '#1E40AF',
-        fontSize: 16,
-        fontWeight: '900',
-    },
-    printBtn: {
-        flex: 1,
-        backgroundColor: '#1E40AF',
-        height: 50,
-        borderRadius: 16,
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 10,
     },
 });
 

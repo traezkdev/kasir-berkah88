@@ -201,6 +201,13 @@ const OrderDetailModal = ({ visible, onClose, order }) => {
                                     </View>
                                 )}
 
+                                {order.points_used > 0 && (
+                                    <View style={styles.totalRow}>
+                                        <Text style={[styles.totalLabel, { color: '#0284C7' }]}>Potongan Poin</Text>
+                                        <Text style={[styles.totalValue, { color: '#0284C7' }]}>-{formatCurrency(order.points_used)}</Text>
+                                    </View>
+                                )}
+
                                 {ppnAmount > 0 && (
                                     <View style={styles.totalRow}>
                                         <Text style={styles.totalLabel}>Pajak/PPN</Text>

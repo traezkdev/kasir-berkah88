@@ -6,13 +6,14 @@ import {
     TouchableOpacity,
     TextInput,
     FlatList,
-    KeyboardAvoidingView,
     Platform,
     Image,
     ActivityIndicator,
     SafeAreaView,
     StatusBar,
-    Modal
+    Modal,
+    KeyboardAvoidingView,
+    Keyboard
 } from 'react-native';
 import {
     MessageCircle,
@@ -289,9 +290,9 @@ const ChatScreen = ({ navigation }) => {
 
                 {/* Body & Input */}
                 <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
                     style={{ flex: 1 }}
-                    keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
                 >
                     {/* Active Order Widget if exists */}
                     {activeOrder && (
@@ -309,7 +310,7 @@ const ChatScreen = ({ navigation }) => {
                         </View>
                     )}
 
-                    {/* Messages List */}
+                    {/* Messages List - Now properly placed inside a View, not a ScrollView */}
                     <FlatList
                         ref={listRef}
                         data={[...messages].reverse()}
@@ -317,9 +318,12 @@ const ChatScreen = ({ navigation }) => {
                         keyExtractor={(item, index) => index.toString()}
                         contentContainerStyle={styles.messagesList}
                         inverted
+                        scrollEnabled={true}
+                        keyboardShouldPersistTaps="handled"
+                        style={{ flex: 1 }}
                     />
 
-                    {/* Input Area */}
+                    {/* Input Area - Now inside KeyboardAvoidingView */}
                     <View style={styles.inputArea}>
                         <TextInput
                             style={styles.chatInput}

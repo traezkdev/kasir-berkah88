@@ -135,20 +135,31 @@ const setupDatabase = async () => {
     console.log('banners table is ready.');
 
     const createOrdersTable = `
-      CREATE TABLE IF NOT EXISTS orders(
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      user_id INT NULL,
-      customer_name VARCHAR(255) NOT NULL,
-      customer_address TEXT,
-      items JSON NOT NULL,
-      total DECIMAL(10, 2) NOT NULL,
-      status VARCHAR(50) NOT NULL DEFAULT 'pending',
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-    );
+      CREATE TABLE IF NOT EXISTS orders (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id INT NOT NULL,
+          customer_name VARCHAR(255),
+          customer_address TEXT,
+          customer_phone VARCHAR(50),
+          items JSON NOT NULL,
+          total DECIMAL(15, 2) NOT NULL,
+          status ENUM('pending', 'accepted', 'rejected', 'cancelled', 'completed') DEFAULT 'pending',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          payment_method VARCHAR(50),
+          note TEXT,
+          points_used DECIMAL(15, 2) DEFAULT 0,
+          FOREIGN KEY (user_id) REFERENCES users(id)
+      );
     `;
     await connection.query(createOrdersTable);
     console.log('orders table is ready.');
+
+    // Check if points_used column exists in orders table
+    const [pointsUsedColumnorders] = await connection.query("SHOW COLUMNS FROM orders LIKE 'points_used'");
+    if (pointsUsedColumnorders.length === 0) {
+      await connection.query("ALTER TABLE orders ADD COLUMN points_used DECIMAL(15, 2) DEFAULT 0");
+      console.log("Added points_used column to orders table.");
+    }
 
     // Check and add payment_method to orders
     const checkPaymentMethodColumn = `
@@ -226,6 +237,39 @@ const setupDatabase = async () => {
     if (addrUsersRows[0]['COUNT(*)'] === 0) {
       await connection.query("ALTER TABLE users ADD COLUMN address TEXT DEFAULT NULL");
       console.log('Added address column to users table.');
+    }
+
+    // Check and add phone to users
+    const checkUserPhoneColumnMigration = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'phone';
+    `;
+    const [phoneUsersRowsMigration] = await connection.query(checkUserPhoneColumnMigration);
+    if (phoneUsersRowsMigration[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE users ADD COLUMN phone VARCHAR(25) DEFAULT NULL");
+      console.log('Added phone column to users table.');
+    }
+
+    // Check and add points to users
+    const checkUserPointsColumnMigration = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'points';
+    `;
+    const [pointsUsersRowsMigration] = await connection.query(checkUserPointsColumnMigration);
+    if (pointsUsersRowsMigration[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE users ADD COLUMN points DECIMAL(10, 2) DEFAULT 0");
+      console.log('Added points column to users table.');
+    }
+
+    // Check and add created_at to users
+    const checkUserCreatedAtColumnMigration = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'created_at';
+    `;
+    const [createdAtUsersRowsMigration] = await connection.query(checkUserCreatedAtColumnMigration);
+    if (createdAtUsersRowsMigration[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+      console.log('Added created_at column to users table.');
     }
 
     // Execute the create table statements
@@ -1477,6 +1521,49 @@ const setupDatabase = async () => {
     `;
     await connection.query(createPointsHistoryTable);
     console.log('points_history table is ready.');
+
+
+    // Check and add points column to users if it doesn't exist
+    const checkUserPointsColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'points';
+    `;
+    const [pointsUserRows] = await connection.query(checkUserPointsColumn);
+    if (pointsUserRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE users ADD COLUMN points DECIMAL(15, 2) DEFAULT 0.00");
+      console.log('Added points column to users table.');
+    }
+
+    // Check and add customer_id, points_used, points_earned to transactions
+    const checkTxCustomerIdColumn = `
+        SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'customer_id';
+    `;
+    const [txCustRows] = await connection.query(checkTxCustomerIdColumn);
+    if (txCustRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE transactions ADD COLUMN customer_id INT NULL, ADD FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE SET NULL");
+      console.log('Added customer_id column to transactions table.');
+    }
+
+    const checkTxPointsUsedColumn = `
+        SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'points_used';
+    `;
+    const [txPointsUsedRows] = await connection.query(checkTxPointsUsedColumn);
+    if (txPointsUsedRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE transactions ADD COLUMN points_used DECIMAL(15, 2) DEFAULT 0.00");
+      console.log('Added points_used column to transactions table.');
+    }
+
+    const checkTxPointsEarnedColumn = `
+        SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'points_earned';
+    `;
+    const [txPointsEarnedRows] = await connection.query(checkTxPointsEarnedColumn);
+    if (txPointsEarnedRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE transactions ADD COLUMN points_earned DECIMAL(15, 2) DEFAULT 0.00");
+      console.log('Added points_earned column to transactions table.');
+    }
 
     connection.release();
 

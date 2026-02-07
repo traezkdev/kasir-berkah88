@@ -287,8 +287,14 @@ const ProfileScreen = ({ navigation }) => {
                     {renderMenuItem(<HelpCircle size={20} color="#6366F1" />, 'Pusat Bantuan', 'FAQ dan Kontak Admin', () => { }, '#6366F1')}
                 </View>
 
-                <Text style={styles.versionText}>Versi 2.1.0 (Alpha)</Text>
-                <Text style={styles.developerText}>Develop By traezkdev</Text>
+                <TouchableOpacity
+                    style={{ alignItems: 'center', marginTop: 15 }}
+                    onPress={() => navigation.navigate('DeveloperCreditsScreen')}
+                    activeOpacity={0.7}
+                >
+                    <Text style={styles.versionText}>Versi 2.1.0 (Alpha)</Text>
+                    <Text style={styles.developerText}>Develop By traezkdev</Text>
+                </TouchableOpacity>
                 <View style={{ height: 100 }} />
             </ScrollView>
 

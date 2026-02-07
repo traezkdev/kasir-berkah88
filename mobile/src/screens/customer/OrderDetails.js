@@ -212,8 +212,18 @@ const OrderDetails = ({ navigation, route }) => {
                         <View style={styles.priceDivider} />
 
                         <View style={styles.summaryRow}>
+                            <Text style={styles.summaryLabel}>Subtotal</Text>
+                            <Text style={styles.summaryValue}>{formatCurrency((parseFloat(order.total) || 0) + (parseFloat(order.points_used) || 0))}</Text>
+                        </View>
+                        {order.points_used > 0 && (
+                            <View style={styles.summaryRow}>
+                                <Text style={[styles.summaryLabel, { color: '#0284C7' }]}>Potongan Poin</Text>
+                                <Text style={[styles.summaryLabel, { color: '#0284C7', fontWeight: '900' }]}>-{formatCurrency(parseFloat(order.points_used) || 0)}</Text>
+                            </View>
+                        )}
+                        <View style={[styles.summaryRow, { marginTop: 12 }]}>
                             <Text style={styles.summaryLabel}>Total Bayar</Text>
-                            <Text style={styles.summaryValue}>{formatCurrency(order.total)}</Text>
+                            <Text style={styles.summaryValue}>{formatCurrency(parseFloat(order.total) || 0)}</Text>
                         </View>
                         <View style={styles.summaryRow}>
                             <Text style={styles.summaryLabel}>Metode Pembayaran</Text>

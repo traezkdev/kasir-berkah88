@@ -3,7 +3,7 @@ import {
     StyleSheet,
     View,
     Text,
-    ScrollView,
+    FlatList,
     TouchableOpacity,
     ActivityIndicator,
     Platform,
@@ -18,22 +18,49 @@ const PointsHistory = ({ navigation }) => {
     const [points, setPoints] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-    const fetchData = useCallback(async (isRefresh = false) => {
-        if (!isRefresh) setIsLoading(true);
+    const fetchData = useCallback(async (targetPage = 1, isRefresh = false) => {
+        if (isRefresh) {
+            setRefreshing(true);
+        } else if (targetPage === 1) {
+            setIsLoading(true);
+        } else {
+            setIsLoadingMore(true);
+        }
+
         try {
             // Fetch current points
-            const pointsRes = await apiService.get('/api/customer/points');
-            if (pointsRes.data.data) setPoints(pointsRes.data.data.points);
+            if (targetPage === 1) {
+                const pointsRes = await apiService.get('/api/customer/points');
+                if (pointsRes.data.data) setPoints(pointsRes.data.data.points);
+            }
 
-            // Fetch points history
-            const historyRes = await apiService.get('/api/customer/points/history');
-            if (historyRes.data.data) setHistory(historyRes.data.data);
+            // Fetch points history with pagination
+            const historyRes = await apiService.get(`/api/customer/points/history?page=${targetPage}&limit=10`);
+            const newData = historyRes.data.data || [];
+            const pagination = historyRes.data.pagination;
+
+            if (targetPage === 1) {
+                setHistory(newData);
+            } else {
+                setHistory(prev => [...prev, ...newData]);
+            }
+
+            if (pagination) {
+                setHasMore(pagination.currentPage < pagination.totalPages);
+                setPage(pagination.currentPage);
+            } else {
+                setHasMore(false);
+            }
         } catch (error) {
             console.error("Error fetching points data:", error);
         } finally {
             setIsLoading(false);
             setRefreshing(false);
+            setIsLoadingMore(false);
         }
     }, []);
 
@@ -42,8 +69,13 @@ const PointsHistory = ({ navigation }) => {
     }, [fetchData]);
 
     const onRefresh = () => {
-        setRefreshing(true);
-        fetchData(true);
+        fetchData(1, true);
+    };
+
+    const handleLoadMore = () => {
+        if (!isLoadingMore && hasMore && !isLoading && !refreshing) {
+            fetchData(page + 1);
+        }
     };
 
     const formatDate = (dateString) => {
@@ -52,7 +84,56 @@ const PointsHistory = ({ navigation }) => {
         return date.toLocaleDateString('id-ID', options);
     };
 
-    if (isLoading && !refreshing) {
+    const renderItem = ({ item }) => (
+        <View style={styles.historyItem}>
+            <View style={[
+                styles.iconWrap,
+                { backgroundColor: item.type === 'earn' ? '#ECFDF5' : '#FEF2F2' }
+            ]}>
+                {item.type === 'earn' ? (
+                    <TrendingUp size={20} color="#10B981" />
+                ) : (
+                    <TrendingDown size={20} color="#EF4444" />
+                )}
+            </View>
+            <View style={styles.historyContent}>
+                <Text style={styles.historyDesc}>{item.description || 'Transaksi'}</Text>
+                <Text style={styles.historyDate}>{formatDate(item.created_at)}</Text>
+                {item.transaction_id && (
+                    <Text style={styles.historyTrxId}>ID: {item.transaction_id}</Text>
+                )}
+            </View>
+            <Text style={[
+                styles.historyAmount,
+                { color: item.type === 'earn' ? '#10B981' : '#EF4444' }
+            ]}>
+                {item.type === 'earn' ? '+' : '-'}{new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(item.amount)}
+            </Text>
+        </View>
+    );
+
+    const renderFooter = () => {
+        if (!isLoadingMore) return <View style={{ height: 100 }} />;
+        return (
+            <View style={styles.footerLoader}>
+                <ActivityIndicator size="small" color="#10B981" />
+                <Text style={styles.footerLoaderText}>Memuat lebih banyak...</Text>
+            </View>
+        );
+    };
+
+    const renderEmpty = () => {
+        if (isLoading) return null;
+        return (
+            <View style={styles.emptyState}>
+                <Calendar size={64} color="#CBD5E1" />
+                <Text style={styles.emptyText}>Belum ada riwayat poin</Text>
+                <Text style={styles.emptySubtext}>Mulai belanja untuk mendapatkan poin!</Text>
+            </View>
+        );
+    };
+
+    if (isLoading && page === 1 && !refreshing) {
         return (
             <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#10B981" />
@@ -79,53 +160,27 @@ const PointsHistory = ({ navigation }) => {
             {/* Points Card */}
             <View style={styles.pointsCard}>
                 <Text style={styles.pointsLabel}>TOTAL POIN ANDA</Text>
-                <Text style={styles.pointsValue}>{new Intl.NumberFormat('id-ID').format(points)}</Text>
-                <Text style={styles.pointsSubtitle}>Poin BERKAHPAY</Text>
+                <Text style={styles.pointsValue}>{new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(points)}</Text>
+                <Text style={styles.pointsSubtitle}>Poin Berkah 88</Text>
             </View>
 
             {/* History List */}
-            <ScrollView
-                style={styles.historyList}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-                showsVerticalScrollIndicator={false}
-            >
-                {history.length === 0 ? (
-                    <View style={styles.emptyState}>
-                        <Calendar size={64} color="#CBD5E1" />
-                        <Text style={styles.emptyText}>Belum ada riwayat poin</Text>
-                        <Text style={styles.emptySubtext}>Mulai belanja untuk mendapatkan poin!</Text>
-                    </View>
-                ) : (
-                    history.map((item) => (
-                        <View key={item.id} style={styles.historyItem}>
-                            <View style={[
-                                styles.iconWrap,
-                                { backgroundColor: item.type === 'earn' ? '#ECFDF5' : '#FEF2F2' }
-                            ]}>
-                                {item.type === 'earn' ? (
-                                    <TrendingUp size={20} color="#10B981" />
-                                ) : (
-                                    <TrendingDown size={20} color="#EF4444" />
-                                )}
-                            </View>
-                            <View style={styles.historyContent}>
-                                <Text style={styles.historyDesc}>{item.description || 'Transaksi'}</Text>
-                                <Text style={styles.historyDate}>{formatDate(item.created_at)}</Text>
-                                {item.transaction_id && (
-                                    <Text style={styles.historyTrxId}>ID: {item.transaction_id}</Text>
-                                )}
-                            </View>
-                            <Text style={[
-                                styles.historyAmount,
-                                { color: item.type === 'earn' ? '#10B981' : '#EF4444' }
-                            ]}>
-                                {item.type === 'earn' ? '+' : '-'}{new Intl.NumberFormat('id-ID').format(item.amount)}
-                            </Text>
-                        </View>
-                    ))
-                )}
-                <View style={{ height: 100 }} />
-            </ScrollView>
+            <View style={styles.historyListContainer}>
+                <FlatList
+                    data={history}
+                    renderItem={renderItem}
+                    keyExtractor={(item) => item.id.toString()}
+                    onEndReached={handleLoadMore}
+                    onEndReachedThreshold={0.5}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#10B981']} />
+                    }
+                    ListEmptyComponent={renderEmpty}
+                    ListFooterComponent={renderFooter}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.listContent}
+                />
+            </View>
         </View>
     );
 };
@@ -195,9 +250,12 @@ const styles = StyleSheet.create({
         color: '#64748B',
         marginTop: 4,
     },
-    historyList: {
+    historyListContainer: {
         flex: 1,
         marginTop: 24,
+    },
+    listContent: {
+        paddingBottom: 20,
     },
     emptyState: {
         alignItems: 'center',
@@ -261,6 +319,18 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '900',
         letterSpacing: -0.5,
+    },
+    footerLoader: {
+        paddingVertical: 20,
+        alignItems: 'center',
+        flexDirection: 'row',
+        justifyContent: 'center',
+    },
+    footerLoaderText: {
+        fontSize: 12,
+        color: '#94A3B8',
+        marginLeft: 8,
+        fontWeight: '600',
     },
 });
 

@@ -54,7 +54,16 @@ const NewOrderPopup = () => {
         if (showPopup && newOrder) {
             const updateTime = () => {
                 const now = new Date();
-                const createdAt = new Date(newOrder.created_at);
+                // Check multiple possible date fields from different notification types
+                const orderTimeStr = newOrder.created_at || newOrder.timestamp || new Date().toISOString();
+                const createdAt = new Date(orderTimeStr);
+
+                // Validate if createdAt is a valid date
+                if (isNaN(createdAt.getTime())) {
+                    setTimeAgo('Baru saja masuk');
+                    return;
+                }
+
                 const diffMs = now - createdAt;
                 const diffMins = Math.floor(diffMs / 60000);
 

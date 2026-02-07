@@ -33,6 +33,9 @@ import Banners from '../screens/seller/Banners';
 import CategoryManagement from '../screens/seller/CategoryManagement';
 import CustomerDetails from '../screens/seller/CustomerDetails';
 import PointManagement from '../screens/seller/PointManagement';
+import CustomerManagement from '../screens/seller/CustomerManagement';
+import SellerMenu from '../screens/seller/SellerMenu';
+import DeveloperCreditsScreen from '../screens/DeveloperCreditsScreen';
 
 // Customer Screens
 import CustomerMenu from '../screens/customer/Menu';
@@ -46,51 +49,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
-
-const SellerStack = () => (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="SellerDashboard" component={SellerDashboard} />
-        <Stack.Screen name="OrderManagement" component={OrderManagement} />
-        <Stack.Screen name="MenuManagement" component={MenuManagement} />
-        <Stack.Screen name="TransactionHistory" component={TransactionHistory} />
-        <Stack.Screen name="SalesPOS" component={SalesPOS} />
-        <Stack.Screen name="ChatScreen" component={ChatScreen} />
-    </Stack.Navigator>
-);
-
-const ProfilePlaceholder = () => {
-    const { logout, user } = useAuth();
-    const { confirm } = useConfirm();
-
-    const handleLogout = async () => {
-        const accepted = await confirm({
-            title: 'Keluar Akun',
-            message: 'Apakah Anda yakin ingin keluar dari akun Anda?',
-            confirmText: 'Ya, Keluar',
-            type: 'danger'
-        });
-        if (accepted) logout();
-    };
-
-    return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
-            <View style={{ backgroundColor: '#FFFFFF', padding: 30, borderRadius: 20, alignItems: 'center', width: '80%', borderWidth: 1, borderColor: '#E2E8F0' }}>
-                <View style={{ width: 80, height: 80, backgroundColor: '#138FEA', borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
-                    <User color="#FFFFFF" size={40} />
-                </View>
-                <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#1E293B' }}>{user?.name}</Text>
-                <Text style={{ fontSize: 14, color: '#64748B', marginBottom: 30 }}>Role: {user?.role}</Text>
-
-                <TouchableOpacity
-                    onPress={handleLogout}
-                    style={{ backgroundColor: '#EF4444', paddingVertical: 12, paddingHorizontal: 40, borderRadius: 12 }}
-                >
-                    <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Keluar Akun</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
-};
 
 const SellerTabs = () => {
     const { pendingCount } = useOrderNotification();
@@ -142,7 +100,6 @@ const SellerTabs = () => {
         </Tab.Navigator>
     );
 };
-
 const SellerRootStack = () => (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="MainTabs" component={SellerTabs} />
@@ -150,8 +107,11 @@ const SellerRootStack = () => (
         <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
         <Stack.Screen name="Banners" component={Banners} />
         <Stack.Screen name="CategoryManagement" component={CategoryManagement} />
+        <Stack.Screen name="CustomerManagement" component={CustomerManagement} />
         <Stack.Screen name="CustomerDetails" component={CustomerDetails} />
         <Stack.Screen name="PointManagement" component={PointManagement} />
+        <Stack.Screen name="SellerMenu" component={SellerMenu} />
+        <Stack.Screen name="DeveloperCreditsScreen" component={DeveloperCreditsScreen} />
     </Stack.Navigator>
 );
 
@@ -218,6 +178,7 @@ const CustomerRootStack = () => (
         <Stack.Screen name="OrderDetails" component={OrderDetails} />
         <Stack.Screen name="ChatScreen" component={ChatScreen} />
         <Stack.Screen name="PointsHistory" component={PointsHistory} />
+        <Stack.Screen name="DeveloperCreditsScreen" component={DeveloperCreditsScreen} />
     </Stack.Navigator>
 );
 

@@ -294,7 +294,12 @@ const SellerDashboard = ({ navigation }) => {
 
                 {/* Quick Actions */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Aksi Cepat</Text>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Aksi Cepat</Text>
+                        <TouchableOpacity onPress={() => navigation.navigate('SellerMenu')}>
+                            <Text style={styles.viewAll}>Lainnya</Text>
+                        </TouchableOpacity>
+                    </View>
                     <View style={styles.actionGrid}>
                         {[
                             { label: 'Chat', icon: MessageCircle, color: '#3B82F6', bgColor: '#EFF6FF', target: 'ChatScreen' },
@@ -302,7 +307,7 @@ const SellerDashboard = ({ navigation }) => {
                             { label: 'Katalog', icon: PlusCircle, color: '#10B981', bgColor: '#ECFDF5', target: 'Katalog' },
                             { label: 'Kategori', icon: BarChart3, color: '#A855F7', bgColor: '#FAF5FF', target: 'CategoryManagement' },
                             { label: 'Banner', icon: ImageIcon, color: '#F59E0B', bgColor: '#FFFBEB', target: 'Banners' },
-                            { label: 'Poin', icon: Gift, color: '#138FEA', bgColor: '#F0F9FF', target: 'PointManagement' },
+                            { label: 'Pelanggan', icon: User, color: '#138FEA', bgColor: '#F0F9FF', target: 'CustomerManagement' },
                             { label: 'Pesanan', icon: ShoppingBag, color: '#6366F1', bgColor: '#EEF2FF', target: 'Pesanan' },
                             { label: 'Riwayat', icon: History, color: '#8B5CF6', bgColor: '#F5F3FF', target: 'Transaksi' },
                         ].map((action, index) => (
@@ -563,7 +568,6 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         color: '#1E293B',
-        marginBottom: 15,
     },
     viewAll: {
         fontSize: 14,

@@ -35,6 +35,7 @@ const CustomerDetails = ({ navigation, route }) => {
         totalSpent: 0,
         totalOrders: 0
     });
+    const [points, setPoints] = useState(0);
     const [refreshing, setRefreshing] = useState(false);
 
     // Modal states
@@ -85,6 +86,28 @@ const CustomerDetails = ({ navigation, route }) => {
                 totalSpent,
                 totalOrders: filteredTx.length + filteredOrders.length
             });
+            // Fetch Customer Points (if registered)
+            try {
+                const searchQ = customerPhone || customerName;
+                if (searchQ && searchQ.length > 2) {
+                    const userRes = await apiService.get(`/api/customers/search?query=${searchQ}`);
+                    if (userRes.data.data && userRes.data.data.length > 0) {
+                        // Find exact match if possible
+                        const match = userRes.data.data.find(u =>
+                            (customerPhone && u.phone === customerPhone) ||
+                            (u.name.toLowerCase() === customerName.toLowerCase())
+                        );
+                        if (match) {
+                            setPoints(match.points || 0);
+                        } else {
+                            setPoints(userRes.data.data[0].points || 0); // Fallback to first result
+                        }
+                    }
+                }
+            } catch (err) {
+                console.log('Error fetching user points:', err);
+            }
+
         } catch (error) {
             console.error('Error fetching customer details:', error);
         } finally {
@@ -145,6 +168,11 @@ const CustomerDetails = ({ navigation, route }) => {
                             <Phone size={14} color="#138FEA" />
                             <Text style={styles.infoBadgeText}>{customerPhone || '-'}</Text>
                         </View>
+                        {points > 0 && (
+                            <View style={[styles.infoBadge, { backgroundColor: '#DCFCE7' }]}>
+                                <Text style={[styles.infoBadgeText, { color: '#166534' }]}>{points} Poin</Text>
+                            </View>
+                        )}
                     </View>
 
                     <View style={styles.addressBox}>

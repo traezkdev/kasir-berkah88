@@ -487,6 +487,14 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
             text += `${kembaliLabel}${" ".repeat(Math.max(1, 32 - kembaliLabel.length - kembaliVal.length))}${kembaliVal}\n`;
         }
 
+        if (Number(transaction.points_used || 0) > 0) {
+            text += `--------------------------------\n`;
+            const pointsLabel = "DISKON POIN";
+            const pointsVal = `-${formatCurrency(transaction.points_used)}`;
+            text += `${pointsLabel}${" ".repeat(Math.max(1, 32 - pointsLabel.length - pointsVal.length))}${pointsVal}\n`;
+        }
+
+
         if (transaction.catatan || transaction.notes) {
             text += `--------------------------------\n`;
             text += `CATATAN TRANSAKSI:\n`;
@@ -656,6 +664,34 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                         <Text style={styles.summaryLabel}>Harga Dasar</Text>
                                         <Text style={styles.summaryValue}>{formatCurrency(transaction.total - (transaction.ppn || 0))}</Text>
                                     </View>
+
+                                    {transaction.customer_name && (
+                                        <View style={styles.summaryRow}>
+                                            <Text style={styles.summaryLabel}>Pelanggan</Text>
+                                            <Text style={styles.summaryValue}>{transaction.customer_name}</Text>
+                                        </View>
+                                    )}
+
+                                    {/* Additional Payment Info for Cash */}
+                                    {((transaction.payment_method || '').toLowerCase() === 'tunai' || (transaction.payment_method || '').toLowerCase() === 'cash') && (
+                                        <>
+                                            <View style={styles.summaryRow}>
+                                                <Text style={styles.summaryLabel}>Uang Dibayar</Text>
+                                                <Text style={styles.summaryValue}>{formatCurrency(transaction.cash_paid || transaction.cashPaid || 0)}</Text>
+                                            </View>
+                                            <View style={styles.summaryRow}>
+                                                <Text style={styles.summaryLabel}>Kembalian</Text>
+                                                <Text style={styles.summaryValue}>{formatCurrency(transaction.change || 0)}</Text>
+                                            </View>
+                                        </>
+                                    )}
+
+                                    {Number(transaction.points_used || 0) > 0 && (
+                                        <View style={styles.summaryRow}>
+                                            <Text style={styles.summaryLabel}>Diskon Poin</Text>
+                                            <Text style={styles.summaryValue}>-{formatCurrency(transaction.points_used)}</Text>
+                                        </View>
+                                    )}
                                     <View style={styles.thickDivider} />
                                     <View style={styles.totalSection}>
                                         <Text style={styles.totalLabel}>TOTAL TAGIHAN</Text>
@@ -1043,6 +1079,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginBottom: 12,
+    },
+    pointLabelRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
     },
     summaryLabel: {
         fontSize: 12,

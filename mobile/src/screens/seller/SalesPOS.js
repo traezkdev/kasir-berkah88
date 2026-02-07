@@ -36,6 +36,7 @@ import {
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
 import ReceiptModal from '../../components/ReceiptModal';
+import ModernLoader from '../../components/ModernLoader';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useAppSettings } from '../../context/AppSettingsContext';
 
@@ -117,11 +118,24 @@ const SalesPOS = () => {
     const [customerAddress, setCustomerAddress] = useState('');
     const [manualDiscount, setManualDiscount] = useState('');
 
+    // Points System State
+    const [selectedCustomer, setSelectedCustomer] = useState(null);
+    const [usePoints, setUsePoints] = useState(false);
+    const [pointsToUse, setPointsToUse] = useState(0);
+    const [showCustomerSearch, setShowCustomerSearch] = useState(false);
+    const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+    const [customerSearchResults, setCustomerSearchResults] = useState([]);
+    const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
+
     const { confirm } = useConfirm();
     const { ignoreStock, toggleIgnoreStock } = useAppSettings();
 
     const fetchData = async () => {
-        setLoading(true);
+        // Hanya tampilkan loading jika data masih kosong (First Load)
+        if (menuItems.length === 0) {
+            setLoading(true);
+        }
+
         try {
             const [menuRes, catRes] = await Promise.all([
                 apiService.get('/api/menu-items/all'),
@@ -165,7 +179,10 @@ const SalesPOS = () => {
             setCategories(sortedCategories);
         } catch (error) {
             console.error('Error fetching POS data:', error);
-            Alert.alert('Error', 'Gagal memuat data menu');
+            // Hanya tampilkan alert jika ini adalah percobaan pertama dan gagal
+            if (menuItems.length === 0) {
+                Alert.alert('Error', 'Gagal memuat data menu');
+            }
         } finally {
             setLoading(false);
         }
@@ -263,8 +280,9 @@ const SalesPOS = () => {
 
     const finalTotal = useMemo(() => {
         const discountVal = parseFloat(manualDiscount || 0);
-        return Math.max(0, subtotal - discountVal);
-    }, [subtotal, manualDiscount]);
+        const pointsVal = usePoints ? pointsToUse : 0;
+        return Math.max(0, subtotal - discountVal - pointsVal);
+    }, [subtotal, manualDiscount, usePoints, pointsToUse]);
 
     const totalItemsCount = useMemo(() => {
         return cart.reduce((acc, curr) => acc + curr.quantity, 0);
@@ -299,6 +317,11 @@ const SalesPOS = () => {
             return;
         }
 
+        if (usePoints && pointsToUse > (selectedCustomer?.points || 0)) {
+            Alert.alert('Poin Kurang', 'Jumlah poin yang digunakan melebihi saldo poin pelanggan');
+            return;
+        }
+
         setIsProcessing(true);
         try {
             const transactionData = {
@@ -317,9 +340,11 @@ const SalesPOS = () => {
                 change: paid - total,
                 payment_method: paymentMethod,
                 ignoreStock: ignoreStock,
-                customer_name: customerName || null,
-                customer_phone: customerPhone || null,
-                customer_address: customerAddress || null,
+                customer_name: parseInt(selectedCustomer?.id) ? selectedCustomer.name : (customerName || null),
+                customer_phone: parseInt(selectedCustomer?.id) ? selectedCustomer.phone : (customerPhone || null),
+                customer_address: parseInt(selectedCustomer?.id) ? selectedCustomer.address : (customerAddress || null),
+                customerId: selectedCustomer?.id || null,
+                pointsUsed: usePoints ? pointsToUse : 0,
                 timestamp: new Date()
             };
 
@@ -338,15 +363,70 @@ const SalesPOS = () => {
             setCustomerName('');
             setCustomerPhone('');
             setCustomerAddress('');
+            setSelectedCustomer(null);
+            setUsePoints(false);
+            setPointsToUse(0);
             setShowReceipt(true);
             fetchData();
         } catch (error) {
             console.error('Transaction Error:', error);
-            Alert.alert('Error', 'Gagal memproses transaksi');
+            const errorMessage = error.response?.data?.error || 'Gagal memproses transaksi';
+            Alert.alert('Error', errorMessage);
         } finally {
             setIsProcessing(false);
         }
     };
+
+    // Customer Search Logic
+    const searchCustomers = useCallback(async (query = '') => {
+        setIsSearchingCustomer(true);
+        try {
+            let url = '/api/customers?limit=20'; // Default list
+
+            if (query && query.length >= 1) {
+                url = `/api/customers/search?query=${query}`;
+            }
+
+            const response = await apiService.get(url);
+            // Handle different field names (username vs name) from different endpoints if necessary
+            // But ideally we handle it in render or standardized backend response.
+            // For now, let's pass data.
+            setCustomerSearchResults(response.data.data || []);
+        } catch (error) {
+            console.error("Error searching customers:", error);
+        } finally {
+            setIsSearchingCustomer(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (showCustomerSearch) {
+            searchCustomers('');
+        }
+    }, [showCustomerSearch, searchCustomers]);
+
+    const handleSelectCustomer = (customer) => {
+        setSelectedCustomer(customer);
+        setCustomerName(customer.name);
+        setCustomerPhone(customer.phone);
+        setCustomerAddress(customer.address);
+        setShowCustomerSearch(false);
+        setCustomerSearchQuery('');
+        setCustomerSearchResults([]);
+    };
+
+    // Calculate max points usable automatically when enabled
+    useEffect(() => {
+        if (usePoints && selectedCustomer) {
+            const pendingTotal = subtotal - parseFloat(manualDiscount || 0);
+            // Can use points up to pendingTotal or limited by balance
+            // 1 Point = 1 Rupiah redemption value
+            const maxUsable = Math.min(pendingTotal, selectedCustomer.points || 0);
+            setPointsToUse(Math.floor(maxUsable));
+        } else {
+            setPointsToUse(0);
+        }
+    }, [usePoints, selectedCustomer, subtotal, manualDiscount]);
 
     const quickCashOptions = [5000, 10000, 20000, 50000, 100000];
 
@@ -427,10 +507,8 @@ const SalesPOS = () => {
             </View>
 
             {/* List */}
-            {loading ? (
-                <View style={styles.center}>
-                    <ActivityIndicator size="large" color="#138FEA" />
-                </View>
+            {loading && menuItems.length === 0 ? (
+                <ModernLoader type="grid" />
             ) : (
                 <FlatList
                     data={filteredItems}
@@ -569,32 +647,87 @@ const SalesPOS = () => {
                                 </View>
 
                                 <View style={styles.paymentSection}>
-                                    <Text style={styles.sectionLabel}>DATA PELANGGAN (OPSIONAL)</Text>
-                                    <View style={styles.customerInputContainer}>
-                                        <TextInput
-                                            style={styles.customerInput}
-                                            placeholder="Nama Pelanggan"
-                                            value={customerName}
-                                            onChangeText={setCustomerName}
-                                            placeholderTextColor="#94A3B8"
-                                        />
-                                        <TextInput
-                                            style={styles.customerInput}
-                                            placeholder="Nomor HP / WhatsApp"
-                                            value={customerPhone}
-                                            onChangeText={setCustomerPhone}
-                                            keyboardType="phone-pad"
-                                            placeholderTextColor="#94A3B8"
-                                        />
-                                        <TextInput
-                                            style={[styles.customerInput, { height: 60, textAlignVertical: 'top', paddingTop: 10 }]}
-                                            placeholder="Alamat Pelanggan"
-                                            value={customerAddress}
-                                            onChangeText={setCustomerAddress}
-                                            multiline
-                                            placeholderTextColor="#94A3B8"
-                                        />
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                                        <Text style={styles.sectionLabel}>DATA PELANGGAN</Text>
+                                        {!selectedCustomer && (
+                                            <TouchableOpacity
+                                                onPress={() => setShowCustomerSearch(true)}
+                                                style={{ backgroundColor: '#EFF6FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}
+                                            >
+                                                <Text style={{ color: '#2563EB', fontWeight: 'bold', fontSize: 12 }}>+ Cari Member</Text>
+                                            </TouchableOpacity>
+                                        )}
                                     </View>
+
+                                    {selectedCustomer ? (
+                                        <View style={styles.selectedCustomerCard}>
+                                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                <View>
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                                        <Text style={styles.customerName}>{selectedCustomer.name}</Text>
+                                                        <View style={{ backgroundColor: '#DCFCE7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                                                            <Text style={{ color: '#166534', fontSize: 10, fontWeight: 'bold' }}>MEMBER</Text>
+                                                        </View>
+                                                    </View>
+                                                    <Text style={styles.customerPhone}>{selectedCustomer.phone || '-'}</Text>
+                                                    <Text style={styles.customerPoints}>Poin: {formatCurrency(selectedCustomer.points)}</Text>
+                                                </View>
+                                                <TouchableOpacity onPress={() => {
+                                                    setSelectedCustomer(null);
+                                                    setUsePoints(false);
+                                                    setCustomerName('');
+                                                    setCustomerPhone('');
+                                                    setCustomerAddress('');
+                                                }}>
+                                                    <X size={16} color="#94A3B8" />
+                                                </TouchableOpacity>
+                                            </View>
+
+                                            {/* Points Redemption Toggle */}
+                                            {(selectedCustomer.points > 0) && (
+                                                <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#E2E8F0' }}>
+                                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <View>
+                                                            <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#1E293B' }}>Gunakan Poin</Text>
+                                                            <Text style={{ fontSize: 11, color: '#64748B' }}>Tukar {pointsToUse} poin</Text>
+                                                        </View>
+                                                        <Switch
+                                                            value={usePoints}
+                                                            onValueChange={setUsePoints}
+                                                            trackColor={{ false: "#E2E8F0", true: "#BFDBFE" }}
+                                                            thumbColor={usePoints ? "#2563EB" : "#F1F5F9"}
+                                                        />
+                                                    </View>
+                                                </View>
+                                            )}
+                                        </View>
+                                    ) : (
+                                        <View style={styles.customerInputContainer}>
+                                            <TextInput
+                                                style={styles.customerInput}
+                                                placeholder="Nama Pelanggan"
+                                                value={customerName}
+                                                onChangeText={setCustomerName}
+                                                placeholderTextColor="#94A3B8"
+                                            />
+                                            <TextInput
+                                                style={styles.customerInput}
+                                                placeholder="Nomor HP / WhatsApp"
+                                                value={customerPhone}
+                                                onChangeText={setCustomerPhone}
+                                                keyboardType="phone-pad"
+                                                placeholderTextColor="#94A3B8"
+                                            />
+                                            <TextInput
+                                                style={[styles.customerInput, { height: 60, textAlignVertical: 'top', paddingTop: 10 }]}
+                                                placeholder="Alamat Pelanggan"
+                                                value={customerAddress}
+                                                onChangeText={setCustomerAddress}
+                                                multiline
+                                                placeholderTextColor="#94A3B8"
+                                            />
+                                        </View>
+                                    )}
 
                                     <Text style={styles.sectionLabel}>DISKON MANUAL</Text>
                                     <View style={[styles.cashInputWrapper, { paddingHorizontal: 0, marginBottom: 20 }]}>
@@ -639,7 +772,6 @@ const SalesPOS = () => {
                                                     keyboardType="numeric"
                                                     value={cashPaid}
                                                     onChangeText={setCashPaid}
-                                                    autoFocus
                                                 />
                                             </View>
 
@@ -687,6 +819,12 @@ const SalesPOS = () => {
                                 <Text style={[styles.totalLabel, { color: '#EF4444', fontSize: 13 }]}>-{formatCurrency(parseFloat(manualDiscount))}</Text>
                             </View>
                         )}
+                        {usePoints && pointsToUse > 0 && (
+                            <View style={[styles.totalRow, { marginBottom: 10 }]}>
+                                <Text style={[styles.totalLabel, { color: '#2563EB', fontSize: 13 }]}>Poin Digunakan</Text>
+                                <Text style={[styles.totalLabel, { color: '#2563EB', fontSize: 13 }]}>-{formatCurrency(pointsToUse)}</Text>
+                            </View>
+                        )}
                         <View style={styles.totalRow}>
                             <Text style={styles.totalLabel}>Total Tagihan</Text>
                             <Text style={styles.totalValue}>{formatCurrency(finalTotal)}</Text>
@@ -713,6 +851,68 @@ const SalesPOS = () => {
                     transaction={lastTransaction}
                 />
             )}
+
+            {/* Customer Search Modal */}
+            <Modal
+                visible={showCustomerSearch}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setShowCustomerSearch(false)}
+            >
+                <View style={styles.customerSearchOverlay}>
+                    <View style={styles.customerSearchContainer}>
+                        <View style={styles.customerSearchHeader}>
+                            <Text style={styles.customerSearchTitle}>Cari Pelanggan</Text>
+                            <TouchableOpacity onPress={() => setShowCustomerSearch(false)}>
+                                <X size={24} color="#64748B" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.customerSearchBar}>
+                            <Search size={20} color="#94A3B8" />
+                            <TextInput
+                                style={styles.customerSearchInput}
+                                placeholder="Nama atau No. HP"
+                                value={customerSearchQuery}
+                                onChangeText={(text) => {
+                                    setCustomerSearchQuery(text);
+                                    searchCustomers(text);
+                                }}
+                                autoFocus
+                            />
+                        </View>
+
+                        <FlatList
+                            data={customerSearchResults}
+                            keyExtractor={item => item.id.toString()}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={styles.customerSearchResultItem}
+                                    onPress={() => handleSelectCustomer(item)}
+                                >
+                                    <View>
+                                        <Text style={styles.resultName}>{item.name || item.username}</Text>
+                                        <Text style={styles.resultPhone}>{item.phone}</Text>
+                                    </View>
+                                    <View style={{ alignItems: 'flex-end' }}>
+                                        <Text style={styles.resultPoints}>{formatCurrency(item.points)}</Text>
+                                        <Text style={{ fontSize: 10, color: '#94A3B8' }}>Poin</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            )}
+                            ListEmptyComponent={() => (
+                                isSearchingCustomer ? (
+                                    <ActivityIndicator style={{ marginTop: 20 }} color="#2563EB" />
+                                ) : (
+                                    <View style={{ padding: 20, alignItems: 'center' }}>
+                                        <Text style={{ color: '#94A3B8' }}>Tidak ada hasil</Text>
+                                    </View>
+                                )
+                            )}
+                        />
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -1328,6 +1528,89 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#E2E8F0',
     },
+    customerName: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#1E293B',
+    },
+    customerPhone: {
+        fontSize: 14,
+        color: '#64748B',
+    },
+    customerPoints: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#2563EB',
+        marginTop: 2,
+    },
+    customerSearchOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    customerSearchContainer: {
+        backgroundColor: '#FFFFFF',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        height: '70%',
+        padding: 20,
+    },
+    customerSearchHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    customerSearchTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#1E293B',
+    },
+    customerSearchBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F1F5F9',
+        paddingHorizontal: 15,
+        height: 50,
+        borderRadius: 12,
+        marginBottom: 15,
+    },
+    customerSearchInput: {
+        flex: 1,
+        marginLeft: 10,
+        fontSize: 15,
+        color: '#1E293B',
+    },
+    customerSearchResultItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F1F5F9',
+    },
+    resultName: {
+        fontSize: 15,
+        fontWeight: 'bold',
+        color: '#1E293B',
+    },
+    resultPhone: {
+        fontSize: 13,
+        color: '#64748B',
+    },
+    resultPoints: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#2563EB',
+    },
+    selectedCustomerCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        marginBottom: 20,
+    }
 });
 
 export default SalesPOS;

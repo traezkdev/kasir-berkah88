@@ -54,7 +54,6 @@ const RegisterScreen = ({ navigation }) => {
                 address
             });
 
-            // Assuming standard API response structure
             if (response.data.message === 'success' || response.status === 201 || response.status === 200) {
                 Alert.alert('Sukses', 'Pendaftaran berhasil! Silakan login.', [
                     { text: 'OK', onPress: () => navigation.navigate('Login') }
@@ -71,85 +70,88 @@ const RegisterScreen = ({ navigation }) => {
     };
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.container}
-        >
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                        <ArrowLeft size={24} color="#1E293B" />
-                    </TouchableOpacity>
-                    <View style={styles.headerTextWrap}>
-                        <Text style={styles.title}>Buat Akun Baru</Text>
-                        <Text style={styles.subtitle}>Lengkapi data diri Anda untuk bergabung</Text>
-                    </View>
-                </View>
-
-                <View style={styles.form}>
-                    <InputGroup
-                        icon={User}
-                        placeholder="Username"
-                        value={formData.username}
-                        onChangeText={(text) => setFormData({ ...formData, username: text })}
-                    />
-                    <InputGroup
-                        icon={Phone}
-                        placeholder="No. WhatsApp / HP"
-                        value={formData.phone}
-                        onChangeText={(text) => setFormData({ ...formData, phone: text })}
-                        keyboardType="phone-pad"
-                    />
-                    <InputGroup
-                        icon={MapPin}
-                        placeholder="Alamat Lengkap"
-                        value={formData.address}
-                        onChangeText={(text) => setFormData({ ...formData, address: text })}
-                        multiline
-                    />
-                    <InputGroup
-                        icon={Lock}
-                        placeholder="Kata Sandi"
-                        value={formData.password}
-                        onChangeText={(text) => setFormData({ ...formData, password: text })}
-                        secureTextEntry
-                    />
-                    <InputGroup
-                        icon={Lock}
-                        placeholder="Konfirmasi Kata Sandi"
-                        value={formData.confirmPassword}
-                        onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
-                        secureTextEntry
-                    />
-
-                    <TouchableOpacity
-                        style={[styles.button, loading && styles.buttonDisabled]}
-                        onPress={handleRegister}
-                        disabled={loading}
-                    >
-                        {loading ? (
-                            <ActivityIndicator color="#FFFFFF" />
-                        ) : (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                <Text style={styles.buttonText}>DAFTAR SEKARANG</Text>
-                                <ArrowRight size={20} color="#FFFFFF" />
-                            </View>
-                        )}
-                    </TouchableOpacity>
-
-                    <View style={styles.loginLink}>
-                        <Text style={styles.loginText}>Sudah punya akun? </Text>
-                        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                            <Text style={styles.loginBtn}>MASUK DISINI</Text>
+        <View style={styles.container}>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+            >
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                    <View style={styles.header}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                            <ArrowLeft size={24} color="#1E293B" />
                         </TouchableOpacity>
+                        <View style={styles.headerTextWrap}>
+                            <Text style={styles.title}>Buat Akun Baru</Text>
+                            <Text style={styles.subtitle}>Lengkapi data diri Anda untuk bergabung</Text>
+                        </View>
                     </View>
-                </View>
 
-                <View style={styles.footer}>
-                    <Text style={styles.footerText}>© 2024 Kasir Berkah88</Text>
-                </View>
-            </ScrollView>
-        </KeyboardAvoidingView>
+                    <View style={styles.form}>
+                        <InputGroup
+                            icon={User}
+                            placeholder="Username"
+                            value={formData.username}
+                            onChangeText={(text) => setFormData({ ...formData, username: text })}
+                        />
+                        <InputGroup
+                            icon={Phone}
+                            placeholder="No. WhatsApp / HP"
+                            value={formData.phone}
+                            onChangeText={(text) => setFormData({ ...formData, phone: text })}
+                            keyboardType="phone-pad"
+                        />
+                        <InputGroup
+                            icon={MapPin}
+                            placeholder="Alamat Lengkap"
+                            value={formData.address}
+                            onChangeText={(text) => setFormData({ ...formData, address: text })}
+                            multiline
+                        />
+                        <InputGroup
+                            icon={Lock}
+                            placeholder="Kata Sandi"
+                            value={formData.password}
+                            onChangeText={(text) => setFormData({ ...formData, password: text })}
+                            secureTextEntry
+                        />
+                        <InputGroup
+                            icon={Lock}
+                            placeholder="Konfirmasi Kata Sandi"
+                            value={formData.confirmPassword}
+                            onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
+                            secureTextEntry
+                        />
+
+                        <TouchableOpacity
+                            style={[styles.button, loading && styles.buttonDisabled]}
+                            onPress={handleRegister}
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <ActivityIndicator color="#FFFFFF" />
+                            ) : (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                    <Text style={styles.buttonText}>DAFTAR SEKARANG</Text>
+                                    <ArrowRight size={20} color="#FFFFFF" />
+                                </View>
+                            )}
+                        </TouchableOpacity>
+
+                        <View style={styles.loginLink}>
+                            <Text style={styles.loginText}>Sudah punya akun? </Text>
+                            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                                <Text style={styles.loginBtn}>MASUK DISINI</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
+
+            {/* Footer - Outside KeyboardAvoidingView to stay at bottom */}
+            <View style={styles.footerOutside}>
+                <Text style={styles.footerText}>© 2024 Kasir Berkah88. All Rights Reserved.</Text>
+            </View>
+        </View>
     );
 };
 
@@ -271,9 +273,10 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         fontSize: 14,
     },
-    footer: {
+    footerOutside: {
         alignItems: 'center',
-        marginTop: 40,
+        paddingBottom: 20,
+        backgroundColor: '#F8FAFC',
     },
     footerText: {
         color: '#CBD5E1',

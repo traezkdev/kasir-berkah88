@@ -793,23 +793,31 @@ app.get("/api/menu-items/all", authenticateToken, authorizeRoles('user', 'admin'
         const sql = `
             SELECT 
                 mi.*,
-                COALESCE(
-                    (
-                        SELECT JSON_ARRAYAGG(
-                            JSON_OBJECT(
-                                'id', mio.id, 
-                                'name', mio.name, 
-                                'price_adjustment', mio.price_adjustment
-                            )
-                        )
-                        FROM menu_item_options mio 
-                        WHERE mio.menu_item_id = mi.id
-                    ),
-                    '[]'
-                ) AS options,
-                (SELECT COALESCE(AVG(rating), 0) FROM menu_reviews WHERE menu_item_id = mi.id) as average_rating,
-                (SELECT COUNT(*) FROM menu_reviews WHERE menu_item_id = mi.id) as total_reviews
+                COALESCE(opt.options_json, '[]') AS options,
+                COALESCE(rev.average_rating, 0) AS average_rating,
+                COALESCE(rev.total_reviews, 0) AS total_reviews
             FROM menu_items mi
+            LEFT JOIN (
+                SELECT 
+                    menu_item_id, 
+                    JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'id', id, 
+                            'name', name, 
+                            'price_adjustment', price_adjustment
+                        )
+                    ) AS options_json
+                FROM menu_item_options
+                GROUP BY menu_item_id
+            ) opt ON mi.id = opt.menu_item_id
+            LEFT JOIN (
+                SELECT 
+                    menu_item_id, 
+                    AVG(rating) as average_rating, 
+                    COUNT(*) as total_reviews 
+                FROM menu_reviews 
+                GROUP BY menu_item_id
+            ) rev ON mi.id = rev.menu_item_id
             ORDER BY mi.order_index ASC;
         `;
         const [rows] = await db.query(sql);
@@ -2099,11 +2107,72 @@ app.get("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
 });
 
 
+
+// Search customers for POS
+app.get("/api/customers/search", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'owner'), async (req, res) => {
+    try {
+        const { query } = req.query;
+        if (!query) return res.json({ message: "success", data: [] });
+
+        // Search by name or phone
+        const sql = "SELECT id, username as name, phone, points, address FROM users WHERE role = 'pelanggan' AND (username LIKE ? OR phone LIKE ?) LIMIT 10";
+        const [rows] = await db.query(sql, [`%${query}%`, `%${query}%`]);
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get all customers with stats
+app.get("/api/customers", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'owner', 'penjual'), async (req, res) => {
+    try {
+        const { search, limit = 50, offset = 0 } = req.query;
+
+        let conditions = ["u.role = 'pelanggan'"];
+        const params = [];
+
+        if (search) {
+            conditions.push("(u.username LIKE ? OR u.phone LIKE ?)");
+            params.push(`%${search}%`, `%${search}%`);
+        }
+
+        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : "";
+
+        // Query with subqueries/joins can be tricky depending on MySQL version for aggregate + limit.
+        // Using a simpler approach:
+        const sql = `
+            SELECT 
+                u.id, 
+                u.username, 
+                u.phone, 
+                u.address, 
+                u.points, 
+                COUNT(o.id) as total_orders,
+                COALESCE(SUM(o.total), 0) as total_spent
+            FROM users u
+            LEFT JOIN orders o ON u.id = o.user_id AND o.status = 'completed'
+            ${whereClause}
+            GROUP BY u.id, u.username, u.phone, u.address, u.points
+            ORDER BY u.id DESC 
+            LIMIT ? OFFSET ?
+        `;
+
+        params.push(parseInt(limit), parseInt(offset));
+
+        const [rows] = await db.query(sql, params);
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        console.error("Error fetching customers:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
 // Create a new transaction
-app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'pelanggan'), async (req, res, next) => {
+app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'pelanggan', 'owner', 'penjual'), async (req, res, next) => {
     let connection;
     try {
-        const { items, total: frontendTotal, ppn: frontendPpn, cashPaid, change, isEmployeeMeal, payment_method, manual_discount, catatan, customer_name, customer_phone, customer_address } = req.body;
+        const { items, total: frontendTotal, ppn: frontendPpn, cashPaid, change, isEmployeeMeal, payment_method, manual_discount, catatan, customer_name, customer_phone, customer_address, customerId, pointsUsed } = req.body;
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ "error": "No items specified" });
@@ -2179,7 +2248,45 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
         const finalPaymentMethod = payment_method || 'tunai';
         const finalUserId = req.user ? req.user.userId : null;
 
-        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock, cash_paid, `change`, user_id, manual_discount, catatan, customer_name, customer_phone, customer_address) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
+        // --- Points Logic ---
+        let finalPointsUsed = 0;
+        let finalPointsEarned = 0;
+        let finalCustomerId = null;
+
+        if (customerId) {
+            // Validate customer exists and lock row
+            const [userRows] = await connection.query("SELECT id, points FROM users WHERE id = ? FOR UPDATE", [customerId]);
+            if (userRows.length === 0) {
+                await connection.rollback();
+                return res.status(400).json({ error: "Customer not found." });
+            }
+
+            finalCustomerId = userRows[0].id;
+            const currentPoints = parseFloat(userRows[0].points || 0);
+
+            // Deduct points if used
+            if (pointsUsed && pointsUsed > 0) {
+                finalPointsUsed = parseFloat(pointsUsed);
+                if (currentPoints < finalPointsUsed) {
+                    await connection.rollback();
+                    return res.status(400).json({ error: "Insufficient points balance." });
+                }
+            }
+
+            // Calculate Earned Points (1% of Total - Discount + PPN, basically Amount Paid)
+            // Or usually points logic is based on Subtotal before tax, or Grand Total.
+            // Let's use Grand Total minus Points Used (Amount actually paid in cash/transfer).
+            const amountPaidCompatible = finalTotal - finalPointsUsed;
+            // 1% cashback
+            finalPointsEarned = Math.floor(amountPaidCompatible * 0.01);
+
+            const newBalance = currentPoints - finalPointsUsed + finalPointsEarned;
+
+            // Update User Points
+            await connection.query("UPDATE users SET points = ? WHERE id = ?", [newBalance, finalCustomerId]);
+        }
+
+        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock, cash_paid, `change`, user_id, manual_discount, catatan, customer_name, customer_phone, customer_address, customer_id, points_used, points_earned) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
         const params = [
             newTransactionId,
             timestamp,
@@ -2196,7 +2303,10 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
             catatan || null,
             customer_name || null,
             customer_phone || null,
-            customer_address || null
+            customer_address || null,
+            finalCustomerId,
+            finalPointsUsed.toFixed(2),
+            finalPointsEarned.toFixed(2)
         ];
 
         await connection.query(sql, params);
@@ -2297,6 +2407,20 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
 
         await logActivity(finalUserId, 'Membuat Transaksi', 'transaction', newTransactionId, `Transaksi baru ${newTransactionId} senilai Rp ${parseFloat(finalTotal).toLocaleString('id-ID')}`);
 
+        // Emit Socket Event for Real-time Updates
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('new_order', {
+                id: newTransactionId,
+                total: finalTotal,
+                timestamp: timestamp,
+                items: itemsWithDetails,
+                status: 'completed', // Transactions are instantly completed
+                payment_method: finalPaymentMethod,
+                is_transaction: true // Marker so frontend knows it's a direct transaction
+            });
+        }
+
         res.json({
             "message": "success",
             "data": {
@@ -2371,31 +2495,28 @@ app.get("/api/customer/points", authenticateToken, async (req, res) => {
     }
 });
 
-app.get("/api/customer/points/history", authenticateToken, async (req, res) => {
-    try {
-        const sql = "SELECT * FROM points_history WHERE user_id = ? ORDER BY created_at DESC";
-        const [rows] = await db.query(sql, [req.user.userId]);
-        res.json({ message: "success", data: rows });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
 
 // Update a transaction
 app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res, next) => {
     try {
-        const { total, ppn, isEmployeeMeal, payment_method, timestamp, manual_discount, catatan, items } = req.body;
+        const { total, ppn, isEmployeeMeal, payment_method, timestamp, manual_discount, catatan, items, customer_name, customer_phone, customer_address } = req.body;
         const { id } = req.params;
 
         const sql = `UPDATE transactions SET 
-           total = COALESCE(?, total), 
-           ppn = COALESCE(?, ppn), 
-           isEmployeeMeal = COALESCE(?, isEmployeeMeal), 
-           payment_method = COALESCE(?, payment_method),
-           timestamp = COALESCE(?, timestamp),
-           manual_discount = COALESCE(?, manual_discount),
-           catatan = COALESCE(?, catatan),
-           items = COALESCE(?, items)
+           \`total\` = COALESCE(?, \`total\`), 
+           \`ppn\` = COALESCE(?, \`ppn\`), 
+           \`isEmployeeMeal\` = COALESCE(?, \`isEmployeeMeal\`), 
+           \`payment_method\` = COALESCE(?, \`payment_method\`),
+           \`timestamp\` = COALESCE(?, \`timestamp\`),
+           \`manual_discount\` = COALESCE(?, \`manual_discount\`),
+           \`catatan\` = COALESCE(?, \`catatan\`),
+           \`items\` = COALESCE(?, \`items\`),
+           \`cash_paid\` = COALESCE(?, \`cash_paid\`),
+           \`change\` = COALESCE(?, \`change\`),
+           \`customer_name\` = COALESCE(?, \`customer_name\`),
+           \`customer_phone\` = COALESCE(?, \`customer_phone\`),
+           \`customer_address\` = COALESCE(?, \`customer_address\`),
+           \`customer_id\` = COALESCE(?, \`customer_id\`)
            WHERE id = ? AND deleted_at IS NULL`;
 
         const params = [
@@ -2403,10 +2524,16 @@ app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
             ppn,
             isEmployeeMeal !== undefined ? (isEmployeeMeal ? 1 : 0) : null,
             payment_method,
-            timestamp ? new Date(timestamp) : null,
+            timestamp ? timestamp : null,
             manual_discount,
             catatan,
             items ? (typeof items === 'string' ? items : JSON.stringify(items)) : null,
+            req.body.cash_paid !== undefined ? parseFloat(req.body.cash_paid) : null,
+            req.body.change !== undefined ? parseFloat(req.body.change) : null,
+            customer_name !== undefined ? customer_name : null,
+            customer_phone !== undefined ? customer_phone : null,
+            customer_address !== undefined ? customer_address : null,
+            req.body.customerId !== undefined ? req.body.customerId : (req.body.customer_id !== undefined ? req.body.customer_id : null),
             id
         ];
 
@@ -2417,6 +2544,17 @@ app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
         }
 
         await logActivity(req.user.userId, 'Sunting Transaksi', 'transaction', id, `Transaksi ${id} diperbarui. Total: Rp ${parseFloat(total).toLocaleString('id-ID')}`);
+
+        // Emit Socket Update
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('order_update', {
+                id: id,
+                status: 'updated',
+                is_transaction: true
+            });
+        }
+
         res.json({ message: "success", data: req.body, changes: result.affectedRows });
     } catch (err) {
         res.status(400).json({ "error": err.message, "stack": err.stack });
@@ -2430,6 +2568,16 @@ app.delete("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'a
         const [result] = await db.query(sql, [new Date(), req.params.id]);
 
         await logActivity(req.user.userId, 'Menghapus Transaksi', 'transaction', req.params.id, `Transaksi ${req.params.id} dipindahkan ke sampah`);
+
+        // Emit Socket Update
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('order_update', {
+                id: req.params.id,
+                status: 'deleted',
+                is_transaction: true
+            });
+        }
 
         res.json({ "message": "deleted", changes: result.affectedRows });
     } catch (err) {
@@ -2453,8 +2601,31 @@ app.get("/api/customer/points", authenticateToken, authorizeRoles('pelanggan', '
 // Get current user's point history (Pelanggan)
 app.get("/api/customer/points/history", authenticateToken, authorizeRoles('pelanggan', 'user', 'admin'), async (req, res) => {
     try {
-        const [rows] = await db.query('SELECT * FROM points_history WHERE user_id = ? ORDER BY created_at DESC', [req.user.userId]);
-        res.json({ message: "success", data: rows });
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 10;
+        const offset = (page - 1) * limit;
+
+        // Count total items for pagination
+        const [countRows] = await db.query('SELECT COUNT(*) as total FROM points_history WHERE user_id = ?', [req.user.userId]);
+        const totalItems = countRows[0].total;
+        const totalPages = Math.ceil(totalItems / limit);
+
+        // Get paginated data
+        const [rows] = await db.query(
+            'SELECT * FROM points_history WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+            [req.user.userId, limit, offset]
+        );
+
+        res.json({
+            message: "success",
+            data: rows,
+            pagination: {
+                currentPage: page,
+                totalPages: totalPages,
+                totalItems: totalItems,
+                limit: limit
+            }
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -3355,7 +3526,7 @@ app.post("/api/orders", (req, res, next) => {
     }
 }, async (req, res) => {
     try {
-        const { customer_name, customer_address, customer_phone, items, payment_method, note, notes } = req.body; // 'total' will be calculated on backend
+        const { customer_name, customer_address, customer_phone, items, payment_method, note, notes, pointsUsed } = req.body; // 'total' will be calculated on backend
         if (!customer_name || !items || items.length === 0) {
             return res.status(400).json({ error: "Missing required fields: customer_name, items" });
         }
@@ -3422,8 +3593,35 @@ app.post("/api/orders", (req, res, next) => {
         const paymentMethodValue = payment_method || 'Tunai';
         const orderNote = note || notes || null;
 
-        const sql = 'INSERT INTO orders (user_id, customer_name, customer_address, customer_phone, items, total, status, payment_method, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
-        const params = [userId, customer_name, customer_address, customer_phone || null, JSON.stringify(orderItemsWithDetails), calculatedTotal, 'pending', paymentMethodValue, orderNote];
+        let finalPointsUsed = 0;
+        // Validate and Deduct Points
+        if (userId && pointsUsed && pointsUsed > 0) {
+            // Check user points balance
+            const [userRows] = await db.query('SELECT points FROM users WHERE id = ?', [userId]);
+            if (userRows.length > 0) {
+                const currentPoints = parseFloat(userRows[0].points || 0);
+                if (currentPoints >= pointsUsed) {
+                    // Check if pointsUsed exceeds total order amount
+                    if (pointsUsed > calculatedTotal) {
+                        return res.status(400).json({ error: "Points used cannot exceed order total." });
+                    }
+
+                    // Deduct points
+                    await db.query('UPDATE users SET points = points - ? WHERE id = ?', [pointsUsed, userId]);
+                    await db.query(
+                        'INSERT INTO points_history (user_id, amount, type, description) VALUES (?, ?, ?, ?)',
+                        [userId, pointsUsed, 'redeem', `Digunakan untuk Order`]
+                    );
+                    finalPointsUsed = parseFloat(pointsUsed);
+                    calculatedTotal -= finalPointsUsed; // Apply discount
+                } else {
+                    return res.status(400).json({ error: "Insufficient points balance." });
+                }
+            }
+        }
+
+        const sql = 'INSERT INTO orders (user_id, customer_name, customer_address, customer_phone, items, total, points_used, status, payment_method, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        const params = [userId, customer_name, customer_address, customer_phone || null, JSON.stringify(orderItemsWithDetails), calculatedTotal, finalPointsUsed, 'pending', paymentMethodValue, orderNote];
         const [result] = await db.query(sql, params);
 
         const orderId = result.insertId;
@@ -3445,7 +3643,8 @@ app.post("/api/orders", (req, res, next) => {
             id: orderId,
             customer_name,
             total: calculatedTotal,
-            status: 'pending'
+            status: 'pending',
+            created_at: new Date()
         });
 
         res.status(201).json({
@@ -3457,6 +3656,7 @@ app.post("/api/orders", (req, res, next) => {
                 customer_address,
                 items: orderItemsWithDetails,
                 total: calculatedTotal,
+                points_used: finalPointsUsed,
                 status: 'pending',
                 payment_method: paymentMethodValue
             }
@@ -3580,7 +3780,7 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
         await connection.beginTransaction();
 
         // Get the order to check ownership and current status
-        const [orderRows] = await connection.query('SELECT user_id, status, customer_name, customer_address, customer_phone, items, total, payment_method, note FROM orders WHERE id = ? FOR UPDATE', [id]);
+        const [orderRows] = await connection.query('SELECT user_id, status, customer_name, customer_address, customer_phone, items, total, payment_method, note, points_used FROM orders WHERE id = ? FOR UPDATE', [id]);
 
         if (orderRows.length === 0) {
             await connection.rollback();
@@ -3605,6 +3805,17 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
         if (status === 'rejected' || status === 'cancelled' || status === 'completed') {
             const updateSql = 'UPDATE orders SET status = ? WHERE id = ?';
             await connection.query(updateSql, [status, id]);
+
+            // --- REFUND POINTS if Rejected or Cancelled ---
+            if ((status === 'rejected' || status === 'cancelled') && order.points_used > 0 && order.user_id) {
+                await connection.query('UPDATE users SET points = points + ? WHERE id = ?', [order.points_used, order.user_id]);
+                await connection.query(
+                    'INSERT INTO points_history (user_id, amount, type, description) VALUES (?, ?, ?, ?)',
+                    [order.user_id, order.points_used, 'refund', `Refund poin dari Order #${id} (${status})`]
+                );
+                console.log(`[Order] Refunded ${order.points_used} points to user ${order.user_id} for order ${id}`);
+            }
+            // --- End Refund Logic ---
 
             // --- Points Awarding Logic for Completed Orders ---
             if (status === 'completed' && order.user_id) {
@@ -3867,7 +4078,9 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
                 isEmployeeMeal: 0,
                 payment_method: order.payment_method || 'Tunai',
                 order_id: id,
-                ignore_stock: effectivelyIgnoreStock ? 1 : 0
+                ignore_stock: effectivelyIgnoreStock ? 1 : 0,
+                customer_id: order.user_id || null, // Ensure customer_id is set
+                points_used: order.points_used || 0
             };
 
             const transactionParams = [
@@ -3883,10 +4096,12 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
                 order.customer_name || null,
                 order.customer_phone || null,
                 order.customer_address || null,
-                order.note || null
+                order.note || null,
+                transactionData.customer_id,
+                transactionData.points_used
             ];
 
-            await connection.query('INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, order_id, ignore_stock, customer_name, customer_phone, customer_address, catatan) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)', transactionParams);
+            await connection.query('INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, order_id, ignore_stock, customer_name, customer_phone, customer_address, catatan, customer_id, points_used) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', transactionParams);
 
             // 5. Update the order status to 'accepted'
             await connection.query('UPDATE orders SET status = ? WHERE id = ?', ['accepted', id]);
@@ -4568,7 +4783,7 @@ app.delete("/api/admin/users/:id", authenticateToken, authorizeRoles('admin'), a
 // Get User Profile
 app.get("/api/user/profile", authenticateToken, async (req, res) => {
     try {
-        const sql = 'SELECT id, username, role, avatar_url, phone, address FROM users WHERE id = ?';
+        const sql = 'SELECT id, username, role, avatar_url, phone, address, points FROM users WHERE id = ?';
         const [rows] = await db.query(sql, [req.user.userId]);
         if (rows.length > 0) {
             res.json({ message: "success", data: rows[0] });

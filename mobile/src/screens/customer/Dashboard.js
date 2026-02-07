@@ -297,16 +297,10 @@ const CustomerDashboard = ({ navigation }) => {
                 <View style={styles.actionCard}>
                     <View style={styles.saldoRow}>
                         <View>
-                            <Text style={styles.saldoLabel}>BERKAHPAY</Text>
-                            <Text style={styles.saldoValue}>{new Intl.NumberFormat('id-ID').format(points)} Poin</Text>
+                            <Text style={styles.saldoLabel}>Poin Berkah 88</Text>
+                            <Text style={styles.saldoValue}>{new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(points)} Poin</Text>
                         </View>
                         <View style={styles.saldoActions}>
-                            <TouchableOpacity style={styles.saldoBtn}>
-                                <View style={styles.saldoIconWrap}>
-                                    <PlusCircle size={20} color="#10B981" />
-                                </View>
-                                <Text style={styles.saldoBtnText}>TOP UP</Text>
-                            </TouchableOpacity>
                             <TouchableOpacity
                                 style={styles.saldoBtn}
                                 onPress={() => navigation.navigate('PointsHistory')}
