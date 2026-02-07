@@ -78,11 +78,12 @@ const SellerMenuManagement = () => {
     const handleOpenModal = (item = null) => {
         if (item) {
             setEditingItem(item);
+            const currentCategory = (item.category || '').trim();
             setFormData({
                 name: item.name,
                 price: item.price,
                 stock: item.stock,
-                category: item.category,
+                category: currentCategory || (categories.length > 0 ? categories[0].name : 'Lainnya'),
                 hpp: item.hpp || '',
                 discount: item.discount || 0,
                 is_featured: item.is_featured === 1 || item.is_featured === true,
@@ -108,6 +109,13 @@ const SellerMenuManagement = () => {
         setImageFile(null);
         setIsModalOpen(true);
     };
+
+    // Sinkronisasi kategori saat daftar kategori tersedia
+    useEffect(() => {
+        if (isModalOpen && !formData.category && categories.length > 0) {
+            setFormData(prev => ({ ...prev, category: categories[0].name }));
+        }
+    }, [isModalOpen, categories, formData.category]);
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
@@ -493,15 +501,33 @@ const SellerMenuManagement = () => {
 
                                     <div>
                                         <label className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2 mb-2 block">Kategori</label>
-                                        <select
-                                            value={formData.category}
-                                            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                            className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-2 focus:ring-blue-500 outline-none text-gray-800 font-bold transition-all appearance-none"
-                                        >
-                                            {categories.map(cat => (
-                                                <option key={cat.id} value={cat.name}>{cat.name}</option>
-                                            ))}
-                                        </select>
+                                        <div className="flex overflow-x-auto pb-2 gap-2 no-scrollbar ml-2 mt-1">
+                                            {categories.map(cat => {
+                                                const isActive = (formData.category || '').trim().toLowerCase() === (cat.name || '').trim().toLowerCase();
+                                                return (
+                                                    <button
+                                                        key={cat.id}
+                                                        type="button"
+                                                        onClick={() => setFormData({ ...formData, category: cat.name })}
+                                                        className={`whitespace-nowrap px-4 py-2 rounded-xl border transition-all font-bold text-xs ${isActive
+                                                                ? 'bg-[#1E40AF] border-[#1E40AF] text-white'
+                                                                : 'bg-gray-50 border-gray-100 text-gray-400 hover:bg-gray-100'
+                                                            }`}
+                                                    >
+                                                        {(cat.name || '').trim()}
+                                                    </button>
+                                                );
+                                            })}
+                                            {/* Fallback jika kategori tersimpan tidak ada di list utama (case-insensitive) */}
+                                            {formData.category && !categories.find(c => (c.name || '').trim().toLowerCase() === (formData.category || '').trim().toLowerCase()) && (
+                                                <button
+                                                    type="button"
+                                                    className="whitespace-nowrap px-4 py-2 rounded-xl bg-[#1E40AF] border-[#1E40AF] text-white font-bold text-xs"
+                                                >
+                                                    {formData.category.trim()}
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
 
                                     <div>

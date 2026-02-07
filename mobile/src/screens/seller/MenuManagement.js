@@ -83,11 +83,12 @@ const MenuManagement = ({ navigation }) => {
     const handleOpenModal = useCallback((item = null) => {
         if (item) {
             setEditingItem(item);
+            const currentCategory = (item.category || '').trim();
             setFormData({
                 name: item.name,
                 price: item.price.toString(),
                 stock: item.stock.toString(),
-                category: item.category,
+                category: currentCategory || (categories.length > 0 ? categories[0].name : 'Lainnya'),
                 hpp: (item.hpp || '0').toString(),
                 discount: (item.discount || '0').toString(),
                 is_featured: item.is_featured === 1 || item.is_featured === true,
@@ -110,6 +111,13 @@ const MenuManagement = ({ navigation }) => {
         }
         setIsModalOpen(true);
     }, [categories]);
+
+    // Sinkronisasi kategori saat daftar kategori dari backend tersedia
+    useEffect(() => {
+        if (isModalOpen && !formData.category && categories.length > 0) {
+            setFormData(prev => ({ ...prev, category: categories[0].name }));
+        }
+    }, [isModalOpen, categories, formData.category]);
 
     const pickImage = async () => {
         try {
@@ -382,15 +390,27 @@ const MenuManagement = ({ navigation }) => {
                     <Text style={styles.label}>KATEGORI</Text>
                     <View style={styles.categoryPicker}>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
-                            {categories.map(cat => (
+                            {categories.map(cat => {
+                                const isActive = (formData.category || '').trim().toLowerCase() === (cat.name || '').trim().toLowerCase();
+                                return (
+                                    <TouchableOpacity
+                                        key={cat.id}
+                                        onPress={() => setFormData({ ...formData, category: cat.name })}
+                                        style={[styles.catPickBtn, isActive && styles.activeCatPickBtn]}
+                                    >
+                                        <Text style={[styles.catPickText, isActive && styles.activeCatPickText]}>{(cat.name || '').trim()}</Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                            {/* Jika kategori item tidak ada di list utama (case-insensitive), tetap tampilkan sebagai terpilih agar tidak hilang */}
+                            {formData.category && !categories.find(c => (c.name || '').trim().toLowerCase() === (formData.category || '').trim().toLowerCase()) && (
                                 <TouchableOpacity
-                                    key={cat.id}
-                                    onPress={() => setFormData({ ...formData, category: cat.name })}
-                                    style={[styles.catPickBtn, formData.category === cat.name && styles.activeCatPickBtn]}
+                                    onPress={() => { }}
+                                    style={[styles.catPickBtn, styles.activeCatPickBtn]}
                                 >
-                                    <Text style={[styles.catPickText, formData.category === cat.name && styles.activeCatPickText]}>{cat.name}</Text>
+                                    <Text style={[styles.catPickText, styles.activeCatPickText]}>{formData.category.trim()}</Text>
                                 </TouchableOpacity>
-                            ))}
+                            )}
                         </ScrollView>
                     </View>
                 </View>
@@ -850,8 +870,8 @@ const styles = StyleSheet.create({
         borderColor: '#E2E8F0',
     },
     activeCatPickBtn: {
-        backgroundColor: '#EFF6FF',
-        borderColor: '#2563EB',
+        backgroundColor: '#1E40AF',
+        borderColor: '#1E40AF',
     },
     catPickText: {
         fontSize: 12,
@@ -859,7 +879,7 @@ const styles = StyleSheet.create({
         color: '#64748B',
     },
     activeCatPickText: {
-        color: '#2563EB',
+        color: '#FFFFFF',
     },
     featuredToggle: {
         flexDirection: 'row',

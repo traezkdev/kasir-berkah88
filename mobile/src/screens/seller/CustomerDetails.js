@@ -20,7 +20,9 @@ import {
     ShoppingBag,
     TrendingUp,
     Calendar,
-    ArrowRight
+    ArrowRight,
+    ChevronRight,
+    RefreshCw
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 import OrderDetailModal from '../../components/OrderDetailModal';
@@ -38,36 +40,50 @@ const CustomerDetails = ({ navigation, route }) => {
     const [points, setPoints] = useState(0);
     const [refreshing, setRefreshing] = useState(false);
 
+    // Pagination for transactions
+    const [txPage, setTxPage] = useState(1);
+    const [txTotalPages, setTxTotalPages] = useState(1);
+    const [txTotalItems, setTxTotalItems] = useState(0);
+    const [txTotalAmount, setTxTotalAmount] = useState(0);
+    const [txLoading, setTxLoading] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+
     // Modal states
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [showOrderModal, setShowOrderModal] = useState(false);
     const [selectedTx, setSelectedTx] = useState(null);
     const [showReceiptModal, setShowReceiptModal] = useState(false);
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
+    const fetchData = useCallback(async (pageNum = 1) => {
+        if (pageNum === 1) setLoading(true);
+        else setTxLoading(true);
+
         try {
-            // Fetch Transactions by customer name
-            // Note: The backend doesn't have a direct "search by customer" but we can use the main transactions list
-            // with a search term if the backend supports it, OR fetch all and filter client side for better UX
-            // However, fetching all might be too much. Let's try searching first.
-            const txRes = await apiService.get(`/api/transactions?search=${customerName}&limit=50`);
-            const allTxData = txRes.data.data || [];
+            // Fetch Transactions by customer name (Paginated: 10 per page)
+            const txRes = await apiService.get(`/api/transactions?search=${customerName}&page=${pageNum}&limit=10`);
+            if (txRes.data && txRes.data.message === 'success') {
+                const txData = txRes.data.data || [];
+                const parsedTx = txData.map(t => ({
+                    ...t,
+                    items: typeof t.items === 'string' ? JSON.parse(t.items || '[]') : (t.items || [])
+                }));
 
-            const parsedTx = allTxData.map(t => ({
-                ...t,
-                items: typeof t.items === 'string' ? JSON.parse(t.items || '[]') : (t.items || [])
-            }));
+                if (pageNum === 1) {
+                    setTransactions(parsedTx);
+                } else {
+                    setTransactions(prev => [...prev, ...parsedTx]);
+                }
 
-            // Filter by name (to be sure)
-            const filteredTx = parsedTx.filter(tx =>
-                (tx.customer_name && tx.customer_name.toLowerCase() === customerName.toLowerCase()) ||
-                (tx.customer_phone && customerPhone && tx.customer_phone === customerPhone)
-            );
-            setTransactions(filteredTx);
+                const pagin = txRes.data.pagination;
+                setTxTotalPages(pagin.totalPages || 1);
+                setTxTotalItems(pagin.totalItems || 0);
+                setTxTotalAmount(pagin.totalAmount || 0);
+                setTxPage(pageNum);
+                setHasMore(pageNum < pagin.totalPages);
+            }
 
-            // Fetch Active Orders
-            const orderRes = await apiService.get(`/api/orders?search=${customerName}&limit=50`);
+            // Fetch Active Orders (Stay with limited search for now)
+            const orderRes = await apiService.get(`/api/orders?search=${customerName}&limit=20`);
             const allOrders = orderRes.data.data || [];
             const parsedOrders = allOrders.map(o => ({
                 ...o,
@@ -80,27 +96,18 @@ const CustomerDetails = ({ navigation, route }) => {
             ).filter(o => ['pending', 'accepted'].includes(o.status));
             setActiveOrders(filteredOrders);
 
-            // Calculate stats
-            const totalSpent = filteredTx.reduce((sum, tx) => sum + Number(tx.total), 0);
-            setStats({
-                totalSpent,
-                totalOrders: filteredTx.length + filteredOrders.length
-            });
             // Fetch Customer Points (if registered)
             try {
                 const searchQ = customerPhone || customerName;
                 if (searchQ && searchQ.length > 2) {
                     const userRes = await apiService.get(`/api/customers/search?query=${searchQ}`);
                     if (userRes.data.data && userRes.data.data.length > 0) {
-                        // Find exact match if possible
                         const match = userRes.data.data.find(u =>
                             (customerPhone && u.phone === customerPhone) ||
                             (u.name.toLowerCase() === customerName.toLowerCase())
                         );
                         if (match) {
                             setPoints(match.points || 0);
-                        } else {
-                            setPoints(userRes.data.data[0].points || 0); // Fallback to first result
                         }
                     }
                 }
@@ -112,9 +119,16 @@ const CustomerDetails = ({ navigation, route }) => {
             console.error('Error fetching customer details:', error);
         } finally {
             setLoading(false);
+            setTxLoading(false);
             setRefreshing(false);
         }
     }, [customerName, customerPhone]);
+
+    const handleLoadMore = () => {
+        if (!txLoading && hasMore && !loading) {
+            fetchData(txPage + 1);
+        }
+    };
 
     useEffect(() => {
         fetchData();
@@ -138,6 +152,126 @@ const CustomerDetails = ({ navigation, route }) => {
         });
     };
 
+    const renderHeader = () => (
+        <View style={styles.headerContent}>
+            {/* Profile Card */}
+            <View style={styles.profileCard}>
+                <View style={styles.avatar}>
+                    <User size={40} color="#FFFFFF" strokeWidth={2.5} />
+                </View>
+                <Text style={styles.customerNameText}>{customerName}</Text>
+
+                <View style={styles.contactInfo}>
+                    <View style={styles.infoBadge}>
+                        <Phone size={14} color="#138FEA" />
+                        <Text style={styles.infoBadgeText}>{customerPhone || '-'}</Text>
+                    </View>
+                    {points > 0 && (
+                        <View style={[styles.infoBadge, { backgroundColor: '#DCFCE7' }]}>
+                            <Text style={[styles.infoBadgeText, { color: '#166534' }]}>{Math.floor(points)} Poin</Text>
+                        </View>
+                    )}
+                </View>
+
+                <View style={styles.addressBox}>
+                    <MapPin size={16} color="#94A3B8" />
+                    <Text style={styles.addressText}>{customerAddress || 'Alamat tidak tersedia'}</Text>
+                </View>
+            </View>
+
+            {/* Stats Grid */}
+            <View style={styles.statsGrid}>
+                <View style={styles.statCard}>
+                    <View style={[styles.statIconBg, { backgroundColor: '#F0F9FF' }]}>
+                        <TrendingUp size={20} color="#138FEA" />
+                    </View>
+                    <Text style={styles.statLabel}>TOTAL BELANJA</Text>
+                    <Text style={styles.statValue}>{formatCurrency(txTotalAmount)}</Text>
+                </View>
+                <View style={styles.statCard}>
+                    <View style={[styles.statIconBg, { backgroundColor: '#F0FDF4' }]}>
+                        <ShoppingBag size={20} color="#10B981" />
+                    </View>
+                    <Text style={styles.statLabel}>JUMLAH PESANAN</Text>
+                    <Text style={styles.statValue}>{txTotalItems}x</Text>
+                </View>
+            </View>
+
+            {/* Active Orders Section */}
+            {activeOrders.length > 0 && (
+                <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Pesanan Aktif</Text>
+                        <View style={styles.countBadge}>
+                            <Text style={styles.countText}>{activeOrders.length}</Text>
+                        </View>
+                    </View>
+                    {activeOrders.map((order) => (
+                        <TouchableOpacity
+                            key={order.id}
+                            style={styles.orderItem}
+                            activeOpacity={0.7}
+                            onPress={() => {
+                                setSelectedOrder(order);
+                                setShowOrderModal(true);
+                            }}
+                        >
+                            <View style={styles.orderLeft}>
+                                <View style={styles.orderStatusDot} />
+                                <View>
+                                    <Text style={styles.orderId}>Order #{order.id}</Text>
+                                    <Text style={styles.orderStatus}>{(order.status || 'Pending').toUpperCase()}</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.orderTotal}>{formatCurrency(order.total)}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            )}
+
+            <View style={[styles.sectionHeader, { marginTop: 20 }]}>
+                <Text style={styles.sectionTitle}>Riwayat Transaksi</Text>
+                <History size={18} color="#64748B" />
+            </View>
+        </View>
+    );
+
+    const renderTxItem = ({ item: tx }) => (
+        <TouchableOpacity
+            key={tx.id}
+            style={styles.txRow}
+            activeOpacity={0.7}
+            onPress={() => {
+                setSelectedTx(tx);
+                setShowReceiptModal(true);
+            }}
+        >
+            <View style={styles.txLeft}>
+                <View style={styles.txIcon}>
+                    <Calendar size={14} color="#64748B" />
+                </View>
+                <View>
+                    <Text style={styles.txId}>#{tx.id}</Text>
+                    <Text style={styles.txDate}>{formatDate(tx.timestamp)}</Text>
+                </View>
+            </View>
+            <View style={styles.txRight}>
+                <Text style={styles.txAmount}>{formatCurrency(tx.total)}</Text>
+                <ArrowRight size={14} color="#CBD5E1" />
+            </View>
+        </TouchableOpacity>
+    );
+
+    const renderFooter = () => {
+        if (!txLoading) return <View style={{ height: 40 }} />;
+        return (
+            <View style={styles.txLoadingFooter}>
+                <ActivityIndicator size="small" color="#138FEA" />
+                <Text style={styles.txLoadingText}>Memuat lebih banyak...</Text>
+            </View>
+        );
+    };
+
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -151,128 +285,29 @@ const CustomerDetails = ({ navigation, route }) => {
                 <View style={{ width: 40 }} />
             </View>
 
-            <ScrollView
-                style={styles.content}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-                showsVerticalScrollIndicator={false}
-            >
-                {/* Profile Card */}
-                <View style={styles.profileCard}>
-                    <View style={styles.avatar}>
-                        <User size={40} color="#FFFFFF" strokeWidth={2.5} />
-                    </View>
-                    <Text style={styles.customerNameText}>{customerName}</Text>
-
-                    <View style={styles.contactInfo}>
-                        <View style={styles.infoBadge}>
-                            <Phone size={14} color="#138FEA" />
-                            <Text style={styles.infoBadgeText}>{customerPhone || '-'}</Text>
-                        </View>
-                        {points > 0 && (
-                            <View style={[styles.infoBadge, { backgroundColor: '#DCFCE7' }]}>
-                                <Text style={[styles.infoBadgeText, { color: '#166534' }]}>{Math.floor(points)} Poin</Text>
-                            </View>
-                        )}
-                    </View>
-
-                    <View style={styles.addressBox}>
-                        <MapPin size={16} color="#94A3B8" />
-                        <Text style={styles.addressText}>{customerAddress || 'Alamat tidak tersedia'}</Text>
-                    </View>
+            {loading && txPage === 1 ? (
+                <View style={styles.centerLoader}>
+                    <ActivityIndicator size="large" color="#138FEA" />
                 </View>
-
-                {/* Stats Grid */}
-                <View style={styles.statsGrid}>
-                    <View style={styles.statCard}>
-                        <View style={[styles.statIconBg, { backgroundColor: '#F0F9FF' }]}>
-                            <TrendingUp size={20} color="#138FEA" />
-                        </View>
-                        <Text style={styles.statLabel}>TOTAL BELANJA</Text>
-                        <Text style={styles.statValue}>{formatCurrency(stats.totalSpent)}</Text>
-                    </View>
-                    <View style={styles.statCard}>
-                        <View style={[styles.statIconBg, { backgroundColor: '#F0FDF4' }]}>
-                            <ShoppingBag size={20} color="#10B981" />
-                        </View>
-                        <Text style={styles.statLabel}>JUMLAH PESANAN</Text>
-                        <Text style={styles.statValue}>{stats.totalOrders}x</Text>
-                    </View>
-                </View>
-
-                {/* Active Orders Section */}
-                {activeOrders.length > 0 && (
-                    <View style={styles.section}>
-                        <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>Pesanan Aktif</Text>
-                            <View style={styles.countBadge}>
-                                <Text style={styles.countText}>{activeOrders.length}</Text>
-                            </View>
-                        </View>
-                        {activeOrders.map((order) => (
-                            <TouchableOpacity
-                                key={order.id}
-                                style={styles.orderItem}
-                                activeOpacity={0.7}
-                                onPress={() => {
-                                    setSelectedOrder(order);
-                                    setShowOrderModal(true);
-                                }}
-                            >
-                                <View style={styles.orderLeft}>
-                                    <View style={styles.orderStatusDot} />
-                                    <View>
-                                        <Text style={styles.orderId}>Order #{order.id}</Text>
-                                        <Text style={styles.orderStatus}>{(order.status || 'Pending').toUpperCase()}</Text>
-                                    </View>
-                                </View>
-                                <Text style={styles.orderTotal}>{formatCurrency(order.total)}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                )}
-
-                {/* Transaction History Section */}
-                <View style={[styles.section, { marginBottom: 40 }]}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Riwayat Transaksi</Text>
-                        <History size={18} color="#64748B" />
-                    </View>
-
-                    {loading ? (
-                        <ActivityIndicator color="#138FEA" style={{ marginTop: 20 }} />
-                    ) : transactions.length > 0 ? (
-                        transactions.map((tx) => (
-                            <TouchableOpacity
-                                key={tx.id}
-                                style={styles.txRow}
-                                activeOpacity={0.7}
-                                onPress={() => {
-                                    setSelectedTx(tx);
-                                    setShowReceiptModal(true);
-                                }}
-                            >
-                                <View style={styles.txLeft}>
-                                    <View style={styles.txIcon}>
-                                        <Calendar size={14} color="#64748B" />
-                                    </View>
-                                    <View>
-                                        <Text style={styles.txId}>#{tx.id}</Text>
-                                        <Text style={styles.txDate}>{formatDate(tx.timestamp)}</Text>
-                                    </View>
-                                </View>
-                                <View style={styles.txRight}>
-                                    <Text style={styles.txAmount}>{formatCurrency(tx.total)}</Text>
-                                    <ArrowRight size={14} color="#CBD5E1" />
-                                </View>
-                            </TouchableOpacity>
-                        ))
-                    ) : (
+            ) : (
+                <FlatList
+                    data={transactions}
+                    renderItem={renderTxItem}
+                    keyExtractor={item => item.id.toString()}
+                    ListHeaderComponent={renderHeader}
+                    ListFooterComponent={renderFooter}
+                    ListEmptyComponent={
                         <View style={styles.emptyBox}>
                             <Text style={styles.emptyText}>Belum ada riwayat transaksi</Text>
                         </View>
-                    )}
-                </View>
-            </ScrollView>
+                    }
+                    contentContainerStyle={styles.listContent}
+                    onEndReached={handleLoadMore}
+                    onEndReachedThreshold={0.5}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+                    showsVerticalScrollIndicator={false}
+                />
+            )}
 
             {/* Modals */}
             {selectedOrder && (
@@ -539,6 +574,29 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 14,
         color: '#94A3B8',
+        fontWeight: 'bold',
+    },
+    centerLoader: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    listContent: {
+        padding: 20,
+    },
+    headerContent: {
+        marginBottom: 10,
+    },
+    txLoadingFooter: {
+        paddingVertical: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        gap: 10,
+    },
+    txLoadingText: {
+        fontSize: 13,
+        color: '#64748B',
         fontWeight: 'bold',
     },
 });
