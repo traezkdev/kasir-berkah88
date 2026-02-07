@@ -26,20 +26,27 @@ import {
     Store,
     Clock,
     UserCircle,
-    X
+    X,
+    Check,
+    Camera,
+    PlayCircle
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useToast } from '../../context/ToastContext';
+import { useOrderNotification } from '../../context/OrderNotificationContext';
 import apiService, { API_URL } from '../../api/apiService';
-import { Check, Camera } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import BottomModalTemplate from '../../components/templates/BottomModalTemplate';
 
 const ProfileScreen = ({ navigation }) => {
-    const { user, logout, refreshUser, updateUser } = useAuth();
+    const { user, logout, refreshUser } = useAuth();
     const { confirm } = useConfirm();
     const { showToast } = useToast();
+    const {
+        selectedSoundId,
+        changeNotificationSound
+    } = useOrderNotification();
 
     // Modal States
     const [activeModal, setActiveModal] = useState(null); // 'info', 'security', 'notif'
@@ -64,7 +71,14 @@ const ProfileScreen = ({ navigation }) => {
         promo: false
     });
 
-    React.useEffect(() => {
+    const NOTIFICATION_SOUNDS = [
+        { id: 'default', name: 'Standard Chime' },
+        { id: 'bell', name: 'Reception Bell' },
+        { id: 'modern', name: 'Digital Alert' },
+        { id: 'urgent', name: 'Triple Beep' },
+    ];
+
+    useEffect(() => {
         if (user) {
             setFormData({
                 username: user.name || '',
@@ -74,7 +88,7 @@ const ProfileScreen = ({ navigation }) => {
         }
     }, [user]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         loadNotificationSettings();
     }, []);
 
@@ -97,12 +111,10 @@ const ProfileScreen = ({ navigation }) => {
 
         setIsSaving(true);
         try {
-            // Update Username
             if (formData.username !== user.name) {
                 await apiService.put('/api/user/profile/username', { username: formData.username });
             }
 
-            // Update Phone & Address
             await apiService.put('/api/user/profile', {
                 phone: formData.phone,
                 address: formData.address
@@ -178,16 +190,14 @@ const ProfileScreen = ({ navigation }) => {
                 type: `image/${fileType}`,
             });
 
-            const response = await apiService.post('/api/user/profile/avatar', formData, {
+            await apiService.post('/api/user/profile/avatar', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
             });
 
-            if (response.data && response.data.data) {
-                await refreshUser();
-                showToast('Foto profil diperbarui', 'success');
-            }
+            await refreshUser();
+            showToast('Foto profil diperbarui', 'success');
         } catch (error) {
             console.error('Upload avatar error:', error);
             showToast('Gagal mengunggah foto profil', 'error');
@@ -442,17 +452,27 @@ const ProfileScreen = ({ navigation }) => {
                             thumbColor={notifSettings.chat ? '#138FEA' : '#94A3B8'}
                         />
                     </View>
-                    <View style={styles.notifRow}>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.notifTitle}>Promo & Update</Text>
-                            <Text style={styles.notifSubtitle}>Info terbaru tentang fitur dan promo</Text>
+
+                    {/* Sound Selection */}
+                    <View style={{ marginTop: 24 }}>
+                        <Text style={styles.sectionTitle}>SUARA NOTIFIKASI</Text>
+                        <View style={styles.soundGrid}>
+                            {NOTIFICATION_SOUNDS.map((sound) => {
+                                const isSelected = selectedSoundId === sound.id;
+                                return (
+                                    <TouchableOpacity
+                                        key={sound.id}
+                                        style={[styles.soundCard, isSelected && styles.soundCardSelected]}
+                                        onPress={() => changeNotificationSound(sound.id)}
+                                    >
+                                        <View style={[styles.soundIcon, isSelected && styles.soundIconSelected]}>
+                                            {isSelected ? <Check size={16} color="#FFFFFF" /> : <PlayCircle size={16} color="#64748B" />}
+                                        </View>
+                                        <Text style={[styles.soundName, isSelected && styles.soundNameSelected]}>{sound.name}</Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
                         </View>
-                        <Switch
-                            value={notifSettings.promo}
-                            onValueChange={(val) => setNotifSettings({ ...notifSettings, promo: val })}
-                            trackColor={{ false: '#E2E8F0', true: '#BFDBFE' }}
-                            thumbColor={notifSettings.promo ? '#138FEA' : '#94A3B8'}
-                        />
                     </View>
                 </View>
             </BottomModalTemplate>
@@ -693,29 +713,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: 8,
     },
-    saveBtn: {
-        backgroundColor: '#1E293B',
-        paddingVertical: 16,
-        borderRadius: 16,
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'row',
-        gap: 8,
-        ...Platform.select({
-            ios: {
-                shadowColor: '#1E293B',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.2,
-                shadowRadius: 8,
-            },
-            android: {
-                elevation: 4,
-            },
-            web: {
-                boxShadow: '0px 4px 12px rgba(30, 41, 59, 0.2)',
-            },
-        }),
-    },
     saveBtnText: {
         color: '#FFFFFF',
         fontSize: 16,
@@ -759,6 +756,47 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#94A3B8',
         marginTop: 2,
+    },
+    soundGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+        marginTop: 10,
+    },
+    soundCard: {
+        width: '48%',
+        backgroundColor: '#F8FAFC',
+        borderRadius: 16,
+        padding: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    soundCardSelected: {
+        backgroundColor: '#EFF6FF',
+        borderColor: '#3B82F6',
+    },
+    soundIcon: {
+        width: 24,
+        height: 24,
+        borderRadius: 8,
+        backgroundColor: '#E2E8F0',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    soundIconSelected: {
+        backgroundColor: '#3B82F6',
+    },
+    soundName: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#64748B',
+        flex: 1,
+    },
+    soundNameSelected: {
+        color: '#1E3A8A',
     }
 });
 

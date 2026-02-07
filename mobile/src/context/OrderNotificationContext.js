@@ -5,11 +5,22 @@ import apiService, { API_URL } from '../api/apiService';
 import { useAuth } from './AuthContext';
 
 // We'll use these but check for existence and platform
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { Audio } from 'expo-av';
 import { io } from 'socket.io-client';
 
 const OrderNotificationContext = createContext();
+
+// Available notification sounds
+export const NOTIFICATION_SOUNDS = [
+    { id: 'default', name: 'Standard Chime', uri: 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3' },
+    { id: 'bell', name: 'Reception Bell', uri: 'https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3' },
+    { id: 'modern', name: 'Digital Alert', uri: 'https://assets.mixkit.co/active_storage/sfx/2205/2205-preview.mp3' },
+    { id: 'urgent', name: 'Triple Beep', uri: 'https://assets.mixkit.co/active_storage/sfx/2350/2350-preview.mp3' },
+];
+
+const STORAGE_KEY = '@notification_sound_id';
 
 // Configure notification behavior for mobile only
 try {
@@ -35,6 +46,7 @@ export const OrderNotificationProvider = ({ children }) => {
     const [showPopup, setShowPopup] = useState(false);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [onlineUsers, setOnlineUsers] = useState([]); // Store online user objects {userId, role}
+    const [selectedSoundId, setSelectedSoundId] = useState('default');
     const soundRef = useRef(null);
     const pollingInterval = useRef(null);
     const socketRef = useRef(null);
@@ -42,24 +54,62 @@ export const OrderNotificationProvider = ({ children }) => {
 
     const previousOrdersRef = useRef([]);
 
-    const loadSound = async () => {
+    // Load sound preference on mount
+    useEffect(() => {
+        const loadPreference = async () => {
+            try {
+                const savedId = await AsyncStorage.getItem(STORAGE_KEY);
+                if (savedId) setSelectedSoundId(savedId);
+            } catch (e) {
+                console.error('Failed to load sound preference', e);
+            }
+        };
+        loadPreference();
+    }, []);
+
+    const loadSound = async (soundId = selectedSoundId) => {
         if (Platform.OS === 'web' || !Audio || !Audio.Sound) return;
+
+        // Unload existing sound if any
+        if (soundRef.current) {
+            try {
+                await soundRef.current.unloadAsync();
+            } catch (e) { }
+        }
+
         try {
-            const { sound } = await Audio.Sound.createAsync(
-                { uri: 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3' }
-            );
+            const soundConfig = NOTIFICATION_SOUNDS.find(s => s.id === soundId) || NOTIFICATION_SOUNDS[0];
+            const { sound } = await Audio.Sound.createAsync({ uri: soundConfig.uri });
             if (isMounted.current) soundRef.current = sound;
         } catch (error) {
             console.warn('Failed to load notification sound:', error);
         }
     };
 
-    const playNotificationSound = async () => {
-        if (Platform.OS === 'web' || !soundRef.current) return;
-        try {
+    const changeNotificationSound = async (soundId) => {
+        setSelectedSoundId(soundId);
+        await AsyncStorage.setItem(STORAGE_KEY, soundId);
+        await loadSound(soundId);
+        // Play once for preview
+        if (soundRef.current) {
             await soundRef.current.replayAsync();
+        }
+    };
+
+    const playNotificationSound = async () => {
+        if (Platform.OS === 'web' || !soundRef.current) {
+            // If sound not loaded yet, try loading it now
+            await loadSound();
+        }
+
+        try {
+            if (soundRef.current) {
+                await soundRef.current.replayAsync();
+            }
         } catch (error) {
             console.warn('Error playing sound:', error);
+            // Fallback: try reloading
+            await loadSound();
         }
     };
 
@@ -162,6 +212,7 @@ export const OrderNotificationProvider = ({ children }) => {
         if (Platform.OS === 'web' || !Notifications || !Notifications.getPermissionsAsync) return;
 
         try {
+            console.log('--- Memulai Registrasi Push Token ---');
             const { status: existingStatus } = await Notifications.getPermissionsAsync();
             let finalStatus = existingStatus;
 
@@ -170,29 +221,48 @@ export const OrderNotificationProvider = ({ children }) => {
                 finalStatus = status;
             }
 
-            if (finalStatus !== 'granted') return;
-
-            const tokenResponse = await Notifications.getExpoPushTokenAsync({
-                projectId: '62f9fb68-21b9-4aca-9206-5ed3e86b51b1' // Match projectId from app.json
-            });
-            const token = tokenResponse.data;
-            console.log('Mobile Push Token:', token);
-
-            if (user && isMounted.current) {
-                const res = await apiService.post('/api/users/push-token', { pushToken: token });
-                console.log('Push token registration response:', res.data);
+            if (finalStatus !== 'granted') {
+                console.warn('Izin notifikasi ditolak!');
+                return;
             }
 
+            // Dapatkan token dari Expo
+            const tokenResponse = await Notifications.getExpoPushTokenAsync({
+                projectId: '62f9fb68-21b9-4aca-9206-5ed3e86b51b1'
+            });
+            const token = tokenResponse.data;
+            console.log('Mobile Push Token Berhasil Didapat:', token);
+
+            // Kirim ke server jika ada user yang login
+            if (user) {
+                try {
+                    const res = await apiService.post('/api/users/push-token', { pushToken: token });
+                    console.log('Token berhasil didaftarkan ke Database Server:', res.data);
+                } catch (sendError) {
+                    console.error('Gagal mengirim token ke server:', sendError.message);
+                }
+            }
+
+            // Setting Channel khusus Android (Sangat penting agar notifikasi muncul di luar app)
             if (Platform.OS === 'android') {
-                Notifications.setNotificationChannelAsync('default', {
-                    name: 'default',
+                await Notifications.setNotificationChannelAsync('orders', {
+                    name: 'Pesanan Baru',
+                    description: 'Notifikasi untuk pesanan baru yang masuk',
                     importance: Notifications.AndroidImportance.MAX,
                     vibrationPattern: [0, 250, 250, 250],
                     lightColor: '#FF231F7C',
+                    enableVibrate: true,
+                    showBadge: true,
+                    // Kita akan hubungkan ini dengan suara kustom nanti
+                });
+
+                await Notifications.setNotificationChannelAsync('default', {
+                    name: 'Umum',
+                    importance: Notifications.AndroidImportance.DEFAULT,
                 });
             }
         } catch (error) {
-            console.warn('Push registration error:', error);
+            console.warn('Error sistem registrasi push:', error);
         }
     };
 
@@ -353,7 +423,10 @@ export const OrderNotificationProvider = ({ children }) => {
             showPopup,
             closePopup,
             refreshTrigger,
-            onlineUsers
+            onlineUsers,
+            selectedSoundId,
+            changeNotificationSound,
+            playNotificationSound
         }}>
             {children}
         </OrderNotificationContext.Provider>
