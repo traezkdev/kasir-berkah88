@@ -16,7 +16,9 @@ import {
     KeyboardAvoidingView,
     RefreshControl,
     Switch,
-    StatusBar
+    StatusBar,
+    Pressable,
+    InteractionManager
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
@@ -46,12 +48,12 @@ const COLUMN_WIDTH = (width - 48) / 2;
 // Komponen Item yang dimemoize untuk performa (Anti-Delay)
 const ProductCardItem = React.memo(({ item, qty, addToCart, ignoreStock, formatCurrency, isOutOfStock }) => {
     return (
-        <TouchableOpacity
-            activeOpacity={1}
-            style={[
+        <Pressable
+            style={({ pressed }) => [
                 styles.productCard,
                 isOutOfStock && !ignoreStock && styles.outOfStockCard,
-                qty > 0 && styles.selectedProductCard
+                qty > 0 && styles.selectedProductCard,
+                pressed && { transform: [{ scale: 0.98 }] }
             ]}
             onPress={() => (ignoreStock || !isOutOfStock) && addToCart(item)}
             disabled={isOutOfStock && !ignoreStock}
@@ -87,7 +89,7 @@ const ProductCardItem = React.memo(({ item, qty, addToCart, ignoreStock, formatC
                     <Text style={styles.stockText}>Stok: {item.stock ?? '∞'}</Text>
                 </View>
             </View>
-        </TouchableOpacity>
+        </Pressable>
     );
 });
 
@@ -126,6 +128,8 @@ const SalesPOS = () => {
     const [customerSearchQuery, setCustomerSearchQuery] = useState('');
     const [customerSearchResults, setCustomerSearchResults] = useState([]);
     const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
+    const [isCartReady, setIsCartReady] = useState(false);
+    const [isCustomerSearchReady, setIsCustomerSearchReady] = useState(false);
 
     const { confirm } = useConfirm();
     const { ignoreStock, toggleIgnoreStock } = useAppSettings();
@@ -210,18 +214,18 @@ const SalesPOS = () => {
         }
     };
 
-    // Save Customer Data on Change
+    // Debounced Save Customer Data
     useEffect(() => {
-        const saveCustomerData = async () => {
+        const timer = setTimeout(async () => {
             try {
-                if (customerName !== undefined) await AsyncStorage.setItem('pos_last_customer_name', customerName);
-                if (customerPhone !== undefined) await AsyncStorage.setItem('pos_last_customer_phone', customerPhone);
-                if (customerAddress !== undefined) await AsyncStorage.setItem('pos_last_customer_address', customerAddress);
+                if (customerName) await AsyncStorage.setItem('pos_last_customer_name', customerName);
+                if (customerPhone) await AsyncStorage.setItem('pos_last_customer_phone', customerPhone);
+                if (customerAddress) await AsyncStorage.setItem('pos_last_customer_address', customerAddress);
             } catch (e) {
                 console.error("Error saving customer data:", e);
             }
-        };
-        saveCustomerData();
+        }, 1000);
+        return () => clearTimeout(timer);
     }, [customerName, customerPhone, customerAddress]);
 
     const filteredItems = useMemo(() => {
@@ -401,9 +405,12 @@ const SalesPOS = () => {
 
     useEffect(() => {
         if (showCustomerSearch) {
-            searchCustomers('');
+            const timer = setTimeout(() => {
+                searchCustomers(customerSearchQuery);
+            }, 300);
+            return () => clearTimeout(timer);
         }
-    }, [showCustomerSearch, searchCustomers]);
+    }, [customerSearchQuery, showCustomerSearch, searchCustomers]);
 
     const handleSelectCustomer = (customer) => {
         setSelectedCustomer(customer);
@@ -539,7 +546,13 @@ const SalesPOS = () => {
                     <TouchableOpacity
                         activeOpacity={0.9}
                         style={styles.fabMain}
-                        onPress={() => setIsCartModalOpen(true)}
+                        onPress={() => {
+                            setIsCartModalOpen(true);
+                            // Defer heavy cart rendering
+                            InteractionManager.runAfterInteractions(() => {
+                                setIsCartReady(true);
+                            });
+                        }}
                     >
                         {/* Info Section */}
                         <View style={styles.fabInfoSection}>
@@ -594,7 +607,10 @@ const SalesPOS = () => {
                         <View style={styles.headerActions}>
                             <TouchableOpacity
                                 style={styles.closeBtn}
-                                onPress={() => setIsCartModalOpen(false)}
+                                onPress={() => {
+                                    setIsCartModalOpen(false);
+                                    setIsCartReady(false);
+                                }}
                             >
                                 <X size={24} color="#64748B" />
                             </TouchableOpacity>
@@ -607,202 +623,213 @@ const SalesPOS = () => {
                         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
                     >
                         <View style={styles.modalScrollContainer}>
-                            <ScrollView
-                                showsVerticalScrollIndicator={false}
-                                contentContainerStyle={styles.modalBodyContent}
-                                keyboardShouldPersistTaps="handled"
-                            >
-                                <View style={styles.cartList}>
-                                    {cart.map(item => (
-                                        <View key={item.id} style={styles.cartItem}>
-                                            <View style={styles.cartItemLeft}>
-                                                <Text style={styles.cartItemName}>{item.name}</Text>
-                                                <Text style={styles.cartItemPrice}>{formatCurrency(item.price)}</Text>
-                                            </View>
-                                            <View style={styles.cartItemRight}>
-                                                <View style={styles.qtyControl}>
+                            {!isCartReady ? (
+                                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                    <ActivityIndicator size="large" color="#138FEA" />
+                                </View>
+                            ) : (
+                                <ScrollView
+                                    showsVerticalScrollIndicator={false}
+                                    contentContainerStyle={styles.modalBodyContent}
+                                    keyboardShouldPersistTaps="handled"
+                                >
+                                    <View style={styles.cartList}>
+                                        {cart.map(item => (
+                                            <View key={item.id} style={styles.cartItem}>
+                                                <View style={styles.cartItemLeft}>
+                                                    <Text style={styles.cartItemName}>{item.name}</Text>
+                                                    <Text style={styles.cartItemPrice}>{formatCurrency(item.price)}</Text>
+                                                </View>
+                                                <View style={styles.cartItemRight}>
+                                                    <View style={styles.qtyControl}>
+                                                        <TouchableOpacity
+                                                            style={styles.qtyBtn}
+                                                            onPress={() => updateQuantity(item.id, -1)}
+                                                        >
+                                                            <Minus size={16} color="#64748B" />
+                                                        </TouchableOpacity>
+                                                        <Text style={styles.qtyText}>{item.quantity}</Text>
+                                                        <TouchableOpacity
+                                                            style={styles.qtyBtn}
+                                                            onPress={() => updateQuantity(item.id, 1)}
+                                                        >
+                                                            <Plus size={16} color="#64748B" />
+                                                        </TouchableOpacity>
+                                                    </View>
                                                     <TouchableOpacity
-                                                        style={styles.qtyBtn}
-                                                        onPress={() => updateQuantity(item.id, -1)}
+                                                        style={styles.trashBtn}
+                                                        onPress={() => removeFromCart(item.id)}
                                                     >
-                                                        <Minus size={16} color="#64748B" />
-                                                    </TouchableOpacity>
-                                                    <Text style={styles.qtyText}>{item.quantity}</Text>
-                                                    <TouchableOpacity
-                                                        style={styles.qtyBtn}
-                                                        onPress={() => updateQuantity(item.id, 1)}
-                                                    >
-                                                        <Plus size={16} color="#64748B" />
+                                                        <Trash2 size={18} color="#EF4444" />
                                                     </TouchableOpacity>
                                                 </View>
-                                                <TouchableOpacity
-                                                    style={styles.trashBtn}
-                                                    onPress={() => removeFromCart(item.id)}
-                                                >
-                                                    <Trash2 size={18} color="#EF4444" />
-                                                </TouchableOpacity>
                                             </View>
-                                        </View>
-                                    ))}
-                                </View>
-
-                                <View style={styles.paymentSection}>
-                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                                        <Text style={styles.sectionLabel}>DATA PELANGGAN</Text>
-                                        {!selectedCustomer && (
-                                            <TouchableOpacity
-                                                onPress={() => setShowCustomerSearch(true)}
-                                                style={{ backgroundColor: '#EFF6FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}
-                                            >
-                                                <Text style={{ color: '#2563EB', fontWeight: 'bold', fontSize: 12 }}>+ Cari Member</Text>
-                                            </TouchableOpacity>
-                                        )}
+                                        ))}
                                     </View>
 
-                                    {selectedCustomer ? (
-                                        <View style={styles.selectedCustomerCard}>
-                                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                <View>
-                                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                                        <Text style={styles.customerName}>{selectedCustomer.name}</Text>
-                                                        <View style={{ backgroundColor: '#DCFCE7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-                                                            <Text style={{ color: '#166534', fontSize: 10, fontWeight: 'bold' }}>MEMBER</Text>
-                                                        </View>
-                                                    </View>
-                                                    <Text style={styles.customerPhone}>{selectedCustomer.phone || '-'}</Text>
-                                                    <Text style={styles.customerPoints}>Poin: {formatCurrency(selectedCustomer.points)}</Text>
-                                                </View>
-                                                <TouchableOpacity onPress={() => {
-                                                    setSelectedCustomer(null);
-                                                    setUsePoints(false);
-                                                    setCustomerName('');
-                                                    setCustomerPhone('');
-                                                    setCustomerAddress('');
-                                                }}>
-                                                    <X size={16} color="#94A3B8" />
+                                    <View style={styles.paymentSection}>
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                                            <Text style={styles.sectionLabel}>DATA PELANGGAN</Text>
+                                            {!selectedCustomer && (
+                                                <TouchableOpacity
+                                                    onPress={() => {
+                                                        setShowCustomerSearch(true);
+                                                        InteractionManager.runAfterInteractions(() => {
+                                                            setIsCustomerSearchReady(true);
+                                                        });
+                                                    }}
+                                                    style={{ backgroundColor: '#EFF6FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}
+                                                >
+                                                    <Text style={{ color: '#2563EB', fontWeight: 'bold', fontSize: 12 }}>+ Cari Member</Text>
                                                 </TouchableOpacity>
-                                            </View>
-
-                                            {/* Points Redemption Toggle */}
-                                            {(selectedCustomer.points > 0) && (
-                                                <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#E2E8F0' }}>
-                                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <View>
-                                                            <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#1E293B' }}>Gunakan Poin</Text>
-                                                            <Text style={{ fontSize: 11, color: '#64748B' }}>Tukar {pointsToUse} poin</Text>
-                                                        </View>
-                                                        <Switch
-                                                            value={usePoints}
-                                                            onValueChange={setUsePoints}
-                                                            trackColor={{ false: "#E2E8F0", true: "#BFDBFE" }}
-                                                            thumbColor={usePoints ? "#2563EB" : "#F1F5F9"}
-                                                        />
-                                                    </View>
-                                                </View>
                                             )}
                                         </View>
-                                    ) : (
-                                        <View style={styles.customerInputContainer}>
-                                            <TextInput
-                                                style={styles.customerInput}
-                                                placeholder="Nama Pelanggan"
-                                                value={customerName}
-                                                onChangeText={setCustomerName}
-                                                placeholderTextColor="#94A3B8"
-                                            />
-                                            <TextInput
-                                                style={styles.customerInput}
-                                                placeholder="Nomor HP / WhatsApp"
-                                                value={customerPhone}
-                                                onChangeText={setCustomerPhone}
-                                                keyboardType="phone-pad"
-                                                placeholderTextColor="#94A3B8"
-                                            />
-                                            <TextInput
-                                                style={[styles.customerInput, { height: 60, textAlignVertical: 'top', paddingTop: 10 }]}
-                                                placeholder="Alamat Pelanggan"
-                                                value={customerAddress}
-                                                onChangeText={setCustomerAddress}
-                                                multiline
-                                                placeholderTextColor="#94A3B8"
-                                            />
-                                        </View>
-                                    )}
 
-                                    <Text style={styles.sectionLabel}>DISKON MANUAL</Text>
-                                    <View style={[styles.cashInputWrapper, { paddingHorizontal: 0, marginBottom: 20 }]}>
-                                        <View style={styles.manualDiscountIconArea}>
-                                            <Text style={styles.discountIconText}>%</Text>
-                                        </View>
-                                        <TextInput
-                                            style={[styles.cashInput, { paddingLeft: 12 }]}
-                                            placeholder="0"
-                                            keyboardType="numeric"
-                                            value={manualDiscount}
-                                            onChangeText={setManualDiscount}
-                                        />
-                                    </View>
+                                        {selectedCustomer ? (
+                                            <View style={styles.selectedCustomerCard}>
+                                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                    <View>
+                                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                                            <Text style={styles.customerName}>{selectedCustomer.name}</Text>
+                                                            <View style={{ backgroundColor: '#DCFCE7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                                                                <Text style={{ color: '#166534', fontSize: 10, fontWeight: 'bold' }}>MEMBER</Text>
+                                                            </View>
+                                                        </View>
+                                                        <Text style={styles.customerPhone}>{selectedCustomer.phone || '-'}</Text>
+                                                        <Text style={styles.customerPoints}>Poin: {formatCurrency(selectedCustomer.points)}</Text>
+                                                    </View>
+                                                    <TouchableOpacity onPress={() => {
+                                                        setSelectedCustomer(null);
+                                                        setUsePoints(false);
+                                                        setCustomerName('');
+                                                        setCustomerPhone('');
+                                                        setCustomerAddress('');
+                                                    }}>
+                                                        <X size={16} color="#94A3B8" />
+                                                    </TouchableOpacity>
+                                                </View>
 
-                                    <Text style={styles.sectionLabel}>METODE PEMBAYARAN</Text>
-                                    <View style={styles.methodGrid}>
-                                        <TouchableOpacity
-                                            style={[styles.methodBtn, paymentMethod === 'tunai' && styles.activeMethod]}
-                                            onPress={() => setPaymentMethod('tunai')}
-                                        >
-                                            <Banknote size={24} color={paymentMethod === 'tunai' ? '#2563EB' : '#64748B'} />
-                                            <Text style={[styles.methodText, paymentMethod === 'tunai' && styles.activeMethodText]}>Tunai</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            style={[styles.methodBtn, paymentMethod === 'qris' && styles.activeMethod]}
-                                            onPress={() => setPaymentMethod('qris')}
-                                        >
-                                            <QrCode size={24} color={paymentMethod === 'qris' ? '#2563EB' : '#64748B'} />
-                                            <Text style={[styles.methodText, paymentMethod === 'qris' && styles.activeMethodText]}>QRIS</Text>
-                                        </TouchableOpacity>
-                                    </View>
-
-                                    {paymentMethod === 'tunai' && (
-                                        <View style={styles.cashInputArea}>
-                                            <Text style={styles.sectionLabel}>UANG DIBAYAR</Text>
-                                            <View style={styles.cashInputWrapper}>
-                                                <Text style={styles.rpPrefix}>Rp</Text>
+                                                {/* Points Redemption Toggle */}
+                                                {(selectedCustomer.points > 0) && (
+                                                    <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#E2E8F0' }}>
+                                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                            <View>
+                                                                <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#1E293B' }}>Gunakan Poin</Text>
+                                                                <Text style={{ fontSize: 11, color: '#64748B' }}>Tukar {pointsToUse} poin</Text>
+                                                            </View>
+                                                            <Switch
+                                                                value={usePoints}
+                                                                onValueChange={setUsePoints}
+                                                                trackColor={{ false: "#E2E8F0", true: "#BFDBFE" }}
+                                                                thumbColor={usePoints ? "#2563EB" : "#F1F5F9"}
+                                                            />
+                                                        </View>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        ) : (
+                                            <View style={styles.customerInputContainer}>
                                                 <TextInput
-                                                    style={styles.cashInput}
-                                                    placeholder="0"
-                                                    keyboardType="numeric"
-                                                    value={cashPaid}
-                                                    onChangeText={setCashPaid}
+                                                    style={styles.customerInput}
+                                                    placeholder="Nama Pelanggan"
+                                                    value={customerName}
+                                                    onChangeText={setCustomerName}
+                                                    placeholderTextColor="#94A3B8"
+                                                />
+                                                <TextInput
+                                                    style={styles.customerInput}
+                                                    placeholder="Nomor HP / WhatsApp"
+                                                    value={customerPhone}
+                                                    onChangeText={setCustomerPhone}
+                                                    keyboardType="phone-pad"
+                                                    placeholderTextColor="#94A3B8"
+                                                />
+                                                <TextInput
+                                                    style={[styles.customerInput, { height: 60, textAlignVertical: 'top', paddingTop: 10 }]}
+                                                    placeholder="Alamat Pelanggan"
+                                                    value={customerAddress}
+                                                    onChangeText={setCustomerAddress}
+                                                    multiline
+                                                    placeholderTextColor="#94A3B8"
                                                 />
                                             </View>
+                                        )}
 
-                                            <View style={styles.quickCashRow}>
-                                                {quickCashOptions.map(amount => (
-                                                    <TouchableOpacity
-                                                        key={amount}
-                                                        onPress={() => setCashPaid(amount.toString())}
-                                                        style={styles.quickCashBtn}
-                                                    >
-                                                        <Text style={styles.quickCashText}>{amount / 1000}k</Text>
-                                                    </TouchableOpacity>
-                                                ))}
-                                                <TouchableOpacity
-                                                    onPress={() => setCashPaid(finalTotal.toString())}
-                                                    style={[styles.quickCashBtn, { backgroundColor: '#EFF6FF', borderColor: '#2563EB' }]}
-                                                >
-                                                    <Text style={[styles.quickCashText, { color: '#2563EB' }]}>Pas</Text>
-                                                </TouchableOpacity>
+                                        <Text style={styles.sectionLabel}>DISKON MANUAL</Text>
+                                        <View style={[styles.cashInputWrapper, { paddingHorizontal: 0, marginBottom: 20 }]}>
+                                            <View style={styles.manualDiscountIconArea}>
+                                                <Text style={styles.discountIconText}>%</Text>
                                             </View>
-
-                                            {parseFloat(cashPaid || 0) >= finalTotal && parseFloat(cashPaid || 0) > 0 && (
-                                                <View style={styles.changeInfo}>
-                                                    <Text style={styles.changeLabel}>Kembalian</Text>
-                                                    <Text style={styles.changeValue}>{formatCurrency(parseFloat(cashPaid) - finalTotal)}</Text>
-                                                </View>
-                                            )}
+                                            <TextInput
+                                                style={[styles.cashInput, { paddingLeft: 12 }]}
+                                                placeholder="0"
+                                                keyboardType="numeric"
+                                                value={manualDiscount}
+                                                onChangeText={setManualDiscount}
+                                            />
                                         </View>
-                                    )}
-                                </View>
-                            </ScrollView>
+
+                                        <Text style={styles.sectionLabel}>METODE PEMBAYARAN</Text>
+                                        <View style={styles.methodGrid}>
+                                            <TouchableOpacity
+                                                style={[styles.methodBtn, paymentMethod === 'tunai' && styles.activeMethod]}
+                                                onPress={() => setPaymentMethod('tunai')}
+                                            >
+                                                <Banknote size={24} color={paymentMethod === 'tunai' ? '#2563EB' : '#64748B'} />
+                                                <Text style={[styles.methodText, paymentMethod === 'tunai' && styles.activeMethodText]}>Tunai</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={[styles.methodBtn, paymentMethod === 'qris' && styles.activeMethod]}
+                                                onPress={() => setPaymentMethod('qris')}
+                                            >
+                                                <QrCode size={24} color={paymentMethod === 'qris' ? '#2563EB' : '#64748B'} />
+                                                <Text style={[styles.methodText, paymentMethod === 'qris' && styles.activeMethodText]}>QRIS</Text>
+                                            </TouchableOpacity>
+                                        </View>
+
+                                        {paymentMethod === 'tunai' && (
+                                            <View style={styles.cashInputArea}>
+                                                <Text style={styles.sectionLabel}>UANG DIBAYAR</Text>
+                                                <View style={styles.cashInputWrapper}>
+                                                    <Text style={styles.rpPrefix}>Rp</Text>
+                                                    <TextInput
+                                                        style={styles.cashInput}
+                                                        placeholder="0"
+                                                        keyboardType="numeric"
+                                                        value={cashPaid}
+                                                        onChangeText={setCashPaid}
+                                                    />
+                                                </View>
+
+                                                <View style={styles.quickCashRow}>
+                                                    {quickCashOptions.map(amount => (
+                                                        <TouchableOpacity
+                                                            key={amount}
+                                                            onPress={() => setCashPaid(amount.toString())}
+                                                            style={styles.quickCashBtn}
+                                                        >
+                                                            <Text style={styles.quickCashText}>{amount / 1000}k</Text>
+                                                        </TouchableOpacity>
+                                                    ))}
+                                                    <TouchableOpacity
+                                                        onPress={() => setCashPaid(finalTotal.toString())}
+                                                        style={[styles.quickCashBtn, { backgroundColor: '#EFF6FF', borderColor: '#2563EB' }]}
+                                                    >
+                                                        <Text style={[styles.quickCashText, { color: '#2563EB' }]}>Pas</Text>
+                                                    </TouchableOpacity>
+                                                </View>
+
+                                                {parseFloat(cashPaid || 0) >= finalTotal && parseFloat(cashPaid || 0) > 0 && (
+                                                    <View style={styles.changeInfo}>
+                                                        <Text style={styles.changeLabel}>Kembalian</Text>
+                                                        <Text style={styles.changeValue}>{formatCurrency(parseFloat(cashPaid) - finalTotal)}</Text>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        )}
+                                    </View>
+                                </ScrollView>
+                            )}
                         </View>
                     </KeyboardAvoidingView>
 
@@ -863,7 +890,10 @@ const SalesPOS = () => {
                     <View style={styles.customerSearchContainer}>
                         <View style={styles.customerSearchHeader}>
                             <Text style={styles.customerSearchTitle}>Cari Pelanggan</Text>
-                            <TouchableOpacity onPress={() => setShowCustomerSearch(false)}>
+                            <TouchableOpacity onPress={() => {
+                                setShowCustomerSearch(false);
+                                setIsCustomerSearchReady(false);
+                            }}>
                                 <X size={24} color="#64748B" />
                             </TouchableOpacity>
                         </View>
@@ -876,40 +906,43 @@ const SalesPOS = () => {
                                 value={customerSearchQuery}
                                 onChangeText={(text) => {
                                     setCustomerSearchQuery(text);
-                                    searchCustomers(text);
                                 }}
                                 autoFocus
                             />
                         </View>
 
-                        <FlatList
-                            data={customerSearchResults}
-                            keyExtractor={item => item.id.toString()}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity
-                                    style={styles.customerSearchResultItem}
-                                    onPress={() => handleSelectCustomer(item)}
-                                >
-                                    <View>
-                                        <Text style={styles.resultName}>{item.name || item.username}</Text>
-                                        <Text style={styles.resultPhone}>{item.phone}</Text>
-                                    </View>
-                                    <View style={{ alignItems: 'flex-end' }}>
-                                        <Text style={styles.resultPoints}>{formatCurrency(item.points)}</Text>
-                                        <Text style={{ fontSize: 10, color: '#94A3B8' }}>Poin</Text>
-                                    </View>
-                                </TouchableOpacity>
-                            )}
-                            ListEmptyComponent={() => (
-                                isSearchingCustomer ? (
-                                    <ActivityIndicator style={{ marginTop: 20 }} color="#2563EB" />
-                                ) : (
-                                    <View style={{ padding: 20, alignItems: 'center' }}>
-                                        <Text style={{ color: '#94A3B8' }}>Tidak ada hasil</Text>
-                                    </View>
-                                )
-                            )}
-                        />
+                        {!isCustomerSearchReady ? (
+                            <ActivityIndicator style={{ marginTop: 40 }} color="#2563EB" />
+                        ) : (
+                            <FlatList
+                                data={customerSearchResults}
+                                keyExtractor={item => item.id.toString()}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        style={styles.customerSearchResultItem}
+                                        onPress={() => handleSelectCustomer(item)}
+                                    >
+                                        <View>
+                                            <Text style={styles.resultName}>{item.name || item.username}</Text>
+                                            <Text style={styles.resultPhone}>{item.phone}</Text>
+                                        </View>
+                                        <View style={{ alignItems: 'flex-end' }}>
+                                            <Text style={styles.resultPoints}>{formatCurrency(item.points)}</Text>
+                                            <Text style={{ fontSize: 10, color: '#94A3B8' }}>Poin</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                )}
+                                ListEmptyComponent={() => (
+                                    isSearchingCustomer ? (
+                                        <ActivityIndicator style={{ marginTop: 20 }} color="#2563EB" />
+                                    ) : (
+                                        <View style={{ padding: 20, alignItems: 'center' }}>
+                                            <Text style={{ color: '#94A3B8' }}>Tidak ada hasil</Text>
+                                        </View>
+                                    )
+                                )}
+                            />
+                        )}
                     </View>
                 </View>
             </Modal>
