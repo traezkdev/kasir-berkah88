@@ -139,7 +139,7 @@ const SellerDashboard = ({ navigation }) => {
         }
     };
 
-    const handleUpdateStatus = async (orderId, status) => {
+    const handleUpdateStatus = useCallback(async (orderId, status) => {
         try {
             await apiService.put(`/api/orders/${orderId}/status`, { status });
             showToast(`Pesanan telah ${status === 'accepted' ? 'diterima' : 'ditolak'}`, 'success');
@@ -147,12 +147,20 @@ const SellerDashboard = ({ navigation }) => {
         } catch (error) {
             showToast(error.response?.data?.error || 'Gagal memperbarui status pesanan', 'error');
         }
-    };
+    }, [showToast, fetchData]);
 
-    const handleViewDetail = (order) => {
+    const handleViewDetail = useCallback((order) => {
         setSelectedOrderForDetail(order);
         setShowDetailModal(true);
-    };
+    }, []);
+
+    const handleAccept = useCallback((orderId) => {
+        handleUpdateStatus(orderId, 'accepted');
+    }, [handleUpdateStatus]);
+
+    const handleReject = useCallback((orderId) => {
+        handleUpdateStatus(orderId, 'rejected');
+    }, [handleUpdateStatus]);
 
     if (loading && !refreshing) {
         return (
@@ -339,8 +347,8 @@ const SellerDashboard = ({ navigation }) => {
                             <SellerOrderCard
                                 key={order.id}
                                 order={order}
-                                onAccept={() => handleUpdateStatus(order.id, 'accepted')}
-                                onReject={() => handleUpdateStatus(order.id, 'rejected')}
+                                onAccept={handleAccept}
+                                onReject={handleReject}
                                 onViewDetail={handleViewDetail}
                             />
                         ))

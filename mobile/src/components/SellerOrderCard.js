@@ -24,7 +24,7 @@ const SellerOrderCard = ({ order, onAccept, onReject, onComplete, onViewDetail }
             confirmText: 'Terima Sekarang',
             type: 'primary'
         });
-        if (ok && onAccept) onAccept();
+        if (ok && onAccept) onAccept(order.id);
     };
 
     const handleReject = async () => {
@@ -34,7 +34,7 @@ const SellerOrderCard = ({ order, onAccept, onReject, onComplete, onViewDetail }
             confirmText: 'Ya, Tolak',
             type: 'danger'
         });
-        if (ok && onReject) onReject();
+        if (ok && onReject) onReject(order.id);
     };
 
     const handleComplete = async () => {
@@ -44,7 +44,7 @@ const SellerOrderCard = ({ order, onAccept, onReject, onComplete, onViewDetail }
             confirmText: 'Ya, Selesai',
             type: 'primary'
         });
-        if (ok && onComplete) onComplete();
+        if (ok && onComplete) onComplete(order.id);
     };
 
     const handleChatCustomer = () => {

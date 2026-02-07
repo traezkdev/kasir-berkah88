@@ -31,28 +31,63 @@ import { useToast } from '../context/ToastContext';
 
 import BottomModalTemplate from './templates/BottomModalTemplate';
 
+const formatCurrency = (val) => {
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency', currency: 'IDR', minimumFractionDigits: 0
+    }).format(val || 0);
+};
+
+const formatDate = (dateStr) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('id-ID', {
+        day: '2-digit', month: 'long', year: 'numeric'
+    }) + ' • ' + date.toLocaleTimeString('id-ID', {
+        hour: '2-digit', minute: '2-digit'
+    });
+};
+
 const OrderDetailModal = ({ visible, onClose, order }) => {
     const { showToast } = useToast();
     const navigation = useNavigation();
 
+    // Memoize parsed items and price calculations
+    const { parsedItems, subtotalGross, subtotalNetItems, itemDiscountAmount, manualDiscount, ppnAmount, grandTotal } = useMemo(() => {
+        if (!order) return { parsedItems: [] };
+
+        const items = Array.isArray(order.items) ? order.items : (typeof order.items === 'string' ? JSON.parse(order.items) : []);
+
+        const gross = items.reduce((sum, item) => {
+            const qty = Number(item.quantity || item.qty) || 0;
+            const originalBasePrice = Number(item.basePrice || item.price) || 0;
+            const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+            return sum + ((originalBasePrice + optionAdjustment) * qty);
+        }, 0);
+
+        const netItems = items.reduce((sum, item) => {
+            const qty = Number(item.quantity || item.qty) || 0;
+            const itemPrice = Number(item.price) || 0;
+            const itemDiscount = Number(item.discount) || 0;
+            const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+
+            const effectivePrice = item.basePrice
+                ? itemPrice
+                : (itemDiscount > 0 ? (itemPrice * (1 - itemDiscount / 100)) + optionAdjustment : itemPrice + optionAdjustment);
+
+            return sum + (effectivePrice * qty);
+        }, 0);
+
+        return {
+            parsedItems: items,
+            subtotalGross: gross,
+            subtotalNetItems: netItems,
+            itemDiscountAmount: gross - netItems,
+            manualDiscount: Number(order.manual_discount || 0),
+            ppnAmount: Number(order.ppn || 0),
+            grandTotal: Number(order.total) || 0
+        };
+    }, [order]);
+
     if (!order) return null;
-
-    const parsedItems = Array.isArray(order.items) ? order.items : (typeof order.items === 'string' ? JSON.parse(order.items) : []);
-
-    const formatCurrency = (val) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency', currency: 'IDR', minimumFractionDigits: 0
-        }).format(val || 0);
-    };
-
-    const formatDate = (dateStr) => {
-        const date = new Date(dateStr);
-        return date.toLocaleDateString('id-ID', {
-            day: '2-digit', month: 'long', year: 'numeric'
-        }) + ' • ' + date.toLocaleTimeString('id-ID', {
-            hour: '2-digit', minute: '2-digit'
-        });
-    };
 
     return (
         <BottomModalTemplate
@@ -155,73 +190,43 @@ const OrderDetailModal = ({ visible, onClose, order }) => {
 
                     <View style={styles.totalDivider} />
 
-                    {(() => {
-                        const subtotalGross = parsedItems.reduce((sum, item) => {
-                            const qty = Number(item.quantity || item.qty) || 0;
-                            const originalBasePrice = Number(item.basePrice || item.price) || 0;
-                            const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
-                            return sum + ((originalBasePrice + optionAdjustment) * qty);
-                        }, 0);
+                    <View style={styles.totalRow}>
+                        <Text style={styles.totalLabel}>Subtotal</Text>
+                        <Text style={styles.totalValue}>{formatCurrency(subtotalGross)}</Text>
+                    </View>
 
-                        const subtotalNetItems = parsedItems.reduce((sum, item) => {
-                            const qty = Number(item.quantity || item.qty) || 0;
-                            const itemPrice = Number(item.price) || 0;
-                            const itemDiscount = Number(item.discount) || 0;
-                            const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+                    {itemDiscountAmount > 0 && (
+                        <View style={styles.totalRow}>
+                            <Text style={[styles.totalLabel, { color: '#EF4444' }]}>Diskon Item</Text>
+                            <Text style={[styles.totalValue, { color: '#EF4444' }]}>-{formatCurrency(itemDiscountAmount)}</Text>
+                        </View>
+                    )}
 
-                            const effectivePrice = item.basePrice
-                                ? itemPrice
-                                : (itemDiscount > 0 ? (itemPrice * (1 - itemDiscount / 100)) + optionAdjustment : itemPrice + optionAdjustment);
+                    {manualDiscount > 0 && (
+                        <View style={styles.totalRow}>
+                            <Text style={[styles.totalLabel, { color: '#EF4444' }]}>Diskon Tambahan</Text>
+                            <Text style={[styles.totalValue, { color: '#EF4444' }]}>-{formatCurrency(manualDiscount)}</Text>
+                        </View>
+                    )}
 
-                            return sum + (effectivePrice * qty);
-                        }, 0);
+                    {order.points_used > 0 && (
+                        <View style={styles.totalRow}>
+                            <Text style={[styles.totalLabel, { color: '#0284C7' }]}>Potongan Poin</Text>
+                            <Text style={[styles.totalValue, { color: '#0284C7' }]}>-{formatCurrency(order.points_used)}</Text>
+                        </View>
+                    )}
 
-                        const itemDiscountAmount = subtotalGross - subtotalNetItems;
-                        const manualDiscount = Number(order.manual_discount || 0);
-                        const ppnAmount = Number(order.ppn || 0);
+                    {ppnAmount > 0 && (
+                        <View style={styles.totalRow}>
+                            <Text style={styles.totalLabel}>Pajak/PPN</Text>
+                            <Text style={styles.totalValue}>{formatCurrency(ppnAmount)}</Text>
+                        </View>
+                    )}
 
-                        return (
-                            <>
-                                <View style={styles.totalRow}>
-                                    <Text style={styles.totalLabel}>Subtotal</Text>
-                                    <Text style={styles.totalValue}>{formatCurrency(subtotalGross)}</Text>
-                                </View>
-
-                                {itemDiscountAmount > 0 && (
-                                    <View style={styles.totalRow}>
-                                        <Text style={[styles.totalLabel, { color: '#EF4444' }]}>Diskon Item</Text>
-                                        <Text style={[styles.totalValue, { color: '#EF4444' }]}>-{formatCurrency(itemDiscountAmount)}</Text>
-                                    </View>
-                                )}
-
-                                {manualDiscount > 0 && (
-                                    <View style={styles.totalRow}>
-                                        <Text style={[styles.totalLabel, { color: '#EF4444' }]}>Diskon Tambahan</Text>
-                                        <Text style={[styles.totalValue, { color: '#EF4444' }]}>-{formatCurrency(manualDiscount)}</Text>
-                                    </View>
-                                )}
-
-                                {order.points_used > 0 && (
-                                    <View style={styles.totalRow}>
-                                        <Text style={[styles.totalLabel, { color: '#0284C7' }]}>Potongan Poin</Text>
-                                        <Text style={[styles.totalValue, { color: '#0284C7' }]}>-{formatCurrency(order.points_used)}</Text>
-                                    </View>
-                                )}
-
-                                {ppnAmount > 0 && (
-                                    <View style={styles.totalRow}>
-                                        <Text style={styles.totalLabel}>Pajak/PPN</Text>
-                                        <Text style={styles.totalValue}>{formatCurrency(ppnAmount)}</Text>
-                                    </View>
-                                )}
-
-                                <View style={[styles.totalRow, { marginTop: 12 }]}>
-                                    <Text style={styles.grandTotalLabel}>TOTAL BAYAR</Text>
-                                    <Text style={styles.grandTotalValue}>{formatCurrency(Number(order.total))}</Text>
-                                </View>
-                            </>
-                        );
-                    })()}
+                    <View style={[styles.totalRow, { marginTop: 12 }]}>
+                        <Text style={styles.grandTotalLabel}>TOTAL BAYAR</Text>
+                        <Text style={styles.grandTotalValue}>{formatCurrency(grandTotal)}</Text>
+                    </View>
                 </View>
 
                 {/* Logistics info or note if applicable */}
@@ -237,6 +242,7 @@ const OrderDetailModal = ({ visible, onClose, order }) => {
         </BottomModalTemplate>
     );
 };
+
 
 const styles = StyleSheet.create({
     // Styles that were handled by layout/template logic are removed.

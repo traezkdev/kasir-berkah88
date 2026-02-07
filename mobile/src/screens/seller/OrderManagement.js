@@ -64,7 +64,7 @@ const OrderManagement = ({ navigation }) => {
         fetchOrders(true);
     };
 
-    const handleUpdateStatus = async (orderId, status) => {
+    const handleUpdateStatus = useCallback(async (orderId, status) => {
         try {
             await apiService.put(`/api/orders/${orderId}/status`, { status });
             showToast('Status berhasil diperbarui', 'success');
@@ -74,7 +74,7 @@ const OrderManagement = ({ navigation }) => {
             showToast(errorMsg, 'error');
             console.error('Error updating status:', error);
         }
-    };
+    }, [showToast, fetchOrders]);
 
     const handleViewReceipt = (order) => {
         // Tetap simpan ini jika nanti ingin mencetak struk dari sini
@@ -93,10 +93,32 @@ const OrderManagement = ({ navigation }) => {
         setShowReceiptModal(true);
     };
 
-    const handleViewDetail = (order) => {
+    const handleViewDetail = useCallback((order) => {
         setSelectedOrderForDetail(order);
         setShowDetailModal(true);
-    };
+    }, []);
+
+    const handleAccept = useCallback((orderId) => {
+        handleUpdateStatus(orderId, 'accepted');
+    }, [handleUpdateStatus]);
+
+    const handleComplete = useCallback((orderId) => {
+        handleUpdateStatus(orderId, 'completed');
+    }, [handleUpdateStatus]);
+
+    const handleReject = useCallback((orderId) => {
+        handleUpdateStatus(orderId, 'cancelled');
+    }, [handleUpdateStatus]);
+
+    const renderOrderItem = useCallback(({ item }) => (
+        <SellerOrderCard
+            order={item}
+            onViewDetail={handleViewDetail}
+            onAccept={activeTab === 'pending' ? handleAccept : null}
+            onComplete={activeTab === 'accepted' ? handleComplete : null}
+            onReject={(activeTab === 'pending' || activeTab === 'accepted') ? handleReject : null}
+        />
+    ), [activeTab, handleViewDetail, handleAccept, handleComplete, handleReject]);
 
     const tabs = [
         { id: 'pending', label: 'Baru', icon: Clock },
@@ -161,15 +183,7 @@ const OrderManagement = ({ navigation }) => {
                             <Text style={styles.emptyText}>Tidak ada pesanan {tabs.find(t => t.id === activeTab).label.toLowerCase()}</Text>
                         </View>
                     }
-                    renderItem={({ item }) => (
-                        <SellerOrderCard
-                            order={item}
-                            onViewDetail={handleViewDetail}
-                            onAccept={activeTab === 'pending' ? () => handleUpdateStatus(item.id, 'accepted') : null}
-                            onComplete={activeTab === 'accepted' ? () => handleUpdateStatus(item.id, 'completed') : null}
-                            onReject={(activeTab === 'pending' || activeTab === 'accepted') ? () => handleUpdateStatus(item.id, 'cancelled') : null}
-                        />
-                    )}
+                    renderItem={renderOrderItem}
                 />
             )}
 
