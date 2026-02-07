@@ -606,6 +606,12 @@ const CashReconciliation = ({ navigation }) => {
                                                 </Text>
                                             </View>
                                             <View style={styles.histStatBox}>
+                                                <Text style={styles.histStatLbl}>Transfer</Text>
+                                                <Text style={styles.histStatVal}>
+                                                    {formatCurrency(parseFloat(item.actual_transfer))}
+                                                </Text>
+                                            </View>
+                                            <View style={styles.histStatBox}>
                                                 <Text style={styles.histStatLbl}>Selisih</Text>
                                                 <View style={styles.varRow}>
                                                     <IconStat size={12} color={status.color} />
@@ -1047,7 +1053,7 @@ const styles = StyleSheet.create({
         borderColor: '#F1F5F9',
     },
     histStatusStrip: {
-        width: 6,
+        width: 12,
     },
     histMain: {
         flex: 1,
