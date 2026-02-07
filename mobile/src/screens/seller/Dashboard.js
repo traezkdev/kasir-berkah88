@@ -30,7 +30,9 @@ import {
     Clock,
     User,
     Gift,
-    Image as ImageIcon
+    Image as ImageIcon,
+    TrendingDown,
+    Wallet
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
@@ -313,8 +315,8 @@ const SellerDashboard = ({ navigation }) => {
                             { label: 'Chat', icon: MessageCircle, color: '#3B82F6', bgColor: '#EFF6FF', target: 'ChatScreen' },
                             { label: 'Jual', icon: ShoppingCart, color: '#FFFFFF', bgColor: '#138FEA', target: 'Jual' },
                             { label: 'Katalog', icon: PlusCircle, color: '#10B981', bgColor: '#ECFDF5', target: 'Katalog' },
-                            { label: 'Kategori', icon: BarChart3, color: '#A855F7', bgColor: '#FAF5FF', target: 'CategoryManagement' },
-                            { label: 'Banner', icon: ImageIcon, color: '#F59E0B', bgColor: '#FFFBEB', target: 'Banners' },
+                            { label: 'Pengeluaran', icon: TrendingDown, color: '#EF4444', bgColor: '#FEF2F2', target: 'ExpenseManagement' },
+                            { label: 'Deposit', icon: Wallet, color: '#138FEA', bgColor: '#E0F2FE', target: 'LapakDeposit' },
                             { label: 'Pelanggan', icon: User, color: '#138FEA', bgColor: '#F0F9FF', target: 'CustomerManagement' },
                             { label: 'Pesanan', icon: ShoppingBag, color: '#6366F1', bgColor: '#EEF2FF', target: 'Pesanan' },
                             { label: 'Riwayat', icon: History, color: '#8B5CF6', bgColor: '#F5F3FF', target: 'Transaksi' },

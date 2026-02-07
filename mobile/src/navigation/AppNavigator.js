@@ -35,6 +35,8 @@ import CustomerDetails from '../screens/seller/CustomerDetails';
 import PointManagement from '../screens/seller/PointManagement';
 import CustomerManagement from '../screens/seller/CustomerManagement';
 import SellerMenu from '../screens/seller/SellerMenu';
+import ExpenseManagement from '../screens/seller/ExpenseManagement';
+import LapakDeposit from '../screens/seller/LapakDeposit';
 import DeveloperCreditsScreen from '../screens/DeveloperCreditsScreen';
 
 // Customer Screens
@@ -111,6 +113,8 @@ const SellerRootStack = () => (
         <Stack.Screen name="CustomerDetails" component={CustomerDetails} />
         <Stack.Screen name="PointManagement" component={PointManagement} />
         <Stack.Screen name="SellerMenu" component={SellerMenu} />
+        <Stack.Screen name="ExpenseManagement" component={ExpenseManagement} />
+        <Stack.Screen name="LapakDeposit" component={LapakDeposit} />
         <Stack.Screen name="DeveloperCreditsScreen" component={DeveloperCreditsScreen} />
     </Stack.Navigator>
 );

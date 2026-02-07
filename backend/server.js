@@ -1344,13 +1344,25 @@ app.delete("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penju
 // --- Expense Categories Endpoints ---
 
 // Get all expense categories
-app.get("/api/expense-categories", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'owner'), async (req, res) => {
+app.get("/api/expense-categories", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'owner', 'penjual', 'guest'), async (req, res) => {
     try {
-        const sql = "SELECT * FROM expense_categories ORDER BY name ASC";
-        const [rows] = await db.query(sql);
+        // Get categories from fixed table
+        const [categoryRows] = await db.query("SELECT name FROM expense_categories ORDER BY name ASC");
+        let categoriesFromTable = categoryRows.map(r => r.name);
+
+        // Get categories from expenses table
+        const [expenseRows] = await db.query('SELECT DISTINCT category FROM expenses WHERE category IS NOT NULL AND category != ""');
+        let categoriesFromExpenses = expenseRows.map(r => r.category);
+
+        // Merge and unique
+        const allUniqueNames = [...new Set([...categoriesFromTable, ...categoriesFromExpenses])].sort();
+
+        // Convert back to object format for web compatibility
+        const finalData = allUniqueNames.map(name => ({ name }));
+
         res.json({
             "message": "success",
-            "data": rows
+            "data": finalData
         });
     } catch (err) {
         res.status(500).json({ "error": err.message });
@@ -2852,31 +2864,33 @@ app.get("/api/expenses", authenticateToken, authorizeRoles('user', 'admin', 'gue
         const lastClosingDate = closingRow.length > 0 ? closingRow[0].value : null;
 
         if (startDate) {
-            let effectiveStartDate = startDate;
-            if (lastClosingDate) {
-                const closingTime = new Date(lastClosingDate).getTime();
-                const startReqTime = startDate.includes(':') ? new Date(startDate).getTime() : new Date(`${startDate} 00:00:00`).getTime();
-                if (closingTime > startReqTime) {
-                    effectiveStartDate = lastClosingDate;
-                }
-            }
             whereClauses.push('e.date >= ?');
-            queryParams.push(effectiveStartDate);
+            queryParams.push(startDate.includes(':') ? startDate : `${startDate} 00:00:00`);
         } else if (lastClosingDate) {
             whereClauses.push('e.date >= ?');
             queryParams.push(lastClosingDate);
         }
         if (endDate) {
             whereClauses.push('e.date <= ?');
-            queryParams.push(endDate);
+            const effectiveEndDate = endDate.includes(':') ? endDate : `${endDate} 23:59:59`;
+            queryParams.push(effectiveEndDate);
+        }
+        if (req.query.category) {
+            whereClauses.push('e.category = ?');
+            queryParams.push(req.query.category);
+        }
+        if (req.query.search) {
+            whereClauses.push('(e.name LIKE ? OR e.notes LIKE ?)');
+            queryParams.push(`%${req.query.search}%`, `%${req.query.search}%`);
         }
 
         const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-        // Query to get total count
-        const countSql = `SELECT COUNT(*) as totalItems FROM expenses e ${whereSql}`;
-        const [countRows] = await db.query(countSql, queryParams);
-        const totalItems = countRows[0].totalItems;
+        // Query to get total count and sum
+        const statsSql = `SELECT COUNT(*) as totalItems, IFNULL(SUM(amount), 0) as totalAmount FROM expenses e ${whereSql}`;
+        const [statsRows] = await db.query(statsSql, queryParams);
+        const totalItems = statsRows[0].totalItems;
+        const totalAmount = statsRows[0].totalAmount;
         const totalPages = Math.ceil(totalItems / limit);
 
         // Query to get paginated data
@@ -2902,6 +2916,7 @@ app.get("/api/expenses", authenticateToken, authorizeRoles('user', 'admin', 'gue
         res.json({
             "message": "success",
             "data": rows,
+            "totalAmount": totalAmount,
             "pagination": {
                 "currentPage": page,
                 "totalPages": totalPages,

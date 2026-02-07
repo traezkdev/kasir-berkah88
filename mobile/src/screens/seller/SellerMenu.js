@@ -22,7 +22,9 @@ import {
     MessageCircle,
     UserCircle,
     Code,
-    ChevronLeft
+    ChevronLeft,
+    TrendingDown,
+    Wallet
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -37,6 +39,8 @@ const MENU_ITEMS = [
     { label: 'Banner', icon: ImageIcon, color: '#EC4899', bgColor: '#FDF2F8', target: 'Banners' },
     { label: 'Pelanggan', icon: User, color: '#14B8A6', bgColor: '#F0FDFA', target: 'CustomerManagement' },
     { label: 'Poin & Loyalty', icon: Gift, color: '#F97316', bgColor: '#FFF7ED', target: 'PointManagement' },
+    { label: 'Pengeluaran', icon: TrendingDown, color: '#EF4444', bgColor: '#FEF2F2', target: 'ExpenseManagement' },
+    { label: 'Lapak Deposit', icon: Wallet, color: '#138FEA', bgColor: '#E0F2FE', target: 'LapakDeposit' },
     { label: 'Chat', icon: MessageCircle, color: '#0EA5E9', bgColor: '#F0F9FF', target: 'ChatScreen' },
     { label: 'Profil Saya', icon: UserCircle, color: '#475569', bgColor: '#F1F5F9', target: 'ProfileScreen' },
     { label: 'Tentang App', icon: Code, color: '#64748B', bgColor: '#F8FAFC', target: 'DeveloperCreditsScreen' },
