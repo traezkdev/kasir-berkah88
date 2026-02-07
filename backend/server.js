@@ -4525,6 +4525,72 @@ app.post("/api/settings", authenticateToken, authorizeRoles('admin'), async (req
     }
 });
 
+// --- NEW SETTING ENDPOINTS ---
+
+// Generic update single setting (used by frontend for various fields dynamically)
+app.put("/api/settings/:key", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    const { key } = req.params;
+    let { value } = req.body;
+    let dbKey = key;
+
+    // Mapping key frontend -> key database jika berbeda
+    if (key === 'website_title') dbKey = 'website_title';
+    if (key === 'header_title') dbKey = 'header_title';
+    if (key === 'cashier_dashboard_title') dbKey = 'cashier_dashboard_title';
+    if (key === 'web_description') dbKey = 'web_description';
+
+    try {
+        const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+        await db.query(sql, [dbKey, value]);
+
+        await logActivity(req.user.userId, 'Update Pengaturan', 'settings', dbKey, `Mengubah ${dbKey}`);
+
+        res.json({ message: `${dbKey} updated successfully`, data: { value } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Upload Logo
+app.post('/api/settings/logo', authenticateToken, authorizeRoles('admin'), upload.single('logo'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No logo file uploaded.' });
+        }
+        const logoUrl = `/public/uploads/${req.file.filename}`;
+
+        const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+        await db.query(sql, ['logo_url', logoUrl]);
+
+        res.json({ message: 'Logo updated successfully!', data: { logo_url: logoUrl } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete Logo
+app.delete('/api/settings/logo', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        // Clear DB entry.
+        const sql = 'UPDATE settings SET `value` = NULL WHERE `key` = ?';
+        await db.query(sql, ['logo_url']);
+        res.json({ message: 'Logo removed successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get Logo specifically
+app.get('/api/settings/logo', async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT value FROM settings WHERE `key` = ?', ['logo_url']);
+        const logoUrl = rows.length > 0 ? rows[0].value : null;
+        res.json({ message: 'success', data: { logo_url: logoUrl } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Update last_monthly_reset_date setting
 app.put('/api/settings/last_monthly_reset_date', authenticateToken, authorizeRoles('admin'), async (req, res) => {
     try {

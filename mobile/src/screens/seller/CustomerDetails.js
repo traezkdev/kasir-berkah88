@@ -170,7 +170,7 @@ const CustomerDetails = ({ navigation, route }) => {
                         </View>
                         {points > 0 && (
                             <View style={[styles.infoBadge, { backgroundColor: '#DCFCE7' }]}>
-                                <Text style={[styles.infoBadgeText, { color: '#166534' }]}>{points} Poin</Text>
+                                <Text style={[styles.infoBadgeText, { color: '#166534' }]}>{Math.floor(points)} Poin</Text>
                             </View>
                         )}
                     </View>

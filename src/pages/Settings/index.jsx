@@ -634,7 +634,8 @@ const Settings = () => {
           {/* Settings Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch optimize-scroll">
             {/* Store Configuration Section */}
-            <SettingsCard icon="Store" title="Identitas Toko" description="Nama, logo, dan deskripsi website" onClick={() => setActiveModal('restaurantSettings')} disabled={!isAdmin} />
+            <SettingsCard icon="Store" title="Identitas Toko" description="Nama, slogan, dan kontak resmi" onClick={() => setActiveModal('restaurantSettings')} disabled={!isAdmin} />
+            <SettingsCard icon="Image" title="Logo & Branding" description="Ganti logo, judul aplikasi, dan SEO" onClick={() => setActiveModal('brandingSettings')} disabled={!isAdmin} />
             <SettingsCard icon="Layout" title="Tampilan & Tema" description="Ubah tema warna dan gaya aplikasi" onClick={() => setActiveModal('appStyleSelection')} disabled={!isAdmin} />
             <SettingsCard icon="Zap" title="Mode Aplikasi" description="Beralih mode Sederhana/Lengkap" onClick={() => setActiveModal('appMode')} disabled={!isAdmin} />
             <SettingsCard icon="Sunrise" title="Motivasi Harian" description="Aktifkan pesan penyemangat pagi" onClick={() => {
@@ -667,11 +668,108 @@ const Settings = () => {
       {/* --- ALL MODALS --- */}
       <DataSyncModal isOpen={activeModal === 'dataSync'} onClose={handleModalClose} />
 
-      <SettingsModal title="Ubah Judul Dasbor Kasir" isOpen={activeModal === 'cashierDashboardTitle'} onClose={handleModalClose}>
-        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/cashier_dashboard_title', { value: newCashierDashboardTitle }, 'Judul dasbor kasir berhasil diperbarui!')} className="space-y-4">
-          <Input label="Judul Dasbor Kasir Baru" name="newCashierDashboardTitle" type="text" value={newCashierDashboardTitle} onChange={(e) => setNewCashierDashboardTitle(e.target.value)} required />
-          <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
-        </form>
+      <SettingsModal title="Branding & Identitas Web" isOpen={activeModal === 'brandingSettings'} onClose={handleModalClose} size="xl">
+        <div className="space-y-8">
+          {/* Logo Section */}
+          <div className="pb-6 border-b border-border">
+            <h4 className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] mb-4 opacity-70">Logo Aplikasi</h4>
+            <form onSubmit={handleLogoUpload} className="space-y-4">
+              {currentLogoUrl && (
+                <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-2xl border border-border group">
+                  <div className="relative">
+                    <img src={currentLogoUrl} alt="Current Logo" className="w-20 h-20 rounded-xl object-cover border bg-white shadow-sm" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
+                      <AppIcon name="Image" className="text-white w-6 h-6" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[10px] font-black text-text-primary uppercase tracking-wider">Logo Aktif</p>
+                    <p className="text-[9px] text-text-secondary mt-1">Logo ini tampil di header dan struk.</p>
+                    <Button type="button" variant="destructive" size="sm" onClick={confirmDeleteLogo} className="mt-3 h-8 px-4 text-[10px] rounded-full font-black uppercase tracking-tighter">
+                      Hapus Logo
+                    </Button>
+                  </div>
+                </div>
+              )}
+              <div className="space-y-3">
+                <div className="relative group">
+                  <Input label="Pilih File Logo Baru" type="file" accept=".png, .jpg, .jpeg" onChange={handleLogoFileChange} className="cursor-pointer file:hidden" />
+                  <div className="absolute right-4 top-[38px] pointer-events-none group-hover:scale-110 transition-transform">
+                    <AppIcon name="UploadCloud" className="text-blue-500 w-5 h-5" />
+                  </div>
+                </div>
+
+                {logoPreview && (
+                  <div className="flex flex-col items-center p-6 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border border-blue-200 dark:border-blue-800 animate-in fade-in zoom-in duration-300">
+                    <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.2em] mb-3">Pratinjau Baru</p>
+                    <img src={logoPreview} alt="Preview" className="w-24 h-24 rounded-xl object-cover shadow-2xl border-4 border-white dark:border-slate-800" />
+                  </div>
+                )}
+
+                <Button type="submit" className="w-full py-4 rounded-xl font-black uppercase tracking-widest shadow-lg shadow-blue-500/20" disabled={isLoading || !logoFile}>
+                  {isLoading ? 'Mengunggah...' : 'Unggah & Simpan Logo'}
+                </Button>
+              </div>
+            </form>
+          </div>
+
+          {/* Titles & SEO Section */}
+          <div className="space-y-6">
+            <h4 className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] opacity-70">Konfigurasi Teks & SEO</h4>
+
+            <div className="grid grid-cols-1 gap-4">
+              <div className="p-5 bg-card rounded-2xl border border-border shadow-sm hover:border-blue-500/30 transition-colors">
+                <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/website_title', { value: newWebsiteTitle }, 'Judul situs berhasil diperbarui!')} className="space-y-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                    <span className="text-[10px] font-black text-text-primary uppercase tracking-widest">Judul Web (SEO)</span>
+                  </div>
+                  <Input placeholder="Contoh: Kasir Berkah 88 - Toko Online" value={newWebsiteTitle} onChange={(e) => setNewWebsiteTitle(e.target.value)} required />
+                  <Button type="submit" size="sm" className="w-full h-10 text-[10px] font-black uppercase tracking-widest rounded-lg" disabled={isLoading}>Update Judul Web</Button>
+                </form>
+              </div>
+
+              <div className="p-5 bg-card rounded-2xl border border-border shadow-sm hover:border-indigo-500/30 transition-colors">
+                <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/header_title', { value: newHeaderTitle }, 'Judul header berhasil diperbarui!')} className="space-y-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                    <span className="text-[10px] font-black text-text-primary uppercase tracking-widest">Judul Header Sambutan</span>
+                  </div>
+                  <Input placeholder="Teks yang muncul di bagian atas halaman" value={newHeaderTitle} onChange={(e) => setNewHeaderTitle(e.target.value)} required />
+                  <Button type="submit" size="sm" className="w-full h-10 text-[10px] font-black uppercase tracking-widest rounded-lg bg-indigo-600 hover:bg-indigo-700" disabled={isLoading}>Update Judul Header</Button>
+                </form>
+              </div>
+
+              <div className="p-5 bg-card rounded-2xl border border-border shadow-sm hover:border-emerald-500/30 transition-colors">
+                <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/web_description', { value: webDescription }, 'Deskripsi web berhasil diperbarui!')} className="space-y-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                    <span className="text-[10px] font-black text-text-primary uppercase tracking-widest">Deskripsi Web (Meta)</span>
+                  </div>
+                  <textarea
+                    value={webDescription}
+                    onChange={(e) => setWebDescription(e.target.value)}
+                    rows="3"
+                    className="flex w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                    placeholder="Masukkan deskripsi untuk optimasi pencarian Google..."
+                  />
+                  <Button type="submit" size="sm" className="w-full h-10 text-[10px] font-black uppercase tracking-widest rounded-lg bg-emerald-600 hover:bg-emerald-700" disabled={isLoading}>Update Deskripsi SEO</Button>
+                </form>
+              </div>
+
+              <div className="p-5 bg-card rounded-2xl border border-border shadow-sm hover:border-amber-500/30 transition-colors">
+                <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/cashier_dashboard_title', { value: newCashierDashboardTitle }, 'Judul dasbor kasir berhasil diperbarui!')} className="space-y-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                    <span className="text-[10px] font-black text-text-primary uppercase tracking-widest">Judul Panel Kasir</span>
+                  </div>
+                  <Input placeholder="Judul khusus untuk halaman kasir" value={newCashierDashboardTitle} onChange={(e) => setNewCashierDashboardTitle(e.target.value)} required />
+                  <Button type="submit" size="sm" className="w-full h-10 text-[10px] font-black uppercase tracking-widest rounded-lg bg-amber-600 hover:bg-amber-700" disabled={isLoading}>Update Judul Kasir</Button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
       </SettingsModal>
 
       <SettingsModal title="Atur PPN Global" isOpen={activeModal === 'ppnRate'} onClose={handleModalClose}>
@@ -868,50 +966,6 @@ const Settings = () => {
         </div>
       </SettingsModal>
 
-      <SettingsModal title="Ubah Judul Situs Web" isOpen={activeModal === 'websiteTitle'} onClose={handleModalClose}>
-        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/website_title', { value: newWebsiteTitle }, 'Judul situs berhasil diperbarui!')} className="space-y-4">
-          <Input label="Judul Situs Web Baru" name="newWebsiteTitle" type="text" value={newWebsiteTitle} onChange={(e) => setNewWebsiteTitle(e.target.value)} required />
-          <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
-        </form>
-      </SettingsModal>
-
-      <SettingsModal title="Ubah Judul Header Web" isOpen={activeModal === 'headerTitle'} onClose={handleModalClose}>
-        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/header_title', { value: newHeaderTitle }, 'Judul header berhasil diperbarui!')} className="space-y-4">
-          <Input label="Judul Header Baru" name="newHeaderTitle" type="text" value={newHeaderTitle} onChange={(e) => setNewHeaderTitle(e.target.value)} required />
-          <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
-        </form>
-      </SettingsModal>
-
-      <SettingsModal title="Ganti Logo Header" isOpen={activeModal === 'logo'} onClose={handleModalClose}>
-        <form onSubmit={handleLogoUpload} className="space-y-6">
-          {currentLogoUrl && (
-            <div className="flex flex-col items-center space-y-4">
-              <p className="text-sm text-text-secondary">Logo Saat Ini:</p>
-              <img src={currentLogoUrl} alt="Logo Saat Ini" className="w-24 h-24 rounded-lg object-cover border border-dashed p-1" />
-              <Button type="button" variant="destructive" onClick={confirmDeleteLogo} disabled={isLoading}>
-                <AppIcon name="Trash2" className="w-4 h-4 mr-2" /> Hapus Logo
-              </Button>
-            </div>
-          )}
-          <Input label="Pilih File Logo Baru (PNG, JPG)" name="logoFile" type="file" accept=".png, .jpg, .jpeg" onChange={handleLogoFileChange} />
-          {logoPreview && <img src={logoPreview} alt="Pratinjau Logo Baru" className="w-24 h-24 rounded-lg object-cover mx-auto border border-dashed p-1" />}
-          <Button type="submit" className="w-full" disabled={isLoading || !logoFile}>{isLoading ? 'Mengunggah...' : 'Unggah dan Simpan'}</Button>
-        </form>
-      </SettingsModal>
-
-      <SettingsModal title="Atur Modal Awal" isOpen={activeModal === 'initialCapital'} onClose={handleModalClose}>
-        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/initial_capital', { value: initialCapital }, 'Modal awal berhasil diperbarui!')} className="space-y-4">
-          <Input label="Jumlah Modal Awal (Rp)" name="initialCapital" type="number" value={initialCapital} onChange={(e) => setInitialCapital(e.target.value)} required />
-          <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
-        </form>
-      </SettingsModal>
-
-      <SettingsModal title="Ubah Deskripsi Web" isOpen={activeModal === 'webDescription'} onClose={handleModalClose}>
-        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/web_description', { value: webDescription }, 'Deskripsi web berhasil diperbarui!')} className="space-y-4">
-          <textarea value={webDescription} onChange={(e) => setWebDescription(e.target.value)} rows="4" className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="Masukkan deskripsi web..."></textarea>
-          <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
-        </form>
-      </SettingsModal>
 
       <SettingsModal title="Pendaftaran Pengguna" isOpen={activeModal === 'registration'} onClose={handleModalClose}>
         <div className="flex items-center justify-between p-4 rounded-lg bg-background">
@@ -968,6 +1022,13 @@ const Settings = () => {
           <Input label="Kata Sandi" name="adminPassword" type={showAdminPassword ? "text" : "password"} value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} required
             rightIcon={<span className="cursor-pointer" onClick={() => setShowAdminPassword(!showAdminPassword)}><AppIcon name={showAdminPassword ? "EyeOff" : "Eye"} className="h-5 w-5 text-gray-400" /></span>} />
           <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Membuat...' : 'Buat Admin'}</Button>
+        </form>
+      </SettingsModal>
+
+      <SettingsModal title="Atur Modal Awal" isOpen={activeModal === 'initialCapital'} onClose={handleModalClose}>
+        <form onSubmit={(e) => handleUpdateSetting(e, '/api/settings/initial_capital', { value: initialCapital }, 'Modal awal berhasil diperbarui!')} className="space-y-4">
+          <Input label="Jumlah Modal Awal (Rp)" name="initialCapital" type="number" value={initialCapital} onChange={(e) => setInitialCapital(e.target.value)} required />
+          <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
         </form>
       </SettingsModal>
 
