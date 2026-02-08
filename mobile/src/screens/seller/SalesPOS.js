@@ -195,38 +195,9 @@ const SalesPOS = () => {
     useFocusEffect(
         useCallback(() => {
             fetchData();
-            loadLastCustomer();
         }, [])
     );
 
-    const loadLastCustomer = async () => {
-        try {
-            const [lastCName, lastCPhone, lastCAddr] = await Promise.all([
-                AsyncStorage.getItem('pos_last_customer_name'),
-                AsyncStorage.getItem('pos_last_customer_phone'),
-                AsyncStorage.getItem('pos_last_customer_address')
-            ]);
-            if (lastCName) setCustomerName(lastCName);
-            if (lastCPhone) setCustomerPhone(lastCPhone);
-            if (lastCAddr) setCustomerAddress(lastCAddr);
-        } catch (e) {
-            console.error("Error loading last customer data:", e);
-        }
-    };
-
-    // Debounced Save Customer Data
-    useEffect(() => {
-        const timer = setTimeout(async () => {
-            try {
-                if (customerName) await AsyncStorage.setItem('pos_last_customer_name', customerName);
-                if (customerPhone) await AsyncStorage.setItem('pos_last_customer_phone', customerPhone);
-                if (customerAddress) await AsyncStorage.setItem('pos_last_customer_address', customerAddress);
-            } catch (e) {
-                console.error("Error saving customer data:", e);
-            }
-        }, 1000);
-        return () => clearTimeout(timer);
-    }, [customerName, customerPhone, customerAddress]);
 
     const filteredItems = useMemo(() => {
         return menuItems.filter(item => {
@@ -279,7 +250,26 @@ const SalesPOS = () => {
     }, [menuItems, ignoreStock]);
 
     const subtotal = useMemo(() => {
-        return cart.reduce((acc, curr) => acc + (curr.price * curr.quantity), 0);
+        return cart.reduce((acc, curr) => {
+            const itemPrice = parseFloat(curr.price || 0);
+            const basePrice = curr.basePrice ? parseFloat(curr.basePrice) : null;
+            const itemDiscount = parseFloat(curr.discount || 0);
+            const quantity = curr.quantity || 0;
+
+            let priceAfterDiscount;
+            if (basePrice !== null) {
+                // If basePrice exists, it's the original price.
+                priceAfterDiscount = itemDiscount > 0
+                    ? Math.round(basePrice * (1 - (itemDiscount / 100)))
+                    : basePrice;
+            } else {
+                // Fresh item from menu, apply discount to current price
+                priceAfterDiscount = itemDiscount > 0
+                    ? Math.round(itemPrice * (1 - (itemDiscount / 100)))
+                    : itemPrice;
+            }
+            return acc + (priceAfterDiscount * quantity);
+        }, 0);
     }, [cart]);
 
     const finalTotal = useMemo(() => {
@@ -329,20 +319,29 @@ const SalesPOS = () => {
         setIsProcessing(true);
         try {
             const transactionData = {
-                items: cart.map(item => ({
-                    id: item.id,
-                    name: item.name,
-                    price: item.price,
-                    quantity: item.quantity,
-                    discount: item.discount || 0
-                })),
+                items: cart.map(item => {
+                    const itemPrice = parseFloat(item.price) || 0;
+                    const itemDiscount = parseFloat(item.discount) || 0;
+                    const priceAfterDiscount = itemDiscount > 0
+                        ? Math.round(itemPrice * (1 - (itemDiscount / 100)))
+                        : itemPrice;
+
+                    return {
+                        id: item.id,
+                        name: item.name,
+                        price: priceAfterDiscount, // Send final price to be consistent with web
+                        basePrice: itemPrice,      // Include basePrice for receipt
+                        quantity: item.quantity,
+                        discount: itemDiscount
+                    };
+                }),
                 subtotal: subtotal,
-                discount: parseFloat(manualDiscount || 0),
+                manual_discount: parseFloat(manualDiscount || 0),
                 total: total,
                 ppn: 0,
                 cashPaid: paid,
                 change: paid - total,
-                payment_method: paymentMethod,
+                payment_method: paymentMethod === 'qris' ? 'transfer' : paymentMethod,
                 ignoreStock: ignoreStock,
                 customer_name: parseInt(selectedCustomer?.id) ? selectedCustomer.name : (customerName || null),
                 customer_phone: parseInt(selectedCustomer?.id) ? selectedCustomer.phone : (customerPhone || null),

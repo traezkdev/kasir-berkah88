@@ -80,6 +80,20 @@ const ExpenseManagement = ({ navigation }) => {
     const { showToast } = useToast();
     const abortControllerRef = useRef(null);
 
+    // Helper for local date string YYYY-MM-DD to avoid timezone issues
+    const getLocalDateString = (daysAgo = 0) => {
+        const date = new Date();
+        if (daysAgo !== 0) {
+            date.setDate(date.getDate() - daysAgo);
+        }
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const today = getLocalDateString();
+
     // Data States
     const [expenses, setExpenses] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -110,26 +124,17 @@ const ExpenseManagement = ({ navigation }) => {
 
     // Filter States
     const [filters, setFilters] = useState({
-        startDate: '',
-        endDate: '',
+        startDate: today,
+        endDate: today,
         category: ''
     });
 
     // Local filters for modal (draft mode)
     const [localFilters, setLocalFilters] = useState({
-        startDate: '',
-        endDate: '',
+        startDate: today,
+        endDate: today,
         category: ''
     });
-
-    // Helper for local date string YYYY-MM-DD to avoid timezone issues
-    const getLocalDateString = () => {
-        const date = new Date();
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
 
     // Form States
     const [formData, setFormData] = useState({
@@ -137,7 +142,7 @@ const ExpenseManagement = ({ navigation }) => {
         amount: '',
         category: 'Operasional',
         notes: '',
-        date: getLocalDateString()
+        date: today
     });
 
     const [categories, setCategories] = useState(['Bahan Baku & Supplies', 'Listrik & Air', 'Pembelian Stok', 'Peralatan', 'Perawatan & Perbaikan', 'Transportasi', 'Promosi & Marketing', 'Operasional Lainnya', 'Lain-lain', 'Gaji']);
@@ -286,8 +291,8 @@ const ExpenseManagement = ({ navigation }) => {
 
     const handleResetFilter = () => {
         const resetValues = {
-            startDate: '',
-            endDate: '',
+            startDate: today,
+            endDate: today,
             category: ''
         };
         setLocalFilters(resetValues);
@@ -518,7 +523,15 @@ const ExpenseManagement = ({ navigation }) => {
                     <View style={styles.summaryCardPremium}>
                         <View style={styles.summaryHeader}>
                             <Text style={styles.summaryTag}>
-                                {filters.startDate || filters.endDate || filters.category || debouncedSearch ? 'DIFILTER' : 'KESELURUHAN'}
+                                {filters.startDate === today && filters.endDate === today && !filters.category && !debouncedSearch
+                                    ? 'HARI INI'
+                                    : (filters.startDate === getLocalDateString(1) && filters.endDate === getLocalDateString(1) && !filters.category && !debouncedSearch
+                                        ? 'KEMARIN'
+                                        : (filters.startDate === (today.substring(0, 8) + '01') && filters.endDate === today && !filters.category && !debouncedSearch
+                                            ? 'BULAN INI'
+                                            : (!filters.startDate && !filters.endDate && !filters.category && !debouncedSearch
+                                                ? 'SEMUA DATA'
+                                                : (filters.startDate || filters.endDate || filters.category || debouncedSearch ? 'DIFILTER' : 'KESELURUHAN'))))}
                             </Text>
                             <TouchableOpacity style={styles.filterBtnMini} onPress={() => {
                                 setLocalFilters(filters);
@@ -731,6 +744,38 @@ const ExpenseManagement = ({ navigation }) => {
                 )}
             >
                 <View style={styles.formContainer}>
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Filter Cepat</Text>
+                        <View style={styles.quickFilterRow}>
+                            <TouchableOpacity
+                                style={[styles.quickFilterBtn, localFilters.startDate === today && localFilters.endDate === today && styles.quickFilterBtnActive]}
+                                onPress={() => setLocalFilters({ ...localFilters, startDate: today, endDate: today })}
+                            >
+                                <Text style={[styles.quickFilterText, localFilters.startDate === today && localFilters.endDate === today && styles.quickFilterTextActive]}>Hari Ini</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.quickFilterBtn, localFilters.startDate === getLocalDateString(1) && localFilters.endDate === getLocalDateString(1) && styles.quickFilterBtnActive]}
+                                onPress={() => setLocalFilters({ ...localFilters, startDate: getLocalDateString(1), endDate: getLocalDateString(1) })}
+                            >
+                                <Text style={[styles.quickFilterText, localFilters.startDate === getLocalDateString(1) && localFilters.endDate === getLocalDateString(1) && styles.quickFilterTextActive]}>Kemarin</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+                            <TouchableOpacity
+                                style={[styles.quickFilterBtn, localFilters.startDate === (today.substring(0, 8) + '01') && localFilters.endDate === today && styles.quickFilterBtnActive]}
+                                onPress={() => setLocalFilters({ ...localFilters, startDate: today.substring(0, 8) + '01', endDate: today })}
+                            >
+                                <Text style={[styles.quickFilterText, localFilters.startDate === (today.substring(0, 8) + '01') && localFilters.endDate === today && styles.quickFilterTextActive]}>Bulan Ini</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.quickFilterBtn, localFilters.startDate === '' && localFilters.endDate === '' && styles.quickFilterBtnActive]}
+                                onPress={() => setLocalFilters({ ...localFilters, startDate: '', endDate: '' })}
+                            >
+                                <Text style={[styles.quickFilterText, localFilters.startDate === '' && localFilters.endDate === '' && styles.quickFilterTextActive]}>Semua Data</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
                     <View style={styles.inputGroup}>
                         <Text style={styles.inputLabel}>Dari Tanggal</Text>
                         {renderDateInput(localFilters.startDate, (val) => setLocalFilters({ ...localFilters, startDate: val }), showStartDatePicker, setShowStartDatePicker, 'Pilih Tanggal Mulai')}
@@ -1174,6 +1219,31 @@ const styles = StyleSheet.create({
     submitBtnText: {
         fontSize: 16,
         fontWeight: '900',
+        color: '#FFFFFF',
+    },
+    quickFilterRow: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    quickFilterBtn: {
+        flex: 1,
+        backgroundColor: '#F1F5F9',
+        paddingVertical: 12,
+        borderRadius: 12,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    quickFilterBtnActive: {
+        backgroundColor: '#1E40AF',
+        borderColor: '#1E40AF',
+    },
+    quickFilterText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#64748B',
+    },
+    quickFilterTextActive: {
         color: '#FFFFFF',
     },
     filterActionRow: {

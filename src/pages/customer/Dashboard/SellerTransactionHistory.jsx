@@ -19,6 +19,8 @@ const SellerTransactionHistory = () => {
         endDate: ''
     });
     const [currentPage, setCurrentPage] = useState(1);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [txToDelete, setTxToDelete] = useState(null);
     const itemsPerPage = 10;
 
     useEffect(() => {
@@ -66,6 +68,41 @@ const SellerTransactionHistory = () => {
         } catch (error) {
             console.error("Error fetching transactions:", error);
             toast.error('Terjadi kesalahan koneksi');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+
+
+
+    const handleDeleteTransaction = (id) => {
+        setTxToDelete(id);
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDeleteTransaction = async () => {
+        if (!txToDelete) return;
+
+        setIsLoading(true);
+        try {
+            const response = await authFetch(`${import.meta.env.VITE_API_URL}/api/transactions/${txToDelete}`, {
+                method: 'DELETE'
+            });
+            const data = await response.json();
+
+            if (response.ok && data.message === 'deleted') {
+                toast.success('Transaksi berhasil dihapus');
+                setShowDeleteConfirm(false);
+                setTxToDelete(null);
+                setSelectedTransaction(null);
+                fetchTransactions();
+            } else {
+                toast.error(data.error || 'Gagal menghapus transaksi');
+            }
+        } catch (error) {
+            console.error("Error deleting transaction:", error);
+            toast.error('Terjadi kesalahan saat menghapus data');
         } finally {
             setIsLoading(false);
         }
@@ -150,6 +187,14 @@ const SellerTransactionHistory = () => {
                                 Admin
                             </button>
                         )}
+                        {userRole === 'admin' && (
+                            <button
+                                onClick={() => navigate('/seller/transaction-trash')}
+                                className={`p-2 rounded-xl active:scale-90 transition-all ${scrolled ? 'bg-red-50 text-red-600' : 'bg-white/20 text-white'}`}
+                            >
+                                <Icon name="Trash2" size={20} />
+                            </button>
+                        )}
                         <button onClick={fetchTransactions} className={`p-2 rounded-xl active:scale-90 transition-all ${scrolled ? 'bg-gray-100 text-gray-600' : 'bg-white/20 text-white'}`}>
                             <Icon name="RefreshCw" size={20} className={isLoading ? 'animate-spin' : ''} />
                         </button>
@@ -176,6 +221,15 @@ const SellerTransactionHistory = () => {
                             <Icon name="RefreshCw" size={18} className={isLoading ? 'animate-spin' : ''} />
                             Refresh Data
                         </button>
+                        {userRole === 'admin' && (
+                            <button
+                                onClick={() => navigate('/seller/transaction-trash')}
+                                className="bg-red-50 text-red-600 px-6 py-3 rounded-xl font-bold hover:bg-red-100 active:scale-95 transition-all flex items-center gap-2"
+                            >
+                                <Icon name="Trash2" size={18} />
+                                Tong Sampah
+                            </button>
+                        )}
                     </div>
                 </header>
 
@@ -323,10 +377,10 @@ const SellerTransactionHistory = () => {
                         </div>
                     )}
                 </div>
-            </div>
+            </div >
 
             {/* Mobile UI */}
-            <div className="pb-24 overflow-x-hidden lg:hidden">
+            < div className="pb-24 overflow-x-hidden lg:hidden" >
 
                 <header className="bg-gradient-to-br from-indigo-700 via-blue-600 to-indigo-500 pt-24 pb-12 px-6 rounded-b-[2.5rem] shadow-xl relative z-10">
                     <div className="absolute inset-0 overflow-hidden rounded-b-[2.5rem] pointer-events-none">
@@ -455,95 +509,142 @@ const SellerTransactionHistory = () => {
                         </div>
                     )}
                 </main>
-            </div>
+            </div >
 
             {/* Transaction Detail Modal */}
-            {selectedTransaction && (
-                <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4 animate-in fade-in duration-200">
-                    <div className="bg-white w-full h-full sm:h-auto max-w-lg rounded-none sm:rounded-[2.5rem] p-6 shadow-2xl animate-in slide-in-from-bottom-12 duration-300 sm:max-h-[90vh] flex flex-col">
-                        <div className="flex justify-between items-center mb-6">
-                            <div>
-                                <h3 className="text-xl font-black text-gray-900 tracking-tight">Detail Transaksi</h3>
-                                <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">#{selectedTransaction.id}</p>
-                            </div>
-                            <button
-                                onClick={() => setSelectedTransaction(null)}
-                                className="p-2 bg-gray-100 rounded-full text-gray-400 hover:bg-gray-200 transition-colors"
-                            >
-                                <Icon name="X" size={20} />
-                            </button>
-                        </div>
-
-                        <div className="space-y-6 overflow-y-auto pr-2 custom-scrollbar flex-1">
-                            {/* Date & Status */}
-                            <div className="flex justify-between items-center bg-gray-50 p-4 rounded-2xl">
-                                <div className="flex flex-col">
-                                    <span className="text-xs font-bold text-gray-400 uppercase">Waktu Transaksi</span>
-                                    <span className="font-bold text-gray-700">{formatDate(selectedTransaction.timestamp)}</span>
+            {
+                selectedTransaction && (
+                    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4 animate-in fade-in duration-200">
+                        <div className="bg-white w-full h-full sm:h-auto max-w-lg rounded-none sm:rounded-[2.5rem] p-6 shadow-2xl animate-in slide-in-from-bottom-12 duration-300 sm:max-h-[90vh] flex flex-col">
+                            <div className="flex justify-between items-center mb-6">
+                                <div>
+                                    <h3 className="text-xl font-black text-gray-900 tracking-tight">Detail Transaksi</h3>
+                                    <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">#{selectedTransaction.id}</p>
                                 </div>
+                                <button
+                                    onClick={() => setSelectedTransaction(null)}
+                                    className="p-2 bg-gray-100 rounded-full text-gray-400 hover:bg-gray-200 transition-colors"
+                                >
+                                    <Icon name="X" size={20} />
+                                </button>
                             </div>
 
-                            {/* Items */}
-                            <div>
-                                <h4 className="text-sm font-black text-gray-900 mb-3 uppercase tracking-wider">Item Dipesan</h4>
-                                <div className="space-y-3">
-                                    {selectedTransaction.items.map((item, idx) => (
-                                        <div key={idx} className="flex justify-between items-center">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 font-bold text-xs">
-                                                    x{item.qty || item.quantity}
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-gray-800 text-sm line-clamp-1">{item.name}</p>
-                                                    <p className="text-xs text-gray-400 font-medium">@{formatCurrency(item.price)}</p>
-                                                </div>
-                                            </div>
-                                            <span className="font-black text-gray-900 text-sm">
-                                                {formatCurrency((item.price * (item.qty || item.quantity)))}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Payment Detail */}
-                            <div className="border-t border-dashed border-gray-200 pt-4 space-y-3">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500 font-medium">Subtotal</span>
-                                    <span className="font-bold text-gray-900">{formatCurrency(selectedTransaction.total)}</span>
-                                </div>
-                                {selectedTransaction.ppn > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500 font-medium">Pajak (PPN)</span>
-                                        <span className="font-bold text-gray-900">{formatCurrency(selectedTransaction.ppn)}</span>
+                            <div className="space-y-6 overflow-y-auto pr-2 custom-scrollbar flex-1">
+                                {/* Date & Status */}
+                                <div className="flex justify-between items-center bg-gray-50 p-4 rounded-2xl">
+                                    <div className="flex flex-col">
+                                        <span className="text-xs font-bold text-gray-400 uppercase">Waktu Transaksi</span>
+                                        <span className="font-bold text-gray-700">{formatDate(selectedTransaction.timestamp)}</span>
                                     </div>
-                                )}
-                                <div className="flex justify-between text-sm items-center pt-2">
-                                    <span className="text-gray-900 font-black text-lg">Total Bayar</span>
-                                    <span className="font-black text-indigo-600 text-xl">{formatCurrency(selectedTransaction.total)}</span>
+                                </div>
+
+                                {/* Items */}
+                                <div>
+                                    <h4 className="text-sm font-black text-gray-900 mb-3 uppercase tracking-wider">Item Dipesan</h4>
+                                    <div className="space-y-3">
+                                        {selectedTransaction.items.map((item, idx) => (
+                                            <div key={idx} className="flex justify-between items-center">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 font-bold text-xs">
+                                                        x{item.qty || item.quantity}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-gray-800 text-sm line-clamp-1">{item.name}</p>
+                                                        <p className="text-xs text-gray-400 font-medium">@{formatCurrency(item.price)}</p>
+                                                    </div>
+                                                </div>
+                                                <span className="font-black text-gray-900 text-sm">
+                                                    {formatCurrency((item.price * (item.qty || item.quantity)))}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Payment Detail */}
+                                <div className="border-t border-dashed border-gray-200 pt-4 space-y-3">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500 font-medium">Subtotal</span>
+                                        <span className="font-bold text-gray-900">{formatCurrency(selectedTransaction.total)}</span>
+                                    </div>
+                                    {selectedTransaction.ppn > 0 && (
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-500 font-medium">Pajak (PPN)</span>
+                                            <span className="font-bold text-gray-900">{formatCurrency(selectedTransaction.ppn)}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between text-sm items-center pt-2">
+                                        <span className="text-gray-900 font-black text-lg">Total Bayar</span>
+                                        <span className="font-black text-indigo-600 text-xl">{formatCurrency(selectedTransaction.total)}</span>
+                                    </div>
+                                </div>
+
+                                <div className="bg-indigo-50 p-4 rounded-2xl flex justify-between items-center">
+                                    <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Metode Pembayaran</span>
+                                    <span className="font-black text-indigo-700 uppercase">{selectedTransaction.payment_method || 'TUNAI'}</span>
                                 </div>
                             </div>
 
-                            <div className="bg-indigo-50 p-4 rounded-2xl flex justify-between items-center">
-                                <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Metode Pembayaran</span>
-                                <span className="font-black text-indigo-700 uppercase">{selectedTransaction.payment_method || 'TUNAI'}</span>
+                            <div className="mt-6 flex flex-col gap-3">
+                                <button
+                                    onClick={() => navigate('/seller/receipt', { state: { transaction: selectedTransaction } })}
+                                    className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-200 active:scale-95 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Icon name="Receipt" size={20} />
+                                    Lihat Struk
+                                </button>
+                                <button
+                                    onClick={() => setSelectedTransaction(null)}
+                                    className="w-full bg-gray-100 text-gray-700 font-bold py-4 rounded-2xl active:scale-95 transition-transform"
+                                >
+                                    Tutup
+                                </button>
+                                {userRole === 'admin' && (
+                                    <button
+                                        onClick={() => handleDeleteTransaction(selectedTransaction.id)}
+                                        className="w-full bg-red-50 text-red-600 font-bold py-4 rounded-2xl border border-red-100 active:scale-95 transition-all flex items-center justify-center gap-2"
+                                        disabled={isLoading}
+                                    >
+                                        <Icon name="Trash2" size={20} />
+                                        Hapus Transaksi
+                                    </button>
+                                )}
                             </div>
                         </div>
+                    </div>
+                )}
 
-                        <div className="mt-6 flex flex-col gap-3">
-                            <button
-                                onClick={() => navigate('/seller/receipt', { state: { transaction: selectedTransaction } })}
-                                className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-200 active:scale-95 transition-all flex items-center justify-center gap-2"
-                            >
-                                <Icon name="Receipt" size={20} />
-                                Lihat Struk
-                            </button>
-                            <button
-                                onClick={() => setSelectedTransaction(null)}
-                                className="w-full bg-gray-100 text-gray-700 font-bold py-4 rounded-2xl active:scale-95 transition-transform"
-                            >
-                                Tutup
-                            </button>
+            {/* Custom Delete Confirmation Modal */}
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-300">
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mb-6 shadow-inner">
+                                <Icon name="AlertTriangle" size={40} />
+                            </div>
+                            <h3 className="text-2xl font-black text-gray-900 mb-2 tracking-tight">Hapus Transaksi?</h3>
+                            <p className="text-gray-500 font-bold text-sm leading-relaxed mb-8">
+                                Transaksi <span className="text-gray-900 font-black">#{txToDelete}</span> akan dipindahkan ke tempat sampah. Data ini dapat Anda pulihkan nanti jika diperlukan.
+                            </p>
+                            <div className="flex flex-col w-full gap-3">
+                                <button
+                                    onClick={confirmDeleteTransaction}
+                                    className="w-full bg-red-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-red-200 active:scale-95 transition-all flex items-center justify-center gap-2"
+                                    disabled={isLoading}
+                                >
+                                    {isLoading ? <Icon name="RefreshCw" size={20} className="animate-spin" /> : 'Ya, Hapus Sekarang'}
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowDeleteConfirm(false);
+                                        setTxToDelete(null);
+                                    }}
+                                    className="w-full bg-gray-100 text-gray-700 font-bold py-4 rounded-2xl active:scale-95 transition-transform"
+                                    disabled={isLoading}
+                                >
+                                    Batalkan
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

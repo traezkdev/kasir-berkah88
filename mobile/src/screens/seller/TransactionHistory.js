@@ -41,6 +41,9 @@ import EditTransactionModal from './EditTransactionModal';
 import TransactionDetailModal from './TransactionDetailModal';
 import ModernLoader from '../../components/ModernLoader';
 import { useOrderNotification } from '../../context/OrderNotificationContext';
+import { useAuth } from '../../context/AuthContext';
+import { Alert } from 'react-native';
+import { Trash2, AlertTriangle } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -67,7 +70,7 @@ const TransactionCard = React.memo(({ item, setSelectedTx, formatDate, formatCur
 
     const getMethodIcon = () => {
         const method = (item.payment_method || '').toLowerCase();
-        if (method.includes('transfer')) return <Wallet size={120} color="#3B82F6" />;
+        if (method.includes('transfer')) return <QrCode size={120} color="#3B82F6" />;
         if (method.includes('cash') || method.includes('tunai')) return <Banknote size={120} color="#22C55E" />;
         if (method.includes('qris')) return <QrCode size={120} color="#3B82F6" />;
         return <CreditCard size={120} color="#3B82F6" />;
@@ -94,7 +97,7 @@ const TransactionCard = React.memo(({ item, setSelectedTx, formatDate, formatCur
                     </View>
                     <View style={[styles.methodBadge, { backgroundColor: (item.payment_method?.toLowerCase() === 'cash' || item.payment_method?.toLowerCase() === 'tunai') ? '#F0FDF4' : '#EFF6FF' }]}>
                         <Text style={[styles.methodText, { color: (item.payment_method?.toLowerCase() === 'cash' || item.payment_method?.toLowerCase() === 'tunai') ? '#166534' : '#1E40AF' }]}>
-                            {(item.payment_method || 'Tunai').toUpperCase()}
+                            {item.payment_method?.toLowerCase() === 'transfer' ? 'QRIS' : (item.payment_method || 'Tunai').toUpperCase()}
                         </Text>
                     </View>
                 </View>
@@ -123,6 +126,8 @@ const TransactionCard = React.memo(({ item, setSelectedTx, formatDate, formatCur
 });
 
 const TransactionHistory = ({ navigation }) => {
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'admin';
     const { refreshTrigger } = useOrderNotification();
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -133,6 +138,7 @@ const TransactionHistory = ({ navigation }) => {
     const [selectedTx, setSelectedTx] = useState(null);
     const [showReceipt, setShowReceipt] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     // Pagination state
     const [page, setPage] = useState(1);
@@ -241,6 +247,27 @@ const TransactionHistory = ({ navigation }) => {
         }).format(date);
     }, []);
 
+    const confirmDeleteAction = async () => {
+        if (!selectedTx) return;
+        try {
+            setLoading(true);
+            const response = await apiService.delete(`/api/transactions/${selectedTx.id}`);
+            if (response.data && response.data.message === 'deleted') {
+                setShowDeleteConfirm(false);
+                setSelectedTx(null);
+                fetchTransactions(1, true, debouncedSearch, selectedDate);
+            } else {
+                Alert.alert("Gagal", "Gagal menghapus transaksi.");
+            }
+        } catch (error) {
+            console.error('Delete transaction error:', error);
+            Alert.alert("Error", "Terjadi kesalahan saat menghapus data.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
 
     const renderItem = useCallback(({ item }) => (
         <TransactionCard
@@ -250,6 +277,10 @@ const TransactionHistory = ({ navigation }) => {
             formatCurrency={formatCurrency}
         />
     ), [formatDate, formatCurrency]);
+
+    const handleDeleteTransaction = (tx) => {
+        setShowDeleteConfirm(true);
+    };
 
     const renderFooter = () => {
         if (!loadingMore) return <View style={{ height: 20 }} />;
@@ -275,17 +306,27 @@ const TransactionHistory = ({ navigation }) => {
                         <Text style={styles.headerSubtitle}>{totalItems} Transaksi tercatat</Text>
                     </View>
                 </View>
-                <TouchableOpacity
-                    onPress={onRefresh}
-                    style={styles.refreshBtn}
-                    disabled={refreshing || loading}
-                >
-                    {refreshing || loading ? (
-                        <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                        <RefreshCw size={20} color="#FFFFFF" />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <TouchableOpacity
+                        onPress={onRefresh}
+                        style={styles.refreshBtn}
+                        disabled={refreshing || loading}
+                    >
+                        {refreshing || loading ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                            <RefreshCw size={20} color="#FFFFFF" />
+                        )}
+                    </TouchableOpacity>
+                    {isAdmin && (
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('TransactionTrash')}
+                            style={[styles.refreshBtn, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}
+                        >
+                            <Trash2 size={20} color="#FFFFFF" />
+                        </TouchableOpacity>
                     )}
-                </TouchableOpacity>
+                </View>
             </View>
 
             <View style={styles.heroArea}>
@@ -362,10 +403,47 @@ const TransactionHistory = ({ navigation }) => {
                 onClose={() => setSelectedTx(null)}
                 onEdit={() => setShowEditModal(true)}
                 onPrint={() => setShowReceipt(true)}
+                onDelete={() => handleDeleteTransaction(selectedTx)}
+                isAdmin={isAdmin}
                 navigation={navigation}
                 formatCurrency={formatCurrency}
                 formatDate={formatDate}
             />
+
+            {/* Premium Delete Confirmation Modal */}
+            <Modal visible={showDeleteConfirm} transparent animationType="fade">
+                <View style={styles.confirmOverlay}>
+                    <View style={styles.confirmCard}>
+                        <View style={styles.confirmIconBg}>
+                            <AlertTriangle size={32} color="#DC2626" />
+                        </View>
+                        <Text style={styles.confirmTitle}>Hapus Transaksi?</Text>
+                        <Text style={styles.confirmSubtitle}>
+                            Transaksi <Text style={{ color: '#1E293B', fontWeight: '900' }}>#{selectedTx?.id}</Text> akan dipindahkan ke tempat sampah. Anda dapat memulihkannya nanti di menu utama jika diperlukan.
+                        </Text>
+                        <View style={styles.confirmActions}>
+                            <TouchableOpacity
+                                style={styles.confirmCancelBtn}
+                                onPress={() => setShowDeleteConfirm(false)}
+                                disabled={loading}
+                            >
+                                <Text style={styles.confirmCancelText}>Batal</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.confirmDeleteBtn}
+                                onPress={confirmDeleteAction}
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                    <Text style={styles.confirmDeleteText}>Ya, Hapus</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
 
             {showReceipt && (
                 <ReceiptModal
@@ -815,6 +893,80 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: '#64748B',
         fontWeight: 'bold',
+    },
+    confirmOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+    },
+    confirmCard: {
+        backgroundColor: '#FFFFFF',
+        width: '100%',
+        maxWidth: 340,
+        borderRadius: 32,
+        padding: 24,
+        alignItems: 'center',
+        elevation: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+    },
+    confirmIconBg: {
+        width: 64,
+        height: 64,
+        backgroundColor: '#FEF2F2',
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    confirmTitle: {
+        fontSize: 20,
+        fontWeight: '900',
+        color: '#1E293B',
+        marginBottom: 8,
+    },
+    confirmSubtitle: {
+        fontSize: 14,
+        color: '#64748B',
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 24,
+        fontWeight: 'bold',
+    },
+    confirmActions: {
+        flexDirection: 'row',
+        gap: 12,
+        width: '100%',
+    },
+    confirmCancelBtn: {
+        flex: 1,
+        height: 54,
+        borderRadius: 18,
+        backgroundColor: '#F1F5F9',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    confirmCancelText: {
+        fontSize: 15,
+        fontWeight: '900',
+        color: '#64748B',
+    },
+    confirmDeleteBtn: {
+        flex: 1,
+        height: 54,
+        borderRadius: 18,
+        backgroundColor: '#DC2626',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    confirmDeleteText: {
+        fontSize: 15,
+        fontWeight: '900',
+        color: '#FFFFFF',
     },
 });
 

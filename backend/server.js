@@ -2242,10 +2242,16 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
             return { ...item, price: price, quantity: quantity };
         });
 
+        // Ensure manual_discount is treated as a number
+        const manualDiscountVal = parseFloat(manual_discount || 0);
+        const subtotalAfterManualDiscount = Math.max(0, calculatedSubtotal - manualDiscountVal);
+
         const [ppnSetting] = await connection.query("SELECT value FROM settings WHERE `key` = ?", ['ppn']);
         const ppnRate = ppnSetting.length > 0 ? parseFloat(ppnSetting[0].value) : 0.12;
-        const calculatedPpn = calculatedSubtotal * ppnRate;
-        const calculatedTotal = calculatedSubtotal + calculatedPpn;
+
+        // PPN is calculated after manual discount
+        const calculatedPpn = subtotalAfterManualDiscount * ppnRate;
+        const calculatedTotal = subtotalAfterManualDiscount + calculatedPpn;
 
         const finalTotal = (frontendTotal !== undefined && frontendTotal !== null && !isNaN(parseFloat(frontendTotal)))
             ? parseFloat(frontendTotal)

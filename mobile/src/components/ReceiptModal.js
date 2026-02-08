@@ -146,7 +146,9 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                 ? 'MAKAN KARYAWAN'
                 : (transaction.payment_method === 'cash' || transaction.payment_method === 'tunai' || transaction.payment_method === 'Tunai')
                     ? 'TUNAI'
-                    : (transaction.payment_method || 'TUNAI').toUpperCase();
+                    : (transaction.payment_method === 'transfer' || transaction.payment_method === 'TRANSFER')
+                        ? 'QRIS'
+                        : (transaction.payment_method || 'TUNAI').toUpperCase();
 
             printData.push({ text: `METODE: ${paymentMethodText}`, align: 'left' });
             printData.push({ text: 'STATUS: LUNAS', align: 'left' });
@@ -391,7 +393,9 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
             ? 'MAKAN KARYAWAN'
             : (transaction.payment_method === 'cash' || transaction.payment_method === 'tunai' || transaction.payment_method === 'Tunai')
                 ? 'TUNAI'
-                : (transaction.payment_method || 'TUNAI').toUpperCase();
+                : (transaction.payment_method === 'transfer' || transaction.payment_method === 'TRANSFER')
+                    ? 'QRIS'
+                    : (transaction.payment_method || 'TUNAI').toUpperCase();
 
         text += `Metode Bayar: ${paymentMethodText}\n`;
         text += `Status: LUNAS\n`;
@@ -531,6 +535,32 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
         }
     };
 
+    // Calculations for UI display
+    const items = transaction.items || [];
+    const subtotalBeforeAllDiscounts = items.reduce((sum, item) => {
+        const originalBasePrice = Number(item.basePrice || item.price) || 0;
+        const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+        const pricePerUnitBeforeDiscount = originalBasePrice + optionAdjustment;
+        return sum + (pricePerUnitBeforeDiscount * (Number(item.quantity || item.qty) || 0));
+    }, 0);
+
+    const subtotalAfterItemDiscounts = items.reduce((sum, item) => {
+        const itemDiscount = Number(item.discount) || 0;
+        const basePrice = Number(item.basePrice || item.price) || 0;
+        const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+
+        const priceAfterDiscount = itemDiscount > 0
+            ? Math.round(basePrice * (1 - (itemDiscount / 100)))
+            : basePrice;
+
+        return sum + ((priceAfterDiscount + optionAdjustment) * (Number(item.quantity || item.qty) || 0));
+    }, 0);
+
+    const itemsDiscountAmount = subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts;
+    const manualDiscountAmount = Number(transaction.manual_discount) || 0;
+    const ppnAmount = Number(transaction.ppn) || 0;
+    const ppnRate = itemsDiscountAmount > 0 || manualDiscountAmount > 0 ? (ppnAmount / (subtotalAfterItemDiscounts - manualDiscountAmount)) : (ppnAmount / subtotalBeforeAllDiscounts);
+
     return (
         <Modal
             visible={visible}
@@ -667,16 +697,31 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                 <View style={styles.summaryGlow} />
                                 <View style={styles.summaryContent}>
                                     <View style={styles.summaryRow}>
-                                        <Text style={styles.summaryLabel}>Harga Dasar</Text>
-                                        <Text style={styles.summaryValue}>{formatCurrency(transaction.total - (transaction.ppn || 0))}</Text>
+                                        <Text style={styles.summaryLabel}>Subtotal</Text>
+                                        <Text style={styles.summaryValue}>{formatCurrency(subtotalBeforeAllDiscounts)}</Text>
                                     </View>
 
-                                    {transaction.customer_name && (
+                                    {itemsDiscountAmount > 0 && (
                                         <View style={styles.summaryRow}>
-                                            <Text style={styles.summaryLabel}>Pelanggan</Text>
-                                            <Text style={styles.summaryValue}>{transaction.customer_name}</Text>
+                                            <Text style={styles.summaryLabel}>Diskon Item</Text>
+                                            <Text style={styles.summaryValue}>-{formatCurrency(itemsDiscountAmount)}</Text>
                                         </View>
                                     )}
+
+                                    {manualDiscountAmount > 0 && (
+                                        <View style={styles.summaryRow}>
+                                            <Text style={styles.summaryLabel}>Diskon Transaksi</Text>
+                                            <Text style={styles.summaryValue}>-{formatCurrency(manualDiscountAmount)}</Text>
+                                        </View>
+                                    )}
+
+                                    {ppnAmount > 0 && (
+                                        <View style={styles.summaryRow}>
+                                            <Text style={styles.summaryLabel}>PPN ({(ppnRate * 100).toFixed(0)}%)</Text>
+                                            <Text style={styles.summaryValue}>{formatCurrency(ppnAmount)}</Text>
+                                        </View>
+                                    )}
+
 
                                     {/* Additional Payment Info for Cash */}
                                     {((transaction.payment_method || '').toLowerCase() === 'tunai' || (transaction.payment_method || '').toLowerCase() === 'cash') && (
@@ -716,7 +761,7 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                             <View style={styles.paymentPill}>
                                 <View style={styles.pillPart}>
                                     <Text style={styles.pillLabel}>METODE</Text>
-                                    <Text style={styles.pillValue}>{(transaction.payment_method || 'Tunai').toUpperCase()}</Text>
+                                    <Text style={styles.pillValue}>{(transaction.payment_method === 'transfer' || transaction.payment_method === 'TRANSFER') ? 'QRIS' : (transaction.payment_method || 'Tunai').toUpperCase()}</Text>
                                 </View>
                                 <View style={[styles.pillPart, styles.pillBorder]}>
                                     <Text style={styles.pillLabel}>STATUS</Text>

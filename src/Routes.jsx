@@ -62,6 +62,7 @@ import SellerBanners from './pages/customer/Dashboard/SellerBanners';
 import SellerMenuManagement from './pages/customer/Dashboard/SellerMenuManagement';
 import SellerTransactionHistory from './pages/customer/Dashboard/SellerTransactionHistory';
 import SellerReceipt from './pages/customer/Dashboard/SellerReceipt';
+import SellerTransactionTrash from './pages/customer/Dashboard/SellerTransactionTrash';
 import SellerOrderManagement from './pages/customer/Dashboard/SellerOrderManagement';
 import SellerTransactions from './pages/customer/Dashboard/SellerTransactions';
 import SellerChatPage from './pages/seller/Chat';
@@ -281,6 +282,7 @@ const AppRoutes = () => {
         <Route path="/seller/banners" element={<SellerBanners />} />
         <Route path="/seller/menu-management" element={<SellerMenuManagement />} />
         <Route path="/seller/transaction-history" element={<SellerTransactionHistory />} />
+        <Route path="/seller/transaction-trash" element={<SellerTransactionTrash />} />
         <Route path="/seller/orders" element={<SellerOrderManagement />} />
         <Route path="/seller/transactions" element={<SellerTransactions />} />
         <Route path="/seller/receipt" element={<SellerReceipt />} />

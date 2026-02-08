@@ -66,7 +66,21 @@ const EditTransactionModal = ({ visible, onClose, transaction, onSave }) => {
 
     useEffect(() => {
         if (visible && transaction) {
-            setCart(transaction.items || []);
+            const normalizedItems = (transaction.items || []).map(item => {
+                const itemDiscount = parseFloat(item.discount || 0);
+                const currentPrice = parseFloat(item.price || 0);
+                // Jika basePrice tidak ada tapi ada diskon, rekonstruksi harga asli (mencegah double discount)
+                const reconstructedBase = (itemDiscount > 0 && !item.basePrice)
+                    ? Math.round(currentPrice / (1 - (itemDiscount / 100)))
+                    : (item.basePrice || currentPrice);
+
+                return {
+                    ...item,
+                    basePrice: reconstructedBase,
+                    price: currentPrice // Tetap simpan harga final dari DB
+                };
+            });
+            setCart(normalizedItems);
             setManualDiscount(String(transaction.manual_discount || 0));
             setPpn(String(transaction.ppn || 0));
             setNotes(transaction.catatan || '');
@@ -74,7 +88,12 @@ const EditTransactionModal = ({ visible, onClose, transaction, onSave }) => {
             // Normalize payment method to match UI options (Tunai, Gojek, etc.)
             const methods = ['Tunai', 'Gojek', 'Transfer', 'QRIS'];
             const backendMethod = transaction.payment_method || 'Tunai';
-            const matchedMethod = methods.find(m => m.toLowerCase() === backendMethod.toLowerCase()) || 'Tunai';
+            let matchedMethod = methods.find(m => m.toLowerCase() === backendMethod.toLowerCase()) || 'Tunai';
+
+            // Map 'transfer' from backend to 'QRIS' for mobile UI if requested
+            if (backendMethod.toLowerCase() === 'transfer') {
+                matchedMethod = 'QRIS';
+            }
             setPaymentMethod(matchedMethod);
 
             setCustomerName(transaction.customer_name || '');
@@ -178,10 +197,19 @@ const EditTransactionModal = ({ visible, onClose, transaction, onSave }) => {
             item.name.toLowerCase().includes(menuSearch.toLowerCase())
         ), [menuItems, menuSearch]);
 
-    const subtotal = useMemo(() =>
-        cart.reduce((acc, item) => acc + (item.price * (item.quantity || item.qty || 1)), 0),
-        [cart]
-    );
+    const subtotal = useMemo(() => {
+        return cart.reduce((acc, item) => {
+            const basePrice = parseFloat(item.basePrice || item.price || 0);
+            const itemDiscount = parseFloat(item.discount || 0);
+            const quantity = parseInt(item.quantity || item.qty || 1);
+
+            const priceAfterDiscount = itemDiscount > 0
+                ? Math.round(basePrice * (1 - (itemDiscount / 100)))
+                : basePrice;
+
+            return acc + (priceAfterDiscount * quantity);
+        }, 0);
+    }, [cart]);
 
     const total = useMemo(() =>
         subtotal + Number(ppn || 0) - Number(manualDiscount || 0),
@@ -229,6 +257,8 @@ const EditTransactionModal = ({ visible, onClose, transaction, onSave }) => {
                     id: item.id,
                     name: item.name,
                     price: item.price,
+                    basePrice: item.price,
+                    discount: item.discount || 0,
                     quantity: 1,
                     qty: 1,
                     category: item.category
@@ -260,12 +290,28 @@ const EditTransactionModal = ({ visible, onClose, transaction, onSave }) => {
         setLoading(true);
         try {
             const payload = {
-                items: cart,
+                items: cart.map(item => {
+                    const basePrice = parseFloat(item.basePrice || item.price || 0);
+                    const itemDiscount = parseFloat(item.discount || 0);
+                    const priceAfterDiscount = itemDiscount > 0
+                        ? Math.round(basePrice * (1 - (itemDiscount / 100)))
+                        : basePrice;
+
+                    return {
+                        id: item.id,
+                        name: item.name,
+                        price: priceAfterDiscount, // Final price
+                        basePrice: basePrice,      // Original price
+                        quantity: item.quantity || item.qty || 1,
+                        discount: itemDiscount,
+                        options: item.options || []
+                    };
+                }),
                 total: total,
                 ppn: Number(ppn || 0),
                 manual_discount: Number(manualDiscount || 0),
                 catatan: notes,
-                payment_method: paymentMethod,
+                payment_method: paymentMethod === 'QRIS' ? 'transfer' : paymentMethod,
                 customer_name: customerName,
                 customer_phone: customerPhone,
                 customer_address: customerAddress,

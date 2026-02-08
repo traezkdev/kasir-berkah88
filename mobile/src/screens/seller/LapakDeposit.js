@@ -92,6 +92,20 @@ const LapakDeposit = ({ navigation }) => {
     const { showToast } = useToast();
     const abortControllerRef = useRef(null);
 
+    // Helper for local date string YYYY-MM-DD to avoid timezone issues
+    const getLocalDateString = (daysAgo = 0) => {
+        const date = new Date();
+        if (daysAgo !== 0) {
+            date.setDate(date.getDate() - daysAgo);
+        }
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const today = getLocalDateString();
+
     // Data States
     const [lapakAccount, setLapakAccount] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -110,15 +124,14 @@ const LapakDeposit = ({ navigation }) => {
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [filters, setFilters] = useState({
         type: 'all',
-        startDate: '',
-        endDate: '',
+        startDate: getLocalDateString(),
+        endDate: getLocalDateString(),
     });
 
-    // Local filters for modal (draft mode)
     const [localFilters, setLocalFilters] = useState({
         type: 'all',
-        startDate: '',
-        endDate: '',
+        startDate: getLocalDateString(),
+        endDate: getLocalDateString(),
     });
 
     // Form States
@@ -213,21 +226,13 @@ const LapakDeposit = ({ navigation }) => {
     }, [localFilters]);
 
     const handleResetFilter = useCallback(() => {
-        const resetValues = { type: 'all', startDate: '', endDate: '' };
+        const resetValues = { type: 'all', startDate: today, endDate: today };
         setLocalFilters(resetValues);
         setFilters(resetValues);
         setSearchInput('');
         setShowFilterModal(false);
-    }, []);
+    }, [today]);
 
-    // Helper for local date string YYYY-MM-DD to avoid timezone issues
-    const getLocalDateString = () => {
-        const date = new Date();
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
 
     const handleAddDeposit = useCallback(() => {
         setFormData({
@@ -436,9 +441,22 @@ const LapakDeposit = ({ navigation }) => {
                 <View style={styles.balanceCard}>
                     <View style={styles.balanceInfo}>
                         <View style={styles.walletIconBg}>
-                            <Wallet size={24} color="#138FEA" />
+                            <Wallet size={24} color="#1E40AF" />
                         </View>
-                        <View>
+                        <View style={{ flex: 1 }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                <Text style={styles.periodTag}>
+                                    {filters.startDate === today && filters.endDate === today && filters.type === 'all' && !debouncedSearch
+                                        ? 'HARI INI'
+                                        : (filters.startDate === getLocalDateString(1) && filters.endDate === getLocalDateString(1) && filters.type === 'all' && !debouncedSearch
+                                            ? 'KEMARIN'
+                                            : (filters.startDate === (today.substring(0, 8) + '01') && filters.endDate === today && filters.type === 'all' && !debouncedSearch
+                                                ? 'BULAN INI'
+                                                : (!filters.startDate && !filters.endDate && filters.type === 'all' && !debouncedSearch
+                                                    ? 'SEMUA DATA'
+                                                    : 'DIFILTER')))}
+                                </Text>
+                            </View>
                             <Text style={styles.balanceLabel}>Saldo Lapak</Text>
                             <Text style={styles.balanceAmount}>{formatCurrency(lapakAccount?.account?.balance || 0)}</Text>
                         </View>
@@ -462,7 +480,7 @@ const LapakDeposit = ({ navigation }) => {
                     <View style={styles.actionButtons}>
                         <TouchableOpacity style={styles.actionBtnMain} onPress={handleAddDeposit}>
                             <View style={styles.actionIconBg}>
-                                <Plus size={18} color="#138FEA" />
+                                <Plus size={18} color="#1E40AF" />
                             </View>
                             <Text style={styles.actionText}>Deposit</Text>
                         </TouchableOpacity>
@@ -502,7 +520,7 @@ const LapakDeposit = ({ navigation }) => {
 
                 {loading && !lapakAccount ? (
                     <View style={styles.centerPadding}>
-                        <ActivityIndicator size="large" color="#138FEA" />
+                        <ActivityIndicator size="large" color="#1E40AF" />
                         <Text style={styles.loadingText}>Memuat data...</Text>
                     </View>
                 ) : (
@@ -653,6 +671,38 @@ const LapakDeposit = ({ navigation }) => {
                 )}
             >
                 <View style={styles.formContainer}>
+                    <Text style={styles.inputLabel}>Filter Cepat</Text>
+                    <View style={styles.quickFilterRow}>
+                        <TouchableOpacity
+                            style={[styles.quickFilterBtn, localFilters.startDate === today && localFilters.endDate === today && styles.quickFilterBtnActive]}
+                            onPress={() => setLocalFilters({ ...localFilters, startDate: today, endDate: today })}
+                        >
+                            <Text style={[styles.quickFilterText, localFilters.startDate === today && localFilters.endDate === today && styles.quickFilterTextActive]}>Hari Ini</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.quickFilterBtn, localFilters.startDate === getLocalDateString(1) && localFilters.endDate === getLocalDateString(1) && styles.quickFilterBtnActive]}
+                            onPress={() => setLocalFilters({ ...localFilters, startDate: getLocalDateString(1), endDate: getLocalDateString(1) })}
+                        >
+                            <Text style={[styles.quickFilterText, localFilters.startDate === getLocalDateString(1) && localFilters.endDate === getLocalDateString(1) && styles.quickFilterTextActive]}>Kemarin</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <View style={[styles.quickFilterRow, { marginTop: 10 }]}>
+                        <TouchableOpacity
+                            style={[styles.quickFilterBtn, localFilters.startDate === (today.substring(0, 8) + '01') && localFilters.endDate === today && styles.quickFilterBtnActive]}
+                            onPress={() => setLocalFilters({ ...localFilters, startDate: today.substring(0, 8) + '01', endDate: today })}
+                        >
+                            <Text style={[styles.quickFilterText, localFilters.startDate === (today.substring(0, 8) + '01') && localFilters.endDate === today && styles.quickFilterTextActive]}>Bulan Ini</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.quickFilterBtn, localFilters.startDate === '' && localFilters.endDate === '' && styles.quickFilterBtnActive]}
+                            onPress={() => setLocalFilters({ ...localFilters, startDate: '', endDate: '' })}
+                        >
+                            <Text style={[styles.quickFilterText, localFilters.startDate === '' && localFilters.endDate === '' && styles.quickFilterTextActive]}>Semua Data</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={{ height: 20 }} />
+
                     <Text style={styles.inputLabel}>Tipe Transaksi</Text>
                     <View style={styles.typeSelector}>
                         {['all', 'deposit', 'expense'].map((t) => (
@@ -687,7 +737,7 @@ const styles = StyleSheet.create({
     header: {
         backgroundColor: '#1E40AF',
         paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 50,
-        paddingBottom: 140,
+        paddingBottom: 170,
         paddingHorizontal: 20,
         borderBottomLeftRadius: 32,
         borderBottomRightRadius: 32,
@@ -696,7 +746,7 @@ const styles = StyleSheet.create({
     headerTop: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'between',
+        justifyContent: 'space-between',
         marginBottom: 25,
     },
     backBtn: {
@@ -706,7 +756,7 @@ const styles = StyleSheet.create({
     },
     headerTitleContainer: {
         flex: 1,
-        marginLeft: 15,
+        alignItems: 'center',
     },
     headerSubtitle: {
         color: 'rgba(255, 255, 255, 0.7)',
@@ -721,6 +771,8 @@ const styles = StyleSheet.create({
     },
     refreshBtn: {
         padding: 8,
+        width: 40,
+        alignItems: 'center',
     },
     balanceCard: {
         position: 'absolute',
@@ -792,6 +844,41 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: 12,
     },
+    periodTag: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#94A3B8',
+        backgroundColor: '#F1F5F9',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+        alignSelf: 'flex-start',
+    },
+    quickFilterRow: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    quickFilterBtn: {
+        flex: 1,
+        backgroundColor: '#F1F5F9',
+        paddingVertical: 12,
+        borderRadius: 12,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    quickFilterBtnActive: {
+        backgroundColor: '#1E40AF',
+        borderColor: '#1E40AF',
+    },
+    quickFilterText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#64748B',
+    },
+    quickFilterTextActive: {
+        color: '#FFFFFF',
+    },
     actionBtnMain: {
         flex: 1,
         flexDirection: 'row',
@@ -811,13 +898,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     actionText: {
-        color: '#138FEA',
+        color: '#1E40AF',
         fontSize: 13,
         fontWeight: '800',
     },
     contentWrapper: {
         flex: 1,
-        paddingTop: 135,
+        paddingTop: 130,
         paddingHorizontal: 20,
     },
     searchAndFilter: {
@@ -854,8 +941,8 @@ const styles = StyleSheet.create({
         borderColor: '#E2E8F0',
     },
     filterBtnActive: {
-        backgroundColor: '#138FEA',
-        borderColor: '#138FEA',
+        backgroundColor: '#1E40AF',
+        borderColor: '#1E40AF',
     },
     centerPadding: {
         flex: 1,
@@ -1021,7 +1108,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     submitBtn: {
-        backgroundColor: '#138FEA',
+        backgroundColor: '#1E40AF',
         height: 55,
         borderRadius: 16,
         alignItems: 'center',
@@ -1064,7 +1151,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     typeOptionActive: {
-        backgroundColor: '#138FEA',
+        backgroundColor: '#1E40AF',
     },
     typeOptionText: {
         fontSize: 13,

@@ -17,7 +17,8 @@ import {
     RefreshCw,
     Download,
     ArrowRight,
-    FileText
+    FileText,
+    Trash2
 } from 'lucide-react-native';
 
 const TransactionDetailModal = ({
@@ -28,7 +29,9 @@ const TransactionDetailModal = ({
     onPrint,
     navigation,
     formatCurrency,
-    formatDate
+    formatDate,
+    onDelete,
+    isAdmin
 }) => {
 
     const items = useMemo(() => transaction?.items || [], [transaction]);
@@ -45,7 +48,7 @@ const TransactionDetailModal = ({
                 <View style={styles.txInfoRow}>
                     <Text style={styles.txInfoLabel}>Metode Pembayaran</Text>
                     <Text style={[styles.txInfoValue, { color: '#1E40AF', fontWeight: '900' }]}>
-                        {(transaction.payment_method || 'Tunai').toUpperCase()}
+                        {transaction.payment_method?.toLowerCase() === 'transfer' ? 'QRIS' : (transaction.payment_method || 'Tunai').toUpperCase()}
                     </Text>
                 </View>
 
@@ -159,6 +162,28 @@ const TransactionDetailModal = ({
 
                 {/* Footer */}
                 <View style={styles.modalFooter}>
+                    {/* Footer Breakdown */}
+                    <View style={{ marginBottom: 15, gap: 4 }}>
+                        {transaction.manual_discount > 0 && (
+                            <View style={styles.infoRowMini}>
+                                <Text style={styles.miniLabel}>Diskon Transaksi</Text>
+                                <Text style={[styles.miniValue, { color: '#DC2626' }]}>-{formatCurrency(transaction.manual_discount)}</Text>
+                            </View>
+                        )}
+                        {transaction.points_used > 0 && (
+                            <View style={styles.infoRowMini}>
+                                <Text style={styles.miniLabel}>Diskon Poin</Text>
+                                <Text style={[styles.miniValue, { color: '#2563EB' }]}>-{formatCurrency(transaction.points_used)}</Text>
+                            </View>
+                        )}
+                        {transaction.ppn > 0 && (
+                            <View style={styles.infoRowMini}>
+                                <Text style={styles.miniLabel}>PPN</Text>
+                                <Text style={styles.miniValue}>{formatCurrency(transaction.ppn)}</Text>
+                            </View>
+                        )}
+                    </View>
+
                     <View style={styles.totalRow}>
                         <Text style={styles.grandTotalLabel}>Total Bayar</Text>
                         <Text style={styles.grandTotalValue}>
@@ -176,6 +201,15 @@ const TransactionDetailModal = ({
                             <Text style={styles.printBtnText}>Lihat Struk</Text>
                         </TouchableOpacity>
                     </View>
+                    {isAdmin && (
+                        <TouchableOpacity
+                            style={[styles.editBtn, { marginTop: 12, backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}
+                            onPress={onDelete}
+                        >
+                            <Trash2 size={20} color="#DC2626" />
+                            <Text style={[styles.editBtnText, { color: '#DC2626' }]}>Hapus Transaksi</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
             </View>
         </Modal>
@@ -433,6 +467,21 @@ const styles = StyleSheet.create({
         height: 1,
         backgroundColor: '#F1F5F9',
         marginVertical: 16,
+    },
+    infoRowMini: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    miniLabel: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        color: '#64748B',
+    },
+    miniValue: {
+        fontSize: 13,
+        fontWeight: '900',
+        color: '#1E293B',
     },
 });
 
