@@ -2,7 +2,7 @@
   "expo": {
     "name": "Kasir Berkah88",
     "slug": "kasir-berkah88-mobile",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/logonew.png",
     "userInterfaceStyle": "light",
@@ -48,6 +48,12 @@
           "photosPermission": "Izinkan Kasir Berkah88 mengakses galeri Anda.",
           "savePhotosPermission": "Izinkan Kasir Berkah88 menyimpan gambar ke galeri.",
           "isAccessMediaLocationEnabled": true
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Izinkan Kasir Berkah88 mengakses foto Anda untuk banner promo."
         }
       ],
       "@react-native-community/datetimepicker"

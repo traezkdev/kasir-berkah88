@@ -33,7 +33,7 @@ import {
     Info,
     ShoppingBag
 } from 'lucide-react-native';
-import apiService from '../../api/apiService';
+import apiService, { API_URL } from '../../api/apiService';
 
 const { width } = Dimensions.get('window');
 
@@ -43,6 +43,12 @@ const PromoScreen = ({ navigation }) => {
     const [codeModalVisible, setCodeModalVisible] = useState(false);
     const [selectedPromo, setSelectedPromo] = useState(null);
     const [copied, setCopied] = useState(false);
+
+    const getImageUrl = (url) => {
+        if (!url) return null;
+        if (url.startsWith('data:') || url.startsWith('http')) return url;
+        return `${API_URL}${url}`;
+    };
 
     useEffect(() => {
         fetchPromos();
@@ -139,20 +145,46 @@ const PromoScreen = ({ navigation }) => {
     const renderCampaign = (item) => (
         <TouchableOpacity
             key={item.id}
-            style={styles.campaignCard}
+            style={[styles.campaignCard, { backgroundColor: item.color || '#059669' }]}
             onPress={() => navigation.navigate('MainTabs', { screen: 'Menu' })}
+            activeOpacity={0.9}
         >
             <View style={styles.campaignContent}>
-                <View style={styles.campaignInfo}>
-                    <Text style={styles.campaignTitle}>{item.title}</Text>
+                <View style={styles.campaignIconBox}>
+                    {getIcon(item.icon, '#FFFFFF')}
+                </View>
+
+                <View style={styles.campaignMain}>
+                    <Text style={styles.campaignTitle} numberOfLines={1}>{item.title}</Text>
                     <Text style={styles.campaignSubtitle} numberOfLines={2}>{item.description}</Text>
-                    <View style={styles.activeIndicator}>
-                        <CheckCircle2 size={12} color="#10B981" />
-                        <Text style={styles.activeText}>Sedang Aktif</Text>
+
+                    <View style={styles.campaignMeta}>
+                        <View style={styles.activePill}>
+                            <Zap size={10} color={item.color || '#059669'} fill={item.color || '#059669'} />
+                            <Text style={[styles.activePillText, { color: item.color || '#059669' }]}>AKTIF</Text>
+                        </View>
+                        {item.min_purchase > 0 && (
+                            <Text style={styles.campaignMinPurchase}>
+                                • Min. Rp {parseFloat(item.min_purchase).toLocaleString('id-ID')}
+                            </Text>
+                        )}
                     </View>
                 </View>
-                <ChevronRight size={20} color="#CBD5E1" />
+
+                <View style={styles.campaignBenefit}>
+                    <View style={styles.benefitCircle}>
+                        <Text style={[styles.benefitValue, { color: item.color || '#059669' }]}>
+                            {item.discount_type === 'percentage'
+                                ? `${parseFloat(item.discount_value).toFixed(0)}%`
+                                : '!!!'}
+                        </Text>
+                        <Text style={[styles.benefitLabel, { color: item.color || '#059669' }]}>OFF</Text>
+                    </View>
+                </View>
             </View>
+
+            {/* Decorative Element */}
+            <View style={styles.decorCircle} />
         </TouchableOpacity>
     );
 
@@ -180,25 +212,10 @@ const PromoScreen = ({ navigation }) => {
                         {/* Hero section - Dynamic from promos with is_hero flag */}
                         {promos.filter(p => p.is_hero).length > 0 && (
                             <ImageBackground
-                                source={{ uri: promos.find(p => p.is_hero)?.image_url || 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1000&auto=format&fit=crop' }}
+                                source={{ uri: getImageUrl(promos.find(p => p.is_hero)?.image_url) || 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1000&auto=format&fit=crop' }}
                                 style={styles.heroSection}
                                 imageStyle={{ borderRadius: 30 }}
-                            >
-                                <View style={styles.heroOverlay}>
-                                    <View style={styles.heroBadge}>
-                                        <Sparkles size={14} color="#FFFFFF" fill="#FFFFFF" />
-                                        <Text style={styles.heroBadgeText}>
-                                            {promos.find(p => p.is_hero)?.badge_text || 'SPESIAL PENJUALAN TERBAIK'}
-                                        </Text>
-                                    </View>
-                                    <Text style={styles.heroTitle}>
-                                        {promos.find(p => p.is_hero)?.title || 'Makan Enak, Dompet Happy!'}
-                                    </Text>
-                                    <Text style={styles.heroSubtitle}>
-                                        {promos.find(p => p.is_hero)?.description || 'Temukan berbagai penawaran menarik khusus untuk kamu hari ini.'}
-                                    </Text>
-                                </View>
-                            </ImageBackground>
+                            />
                         )}
 
                         {/* Voucher Section */}
@@ -209,8 +226,8 @@ const PromoScreen = ({ navigation }) => {
                             </View>
                         </View>
                         <View style={styles.voucherList}>
-                            {promos.filter(p => p.code).length > 0 ? (
-                                promos.filter(p => p.code).map(renderVoucher)
+                            {promos.filter(p => p.code && !p.is_hero).length > 0 ? (
+                                promos.filter(p => p.code && !p.is_hero).map(renderVoucher)
                             ) : (
                                 <View style={{ padding: 40, alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 20 }}>
                                     <Ticket size={48} color="#D1D5DB" />
@@ -228,8 +245,8 @@ const PromoScreen = ({ navigation }) => {
                         </View>
 
                         <View style={{ gap: 16 }}>
-                            {promos.filter(p => !p.code).length > 0 ? (
-                                promos.filter(p => !p.code).map(renderCampaign)
+                            {promos.filter(p => !p.code && !p.is_hero).length > 0 ? (
+                                promos.filter(p => !p.code && !p.is_hero).map(renderCampaign)
                             ) : (
                                 <View style={{ padding: 30, alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 24, borderWidth: 1, borderColor: '#F1F5F9' }}>
                                     <Zap size={32} color="#D1D5DB" />
@@ -347,10 +364,6 @@ const styles = StyleSheet.create({
         height: 200,
         marginBottom: 30,
         justifyContent: 'flex-end',
-        ...Platform.select({
-            web: { boxShadow: '0px 10px 25px rgba(0,0,0,0.1)' },
-            android: { elevation: 5 }
-        })
     },
     heroOverlay: {
         padding: 20,
@@ -504,49 +517,102 @@ const styles = StyleSheet.create({
         borderColor: '#F1F5F9',
     },
     campaignCard: {
-        backgroundColor: '#FFFFFF',
         borderRadius: 24,
-        padding: 20,
-        borderWidth: 1,
-        borderColor: '#F1F5F9',
+        overflow: 'hidden',
+        marginBottom: 16,
         ...Platform.select({
-            web: { boxShadow: '0px 4px 12px rgba(0,0,0,0.03)' },
-            android: { elevation: 2 }
+            web: { boxShadow: '0px 8px 20px rgba(0,0,0,0.15)' },
+            android: { elevation: 6 }
         })
     },
     campaignContent: {
         flexDirection: 'row',
         alignItems: 'center',
+        padding: 20,
     },
-    campaignInfo: {
+    campaignIconBox: {
+        width: 44,
+        height: 44,
+        borderRadius: 14,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 15,
+    },
+    campaignMain: {
         flex: 1,
     },
     campaignTitle: {
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: '900',
-        color: '#1E293B',
+        color: '#FFFFFF',
+        letterSpacing: -0.5,
     },
     campaignSubtitle: {
         fontSize: 12,
-        color: '#64748B',
-        marginTop: 4,
-        lineHeight: 18,
+        color: 'rgba(255,255,255,0.8)',
+        marginTop: 2,
+        lineHeight: 16,
     },
-    activeIndicator: {
+    campaignMeta: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#ECFDF5',
-        alignSelf: 'flex-start',
-        paddingHorizontal: 8,
+        marginTop: 12,
+        gap: 8,
+    },
+    activePill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        paddingHorizontal: 10,
         paddingVertical: 4,
-        borderRadius: 8,
-        marginTop: 10,
+        borderRadius: 20,
         gap: 4,
     },
-    activeText: {
-        fontSize: 10,
+    activePillText: {
+        fontSize: 9,
         fontWeight: '900',
-        color: '#059669',
+        letterSpacing: 0.5,
+    },
+    campaignMinPurchase: {
+        fontSize: 10,
+        color: 'rgba(255,255,255,0.7)',
+        fontWeight: '700',
+    },
+    campaignBenefit: {
+        paddingLeft: 15,
+    },
+    benefitCircle: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: '#FFFFFF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        ...Platform.select({
+            web: { boxShadow: '0px 4px 10px rgba(0,0,0,0.1)' },
+            android: { elevation: 3 }
+        })
+    },
+    benefitValue: {
+        fontSize: 18,
+        fontWeight: '900',
+        letterSpacing: -1,
+    },
+    benefitLabel: {
+        fontSize: 9,
+        fontWeight: '900',
+        marginTop: -4,
+    },
+    decorCircle: {
+        position: 'absolute',
+        right: -20,
+        top: -20,
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        zIndex: -1,
     },
     tipsCard: {
         backgroundColor: '#059669',

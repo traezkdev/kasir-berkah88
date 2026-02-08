@@ -14,11 +14,14 @@ import {
     PanResponder,
     Animated,
     KeyboardAvoidingView,
-    ScrollView
+    ScrollView,
+    Image,
+    Switch
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Dimensions } from 'react-native';
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 import {
     Ticket,
     Plus,
@@ -42,10 +45,18 @@ import {
     Tags,
     Info,
     Sparkles,
-    Image,
-    ImageIcon
+    User,
+    Image as ImageIcon
 } from 'lucide-react-native';
-import apiService from '../../api/apiService';
+import apiService, { API_URL } from '../../api/apiService';
+import * as ImagePicker from 'expo-image-picker';
+
+const getImageUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('data:') || url.startsWith('http')) return url;
+    // Gabungkan baseURL dengan path (misal /public/uploads/...)
+    return `${API_URL}${url}`;
+};
 
 // Memoized Promo Item Component for better performance
 const getIcon = (iconName, size, color) => {
@@ -98,28 +109,44 @@ const PromoItem = React.memo(({ promo, onEdit, onDelete, onToggle }) => {
                 </TouchableOpacity>
             </View>
 
-            {/* Body: Icon, Title, Discount */}
+            {/* Body: Image/Icon, Title, Description/Discount */}
             <View style={styles.cardBody}>
-                <View style={[styles.promoIconContainer, { backgroundColor: promo.color + '15' }]}>
-                    {getIcon(promo.icon, 28, promo.color)}
-                </View>
+                {promo.is_hero && promo.image_url ? (
+                    <View style={styles.bannerPreviewContainer}>
+                        <Image
+                            source={{ uri: getImageUrl(promo.image_url) }}
+                            style={styles.bannerPreviewImage}
+                            resizeMode="cover"
+                        />
+                    </View>
+                ) : (
+                    <View style={[styles.promoIconContainer, { backgroundColor: promo.color + '15' }]}>
+                        {getIcon(promo.icon, 28, promo.color)}
+                    </View>
+                )}
 
                 <View style={styles.cardContent}>
                     <Text style={styles.promoTitle} numberOfLines={1}>{promo.title}</Text>
 
-                    <View style={styles.discountContainer}>
-                        <Text style={[styles.promoDiscount, { color: promo.color }]}>
-                            {promo.discount_type === 'percentage'
-                                ? `${promo.discount_value}% OFF`
-                                : `Rp ${parseFloat(promo.discount_value).toLocaleString('id-ID')}`}
+                    {promo.is_hero ? (
+                        <Text style={styles.promoReminderText} numberOfLines={2}>
+                            {promo.description || 'Tidak ada keterangan pengingat.'}
                         </Text>
-                        {promo.code && (
-                            <View style={styles.codePill}>
-                                <Hash size={12} color="#6B7280" />
-                                <Text style={styles.codeText}>{promo.code}</Text>
-                            </View>
-                        )}
-                    </View>
+                    ) : (
+                        <View style={styles.discountContainer}>
+                            <Text style={[styles.promoDiscount, { color: promo.color }]}>
+                                {promo.discount_type === 'percentage'
+                                    ? `${promo.discount_value}% OFF`
+                                    : `Rp ${parseFloat(promo.discount_value).toLocaleString('id-ID')}`}
+                            </Text>
+                            {promo.code && (
+                                <View style={styles.codePill}>
+                                    <Hash size={12} color="#6B7280" />
+                                    <Text style={styles.codeText}>{promo.code}</Text>
+                                </View>
+                            )}
+                        </View>
+                    )}
                 </View>
             </View>
 
@@ -129,14 +156,18 @@ const PromoItem = React.memo(({ promo, onEdit, onDelete, onToggle }) => {
             {/* Footer: Details & Actions */}
             <View style={styles.cardFooter}>
                 <View style={styles.metaContainer}>
-                    <View style={styles.metaItem}>
-                        <Calendar size={14} color="#9CA3AF" />
-                        <Text style={styles.metaText}>{promo.expiry || 'Tanpa Batas'}</Text>
-                    </View>
-                    <View style={styles.metaItem}>
-                        <ShoppingBag size={14} color="#9CA3AF" />
-                        <Text style={styles.metaText}>Min. {parseInt(promo.min_purchase) > 0 ? `Rp ${parseFloat(promo.min_purchase).toLocaleString('id-ID')}` : 'Rp 0'}</Text>
-                    </View>
+                    {(!promo.is_hero || promo.expiry) && (
+                        <View style={styles.metaItem}>
+                            <Calendar size={14} color="#9CA3AF" />
+                            <Text style={styles.metaText}>{promo.expiry || 'Tanpa Batas'}</Text>
+                        </View>
+                    )}
+                    {(!promo.is_hero || parseInt(promo.min_purchase) > 0) && (
+                        <View style={styles.metaItem}>
+                            <ShoppingBag size={14} color="#9CA3AF" />
+                            <Text style={styles.metaText}>Min. Rp {parseFloat(promo.min_purchase || 0).toLocaleString('id-ID')}</Text>
+                        </View>
+                    )}
                 </View>
 
                 <View style={styles.actionRow}>
@@ -158,41 +189,18 @@ const BannerItem = React.memo(({ item, onEdit }) => (
         activeOpacity={0.9}
         onPress={() => onEdit(item)}
     >
-        <View style={[styles.bannerCard, { backgroundColor: item.color || '#059669' }]}>
+        <View style={[styles.bannerCard, { backgroundColor: 'transparent' }]}>
             {/* Background Pattern/Image */}
             <View style={styles.bannerBackground}>
                 {item.image_url ? (
                     <Animated.Image
-                        source={{ uri: item.image_url }}
+                        source={{ uri: getImageUrl(item.image_url) }}
                         style={styles.bannerImage}
                         resizeMode="cover"
                     />
                 ) : (
                     <View style={styles.patternOverlay} />
                 )}
-            </View>
-
-            <View style={styles.bannerContent}>
-                {item.badge_text ? (
-                    <View style={styles.bannerBadge}>
-                        <Text style={styles.bannerBadgeText}>{item.badge_text}</Text>
-                    </View>
-                ) : null}
-
-                <Text style={styles.bannerTitle} numberOfLines={2}>
-                    {item.title}
-                </Text>
-
-                <View style={styles.bannerFooter}>
-                    <View style={styles.bannerCode}>
-                        <Text style={styles.bannerCodeText}>
-                            {item.code || 'TANPA KODE'}
-                        </Text>
-                    </View>
-                    <Text style={styles.bannerExpiry}>
-                        Berlaku s/d {item.expiry || 'Seterusnya'}
-                    </Text>
-                </View>
             </View>
 
             {/* Edit Indicator */}
@@ -203,25 +211,82 @@ const BannerItem = React.memo(({ item, onEdit }) => (
     </TouchableOpacity>
 ));
 
-const BannerCarousel = React.memo(({ promos, onEdit }) => {
-    if (!promos || promos.length === 0) {
-        return (
-            <TouchableOpacity
-                style={styles.emptyBannerContainer}
-                onPress={() => onEdit(null, true)} // Pass true to pre-select hero
-            >
-                <View style={styles.emptyBannerContent}>
-                    <Sparkles size={32} color="#D1D5DB" />
-                    <Text style={styles.emptyBannerText}>Tambahkan Banner Promosi</Text>
-                    <Text style={styles.emptyBannerSubText}>Klik untuk buat banner baru</Text>
-                </View>
-            </TouchableOpacity>
-        );
-    }
+const BannerCarousel = React.memo(({ promos, totalPromos, onEdit }) => {
+    const stats = useMemo(() => {
+        if (!totalPromos) return { active: 0, voucher: 0, auto: 0 };
+        return {
+            active: totalPromos.filter(p => p.is_active).length,
+            voucher: totalPromos.filter(p => p.is_active && p.code).length,
+            auto: totalPromos.filter(p => p.is_active && !p.code && !p.is_hero).length
+        };
+    }, [totalPromos]);
 
     const renderBanner = useCallback(({ item }) => (
         <BannerItem item={item} onEdit={onEdit} />
     ), [onEdit]);
+
+    if (!promos || promos.length === 0) {
+        return (
+            <View style={styles.dashboardContainer}>
+                {/* Stats Section */}
+                <View style={styles.statsCardWrapper}>
+                    <View style={styles.statsHeader}>
+                        <Text style={styles.statsTitle}>Statistik Promo</Text>
+                        <View style={styles.statsBadge}>
+                            <Text style={styles.statsBadgeText}>Update Real-time</Text>
+                        </View>
+                    </View>
+
+                    <View style={styles.statsGrid}>
+                        <View style={styles.statBox}>
+                            <View style={[styles.statIcon, { backgroundColor: '#DCFCE7' }]}>
+                                <Ticket size={20} color="#15803D" />
+                            </View>
+                            <Text style={styles.statNumber}>{stats.active}</Text>
+                            <Text style={styles.statLabel}>Aktif</Text>
+                        </View>
+
+                        <View style={styles.verticalDivider} />
+
+                        <View style={styles.statBox}>
+                            <View style={[styles.statIcon, { backgroundColor: '#DBEAFE' }]}>
+                                <Hash size={20} color="#1D4ED8" />
+                            </View>
+                            <Text style={styles.statNumber}>{stats.voucher}</Text>
+                            <Text style={styles.statLabel}>Voucher</Text>
+                        </View>
+
+                        <View style={styles.verticalDivider} />
+
+                        <View style={styles.statBox}>
+                            <View style={[styles.statIcon, { backgroundColor: '#FFEDD5' }]}>
+                                <Zap size={20} color="#C2410C" />
+                            </View>
+                            <Text style={styles.statNumber}>{stats.auto}</Text>
+                            <Text style={styles.statLabel}>Otomatis</Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* CTA Banner */}
+                <TouchableOpacity
+                    style={styles.ctaBanner}
+                    activeOpacity={0.9}
+                    onPress={() => onEdit(null, true)}
+                >
+                    <View style={styles.ctaContent}>
+                        <View style={styles.ctaTextContainer}>
+                            <Text style={styles.ctaTitle}>Pasang Banner Unggulan</Text>
+                            <Text style={styles.ctaDesc}>Tingkatkan visibilitas promo di toko Anda</Text>
+                        </View>
+                        <View style={styles.ctaIconContainer}>
+                            <Sparkles size={24} color="#FFFFFF" />
+                        </View>
+                    </View>
+                </TouchableOpacity>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.carouselContainer}>
@@ -287,29 +352,31 @@ const PromoManagement = ({ navigation }) => {
         PanResponder.create({
             onStartShouldSetPanResponder: () => true,
             onMoveShouldSetPanResponder: (_, gestureState) => {
-                // Only respond to vertical swipes
-                return Math.abs(gestureState.dy) > 5;
+                // Only respond to downward swipes that are more vertical than horizontal
+                return gestureState.dy > 5 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
             },
             onPanResponderMove: (_, gestureState) => {
-                // Only allow downward swipes
                 if (gestureState.dy > 0) {
                     panY.setValue(gestureState.dy);
                 }
             },
             onPanResponderRelease: (_, gestureState) => {
-                // Close modal if swiped down more than 100px
-                if (gestureState.dy > 100) {
-                    setModalVisible(false);
+                if (gestureState.dy > 120 || gestureState.vy > 0.5) {
+                    // Close modal
                     Animated.timing(panY, {
-                        toValue: 0,
-                        duration: 200,
+                        toValue: height, // Use height for smooth exit
+                        duration: 300,
                         useNativeDriver: true,
-                    }).start();
+                    }).start(() => {
+                        setModalVisible(false);
+                    });
                 } else {
-                    // Snap back to original position
+                    // Snap back to top
                     Animated.spring(panY, {
                         toValue: 0,
                         useNativeDriver: true,
+                        tension: 40,
+                        friction: 8
                     }).start();
                 }
             },
@@ -322,11 +389,12 @@ const PromoManagement = ({ navigation }) => {
             const response = await apiService.get('/api/promos');
             if (response.data && response.data.data) {
                 setPromos(response.data.data);
-                // setHeroPromos derived automatically
+                // Cache the fresh data
+                AsyncStorage.setItem('promos_cache', JSON.stringify(response.data.data)).catch(err => console.error('Cache save error:', err));
             }
         } catch (error) {
             console.error('Error fetching promos:', error);
-            Alert.alert('Error', 'Gagal mengambil data promo');
+            if (!isQuiet) Alert.alert('Error', 'Gagal mengambil data promo');
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -334,7 +402,21 @@ const PromoManagement = ({ navigation }) => {
     }, []);
 
     useEffect(() => {
-        fetchPromos();
+        const loadCache = async () => {
+            try {
+                const cached = await AsyncStorage.getItem('promos_cache');
+                if (cached) {
+                    const parsed = JSON.parse(cached);
+                    setPromos(parsed);
+                    setLoading(false); // Show cached content immediately
+                }
+            } catch (error) {
+                console.log('Cache load error:', error);
+            }
+        };
+
+        loadCache();
+        fetchPromos(true); // Fetch fresh data in background
     }, [fetchPromos]);
 
     const onRefresh = useCallback(() => {
@@ -370,7 +452,8 @@ const PromoManagement = ({ navigation }) => {
                 min_purchase: promo.min_purchase?.toString() || '',
                 is_hero: !!promo.is_hero,
                 badge_text: promo.badge_text || '',
-                image_url: promo.image_url || ''
+                image_url: promo.image_url || '',
+                is_one_time: !!promo.is_one_time
             });
         } else {
             setEditingPromo(null);
@@ -389,19 +472,17 @@ const PromoManagement = ({ navigation }) => {
                 min_purchase: '',
                 is_hero: startAsHero, // Set based on startAsHero for new promos
                 badge_text: '',
-                image_url: ''
+                image_url: '',
+                is_one_time: false
             });
         }
         setModalVisible(true);
-    }, []);
+        panY.setValue(0);
+    }, [panY]);
 
     const handleSubmit = async () => {
-        if (!form.title && promoMode !== 'banner') { // Title is optional for banner if badge_text is main
+        if (!form.title && promoMode !== 'banner') {
             Alert.alert('Peringatan', 'Judul promo wajib diisi');
-            return;
-        }
-        if (promoMode === 'banner' && !form.badge_text) {
-            Alert.alert('Peringatan', 'Teks Badge wajib diisi untuk Banner');
             return;
         }
 
@@ -421,6 +502,7 @@ const PromoManagement = ({ navigation }) => {
                 // For banner mode, ensure icon is null/default and description is optional
                 icon: promoMode === 'banner' ? null : form.icon,
                 description: promoMode === 'banner' ? form.description : form.description, // Description is common
+                is_one_time: form.is_one_time ? 1 : 0
             };
 
             if (editingPromo) {
@@ -443,6 +525,43 @@ const PromoManagement = ({ navigation }) => {
         setPromoToDelete(id);
         setDeleteModalVisible(true);
     }, []);
+
+    const pickImage = async () => {
+        try {
+            // Request permission specifically for Android 13+ and older
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+            if (status !== 'granted') {
+                Alert.alert('Izin Pembatasan', 'Mohon izinkan akses galeri untuk memilih gambar banner.');
+                return;
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images, // Reverting to MediaTypeOptions to fix crash
+                allowsEditing: true,
+                aspect: [16, 9],
+                quality: 0.7, // Reduce quality slightly for faster processing
+                base64: true,
+            });
+
+            if (!result.canceled) {
+                const asset = result.assets[0];
+
+                // Validate base64 existence
+                if (asset.base64) {
+                    const imageUri = `data:image/jpeg;base64,${asset.base64}`;
+                    setForm({ ...form, image_url: imageUri });
+                } else {
+                    // Fallback if base64 is missing (rare with base64: true)
+                    console.warn("Base64 data missing from image picker result");
+                    setForm({ ...form, image_url: asset.uri });
+                }
+            }
+        } catch (error) {
+            console.error('Image Picker Error:', error);
+            Alert.alert('Error', 'Gagal memilih gambar: ' + (error.message || 'Unknown error'));
+        }
+    };
 
     const confirmDelete = async () => {
         if (!promoToDelete) return;
@@ -507,20 +626,25 @@ const PromoManagement = ({ navigation }) => {
 
     const mainListHeader = useMemo(() => (
         <View>
-            <BannerCarousel promos={heroPromos} onEdit={handleOpenModal} />
+            <BannerCarousel promos={heroPromos} totalPromos={promos} onEdit={handleOpenModal} />
             <View style={styles.listHeaderContainer}>
                 <Text style={styles.listTitle}>Daftar Promo Aktif</Text>
             </View>
         </View>
     ), [heroPromos, handleOpenModal]);
 
+    // Optimized loading: Don't block UI on initial load if we want faster perceived performance
+    // or use a Skeleton loader. For now, we allow rendering with empty list/spinner inside list.
+
+    /* 
     if (loading && !refreshing) {
         return (
             <View style={styles.centerContainer}>
                 <ActivityIndicator size="large" color="#059669" />
             </View>
         );
-    }
+    } 
+    */
 
 
     return (
@@ -528,7 +652,7 @@ const PromoManagement = ({ navigation }) => {
             {headerComponent}
 
             <FlatList
-                data={promos}
+                data={promos.filter(p => !p.is_hero)}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={renderPromoItem}
                 ListHeaderComponent={mainListHeader}
@@ -621,46 +745,156 @@ const PromoManagement = ({ navigation }) => {
                                         {/* BANNER SPECIFIC FIELDS */}
                                         {promoMode === 'banner' && (
                                             <View style={styles.bannerSettingsContainer}>
-                                                <Text style={styles.sectionHeaderTitle}>Pengaturan Tampilan Banner</Text>
+                                                <Text style={styles.sectionHeaderTitle}>Pengaturan Banner</Text>
 
                                                 <View style={styles.inputGroup}>
-                                                    <Text style={styles.subLabel}>Teks Badge (Wajib)</Text>
-                                                    <TextInput
-                                                        style={styles.input}
-                                                        placeholder="Contoh: FLASH SALE"
-                                                        value={form.badge_text}
-                                                        onChangeText={(text) => setForm({ ...form, badge_text: text })}
-                                                    />
+                                                    <Text style={styles.subLabel}>Gambar Banner (Rasio 16:9)</Text>
+                                                    <TouchableOpacity style={styles.uploadContainer} onPress={pickImage}>
+                                                        {form.image_url ? (
+                                                            <>
+                                                                <Image
+                                                                    source={{ uri: getImageUrl(form.image_url) }}
+                                                                    style={styles.imagePreview}
+                                                                    resizeMode="cover"
+                                                                />
+                                                                <View style={styles.editImageOverlay}>
+                                                                    <Edit2 size={20} color="#FFFFFF" />
+                                                                </View>
+                                                            </>
+                                                        ) : (
+                                                            <View style={styles.uploadPlaceholder}>
+                                                                <ImageIcon size={32} color="#9CA3AF" />
+                                                                <Text style={styles.uploadText}>Upload Gambar Banner</Text>
+                                                                <Text style={styles.uploadSubText}>Format JPG/PNG, Rekomendasi 16:9</Text>
+                                                            </View>
+                                                        )}
+                                                    </TouchableOpacity>
                                                 </View>
 
                                                 <View style={styles.inputGroup}>
-                                                    <Text style={styles.subLabel}>Judul Banner</Text>
+                                                    <Text style={styles.subLabel}>Judul Banner (Pengingat Seller)</Text>
                                                     <TextInput
                                                         style={styles.input}
-                                                        placeholder="Judul menarik untuk banner..."
+                                                        placeholder="Masukkan judul banner..."
+                                                        value={form.title}
+                                                        onChangeText={(text) => setForm({ ...form, title: text })}
+                                                    />
+                                                </View>
+                                            </View>
+                                        )}
+
+
+                                        {/* NON-BANNER FIELDS (Common) */}
+                                        {promoMode !== 'banner' && (
+                                            <>
+                                                <View style={styles.inputGroup}>
+                                                    <View style={styles.inputLabelContainer}>
+                                                        <Type size={16} color="#6B7280" />
+                                                        <Text style={styles.inputLabel}>Judul Promo</Text>
+                                                    </View>
+                                                    <TextInput
+                                                        style={styles.input}
+                                                        placeholder="Contoh: Diskon Merdeka"
                                                         value={form.title}
                                                         onChangeText={(text) => setForm({ ...form, title: text })}
                                                     />
                                                 </View>
 
+                                                {/* VOUCHER SPECIFIC: CODE */}
+                                                {promoMode === 'voucher' && (
+                                                    <View style={styles.inputGroup}>
+                                                        <View style={styles.inputLabelContainer}>
+                                                            <Hash size={16} color="#6B7280" />
+                                                            <Text style={styles.inputLabel}>Kode Voucher (Wajib)</Text>
+                                                        </View>
+                                                        <TextInput
+                                                            style={styles.input}
+                                                            placeholder="Contoh: MERDEKA45"
+                                                            value={form.code}
+                                                            onChangeText={(text) => setForm({ ...form, code: text })}
+                                                            autoCapitalize="characters"
+                                                        />
+                                                    </View>
+                                                )}
+
+                                                {/* COMMON DETAILS FOR VOUCHER & AUTOMATIC */}
+                                                <View style={styles.sectionDivider}>
+                                                    <Text style={styles.sectionDividerText}>Detail Keuntungan</Text>
+                                                </View>
+
+                                                <View style={styles.rowContainer}>
+                                                    <View style={[styles.inputGroup, { flex: 1 }]}>
+                                                        <Text style={styles.subLabel}>{promoMode === 'automatic' ? 'Masa Kampanye' : 'Masa Berlaku'}</Text>
+                                                        <TextInput
+                                                            style={styles.input}
+                                                            placeholder="s/d 31 Des"
+                                                            value={form.expiry}
+                                                            onChangeText={(text) => setForm({ ...form, expiry: text })}
+                                                        />
+                                                    </View>
+                                                    <View style={[styles.inputGroup, { flex: 1, marginLeft: 10 }]}>
+                                                        <Text style={styles.subLabel}>Min. Belanja (Rp)</Text>
+                                                        <TextInput
+                                                            style={styles.input}
+                                                            placeholder="0"
+                                                            value={form.min_purchase}
+                                                            onChangeText={(text) => setForm({ ...form, min_purchase: text })}
+                                                            keyboardType="numeric"
+                                                        />
+                                                    </View>
+                                                </View>
+
                                                 <View style={styles.inputGroup}>
-                                                    <Text style={styles.subLabel}>URL Gambar Background</Text>
-                                                    <TextInput
-                                                        style={styles.input}
-                                                        placeholder="https://..."
-                                                        value={form.image_url}
-                                                        onChangeText={(text) => setForm({ ...form, image_url: text })}
-                                                    />
-                                                    <Text style={styles.inputHint}>*Gunakan link gambar langsung (jpg/png)</Text>
+                                                    <View style={styles.inputLabelContainer}>
+                                                        <Banknote size={16} color="#6B7280" />
+                                                        <Text style={styles.inputLabel}>Besar Potongan/Diskon</Text>
+                                                    </View>
+                                                    <View style={styles.discountRow}>
+                                                        <View style={styles.discountTypeContainer}>
+                                                            <TouchableOpacity
+                                                                style={[styles.typeBtn, form.discount_type === 'fixed' && styles.typeBtnActive]}
+                                                                onPress={() => setForm({ ...form, discount_type: 'fixed' })}
+                                                            >
+                                                                <Text style={[styles.typeBtnText, form.discount_type === 'fixed' && styles.typeBtnTextActive]}>Rp</Text>
+                                                            </TouchableOpacity>
+                                                            <TouchableOpacity
+                                                                style={[styles.typeBtn, form.discount_type === 'percentage' && styles.typeBtnActive]}
+                                                                onPress={() => setForm({ ...form, discount_type: 'percentage' })}
+                                                            >
+                                                                <Text style={[styles.typeBtnText, form.discount_type === 'percentage' && styles.typeBtnTextActive]}>%</Text>
+                                                            </TouchableOpacity>
+                                                        </View>
+                                                        <TextInput
+                                                            style={[styles.input, { flex: 1 }]}
+                                                            placeholder="Nominal..."
+                                                            value={form.discount_value}
+                                                            onChangeText={(text) => setForm({ ...form, discount_value: text })}
+                                                            keyboardType="numeric"
+                                                        />
+                                                    </View>
                                                 </View>
 
                                                 <View style={styles.inputGroup}>
                                                     <View style={styles.inputLabelContainer}>
                                                         <Palette size={16} color="#6B7280" />
-                                                        <Text style={styles.inputLabel}>Warna Tema Banner</Text>
+                                                        <Text style={styles.inputLabel}>Tampilan & Warna</Text>
                                                     </View>
-                                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.colorPicker}>
-                                                        {['#059669', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#111827'].map((c) => (
+                                                    <View style={styles.iconPicker}>
+                                                        {['Ticket', 'Zap', 'Gift', 'Truck', 'Percent', 'Wallet', 'Tags'].map((icon) => (
+                                                            <TouchableOpacity
+                                                                key={icon}
+                                                                style={[
+                                                                    styles.iconOption,
+                                                                    form.icon === icon && { backgroundColor: form.color + '20', borderColor: form.color }
+                                                                ]}
+                                                                onPress={() => setForm({ ...form, icon })}
+                                                            >
+                                                                {getIcon(icon, 20, form.icon === icon ? form.color : '#9CA3AF')}
+                                                            </TouchableOpacity>
+                                                        ))}
+                                                    </View>
+                                                    <View style={[styles.colorPicker, { marginTop: 10 }]}>
+                                                        {['#059669', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'].map((c) => (
                                                             <TouchableOpacity
                                                                 key={c}
                                                                 style={[
@@ -673,146 +907,35 @@ const PromoManagement = ({ navigation }) => {
                                                                 {form.color === c && <CheckCircle2 size={16} color="#FFFFFF" />}
                                                             </TouchableOpacity>
                                                         ))}
-                                                    </ScrollView>
+                                                    </View>
                                                 </View>
-                                            </View>
-                                        )}
 
-
-                                        {/* NON-BANNER FIELDS (Common) */}
-                                        {promoMode !== 'banner' && (
-                                            <View style={styles.inputGroup}>
-                                                <View style={styles.inputLabelContainer}>
-                                                    <Type size={16} color="#6B7280" />
-                                                    <Text style={styles.inputLabel}>Judul Promo</Text>
-                                                </View>
-                                                <TextInput
-                                                    style={styles.input}
-                                                    placeholder="Contoh: Diskon Merdeka"
-                                                    value={form.title}
-                                                    onChangeText={(text) => setForm({ ...form, title: text })}
-                                                />
-                                            </View>
-                                        )}
-
-                                        {/* VOUCHER SPECIFIC: CODE */}
-                                        {promoMode === 'voucher' && (
-                                            <View style={styles.inputGroup}>
-                                                <View style={styles.inputLabelContainer}>
-                                                    <Hash size={16} color="#6B7280" />
-                                                    <Text style={styles.inputLabel}>Kode Voucher (Wajib)</Text>
-                                                </View>
-                                                <TextInput
-                                                    style={styles.input}
-                                                    placeholder="Contoh: MERDEKA45"
-                                                    value={form.code}
-                                                    onChangeText={(text) => setForm({ ...form, code: text })}
-                                                    autoCapitalize="characters"
-                                                />
-                                            </View>
-                                        )}
-
-                                        {/* COMMON DETAILS FOR ALL MODES */}
-                                        <View style={styles.sectionDivider}>
-                                            <Text style={styles.sectionDividerText}>Detail Keuntungan</Text>
-                                        </View>
-
-                                        <View style={styles.rowContainer}>
-                                            <View style={[styles.inputGroup, { flex: 1 }]}>
-                                                <Text style={styles.subLabel}>Masa Berlaku</Text>
-                                                <TextInput
-                                                    style={styles.input}
-                                                    placeholder="s/d 31 Des"
-                                                    value={form.expiry}
-                                                    onChangeText={(text) => setForm({ ...form, expiry: text })}
-                                                />
-                                            </View>
-                                            <View style={[styles.inputGroup, { flex: 1, marginLeft: 10 }]}>
-                                                <Text style={styles.subLabel}>Min. Belanja (Rp)</Text>
-                                                <TextInput
-                                                    style={styles.input}
-                                                    placeholder="0"
-                                                    value={form.min_purchase}
-                                                    onChangeText={(text) => setForm({ ...form, min_purchase: text })}
-                                                    keyboardType="numeric"
-                                                />
-                                            </View>
-                                        </View>
-
-                                        <View style={styles.inputGroup}>
-                                            <View style={styles.inputLabelContainer}>
-                                                <Banknote size={16} color="#6B7280" />
-                                                <Text style={styles.inputLabel}>Besar Potongan/Diskon</Text>
-                                            </View>
-                                            <View style={styles.discountRow}>
-                                                <View style={styles.discountTypeContainer}>
-                                                    <TouchableOpacity
-                                                        style={[styles.typeBtn, form.discount_type === 'fixed' && styles.typeBtnActive]}
-                                                        onPress={() => setForm({ ...form, discount_type: 'fixed' })}
-                                                    >
-                                                        <Text style={[styles.typeBtnText, form.discount_type === 'fixed' && styles.typeBtnTextActive]}>Rp</Text>
-                                                    </TouchableOpacity>
-                                                    <TouchableOpacity
-                                                        style={[styles.typeBtn, form.discount_type === 'percentage' && styles.typeBtnActive]}
-                                                        onPress={() => setForm({ ...form, discount_type: 'percentage' })}
-                                                    >
-                                                        <Text style={[styles.typeBtnText, form.discount_type === 'percentage' && styles.typeBtnTextActive]}>%</Text>
-                                                    </TouchableOpacity>
-                                                </View>
-                                                <TextInput
-                                                    style={[styles.input, { flex: 1 }]}
-                                                    placeholder="Nominal..."
-                                                    value={form.discount_value}
-                                                    onChangeText={(text) => setForm({ ...form, discount_value: text })}
-                                                    keyboardType="numeric"
-                                                />
-                                            </View>
-                                        </View>
-
-                                        {/* Visuals for Non-Banner */}
-                                        {promoMode !== 'banner' && (
-                                            <View style={styles.inputGroup}>
-                                                <View style={styles.inputLabelContainer}>
-                                                    <Palette size={16} color="#6B7280" />
-                                                    <Text style={styles.inputLabel}>Tampilan & Warna</Text>
-                                                </View>
-                                                <View style={styles.iconPicker}>
-                                                    {['Ticket', 'Zap', 'Gift', 'Truck', 'Percent', 'Wallet', 'Tags'].map((icon) => (
-                                                        <TouchableOpacity
-                                                            key={icon}
-                                                            style={[
-                                                                styles.iconOption,
-                                                                form.icon === icon && { backgroundColor: form.color + '20', borderColor: form.color }
-                                                            ]}
-                                                            onPress={() => setForm({ ...form, icon })}
-                                                        >
-                                                            {getIcon(icon, 20, form.icon === icon ? form.color : '#9CA3AF')}
-                                                        </TouchableOpacity>
-                                                    ))}
-                                                </View>
-                                                <View style={[styles.colorPicker, { marginTop: 10 }]}>
-                                                    {['#059669', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'].map((c) => (
-                                                        <TouchableOpacity
-                                                            key={c}
-                                                            style={[
-                                                                styles.colorOption,
-                                                                { backgroundColor: c },
-                                                                form.color === c && styles.selectedColor
-                                                            ]}
-                                                            onPress={() => setForm({ ...form, color: c })}
-                                                        >
-                                                            {form.color === c && <CheckCircle2 size={16} color="#FFFFFF" />}
-                                                        </TouchableOpacity>
-                                                    ))}
-                                                </View>
-                                            </View>
+                                                {/* Only show "One Time Use" for Vouchers */}
+                                                {promoMode === 'voucher' && (
+                                                    <View style={styles.inputGroup}>
+                                                        <View style={[styles.inputLabelContainer, { justifyContent: 'space-between', width: '100%' }]}>
+                                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                                                <User size={16} color="#6B7280" />
+                                                                <Text style={styles.inputLabel}>Hanya 1x Per Pengguna</Text>
+                                                            </View>
+                                                            <Switch
+                                                                value={form.is_one_time}
+                                                                onValueChange={(val) => setForm({ ...form, is_one_time: val })}
+                                                                trackColor={{ false: "#D1D5DB", true: (form.color || '#059669') + '80' }}
+                                                                thumbColor={form.is_one_time ? (form.color || '#059669') : "#F3F4F6"}
+                                                            />
+                                                        </View>
+                                                        <Text style={styles.subLabel}>Jika aktif, kupon hanya bisa digunakan satu kali oleh setiap pelanggan.</Text>
+                                                    </View>
+                                                )}
+                                            </>
                                         )}
 
                                         <View style={styles.inputGroup}>
-                                            <Text style={styles.inputLabel}>Keterangan Tambahan</Text>
+                                            <Text style={styles.inputLabel}>{promoMode === 'banner' ? 'Deskripsi (Pengingat Seller)' : 'Keterangan Tambahan'}</Text>
                                             <TextInput
                                                 style={[styles.input, styles.textArea]}
-                                                placeholder="Syarat & Ketentuan..."
+                                                placeholder={promoMode === 'banner' ? 'Contoh: Banner promo akhir bulan...' : 'Syarat & Ketentuan...'}
                                                 value={form.description}
                                                 onChangeText={(text) => setForm({ ...form, description: text })}
                                                 multiline={true}
@@ -951,20 +1074,8 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 16,
         marginBottom: 16,
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.08,
-                shadowRadius: 12,
-            },
-            android: {
-                elevation: 3,
-            },
-            web: {
-                boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
-            }
-        }),
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
     },
     cardHeader: {
         flexDirection: 'row',
@@ -1187,7 +1298,6 @@ const styles = StyleSheet.create({
     },
     bannerBackground: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.1)', // Overlay tint
     },
     bannerImage: {
         width: '100%',
@@ -1196,7 +1306,6 @@ const styles = StyleSheet.create({
     patternOverlay: {
         flex: 1,
         opacity: 0.2,
-        backgroundColor: '#000',
     },
     bannerContent: {
         zIndex: 2,
@@ -1296,13 +1405,15 @@ const styles = StyleSheet.create({
     },
     handleBarContainer: {
         alignItems: 'center',
-        paddingVertical: 12,
+        paddingVertical: 15,
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
     },
     handleBar: {
-        width: 40,
-        height: 4,
-        backgroundColor: '#D1D5DB',
-        borderRadius: 2,
+        width: 50,
+        height: 5,
+        backgroundColor: '#E5E7EB',
+        borderRadius: 3,
     },
     modalHeader: {
         flexDirection: 'row',
@@ -1316,10 +1427,11 @@ const styles = StyleSheet.create({
     tabContainer: {
         flexDirection: 'row',
         paddingHorizontal: 20,
-        paddingBottom: 10,
+        paddingTop: 15,
+        paddingBottom: 15,
         gap: 12,
         borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
+        borderBottomColor: '#E5E7EB',
     },
     tabBtn: {
         flex: 1,
@@ -1421,20 +1533,17 @@ const styles = StyleSheet.create({
     },
     discountTypeContainer: {
         flexDirection: 'row',
-        gap: 10,
-        marginBottom: 10,
+        backgroundColor: '#F3F4F6',
+        padding: 4,
+        borderRadius: 12,
+        width: 100,
+        height: 46, // Menyesuaikan dengan tinggi input agar sejajar
     },
     typeBtn: {
         flex: 1,
-        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 6,
-        paddingVertical: 10,
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
-        backgroundColor: '#FFFFFF',
+        borderRadius: 8,
     },
     typeBtnActive: {
         backgroundColor: '#059669',
@@ -1442,8 +1551,11 @@ const styles = StyleSheet.create({
     },
     typeBtnText: {
         fontSize: 13,
-        fontWeight: '600',
+        fontWeight: '700',
         color: '#6B7280',
+        textAlign: 'center',
+        textAlignVertical: 'center',
+        includeFontPadding: false, // Menghilangkan padding bawaan font agar center sempurna
     },
     typeBtnTextActive: {
         color: '#FFFFFF',
@@ -1537,6 +1649,7 @@ const styles = StyleSheet.create({
     },
     discountRow: {
         flexDirection: 'row',
+        alignItems: 'center', // Pastikan kontainer Rp/% sejajar vertikal dengan input
         gap: 10
     },
     // Custom Alert Styles
@@ -1601,6 +1714,186 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '600',
         color: '#FFFFFF',
+    },
+    // Dashboard Styles
+    dashboardContainer: {
+        marginBottom: 24,
+        gap: 16,
+    },
+    statsCardWrapper: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 20,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 4,
+        borderWidth: 1,
+        borderColor: '#F3F4F6',
+    },
+    statsHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    statsTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#111827',
+    },
+    statsBadge: {
+        backgroundColor: '#F3F4F6',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    statsBadgeText: {
+        fontSize: 10,
+        fontWeight: '600',
+        color: '#6B7280',
+    },
+    statsGrid: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    statBox: {
+        alignItems: 'center',
+        flex: 1,
+    },
+    verticalDivider: {
+        width: 1,
+        height: 40,
+        backgroundColor: '#E5E7EB',
+    },
+    statIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    statNumber: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: '#111827',
+        marginBottom: 2,
+        textAlign: 'center',
+    },
+    statLabel: {
+        fontSize: 12,
+        color: '#6B7280',
+        fontWeight: '500',
+        textAlign: 'center',
+    },
+    ctaBanner: {
+        backgroundColor: '#059669', // Emerald 600
+        borderRadius: 20,
+        padding: 20,
+        shadowColor: '#059669',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
+    },
+    ctaContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    ctaTextContainer: {
+        flex: 1,
+        marginRight: 15,
+    },
+    ctaTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#FFFFFF',
+        marginBottom: 4,
+    },
+    ctaDesc: {
+        fontSize: 12,
+        color: '#D1FAE5', // Emerald 100
+        lineHeight: 18,
+    },
+    ctaIconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+    },
+    // Image Upload Styles
+    uploadContainer: {
+        width: '100%',
+        height: 160,
+        backgroundColor: '#F9FAFB',
+        borderRadius: 16,
+        borderWidth: 2,
+        borderColor: '#E5E7EB',
+        borderStyle: 'dashed',
+        overflow: 'hidden',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    uploadPlaceholder: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20,
+    },
+    uploadText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#4B5563',
+        marginTop: 12,
+        marginBottom: 4,
+    },
+    uploadSubText: {
+        fontSize: 12,
+        color: '#9CA3AF',
+    },
+    imagePreview: {
+        width: '100%',
+        height: '100%',
+    },
+    editImageOverlay: {
+        position: 'absolute',
+        bottom: 12,
+        right: 12,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    // Banner specific styles for card
+    bannerPreviewContainer: {
+        width: 60,
+        height: 60,
+        borderRadius: 12,
+        backgroundColor: '#F3F4F6',
+        overflow: 'hidden',
+        marginRight: 15,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    bannerPreviewImage: {
+        width: '100%',
+        height: '100%',
+    },
+    promoReminderText: {
+        fontSize: 12,
+        color: '#64748B',
+        marginTop: 4,
+        fontStyle: 'italic',
+        lineHeight: 16,
     }
 });
 

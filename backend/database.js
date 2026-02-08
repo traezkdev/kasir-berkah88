@@ -172,6 +172,11 @@ const setupDatabase = async () => {
       await connection.query("ALTER TABLE promos ADD COLUMN badge_text VARCHAR(255)");
       console.log("Added badge_text column to promos table.");
     }
+    const [isOneTimeCol] = await connection.query("SHOW COLUMNS FROM promos LIKE 'is_one_time'");
+    if (isOneTimeCol.length === 0) {
+      await connection.query("ALTER TABLE promos ADD COLUMN is_one_time BOOLEAN DEFAULT FALSE");
+      console.log("Added is_one_time column to promos table.");
+    }
 
     const createOrdersTable = `
       CREATE TABLE IF NOT EXISTS orders (

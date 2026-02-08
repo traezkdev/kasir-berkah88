@@ -114,7 +114,44 @@ const MenuCardItem = React.memo(({ item, qty, isOpen, ignoreStock, onOpenDetail,
             </View>
         </TouchableOpacity>
     );
+}, (prev, next) => {
+    return prev.qty === next.qty &&
+        prev.isOpen === next.isOpen &&
+        prev.ignoreStock === next.ignoreStock &&
+        prev.item.id === next.item.id &&
+        prev.item.stock === next.item.stock &&
+        prev.item.price === next.item.price &&
+        prev.item.discount === next.item.discount;
 });
+
+const ReviewItem = React.memo(({ rv }) => (
+    <View style={styles.reviewItem}>
+        <View style={styles.reviewHeader}>
+            <View style={styles.reviewUserWrap}>
+                <View style={styles.userAvatar}>
+                    <Text style={styles.userAvatarText}>{rv.username?.substring(0, 1).toUpperCase()}</Text>
+                </View>
+                <View>
+                    <Text style={styles.reviewUser}>{rv.username}</Text>
+                    <View style={styles.starsRow}>
+                        {[1, 2, 3, 4, 5].map(s => (
+                            <Star key={s} size={10} color={s <= rv.rating ? "#FBBF24" : "#E2E8F0"} fill={s <= rv.rating ? "#FBBF24" : "#E2E8F0"} />
+                        ))}
+                    </View>
+                </View>
+            </View>
+            <Text style={styles.reviewDate}>{new Date(rv.created_at).toLocaleDateString()}</Text>
+        </View>
+        {rv.comment && <Text style={styles.reviewComment}>"{rv.comment}"</Text>}
+    </View>
+));
+
+const MetaItem = React.memo(({ label, value }) => (
+    <View style={styles.metaItem}>
+        <Text style={styles.metaLabel}>{label}</Text>
+        <Text style={styles.metaValue}>{value}</Text>
+    </View>
+));
 
 const CustomerMenu = ({ navigation, route }) => {
     const { categoryId, itemId, filter } = route.params || {};
@@ -158,16 +195,16 @@ const CustomerMenu = ({ navigation, route }) => {
         }
     }, [itemId, menus]);
 
-    const fetchInitialData = async () => {
+    const fetchInitialData = useCallback(async () => {
         try {
             const catRes = await apiService.get('/api/categories');
             if (catRes.data.data) setCategories(catRes.data.data);
         } catch (error) {
             console.error(error);
         }
-    };
+    }, []);
 
-    const fetchMenus = async () => {
+    const fetchMenus = useCallback(async () => {
         setLoading(true);
         try {
             let url = '/api/menu-items?limit=100';
@@ -189,9 +226,9 @@ const CustomerMenu = ({ navigation, route }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [searchTerm, selectedCategory, categories]);
 
-    const fetchReviews = async (menuItemId) => {
+    const fetchReviews = useCallback(async (menuItemId) => {
         setReviewsLoading(true);
         try {
             const res = await apiService.get(`/api/menu-reviews/${menuItemId}`);
@@ -203,21 +240,21 @@ const CustomerMenu = ({ navigation, route }) => {
         } finally {
             setReviewsLoading(false);
         }
-    };
+    }, []);
 
-    const handleOpenDetail = (item) => {
+    const handleOpenDetail = useCallback((item) => {
         setSelectedItem(item);
         setSelectedOptions([]);
         fetchReviews(item.id);
-    };
+    }, [fetchReviews]);
 
-    const formatCurrency = (val) => {
+    const formatCurrency = useCallback((val) => {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
             currency: 'IDR',
             minimumFractionDigits: 0
         }).format(val || 0);
-    };
+    }, []);
 
     const renderMenuCard = useCallback(({ item }) => {
         const qty = getItemQuantity(item.id);
@@ -289,6 +326,10 @@ const CustomerMenu = ({ navigation, route }) => {
                     renderItem={renderMenuCard}
                     keyExtractor={item => item.id.toString()}
                     contentContainerStyle={styles.listContent}
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={5}
+                    windowSize={5}
+                    removeClippedSubviews={Platform.OS !== 'web'}
                     ListHeaderComponent={!isOpen && (
                         <View style={styles.closedWarning}>
                             <XCircle size={20} color="#FFFFFF" />
@@ -398,14 +439,8 @@ const CustomerMenu = ({ navigation, route }) => {
 
                                 {/* Stock Info */}
                                 <View style={styles.metaRow}>
-                                    <View style={styles.metaItem}>
-                                        <Text style={styles.metaLabel}>Kategori</Text>
-                                        <Text style={styles.metaValue}>{selectedItem?.category || '-'}</Text>
-                                    </View>
-                                    <View style={styles.metaItem}>
-                                        <Text style={styles.metaLabel}>Stok</Text>
-                                        <Text style={styles.metaValue}>{selectedItem?.stock || 0} Porsi</Text>
-                                    </View>
+                                    <MetaItem label="Kategori" value={selectedItem?.category || '-'} />
+                                    <MetaItem label="Stok" value={`${selectedItem?.stock || 0} Porsi`} />
                                 </View>
 
                                 {/* Reviews */}
@@ -425,25 +460,7 @@ const CustomerMenu = ({ navigation, route }) => {
                                         <ActivityIndicator color="#059669" style={{ marginVertical: 20 }} />
                                     ) : reviews.length > 0 ? (
                                         reviews.map((rv, idx) => (
-                                            <View key={idx} style={styles.reviewItem}>
-                                                <View style={styles.reviewHeader}>
-                                                    <View style={styles.reviewUserWrap}>
-                                                        <View style={styles.userAvatar}>
-                                                            <Text style={styles.userAvatarText}>{rv.username?.substring(0, 1).toUpperCase()}</Text>
-                                                        </View>
-                                                        <View>
-                                                            <Text style={styles.reviewUser}>{rv.username}</Text>
-                                                            <View style={styles.starsRow}>
-                                                                {[1, 2, 3, 4, 5].map(s => (
-                                                                    <Star key={s} size={10} color={s <= rv.rating ? "#FBBF24" : "#E2E8F0"} fill={s <= rv.rating ? "#FBBF24" : "#E2E8F0"} />
-                                                                ))}
-                                                            </View>
-                                                        </View>
-                                                    </View>
-                                                    <Text style={styles.reviewDate}>{new Date(rv.created_at).toLocaleDateString()}</Text>
-                                                </View>
-                                                {rv.comment && <Text style={styles.reviewComment}>"{rv.comment}"</Text>}
-                                            </View>
+                                            <ReviewItem key={idx} rv={rv} />
                                         ))
                                     ) : (
                                         <View style={styles.emptyReviews}>

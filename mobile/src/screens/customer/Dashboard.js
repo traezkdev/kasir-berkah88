@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import {
     Search,
+    ShoppingCart,
     ShoppingBag,
     Bell,
     MessageCircle,
@@ -228,6 +229,16 @@ const CustomerDashboard = ({ navigation }) => {
                             )}
                         </View>
                     </TouchableOpacity>
+                    <TouchableOpacity onPress={() => navigation.navigate('Cart')}>
+                        <View>
+                            <ShoppingCart size={20} color="#64748B" />
+                            {cartCount > 0 && (
+                                <View style={[styles.statusBadge, { top: -6, right: -6, width: 14, height: 14, borderRadius: 7, borderWidth: 1.5 }]}>
+                                    <Text style={[styles.statusBadgeText, { fontSize: 7 }]}>{cartCount}</Text>
+                                </View>
+                            )}
+                        </View>
+                    </TouchableOpacity>
                 </View>
             </Animated.View>
 
@@ -257,6 +268,19 @@ const CustomerDashboard = ({ navigation }) => {
                                     {unreadCount > 0 && (
                                         <View style={[styles.statusBadge, { top: -5, right: -5 }]}>
                                             <Text style={styles.statusBadgeText}>{unreadCount}</Text>
+                                        </View>
+                                    )}
+                                </View>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.notificationBtn}
+                                onPress={() => navigation.navigate('Cart')}
+                            >
+                                <View>
+                                    <ShoppingCart size={22} color="#FFFFFF" />
+                                    {cartCount > 0 && (
+                                        <View style={[styles.statusBadge, { top: -5, right: -5 }]}>
+                                            <Text style={styles.statusBadgeText}>{cartCount}</Text>
                                         </View>
                                     )}
                                 </View>

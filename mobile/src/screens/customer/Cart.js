@@ -33,6 +33,7 @@ import {
     Banknote,
     QrCode,
     X,
+    XCircle,
     Download,
     Phone
 } from 'lucide-react-native';
@@ -126,6 +127,15 @@ const CustomerCart = ({ navigation }) => {
     const [promoCode, setPromoCode] = useState('');
     const [appliedPromo, setAppliedPromo] = useState(null);
     const [validatingPromo, setValidatingPromo] = useState(false);
+
+    // Custom Error Modal State
+    const [errorModalVisible, setErrorModalVisible] = useState(false);
+    const [errorModalContent, setErrorModalContent] = useState({ title: '', message: '' });
+
+    const showError = (title, message) => {
+        setErrorModalContent({ title, message });
+        setErrorModalVisible(true);
+    };
 
     const pointsToUse = usePoints
         ? Math.min(points, cartTotal)
@@ -260,7 +270,8 @@ const CustomerCart = ({ navigation }) => {
             }
         } catch (error) {
             console.error('Promo error:', error);
-            showToast(error.response?.data?.error || 'Kode promo tidak valid', 'error');
+            const errMsg = error.response?.data?.error || 'Kode promo tidak valid';
+            showError('Gagal Menggunakan Promo', errMsg);
             setAppliedPromo(null);
         } finally {
             setValidatingPromo(false);
@@ -362,7 +373,15 @@ const CustomerCart = ({ navigation }) => {
             }
         } catch (error) {
             console.error('Checkout error:', error);
-            showToast(error.message || 'Gagal memproses pesanan. Silakan coba lagi.', 'error');
+            const serverMessage = error.response?.data?.error;
+            const finalMsg = serverMessage || error.message || 'Gagal memproses pesanan. Silakan coba lagi.';
+
+            // Jika error dari server terkait promo atau validasi, tampilkan popup Custom
+            if (serverMessage) {
+                showError('Pesanan Gagal', finalMsg);
+            } else {
+                showToast(finalMsg, 'error');
+            }
         } finally {
             setLoading(false);
         }
@@ -424,6 +443,8 @@ const CustomerCart = ({ navigation }) => {
                     ))}
                 </View>
 
+                <View style={styles.divider} />
+
                 {/* Delivery Notes */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Catatan Pesanan (Optional)</Text>
@@ -438,6 +459,8 @@ const CustomerCart = ({ navigation }) => {
                         />
                     </View>
                 </View>
+
+                <View style={styles.divider} />
 
                 {/* Delivery Address */}
                 <View style={styles.section}>
@@ -484,6 +507,8 @@ const CustomerCart = ({ navigation }) => {
                         />
                     </View>
                 </View>
+
+                <View style={styles.divider} />
 
                 {/* Payment Method */}
                 <View style={styles.section}>
@@ -547,48 +572,7 @@ const CustomerCart = ({ navigation }) => {
                     )}
                 </View>
 
-                {/* Promo Code Section */}
-                <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Gunakan Kode Promo</Text>
-                    {appliedPromo ? (
-                        <View style={styles.appliedPromoBox}>
-                            <View style={styles.promoInfo}>
-                                <View style={styles.promoIconActive}>
-                                    <Ticket size={24} color="#059669" />
-                                </View>
-                                <View>
-                                    <Text style={styles.appliedPromoTitle}>{appliedPromo.title}</Text>
-                                    <Text style={styles.appliedPromoCode}>Kode: {appliedPromo.code}</Text>
-                                </View>
-                            </View>
-                            <TouchableOpacity onPress={removePromo} style={styles.removePromoBtn}>
-                                <X size={20} color="#EF4444" />
-                            </TouchableOpacity>
-                        </View>
-                    ) : (
-                        <View style={styles.promoInputRow}>
-                            <Ticket size={20} color="#94A3B8" />
-                            <TextInput
-                                placeholder="Masukkan kode promo..."
-                                style={styles.promoInput}
-                                value={promoCode}
-                                onChangeText={setPromoCode}
-                                autoCapitalize="characters"
-                            />
-                            <TouchableOpacity
-                                style={[styles.applyPromoBtn, (!promoCode || validatingPromo) && styles.applyPromoBtnDisabled]}
-                                onPress={handleValidatePromo}
-                                disabled={!promoCode || validatingPromo}
-                            >
-                                {validatingPromo ? (
-                                    <ActivityIndicator size="small" color="#FFFFFF" />
-                                ) : (
-                                    <Text style={styles.applyPromoBtnText}>PAKAI</Text>
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                    )}
-                </View>
+                <View style={styles.divider} />
 
                 {/* Points Redemption Section */}
                 {points > 0 && (
@@ -652,6 +636,53 @@ const CustomerCart = ({ navigation }) => {
                         )}
                     </View>
                 )}
+
+                <View style={styles.divider} />
+
+                {/* Promo Code Section */}
+                <View style={styles.section}>
+                    <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Gunakan Kode Promo</Text>
+                    {appliedPromo ? (
+                        <View style={styles.appliedPromoBox}>
+                            <View style={styles.promoInfo}>
+                                <View style={styles.promoIconActive}>
+                                    <Ticket size={24} color="#059669" />
+                                </View>
+                                <View>
+                                    <Text style={styles.appliedPromoTitle}>{appliedPromo.title}</Text>
+                                    <Text style={styles.appliedPromoCode}>Kode: {appliedPromo.code}</Text>
+                                </View>
+                            </View>
+                            <TouchableOpacity onPress={removePromo} style={styles.removePromoBtn}>
+                                <X size={20} color="#EF4444" />
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <View style={styles.promoInputRow}>
+                            <Ticket size={20} color="#94A3B8" />
+                            <TextInput
+                                placeholder="Masukkan kode promo..."
+                                style={styles.promoInput}
+                                value={promoCode}
+                                onChangeText={setPromoCode}
+                                autoCapitalize="characters"
+                            />
+                            <TouchableOpacity
+                                style={[styles.applyPromoBtn, (!promoCode || validatingPromo) && styles.applyPromoBtnDisabled]}
+                                onPress={handleValidatePromo}
+                                disabled={!promoCode || validatingPromo}
+                            >
+                                {validatingPromo ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                    <Text style={styles.applyPromoBtnText}>PAKAI</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                </View>
+
+                <View style={styles.divider} />
 
                 {/* Summary */}
                 <View style={styles.summaryBox}>
@@ -740,6 +771,30 @@ const CustomerCart = ({ navigation }) => {
                     </View>
                 </View>
             </Modal>
+
+            {/* Premium Custom Error Modal */}
+            <Modal
+                visible={errorModalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setErrorModalVisible(false)}
+            >
+                <View style={styles.alertOverlay}>
+                    <View style={styles.alertCard}>
+                        <View style={styles.alertIconBg}>
+                            <XCircle size={32} color="#EF4444" />
+                        </View>
+                        <Text style={styles.alertTitleText}>{errorModalContent.title}</Text>
+                        <Text style={styles.alertMessageText}>{errorModalContent.message}</Text>
+                        <TouchableOpacity
+                            style={styles.alertCloseBtn}
+                            onPress={() => setErrorModalVisible(false)}
+                        >
+                            <Text style={styles.alertCloseBtnText}>TUTUP</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -790,7 +845,13 @@ const styles = StyleSheet.create({
         paddingBottom: 40,
     },
     section: {
-        marginBottom: 24,
+        marginBottom: 16,
+    },
+    divider: {
+        height: 6,
+        backgroundColor: '#F8FAFC',
+        marginHorizontal: -20,
+        marginBottom: 20,
     },
     sectionTitle: {
         fontSize: 14,
@@ -1408,6 +1469,66 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+    // Custom Alert Modal Styles
+    alertOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(15, 23, 42, 0.75)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+    },
+    alertCard: {
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 32,
+        padding: 24,
+        alignItems: 'center',
+        ...Platform.select({
+            web: { boxShadow: '0px 20px 50px rgba(0,0,0,0.3)' },
+            android: { elevation: 20 }
+        })
+    },
+    alertIconBg: {
+        width: 72,
+        height: 72,
+        borderRadius: 24,
+        backgroundColor: '#FEF2F2',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    alertTitleText: {
+        fontSize: 20,
+        fontWeight: '900',
+        color: '#1E293B',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    alertMessageText: {
+        fontSize: 15,
+        color: '#64748B',
+        textAlign: 'center',
+        lineHeight: 22,
+        marginBottom: 28,
+    },
+    alertCloseBtn: {
+        width: '100%',
+        height: 56,
+        backgroundColor: '#1E293B', // Dark slate for premium look
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        ...Platform.select({
+            web: { boxShadow: '0px 4px 12px rgba(30, 41, 59, 0.3)' },
+            android: { elevation: 4 }
+        })
+    },
+    alertCloseBtnText: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: '#FFFFFF',
+        letterSpacing: 1,
+    }
 });
 
 export default CustomerCart;

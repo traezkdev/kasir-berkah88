@@ -335,7 +335,6 @@ const SellerDashboard = ({ navigation }) => {
                             { label: 'Rekon', icon: Calculator, color: '#F59E0B', bgColor: '#FFFBEB', target: 'CashReconciliation' },
                             { label: 'Pengeluaran', icon: TrendingDown, color: '#EF4444', bgColor: '#FEF2F2', target: 'ExpenseManagement' },
                             { label: 'Deposit', icon: Wallet, color: '#138FEA', bgColor: '#E0F2FE', target: 'LapakDeposit' },
-                            { label: 'Pelanggan', icon: User, color: '#138FEA', bgColor: '#F0F9FF', target: 'CustomerManagement' },
                         ].map((action, index) => (
                             <TouchableOpacity
                                 key={index}

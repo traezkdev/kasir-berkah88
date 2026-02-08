@@ -36,6 +36,7 @@ import {
     PackageX,
     ArrowRight
 } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import apiService, { API_URL } from '../../api/apiService';
 import ReceiptModal from '../../components/ReceiptModal';
 import ModernLoader from '../../components/ModernLoader';
@@ -539,51 +540,56 @@ const SalesPOS = () => {
                 />
             )}
 
-            {/* Sleek & Premium Floating Cart Bar */}
+            {/* Premium Neo-Fintech Floating Cart Bar */}
             {cart.length > 0 && (
                 <View style={styles.fabWrapper}>
                     <TouchableOpacity
-                        activeOpacity={0.9}
-                        style={styles.fabMain}
+                        activeOpacity={0.98}
+                        style={styles.fabCard}
                         onPress={() => {
                             setIsCartModalOpen(true);
-                            // Defer heavy cart rendering
                             InteractionManager.runAfterInteractions(() => {
                                 setIsCartReady(true);
                             });
                         }}
                     >
-                        {/* Info Section */}
-                        <View style={styles.fabInfoSection}>
-                            <View style={styles.cartIconCircle}>
-                                <ShoppingCart size={20} color="#FFFFFF" />
-                                <View style={styles.cartBadgeMini}>
-                                    <Text style={styles.cartBadgeText}>{totalItemsCount}</Text>
-                                </View>
+                        {/* Info Section: Left side focuses on value and quantity */}
+                        <View style={styles.fabDetailsArea}>
+                            <View style={styles.fabBadgeWrapper}>
+                                <Text style={styles.fabBadgeText}>{totalItemsCount}</Text>
                             </View>
-
-                            <View style={styles.priceContainer}>
-                                <Text style={styles.labelSubtotal}>Subtotal</Text>
-                                <Text style={styles.valueSubtotal}>{formatCurrency(subtotal)}</Text>
+                            <View style={styles.fabPriceInfo}>
+                                <Text style={styles.fabPriceLabel}>Total Bayar</Text>
+                                <Text style={styles.fabPriceValue}>{formatCurrency(subtotal)}</Text>
                             </View>
                         </View>
 
-                        {/* Action Section */}
-                        <View style={styles.fabActionGroup}>
+                        {/* Quick Action Area: Right side is the primary touch target */}
+                        <View style={styles.fabActionArea}>
                             <TouchableOpacity
                                 onPress={handleClearCart}
-                                style={styles.miniTrashBtn}
-                                activeOpacity={0.7}
+                                style={styles.fabClearBtn}
                             >
-                                <Trash2 size={18} color="#EF4444" />
+                                <Trash2 size={16} color="#EF4444" />
                             </TouchableOpacity>
 
-                            <View style={styles.actionDivider} />
+                            <View style={styles.fabVerticalDivider} />
 
-                            <View style={styles.payBtnCompact}>
-                                <Text style={styles.payBtnCompactText}>BAYAR</Text>
-                                <ArrowRight size={16} color="#FFFFFF" strokeWidth={3} />
-                            </View>
+                            <TouchableOpacity
+                                activeOpacity={0.8}
+                                style={styles.payButtonPill}
+                                onPress={() => {
+                                    setIsCartModalOpen(true);
+                                    InteractionManager.runAfterInteractions(() => {
+                                        setIsCartReady(true);
+                                    });
+                                }}
+                            >
+                                <Text style={styles.payButtonText}>BAYAR</Text>
+                                <View style={styles.payButtonIconWrap}>
+                                    <ArrowRight size={14} color="#FFFFFF" strokeWidth={3} />
+                                </View>
+                            </TouchableOpacity>
                         </View>
                     </TouchableOpacity>
                 </View>
@@ -832,38 +838,67 @@ const SalesPOS = () => {
                         </View>
                     </KeyboardAvoidingView>
 
-                    <View style={[styles.modalFooter, { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F1F5F9' }]}>
-                        {parseFloat(manualDiscount || 0) > 0 && (
-                            <View style={[styles.totalRow, { marginBottom: 6 }]}>
-                                <Text style={[styles.totalLabel, { fontSize: 13 }]}>Subtotal</Text>
-                                <Text style={[styles.totalLabel, { fontSize: 13 }]}>{formatCurrency(subtotal)}</Text>
-                            </View>
-                        )}
-                        {parseFloat(manualDiscount || 0) > 0 && (
-                            <View style={[styles.totalRow, { marginBottom: 10 }]}>
-                                <Text style={[styles.totalLabel, { color: '#EF4444', fontSize: 13 }]}>Diskon</Text>
-                                <Text style={[styles.totalLabel, { color: '#EF4444', fontSize: 13 }]}>-{formatCurrency(parseFloat(manualDiscount))}</Text>
-                            </View>
-                        )}
-                        {usePoints && pointsToUse > 0 && (
-                            <View style={[styles.totalRow, { marginBottom: 10 }]}>
-                                <Text style={[styles.totalLabel, { color: '#2563EB', fontSize: 13 }]}>Poin Digunakan</Text>
-                                <Text style={[styles.totalLabel, { color: '#2563EB', fontSize: 13 }]}>-{formatCurrency(pointsToUse)}</Text>
-                            </View>
-                        )}
-                        <View style={styles.totalRow}>
-                            <Text style={styles.totalLabel}>Total Tagihan</Text>
-                            <Text style={styles.totalValue}>{formatCurrency(finalTotal)}</Text>
+                    <View style={[styles.modalFooter, { position: 'absolute', bottom: 0, left: 0, right: 0 }]}>
+                        <View style={{ gap: 8, marginBottom: 15 }}>
+                            {parseFloat(manualDiscount || 0) > 0 && (
+                                <View style={styles.totalRow}>
+                                    <Text style={[styles.totalLabel, { color: '#64748B' }]}>Subtotal</Text>
+                                    <Text style={[styles.totalLabel, { color: '#64748B' }]}>{formatCurrency(subtotal)}</Text>
+                                </View>
+                            )}
+                            {parseFloat(manualDiscount || 0) > 0 && (
+                                <View style={styles.totalRow}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                        <View style={{ backgroundColor: '#FEF2F2', padding: 4, borderRadius: 6 }}>
+                                            <Text style={{ color: '#EF4444', fontSize: 10, fontWeight: 'bold' }}>DISKON</Text>
+                                        </View>
+                                    </View>
+                                    <Text style={{ color: '#EF4444', fontWeight: 'bold' }}>-{formatCurrency(parseFloat(manualDiscount))}</Text>
+                                </View>
+                            )}
+                            {usePoints && pointsToUse > 0 && (
+                                <View style={styles.totalRow}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                        <View style={{ backgroundColor: '#EFF6FF', padding: 4, borderRadius: 6 }}>
+                                            <Text style={{ color: '#2563EB', fontSize: 10, fontWeight: 'bold' }}>POIN</Text>
+                                        </View>
+                                    </View>
+                                    <Text style={{ color: '#2563EB', fontWeight: 'bold' }}>-{formatCurrency(pointsToUse)}</Text>
+                                </View>
+                            )}
                         </View>
+
+                        <View style={[styles.totalRow, { marginBottom: 20 }]}>
+                            <View>
+                                <Text style={styles.totalLabel}>TOTAL TAGIHAN</Text>
+                                <Text style={styles.totalValue}>{formatCurrency(finalTotal)}</Text>
+                            </View>
+                            <View style={styles.paymentMethodBadge}>
+                                <Text style={styles.paymentMethodBadgeText}>{paymentMethod.toUpperCase()}</Text>
+                            </View>
+                        </View>
+
                         <TouchableOpacity
-                            style={[styles.payBtn, (isProcessing || (paymentMethod === 'tunai' && parseFloat(cashPaid || 0) < finalTotal)) && styles.disabledBtn]}
+                            activeOpacity={0.8}
+                            style={[styles.payBtnTouchable, (isProcessing || (paymentMethod === 'tunai' && parseFloat(cashPaid || 0) < finalTotal)) && styles.disabledBtn]}
                             disabled={isProcessing || (paymentMethod === 'tunai' && parseFloat(cashPaid || 0) < finalTotal)}
                             onPress={handleProcessTransaction}
                         >
-                            <Text style={styles.payBtnText}>
-                                {isProcessing ? 'Memproses...' : 'KONFIRMASI PEMBAYARAN'}
-                            </Text>
-                            {!isProcessing && <Check size={20} color="#FFFFFF" />}
+                            <LinearGradient
+                                colors={['#1e3a8a', '#1e40af']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={styles.payBtn}
+                            >
+                                {isProcessing ? (
+                                    <ActivityIndicator color="#FFFFFF" size="small" />
+                                ) : (
+                                    <>
+                                        <Text style={styles.payBtnText}>KONFIRMASI PEMBAYARAN</Text>
+                                        <ArrowRight size={20} color="#FFFFFF" strokeWidth={3} />
+                                    </>
+                                )}
+                            </LinearGradient>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -1131,110 +1166,117 @@ const styles = StyleSheet.create({
     },
     fabWrapper: {
         position: 'absolute',
-        bottom: 30,
+        bottom: 25,
         left: 20,
         right: 20,
         zIndex: 1000,
     },
-    fabMain: {
-        backgroundColor: '#1E293B', // Deep Slate
-        height: 70,
-        borderRadius: 20,
+    fabCard: {
+        backgroundColor: '#FFFFFF',
+        height: 72,
+        borderRadius: 24,
         flexDirection: 'row',
-        paddingHorizontal: 12,
         alignItems: 'center',
         justifyContent: 'space-between',
+        paddingLeft: 16,
+        paddingRight: 8,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: '#F1F5F9',
         ...Platform.select({
             ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.3,
-                shadowRadius: 12,
+                shadowColor: '#6366F1',
+                shadowOffset: { width: 0, height: 12 },
+                shadowOpacity: 0.15,
+                shadowRadius: 24,
             },
-            android: { elevation: 12 },
-            web: { boxShadow: '0px 10px 30px rgba(0,0,0,0.3)' }
+            android: { elevation: 15 },
+            web: { boxShadow: '0px 10px 40px rgba(99, 102, 241, 0.12)' }
         }),
     },
-    fabInfoSection: {
+    fabDetailsArea: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
     },
-    cartIconCircle: {
-        width: 44,
-        height: 44,
-        backgroundColor: '#138FEA',
-        borderRadius: 14,
-        justifyContent: 'center',
-        alignItems: 'center',
-        position: 'relative',
-    },
-    cartBadgeMini: {
-        position: 'absolute',
-        top: -6,
-        right: -6,
-        backgroundColor: '#EF4444',
-        minWidth: 20,
-        height: 20,
+    fabBadgeWrapper: {
+        width: 32,
+        height: 32,
+        backgroundColor: '#EEF2FF',
         borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 2,
-        borderColor: '#1E293B',
-        paddingHorizontal: 4,
+        borderWidth: 1,
+        borderColor: '#E0E7FF',
     },
-    cartBadgeText: {
-        color: '#FFFFFF',
-        fontSize: 10,
+    fabBadgeText: {
+        color: '#4F46E5',
+        fontSize: 14,
         fontWeight: '900',
     },
-    priceContainer: {
+    fabPriceInfo: {
         justifyContent: 'center',
     },
-    labelSubtotal: {
-        color: '#94A3B8',
+    fabPriceLabel: {
         fontSize: 10,
+        color: '#94A3B8',
         fontWeight: 'bold',
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     },
-    valueSubtotal: {
-        color: '#FFFFFF',
+    fabPriceValue: {
         fontSize: 18,
-        fontWeight: 'bold',
+        fontWeight: '900',
+        color: '#1E293B',
+        letterSpacing: -0.5,
     },
-    fabActionGroup: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        padding: 6,
-        borderRadius: 16,
-        gap: 10,
-    },
-    miniTrashBtn: {
-        padding: 8,
-    },
-    actionDivider: {
-        width: 1,
-        height: 20,
-        backgroundColor: 'rgba(255,255,255,0.1)',
-    },
-    payBtnCompact: {
-        backgroundColor: '#138FEA',
-        height: 44,
-        paddingHorizontal: 16,
-        borderRadius: 12,
+    fabActionArea: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
     },
-    payBtnCompactText: {
+    fabClearBtn: {
+        width: 36,
+        height: 36,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    fabVerticalDivider: {
+        width: 1,
+        height: 30,
+        backgroundColor: '#F1F5F9',
+        marginHorizontal: 4,
+    },
+    payButtonPill: {
+        backgroundColor: '#2563EB',
+        height: 56,
+        paddingHorizontal: 20,
+        borderRadius: 18,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#2563EB',
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.3,
+                shadowRadius: 10,
+            },
+            android: { elevation: 4 },
+        }),
+    },
+    payButtonText: {
         color: '#FFFFFF',
         fontWeight: '900',
         fontSize: 14,
         letterSpacing: 1,
+    },
+    payButtonIconWrap: {
+        width: 22,
+        height: 22,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 7,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     emptyContainer: {
         alignItems: 'center',
@@ -1518,31 +1560,55 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     totalLabel: {
-        fontSize: 14,
-        color: '#64748B',
-        fontWeight: 'bold',
+        fontSize: 10,
+        color: '#94A3B8',
+        fontWeight: '900',
+        letterSpacing: 1,
+        marginBottom: 2,
     },
     totalValue: {
-        fontSize: 22,
+        fontSize: 24,
         fontWeight: '900',
         color: '#1E293B',
     },
+    paymentMethodBadge: {
+        backgroundColor: '#EFF6FF',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#BFDBFE',
+    },
+    paymentMethodBadgeText: {
+        color: '#2563EB',
+        fontSize: 10,
+        fontWeight: '900',
+    },
     payBtn: {
-        backgroundColor: '#1E40AF',
         height: 60,
-        borderRadius: 18,
+        borderRadius: 20,
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        gap: 10,
+        gap: 12,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#1E40AF',
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.3,
+                shadowRadius: 10,
+            },
+            android: { elevation: 8 }
+        })
     },
     payBtnText: {
         color: '#FFFFFF',
         fontSize: 16,
         fontWeight: '900',
+        letterSpacing: 1,
     },
     disabledBtn: {
-        backgroundColor: '#CBD5E1',
+        opacity: 0.5,
     },
     // Customer Input Styles
     customerInputContainer: {

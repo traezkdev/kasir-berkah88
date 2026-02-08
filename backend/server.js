@@ -120,7 +120,8 @@ app.use(cors({
 app.options('*', cors());
 
 // 2. Body Parser
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // 3. Security Headers
 app.use(helmet({
@@ -319,6 +320,32 @@ const sendUniversalNotification = async (userIds, message, heading, data = {}, e
         }
     } catch (e) {
         console.error('Expo Push Helper Error:', e);
+    }
+};
+
+// --- HELPER UNTUK BASE64 IMAGE UPLOAD ---
+const processBase64Image = async (base64String, prefix = 'promo') => {
+    if (!base64String || !base64String.startsWith('data:image')) {
+        return base64String; // Return as is if not base64 or already a path
+    }
+
+    try {
+        const matches = base64String.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (!matches || matches.length !== 3) {
+            console.error('Invalid base64 string format');
+            return null;
+        }
+
+        const extension = matches[1].split('/')[1]; // e.g. 'jpeg', 'png'
+        const data = Buffer.from(matches[2], 'base64');
+        const fileName = `${prefix}_${Date.now()}.${extension}`;
+        const filePath = path.join(__dirname, 'public', 'uploads', fileName);
+
+        fs.writeFileSync(filePath, data);
+        return `/public/uploads/${fileName}`;
+    } catch (err) {
+        console.error('Error processing base64 image:', err);
+        return null;
     }
 };
 
@@ -3650,12 +3677,19 @@ app.post("/api/orders", (req, res, next) => {
             const [promoRows] = await db.query('SELECT * FROM promos WHERE id = ? AND is_active = 1', [promoId]);
             if (promoRows.length > 0) {
                 const promo = promoRows[0];
-                const promoMinPurchase = parseFloat(promo.min_purchase || 0);
 
-                // Note: min_purchase check is usually against SUB-TOTAL (before points/other discounts)
-                // But let's check current logic. Items total (before points) is in calculatedTotal (before points deduction)
-                // Wait, I already subtracted points from calculatedTotal.
-                // Re-calculate subtotal for promo check if needed, or just use what we have.
+                // Check if one-time use per user is enabled
+                if (promo.is_one_time && userId) {
+                    const [usageRows] = await db.query(
+                        "SELECT id FROM orders WHERE user_id = ? AND promo_id = ? AND status NOT IN ('cancelled', 'rejected') LIMIT 1",
+                        [userId, promoId]
+                    );
+                    if (usageRows.length > 0) {
+                        return res.status(400).json({ error: "Anda sudah menggunakan kupon ini sebelumnya. Kupon ini hanya berlaku 1x per pengguna." });
+                    }
+                }
+
+                const promoMinPurchase = parseFloat(promo.min_purchase || 0);
                 const subtotalForPromo = calculatedTotal + finalPointsUsed;
 
                 if (subtotalForPromo >= promoMinPurchase) {
@@ -6002,14 +6036,20 @@ app.get("/api/customer/promos", async (req, res) => {
 // Add new promo
 app.post("/api/promos", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
-        const { title, description, code, icon, color, expiry, is_active, discount_value, discount_type, min_purchase } = req.body;
+        const { title, description, code, icon, color, expiry, is_active, discount_value, discount_type, min_purchase, is_hero, image_url, badge_text, is_one_time } = req.body;
+        if (!title && !is_hero) { // Title mandatory unless it's a banner (sometimes banners have no title)
+            // But let's keep validation simple for now or align with frontend
+        }
         if (!title) {
             return res.status(400).json({ error: "Judul promo wajib diisi" });
         }
 
+        // Process image if it's base64
+        const processedImageUrl = await processBase64Image(image_url, 'promo');
+
         const sql = `
-            INSERT INTO promos (title, description, code, icon, color, expiry, is_active, discount_value, discount_type, min_purchase)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO promos (title, description, code, icon, color, expiry, is_active, discount_value, discount_type, min_purchase, is_hero, image_url, badge_text, is_one_time)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         const cleanMin = min_purchase ? (typeof min_purchase === 'string' ? parseFloat(min_purchase.replace(/[^\d.]/g, '')) : parseFloat(min_purchase)) : 0;
         const params = [
@@ -6022,7 +6062,11 @@ app.post("/api/promos", authenticateToken, authorizeRoles('admin', 'owner'), asy
             is_active === undefined ? 1 : is_active,
             discount_value || 0,
             discount_type || 'fixed',
-            cleanMin
+            cleanMin,
+            is_hero ? 1 : 0,
+            processedImageUrl || null,
+            badge_text || null,
+            is_one_time ? 1 : 0
         ];
 
         const [result] = await db.query(sql, params);
@@ -6031,7 +6075,7 @@ app.post("/api/promos", authenticateToken, authorizeRoles('admin', 'owner'), asy
 
         res.status(201).json({
             message: "Promo berhasil ditambahkan",
-            data: { id: result.insertId, ...req.body }
+            data: { id: result.insertId, ...req.body, image_url: processedImageUrl }
         });
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
@@ -6045,16 +6089,21 @@ app.post("/api/promos", authenticateToken, authorizeRoles('admin', 'owner'), asy
 app.put("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, code, icon, color, expiry, is_active, discount_value, discount_type, min_purchase } = req.body;
+        const { title, description, code, icon, color, expiry, is_active, discount_value, discount_type, min_purchase, is_hero, image_url, badge_text, is_one_time } = req.body;
 
         if (!title) {
             return res.status(400).json({ error: "Judul promo wajib diisi" });
         }
 
+        const cleanMin = min_purchase ? (typeof min_purchase === 'string' ? parseFloat(min_purchase.replace(/[^\d.]/g, '')) : parseFloat(min_purchase)) : 0;
+
+        // Process image if it's base64
+        const processedImageUrl = await processBase64Image(image_url, 'promo');
+
         const sql = `
             UPDATE promos 
-            SET title = ?, description = ?, code = ?, icon = ?, color = ?, expiry = ?, is_active = ?, discount_value = ?, discount_type = ?, min_purchase = ?
-            WHERE id = ?
+            SET title=?, description=?, code=?, icon=?, color=?, expiry=?, is_active=?, discount_value=?, discount_type=?, min_purchase=?, is_hero=?, image_url=?, badge_text=?, is_one_time=?
+            WHERE id=?
         `;
         const params = [
             title,
@@ -6066,7 +6115,11 @@ app.put("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner'), 
             is_active === undefined ? 1 : is_active,
             discount_value || 0,
             discount_type || 'fixed',
-            min_purchase || 0,
+            cleanMin,
+            is_hero ? 1 : 0,
+            processedImageUrl || null,
+            badge_text || null,
+            is_one_time ? 1 : 0,
             id
         ];
 
@@ -6078,7 +6131,7 @@ app.put("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner'), 
 
         await logActivity(req.user.userId, 'Edit Promo', 'promo', id, `Promo diperbarui: ${title}`);
 
-        res.json({ message: "Promo berhasil diperbarui" });
+        res.json({ message: "Promo berhasil diperbarui", image_url: processedImageUrl });
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
             return res.status(409).json({ error: "Kode promo sudah digunakan" });
@@ -6109,14 +6162,29 @@ app.delete("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner'
 });
 
 // Validate promo code
-app.post("/api/promos/validate", async (req, res) => {
+app.post("/api/promos/validate", (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token) {
+        jwt.verify(token, ACTUAL_JWT_SECRET, (err, user) => {
+            if (!err) {
+                req.user = { userId: user.userId, username: user.username, role: user.role.trim() };
+            }
+            next();
+        });
+    } else {
+        next();
+    }
+}, async (req, res) => {
     try {
         const { code, total } = req.body;
+        const userId = req.user ? req.user.userId : null;
+
         if (!code) {
             return res.status(400).json({ error: "Kode promo harus diisi" });
         }
 
-        const sql = "SELECT * FROM promos WHERE code = ? AND is_active = 1";
+        const sql = "SELECT * FROM promos WHERE code = ? AND is_active = 1 AND is_hero = 0";
         const [rows] = await db.query(sql, [code]);
 
         if (rows.length === 0) {
@@ -6124,6 +6192,17 @@ app.post("/api/promos/validate", async (req, res) => {
         }
 
         const promo = rows[0];
+
+        // Check if one-time use per user is enabled
+        if (promo.is_one_time && userId) {
+            const [usageRows] = await db.query(
+                "SELECT id FROM orders WHERE user_id = ? AND promo_id = ? AND status NOT IN ('cancelled', 'rejected') LIMIT 1",
+                [userId, promo.id]
+            );
+            if (usageRows.length > 0) {
+                return res.status(400).json({ error: "Anda sudah menggunakan kupon ini sebelumnya. Kupon ini hanya berlaku 1x per pengguna." });
+            }
+        }
 
         const cleanTotal = total !== undefined ? (typeof total === 'string' ? parseFloat(total.replace(/[^\d.]/g, '')) : parseFloat(total)) : undefined;
         const cleanMin = typeof promo.min_purchase === 'string' ? parseFloat(promo.min_purchase.replace(/[^\d.]/g, '')) : parseFloat(promo.min_purchase);
