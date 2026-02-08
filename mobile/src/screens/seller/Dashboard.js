@@ -11,7 +11,8 @@ import {
     Platform,
     Animated,
     Easing,
-    StatusBar
+    StatusBar,
+    AppState
 } from 'react-native';
 import {
     Store,
@@ -34,7 +35,8 @@ import {
     TrendingDown,
     Wallet,
     Calculator,
-    ClipboardCheck
+    ClipboardCheck,
+    Ticket
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
@@ -125,6 +127,19 @@ const SellerDashboard = ({ navigation }) => {
         // Polling like web
         const interval = setInterval(fetchData, 10000);
         return () => clearInterval(interval);
+    }, [fetchData]);
+
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', nextAppState => {
+            if (nextAppState === 'active') {
+                console.log('App has come to the foreground! Refreshing data...');
+                fetchData();
+            }
+        });
+
+        return () => {
+            subscription.remove();
+        };
     }, [fetchData]);
 
     const onRefresh = () => {
@@ -321,7 +336,6 @@ const SellerDashboard = ({ navigation }) => {
                             { label: 'Pengeluaran', icon: TrendingDown, color: '#EF4444', bgColor: '#FEF2F2', target: 'ExpenseManagement' },
                             { label: 'Deposit', icon: Wallet, color: '#138FEA', bgColor: '#E0F2FE', target: 'LapakDeposit' },
                             { label: 'Pelanggan', icon: User, color: '#138FEA', bgColor: '#F0F9FF', target: 'CustomerManagement' },
-                            { label: 'Riwayat', icon: History, color: '#8B5CF6', bgColor: '#F5F3FF', target: 'Transaksi' },
                         ].map((action, index) => (
                             <TouchableOpacity
                                 key={index}
@@ -334,6 +348,26 @@ const SellerDashboard = ({ navigation }) => {
                                 <Text style={styles.actionLabel}>{action.label}</Text>
                             </TouchableOpacity>
                         ))}
+                        {(user?.role === 'admin' || user?.role === 'owner') && (
+                            <TouchableOpacity
+                                style={styles.actionItem}
+                                onPress={() => navigation.navigate('PromoManagement')}
+                            >
+                                <View style={[styles.actionIcon, { backgroundColor: '#ECFDF5' }]}>
+                                    <Ticket size={25} color="#059669" />
+                                </View>
+                                <Text style={styles.actionLabel}>Promo</Text>
+                            </TouchableOpacity>
+                        )}
+                        <TouchableOpacity
+                            style={styles.actionItem}
+                            onPress={() => navigation.navigate('Transaksi')}
+                        >
+                            <View style={[styles.actionIcon, { backgroundColor: '#F5F3FF' }]}>
+                                <History size={25} color="#8B5CF6" />
+                            </View>
+                            <Text style={styles.actionLabel}>Riwayat</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
 

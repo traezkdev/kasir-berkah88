@@ -3547,7 +3547,7 @@ app.post("/api/orders", (req, res, next) => {
     }
 }, async (req, res) => {
     try {
-        const { customer_name, customer_address, customer_phone, items, payment_method, note, notes, pointsUsed } = req.body; // 'total' will be calculated on backend
+        const { customer_name, customer_address, customer_phone, items, payment_method, note, notes, pointsUsed, promoId } = req.body; // 'total' will be calculated on backend
         if (!customer_name || !items || items.length === 0) {
             return res.status(400).json({ error: "Missing required fields: customer_name, items" });
         }
@@ -3641,8 +3641,8 @@ app.post("/api/orders", (req, res, next) => {
             }
         }
 
-        const sql = 'INSERT INTO orders (user_id, customer_name, customer_address, customer_phone, items, total, points_used, status, payment_method, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-        const params = [userId, customer_name, customer_address, customer_phone || null, JSON.stringify(orderItemsWithDetails), calculatedTotal, finalPointsUsed, 'pending', paymentMethodValue, orderNote];
+        const sql = 'INSERT INTO orders (user_id, customer_name, customer_address, customer_phone, items, total, points_used, status, payment_method, note, promo_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        const params = [userId, customer_name, customer_address, customer_phone || null, JSON.stringify(orderItemsWithDetails), calculatedTotal, finalPointsUsed, 'pending', paymentMethodValue, orderNote, promoId || null];
         const [result] = await db.query(sql, params);
 
         const orderId = result.insertId;
@@ -3866,11 +3866,16 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
 
                             if (pointsEarned > 0) {
                                 await connection.query('UPDATE users SET points = points + ? WHERE id = ?', [pointsEarned, customerId]);
+
+                                // Lookup valid transaction ID for foreign key constraint
+                                const [trxRows] = await connection.query('SELECT id FROM transactions WHERE order_id = ? LIMIT 1', [id]);
+                                const transactionRefId = trxRows.length > 0 ? trxRows[0].id : null;
+
                                 await connection.query(
                                     'INSERT INTO points_history (user_id, transaction_id, amount, type, description) VALUES (?, ?, ?, ?, ?)',
-                                    [customerId, `ORDER-${id}`, pointsEarned, 'earn', `Order #${id} selesai (${totalItemsCount} item)`]
+                                    [customerId, transactionRefId, pointsEarned, 'earn', `Order #${id} selesai (${totalItemsCount} item)`]
                                 );
-                                console.log(`[POINTS-ORDER] ✅ Awarded ${pointsEarned} points to ${customerName}`);
+                                console.log(`[POINTS-ORDER] ✅ Awarded ${pointsEarned} points to ${customerName} (Trx: ${transactionRefId})`);
                             }
                         } else if (userRows.length > 0) {
                             console.log(`[POINTS-ORDER] ⚠️ User is not a customer (role: ${userRows[0].role})`);
@@ -5479,6 +5484,54 @@ app.post("/api/database/restore", authenticateToken, authorizeRoles('admin', 'ow
 });
 
 
+// --- Manual Point Management Endpoints ---
+
+// Get all customers (simple list for selection)
+app.get("/api/customers/simple", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual'), async (req, res) => {
+    try {
+        const [rows] = await db.query("SELECT id, username, phone, points FROM users WHERE role = 'pelanggan' ORDER BY username ASC");
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Add manual points
+app.post("/api/customers/points/manual", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    const connection = await db.getConnection();
+    try {
+        const { customer_id, amount, description } = req.body;
+        const adminId = req.user.userId;
+
+        if (!customer_id || !amount) {
+            return res.status(400).json({ error: "Customer ID and amount are required" });
+        }
+
+        await connection.beginTransaction();
+
+        // Update user points
+        await connection.query("UPDATE users SET points = points + ? WHERE id = ?", [amount, customer_id]);
+
+        // Record history
+        await connection.query(
+            "INSERT INTO points_history (user_id, amount, type, description) VALUES (?, ?, ?, ?)",
+            [customer_id, amount, amount >= 0 ? 'earn' : 'redeem', description || 'Manual adjustment by admin']
+        );
+
+        await connection.commit();
+
+        await logActivity(adminId, 'Manual Point Adjustment', 'user', customer_id, `Adjusted points for user ${customer_id} by ${amount}`);
+
+        res.json({ message: "Points updated successfully" });
+    } catch (err) {
+        await connection.rollback();
+        res.status(500).json({ error: err.message });
+    } finally {
+        connection.release();
+    }
+});
+
+
 // --- Employee Credits Endpoints ---
 
 // Get all credits
@@ -5883,6 +5936,164 @@ app.put("/api/user/notification-settings", authenticateToken, async (req, res) =
         res.json({
             message: "success",
             data: settings
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- Promo Management Endpoints ---
+
+// Get all promos (Seller/Admin view - including inactive)
+app.get("/api/promos", authenticateToken, authorizeRoles('admin', 'owner', 'penjual'), async (req, res) => {
+    try {
+        const sql = "SELECT * FROM promos ORDER BY created_at DESC";
+        const [rows] = await db.query(sql);
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get active promos (Public/Customer view)
+app.get("/api/customer/promos", async (req, res) => {
+    try {
+        const sql = "SELECT * FROM promos WHERE is_active = 1 ORDER BY created_at DESC";
+        const [rows] = await db.query(sql);
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Add new promo
+app.post("/api/promos", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { title, description, code, icon, color, expiry, is_active, discount_value, discount_type } = req.body;
+        if (!title) {
+            return res.status(400).json({ error: "Judul promo wajib diisi" });
+        }
+
+        const sql = `
+            INSERT INTO promos (title, description, code, icon, color, expiry, is_active, discount_value, discount_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        const params = [
+            title,
+            description,
+            code || null,
+            icon || 'Ticket',
+            color || '#059669',
+            expiry || null,
+            is_active === undefined ? 1 : is_active,
+            discount_value || 0,
+            discount_type || 'fixed'
+        ];
+
+        const [result] = await db.query(sql, params);
+
+        await logActivity(req.user.userId, 'Tambah Promo', 'promo', result.insertId, `Promo baru: ${title}`);
+
+        res.status(201).json({
+            message: "Promo berhasil ditambahkan",
+            data: { id: result.insertId, ...req.body }
+        });
+    } catch (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ error: "Kode promo sudah digunakan" });
+        }
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update promo
+app.put("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, description, code, icon, color, expiry, is_active, discount_value, discount_type } = req.body;
+
+        if (!title) {
+            return res.status(400).json({ error: "Judul promo wajib diisi" });
+        }
+
+        const sql = `
+            UPDATE promos 
+            SET title = ?, description = ?, code = ?, icon = ?, color = ?, expiry = ?, is_active = ?, discount_value = ?, discount_type = ?
+            WHERE id = ?
+        `;
+        const params = [
+            title,
+            description,
+            code || null,
+            icon || 'Ticket',
+            color || '#059669',
+            expiry || null,
+            is_active === undefined ? 1 : is_active,
+            discount_value || 0,
+            discount_type || 'fixed',
+            id
+        ];
+
+        const [result] = await db.query(sql, params);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Promo tidak ditemukan" });
+        }
+
+        await logActivity(req.user.userId, 'Edit Promo', 'promo', id, `Promo diperbarui: ${title}`);
+
+        res.json({ message: "Promo berhasil diperbarui" });
+    } catch (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ error: "Kode promo sudah digunakan" });
+        }
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete promo
+app.delete("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [promo] = await db.query("SELECT title FROM promos WHERE id = ?", [id]);
+
+        const sql = "DELETE FROM promos WHERE id = ?";
+        const [result] = await db.query(sql, [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Promo tidak ditemukan" });
+        }
+
+        await logActivity(req.user.userId, 'Hapus Promo', 'promo', id, `Promo dihapus: ${promo[0]?.title || id}`);
+
+        res.json({ message: "Promo berhasil dihapus" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Validate promo code
+app.post("/api/promos/validate", async (req, res) => {
+    try {
+        const { code } = req.body;
+        if (!code) {
+            return res.status(400).json({ error: "Kode promo harus diisi" });
+        }
+
+        const sql = "SELECT * FROM promos WHERE code = ? AND is_active = 1";
+        const [rows] = await db.query(sql, [code]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Kode promo tidak valid atau sudah tidak aktif" });
+        }
+
+        const promo = rows[0];
+        // Note: In a real app we might check expiry dates correctly here
+        // For now, since expiry is a string like "2026-12-31", we just return the promo info.
+
+        res.json({
+            message: "Promo berhasil diterapkan",
+            data: promo
         });
     } catch (err) {
         res.status(500).json({ error: err.message });

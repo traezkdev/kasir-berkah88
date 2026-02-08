@@ -122,12 +122,26 @@ const CustomerCart = ({ navigation }) => {
     const [points, setPoints] = useState(0);
     const [usePoints, setUsePoints] = useState(false);
 
-    // Calculate points to use
+    // Promo System
+    const [promoCode, setPromoCode] = useState('');
+    const [appliedPromo, setAppliedPromo] = useState(null);
+    const [validatingPromo, setValidatingPromo] = useState(false);
+
     const pointsToUse = usePoints
         ? Math.min(points, cartTotal)
         : 0;
 
-    const finalTotal = Math.max(0, cartTotal - pointsToUse);
+    // Calculate Promo Discount
+    let promoDiscountAmount = 0;
+    if (appliedPromo) {
+        if (appliedPromo.discount_type === 'percentage') {
+            promoDiscountAmount = (cartTotal * parseFloat(appliedPromo.discount_value)) / 100;
+        } else {
+            promoDiscountAmount = parseFloat(appliedPromo.discount_value);
+        }
+    }
+
+    const finalTotal = Math.max(0, cartTotal - pointsToUse - promoDiscountAmount);
 
     // Fetch user profile to get saved address and points
     useFocusEffect(
@@ -202,6 +216,30 @@ const CustomerCart = ({ navigation }) => {
         saveData();
     }, [customerAddress, customerPhone]);
 
+    const handleValidatePromo = async () => {
+        if (!promoCode.trim()) return;
+
+        setValidatingPromo(true);
+        try {
+            const response = await apiService.post('/api/promos/validate', { code: promoCode });
+            if (response.data && response.data.data) {
+                setAppliedPromo(response.data.data);
+                showToast('Promo berhasil diterapkan!', 'success');
+            }
+        } catch (error) {
+            console.error('Promo error:', error);
+            showToast(error.response?.data?.error || 'Kode promo tidak valid', 'error');
+            setAppliedPromo(null);
+        } finally {
+            setValidatingPromo(false);
+        }
+    };
+
+    const removePromo = () => {
+        setAppliedPromo(null);
+        setPromoCode('');
+    };
+
     const handleDownloadQris = async () => {
         try {
             const { status } = await MediaLibrary.requestPermissionsAsync(true);
@@ -249,9 +287,10 @@ const CustomerCart = ({ navigation }) => {
             return;
         }
 
+        const totalSavings = pointsToUse + promoDiscountAmount;
         const accepted = await confirm({
             title: 'Konfirmasi Pesanan',
-            message: `Total belanja Anda adalah ${formatCurrency(finalTotal)} ${usePoints ? `(Hemat ${formatCurrency(pointsToUse)})` : ''}. Lanjutkan pemesanan?`,
+            message: `Total belanja Anda adalah ${formatCurrency(finalTotal)} ${totalSavings > 0 ? `(Hemat ${formatCurrency(totalSavings)})` : ''}. Lanjutkan pemesanan?`,
             confirmText: 'Pesan Sekarang',
             type: 'primary'
         });
@@ -274,7 +313,8 @@ const CustomerCart = ({ navigation }) => {
                 customer_address: customerAddress || null,
                 customer_phone: customerPhone || null,
                 customer_name: user?.username || user?.name || 'Pelanggan',
-                pointsUsed: usePoints ? pointsToUse : 0
+                pointsUsed: usePoints ? pointsToUse : 0,
+                promoId: appliedPromo ? appliedPromo.id : null
             };
 
             const response = await apiService.post('/api/orders', payload);
@@ -475,6 +515,49 @@ const CustomerCart = ({ navigation }) => {
                     )}
                 </View>
 
+                {/* Promo Code Section */}
+                <View style={styles.section}>
+                    <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Gunakan Kode Promo</Text>
+                    {appliedPromo ? (
+                        <View style={styles.appliedPromoBox}>
+                            <View style={styles.promoInfo}>
+                                <View style={styles.promoIconActive}>
+                                    <Ticket size={24} color="#059669" />
+                                </View>
+                                <View>
+                                    <Text style={styles.appliedPromoTitle}>{appliedPromo.title}</Text>
+                                    <Text style={styles.appliedPromoCode}>Kode: {appliedPromo.code}</Text>
+                                </View>
+                            </View>
+                            <TouchableOpacity onPress={removePromo} style={styles.removePromoBtn}>
+                                <X size={20} color="#EF4444" />
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <View style={styles.promoInputRow}>
+                            <Ticket size={20} color="#94A3B8" />
+                            <TextInput
+                                placeholder="Masukkan kode promo..."
+                                style={styles.promoInput}
+                                value={promoCode}
+                                onChangeText={setPromoCode}
+                                autoCapitalize="characters"
+                            />
+                            <TouchableOpacity
+                                style={[styles.applyPromoBtn, (!promoCode || validatingPromo) && styles.applyPromoBtnDisabled]}
+                                onPress={handleValidatePromo}
+                                disabled={!promoCode || validatingPromo}
+                            >
+                                {validatingPromo ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                    <Text style={styles.applyPromoBtnText}>PAKAI</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                </View>
+
                 {/* Points Redemption Section */}
                 {points > 0 && (
                     <View style={styles.section}>
@@ -552,6 +635,12 @@ const CustomerCart = ({ navigation }) => {
                         <View style={styles.summaryRow}>
                             <Text style={[styles.summaryLabel, { color: '#0284C7' }]}>Potongan Poin</Text>
                             <Text style={[styles.summaryValue, { color: '#0284C7' }]}>-{formatCurrency(pointsToUse)}</Text>
+                        </View>
+                    )}
+                    {appliedPromo && promoDiscountAmount > 0 && (
+                        <View style={styles.summaryRow}>
+                            <Text style={[styles.summaryLabel, { color: '#059669' }]}>Diskon Promo</Text>
+                            <Text style={[styles.summaryValue, { color: '#059669' }]}>-{formatCurrency(promoDiscountAmount)}</Text>
                         </View>
                     )}
                     <View style={[styles.summaryRow, styles.totalRow]}>
@@ -1211,7 +1300,82 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 16,
         fontWeight: '900',
-    }
+    },
+    // Promo Styles
+    promoInputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        borderRadius: 18,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+        gap: 12,
+    },
+    promoInput: {
+        flex: 1,
+        fontSize: 14,
+        color: '#1E293B',
+        fontWeight: '900',
+        paddingVertical: 8,
+    },
+    applyPromoBtn: {
+        backgroundColor: '#059669',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 12,
+    },
+    applyPromoBtnDisabled: {
+        backgroundColor: '#CBD5E1',
+    },
+    applyPromoBtnText: {
+        color: '#FFFFFF',
+        fontSize: 12,
+        fontWeight: '900',
+    },
+    appliedPromoBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#ECFDF5',
+        borderRadius: 18,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: '#A7F3D0',
+    },
+    promoInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+    },
+    promoIconActive: {
+        width: 44,
+        height: 44,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    appliedPromoTitle: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: '#059669',
+    },
+    appliedPromoCode: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#047857',
+        marginTop: 2,
+    },
+    removePromoBtn: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#FEE2E2',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
 });
 
 export default CustomerCart;

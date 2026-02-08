@@ -12,7 +12,9 @@ import {
     Platform,
     StatusBar,
     RefreshControl,
-    Animated
+    Animated,
+    AppState,
+    SafeAreaView
 } from 'react-native';
 import {
     Search,
@@ -115,6 +117,19 @@ const CustomerDashboard = ({ navigation }) => {
         return () => clearInterval(pollInterval);
     }, [fetchData]);
 
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', nextAppState => {
+            if (nextAppState === 'active') {
+                console.log('App (Customer) has come to the foreground! Refreshing data...');
+                fetchData(true);
+            }
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, [fetchData]);
+
     const onRefresh = () => {
         setRefreshing(true);
         fetchData(true);
@@ -190,7 +205,7 @@ const CustomerDashboard = ({ navigation }) => {
     }
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
             <StatusBar barStyle="light-content" backgroundColor="#059669" />
 
             {/* Compact Header on Scroll */}
@@ -232,19 +247,25 @@ const CustomerDashboard = ({ navigation }) => {
                             <Text style={styles.greetingText}>{getGreeting()},</Text>
                             <Text style={styles.userName}>{user?.name || 'Pelanggan'}</Text>
                         </View>
-                        <TouchableOpacity
-                            style={styles.notificationBtn}
-                            onPress={() => navigation.navigate('ChatScreen')}
-                        >
-                            <View>
-                                <MessageCircle size={22} color="#FFFFFF" />
-                                {unreadCount > 0 && (
-                                    <View style={[styles.statusBadge, { top: -5, right: -5 }]}>
-                                        <Text style={styles.statusBadgeText}>{unreadCount}</Text>
-                                    </View>
-                                )}
-                            </View>
-                        </TouchableOpacity>
+                        <View style={styles.headerActions}>
+                            <TouchableOpacity
+                                style={styles.notificationBtn}
+                                onPress={() => navigation.navigate('ChatScreen')}
+                            >
+                                <View>
+                                    <MessageCircle size={22} color="#FFFFFF" />
+                                    {unreadCount > 0 && (
+                                        <View style={[styles.statusBadge, { top: -5, right: -5 }]}>
+                                            <Text style={styles.statusBadgeText}>{unreadCount}</Text>
+                                        </View>
+                                    )}
+                                </View>
+                            </TouchableOpacity>
+                            <Image
+                                source={require('../../../assets/logo.png')}
+                                style={styles.headerLogo}
+                            />
+                        </View>
                     </View>
 
                     {!isOpen && (
@@ -369,6 +390,7 @@ const CustomerDashboard = ({ navigation }) => {
                                 styles.bannerCard,
                                 { backgroundColor: getBannerColor(banner.color_class) }
                             ]}
+                            onPress={() => navigation.navigate('PromoScreen')}
                         >
                             <View style={styles.bannerInfo}>
                                 <Text style={styles.bannerTitle}>{banner.title}</Text>
@@ -494,7 +516,7 @@ const CustomerDashboard = ({ navigation }) => {
                 {/* Footer Padding */}
                 <View style={{ height: 100 }} />
             </Animated.ScrollView>
-        </View>
+        </SafeAreaView>
     );
 };
 
@@ -565,6 +587,16 @@ const styles = StyleSheet.create({
         fontSize: 24,
         color: '#FFFFFF',
         fontWeight: '900',
+    },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    headerLogo: {
+        width: 44,
+        height: 44,
+        resizeMode: 'contain',
     },
     notificationBtn: {
         width: 44,

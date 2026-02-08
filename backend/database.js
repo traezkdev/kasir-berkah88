@@ -129,10 +129,30 @@ const setupDatabase = async () => {
       );
     `;
 
+    const createPromosTable = `
+      CREATE TABLE IF NOT EXISTS promos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        code VARCHAR(50) UNIQUE,
+        icon VARCHAR(50) DEFAULT 'Ticket',
+        color VARCHAR(20) DEFAULT '#059669',
+        expiry VARCHAR(255),
+        is_active BOOLEAN DEFAULT TRUE,
+        discount_value DECIMAL(15, 2) DEFAULT 0.00,
+        discount_type ENUM('fixed', 'percentage') DEFAULT 'fixed',
+        min_purchase DECIMAL(15, 2) DEFAULT 0.00,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `;
+
     await connection.query(createNotesTable);
     console.log('notes table is ready.');
     await connection.query(createBannersTable);
     console.log('banners table is ready.');
+    await connection.query(createPromosTable);
+    console.log('promos table is ready.');
 
     const createOrdersTable = `
       CREATE TABLE IF NOT EXISTS orders (
@@ -148,7 +168,9 @@ const setupDatabase = async () => {
           payment_method VARCHAR(50),
           note TEXT,
           points_used DECIMAL(15, 2) DEFAULT 0,
-          FOREIGN KEY (user_id) REFERENCES users(id)
+          promo_id INT DEFAULT NULL,
+          FOREIGN KEY (user_id) REFERENCES users(id),
+          FOREIGN KEY (promo_id) REFERENCES promos(id) ON DELETE SET NULL
       );
     `;
     await connection.query(createOrdersTable);
@@ -159,6 +181,22 @@ const setupDatabase = async () => {
     if (pointsUsedColumnorders.length === 0) {
       await connection.query("ALTER TABLE orders ADD COLUMN points_used DECIMAL(15, 2) DEFAULT 0");
       console.log("Added points_used column to orders table.");
+    }
+
+    // Check if promo_id column exists in orders table
+    const [promoIdColumnOrders] = await connection.query("SHOW COLUMNS FROM orders LIKE 'promo_id'");
+    if (promoIdColumnOrders.length === 0) {
+      // Step 1: Add the column
+      await connection.query("ALTER TABLE orders ADD COLUMN promo_id INT DEFAULT NULL");
+
+      // Step 2: Add the foreign key separate just in case (to avoid ER_FK_CANNOT_OPEN_PARENT on some environments)
+      try {
+        await connection.query("ALTER TABLE orders ADD FOREIGN KEY (promo_id) REFERENCES promos(id) ON DELETE SET NULL");
+      } catch (fkError) {
+        console.warn("Warming: Gagal menambahkan foreign key promo_id ke tabel orders. Kolom tetap ditambahkan.", fkError.message);
+      }
+
+      console.log("Added promo_id column to orders table.");
     }
 
     // Check and add payment_method to orders
@@ -1563,6 +1601,39 @@ const setupDatabase = async () => {
     if (txPointsEarnedRows[0]['COUNT(*)'] === 0) {
       await connection.query("ALTER TABLE transactions ADD COLUMN points_earned DECIMAL(15, 2) DEFAULT 0.00");
       console.log('Added points_earned column to transactions table.');
+    }
+
+    // Check and add discount_value to promos
+    const checkPromoDiscountValueColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promos' AND COLUMN_NAME = 'discount_value';
+    `;
+    const [promoDiscValueRows] = await connection.query(checkPromoDiscountValueColumn);
+    if (promoDiscValueRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE promos ADD COLUMN discount_value DECIMAL(15, 2) DEFAULT 0.00");
+      console.log('Added discount_value column to promos table.');
+    }
+
+    // Check and add discount_type to promos
+    const checkPromoDiscountTypeColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promos' AND COLUMN_NAME = 'discount_type';
+    `;
+    const [promoDiscTypeRows] = await connection.query(checkPromoDiscountTypeColumn);
+    if (promoDiscTypeRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE promos ADD COLUMN discount_type ENUM('fixed', 'percentage') DEFAULT 'fixed'");
+      console.log('Added discount_type column to promos table.');
+    }
+
+    // Check and add min_purchase to promos
+    const checkPromoMinPurchaseColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promos' AND COLUMN_NAME = 'min_purchase';
+    `;
+    const [promoMinPurchaseRows] = await connection.query(checkPromoMinPurchaseColumn);
+    if (promoMinPurchaseRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE promos ADD COLUMN min_purchase DECIMAL(15, 2) DEFAULT 0.00");
+      console.log('Added min_purchase column to promos table.');
     }
 
     connection.release();

@@ -64,13 +64,23 @@ const OrderManagement = ({ navigation }) => {
         fetchOrders(true);
     };
 
-    const handleUpdateStatus = useCallback(async (orderId, status) => {
+    const handleUpdateStatus = useCallback(async (orderId, status, forceIgnoreStock = false) => {
         try {
-            await apiService.put(`/api/orders/${orderId}/status`, { status });
+            await apiService.put(`/api/orders/${orderId}/status`, {
+                status,
+                ignoreStock: forceIgnoreStock
+            });
             showToast('Status berhasil diperbarui', 'success');
             fetchOrders(true);
         } catch (error) {
             const errorMsg = error.response?.data?.error || 'Gagal memperbarui status';
+
+            // Handle Stock Validation Error - Auto Retry with Ignore Stock
+            if (status === 'accepted' && !forceIgnoreStock && (errorMsg.includes('stok') || errorMsg.includes('Stok'))) {
+                console.log('Stock validation failed, auto-retrying with ignoreStock...');
+                return handleUpdateStatus(orderId, status, true);
+            }
+
             showToast(errorMsg, 'error');
             console.error('Error updating status:', error);
         }

@@ -10,7 +10,9 @@ import {
     Switch,
     Platform,
     StatusBar,
-    Animated
+    Animated,
+    Modal,
+    FlatList
 } from 'react-native';
 import {
     Gift,
@@ -20,7 +22,11 @@ import {
     Info,
     Zap,
     History,
-    Settings
+    Settings,
+    User,
+    Search,
+    X,
+    ChevronDown
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 import { useToast } from '../../context/ToastContext';
@@ -29,14 +35,40 @@ const PointManagement = ({ navigation }) => {
     const { showToast } = useToast();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
     const [settings, setSettings] = useState({
         point_system_enabled: '1',
         points_per_item: '100'
     });
 
+    // Manual Points State
+    const [customers, setCustomers] = useState([]);
+    const [filteredCustomers, setFilteredCustomers] = useState([]);
+    const [selectedCustomer, setSelectedCustomer] = useState(null);
+    const [manualPoints, setManualPoints] = useState('');
+    const [manualDesc, setManualDesc] = useState('');
+    const [showCustomerModal, setShowCustomerModal] = useState(false);
+    const [searchText, setSearchText] = useState('');
+    const [actionType, setActionType] = useState('add'); // 'add' or 'reduce'
+
     useEffect(() => {
         fetchSettings();
+        fetchCustomers();
     }, []);
+
+    useEffect(() => {
+        if (searchText) {
+            const lower = searchText.toLowerCase();
+            setFilteredCustomers(
+                customers.filter(c =>
+                    c.username.toLowerCase().includes(lower) ||
+                    (c.phone && c.phone.includes(lower))
+                )
+            );
+        } else {
+            setFilteredCustomers(customers);
+        }
+    }, [searchText, customers]);
 
     const fetchSettings = async () => {
         try {
@@ -49,6 +81,18 @@ const PointManagement = ({ navigation }) => {
             showToast('Gagal mengambil pengaturan poin', 'error');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchCustomers = async () => {
+        try {
+            const response = await apiService.get('/api/customers/simple');
+            if (response.data.data) {
+                setCustomers(response.data.data);
+                setFilteredCustomers(response.data.data);
+            }
+        } catch (error) {
+            console.error('Error fetching customers:', error);
         }
     };
 
@@ -65,6 +109,43 @@ const PointManagement = ({ navigation }) => {
             showToast('Gagal menyimpan pengaturan poin', 'error');
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleAddManualPoints = async () => {
+        if (!selectedCustomer) {
+            showToast('Pilih pelanggan terlebih dahulu', 'error');
+            return;
+        }
+        if (!manualPoints) {
+            showToast('Masukkan jumlah poin', 'error');
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            const amount = parseInt(manualPoints);
+            const finalAmount = actionType === 'add' ? amount : -Math.abs(amount);
+
+            await apiService.post('/api/customers/points/manual', {
+                customer_id: selectedCustomer.id,
+                amount: finalAmount,
+                description: manualDesc || (actionType === 'add' ? 'Penambahan poin manual' : 'Pengurangan poin manual')
+            });
+            showToast(actionType === 'add' ? 'Poin berhasil ditambahkan' : 'Poin berhasil dikurangi', 'success');
+
+            // Reset form
+            setManualPoints('');
+            setManualDesc('');
+            setSelectedCustomer(null);
+
+            // Refresh customer list to update points display
+            fetchCustomers();
+        } catch (error) {
+            console.error('Error adding manual points:', error);
+            showToast('Gagal menambahkan poin', 'error');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -129,7 +210,12 @@ const PointManagement = ({ navigation }) => {
                 showsVerticalScrollIndicator={false}
             >
                 {/* Configuration Section */}
-                <View style={styles.card}>
+                <View style={[styles.card, { marginTop: 45 }]}>
+                    <View style={styles.cardHeader}>
+                        <Settings size={20} color="#1E293B" />
+                        <Text style={styles.cardTitle}>Pengaturan Dasar</Text>
+                    </View>
+
                     <View style={styles.inputGroup}>
                         <Text style={styles.inputLabel}>POIN PER ITEM</Text>
                         <View style={styles.inputWrapper}>
@@ -169,6 +255,119 @@ const PointManagement = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
 
+                {/* Manual Points Section */}
+                <View style={styles.card}>
+                    <View style={styles.cardHeader}>
+                        <Zap size={20} color="#F59E0B" />
+                        <Text style={styles.cardTitle}>Tambah Poin Manual</Text>
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>PILIH PELANGGAN</Text>
+                        <TouchableOpacity
+                            style={styles.dropdownBtn}
+                            onPress={() => setShowCustomerModal(true)}
+                        >
+                            {selectedCustomer ? (
+                                <View style={styles.selectedCustomer}>
+                                    <View style={styles.customerAvatarSmall}>
+                                        <Text style={styles.customerInitialsSmall}>
+                                            {selectedCustomer.username.substring(0, 2).toUpperCase()}
+                                        </Text>
+                                    </View>
+                                    <View>
+                                        <Text style={styles.selectedCustomerName}>{selectedCustomer.username}</Text>
+                                        <Text style={styles.selectedCustomerPoints}>{selectedCustomer.points} Poin saat ini</Text>
+                                    </View>
+                                </View>
+                            ) : (
+                                <Text style={styles.dropdownPlaceholder}>Cari pelanggan...</Text>
+                            )}
+                            <ChevronDown size={20} color="#94A3B8" />
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>TINDAKAN</Text>
+                        <View style={styles.actionToggleContainer}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.actionBtn,
+                                    actionType === 'add' ? styles.actionBtnAddActive : styles.actionBtnInactive
+                                ]}
+                                onPress={() => setActionType('add')}
+                            >
+                                <PlusCircle size={18} color={actionType === 'add' ? '#FFFFFF' : '#94A3B8'} />
+                                <Text style={[styles.actionBtnText, actionType === 'add' && styles.actionBtnTextActive]}>Tambah</Text>
+                            </TouchableOpacity>
+                            <View style={{ width: 10 }} />
+                            <TouchableOpacity
+                                style={[
+                                    styles.actionBtn,
+                                    actionType === 'reduce' ? styles.actionBtnReduceActive : styles.actionBtnInactive
+                                ]}
+                                onPress={() => setActionType('reduce')}
+                            >
+                                <X size={18} color={actionType === 'reduce' ? '#FFFFFF' : '#94A3B8'} />
+                                <Text style={[styles.actionBtnText, actionType === 'reduce' && styles.actionBtnTextActive]}>Kurangi</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    <View style={styles.rowInputs}>
+                        <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
+                            <Text style={styles.inputLabel}>JUMLAH POIN</Text>
+                            <View style={styles.inputWrapper}>
+                                <TextInput
+                                    style={styles.input}
+                                    value={manualPoints}
+                                    onChangeText={setManualPoints}
+                                    keyboardType="numeric"
+                                    placeholder="0"
+                                    placeholderTextColor="#94A3B8"
+                                />
+                            </View>
+                        </View>
+
+                        <View style={[styles.inputGroup, { flex: 1.5 }]}>
+                            <Text style={styles.inputLabel}>KETERANGAN</Text>
+                            <View style={styles.inputWrapper}>
+                                <TextInput
+                                    style={styles.input}
+                                    value={manualDesc}
+                                    onChangeText={setManualDesc}
+                                    placeholder="Bonus, Refund, dll"
+                                    placeholderTextColor="#94A3B8"
+                                />
+                            </View>
+                        </View>
+                    </View>
+
+                    <TouchableOpacity
+                        style={[
+                            actionType === 'add' ? styles.addBtn : styles.reduceBtn,
+                            submitting && styles.saveBtnDisabled
+                        ]}
+                        onPress={handleAddManualPoints}
+                        disabled={submitting}
+                    >
+                        {submitting ? (
+                            <ActivityIndicator color="#FFFFFF" />
+                        ) : (
+                            <>
+                                {actionType === 'add' ? (
+                                    <PlusCircle color="#FFFFFF" size={20} />
+                                ) : (
+                                    <X color="#FFFFFF" size={20} />
+                                )}
+                                <Text style={styles.saveBtnText}>
+                                    {actionType === 'add' ? 'Tambahkan Poin' : 'Kurangi Poin'}
+                                </Text>
+                            </>
+                        )}
+                    </TouchableOpacity>
+                </View>
+
                 {/* Info Card */}
                 <View style={styles.infoCard}>
                     <View style={styles.infoContent}>
@@ -200,6 +399,73 @@ const PointManagement = ({ navigation }) => {
 
                 <View style={{ height: 40 }} />
             </ScrollView>
+
+            {/* Customer Selection Modal */}
+            <Modal
+                visible={showCustomerModal}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setShowCustomerModal(false)}
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Pilih Pelanggan</Text>
+                            <TouchableOpacity onPress={() => setShowCustomerModal(false)}>
+                                <X size={24} color="#1E293B" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.searchBar}>
+                            <Search size={20} color="#94A3B8" />
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder="Cari nama atau nomor HP..."
+                                value={searchText}
+                                onChangeText={setSearchText}
+                                placeholderTextColor="#94A3B8"
+                            />
+                            {searchText.length > 0 && (
+                                <TouchableOpacity onPress={() => setSearchText('')}>
+                                    <X size={16} color="#94A3B8" />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+
+                        <FlatList
+                            data={filteredCustomers}
+                            keyExtractor={item => item.id.toString()}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={styles.customerItem}
+                                    onPress={() => {
+                                        setSelectedCustomer(item);
+                                        setShowCustomerModal(false);
+                                    }}
+                                >
+                                    <View style={styles.customerAvatar}>
+                                        <Text style={styles.customerInitials}>
+                                            {item.username.substring(0, 2).toUpperCase()}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.customerInfo}>
+                                        <Text style={styles.customerName}>{item.username}</Text>
+                                        <Text style={styles.customerPhone}>{item.phone || 'Tanpa No HP'}</Text>
+                                    </View>
+                                    <View style={styles.customerPointsBadge}>
+                                        <Text style={styles.customerPoints}>{item.points} Poin</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            )}
+                            ListEmptyComponent={
+                                <View style={styles.emptyList}>
+                                    <Text style={styles.emptyListText}>Pelanggan tidak ditemukan</Text>
+                                </View>
+                            }
+                        />
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -312,19 +578,21 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderRadius: 30,
         padding: 25,
-        marginTop: 40,
-        marginBottom: 20,
+        marginTop: 15,
+        marginBottom: 15,
         borderWidth: 1,
         borderColor: '#F1F5F9',
-        ...Platform.select({
-            android: { elevation: 4 },
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.05,
-                shadowRadius: 10,
-            }
-        })
+    },
+    cardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 20,
+        gap: 10,
+    },
+    cardTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#1E293B',
     },
     inputGroup: {
         marginBottom: 25,
@@ -352,7 +620,7 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingVertical: 16,
         paddingHorizontal: 12,
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: 'bold',
         color: '#1E293B',
     },
@@ -396,6 +664,116 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '900',
     },
+    addBtn: {
+        backgroundColor: '#22C55E', // Green for adding
+        flexDirection: 'row',
+        height: 60,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 10,
+        shadowColor: '#22C55E',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 15,
+        elevation: 6,
+    },
+    reduceBtn: {
+        backgroundColor: '#EF4444', // Red for reducing
+        flexDirection: 'row',
+        height: 60,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 10,
+        shadowColor: '#EF4444',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 15,
+        elevation: 6,
+    },
+    actionToggleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    actionBtn: {
+        flex: 1,
+        height: 50,
+        borderRadius: 15,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 8,
+        borderWidth: 1,
+    },
+    actionBtnInactive: {
+        backgroundColor: '#F8FAFC',
+        borderColor: '#E2E8F0',
+    },
+    actionBtnAddActive: {
+        backgroundColor: '#22C55E',
+        borderColor: '#22C55E',
+    },
+    actionBtnReduceActive: {
+        backgroundColor: '#EF4444',
+        borderColor: '#EF4444',
+    },
+    actionBtnText: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#94A3B8',
+    },
+    actionBtnTextActive: {
+        color: '#FFFFFF',
+    },
+    dropdownBtn: {
+        backgroundColor: '#F8FAFC',
+        borderRadius: 20,
+        padding: 16,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    dropdownPlaceholder: {
+        color: '#94A3B8',
+        fontWeight: '500',
+    },
+    selectedCustomer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    customerAvatarSmall: {
+        width: 32,
+        height: 32,
+        borderRadius: 10,
+        backgroundColor: '#EFF6FF',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    customerInitialsSmall: {
+        fontSize: 12,
+        fontWeight: '900',
+        color: '#1E40AF',
+    },
+    selectedCustomerName: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#1E293B',
+    },
+    selectedCustomerPoints: {
+        fontSize: 11,
+        color: '#22C55E',
+        fontWeight: 'bold',
+    },
+    rowInputs: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+
+    // Info Card Styles
     infoCard: {
         backgroundColor: '#4F46E5',
         borderRadius: 30,
@@ -471,6 +849,99 @@ const styles = StyleSheet.create({
         color: '#B45309',
         lineHeight: 18,
         fontWeight: '500',
+    },
+
+    // Modal Styles
+    modalContainer: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
+        backgroundColor: '#FFFFFF',
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
+        padding: 25,
+        maxHeight: '80%',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#1E293B',
+    },
+    searchBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        borderRadius: 15,
+        paddingHorizontal: 15,
+        height: 50,
+        marginBottom: 20,
+    },
+    searchInput: {
+        flex: 1,
+        marginLeft: 10,
+        fontSize: 14,
+        color: '#1E293B',
+    },
+    customerItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F1F5F9',
+    },
+    customerAvatar: {
+        width: 45,
+        height: 45,
+        borderRadius: 15,
+        backgroundColor: '#EFF6FF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 15,
+    },
+    customerInitials: {
+        fontSize: 16,
+        fontWeight: '900',
+        color: '#1E40AF',
+    },
+    customerInfo: {
+        flex: 1,
+    },
+    customerName: {
+        fontSize: 15,
+        fontWeight: 'bold',
+        color: '#1E293B',
+        marginBottom: 2,
+    },
+    customerPhone: {
+        fontSize: 12,
+        color: '#64748B',
+    },
+    customerPointsBadge: {
+        backgroundColor: '#F0FDF4',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 10,
+    },
+    customerPoints: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#16A34A',
+    },
+    emptyList: {
+        padding: 20,
+        alignItems: 'center',
+    },
+    emptyListText: {
+        color: '#94A3B8',
+        fontStyle: 'italic',
     }
 });
 

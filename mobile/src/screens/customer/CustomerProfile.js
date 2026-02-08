@@ -29,7 +29,10 @@ import {
     UserCircle,
     Shield,
     Bell,
-    Banknote
+    Banknote,
+    Lock,
+    Eye,
+    EyeOff
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
 
@@ -57,6 +60,20 @@ const CustomerProfile = ({ navigation }) => {
     const [tempPhone, setTempPhone] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [pageLoading, setPageLoading] = useState(true);
+
+    // Account Settings States
+    const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+    const [securityData, setSecurityData] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+    const [showPasswords, setShowPasswords] = useState({
+        current: false,
+        new: false,
+        confirm: false
+    });
+    const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
     const fetchProfile = async () => {
         try {
@@ -98,6 +115,41 @@ const CustomerProfile = ({ navigation }) => {
         }
     };
 
+    const handleChangePassword = async () => {
+        if (!securityData.currentPassword || !securityData.newPassword) {
+            showToast('Semua field password harus diisi', 'error');
+            return;
+        }
+        if (securityData.newPassword !== securityData.confirmPassword) {
+            showToast('Konfirmasi password tidak cocok', 'error');
+            return;
+        }
+        if (securityData.newPassword.length < 6) {
+            showToast('Password baru minimal 6 karakter', 'error');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const response = await apiService.put('/api/user/profile/password', {
+                currentPassword: securityData.currentPassword,
+                newPassword: securityData.newPassword
+            });
+
+            if (response.data.message) {
+                showToast('Password berhasil diubah!', 'success');
+                setIsAccountModalOpen(false);
+                setSecurityData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+            }
+        } catch (error) {
+            console.error("Error changing password:", error);
+            const errMsg = error.response?.data?.error || 'Gagal mengubah password';
+            showToast(errMsg, 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleLogout = async () => {
         const accepted = await confirm({
             title: 'Keluar Akun',
@@ -128,8 +180,8 @@ const CustomerProfile = ({ navigation }) => {
                 <Text style={styles.headerSubtitle}>INFORMASI & PENGATURAN AKUN</Text>
             </View>
 
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-                {/* User Card */}
+            {/* Fixed Profile Card (Outside ScrollView) */}
+            <View style={styles.fixedProfileContainer}>
                 <View style={styles.profileCard}>
                     <View style={styles.avatarWrap}>
                         {userData.avatar_url ? (
@@ -150,7 +202,9 @@ const CustomerProfile = ({ navigation }) => {
                         <Text style={styles.userPhone}>{userData.phone || 'Belum ada nomor HP'}</Text>
                     </View>
                 </View>
+            </View>
 
+            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                 {/* Points Card */}
                 {userData.role !== 'admin' && (
                     <TouchableOpacity
@@ -187,7 +241,6 @@ const CustomerProfile = ({ navigation }) => {
                             desc: 'Lacak pesanan aktif Anda',
                             onClick: () => navigation.navigate('Orders')
                         },
-                        { icon: CreditCard, label: 'Metode Pembayaran', color: '#8B5CF6', bg: '#F5F3FF', desc: 'Dana, Tunai, BerkahPay' },
                         {
                             icon: HelpCircle,
                             label: 'Bantuan & Dukungan',
@@ -196,7 +249,14 @@ const CustomerProfile = ({ navigation }) => {
                             desc: 'Pusat bantuan 24/7',
                             onClick: () => navigation.navigate('ChatScreen')
                         },
-                        { icon: Settings, label: 'Pengaturan Akun', color: '#10B981', bg: '#ECFDF5', desc: 'Keamanan & Notifikasi' }
+                        {
+                            icon: Settings,
+                            label: 'Pengaturan Akun',
+                            color: '#10B981',
+                            bg: '#ECFDF5',
+                            desc: 'Keamanan & Notifikasi',
+                            onClick: () => setIsAccountModalOpen(true)
+                        }
                     ].map((item, idx) => (
                         <TouchableOpacity
                             key={idx}
@@ -307,6 +367,118 @@ const CustomerProfile = ({ navigation }) => {
                     </View>
                 </View>
             </Modal>
+
+            {/* Account & Security Modal */}
+            <Modal
+                visible={isAccountModalOpen}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setIsAccountModalOpen(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, { maxHeight: '90%' }]}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Pengaturan Akun</Text>
+                            <TouchableOpacity onPress={() => setIsAccountModalOpen(false)} style={styles.modalClose}>
+                                <X size={20} color="#64748B" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <KeyboardAwareScrollView
+                            showsVerticalScrollIndicator={false}
+                            keyboardShouldPersistTaps="handled"
+                        >
+                            <View style={styles.modalBody}>
+                                {/* Security Section */}
+                                <View style={styles.sectionHeader}>
+                                    <Shield size={18} color="#059669" />
+                                    <Text style={styles.sectionTitle}>KEAMANAN AKUN</Text>
+                                </View>
+
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.inputLabel}>PASSWORD SEKARANG</Text>
+                                    <View style={styles.inputWrap}>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Masukkan password saat ini"
+                                            secureTextEntry={!showPasswords.current}
+                                            value={securityData.currentPassword}
+                                            onChangeText={(v) => setSecurityData({ ...securityData, currentPassword: v })}
+                                        />
+                                        <TouchableOpacity onPress={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}>
+                                            {showPasswords.current ? <EyeOff size={18} color="#94A3B8" /> : <Eye size={18} color="#94A3B8" />}
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.inputLabel}>PASSWORD BARU</Text>
+                                    <View style={styles.inputWrap}>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Minimal 6 karakter"
+                                            secureTextEntry={!showPasswords.new}
+                                            value={securityData.newPassword}
+                                            onChangeText={(v) => setSecurityData({ ...securityData, newPassword: v })}
+                                        />
+                                        <TouchableOpacity onPress={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}>
+                                            {showPasswords.new ? <EyeOff size={18} color="#94A3B8" /> : <Eye size={18} color="#94A3B8" />}
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.inputLabel}>KONFIRMASI PASSWORD BARU</Text>
+                                    <View style={styles.inputWrap}>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Ulangi password baru"
+                                            secureTextEntry={!showPasswords.confirm}
+                                            value={securityData.confirmPassword}
+                                            onChangeText={(v) => setSecurityData({ ...securityData, confirmPassword: v })}
+                                        />
+                                        <TouchableOpacity onPress={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}>
+                                            {showPasswords.confirm ? <EyeOff size={18} color="#94A3B8" /> : <Eye size={18} color="#94A3B8" />}
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+
+                                <TouchableOpacity
+                                    onPress={handleChangePassword}
+                                    disabled={isLoading}
+                                    style={[styles.saveBtn, isLoading && styles.saveBtnDisabled]}
+                                >
+                                    {isLoading ? (
+                                        <ActivityIndicator color="#FFFFFF" size="small" />
+                                    ) : (
+                                        <Text style={styles.saveBtnText}>Perbarui Password</Text>
+                                    )}
+                                </TouchableOpacity>
+
+                                {/* Notification Section */}
+                                <View style={[styles.sectionHeader, { marginTop: 30 }]}>
+                                    <Bell size={18} color="#059669" />
+                                    <Text style={styles.sectionTitle}>NOTIFIKASI</Text>
+                                </View>
+
+                                <View style={styles.settingItem}>
+                                    <View style={styles.settingTextWrap}>
+                                        <Text style={styles.settingLabel}>Push Notification</Text>
+                                        <Text style={styles.settingDesc}>Terima update pesanan & promo</Text>
+                                    </View>
+                                    <TouchableOpacity
+                                        onPress={() => setNotificationsEnabled(!notificationsEnabled)}
+                                        style={[styles.miniToggle, notificationsEnabled ? styles.toggleOn : styles.toggleOff]}
+                                    >
+                                        <View style={[styles.toggleCircle, notificationsEnabled ? styles.circleOn : styles.circleOff]} />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                            <View style={{ height: 40 }} />
+                        </KeyboardAwareScrollView>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -343,8 +515,12 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        marginTop: -40,
         paddingHorizontal: 20,
+    },
+    fixedProfileContainer: {
+        paddingHorizontal: 20,
+        marginTop: -45, // Lowered from -60 to give space from title
+        zIndex: 10,
     },
     profileCard: {
         flexDirection: 'row',
@@ -623,6 +799,72 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 16,
         fontWeight: '900',
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 20,
+        gap: 8,
+    },
+    sectionTitle: {
+        fontSize: 12,
+        fontWeight: '900',
+        color: '#64748B',
+        letterSpacing: 1.5,
+    },
+    settingItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#F8FAFC',
+        padding: 16,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+    },
+    settingTextWrap: {
+        flex: 1,
+    },
+    settingLabel: {
+        fontSize: 15,
+        fontWeight: 'bold',
+        color: '#1E293B',
+    },
+    settingDesc: {
+        fontSize: 12,
+        color: '#94A3B8',
+        marginTop: 2,
+    },
+    miniToggle: {
+        width: 44,
+        height: 24,
+        borderRadius: 12,
+        padding: 2,
+        justifyContent: 'center',
+    },
+    toggleOn: {
+        backgroundColor: '#D1FAE5',
+    },
+    toggleOff: {
+        backgroundColor: '#F1F5F9',
+    },
+    toggleCircle: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        backgroundColor: '#FFFFFF',
+        ...Platform.select({
+            web: { boxShadow: '0px 2px 4px rgba(0,0,0,0.1)' },
+            android: { elevation: 2 }
+        })
+    },
+    circleOn: {
+        alignSelf: 'flex-end',
+        backgroundColor: '#059669',
+    },
+    circleOff: {
+        alignSelf: 'flex-start',
+        backgroundColor: '#94A3B8',
     }
 });
 

@@ -29,7 +29,8 @@ import {
     X,
     Check,
     Camera,
-    PlayCircle
+    PlayCircle,
+    Ticket
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useConfirm } from '../../context/ConfirmContext';
@@ -290,6 +291,9 @@ const ProfileScreen = ({ navigation }) => {
                     {renderMenuItem(<User size={20} color="#138FEA" />, 'Informasi Pribadi', 'Nama, Email, dan Foto Profil', () => setActiveModal('info'), '#138FEA')}
                     {renderMenuItem(<Shield size={20} color="#10B981" />, 'Keamanan', 'Kata sandi dan Autentikasi', () => setActiveModal('security'), '#10B981')}
                     {renderMenuItem(<Bell size={20} color="#F59E0B" />, 'Notifikasi', 'Pengaturan pemberitahuan', () => setActiveModal('notif'), '#F59E0B')}
+                    {(user?.role === 'admin' || user?.role === 'owner') &&
+                        renderMenuItem(<Ticket size={20} color="#059669" />, 'Manajemen Promo', 'Kelola Voucher & Diskon', () => navigation.navigate('PromoManagement'), '#059669')
+                    }
                 </View>
 
                 <View style={styles.section}>

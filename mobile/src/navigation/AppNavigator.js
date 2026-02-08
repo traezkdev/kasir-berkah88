@@ -42,6 +42,7 @@ import DailyReport from '../screens/seller/DailyReport';
 import DeveloperCreditsScreen from '../screens/DeveloperCreditsScreen';
 import TransactionTrash from '../screens/seller/TransactionTrash';
 import BusinessReports from '../screens/seller/BusinessReports';
+import PromoManagement from '../screens/seller/PromoManagement';
 
 // Customer Screens
 import CustomerMenu from '../screens/customer/Menu';
@@ -50,6 +51,7 @@ import OrderHistory from '../screens/customer/OrderHistory';
 import OrderDetails from '../screens/customer/OrderDetails';
 import CustomerProfile from '../screens/customer/CustomerProfile';
 import PointsHistory from '../screens/customer/PointsHistory';
+import PromoScreen from '../screens/customer/PromoScreen';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -124,6 +126,7 @@ const SellerRootStack = () => (
         <Stack.Screen name="DeveloperCreditsScreen" component={DeveloperCreditsScreen} />
         <Stack.Screen name="TransactionTrash" component={TransactionTrash} />
         <Stack.Screen name="BusinessReports" component={BusinessReports} />
+        <Stack.Screen name="PromoManagement" component={PromoManagement} />
     </Stack.Navigator>
 );
 
@@ -190,6 +193,7 @@ const CustomerRootStack = () => (
         <Stack.Screen name="OrderDetails" component={OrderDetails} />
         <Stack.Screen name="ChatScreen" component={ChatScreen} />
         <Stack.Screen name="PointsHistory" component={PointsHistory} />
+        <Stack.Screen name="PromoScreen" component={PromoScreen} />
         <Stack.Screen name="DeveloperCreditsScreen" component={DeveloperCreditsScreen} />
     </Stack.Navigator>
 );
