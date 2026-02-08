@@ -1699,7 +1699,65 @@ const setupDatabase = async () => {
       console.log('Added min_purchase column to promos table.');
     }
 
+
+    // --- Promos Table Setup ---
+    try {
+      const createPromosTable = `
+        CREATE TABLE IF NOT EXISTS promos (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          title VARCHAR(255) NOT NULL,
+          description TEXT,
+          code VARCHAR(50) UNIQUE,
+          icon VARCHAR(50),
+          color VARCHAR(50),
+          expiry DATETIME,
+          is_active BOOLEAN DEFAULT TRUE,
+          discount_value DECIMAL(10, 2) DEFAULT 0,
+          discount_type VARCHAR(20) DEFAULT 'percentage',
+          min_purchase DECIMAL(10, 2) DEFAULT 0,
+          is_hero BOOLEAN DEFAULT FALSE,
+          image_url TEXT,
+          badge_text VARCHAR(50),
+          is_one_time BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `;
+      await connection.query(createPromosTable);
+      console.log('promos table checked/created.');
+
+      // Check and add columns if missing
+      const promoColsToCheck = [
+        { name: 'is_active', type: 'BOOLEAN DEFAULT TRUE' },
+        { name: 'is_hero', type: 'BOOLEAN DEFAULT FALSE' },
+        { name: 'is_one_time', type: 'BOOLEAN DEFAULT FALSE' },
+        { name: 'min_purchase', type: 'DECIMAL(10, 2) DEFAULT 0' },
+        { name: 'image_url', type: 'TEXT' },
+        { name: 'badge_text', type: 'VARCHAR(50)' },
+        { name: 'discount_value', type: 'DECIMAL(10, 2) DEFAULT 0' },
+        { name: 'discount_type', type: "VARCHAR(20) DEFAULT 'percentage'" },
+        { name: 'code', type: 'VARCHAR(50)' },
+        { name: 'expiry', type: 'DATETIME' },
+        { name: 'icon', type: 'VARCHAR(50)' },
+        { name: 'color', type: 'VARCHAR(50)' }
+      ];
+
+      for (const col of promoColsToCheck) {
+        const checkColSql = `
+          SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS
+          WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promos' AND COLUMN_NAME = '${col.name}';
+        `;
+        const [rows] = await connection.query(checkColSql);
+        if (rows[0].count === 0) {
+          console.log(`Adding missing column ${col.name} to promos table...`);
+          await connection.query(`ALTER TABLE promos ADD COLUMN ${col.name} ${col.type}`);
+        }
+      }
+    } catch (promoErr) {
+      console.error("Error setting up promos table:", promoErr);
+    }
+
     connection.release();
+
 
   } catch (error) {
     console.error('Error setting up the database:', error);
