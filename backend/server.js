@@ -5706,15 +5706,18 @@ app.post("/api/admin/send-daily-summary", authenticateToken, authorizeRoles('adm
 // Kirim Pesan
 app.post("/api/messages", authenticateToken, async (req, res) => {
     try {
-        const { receiver_id, message, order_id } = req.body;
+        const { receiver_id, message, order_id, image_url } = req.body;
         const sender_id = req.user.userId;
 
-        if (!receiver_id || !message) {
-            return res.status(400).json({ error: "Receiver ID dan pesan wajib diisi" });
+        if (!receiver_id || (!message && !image_url)) {
+            return res.status(400).json({ error: "Receiver ID dan pesan/gambar wajib diisi" });
         }
 
-        const sql = "INSERT INTO messages (sender_id, receiver_id, message, order_id) VALUES (?, ?, ?, ?)";
-        const [result] = await db.query(sql, [sender_id, receiver_id, message, order_id || null]);
+        // Process image if it's base64
+        const processedImageUrl = await processBase64Image(image_url, 'chat');
+
+        const sql = "INSERT INTO messages (sender_id, receiver_id, message, order_id, image_url) VALUES (?, ?, ?, ?, ?)";
+        const [result] = await db.query(sql, [sender_id, receiver_id, message || '', order_id || null, processedImageUrl || null]);
 
         // Kirim Notifikasi Push
         // 1. Cek peran penerima
@@ -5733,15 +5736,15 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
         // 3. Jalankan pengiriman notifikasi (kecuali ke pengirim sendiri)
         sendUniversalNotification(
             targetUserIds,
-            message,
+            message || '[Gambar]',
             `Pesan dari ${req.user.username}`,
-            { type: 'chat', senderId: sender_id, orderId: order_id },
+            { type: 'chat', senderId: sender_id, orderId: order_id, hasImage: !!processedImageUrl },
             sender_id // excludedUserId
         );
 
         res.status(201).json({
             message: "Pesan terkirim",
-            data: { id: result.insertId, sender_id, receiver_id, message, order_id, created_at: new Date() }
+            data: { id: result.insertId, sender_id, receiver_id, message, order_id, image_url: processedImageUrl, created_at: new Date() }
         });
     } catch (err) {
         console.error("Error sending message:", err);
@@ -6236,6 +6239,53 @@ app.get("/api/guest/menu-items", async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({ "error": err.message });
+    }
+});
+
+// Get usage history for a specific promo with pagination
+app.get("/api/promos/:id/usage", authenticateToken, authorizeRoles('admin', 'owner', 'penjual'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = (page - 1) * limit;
+
+        // In the orders table, we have customer_name, customer_phone, customer_address
+        const sql = `
+            SELECT 
+                o.id as order_id,
+                o.customer_name,
+                o.customer_phone,
+                o.total,
+                o.promo_discount,
+                o.created_at,
+                o.status,
+                u.username as user_account
+            FROM orders o
+            LEFT JOIN users u ON o.user_id = u.id
+            WHERE o.promo_id = ?
+            ORDER BY o.created_at DESC
+            LIMIT ? OFFSET ?
+        `;
+        const [rows] = await db.query(sql, [id, limit, offset]);
+
+        // Also get total count for pagination info
+        const [countResult] = await db.query("SELECT COUNT(*) as total FROM orders WHERE promo_id = ?", [id]);
+        const totalCount = countResult[0].total;
+
+        res.json({
+            message: "success",
+            data: rows,
+            pagination: {
+                total: totalCount,
+                page,
+                limit,
+                hasMore: offset + rows.length < totalCount
+            }
+        });
+    } catch (err) {
+        console.error("Error fetching promo usage:", err);
+        res.status(500).json({ error: err.message });
     }
 });
 

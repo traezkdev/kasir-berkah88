@@ -1545,6 +1545,20 @@ const setupDatabase = async () => {
       console.log('Added deleted_at column to messages table.');
     }
 
+    // Check and add image_url column to messages if it doesn't exist
+    const checkImageUrlMsgColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'messages' AND COLUMN_NAME = 'image_url';
+    `;
+    const addImageUrlMsgColumn = `
+      ALTER TABLE messages ADD COLUMN image_url VARCHAR(255) DEFAULT NULL;
+    `;
+    const [msgImageUrlRows] = await connection.query(checkImageUrlMsgColumn);
+    if (msgImageUrlRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addImageUrlMsgColumn);
+      console.log('Added image_url column to messages table.');
+    }
+
     // Ensure messages table supports emojis (utf8mb4)
     try {
       await connection.query("ALTER TABLE messages CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");

@@ -27,14 +27,21 @@ import { useConfirm } from '../../context/ConfirmContext';
 import { useOrderNotification } from '../../context/OrderNotificationContext';
 import { useToast } from '../../context/ToastContext';
 
-const OrderManagement = ({ navigation }) => {
+const OrderManagement = ({ navigation, route }) => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [activeTab, setActiveTab] = useState('pending');
+    const [activeTab, setActiveTab] = useState(route.params?.status || 'pending');
     const { confirm } = useConfirm();
     const { refreshTrigger } = useOrderNotification();
     const { showToast } = useToast();
+
+    // Efek untuk menangkap perubahan status dari navigasi luar (misal: dari Chat)
+    useEffect(() => {
+        if (route.params?.status) {
+            setActiveTab(route.params.status);
+        }
+    }, [route.params?.status]);
 
     // Receipt & Detail Modal State
     const [selectedOrderForReceipt, setSelectedOrderForReceipt] = useState(null);

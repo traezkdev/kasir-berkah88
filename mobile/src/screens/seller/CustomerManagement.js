@@ -20,8 +20,10 @@ import {
     Banknote,
     MapPin,
     Calendar,
-    Phone
+    Phone,
+    MessageCircle
 } from 'lucide-react-native';
+import { useChat } from '../../context/ChatContext';
 import apiService, { API_URL } from '../../api/apiService';
 import { useToast } from '../../context/ToastContext';
 import ModernLoader from '../../components/ModernLoader';
@@ -32,6 +34,7 @@ const CustomerManagement = ({ navigation }) => {
     const [refreshing, setRefreshing] = useState(false);
     const [searchText, setSearchText] = useState('');
     const { showToast } = useToast();
+    const { setActiveChat } = useChat();
 
     // Debounce search
     const [query, setQuery] = useState('');
@@ -72,6 +75,16 @@ const CustomerManagement = ({ navigation }) => {
         }).format(val || 0);
     };
 
+    const handleChat = (item) => {
+        setActiveChat({
+            user_id: item.id,
+            username: item.username,
+            avatar_url: item.avatar_url,
+            role: 'pelanggan'
+        });
+        navigation.navigate('ChatScreen');
+    };
+
     const renderCustomerCard = ({ item }) => (
         <TouchableOpacity
             style={styles.card}
@@ -97,6 +110,12 @@ const CustomerManagement = ({ navigation }) => {
                     <Coins size={12} color="#D97706" fill="#D97706" />
                     <Text style={styles.pointsText}>{new Intl.NumberFormat('id-ID').format(item.points || 0)}</Text>
                 </View>
+                <TouchableOpacity
+                    style={styles.chatBtn}
+                    onPress={() => handleChat(item)}
+                >
+                    <MessageCircle size={16} color="#FFFFFF" />
+                </TouchableOpacity>
             </View>
 
             <View style={styles.divider} />
@@ -302,6 +321,15 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: 'bold',
         color: '#B45309',
+    },
+    chatBtn: {
+        backgroundColor: '#138FEA',
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 8,
     },
     divider: {
         height: 1,

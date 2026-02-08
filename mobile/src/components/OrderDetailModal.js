@@ -107,10 +107,23 @@ const OrderDetailModal = ({ visible, onClose, order }) => {
             <View style={{ width: '100%', paddingBottom: 20 }}>
                 {/* Status Badge */}
                 <View style={styles.statusSection}>
-                    <View style={styles.statusBadge}>
-                        <Clock size={14} color="#1E40AF" />
-                        <Text style={styles.statusText}>{(order.status || 'PENDING').toUpperCase()}</Text>
-                    </View>
+                    {(() => {
+                        const statusConfig = {
+                            pending: { label: 'Baru', color: '#F59E0B' },
+                            accepted: { label: 'Diproses', color: '#138FEA' },
+                            ready: { label: 'Siap Diambil', color: '#10B981' },
+                            completed: { label: 'Selesai', color: '#059669' },
+                            rejected: { label: 'Ditolak', color: '#EF4444' },
+                            cancelled: { label: 'Batal', color: '#64748B' }
+                        };
+                        const currentStatus = statusConfig[order.status] || { label: order.status, color: '#138FEA' };
+                        return (
+                            <View style={[styles.statusBadge, { backgroundColor: currentStatus.color + '15' }]}>
+                                <Clock size={14} color={currentStatus.color} />
+                                <Text style={[styles.statusText, { color: currentStatus.color }]}>{currentStatus.label.toUpperCase()}</Text>
+                            </View>
+                        );
+                    })()}
                     <Text style={styles.timestamp}>{formatDate(order.created_at || new Date())}</Text>
                 </View>
 

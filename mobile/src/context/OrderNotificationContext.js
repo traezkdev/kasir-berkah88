@@ -14,10 +14,11 @@ const OrderNotificationContext = createContext();
 
 // Available notification sounds
 export const NOTIFICATION_SOUNDS = [
-    { id: 'default', name: 'Standard Chime', uri: 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3' },
-    { id: 'bell', name: 'Reception Bell', uri: 'https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3' },
-    { id: 'modern', name: 'Digital Alert', uri: 'https://assets.mixkit.co/active_storage/sfx/2205/2205-preview.mp3' },
-    { id: 'urgent', name: 'Triple Beep', uri: 'https://assets.mixkit.co/active_storage/sfx/2350/2350-preview.mp3' },
+    { id: 'default', name: 'Standard Chime', source: { uri: 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3' } },
+    { id: 'bell', name: 'Reception Bell', source: { uri: 'https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3' } },
+    { id: 'modern', name: 'Digital Alert', source: { uri: 'https://assets.mixkit.co/active_storage/sfx/2205/2205-preview.mp3' } },
+    { id: 'urgent', name: 'Triple Beep', source: { uri: 'https://assets.mixkit.co/active_storage/sfx/2350/2350-preview.mp3' } },
+    { id: 'zte', name: 'ZTE Alert', source: require('../../assets/alert-sound-for-zte.mp3') },
 ];
 
 const STORAGE_KEY = '@notification_sound_id';
@@ -79,7 +80,7 @@ export const OrderNotificationProvider = ({ children }) => {
 
         try {
             const soundConfig = NOTIFICATION_SOUNDS.find(s => s.id === soundId) || NOTIFICATION_SOUNDS[0];
-            const { sound } = await Audio.Sound.createAsync({ uri: soundConfig.uri });
+            const { sound } = await Audio.Sound.createAsync(soundConfig.source);
             if (isMounted.current) soundRef.current = sound;
         } catch (error) {
             console.warn('Failed to load notification sound:', error);

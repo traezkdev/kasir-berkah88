@@ -78,15 +78,17 @@ const OrderHistory = ({ navigation }) => {
     const getStatusInfo = (status) => {
         switch (status) {
             case 'pending':
-                return { label: 'Menunggu', icon: Clock, color: '#F59E0B', bg: '#FFFBEB' };
+                return { label: 'Baru', icon: Clock, color: '#F59E0B', bg: '#FFFBEB' };
             case 'accepted':
-                return { label: 'Diterima', icon: CheckCircle2, color: '#059669', bg: '#ECFDF5' };
+                return { label: 'Diproses', icon: ShoppingBag, color: '#138FEA', bg: '#EFF6FF' };
+            case 'ready':
+                return { label: 'Siap Diambil', icon: CheckCircle2, color: '#10B981', bg: '#ECFDF5' };
             case 'rejected':
                 return { label: 'Ditolak', icon: XCircle, color: '#EF4444', bg: '#FEF2F2' };
             case 'cancelled':
-                return { label: 'Dibatalkan', icon: Slash, color: '#94A3B8', bg: '#F8FAFC' };
+                return { label: 'Batal', icon: Slash, color: '#64748B', bg: '#F8FAFC' };
             case 'completed':
-                return { label: 'Selesai', icon: CheckCircle2, color: '#3B82F6', bg: '#EFF6FF' };
+                return { label: 'Selesai', icon: CheckCircle2, color: '#059669', bg: '#ECFDF5' };
             default:
                 return { label: status, icon: Info, color: '#64748B', bg: '#F8FAFC' };
         }

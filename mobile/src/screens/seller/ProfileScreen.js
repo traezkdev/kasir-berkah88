@@ -77,6 +77,7 @@ const ProfileScreen = ({ navigation }) => {
         { id: 'bell', name: 'Reception Bell' },
         { id: 'modern', name: 'Digital Alert' },
         { id: 'urgent', name: 'Triple Beep' },
+        { id: 'zte', name: 'ZTE Alert' },
     ];
 
     useEffect(() => {

@@ -90,7 +90,7 @@ const OrderDetails = ({ navigation, route }) => {
         switch (status) {
             case 'pending':
                 return {
-                    label: 'MENUNGGU KONFIRMASI',
+                    label: 'BARU',
                     color: '#F59E0B',
                     bg: '#FFFBEB',
                     icon: Clock,
@@ -99,10 +99,18 @@ const OrderDetails = ({ navigation, route }) => {
             case 'accepted':
                 return {
                     label: 'SEDANG DIPROSES',
+                    color: '#138FEA',
+                    bg: '#EFF6FF',
+                    icon: ShoppingBag,
+                    desc: 'Yeay! Pesanan Anda telah diterima dan sedang disiapkan.'
+                };
+            case 'ready':
+                return {
+                    label: 'SIAP DIAMBIL',
                     color: '#10B981',
                     bg: '#ECFDF5',
                     icon: ShoppingBag,
-                    desc: 'Yeay! Pesanan Anda telah diterima dan sedang disiapkan.'
+                    desc: 'Pesanan Anda sudah siap! Silakan ambil di toko.'
                 };
             case 'rejected':
                 return {
@@ -114,8 +122,8 @@ const OrderDetails = ({ navigation, route }) => {
                 };
             case 'cancelled':
                 return {
-                    label: 'PESANAN DIBATALKAN',
-                    color: '#94A3B8',
+                    label: 'PESANAN BATAL',
+                    color: '#64748B',
                     bg: '#F8FAFC',
                     icon: XCircle,
                     desc: 'Pesanan ini telah dibatalkan.'
@@ -123,8 +131,8 @@ const OrderDetails = ({ navigation, route }) => {
             case 'completed':
                 return {
                     label: 'PESANAN SELESAI',
-                    color: '#3B82F6',
-                    bg: '#EFF6FF',
+                    color: '#059669',
+                    bg: '#ECFDF5',
                     icon: CheckCircle2,
                     desc: 'Terima kasih! Pesanan Anda telah selesai. Sampai jumpa lagi!'
                 };

@@ -72,7 +72,7 @@ const getIcon = (iconName, size, color) => {
     }
 };
 
-const PromoItem = React.memo(({ promo, onEdit, onDelete, onToggle }) => {
+const PromoItem = React.memo(({ promo, onEdit, onDelete, onToggle, onViewUsage }) => {
     // Determine type label and styling
     let typeLabel = 'Otomatis';
     let typeColor = '#4B5563'; // Gray 600
@@ -174,6 +174,14 @@ const PromoItem = React.memo(({ promo, onEdit, onDelete, onToggle }) => {
                     <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => onEdit(promo)}>
                         <Edit2 size={16} color="#3B82F6" />
                     </TouchableOpacity>
+                    {promo.code && (
+                        <TouchableOpacity
+                            style={[styles.actionBtn, { backgroundColor: '#F0F9FF', borderColor: '#BAE6FD' }]}
+                            onPress={() => onViewUsage(promo)}
+                        >
+                            <User size={16} color="#0EA5E9" />
+                        </TouchableOpacity>
+                    )}
                     <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => onDelete(promo.id)}>
                         <Trash2 size={16} color="#EF4444" />
                     </TouchableOpacity>
@@ -345,6 +353,15 @@ const PromoManagement = ({ navigation }) => {
         image_url: ''
     });
 
+    // Usage Modal State
+    const [usageModalVisible, setUsageModalVisible] = useState(false);
+    const [usageData, setUsageData] = useState([]);
+    const [loadingUsage, setLoadingUsage] = useState(false);
+    const [selectedPromoUsage, setSelectedPromoUsage] = useState(null);
+    const [usagePage, setUsagePage] = useState(1);
+    const [usageHasMore, setUsageHasMore] = useState(true);
+    const [fetchingMoreUsage, setFetchingMoreUsage] = useState(false);
+
     // Pan Responder for swipe down gesture
     const panY = React.useRef(new Animated.Value(0)).current;
 
@@ -369,6 +386,8 @@ const PromoManagement = ({ navigation }) => {
                         useNativeDriver: true,
                     }).start(() => {
                         setModalVisible(false);
+                        setUsageModalVisible(false);
+                        panY.setValue(0);
                     });
                 } else {
                     // Snap back to top
@@ -577,6 +596,47 @@ const PromoManagement = ({ navigation }) => {
         }
     };
 
+    const fetchPromoUsage = useCallback(async (promo, page = 1) => {
+        if (page === 1) {
+            setSelectedPromoUsage(promo);
+            setUsageData([]);
+            setLoadingUsage(true);
+            setUsagePage(1);
+            setUsageHasMore(true);
+            setUsageModalVisible(true);
+            panY.setValue(0);
+        } else {
+            setFetchingMoreUsage(true);
+        }
+
+        try {
+            const response = await apiService.get(`/api/promos/${promo.id}/usage`, {
+                params: { page, limit: 10 }
+            });
+
+            if (response.data && response.data.data) {
+                const newData = response.data.data;
+                const pagination = response.data.pagination;
+
+                setUsageData(prev => page === 1 ? newData : [...prev, ...newData]);
+                setUsageHasMore(pagination.hasMore);
+                setUsagePage(page);
+            }
+        } catch (error) {
+            console.error('Error fetching usage:', error);
+            if (page === 1) Alert.alert('Error', 'Gagal memuat data penggunaan voucher');
+        } finally {
+            setLoadingUsage(false);
+            setFetchingMoreUsage(false);
+        }
+    }, []);
+
+    const handleLoadMoreUsage = () => {
+        if (usageHasMore && !fetchingMoreUsage && !loadingUsage && selectedPromoUsage) {
+            fetchPromoUsage(selectedPromoUsage, usagePage + 1);
+        }
+    };
+
     const toggleStatus = useCallback(async (promo) => {
         try {
             const newStatus = !promo.is_active;
@@ -596,8 +656,9 @@ const PromoManagement = ({ navigation }) => {
             onEdit={handleOpenModal}
             onDelete={handleDelete}
             onToggle={toggleStatus}
+            onViewUsage={fetchPromoUsage}
         />
-    ), [handleOpenModal, handleDelete, toggleStatus]);
+    ), [handleOpenModal, handleDelete, toggleStatus, fetchPromoUsage]);
 
     const ListEmptyComponent = useMemo(() => (
         <View style={styles.emptyContainer}>
@@ -674,12 +735,23 @@ const PromoManagement = ({ navigation }) => {
 
             {/* Modal Form */}
             <Modal
-                animationType="slide"
+                animationType="fade"
                 transparent={true}
                 visible={modalVisible}
                 onRequestClose={() => setModalVisible(false)}
             >
-                <View style={styles.modalOverlay}>
+                <Animated.View
+                    style={[
+                        styles.modalOverlay,
+                        {
+                            opacity: panY.interpolate({
+                                inputRange: [0, height * 0.5],
+                                outputRange: [1, 0],
+                                extrapolate: 'clamp'
+                            })
+                        }
+                    ]}
+                >
                     <Animated.View
                         style={[
                             styles.modalContent,
@@ -961,7 +1033,7 @@ const PromoManagement = ({ navigation }) => {
                             </View>
                         </KeyboardAvoidingView>
                     </Animated.View>
-                </View>
+                </Animated.View>
             </Modal>
 
             {/* Custom Delete Confirmation Modal */}
@@ -996,6 +1068,125 @@ const PromoManagement = ({ navigation }) => {
                         </View>
                     </View>
                 </View>
+            </Modal>
+
+            {/* Modal Riwayat Penggunaan Promo */}
+            <Modal
+                visible={usageModalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setUsageModalVisible(false)}
+            >
+                <Animated.View
+                    style={[
+                        styles.modalOverlay,
+                        {
+                            opacity: panY.interpolate({
+                                inputRange: [0, height * 0.5],
+                                outputRange: [1, 0],
+                                extrapolate: 'clamp'
+                            })
+                        }
+                    ]}
+                >
+                    <Animated.View
+                        style={[
+                            styles.modalContent,
+                            {
+                                height: '80%',
+                                transform: [{ translateY: panY }]
+                            }
+                        ]}
+                    >
+                        {/* Swipe Handle Bar - GESTURE DETECTOR HERE */}
+                        <View
+                            style={styles.handleBarContainer}
+                            {...panResponder.panHandlers}
+                        >
+                            <View style={styles.handleBar} />
+                        </View>
+
+                        <View style={styles.modalHeader}>
+                            <View>
+                                <Text style={styles.modalTitle}>Penggunaan Voucher</Text>
+                                {selectedPromoUsage && (
+                                    <Text style={styles.usageCodeSubTitle}>Kode: {selectedPromoUsage.code}</Text>
+                                )}
+                            </View>
+                            <TouchableOpacity onPress={() => setUsageModalVisible(false)}>
+                                <X size={24} color="#9CA3AF" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {loadingUsage ? (
+                            <View style={styles.centerContainer}>
+                                <ActivityIndicator size="large" color="#0EA5E9" />
+                                <Text style={styles.loadingText}>Memuat data...</Text>
+                            </View>
+                        ) : (
+                            <FlatList
+                                data={usageData}
+                                keyExtractor={(item) => item.order_id.toString()}
+                                contentContainerStyle={styles.usageListContent}
+                                onEndReached={handleLoadMoreUsage}
+                                onEndReachedThreshold={0.5}
+                                ListEmptyComponent={() => (
+                                    <View style={styles.emptyUsageContainer}>
+                                        <User size={48} color="#D1D5DB" />
+                                        <Text style={styles.emptyText}>Belum ada yang menggunakan voucher ini</Text>
+                                    </View>
+                                )}
+                                ListFooterComponent={() => (
+                                    fetchingMoreUsage ? (
+                                        <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                                            <ActivityIndicator size="small" color="#0EA5E9" />
+                                        </View>
+                                    ) : null
+                                )}
+                                renderItem={({ item }) => (
+                                    <View style={styles.usageItem}>
+                                        <View style={styles.usageItemHeader}>
+                                            <View style={styles.userInfo}>
+                                                <View style={styles.userIconContainer}>
+                                                    <User size={18} color="#0EA5E9" />
+                                                </View>
+                                                <View>
+                                                    <Text style={styles.customerName}>{item.customer_name || 'Pelanggan Umum'}</Text>
+                                                    <Text style={styles.usageDate}>
+                                                        {new Date(item.created_at).toLocaleDateString('id-ID', {
+                                                            day: '2-digit',
+                                                            month: 'long',
+                                                            year: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                            <View style={[styles.statusBadgeSmall, { backgroundColor: item.status === 'completed' ? '#DCFCE7' : '#F3F4F6' }]}>
+                                                <Text style={[styles.statusTextSmall, { color: item.status === 'completed' ? '#15803D' : '#6B7280' }]}>
+                                                    {item.status === 'completed' ? 'Selesai' : item.status}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                        <View style={styles.usageDetails}>
+                                            <View style={styles.usageMeta}>
+                                                <Text style={styles.usageMetaLabel}>Total Belanja</Text>
+                                                <Text style={styles.usageMetaValue}>Rp {parseFloat(item.total).toLocaleString('id-ID')}</Text>
+                                            </View>
+                                            <View style={styles.usageMeta}>
+                                                <Text style={styles.usageMetaLabel}>Potongan</Text>
+                                                <Text style={[styles.usageMetaValue, { color: '#EF4444' }]}>
+                                                    -Rp {parseFloat(item.promo_discount || 0).toLocaleString('id-ID')}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    </View>
+                                )}
+                            />
+                        )}
+                    </Animated.View>
+                </Animated.View>
             </Modal>
         </SafeAreaView >
     );
@@ -1894,6 +2085,93 @@ const styles = StyleSheet.create({
         marginTop: 4,
         fontStyle: 'italic',
         lineHeight: 16,
+        fontStyle: 'italic',
+    },
+    usageCodeSubTitle: {
+        fontSize: 12,
+        color: '#64748B',
+        fontWeight: '600',
+        marginTop: 2,
+    },
+    usageListContent: {
+        padding: 20,
+        paddingBottom: 40,
+    },
+    usageItem: {
+        backgroundColor: '#F8FAFC',
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    usageItemHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 12,
+    },
+    userInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    userIconContainer: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#E0F2FE',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    customerName: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#1E293B',
+    },
+    usageDate: {
+        fontSize: 11,
+        color: '#64748B',
+    },
+    statusBadgeSmall: {
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+    },
+    statusTextSmall: {
+        fontSize: 10,
+        fontWeight: '700',
+        textTransform: 'capitalize',
+    },
+    usageDetails: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#E2E8F0',
+    },
+    usageMeta: {
+        gap: 2,
+    },
+    usageMetaLabel: {
+        fontSize: 11,
+        color: '#64748B',
+    },
+    usageMetaValue: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#1E293B',
+    },
+    emptyUsageContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 60,
+        gap: 12,
+    },
+    loadingText: {
+        marginTop: 12,
+        fontSize: 14,
+        color: '#64748B',
     }
 });
 
