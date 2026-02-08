@@ -185,6 +185,13 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
       text += `${pointsDiscLabel}${" ".repeat(32 - pointsDiscLabel.length - pointsDiscVal.length)}${pointsDiscVal}\n`;
     }
 
+    // Promo Discount
+    if (transaction.promo_discount > 0) {
+      const promoDiscLabel = "DISKON PROMO";
+      const promoDiscVal = `-Rp ${Number(transaction.promo_discount).toLocaleString("id-ID")}`;
+      text += `${promoDiscLabel}${" ".repeat(32 - promoDiscLabel.length - promoDiscVal.length)}${promoDiscVal}\n`;
+    }
+
     // PPN/Tax
     if (ppnAmount > 0) {
       const ppnLabel = "PPN/TAX";
@@ -473,6 +480,15 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
                           </div>
                         )}
 
+                        {transaction.promo_discount > 0 && (
+                          <div className="flex justify-between items-center text-[10px] text-emerald-500 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100/50">
+                            <span className="font-black uppercase tracking-widest flex items-center gap-1.5">
+                              <Icon name="Tag" size={10} /> Diskon Promo
+                            </span>
+                            <span className="font-black font-mono">-Rp {Number(transaction.promo_discount).toLocaleString("id-ID")}</span>
+                          </div>
+                        )}
+
                         {ppnAmount > 0 && (
                           <div className="flex justify-between items-center text-[10px]">
                             <span className="text-gray-400 font-black uppercase tracking-widest">Tax (PPN)</span>
@@ -743,6 +759,13 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
                         <div className="flex justify-between text-xs text-red-500">
                           <span className="font-bold uppercase tracking-wider">Diskon Poin</span>
                           <span className="font-bold font-mono">-Rp {pointsDiscountAmount.toLocaleString("id-ID")}</span>
+                        </div>
+                      )}
+
+                      {transaction.promo_discount > 0 && (
+                        <div className="flex justify-between text-xs text-green-600">
+                          <span className="font-bold uppercase tracking-wider">Diskon Promo</span>
+                          <span className="font-bold font-mono">-Rp {Number(transaction.promo_discount).toLocaleString("id-ID")}</span>
                         </div>
                       )}
 

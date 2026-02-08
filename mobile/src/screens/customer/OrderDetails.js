@@ -235,12 +235,18 @@ const OrderDetails = ({ navigation, route }) => {
 
                         <View style={styles.summaryRow}>
                             <Text style={styles.summaryLabel}>Subtotal</Text>
-                            <Text style={styles.summaryValue}>{formatCurrency((parseFloat(order.total) || 0) + (parseFloat(order.points_used) || 0))}</Text>
+                            <Text style={[styles.summaryLabel, { color: '#1E293B', fontSize: 15, fontWeight: '900' }]}>{formatCurrency((parseFloat(order.total) || 0) + (parseFloat(order.points_used) || 0) + (parseFloat(order.promo_discount) || 0))}</Text>
                         </View>
                         {order.points_used > 0 && (
                             <View style={styles.summaryRow}>
                                 <Text style={[styles.summaryLabel, { color: '#0284C7' }]}>Potongan Poin</Text>
-                                <Text style={[styles.summaryLabel, { color: '#0284C7', fontWeight: '900' }]}>-{formatCurrency(parseFloat(order.points_used) || 0)}</Text>
+                                <Text style={[styles.summaryLabel, { color: '#0284C7', fontWeight: '900', fontSize: 13 }]}>-{formatCurrency(parseFloat(order.points_used) || 0)}</Text>
+                            </View>
+                        )}
+                        {order.promo_discount > 0 && (
+                            <View style={styles.summaryRow}>
+                                <Text style={[styles.summaryLabel, { color: '#059669' }]}>Diskon Promo</Text>
+                                <Text style={[styles.summaryLabel, { color: '#059669', fontWeight: '900', fontSize: 13 }]}>-{formatCurrency(parseFloat(order.promo_discount) || 0)}</Text>
                             </View>
                         )}
                         <View style={[styles.summaryRow, { marginTop: 12 }]}>

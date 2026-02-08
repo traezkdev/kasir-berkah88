@@ -213,6 +213,15 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                 });
             }
 
+            // Promo Discount
+            const promoDiscountAmount = Number(transaction.promo_discount) || 0;
+            if (promoDiscountAmount > 0) {
+                printData.push({
+                    text: BluetoothPrinter.formatColumns('DISKON PROMO', `-Rp ${promoDiscountAmount.toLocaleString("id-ID")}`),
+                    align: 'left'
+                });
+            }
+
             // Manual Discount
             const manualDiscountAmount = Number(transaction.manual_discount) || 0;
             if (manualDiscountAmount > 0) {
@@ -460,6 +469,14 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
             text += `${discLabel}${" ".repeat(Math.max(1, 32 - discLabel.length - discValue.length))}${discValue}\n`;
         }
 
+        // Promo Discount
+        const promoDiscountAmount = Number(transaction.promo_discount) || 0;
+        if (promoDiscountAmount > 0) {
+            const promoDiscLabel = "DISKON PROMO";
+            const promoDiscVal = `-Rp ${promoDiscountAmount.toLocaleString("id-ID")}`;
+            text += `${promoDiscLabel}${" ".repeat(Math.max(1, 32 - promoDiscLabel.length - promoDiscVal.length))}${promoDiscVal}\n`;
+        }
+
         // Manual Discount
         const manualDiscountAmount = Number(transaction.manual_discount) || 0;
         if (manualDiscountAmount > 0) {
@@ -705,6 +722,13 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                         <View style={styles.summaryRow}>
                                             <Text style={styles.summaryLabel}>Diskon Item</Text>
                                             <Text style={styles.summaryValue}>-{formatCurrency(itemsDiscountAmount)}</Text>
+                                        </View>
+                                    )}
+
+                                    {Number(transaction.promo_discount || 0) > 0 && (
+                                        <View style={styles.summaryRow}>
+                                            <Text style={styles.summaryLabel}>Diskon Promo</Text>
+                                            <Text style={[styles.summaryValue, { color: '#059669' }]}>-{formatCurrency(transaction.promo_discount)}</Text>
                                         </View>
                                     )}
 

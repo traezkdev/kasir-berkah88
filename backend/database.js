@@ -138,7 +138,9 @@ const setupDatabase = async () => {
         icon VARCHAR(50) DEFAULT 'Ticket',
         color VARCHAR(20) DEFAULT '#059669',
         expiry VARCHAR(255),
-        is_active BOOLEAN DEFAULT TRUE,
+        is_hero BOOLEAN DEFAULT FALSE,
+        image_url VARCHAR(255),
+        badge_text VARCHAR(255),
         discount_value DECIMAL(15, 2) DEFAULT 0.00,
         discount_type ENUM('fixed', 'percentage') DEFAULT 'fixed',
         min_purchase DECIMAL(15, 2) DEFAULT 0.00,
@@ -153,6 +155,23 @@ const setupDatabase = async () => {
     console.log('banners table is ready.');
     await connection.query(createPromosTable);
     console.log('promos table is ready.');
+
+    // Migration for promos table
+    const [isHeroCol] = await connection.query("SHOW COLUMNS FROM promos LIKE 'is_hero'");
+    if (isHeroCol.length === 0) {
+      await connection.query("ALTER TABLE promos ADD COLUMN is_hero BOOLEAN DEFAULT FALSE");
+      console.log("Added is_hero column to promos table.");
+    }
+    const [imageUrlCol] = await connection.query("SHOW COLUMNS FROM promos LIKE 'image_url'");
+    if (imageUrlCol.length === 0) {
+      await connection.query("ALTER TABLE promos ADD COLUMN image_url VARCHAR(255)");
+      console.log("Added image_url column to promos table.");
+    }
+    const [badgeTextCol] = await connection.query("SHOW COLUMNS FROM promos LIKE 'badge_text'");
+    if (badgeTextCol.length === 0) {
+      await connection.query("ALTER TABLE promos ADD COLUMN badge_text VARCHAR(255)");
+      console.log("Added badge_text column to promos table.");
+    }
 
     const createOrdersTable = `
       CREATE TABLE IF NOT EXISTS orders (
@@ -198,6 +217,17 @@ const setupDatabase = async () => {
 
       console.log("Added promo_id column to orders table.");
     }
+
+    // Check if promo_discount column exists in orders table
+    const [promoDiscountColumnOrders] = await connection.query("SHOW COLUMNS FROM orders LIKE 'promo_discount'");
+    if (promoDiscountColumnOrders.length === 0) {
+      await connection.query("ALTER TABLE orders ADD COLUMN promo_discount DECIMAL(15, 2) DEFAULT 0");
+      console.log("Added promo_discount column to orders table.");
+    }
+
+    // Check if subtotal column exists in orders? (optional, but good)
+    // Actually items JSON has subtotal, but it's good to have it as a column too.
+    // For now let's just stick to promo_discount.
 
     // Check and add payment_method to orders
     const checkPaymentMethodColumn = `
@@ -1084,6 +1114,20 @@ const setupDatabase = async () => {
     if (manualDiscountRows[0]['COUNT(*)'] === 0) {
       await connection.query(addManualDiscountColumn);
       console.log('Added manual_discount column to transactions table.');
+    }
+
+    // Check and add promo_discount column to transactions if it doesn't exist
+    const checkPromoDiscountColumnTx = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'promo_discount';
+    `;
+    const addPromoDiscountColumnTx = `
+      ALTER TABLE transactions ADD COLUMN promo_discount DECIMAL(15, 2) DEFAULT 0;
+    `;
+    const [promoDiscountTxRows] = await connection.query(checkPromoDiscountColumnTx);
+    if (promoDiscountTxRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addPromoDiscountColumnTx);
+      console.log('Added promo_discount column to transactions table.');
     }
 
     // Check and add deleted_at column to transactions if it doesn't exist

@@ -100,9 +100,53 @@ export const CartProvider = ({ children }) => {
 
     const clearCart = useCallback(() => setCart([]), []);
 
+    const parsePrice = (val) => {
+        if (typeof val === 'number') return val;
+        if (!val) return 0;
+        let str = val.toString().trim();
+
+        // Handle BOTH dot and comma (e.g. 25.000,00 or 25,000.00)
+        if (str.includes('.') && str.includes(',')) {
+            if (str.indexOf('.') < str.indexOf(',')) {
+                // Indonesian format: 25.000,00 -> strip dot, replace comma with dot
+                return parseFloat(str.replace(/\./g, '').replace(/,/g, '.'));
+            } else {
+                // US format: 25,000.00 -> strip comma
+                return parseFloat(str.replace(/,/g, ''));
+            }
+        }
+
+        // Handle ONLY comma (e.g. 25,000 - could be thousand or 25,00 - could be decimal)
+        if (str.includes(',') && !str.includes('.')) {
+            const parts = str.split(',');
+            if (parts.length > 1 && parts[parts.length - 1].length === 3) {
+                // Thousand separator if 3 digits follow
+                return parseFloat(str.replace(/,/g, ''));
+            }
+            // Otherwise treat as decimal
+            return parseFloat(str.replace(/,/g, '.'));
+        }
+
+        // Handle ONLY dot (e.g. 25.000 - could be thousand or 25.00 - could be decimal)
+        if (str.includes('.') && !str.includes(',')) {
+            const parts = str.split('.');
+            if (parts.length > 1 && parts[parts.length - 1].length === 3) {
+                // Thousand separator
+                return parseFloat(str.replace(/\./g, ''));
+            }
+            // Otherwise treat as decimal (default parseFloat behavior)
+        }
+
+        return parseFloat(str.replace(/[^\d.-]/g, '')) || 0;
+    };
+
     const cartTotal = cart.reduce((acc, item) => {
-        const optionsTotal = (item.selectedOptions || []).reduce((sum, opt) => sum + (parseFloat(opt.price_adjustment) || 0), 0);
-        const priceAfterDiscount = item.discount > 0 ? Math.round(parseFloat(item.price) * (1 - (item.discount / 100))) : parseFloat(item.price);
+        const cleanPrice = parsePrice(item.price);
+        const optionsTotal = (item.selectedOptions || []).reduce((sum, opt) => {
+            return sum + (parsePrice(opt.price_adjustment) || 0);
+        }, 0);
+
+        const priceAfterDiscount = item.discount > 0 ? Math.round(cleanPrice * (1 - (item.discount / 100))) : cleanPrice;
         return acc + ((priceAfterDiscount + optionsTotal) * item.quantity);
     }, 0);
 

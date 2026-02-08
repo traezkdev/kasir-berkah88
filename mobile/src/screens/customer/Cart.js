@@ -216,12 +216,44 @@ const CustomerCart = ({ navigation }) => {
         saveData();
     }, [customerAddress, customerPhone]);
 
+    // Reactive check for Min Purchase
+    useEffect(() => {
+        if (appliedPromo && cartTotal > 0) {
+            const rawMin = appliedPromo.min_purchase;
+            let minReq = 0;
+
+            if (typeof rawMin === 'number') {
+                minReq = rawMin;
+            } else if (rawMin) {
+                let str = rawMin.toString().trim();
+                if (str.includes('.') && str.includes(',')) {
+                    minReq = str.indexOf('.') < str.indexOf(',') ? parseFloat(str.replace(/\./g, '').replace(/,/g, '.')) : parseFloat(str.replace(/,/g, ''));
+                } else if (str.includes(',') && str.split(',')[str.split(',').length - 1].length === 3) {
+                    minReq = parseFloat(str.replace(/,/g, ''));
+                } else if (str.includes('.') && str.split('.')[str.split('.').length - 1].length === 3) {
+                    minReq = parseFloat(str.replace(/\./g, ''));
+                } else {
+                    minReq = parseFloat(str.replace(/[^\d.-]/g, '')) || 0;
+                }
+            }
+
+            console.log('Reactive Check:', { cartTotal, minReq });
+            if (cartTotal < minReq) {
+                showToast(`Promo dicopot. TOTAL: ${cartTotal} < MIN: ${minReq}`, 'info');
+                setAppliedPromo(null);
+            }
+        }
+    }, [cartTotal, appliedPromo]);
+
     const handleValidatePromo = async () => {
         if (!promoCode.trim()) return;
 
         setValidatingPromo(true);
         try {
-            const response = await apiService.post('/api/promos/validate', { code: promoCode });
+            const response = await apiService.post('/api/promos/validate', {
+                code: promoCode,
+                total: cartTotal
+            });
             if (response.data && response.data.data) {
                 setAppliedPromo(response.data.data);
                 showToast('Promo berhasil diterapkan!', 'success');

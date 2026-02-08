@@ -10,7 +10,9 @@ import {
     StatusBar,
     ImageBackground,
     ActivityIndicator,
-    Alert
+    Alert,
+    Clipboard,
+    Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -26,7 +28,10 @@ import {
     CheckCircle2,
     Tags,
     Percent,
-    Wallet
+    Wallet,
+    Copy,
+    Info,
+    ShoppingBag
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 
@@ -35,6 +40,9 @@ const { width } = Dimensions.get('window');
 const PromoScreen = ({ navigation }) => {
     const [promos, setPromos] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [codeModalVisible, setCodeModalVisible] = useState(false);
+    const [selectedPromo, setSelectedPromo] = useState(null);
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         fetchPromos();
@@ -50,6 +58,25 @@ const PromoScreen = ({ navigation }) => {
             console.error('Error fetching promos:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleClaimPress = (item) => {
+        if (item.code) {
+            setSelectedPromo(item);
+            setCodeModalVisible(true);
+            setCopied(false);
+        } else {
+            // Logic for "PAKAI" if no code (e.g. go to menu)
+            navigation.navigate('MainTabs', { screen: 'Menu' });
+        }
+    };
+
+    const copyToClipboard = () => {
+        if (selectedPromo?.code) {
+            Clipboard.setString(selectedPromo.code);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
         }
     };
 
@@ -90,9 +117,14 @@ const PromoScreen = ({ navigation }) => {
                         <Clock size={12} color="#94A3B8" />
                         <Text style={styles.expiryText}>{item.expiry || 'Tanpa Batas'}</Text>
                     </View>
+                    {item.min_purchase > 0 && (
+                        <View style={styles.minPurchaseBadge}>
+                            <Text style={styles.minPurchaseText}>Min. Beli: Rp {parseFloat(item.min_purchase).toLocaleString('id-ID')}</Text>
+                        </View>
+                    )}
                     <TouchableOpacity
                         style={styles.claimBtn}
-                        onPress={() => item.code && Alert.alert('Kode Promo', `Gunakan kode: ${item.code}`)}
+                        onPress={() => handleClaimPress(item)}
                     >
                         <Text style={styles.claimBtnText}>{item.code ? 'KODE' : 'PAKAI'}</Text>
                     </TouchableOpacity>
@@ -102,6 +134,26 @@ const PromoScreen = ({ navigation }) => {
             <View style={styles.cutoutTop} />
             <View style={styles.cutoutBottom} />
         </View>
+    );
+
+    const renderCampaign = (item) => (
+        <TouchableOpacity
+            key={item.id}
+            style={styles.campaignCard}
+            onPress={() => navigation.navigate('MainTabs', { screen: 'Menu' })}
+        >
+            <View style={styles.campaignContent}>
+                <View style={styles.campaignInfo}>
+                    <Text style={styles.campaignTitle}>{item.title}</Text>
+                    <Text style={styles.campaignSubtitle} numberOfLines={2}>{item.description}</Text>
+                    <View style={styles.activeIndicator}>
+                        <CheckCircle2 size={12} color="#10B981" />
+                        <Text style={styles.activeText}>Sedang Aktif</Text>
+                    </View>
+                </View>
+                <ChevronRight size={20} color="#CBD5E1" />
+            </View>
+        </TouchableOpacity>
     );
 
     return (
@@ -125,21 +177,29 @@ const PromoScreen = ({ navigation }) => {
                     </View>
                 ) : (
                     <>
-                        {/* Hero section */}
-                        <ImageBackground
-                            source={{ uri: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1000&auto=format&fit=crop' }}
-                            style={styles.heroSection}
-                            imageStyle={{ borderRadius: 30 }}
-                        >
-                            <View style={styles.heroOverlay}>
-                                <View style={styles.heroBadge}>
-                                    <Sparkles size={14} color="#FFFFFF" fill="#FFFFFF" />
-                                    <Text style={styles.heroBadgeText}>SPESIAL PENJUALAN TERBAIK</Text>
+                        {/* Hero section - Dynamic from promos with is_hero flag */}
+                        {promos.filter(p => p.is_hero).length > 0 && (
+                            <ImageBackground
+                                source={{ uri: promos.find(p => p.is_hero)?.image_url || 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1000&auto=format&fit=crop' }}
+                                style={styles.heroSection}
+                                imageStyle={{ borderRadius: 30 }}
+                            >
+                                <View style={styles.heroOverlay}>
+                                    <View style={styles.heroBadge}>
+                                        <Sparkles size={14} color="#FFFFFF" fill="#FFFFFF" />
+                                        <Text style={styles.heroBadgeText}>
+                                            {promos.find(p => p.is_hero)?.badge_text || 'SPESIAL PENJUALAN TERBAIK'}
+                                        </Text>
+                                    </View>
+                                    <Text style={styles.heroTitle}>
+                                        {promos.find(p => p.is_hero)?.title || 'Makan Enak, Dompet Happy!'}
+                                    </Text>
+                                    <Text style={styles.heroSubtitle}>
+                                        {promos.find(p => p.is_hero)?.description || 'Temukan berbagai penawaran menarik khusus untuk kamu hari ini.'}
+                                    </Text>
                                 </View>
-                                <Text style={styles.heroTitle}>Makan Enak, Dompet Happy!</Text>
-                                <Text style={styles.heroSubtitle}>Temukan berbagai penawaran menarik khusus untuk kamu hari ini.</Text>
-                            </View>
-                        </ImageBackground>
+                            </ImageBackground>
+                        )}
 
                         {/* Voucher Section */}
                         <View style={styles.sectionHeader}>
@@ -149,60 +209,108 @@ const PromoScreen = ({ navigation }) => {
                             </View>
                         </View>
                         <View style={styles.voucherList}>
-                            {promos.length > 0 ? (
-                                promos.map(renderVoucher)
+                            {promos.filter(p => p.code).length > 0 ? (
+                                promos.filter(p => p.code).map(renderVoucher)
                             ) : (
                                 <View style={{ padding: 40, alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 20 }}>
                                     <Ticket size={48} color="#D1D5DB" />
-                                    <Text style={{ marginTop: 10, color: '#94A3B8', textAlign: 'center' }}>Belum ada promo aktif saat ini. Cek lagi nanti ya!</Text>
+                                    <Text style={{ marginTop: 10, color: '#94A3B8', textAlign: 'center' }}>Belum ada voucer aktif saat ini.</Text>
                                 </View>
                             )}
                         </View>
-                    </>
-                )}
 
-                {/* Ongoing Campaigns */}
-                <View style={[styles.sectionHeader, { marginTop: 20 }]}>
-                    <View style={styles.sectionTitleRow}>
-                        <Zap size={20} color="#FBBF24" />
-                        <Text style={styles.sectionTitle}>Kampanye Sedang Berlangsung</Text>
-                    </View>
-                </View>
-
-                <TouchableOpacity style={styles.campaignCard}>
-                    <View style={styles.campaignContent}>
-                        <View style={styles.campaignInfo}>
-                            <Text style={styles.campaignTitle}>Pesta Gajian Berkah</Text>
-                            <Text style={styles.campaignSubtitle}>Diskon s.d 50% untuk menu pilihan. Setiap tanggal 25-30!</Text>
-                            <View style={styles.activeIndicator}>
-                                <CheckCircle2 size={12} color="#10B981" />
-                                <Text style={styles.activeText}>Sedang Aktif</Text>
+                        {/* Ongoing Campaigns Section */}
+                        <View style={[styles.sectionHeader, { marginTop: 30 }]}>
+                            <View style={styles.sectionTitleRow}>
+                                <Zap size={20} color="#FBBF24" />
+                                <Text style={styles.sectionTitle}>Kampanye Sedang Berlangsung</Text>
                             </View>
                         </View>
-                        <ChevronRight size={20} color="#CBD5E1" />
-                    </View>
-                </TouchableOpacity>
 
-                {/* Promo Tips Card */}
-                <View style={styles.tipsCard}>
-                    <View style={styles.tipsIconWrap}>
-                        <Star size={30} color="#FFFFFF" fill="#FFFFFF" />
-                    </View>
-                    <View style={styles.tipsContent}>
-                        <Text style={styles.tipsTitle}>Tips Hemat Berkah!</Text>
-                        <Text style={styles.tipsDesc}>Kumpulkan poin setiap belanja untuk ditukarkan dengan potongan harga langsung di pesanan berikutnya.</Text>
+                        <View style={{ gap: 16 }}>
+                            {promos.filter(p => !p.code).length > 0 ? (
+                                promos.filter(p => !p.code).map(renderCampaign)
+                            ) : (
+                                <View style={{ padding: 30, alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 24, borderWidth: 1, borderColor: '#F1F5F9' }}>
+                                    <Zap size={32} color="#D1D5DB" />
+                                    <Text style={{ marginTop: 8, color: '#94A3B8', fontSize: 13 }}>Belum ada kampanye aktif hari ini.</Text>
+                                </View>
+                            )}
+                        </View>
+
+                        {/* Promo Tips Card */}
+                        <View style={styles.tipsCard}>
+                            <View style={styles.tipsIconWrap}>
+                                <Star size={30} color="#FFFFFF" fill="#FFFFFF" />
+                            </View>
+                            <View style={styles.tipsContent}>
+                                <Text style={styles.tipsTitle}>Tips Hemat Berkah!</Text>
+                                <Text style={styles.tipsDesc}>Kumpulkan poin setiap belanja untuk ditukarkan dengan potongan harga langsung di pesanan berikutnya.</Text>
+                                <TouchableOpacity
+                                    style={styles.pointsLink}
+                                    onPress={() => navigation.navigate('PointsHistory')}
+                                >
+                                    <Text style={styles.pointsLinkText}>Cek Poin Sekarang</Text>
+                                    <ChevronRight size={14} color="#FFFFFF" />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        <View style={{ height: 40 }} />
+                    </>
+                )}
+            </ScrollView>
+
+            {/* Promo Code Popup Modal */}
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={codeModalVisible}
+                onRequestClose={() => setCodeModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalCard}>
+                        <View style={[styles.modalHeaderIcon, { backgroundColor: (selectedPromo?.color || '#059669') + '15' }]}>
+                            <Gift size={32} color={selectedPromo?.color || '#059669'} />
+                        </View>
+
+                        <Text style={styles.modalTitle}>{selectedPromo?.title}</Text>
+                        <Text style={styles.modalSubtitle}>Salin kode di bawah ini untuk digunakan saat pembayaran.</Text>
+
+                        <View style={styles.codeContainer}>
+                            <Text style={styles.codeText}>{selectedPromo?.code}</Text>
+                            <TouchableOpacity
+                                style={[styles.copyIconBtn, copied && { backgroundColor: '#10B981' }]}
+                                onPress={copyToClipboard}
+                            >
+                                {copied ? <CheckCircle2 size={20} color="#FFFFFF" /> : <Copy size={20} color="#64748B" />}
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.promoDetailInfo}>
+                            <View style={styles.detailRow}>
+                                <Info size={14} color="#94A3B8" />
+                                <Text style={styles.detailText}>
+                                    {selectedPromo?.discount_type === 'percentage'
+                                        ? `Diskon ${selectedPromo.discount_value}%`
+                                        : `Potongan Rp ${parseFloat(selectedPromo?.discount_value || 0).toLocaleString('id-ID')}`}
+                                </Text>
+                            </View>
+                            <View style={styles.detailRow}>
+                                <ShoppingBag size={14} color="#94A3B8" />
+                                <Text style={styles.detailText}>Min. Pembelian Rp {parseFloat(selectedPromo?.min_purchase || 0).toLocaleString('id-ID')}</Text>
+                            </View>
+                        </View>
+
                         <TouchableOpacity
-                            style={styles.pointsLink}
-                            onPress={() => navigation.navigate('PointsHistory')}
+                            style={[styles.closeModalBtn, { backgroundColor: selectedPromo?.color || '#059669' }]}
+                            onPress={() => setCodeModalVisible(false)}
                         >
-                            <Text style={styles.pointsLinkText}>Cek Poin Sekarang</Text>
-                            <ChevronRight size={14} color="#FFFFFF" />
+                            <Text style={styles.closeModalText}>Alhamdulillah, Terima Kasih</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
-
-                <View style={{ height: 40 }} />
-            </ScrollView>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -307,7 +415,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         backgroundColor: '#FFFFFF',
         borderRadius: 20,
-        height: 100,
+        minHeight: 110,
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: '#F1F5F9',
@@ -323,23 +431,31 @@ const styles = StyleSheet.create({
     },
     voucherRight: {
         flex: 1,
-        padding: 15,
-        justifyContent: 'space-between',
+        padding: 12,
+        paddingLeft: 15,
+        justifyContent: 'center',
+    },
+    voucherHeader: {
+        marginBottom: 8,
     },
     voucherTitle: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '900',
         color: '#1E293B',
+        flex: 1,
+        marginRight: 6,
     },
     voucherDesc: {
         fontSize: 11,
         color: '#64748B',
         marginTop: 2,
+        lineHeight: 14,
     },
     voucherFooter: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        gap: 6,
+        flexWrap: 'wrap',
     },
     expiryRow: {
         flexDirection: 'row',
@@ -353,11 +469,12 @@ const styles = StyleSheet.create({
     },
     claimBtn: {
         backgroundColor: '#F8FAFC',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 10,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 8,
         borderWidth: 1,
         borderColor: '#E2E8F0',
+        marginLeft: 'auto',
     },
     claimBtnText: {
         fontSize: 10,
@@ -371,7 +488,7 @@ const styles = StyleSheet.create({
         width: 16,
         height: 16,
         borderRadius: 8,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: '#FFFFFF',
         borderWidth: 1,
         borderColor: '#F1F5F9',
     },
@@ -382,7 +499,7 @@ const styles = StyleSheet.create({
         width: 16,
         height: 16,
         borderRadius: 8,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: '#FFFFFF',
         borderWidth: 1,
         borderColor: '#F1F5F9',
     },
@@ -488,6 +605,115 @@ const styles = StyleSheet.create({
     discountBadgeText: {
         fontSize: 10,
         fontWeight: '900',
+    },
+    minPurchaseBadge: {
+        backgroundColor: '#F1F5F9',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+    },
+    minPurchaseText: {
+        fontSize: 9,
+        fontWeight: '700',
+        color: '#64748B',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    modalCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 30,
+        width: '100%',
+        maxWidth: 340,
+        padding: 24,
+        alignItems: 'center',
+        ...Platform.select({
+            web: { boxShadow: '0px 10px 30px rgba(0,0,0,0.2)' },
+            android: { elevation: 10 }
+        })
+    },
+    modalHeaderIcon: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#1E293B',
+        textAlign: 'center',
+        marginBottom: 8,
+    },
+    modalSubtitle: {
+        fontSize: 12,
+        color: '#64748B',
+        textAlign: 'center',
+        lineHeight: 18,
+        marginBottom: 24,
+        paddingHorizontal: 10,
+    },
+    codeContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        borderWidth: 2,
+        borderColor: '#E2E8F0',
+        borderStyle: 'dashed',
+        borderRadius: 16,
+        padding: 16,
+        width: '100%',
+        justifyContent: 'space-between',
+        marginBottom: 24,
+    },
+    codeText: {
+        fontSize: 24,
+        fontWeight: '900',
+        color: '#1E293B',
+        letterSpacing: 2,
+    },
+    copyIconBtn: {
+        width: 44,
+        height: 44,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    promoDetailInfo: {
+        width: '100%',
+        gap: 10,
+        marginBottom: 30,
+    },
+    detailRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    detailText: {
+        fontSize: 12,
+        color: '#64748B',
+        fontWeight: '600',
+    },
+    closeModalBtn: {
+        width: '100%',
+        height: 54,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    closeModalText: {
+        fontSize: 15,
+        fontWeight: '800',
+        color: '#FFFFFF',
     }
 });
 

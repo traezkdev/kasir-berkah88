@@ -216,6 +216,13 @@ const OrderDetailModal = ({ visible, onClose, order }) => {
                         </View>
                     )}
 
+                    {order.promo_discount > 0 && (
+                        <View style={styles.totalRow}>
+                            <Text style={[styles.totalLabel, { color: '#059669' }]}>Diskon Promo</Text>
+                            <Text style={[styles.totalValue, { color: '#059669' }]}>-{formatCurrency(order.promo_discount)}</Text>
+                        </View>
+                    )}
+
                     {ppnAmount > 0 && (
                         <View style={styles.totalRow}>
                             <Text style={styles.totalLabel}>Pajak/PPN</Text>

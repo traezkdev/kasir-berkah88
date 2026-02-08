@@ -176,6 +176,12 @@ const TransactionDetailModal = ({
                                 <Text style={[styles.miniValue, { color: '#2563EB' }]}>-{formatCurrency(transaction.points_used)}</Text>
                             </View>
                         )}
+                        {transaction.promo_discount > 0 && (
+                            <View style={styles.infoRowMini}>
+                                <Text style={styles.miniLabel}>Diskon Promo</Text>
+                                <Text style={[styles.miniValue, { color: '#059669' }]}>-{formatCurrency(transaction.promo_discount)}</Text>
+                            </View>
+                        )}
                         {transaction.ppn > 0 && (
                             <View style={styles.infoRowMini}>
                                 <Text style={styles.miniLabel}>PPN</Text>
@@ -203,11 +209,11 @@ const TransactionDetailModal = ({
                     </View>
                     {isAdmin && (
                         <TouchableOpacity
-                            style={[styles.editBtn, { marginTop: 12, backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}
+                            style={[styles.deleteBtn, { marginTop: 12 }]}
                             onPress={onDelete}
                         >
                             <Trash2 size={20} color="#DC2626" />
-                            <Text style={[styles.editBtnText, { color: '#DC2626' }]}>Hapus Transaksi</Text>
+                            <Text style={styles.deleteBtnText}>Hapus Transaksi</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -472,16 +478,33 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        paddingVertical: 2,
     },
     miniLabel: {
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: 'bold',
         color: '#64748B',
     },
     miniValue: {
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: '900',
         color: '#1E293B',
+    },
+    deleteBtn: {
+        backgroundColor: '#FEF2F2',
+        height: 50,
+        borderRadius: 16,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 10,
+        borderWidth: 1,
+        borderColor: '#FECACA',
+    },
+    deleteBtnText: {
+        color: '#DC2626',
+        fontSize: 16,
+        fontWeight: '900',
     },
 });
 

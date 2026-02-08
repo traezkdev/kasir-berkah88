@@ -2304,7 +2304,9 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
             await connection.query("UPDATE users SET points = ? WHERE id = ?", [newBalance, finalCustomerId]);
         }
 
-        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock, cash_paid, `change`, user_id, manual_discount, catatan, customer_name, customer_phone, customer_address, customer_id, points_used, points_earned) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
+        const promoDiscountVal = parseFloat(req.body.promo_discount || 0);
+
+        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock, cash_paid, `change`, user_id, manual_discount, catatan, customer_name, customer_phone, customer_address, customer_id, points_used, points_earned, promo_discount) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
         const params = [
             newTransactionId,
             timestamp,
@@ -2324,7 +2326,8 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
             customer_address || null,
             finalCustomerId,
             finalPointsUsed.toFixed(2),
-            finalPointsEarned.toFixed(2)
+            finalPointsEarned.toFixed(2),
+            promoDiscountVal
         ];
 
         await connection.query(sql, params);
@@ -3641,8 +3644,37 @@ app.post("/api/orders", (req, res, next) => {
             }
         }
 
-        const sql = 'INSERT INTO orders (user_id, customer_name, customer_address, customer_phone, items, total, points_used, status, payment_method, note, promo_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-        const params = [userId, customer_name, customer_address, customer_phone || null, JSON.stringify(orderItemsWithDetails), calculatedTotal, finalPointsUsed, 'pending', paymentMethodValue, orderNote, promoId || null];
+        // --- Promo Deduction Logic ---
+        let finalPromoDiscount = 0;
+        if (promoId) {
+            const [promoRows] = await db.query('SELECT * FROM promos WHERE id = ? AND is_active = 1', [promoId]);
+            if (promoRows.length > 0) {
+                const promo = promoRows[0];
+                const promoMinPurchase = parseFloat(promo.min_purchase || 0);
+
+                // Note: min_purchase check is usually against SUB-TOTAL (before points/other discounts)
+                // But let's check current logic. Items total (before points) is in calculatedTotal (before points deduction)
+                // Wait, I already subtracted points from calculatedTotal.
+                // Re-calculate subtotal for promo check if needed, or just use what we have.
+                const subtotalForPromo = calculatedTotal + finalPointsUsed;
+
+                if (subtotalForPromo >= promoMinPurchase) {
+                    if (promo.discount_type === 'percentage') {
+                        finalPromoDiscount = (subtotalForPromo * parseFloat(promo.discount_value)) / 100;
+                    } else {
+                        finalPromoDiscount = parseFloat(promo.discount_value);
+                    }
+                    calculatedTotal -= finalPromoDiscount;
+                } else {
+                    console.log(`[Order] Promo ${promo.code} rejected: Subtotal ${subtotalForPromo} < Min ${promoMinPurchase}`);
+                }
+            }
+        }
+        // Ensure total doesn't go below 0
+        if (calculatedTotal < 0) calculatedTotal = 0;
+
+        const sql = 'INSERT INTO orders (user_id, customer_name, customer_address, customer_phone, items, total, points_used, promo_discount, status, payment_method, note, promo_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        const params = [userId, customer_name, customer_address, customer_phone || null, JSON.stringify(orderItemsWithDetails), calculatedTotal, finalPointsUsed, finalPromoDiscount, 'pending', paymentMethodValue, orderNote, promoId || null];
         const [result] = await db.query(sql, params);
 
         const orderId = result.insertId;
@@ -3664,6 +3696,7 @@ app.post("/api/orders", (req, res, next) => {
             id: orderId,
             customer_name,
             total: calculatedTotal,
+            promo_discount: finalPromoDiscount,
             status: 'pending',
             created_at: new Date()
         });
@@ -3678,6 +3711,7 @@ app.post("/api/orders", (req, res, next) => {
                 items: orderItemsWithDetails,
                 total: calculatedTotal,
                 points_used: finalPointsUsed,
+                promo_discount: finalPromoDiscount,
                 status: 'pending',
                 payment_method: paymentMethodValue
             }
@@ -3801,7 +3835,7 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
         await connection.beginTransaction();
 
         // Get the order to check ownership and current status
-        const [orderRows] = await connection.query('SELECT user_id, status, customer_name, customer_address, customer_phone, items, total, payment_method, note, points_used FROM orders WHERE id = ? FOR UPDATE', [id]);
+        const [orderRows] = await connection.query('SELECT user_id, status, customer_name, customer_address, customer_phone, items, total, payment_method, note, points_used, promo_discount FROM orders WHERE id = ? FOR UPDATE', [id]);
 
         if (orderRows.length === 0) {
             await connection.rollback();
@@ -4093,11 +4127,8 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
 
 
             const transactionData = {
-
                 id: newTransactionId,
-
                 timestamp: new Date(),
-
                 items: JSON.stringify(items),
                 total: totalWithPpn,
                 ppn: ppnAmount,
@@ -4105,8 +4136,9 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
                 payment_method: order.payment_method || 'Tunai',
                 order_id: id,
                 ignore_stock: effectivelyIgnoreStock ? 1 : 0,
-                customer_id: order.user_id || null, // Ensure customer_id is set
-                points_used: order.points_used || 0
+                customer_id: order.user_id || null,
+                points_used: order.points_used || 0,
+                promo_discount: order.promo_discount || 0
             };
 
             const transactionParams = [
@@ -4124,10 +4156,11 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
                 order.customer_address || null,
                 order.note || null,
                 transactionData.customer_id,
-                transactionData.points_used
+                transactionData.points_used,
+                order.promo_discount || 0
             ];
 
-            await connection.query('INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, order_id, ignore_stock, customer_name, customer_phone, customer_address, catatan, customer_id, points_used) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', transactionParams);
+            await connection.query('INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, order_id, ignore_stock, customer_name, customer_phone, customer_address, catatan, customer_id, points_used, promo_discount) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', transactionParams);
 
             // 5. Update the order status to 'accepted'
             await connection.query('UPDATE orders SET status = ? WHERE id = ?', ['accepted', id]);
@@ -5969,15 +6002,16 @@ app.get("/api/customer/promos", async (req, res) => {
 // Add new promo
 app.post("/api/promos", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
-        const { title, description, code, icon, color, expiry, is_active, discount_value, discount_type } = req.body;
+        const { title, description, code, icon, color, expiry, is_active, discount_value, discount_type, min_purchase } = req.body;
         if (!title) {
             return res.status(400).json({ error: "Judul promo wajib diisi" });
         }
 
         const sql = `
-            INSERT INTO promos (title, description, code, icon, color, expiry, is_active, discount_value, discount_type)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO promos (title, description, code, icon, color, expiry, is_active, discount_value, discount_type, min_purchase)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
+        const cleanMin = min_purchase ? (typeof min_purchase === 'string' ? parseFloat(min_purchase.replace(/[^\d.]/g, '')) : parseFloat(min_purchase)) : 0;
         const params = [
             title,
             description,
@@ -5987,7 +6021,8 @@ app.post("/api/promos", authenticateToken, authorizeRoles('admin', 'owner'), asy
             expiry || null,
             is_active === undefined ? 1 : is_active,
             discount_value || 0,
-            discount_type || 'fixed'
+            discount_type || 'fixed',
+            cleanMin
         ];
 
         const [result] = await db.query(sql, params);
@@ -6010,7 +6045,7 @@ app.post("/api/promos", authenticateToken, authorizeRoles('admin', 'owner'), asy
 app.put("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, code, icon, color, expiry, is_active, discount_value, discount_type } = req.body;
+        const { title, description, code, icon, color, expiry, is_active, discount_value, discount_type, min_purchase } = req.body;
 
         if (!title) {
             return res.status(400).json({ error: "Judul promo wajib diisi" });
@@ -6018,7 +6053,7 @@ app.put("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner'), 
 
         const sql = `
             UPDATE promos 
-            SET title = ?, description = ?, code = ?, icon = ?, color = ?, expiry = ?, is_active = ?, discount_value = ?, discount_type = ?
+            SET title = ?, description = ?, code = ?, icon = ?, color = ?, expiry = ?, is_active = ?, discount_value = ?, discount_type = ?, min_purchase = ?
             WHERE id = ?
         `;
         const params = [
@@ -6031,6 +6066,7 @@ app.put("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner'), 
             is_active === undefined ? 1 : is_active,
             discount_value || 0,
             discount_type || 'fixed',
+            min_purchase || 0,
             id
         ];
 
@@ -6075,7 +6111,7 @@ app.delete("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner'
 // Validate promo code
 app.post("/api/promos/validate", async (req, res) => {
     try {
-        const { code } = req.body;
+        const { code, total } = req.body;
         if (!code) {
             return res.status(400).json({ error: "Kode promo harus diisi" });
         }
@@ -6088,8 +6124,19 @@ app.post("/api/promos/validate", async (req, res) => {
         }
 
         const promo = rows[0];
-        // Note: In a real app we might check expiry dates correctly here
-        // For now, since expiry is a string like "2026-12-31", we just return the promo info.
+
+        const cleanTotal = total !== undefined ? (typeof total === 'string' ? parseFloat(total.replace(/[^\d.]/g, '')) : parseFloat(total)) : undefined;
+        const cleanMin = typeof promo.min_purchase === 'string' ? parseFloat(promo.min_purchase.replace(/[^\d.]/g, '')) : parseFloat(promo.min_purchase);
+
+        console.log('Validating promo:', { code, total: cleanTotal, promo_min_purchase: cleanMin });
+
+        // Check minimum purchase if total is provided
+        if (cleanTotal !== undefined && cleanTotal < cleanMin) {
+            return res.status(400).json({
+                error: `Minimal pembelian untuk promo ini adalah Rp ${cleanMin.toLocaleString('id-ID')}`,
+                min_purchase: cleanMin
+            });
+        }
 
         res.json({
             message: "Promo berhasil diterapkan",
