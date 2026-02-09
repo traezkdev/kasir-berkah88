@@ -298,7 +298,7 @@ const CustomerChat = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20 font-sans flex flex-col">
+        <div className="min-h-screen bg-gray-50 pb-10 font-sans flex flex-col">
             {/* Fixed Header */}
             <div className="bg-white px-4 py-3 border-b border-gray-100 flex items-center justify-between fixed top-0 left-0 right-0 z-50">
                 <div className="flex items-center gap-3">
@@ -336,7 +336,7 @@ const CustomerChat = () => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm"
+                            className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm overflow-y-auto"
                         >
                             <motion.div
                                 initial={{ scale: 0.9, opacity: 0 }}
@@ -376,7 +376,7 @@ const CustomerChat = () => {
                         <OrderPinWidget order={activeOrder} />
                     </div>
 
-                    <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-28 pt-4 flex flex-col-reverse">
+                    <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-0 pt-4 flex flex-col-reverse">
                         {messages.length > 0 ? (
                             messages.slice().reverse().map((msg, idx) => {
                                 const isMine = msg.sender_id === myId;
