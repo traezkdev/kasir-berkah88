@@ -27,7 +27,17 @@ import {
     Image as ImageIcon,
     X,
     Check,
-    Camera
+    Camera,
+    Utensils,
+    Fish,
+    Coffee,
+    Tag,
+    MoreHorizontal,
+    Drumstick,
+    CupSoda,
+    Soup,
+    Cookie,
+    LayoutGrid
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
 import * as ImagePicker from 'expo-image-picker';
@@ -57,6 +67,19 @@ const MenuManagement = ({ navigation }) => {
         description: ''
     });
     const [imageUri, setImageUri] = useState(null);
+
+    const getCategoryIcon = useCallback((categoryName) => {
+        const name = categoryName ? categoryName.toUpperCase() : '';
+        if (name.includes('AYAM') || name.includes('CHICKEN') || name.includes('BEBEK') || name.includes('DUCK')) return Drumstick;
+        if (name.includes('IKAN') || name.includes('LELE') || name.includes('GURAME') || name.includes('SEAFOOD') || name.includes('NILA')) return Fish;
+        if (name.includes('MINUM') || name.includes('ES') || name.includes('JUS') || name.includes('AIR')) return CupSoda;
+        if (name.includes('KOPI') || name.includes('COFFEE') || name.includes('TEH') || name.includes('TEA')) return Coffee;
+        if (name.includes('HEMAT') || name.includes('PROMO') || name.includes('PAKET') || name.includes('DISKON')) return Tag;
+        if (name.includes('NASI') || name.includes('SOP') || name.includes('SOTO') || name.includes('MIE') || name.includes('BAKSO')) return Soup;
+        if (name.includes('SNACK') || name.includes('CEMILAN') || name.includes('GORENGAN') || name.includes('KERUPUK')) return Cookie;
+        if (name.includes('LAIN') || name.includes('EXTRA')) return MoreHorizontal;
+        return Utensils;
+    }, []);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -273,19 +296,31 @@ const MenuManagement = ({ navigation }) => {
                 </View>
 
                 <FlatList
-                    data={['Semua', ...categories.map(c => c.name)]}
+                    data={[{ id: 'all', name: 'Semua' }, ...categories]}
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     style={styles.catList}
                     contentContainerStyle={styles.catListContent}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            onPress={() => setActiveCategory(item)}
-                            style={[styles.catBtn, activeCategory === item && styles.activeCatBtn]}
-                        >
-                            <Text style={[styles.catBtnText, activeCategory === item && styles.activeCatBtnText]}>{item}</Text>
-                        </TouchableOpacity>
-                    )}
+                    renderItem={({ item }) => {
+                        const isActive = activeCategory === item.name;
+                        const IconComponent = item.id === 'all' ? LayoutGrid : getCategoryIcon(item.name);
+                        return (
+                            <TouchableOpacity
+                                onPress={() => setActiveCategory(item.name)}
+                                style={[styles.catBtn, isActive && styles.activeCatBtn]}
+                            >
+                                {item.icon ? (
+                                    <Image
+                                        source={{ uri: `${API_URL}${item.icon}` }}
+                                        style={{ width: 14, height: 14, marginRight: 6, resizeMode: 'contain' }}
+                                    />
+                                ) : (
+                                    <IconComponent size={14} color={isActive ? "#FFFFFF" : "#64748B"} style={{ marginRight: 6 }} />
+                                )}
+                                <Text style={[styles.catBtnText, isActive && styles.activeCatBtnText]}>{item.name}</Text>
+                            </TouchableOpacity>
+                        );
+                    }}
                 />
             </View>
 
@@ -603,10 +638,13 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     catBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 20,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#F1F5F9',
+        marginRight: 8,
         borderWidth: 1,
         borderColor: '#E2E8F0',
     },

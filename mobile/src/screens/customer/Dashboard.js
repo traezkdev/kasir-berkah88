@@ -33,7 +33,16 @@ import {
     Coffee,
     Star,
     Plus,
-    XCircle
+    XCircle,
+    Utensils,
+    Fish,
+    Tag,
+    MoreHorizontal,
+    UtensilsCrossed,
+    Drumstick,
+    CupSoda,
+    Soup,
+    Cookie
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
@@ -69,9 +78,12 @@ const CustomerDashboard = ({ navigation }) => {
             const bannerRes = await apiService.get('/api/banners');
             if (bannerRes.data.data) setBanners(bannerRes.data.data);
 
-            // Fetch Categories
+            // Fetch Categories - Show only visible ones
             const catRes = await apiService.get('/api/categories');
-            if (catRes.data.data) setCategories(catRes.data.data.slice(0, 5));
+            if (catRes.data.data) {
+                const visibleCategories = catRes.data.data.filter(c => c.is_visible !== 0 && c.is_visible !== false);
+                setCategories(visibleCategories);
+            }
 
             // Fetch Points
             try {
@@ -204,6 +216,20 @@ const CustomerDashboard = ({ navigation }) => {
             </View>
         );
     }
+
+    const getCategoryIcon = (categoryName) => {
+        const name = categoryName ? categoryName.toUpperCase() : '';
+        if (name.includes('AYAM') || name.includes('CHICKEN') || name.includes('BEBEK') || name.includes('DUCK')) return Drumstick;
+        if (name.includes('IKAN') || name.includes('LELE') || name.includes('GURAME') || name.includes('SEAFOOD') || name.includes('NILA')) return Fish;
+        if (name.includes('MINUM') || name.includes('ES') || name.includes('JUS') || name.includes('AIR')) return CupSoda;
+        if (name.includes('KOPI') || name.includes('COFFEE') || name.includes('TEH') || name.includes('TEA')) return Coffee;
+        if (name.includes('HEMAT') || name.includes('PROMO') || name.includes('PAKET') || name.includes('DISKON')) return Tag;
+        if (name.includes('NASI') || name.includes('SOP') || name.includes('SOTO') || name.includes('MIE') || name.includes('BAKSO')) return Soup;
+        if (name.includes('SNACK') || name.includes('CEMILAN') || name.includes('GORENGAN') || name.includes('KERUPUK')) return Cookie;
+        if (name.includes('SEAFOOD')) return Fish;
+        if (name.includes('LAIN') || name.includes('EXTRA')) return MoreHorizontal;
+        return Utensils;
+    };
 
     return (
         <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
@@ -443,18 +469,30 @@ const CustomerDashboard = ({ navigation }) => {
                         </View>
                         <Text style={styles.categoryLabel}>SEMUA</Text>
                     </TouchableOpacity>
-                    {categories.map((cat) => (
-                        <TouchableOpacity
-                            key={cat.id}
-                            style={styles.categoryItem}
-                            onPress={() => navigation.navigate('Menu', { categoryId: cat.id })}
-                        >
-                            <View style={[styles.categoryIconWrap, { backgroundColor: '#F8FAFC' }]}>
-                                <Coffee size={28} color="#64748B" />
-                            </View>
-                            <Text style={styles.categoryLabel}>{cat.name.toUpperCase()}</Text>
-                        </TouchableOpacity>
-                    ))}
+                    {categories.map((cat) => {
+                        let IconComponent = getCategoryIcon(cat.name);
+                        if (!IconComponent) IconComponent = Utensils;
+
+                        return (
+                            <TouchableOpacity
+                                key={cat.id}
+                                style={styles.categoryItem}
+                                onPress={() => navigation.navigate('Menu', { categoryId: cat.id })}
+                            >
+                                <View style={[styles.categoryIconWrap, { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0', borderWidth: 1, overflow: 'hidden' }]}>
+                                    {cat.icon ? (
+                                        <Image
+                                            source={{ uri: `${API_URL}${cat.icon}` }}
+                                            style={{ width: 28, height: 28, resizeMode: 'contain' }}
+                                        />
+                                    ) : (
+                                        <IconComponent size={28} color="#059669" />
+                                    )}
+                                </View>
+                                <Text style={styles.categoryLabel}>{cat.name.toUpperCase()}</Text>
+                            </TouchableOpacity>
+                        );
+                    })}
                 </ScrollView>
 
                 {/* Recommendations */}

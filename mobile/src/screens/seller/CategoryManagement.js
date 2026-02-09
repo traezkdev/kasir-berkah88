@@ -13,8 +13,10 @@ import {
     ScrollView,
     RefreshControl,
     Dimensions,
-    StatusBar
+    StatusBar,
+    Image
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import {
     ChevronLeft,
     Plus,
@@ -23,9 +25,21 @@ import {
     Check,
     Edit,
     Tag,
-    Layers
+    Layers,
+    Eye,
+    EyeOff,
+    Image as ImageIcon,
+    Upload,
+    Utensils,
+    Fish,
+    Coffee,
+    Drumstick,
+    CupSoda,
+    Soup,
+    Cookie,
+    MoreHorizontal
 } from 'lucide-react-native';
-import apiService from '../../api/apiService';
+import apiService, { API_URL } from '../../api/apiService';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useToast } from '../../context/ToastContext';
 
@@ -43,6 +57,21 @@ const CategoryManagement = ({ navigation }) => {
     const [editingItem, setEditingItem] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
     const [categoryName, setCategoryName] = useState('');
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [currentIcon, setCurrentIcon] = useState(null);
+
+    const getCategoryIcon = useCallback((categoryName) => {
+        const name = categoryName ? categoryName.toUpperCase() : '';
+        if (name.includes('AYAM') || name.includes('CHICKEN') || name.includes('BEBEK') || name.includes('DUCK')) return Drumstick;
+        if (name.includes('IKAN') || name.includes('LELE') || name.includes('GURAME') || name.includes('SEAFOOD') || name.includes('NILA')) return Fish;
+        if (name.includes('MINUM') || name.includes('ES') || name.includes('JUS') || name.includes('AIR')) return CupSoda;
+        if (name.includes('KOPI') || name.includes('COFFEE') || name.includes('TEH') || name.includes('TEA')) return Coffee;
+        if (name.includes('HEMAT') || name.includes('PROMO') || name.includes('PAKET') || name.includes('DISKON')) return Tag;
+        if (name.includes('NASI') || name.includes('SOP') || name.includes('SOTO') || name.includes('MIE') || name.includes('BAKSO')) return Soup;
+        if (name.includes('SNACK') || name.includes('CEMILAN') || name.includes('GORENGAN') || name.includes('KERUPUK')) return Cookie;
+        if (name.includes('LAIN') || name.includes('EXTRA')) return MoreHorizontal;
+        return Utensils;
+    }, []);
 
     const fetchData = async () => {
         setLoading(true);
@@ -71,11 +100,28 @@ const CategoryManagement = ({ navigation }) => {
         if (item) {
             setEditingItem(item);
             setCategoryName(item.name || '');
+            setCurrentIcon(item.icon); // Store current icon path
         } else {
             setEditingItem(null);
             setCategoryName('');
+            setCurrentIcon(null);
         }
+        setSelectedImage(null); // Reset selected image
         setIsModalOpen(true);
+    };
+
+    const pickImage = async () => {
+        // No permissions request is necessary for launching the image library
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.5,
+        });
+
+        if (!result.canceled) {
+            setSelectedImage(result.assets[0].uri);
+        }
     };
 
     const handleSubmit = async () => {
@@ -86,14 +132,31 @@ const CategoryManagement = ({ navigation }) => {
 
         setIsSaving(true);
         try {
-            const payload = { name: categoryName.trim() };
-
             const url = editingItem
                 ? `/api/categories/${editingItem.id}`
                 : `/api/categories`;
             const method = editingItem ? 'put' : 'post';
 
-            const response = await apiService[method](url, payload);
+            const formData = new FormData();
+            formData.append('name', categoryName.trim());
+
+            if (selectedImage) {
+                const filename = selectedImage.split('/').pop();
+                const match = /\.(\w+)$/.exec(filename);
+                const type = match ? `image/${match[1]}` : `image`;
+
+                formData.append('icon', {
+                    uri: Platform.OS === 'android' ? selectedImage : selectedImage.replace('file://', ''),
+                    name: filename,
+                    type,
+                });
+            }
+
+            const response = await apiService[method](url, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
 
             if (response.status === 200 || response.status === 201) {
                 showToast(editingItem ? 'Kategori diperbarui' : 'Kategori ditambahkan', 'success');
@@ -128,33 +191,79 @@ const CategoryManagement = ({ navigation }) => {
         }
     };
 
-    const renderCategory = ({ item }) => (
-        <View style={styles.card}>
-            <View style={styles.cardInfo}>
-                <View style={styles.iconCircle}>
-                    <Tag size={18} color="#138FEA" />
+    const handleToggleVisibility = async (item) => {
+        // Toggle optimistic
+        const newStatus = !item.is_visible;
+        // Optimization: update local state immediately if needed, but here let's just wait api
+        // Actually for better UX, local update is good.
+        setCategories(prev => prev.map(c => c.id === item.id ? { ...c, is_visible: newStatus } : c));
+
+        try {
+            const formData = new FormData();
+            formData.append('name', item.name);
+            formData.append('is_visible', newStatus);
+
+            await apiService.put(`/api/categories/${item.id}`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            showToast('Status visibilitas diperbarui', 'success');
+        } catch (error) {
+            console.error('Error toggling visibility:', error);
+            showToast('Gagal mengubah status', 'error');
+            // Revert
+            setCategories(prev => prev.map(c => c.id === item.id ? { ...c, is_visible: !newStatus } : c));
+        }
+    };
+
+    const renderCategory = ({ item }) => {
+        const IconComponent = getCategoryIcon(item.name);
+        return (
+            <View style={styles.card}>
+                <View style={styles.cardInfo}>
+                    <View style={styles.iconCircle}>
+                        {item.icon ? (
+                            <Image
+                                source={{ uri: `${API_URL}${item.icon}` }}
+                                style={{ width: 24, height: 24, resizeMode: 'contain' }}
+                            />
+                        ) : (
+                            <IconComponent size={18} color="#138FEA" />
+                        )}
+                    </View>
+                    <View>
+                        <Text style={styles.nameText}>{item.name}</Text>
+                        <Text style={[styles.idText, item.is_visible === 0 && { color: '#EF4444', fontWeight: 'bold' }]}>
+                            {item.is_visible !== 0 ? `ID: ${item.id}` : 'Disembunyikan'}
+                        </Text>
+                    </View>
                 </View>
-                <View>
-                    <Text style={styles.nameText}>{item.name}</Text>
-                    <Text style={styles.idText}>ID: {item.id}</Text>
+                <View style={styles.cardActions}>
+                    <TouchableOpacity
+                        onPress={() => handleToggleVisibility(item)}
+                        style={[styles.actionBtn, { backgroundColor: item.is_visible !== 0 ? '#F0FDF4' : '#FEF2F2' }]}
+                    >
+                        {item.is_visible !== 0 ? (
+                            <Eye size={18} color="#059669" />
+                        ) : (
+                            <EyeOff size={18} color="#EF4444" />
+                        )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => handleOpenModal(item)}
+                        style={styles.actionBtn}
+                    >
+                        <Edit size={18} color="#64748B" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => handleDelete(item.id)}
+                        style={[styles.actionBtn, styles.deleteBtn]}
+                    >
+                        <Trash2 size={18} color="#EF4444" />
+                    </TouchableOpacity>
                 </View>
             </View>
-            <View style={styles.cardActions}>
-                <TouchableOpacity
-                    onPress={() => handleOpenModal(item)}
-                    style={styles.actionBtn}
-                >
-                    <Edit size={18} color="#64748B" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                    onPress={() => handleDelete(item.id)}
-                    style={[styles.actionBtn, styles.deleteBtn]}
-                >
-                    <Trash2 size={18} color="#EF4444" />
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
+        );
+    };
 
     return (
         <View style={styles.container}>
@@ -218,8 +327,26 @@ const CategoryManagement = ({ navigation }) => {
                                 placeholder="Contoh: Makanan Berat"
                                 value={categoryName}
                                 onChangeText={setCategoryName}
-                                autoFocus={true}
                             />
+
+                            <Text style={[styles.label, { marginTop: 20 }]}>IKON KATEGORI</Text>
+                            <TouchableOpacity onPress={pickImage} style={styles.imagePicker}>
+                                {selectedImage ? (
+                                    <Image source={{ uri: selectedImage }} style={styles.previewImage} />
+                                ) : currentIcon ? (
+                                    <View style={styles.imagePlaceholder}>
+                                        <Image source={{ uri: `${API_URL}${currentIcon}` }} style={styles.previewImage} />
+                                        <View style={styles.changeOverlay}>
+                                            <Edit size={16} color="#FFF" />
+                                        </View>
+                                    </View>
+                                ) : (
+                                    <View style={styles.imagePlaceholder}>
+                                        <Upload size={24} color="#94A3B8" />
+                                        <Text style={styles.uploadText}>Pilih Ikon</Text>
+                                    </View>
+                                )}
+                            </TouchableOpacity>
                         </View>
 
                         <View style={styles.modalFooter}>
@@ -451,6 +578,42 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: 'bold',
         color: '#FFFFFF',
+    },
+    imagePicker: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 120,
+        backgroundColor: '#F8FAFC',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderStyle: 'dashed',
+        overflow: 'hidden'
+    },
+    imagePlaceholder: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        height: '100%'
+    },
+    previewImage: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'contain'
+    },
+    uploadText: {
+        fontSize: 12,
+        color: '#94A3B8',
+        marginTop: 8,
+        fontWeight: 'bold'
+    },
+    changeOverlay: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        padding: 4,
+        borderTopLeftRadius: 8
     }
 });
 

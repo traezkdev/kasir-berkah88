@@ -1221,20 +1221,24 @@ app.get("/api/categories", authenticateToken, authorizeRoles('user', 'admin', 'g
 });
 
 // Add a new category
-app.post("/api/categories", authenticateToken, authorizeRoles('user', 'admin', 'penjual'), async (req, res) => {
+app.post("/api/categories", authenticateToken, authorizeRoles('user', 'admin', 'penjual'), upload.single('icon'), async (req, res) => {
     try {
-        const { name } = req.body;
+        const { name, is_visible } = req.body;
+        const icon = req.file ? `/public/uploads/${req.file.filename}` : null;
+        // Parse is_visible only if provided (defaults to true in DB, but good to be explicit if passed)
+        const isVisibleVal = (is_visible === 'false' || is_visible === false) ? 0 : 1;
+
         if (!name) {
             return res.status(400).json({ "error": "Category name is required" });
         }
-        const sql = 'INSERT INTO categories (name) VALUES (?)';
-        const [result] = await db.query(sql, [name]);
+        const sql = 'INSERT INTO categories (name, icon, is_visible) VALUES (?, ?, ?)';
+        const [result] = await db.query(sql, [name, icon, isVisibleVal]);
 
         await logActivity(req.user.userId, 'Tambah Kategori', 'category', result.insertId, `Kategori baru: ${name}`);
 
         res.status(201).json({
             "message": "success",
-            "data": { id: result.insertId, name },
+            "data": { id: result.insertId, name, icon, is_visible: isVisibleVal === 1 },
         });
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
@@ -1245,21 +1249,51 @@ app.post("/api/categories", authenticateToken, authorizeRoles('user', 'admin', '
 });
 
 // Update a category
-app.put("/api/categories/:id", authenticateToken, authorizeRoles('user', 'admin', 'penjual'), async (req, res) => {
+app.put("/api/categories/:id", authenticateToken, authorizeRoles('user', 'admin', 'penjual'), upload.single('icon'), async (req, res) => {
     try {
-        const { name } = req.body;
+        const { name, is_visible } = req.body;
         const { id } = req.params;
+        const newIcon = req.file ? `/public/uploads/${req.file.filename}` : null;
+
+        // Parse is_visible if provided. If undefined, we might want to keep it as is, but usually PUT updates all or selective.
+        // Let's assume if it's not provided, we don't update it? No, usually with FormData it might be missing if unchecked depending on frontend.
+        // But for toggle, it should be sent. Let's check if it exists in body.
+        let isVisibleVal;
+        if (is_visible !== undefined) {
+            isVisibleVal = (is_visible === 'true' || is_visible === true || is_visible === '1' || is_visible === 1) ? 1 : 0;
+        }
+
         if (!name) {
             return res.status(400).json({ "error": "Category name is required" });
         }
-        const sql = 'UPDATE categories SET name = ? WHERE id = ?';
-        const [result] = await db.query(sql, [name, id]);
+
+        let sql, params;
+        // Construct query dynamically based on what's provided/changed
+        // But simpler: if newIcon, update icon. Always update name. If isVisibleVal defined, update it.
+
+        let updates = ['name = ?'];
+        let values = [name];
+
+        if (newIcon) {
+            updates.push('icon = ?');
+            values.push(newIcon);
+        }
+
+        if (isVisibleVal !== undefined) {
+            updates.push('is_visible = ?');
+            values.push(isVisibleVal);
+        }
+
+        sql = `UPDATE categories SET ${updates.join(', ')} WHERE id = ?`;
+        values.push(id);
+
+        const [result] = await db.query(sql, values);
         if (result.affectedRows === 0) {
             return res.status(404).json({ "error": "Category not found" });
         }
         res.json({
             "message": "success",
-            "data": { id, name },
+            "data": { id, name, icon: newIcon, is_visible: isVisibleVal === 1 },
         });
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
@@ -5800,7 +5834,17 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
         );
 
         const io = req.app.get('io');
-        const messageData = { id: result.insertId, sender_id, receiver_id, message, order_id, image_url: processedImageUrl, created_at: new Date() };
+        const messageData = {
+            id: result.insertId,
+            sender_id,
+            receiver_id,
+            message,
+            order_id,
+            image_url: processedImageUrl,
+            created_at: new Date(),
+            sender_role: req.user.role,
+            receiver_role: receiverRole
+        };
 
         // Emit to the specific receiver
         io.emit('new_message', messageData);

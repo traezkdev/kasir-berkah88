@@ -29,7 +29,17 @@ import {
     ShoppingBag,
     XCircle,
     MessageSquare,
-    CheckCircle2
+    CheckCircle2,
+    Utensils,
+    Fish,
+    Coffee,
+    Tag,
+    MoreHorizontal,
+    Drumstick,
+    CupSoda,
+    Soup,
+    Cookie,
+    LayoutGrid
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
 import { useCart } from '../../context/CartContext';
@@ -183,8 +193,18 @@ const CustomerMenu = ({ navigation, route }) => {
     }, []);
 
     useEffect(() => {
+        if (categoryId) {
+            setSelectedCategory(categoryId);
+        } else if (filter) {
+            setSelectedCategory('all');
+        } else {
+            setSelectedCategory('all');
+        }
+    }, [categoryId, filter]);
+
+    useEffect(() => {
         fetchMenus();
-    }, [searchTerm, selectedCategory, categories]);
+    }, [searchTerm, selectedCategory, categories, filter]);
 
     useEffect(() => {
         if (itemId && menus.length > 0) {
@@ -198,7 +218,10 @@ const CustomerMenu = ({ navigation, route }) => {
     const fetchInitialData = useCallback(async () => {
         try {
             const catRes = await apiService.get('/api/categories');
-            if (catRes.data.data) setCategories(catRes.data.data);
+            if (catRes.data.data) {
+                const visibleCategories = catRes.data.data.filter(c => c.is_visible !== 0 && c.is_visible !== false);
+                setCategories(visibleCategories);
+            }
         } catch (error) {
             console.error(error);
         }
@@ -217,6 +240,23 @@ const CustomerMenu = ({ navigation, route }) => {
 
             const res = await apiService.get(url);
             let items = res.data.data || [];
+
+            // Apply filter if any
+            if (filter) {
+                if (filter === 'Sedang Promo') {
+                    items = items.filter(i => i.discount > 0);
+                } else if (filter === 'Paling Laris') {
+                    items = items.sort((a, b) => (parseFloat(b.average_rating) || 0) - (parseFloat(a.average_rating) || 0));
+                } else if (filter === 'Terbaru') {
+                    items = items.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                } else if (filter === 'Paket Hemat') {
+                    items = items.filter(i =>
+                        (i.name && i.name.toLowerCase().includes('paket')) ||
+                        (i.category && i.category.toLowerCase().includes('paket'))
+                    );
+                }
+            }
+
             if (searchTerm) {
                 items = items.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
             }
@@ -240,6 +280,19 @@ const CustomerMenu = ({ navigation, route }) => {
         } finally {
             setReviewsLoading(false);
         }
+    }, []);
+
+    const getCategoryIcon = useCallback((categoryName) => {
+        const name = categoryName ? categoryName.toUpperCase() : '';
+        if (name.includes('AYAM') || name.includes('CHICKEN') || name.includes('BEBEK') || name.includes('DUCK')) return Drumstick;
+        if (name.includes('IKAN') || name.includes('LELE') || name.includes('GURAME') || name.includes('SEAFOOD') || name.includes('NILA')) return Fish;
+        if (name.includes('MINUM') || name.includes('ES') || name.includes('JUS') || name.includes('AIR')) return CupSoda;
+        if (name.includes('KOPI') || name.includes('COFFEE') || name.includes('TEH') || name.includes('TEA')) return Coffee;
+        if (name.includes('HEMAT') || name.includes('PROMO') || name.includes('PAKET') || name.includes('DISKON')) return Tag;
+        if (name.includes('NASI') || name.includes('SOP') || name.includes('SOTO') || name.includes('MIE') || name.includes('BAKSO')) return Soup;
+        if (name.includes('SNACK') || name.includes('CEMILAN') || name.includes('GORENGAN') || name.includes('KERUPUK')) return Cookie;
+        if (name.includes('LAIN') || name.includes('EXTRA')) return MoreHorizontal;
+        return Utensils;
     }, []);
 
     const handleOpenDetail = useCallback((item) => {
@@ -302,17 +355,29 @@ const CustomerMenu = ({ navigation, route }) => {
                         style={[styles.tab, selectedCategory === 'all' && styles.activeTab]}
                         onPress={() => setSelectedCategory('all')}
                     >
+                        <LayoutGrid size={14} color={selectedCategory === 'all' ? "#FFFFFF" : "#64748B"} style={{ marginRight: 6 }} />
                         <Text style={[styles.tabText, selectedCategory === 'all' && styles.activeTabText]}>Semua</Text>
                     </TouchableOpacity>
-                    {categories.map(cat => (
-                        <TouchableOpacity
-                            key={cat.id}
-                            style={[styles.tab, selectedCategory === cat.id && styles.activeTab]}
-                            onPress={() => setSelectedCategory(cat.id)}
-                        >
-                            <Text style={[styles.tabText, selectedCategory === cat.id && styles.activeTabText]}>{cat.name}</Text>
-                        </TouchableOpacity>
-                    ))}
+                    {categories.map(cat => {
+                        const IconComponent = getCategoryIcon(cat.name);
+                        return (
+                            <TouchableOpacity
+                                key={cat.id}
+                                style={[styles.tab, selectedCategory === cat.id && styles.activeTab]}
+                                onPress={() => setSelectedCategory(cat.id)}
+                            >
+                                {cat.icon ? (
+                                    <Image
+                                        source={{ uri: `${API_URL}${cat.icon}` }}
+                                        style={{ width: 14, height: 14, marginRight: 6, resizeMode: 'contain' }}
+                                    />
+                                ) : (
+                                    <IconComponent size={14} color={selectedCategory === cat.id ? "#FFFFFF" : "#64748B"} style={{ marginRight: 6 }} />
+                                )}
+                                <Text style={[styles.tabText, selectedCategory === cat.id && styles.activeTabText]}>{cat.name}</Text>
+                            </TouchableOpacity>
+                        );
+                    })}
                 </ScrollView>
             </View>
 
@@ -608,6 +673,8 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     tab: {
+        flexDirection: 'row',
+        alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 20,

@@ -44,14 +44,21 @@ const CustomerMenu = () => {
     }, [id, menus]);
 
     useEffect(() => {
+        setSelectedCategory(searchParams.get('category') || 'all');
+    }, [searchParams]);
+
+    useEffect(() => {
         fetchMenus();
-    }, [searchTerm, selectedCategory, categories]);
+    }, [searchTerm, selectedCategory, categories, searchParams]);
 
     const fetchInitialData = async () => {
         try {
             const catRes = await authFetch(`${import.meta.env.VITE_API_URL}/api/categories`);
             const catData = await catRes.json();
-            if (catData.data) setCategories(catData.data);
+            if (catData.data) {
+                const visibleCategories = catData.data.filter(c => c.is_visible !== 0 && c.is_visible !== false);
+                setCategories(visibleCategories);
+            }
             // fetchMenus will be triggered by useEffect when categories update
         } catch (error) {
             console.error(error);
@@ -79,6 +86,24 @@ const CustomerMenu = () => {
             const data = await res.json();
 
             let items = data.data || [];
+
+            // Apply filter from searchParams
+            const filter = searchParams.get('filter');
+            if (filter) {
+                if (filter === 'sedang_promo') {
+                    items = items.filter(i => i.discount > 0);
+                } else if (filter === 'paling_laris') {
+                    items = items.sort((a, b) => (parseFloat(b.average_rating) || 0) - (parseFloat(a.average_rating) || 0));
+                } else if (filter === 'terbaru') {
+                    items = items.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                } else if (filter === 'paket_hemat') {
+                    items = items.filter(i =>
+                        (i.name && i.name.toLowerCase().includes('paket')) ||
+                        (i.category && i.category.toLowerCase().includes('paket'))
+                    );
+                }
+            }
+
             if (searchTerm) {
                 items = items.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
             }

@@ -405,6 +405,42 @@ export const OrderNotificationProvider = ({ children }) => {
             }
         });
 
+        // Listen for new chat messages
+        socket.on('new_message', (message) => {
+            if (!isMounted.current || !user) return;
+
+            // Don't notify for my own messages
+            if (message.sender_id === user.userId || message.sender_id === user.id) return;
+
+            const amISeller = ['admin', 'owner', 'penjual', 'kasir'].includes(user.role);
+            const isFromCustomer = message.sender_role === 'pelanggan' || message.sender_role === 'user';
+
+            let shouldNotify = false;
+
+            // 1. If I am the direct receiver
+            if (message.receiver_id === (user.userId || user.id)) {
+                shouldNotify = true;
+            }
+            // 2. If I am a seller and the message is from a customer (Team Inbox logic)
+            // AND the message was sent to a seller (which it should be if I'm seeing it contextually, but good to check)
+            else if (amISeller && isFromCustomer) {
+                shouldNotify = true;
+            }
+
+            if (shouldNotify) {
+                console.log('New chat message notification triggered');
+                playNotificationSound();
+
+                // Only send local notification if we aren't already looking at the chat? 
+                // For simplicity, always send it for now, the system handles foreground presentation config.
+                sendLocalNotification(
+                    `Pesan dari ${message.sender_role === 'pelanggan' ? 'Pelanggan' : 'Admin/Penjual'}`,
+                    message.message || 'Mengirim foto',
+                    { type: 'chat', senderId: message.sender_id, orderId: message.order_id }
+                );
+            }
+        });
+
         socketRef.current = socket;
 
         return () => {

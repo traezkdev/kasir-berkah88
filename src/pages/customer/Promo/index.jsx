@@ -64,22 +64,39 @@ const CustomerPromo = () => {
             </div>
 
             <div className="pt-20 px-6 space-y-8">
-                {/* Hero section */}
-                {promos.filter(p => p.is_hero && p.image_url).map((hero, idx) => (
-                    <div
-                        key={idx}
-                        className="relative h-48 rounded-[2rem] overflow-hidden shadow-xl mb-6 group cursor-pointer active:scale-[0.98] transition-all"
-                        onClick={() => hero.code ? openModal(hero) : navigate('/customer/menu')}
-                    >
-                        {hero.image_url && (
-                            <img
-                                src={hero.image_url.startsWith('http') ? hero.image_url : `${API_URL}${hero.image_url}`}
-                                alt={hero.title}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                            />
+                {/* Hero section - Slider */}
+                {promos.filter(p => p.is_hero && p.image_url).length > 0 && (
+                    <div className="relative group">
+                        <div className="overflow-x-auto no-scrollbar flex gap-4 snap-x snap-mandatory scroll-smooth" id="hero-promo-slider">
+                            {promos.filter(p => p.is_hero && p.image_url).map((hero, idx) => (
+                                <div
+                                    key={idx}
+                                    className="min-w-full snap-center"
+                                    onClick={() => hero.code ? openModal(hero) : navigate('/customer/menu')}
+                                >
+                                    <div className="relative h-48 rounded-[2.5rem] overflow-hidden active:scale-[0.98] transition-all cursor-pointer border border-gray-100">
+                                        <img
+                                            src={hero.image_url.startsWith('http') ? hero.image_url : `${API_URL}${hero.image_url}`}
+                                            alt={hero.title}
+                                            className="w-full h-full object-cover transition-transform duration-700"
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        {/* Pagination Dots */}
+                        {promos.filter(p => p.is_hero && p.image_url).length > 1 && (
+                            <div className="flex justify-center gap-1.5 mt-4">
+                                {promos.filter(p => p.is_hero && p.image_url).map((_, idx) => (
+                                    <div
+                                        key={idx}
+                                        className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${idx === 0 ? 'bg-green-600 w-4' : 'bg-gray-200'}`}
+                                    ></div>
+                                ))}
+                            </div>
                         )}
                     </div>
-                ))}
+                )}
 
                 {/* Vouchers Section */}
                 <div>
