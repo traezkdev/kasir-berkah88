@@ -12,7 +12,8 @@ import {
     ActivityIndicator,
     Alert,
     Clipboard,
-    Modal
+    Modal,
+    FlatList
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -199,7 +200,10 @@ const PromoScreen = ({ navigation }) => {
 
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                <TouchableOpacity
+                    onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Home')}
+                    style={styles.backBtn}
+                >
                     <ArrowLeft size={24} color="#1E293B" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Promo & Penawaran</Text>
@@ -217,12 +221,46 @@ const PromoScreen = ({ navigation }) => {
                 ) : (
                     <>
                         {/* Hero section - Dynamic from promos with is_hero flag */}
+                        {/* Hero Slider Section */}
                         {promos.filter(p => p.is_hero).length > 0 && (
-                            <ImageBackground
-                                source={{ uri: getImageUrl(promos.find(p => p.is_hero)?.image_url) || 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1000&auto=format&fit=crop' }}
-                                style={styles.heroSection}
-                                imageStyle={{ borderRadius: 30 }}
-                            />
+                            <View style={{ marginBottom: 30 }}>
+                                <FlatList
+                                    data={promos.filter(p => p.is_hero)}
+                                    horizontal
+                                    pagingEnabled
+                                    showsHorizontalScrollIndicator={false}
+                                    keyExtractor={(item) => item.id.toString()}
+                                    renderItem={({ item }) => (
+                                        <View style={{ width: width - 40, marginHorizontal: 20 }}>
+                                            <ImageBackground
+                                                source={{ uri: getImageUrl(item.image_url) || 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1000&auto=format&fit=crop' }}
+                                                style={styles.heroSection}
+                                                imageStyle={{ borderRadius: 30 }}
+                                            />
+                                        </View>
+                                    )}
+                                    // Make the FlatList content width fit the screen properly
+                                    snapToInterval={width}
+                                    decelerationRate="fast"
+                                    style={{ marginHorizontal: -20 }} // Offset the parent padding
+                                />
+                                {promos.filter(p => p.is_hero).length > 1 && (
+                                    <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: -20, gap: 5 }}>
+                                        {promos.filter(p => p.is_hero).map((_, index) => (
+                                            <View
+                                                key={index}
+                                                style={{
+                                                    width: 6,
+                                                    height: 6,
+                                                    borderRadius: 3,
+                                                    backgroundColor: '#FFFFFF',
+                                                    opacity: 0.8
+                                                }}
+                                            />
+                                        ))}
+                                    </View>
+                                )}
+                            </View>
                         )}
 
                         {/* Voucher Section */}
@@ -350,7 +388,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 16,
-        paddingVertical: 15,
+        paddingVertical: 10,
         backgroundColor: '#FFFFFF',
     },
     backBtn: {

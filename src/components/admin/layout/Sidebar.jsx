@@ -321,6 +321,18 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
                 Stok Bahan Mentah
               </MenuItem>
               <MenuItem
+                to="/admin/promos"
+                icon={FaGift}
+                onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+                isCollapsed={isCollapsed}
+                handleMouseEnter={handleMouseEnter}
+                handleMouseLeave={handleMouseLeave}
+                navLinkClasses={navLinkClasses}
+                activeLinkClasses={activeLinkClasses}
+              >
+                Manajemen Promo
+              </MenuItem>
+              <MenuItem
                 to="/main-critical-stock"
                 icon={FaExclamationTriangle}
                 onClick={() => window.innerWidth < 1024 && toggleSidebar()}

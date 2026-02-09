@@ -59,6 +59,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
+import Svg, { Path } from 'react-native-svg';
+
 const SellerTabs = () => {
     const { pendingCount } = useOrderNotification();
     const { unreadCount } = useChat();

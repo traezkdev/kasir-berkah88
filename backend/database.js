@@ -873,6 +873,28 @@ const setupDatabase = async () => {
       console.log('Default categories inserted.');
     }
 
+    // Check and add icon column to categories if it doesn't exist
+    const checkCategoryIconColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'categories' AND COLUMN_NAME = 'icon';
+    `;
+    const [iconCategoryRows] = await connection.query(checkCategoryIconColumn);
+    if (iconCategoryRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE categories ADD COLUMN icon VARCHAR(255) DEFAULT NULL");
+      console.log('Added icon column to categories table.');
+    }
+
+    // Check and add is_visible column to categories if it doesn't exist
+    const checkCategoryVisibleColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'categories' AND COLUMN_NAME = 'is_visible';
+    `;
+    const [visibleCategoryRows] = await connection.query(checkCategoryVisibleColumn);
+    if (visibleCategoryRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE categories ADD COLUMN is_visible BOOLEAN DEFAULT TRUE");
+      console.log('Added is_visible column to categories table.');
+    }
+
     const createEmployeeCreditsTable = `
       CREATE TABLE IF NOT EXISTS employee_credits (
         id INT AUTO_INCREMENT PRIMARY KEY,

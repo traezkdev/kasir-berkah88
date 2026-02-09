@@ -32,13 +32,19 @@ const SettingsModal = ({ title, isOpen, onClose, children, size = 'lg' }) => {
   }[size];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-[2000] p-4" onClick={onClose}>
-      <div className={`bg-card rounded-xl shadow-2xl w-full ${sizeClass} max-h-[90vh] flex flex-col`} onClick={(e) => e.stopPropagation()}>
-        <div className="flex justify-between items-center p-6 border-b border-border">
-          <h3 className="text-xl font-semibold text-text-primary">{title}</h3>
-          <Button variant="ghost" size="icon" onClick={onClose}><AppIcon name="X" className="w-6 h-6" /></Button>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[2000] p-0 sm:p-4 transition-all duration-300" onClick={onClose}>
+      <div
+        className={`bg-card rounded-t-2xl sm:rounded-xl shadow-2xl w-full ${sizeClass} max-h-[95vh] sm:max-h-[90vh] flex flex-col absolute bottom-0 sm:relative sm:bottom-auto transform transition-transform duration-300 ease-out animate-slide-up sm:animate-in sm:zoom-in-95`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto my-3 sm:hidden" />
+        <div className="flex justify-between items-center px-5 py-4 sm:p-6 border-b border-border">
+          <h3 className="text-lg sm:text-xl font-bold text-text-primary tracking-tight">{title}</h3>
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-9 w-9 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors">
+            <AppIcon name="X" className="w-5 h-5" />
+          </Button>
         </div>
-        <div className="p-6 overflow-y-auto">{children}</div>
+        <div className="p-4 sm:p-6 overflow-y-auto overflow-x-hidden custom-scrollbar">{children}</div>
       </div>
     </div>
   );

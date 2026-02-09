@@ -45,7 +45,10 @@ const CustomerDashboard = () => {
                 // Fetch Categories
                 const catRes = await authFetch(`${import.meta.env.VITE_API_URL}/api/categories`);
                 const catData = await catRes.json();
-                if (catData.data) setCategories(catData.data.slice(0, 5));
+                if (catData.data) {
+                    const visibleCategories = catData.data.filter(c => c.is_visible !== 0 && c.is_visible !== false);
+                    setCategories(visibleCategories);
+                }
 
                 // Fetch Points
                 try {
@@ -138,6 +141,19 @@ const CustomerDashboard = () => {
         if (hour >= 11 && hour < 15) return 'Selamat Siang';
         if (hour >= 15 && hour < 19) return 'Selamat Sore';
         return 'Selamat Malam';
+    };
+
+    const getCategoryIcon = (categoryName) => {
+        const name = categoryName ? categoryName.toUpperCase() : '';
+        if (name.includes('AYAM') || name.includes('CHICKEN') || name.includes('BEBEK') || name.includes('DUCK')) return 'Drumstick';
+        if (name.includes('IKAN') || name.includes('LELE') || name.includes('GURAME') || name.includes('SEAFOOD') || name.includes('NILA')) return 'Fish';
+        if (name.includes('MINUM') || name.includes('ES') || name.includes('JUS') || name.includes('AIR')) return 'CupSoda';
+        if (name.includes('KOPI') || name.includes('COFFEE') || name.includes('TEH') || name.includes('TEA')) return 'Coffee';
+        if (name.includes('HEMAT') || name.includes('PROMO') || name.includes('PAKET') || name.includes('DISKON')) return 'Tag';
+        if (name.includes('NASI') || name.includes('SOP') || name.includes('SOTO') || name.includes('MIE') || name.includes('BAKSO')) return 'Soup';
+        if (name.includes('SNACK') || name.includes('CEMILAN') || name.includes('GORENGAN') || name.includes('KERUPUK')) return 'Cookie';
+        if (name.includes('LAIN') || name.includes('EXTRA')) return 'MoreHorizontal';
+        return 'Utensils';
     };
 
     const formatCurrency = (val) => {
@@ -328,7 +344,11 @@ const CustomerDashboard = () => {
                     {categories.map((cat) => (
                         <Link to={`/customer/menu?category=${cat.id}`} key={cat.id} className="flex flex-col items-center gap-3 min-w-[75px] cursor-pointer group">
                             <div className="w-16 h-16 bg-gray-50 dark:bg-slate-800 rounded-[1.8rem] flex items-center justify-center border border-gray-100 dark:border-slate-700 group-hover:bg-gray-100 transition-all shadow-sm group-active:scale-95">
-                                <Icon name="Coffee" size={28} className="text-gray-500" />
+                                {cat.icon ? (
+                                    <img src={`${import.meta.env.VITE_API_URL}${cat.icon}`} alt={cat.name} className="w-7 h-7 object-contain" />
+                                ) : (
+                                    <Icon name={getCategoryIcon(cat.name)} size={28} className="text-gray-500" />
+                                )}
                             </div>
                             <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest text-center truncate w-full">{cat.name}</span>
                         </Link>

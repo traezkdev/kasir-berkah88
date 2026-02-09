@@ -249,7 +249,7 @@ const CustomerCart = ({ navigation }) => {
 
             console.log('Reactive Check:', { cartTotal, minReq });
             if (cartTotal < minReq) {
-                showToast(`Promo dicopot. TOTAL: ${cartTotal} < MIN: ${minReq}`, 'info');
+                // showToast(`Promo dicopot. TOTAL: ${cartTotal} < MIN: ${minReq}`, 'info');
                 setAppliedPromo(null);
             }
         }
@@ -366,6 +366,7 @@ const CustomerCart = ({ navigation }) => {
             if (response.status === 201 || (response.data && response.data.data)) {
                 showToast('Pesanan berhasil dibuat! Silakan tunggu konfirmasi.', 'success');
                 clearCart();
+                setAppliedPromo(null);
                 // Navigate to OrderDetails with the new ID
                 navigation.navigate('OrderDetails', { orderId: response.data.data.id });
             } else {
