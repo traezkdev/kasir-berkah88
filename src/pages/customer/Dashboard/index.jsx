@@ -4,6 +4,7 @@ import { io } from 'socket.io-client';
 import Icon from '../../../components/AppIcon';
 import authFetch from '../../../utils/authFetch';
 import { useAppSettings } from '../../../contexts/AppSettingsContext';
+import { useCart } from '../context/CartContext';
 
 const CustomerDashboard = () => {
     const navigate = useNavigate();
@@ -12,6 +13,7 @@ const CustomerDashboard = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [userName, setUserName] = useState('Pelanggan');
     const [points, setPoints] = useState(0);
+    const { cartCount } = useCart();
     const { isOpen } = useAppSettings();
 
     const [banners, setBanners] = useState([]);
@@ -154,8 +156,16 @@ const CustomerDashboard = () => {
                         <Icon name="Search" className="w-4 h-4 text-gray-400" />
                         <span className="text-gray-400 text-xs font-medium">Cari menu favorit...</span>
                     </div>
-                    <Link to="/customer/profile" className="p-2 text-gray-400">
-                        <Icon name="Bell" className="w-5 h-5" />
+                    <Link to="/customer/chat" className="p-2 text-gray-400 hover:text-green-600 transition-colors">
+                        <Icon name="MessageCircle" className="w-5 h-5" />
+                    </Link>
+                    <Link to="/customer/cart" className="p-2 text-gray-400 hover:text-green-600 transition-colors relative">
+                        <Icon name="ShoppingCart" className="w-5 h-5" />
+                        {cartCount > 0 && (
+                            <span className="absolute top-1 right-1 bg-red-500 text-white text-[8px] font-bold px-1 min-w-[14px] h-[14px] flex items-center justify-center rounded-full border-2 border-white">
+                                {cartCount}
+                            </span>
+                        )}
                     </Link>
                 </div>
             </div>
@@ -167,9 +177,19 @@ const CustomerDashboard = () => {
                         <p className="text-green-100 text-sm font-medium">{getGreeting()},</p>
                         <h1 className="text-2xl font-bold">{userName}</h1>
                     </div>
-                    <Link to="/customer/profile" className="bg-white/20 p-2 rounded-full hover:bg-white/30 transition-colors backdrop-blur-sm">
-                        <Icon name="Bell" className="w-5 h-5 text-white" />
-                    </Link>
+                    <div className="flex gap-3">
+                        <Link to="/customer/chat" className="bg-white/20 p-2 rounded-full hover:bg-white/30 transition-colors backdrop-blur-sm relative">
+                            <Icon name="MessageCircle" className="w-5 h-5 text-white" />
+                        </Link>
+                        <Link to="/customer/cart" className="bg-white/20 p-2 rounded-full hover:bg-white/30 transition-colors backdrop-blur-sm relative">
+                            <Icon name="ShoppingCart" className="w-5 h-5 text-white" />
+                            {cartCount > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full border-2 border-green-600 shadow-sm animate-in zoom-in duration-300">
+                                    {cartCount}
+                                </span>
+                            )}
+                        </Link>
+                    </div>
                 </div>
 
                 {!isOpen && (
@@ -268,7 +288,11 @@ const CustomerDashboard = () => {
                 </div>
                 <div className="overflow-x-auto no-scrollbar flex gap-4 pb-4 snap-x animate-scroll-hint scroll-smooth" id="banner-scroll">
                     {banners.map((banner) => (
-                        <div key={banner.id} className={`${banner.color_class} min-w-[90%] h-40 rounded-3xl p-6 text-white flex flex-col justify-between shadow-xl snap-center active:scale-95 transition-all cursor-pointer relative overflow-hidden`}>
+                        <div
+                            key={banner.id}
+                            onClick={() => navigate('/customer/promo')}
+                            className={`${banner.color_class} min-w-[90%] h-40 rounded-3xl p-6 text-white flex flex-col justify-between shadow-xl snap-center active:scale-95 transition-all cursor-pointer relative overflow-hidden`}
+                        >
                             <div className="z-10 relative">
                                 <h3 className="font-black text-2xl tracking-tighter leading-tight mb-1">{banner.title}</h3>
                                 <p className="text-xs font-bold opacity-80">{banner.subtitle}</p>
@@ -277,7 +301,7 @@ const CustomerDashboard = () => {
                                 <div className="bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-white/20">Ambil Promo</div>
                             </div>
                             {/* Decorative Icon */}
-                            <Icon name={banner.icon_name} size={120} className="absolute -bottom-6 -right-6 text-white/10 rotate-12" />
+                            <Icon name="Sparkles" size={140} className="absolute -bottom-6 -right-6 text-white/10 rotate-12" />
                         </div>
                     ))}
                 </div>

@@ -1110,8 +1110,44 @@ app.post("/api/menu-reviews", authenticateToken, authorizeRoles('pelanggan', 'us
         const user_id = req.user.userId;
 
         if (!menu_item_id || !rating) {
-            return res.status(400).json({ error: "menu_item_id and rating are required" });
+            return res.status(400).json({ error: "ID menu dan rating wajib diisi" });
         }
+
+        // Anti-Spam & Validation: Check if order exists, belongs to user, is completed, AND contains the menu item
+        if (order_id) {
+            const [orderRows] = await db.query('SELECT items, status, user_id FROM orders WHERE id = ?', [order_id]);
+            if (orderRows.length === 0) {
+                return res.status(404).json({ error: "Pesanan tidak ditemukan" });
+            }
+            const order = orderRows[0];
+            if (order.user_id !== user_id) {
+                return res.status(403).json({ error: "Anda tidak memiliki akses ke pesanan ini" });
+            }
+            if (order.status !== 'completed') {
+                return res.status(400).json({ error: "Anda hanya bisa memberi ulasan pada pesanan yang sudah selesai" });
+            }
+
+            const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+            const hasItem = items.some(item => item.id.toString() === menu_item_id.toString());
+            if (!hasItem) {
+                return res.status(400).json({ error: "Menu ini tidak ada dalam pesanan Anda" });
+            }
+        } else {
+            // If no order_id is provided, we check if they HAVE EVER ordered it in a completed order
+            const [everOrderedRows] = await db.query(`
+                SELECT id FROM orders 
+                WHERE user_id = ? AND status = 'completed' AND items LIKE ?
+            `, [user_id, `%${menu_item_id}%`]);
+
+            if (everOrderedRows.length === 0) {
+                return res.status(403).json({ error: "Anda hanya bisa mengulas menu yang pernah Anda pesan" });
+            }
+        }
+
+        // Use a unique constraint on (user_id, menu_item_id) if we want "one rating per menu"
+        // But the database current unique is (user_id, menu_item_id, order_id).
+        // If we want to allow EDITING regardless of order_id, we can find existing one first
+        // OR we change the DB constraint. Let's stick to the DB constraint for now but handle updates.
 
         const sql = `
             INSERT INTO menu_reviews (menu_item_id, user_id, order_id, rating, comment)
@@ -1126,6 +1162,27 @@ app.post("/api/menu-reviews", authenticateToken, authorizeRoles('pelanggan', 'us
         res.status(201).json({ message: "success", data: { menu_item_id, rating, comment } });
     } catch (err) {
         console.error("Error submitting review:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get my reviews for specific items
+app.get("/api/my-reviews", authenticateToken, async (req, res) => {
+    try {
+        const { menu_item_ids } = req.query; // Expecting comma separated IDs
+        const user_id = req.user.userId;
+
+        if (!menu_item_ids) {
+            return res.json({ message: "success", data: [] });
+        }
+
+        const idArray = menu_item_ids.split(',');
+        const [rows] = await db.query(
+            "SELECT * FROM menu_reviews WHERE user_id = ? AND menu_item_id IN (?)",
+            [user_id, idArray]
+        );
+        res.json({ message: "success", data: rows });
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });

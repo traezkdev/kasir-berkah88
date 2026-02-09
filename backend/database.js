@@ -1597,11 +1597,26 @@ const setupDatabase = async () => {
         FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL,
-        UNIQUE KEY \`unique_user_item_order\` (user_id, menu_item_id(191), order_id)
+        UNIQUE KEY \`unique_user_item\` (user_id, menu_item_id(191))
       );
     `;
     await connection.query(createMenuReviewsTable);
     console.log('menu_reviews table is ready.');
+
+    // Migration for unique constraint
+    try {
+      const [existingConstraints] = await connection.query(`
+            SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS 
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'menu_reviews' AND INDEX_NAME = 'unique_user_item_order'
+        `);
+      if (existingConstraints.length > 0) {
+        await connection.query("ALTER TABLE menu_reviews DROP INDEX unique_user_item_order");
+        await connection.query("ALTER TABLE menu_reviews ADD UNIQUE KEY unique_user_item (user_id, menu_item_id(191))");
+        console.log('Successfully updated menu_reviews unique constraint.');
+      }
+    } catch (err) {
+      console.error('Error migrating menu_reviews constraints:', err.message);
+    }
 
     // --- Points System Migration ---
     // Check and add points column to users if it doesn't exist

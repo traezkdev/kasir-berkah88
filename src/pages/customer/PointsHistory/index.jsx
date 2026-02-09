@@ -78,9 +78,9 @@ const PointsHistory = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-6">
+        <div className="min-h-screen bg-gray-50 pb-6 max-w-md mx-auto relative">
             {/* Header */}
-            <div className="bg-green-600 px-6 pt-6 pb-6 sticky top-0 z-50">
+            <div className="fixed top-0 left-0 right-0 z-50 bg-green-600 px-6 pt-6 pb-6 shadow-lg max-w-md mx-auto">
                 <div className="flex items-center justify-between">
                     <button
                         onClick={() => navigate('/customer/dashboard')}
@@ -93,8 +93,11 @@ const PointsHistory = () => {
                 </div>
             </div>
 
+            {/* Spacer to push content down from fixed header */}
+            <div className="h-[88px]"></div>
+
             {/* Points Card */}
-            <div className="mx-6 -mt-2 bg-white rounded-3xl p-6 shadow-xl border border-gray-100">
+            <div className="mx-6 mt-6 bg-white rounded-3xl p-6 shadow-xl border border-gray-100">
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center mb-2">
                     TOTAL POIN ANDA
                 </p>

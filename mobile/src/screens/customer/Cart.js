@@ -572,69 +572,70 @@ const CustomerCart = ({ navigation }) => {
                     )}
                 </View>
 
-                <View style={styles.divider} />
-
                 {/* Points Redemption Section */}
                 {points > 0 && (
-                    <View style={styles.section}>
-                        <View style={styles.pointsSectionHeader}>
-                            <View style={styles.pointsHeaderIcon}>
-                                <Text style={styles.pointsHeaderEmoji}>💎</Text>
+                    <>
+                        <View style={styles.divider} />
+                        <View style={styles.section}>
+                            <View style={styles.pointsSectionHeader}>
+                                <View style={styles.pointsHeaderIcon}>
+                                    <Text style={styles.pointsHeaderEmoji}>💎</Text>
+                                </View>
+                                <View style={styles.pointsHeaderText}>
+                                    <Text style={styles.sectionTitle}>Tukar Poin Berkah88</Text>
+                                    <Text style={styles.pointsHeaderSubtitle}>Hemat lebih banyak dengan poin!</Text>
+                                </View>
                             </View>
-                            <View style={styles.pointsHeaderText}>
-                                <Text style={styles.sectionTitle}>Tukar Poin Berkah88</Text>
-                                <Text style={styles.pointsHeaderSubtitle}>Hemat lebih banyak dengan poin!</Text>
-                            </View>
-                        </View>
 
-                        <View style={styles.pointsCard}>
-                            <View style={styles.pointsCardGradient}>
-                                <View style={styles.pointsCardContent}>
-                                    <View style={styles.pointsMainRow}>
-                                        <View style={styles.pointsLeft}>
-                                            <View style={styles.pointsBadge}>
-                                                <Text style={styles.pointsBadgeText}>SALDO POIN</Text>
+                            <View style={styles.pointsCard}>
+                                <View style={styles.pointsCardGradient}>
+                                    <View style={styles.pointsCardContent}>
+                                        <View style={styles.pointsMainRow}>
+                                            <View style={styles.pointsLeft}>
+                                                <View style={styles.pointsBadge}>
+                                                    <Text style={styles.pointsBadgeText}>SALDO POIN</Text>
+                                                </View>
+                                                <Text style={styles.pointsValue}>{points.toLocaleString('id-ID')}</Text>
+                                                <Text style={styles.pointsValueLabel}>Poin Tersedia</Text>
                                             </View>
-                                            <Text style={styles.pointsValue}>{points.toLocaleString('id-ID')}</Text>
-                                            <Text style={styles.pointsValueLabel}>Poin Tersedia</Text>
+
+                                            <View style={styles.pointsRight}>
+                                                <View style={styles.switchContainer}>
+                                                    <Text style={styles.switchLabel}>{usePoints ? 'AKTIF' : 'NONAKTIF'}</Text>
+                                                    <Switch
+                                                        value={usePoints}
+                                                        onValueChange={setUsePoints}
+                                                        trackColor={{ false: '#CBD5E1', true: '#34D399' }}
+                                                        thumbColor={usePoints ? '#FFFFFF' : '#F1F5F9'}
+                                                        ios_backgroundColor="#CBD5E1"
+                                                    />
+                                                </View>
+                                            </View>
                                         </View>
 
-                                        <View style={styles.pointsRight}>
-                                            <View style={styles.switchContainer}>
-                                                <Text style={styles.switchLabel}>{usePoints ? 'AKTIF' : 'NONAKTIF'}</Text>
-                                                <Switch
-                                                    value={usePoints}
-                                                    onValueChange={setUsePoints}
-                                                    trackColor={{ false: '#CBD5E1', true: '#34D399' }}
-                                                    thumbColor={usePoints ? '#FFFFFF' : '#F1F5F9'}
-                                                    ios_backgroundColor="#CBD5E1"
-                                                />
-                                            </View>
+                                        <View style={styles.pointsEquivalentBox}>
+                                            <Text style={styles.pointsEquivalentLabel}>Setara dengan</Text>
+                                            <Text style={styles.pointsEquivalent}>{formatCurrency(points)}</Text>
                                         </View>
                                     </View>
+                                </View>
+                            </View>
 
-                                    <View style={styles.pointsEquivalentBox}>
-                                        <Text style={styles.pointsEquivalentLabel}>Setara dengan</Text>
-                                        <Text style={styles.pointsEquivalent}>{formatCurrency(points)}</Text>
+                            {usePoints && pointsToUse > 0 && (
+                                <View style={styles.pointsActiveNotice}>
+                                    <View style={styles.pointsActiveIcon}>
+                                        <Text style={styles.pointsActiveIconText}>✓</Text>
+                                    </View>
+                                    <View style={styles.pointsActiveContent}>
+                                        <Text style={styles.pointsActiveTitle}>Poin Digunakan</Text>
+                                        <Text style={styles.pointsActiveDesc}>
+                                            Kamu menghemat <Text style={styles.pointsActiveAmount}>{formatCurrency(pointsToUse)}</Text> dengan {pointsToUse.toLocaleString('id-ID')} poin
+                                        </Text>
                                     </View>
                                 </View>
-                            </View>
+                            )}
                         </View>
-
-                        {usePoints && pointsToUse > 0 && (
-                            <View style={styles.pointsActiveNotice}>
-                                <View style={styles.pointsActiveIcon}>
-                                    <Text style={styles.pointsActiveIconText}>✓</Text>
-                                </View>
-                                <View style={styles.pointsActiveContent}>
-                                    <Text style={styles.pointsActiveTitle}>Poin Digunakan</Text>
-                                    <Text style={styles.pointsActiveDesc}>
-                                        Kamu menghemat <Text style={styles.pointsActiveAmount}>{formatCurrency(pointsToUse)}</Text> dengan {pointsToUse.toLocaleString('id-ID')} poin
-                                    </Text>
-                                </View>
-                            </View>
-                        )}
-                    </View>
+                    </>
                 )}
 
                 <View style={styles.divider} />

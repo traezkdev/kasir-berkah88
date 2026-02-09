@@ -72,6 +72,7 @@ import CustomerManagement from './pages/CustomerManagement';
 import CustomerPointsHistory from './pages/customer/PointsHistory';
 import CustomerOrderDetails from './pages/customer/OrderDetails';
 import CustomerChat from './pages/customer/Chat';
+import CustomerPromo from './pages/customer/Promo';
 
 // ... (existing imports)
 
@@ -280,6 +281,7 @@ const AppRoutes = () => {
         <Route path="/customer/points-history" element={<CustomerPointsHistory />} />
         <Route path="/customer/order-details/:orderId" element={<CustomerOrderDetails />} />
         <Route path="/customer/chat" element={<CustomerChat />} />
+        <Route path="/customer/promo" element={<CustomerPromo />} />
 
       </Route>
 

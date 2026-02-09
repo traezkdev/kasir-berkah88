@@ -263,13 +263,25 @@ const CustomerOrderConfirmation = () => {
                                         </button>
                                     </div>
 
-                                    <button
-                                        onClick={() => navigate(`/customer/order-details/${order.id}`)}
-                                        className="w-full flex items-center justify-center gap-2 bg-green-50 text-green-600 py-3 rounded-2xl active:scale-95 transition-all border border-green-100"
-                                    >
-                                        <span className="text-[11px] font-black uppercase tracking-wider">Lihat Detail</span>
-                                        <Icon name="ChevronRight" className="w-3.5 h-3.5" />
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => navigate(`/customer/order-details/${order.id}`)}
+                                            className={`${order.status === 'completed' ? 'flex-1' : 'w-full'} flex items-center justify-center gap-2 bg-green-50 text-green-600 py-3 rounded-2xl active:scale-95 transition-all border border-green-100`}
+                                        >
+                                            <span className="text-[11px] font-black uppercase tracking-wider">Detail</span>
+                                            <Icon name="ChevronRight" className="w-3.5 h-3.5" />
+                                        </button>
+
+                                        {order.status === 'completed' && (
+                                            <button
+                                                onClick={() => handleOpenRatingModal(order)}
+                                                className="flex-1 flex items-center justify-center gap-2 bg-amber-50 text-amber-600 py-3 rounded-2xl active:scale-95 transition-all border border-amber-100 shadow-sm shadow-amber-100/30 animate-in zoom-in-95 duration-500"
+                                            >
+                                                <Icon name="Star" className="w-3.5 h-3.5 fill-current" />
+                                                <span className="text-[11px] font-black uppercase tracking-wider">Beri Rating</span>
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         );
@@ -314,18 +326,47 @@ const CustomerOrderConfirmation = () => {
 const RatingModal = ({ order, onClose, onSubmit, submitting }) => {
     const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
     const [ratedItems, setRatedItems] = useState({});
+    const [loadingExisting, setLoadingExisting] = useState(true);
+
+    useEffect(() => {
+        const fetchExistingReviews = async () => {
+            try {
+                const itemIds = items.map(i => i.id).join(',');
+                const res = await authFetch(`${import.meta.env.VITE_API_URL}/api/my-reviews?menu_item_ids=${itemIds}`);
+                const result = await res.json();
+
+                if (result.message === 'success' && result.data.length > 0) {
+                    const existingData = {};
+                    result.data.forEach(rev => {
+                        existingData[rev.menu_item_id] = {
+                            rating: rev.rating,
+                            comment: rev.comment || '',
+                            submitted: true,
+                            isEdit: true
+                        };
+                    });
+                    setRatedItems(prev => ({ ...prev, ...existingData }));
+                }
+            } catch (err) {
+                console.error("Error fetching existing reviews:", err);
+            } finally {
+                setLoadingExisting(false);
+            }
+        };
+        fetchExistingReviews();
+    }, [order.id]);
 
     const handleRate = (itemId, rating) => {
         setRatedItems(prev => ({
             ...prev,
-            [itemId]: { ...prev[itemId], rating }
+            [itemId]: { ...prev[itemId], rating, submitted: false, isEdit: prev[itemId]?.isEdit || false }
         }));
     };
 
     const handleComment = (itemId, comment) => {
         setRatedItems(prev => ({
             ...prev,
-            [itemId]: { ...prev[itemId], comment }
+            [itemId]: { ...prev[itemId], comment, submitted: false, isEdit: prev[itemId]?.isEdit || false }
         }));
     };
 
@@ -360,55 +401,74 @@ const RatingModal = ({ order, onClose, onSubmit, submitting }) => {
                     </button>
                 </div>
 
-                <div className="overflow-y-auto flex-1 space-y-8 pr-1 pb-4">
-                    {items.map((item, idx) => {
-                        const state = ratedItems[item.id] || { rating: 0, comment: '', submitted: false };
-                        return (
-                            <div key={idx} className={`space-y-4 pb-6 border-b border-gray-50 last:border-0 ${state.submitted ? 'opacity-50 pointer-events-none' : ''}`}>
-                                <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center shrink-0">
-                                        <Icon name="Utensils" className="w-6 h-6 text-gray-300" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <h4 className="font-extrabold text-gray-800 text-sm">{item.name}</h4>
-                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Pilih Bintang & Komentar</p>
-                                    </div>
-                                    {state.submitted && (
-                                        <div className="flex items-center gap-1 text-green-600 font-black text-[10px] uppercase">
-                                            <Icon name="Check" className="w-3 h-3" />
-                                            <span>Terkirim</span>
+                <div className="overflow-y-auto flex-1 pr-1 pb-4 custom-scrollbar">
+                    {loadingExisting ? (
+                        <div className="flex flex-col items-center justify-center py-20">
+                            <div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Memuat Ulasan...</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-8">
+                            {items.map((item, idx) => {
+                                const state = ratedItems[item.id] || { rating: 0, comment: '', submitted: false };
+                                return (
+                                    <div key={idx} className={`space-y-4 pb-6 border-b border-gray-50 last:border-0 transition-all ${state.submitted ? 'bg-green-50/30 rounded-[2rem] p-4 -mx-2' : ''}`}>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center shrink-0">
+                                                <Icon name="Utensils" className="w-6 h-6 text-gray-300" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="font-extrabold text-gray-800 text-sm">{item.name}</h4>
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                                                    {state.submitted ? 'Ulasan Terkirim' : 'Pilih Bintang & Komentar'}
+                                                </p>
+                                            </div>
+                                            {state.submitted && (
+                                                <div className="flex items-center gap-1 text-green-600 font-black text-[10px] uppercase bg-white px-3 py-1.5 rounded-full shadow-sm">
+                                                    <Icon name="Check" className="w-3 h-3" />
+                                                    <span>Terkirim</span>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
-                                <div className="flex justify-center gap-3 py-2">
-                                    {[1, 2, 3, 4, 5].map(star => (
-                                        <button
-                                            key={star}
-                                            onClick={() => handleRate(item.id, star)}
-                                            className={`transition-all duration-300 ${state.rating >= star ? 'scale-125' : 'grayscale opacity-30 hover:opacity-100'}`}
-                                        >
-                                            <Icon name="Star" className={`w-8 h-8 ${state.rating >= star ? 'text-amber-400 fill-current' : 'text-gray-300'}`} />
-                                        </button>
-                                    ))}
-                                </div>
-                                <textarea
-                                    placeholder="Tulis ulasan Anda (Opsional)..."
-                                    className="w-full bg-gray-50 border-2 border-transparent focus:border-amber-400 focus:bg-white rounded-2xl p-4 text-xs text-gray-700 font-bold transition-all outline-none min-h-[80px]"
-                                    value={state.comment}
-                                    onChange={(e) => handleComment(item.id, e.target.value)}
-                                />
-                                {!state.submitted && (
-                                    <button
-                                        onClick={() => submitItem(item)}
-                                        disabled={!state.rating || submitting}
-                                        className="w-full bg-amber-500 text-white font-black py-3 rounded-2xl"
-                                    >
-                                        Kirim Ulasan Untuk Menu Ini
-                                    </button>
-                                )}
-                            </div>
-                        );
-                    })}
+                                        <div className="flex justify-center gap-3 py-2">
+                                            {[1, 2, 3, 4, 5].map(star => (
+                                                <button
+                                                    key={star}
+                                                    onClick={() => handleRate(item.id, star)}
+                                                    className={`transition-all duration-300 ${state.rating >= star ? 'scale-125' : 'grayscale opacity-30 hover:opacity-100'}`}
+                                                >
+                                                    <Icon name="Star" className={`w-8 h-8 ${state.rating >= star ? 'text-amber-400 fill-current' : 'text-gray-300'}`} />
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <textarea
+                                            placeholder="Tulis ulasan Anda (Opsional)..."
+                                            className="w-full bg-gray-50 border-2 border-transparent focus:border-amber-400 focus:bg-white rounded-2xl p-4 text-xs text-gray-700 font-bold transition-all outline-none min-h-[80px]"
+                                            value={state.comment}
+                                            onChange={(e) => handleComment(item.id, e.target.value)}
+                                        />
+                                        {!state.submitted && (
+                                            <button
+                                                onClick={() => submitItem(item)}
+                                                disabled={!state.rating || submitting}
+                                                className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-gray-200 text-white font-black py-4 rounded-2xl shadow-lg shadow-amber-200/50 transition-all active:scale-95 text-xs uppercase tracking-widest"
+                                            >
+                                                {submitting ? 'Mengirim...' : (state.isEdit ? 'Simpan Perubahan' : 'Kirim Ulasan')}
+                                            </button>
+                                        )}
+                                        {state.submitted && (
+                                            <button
+                                                onClick={() => setRatedItems(prev => ({ ...prev, [item.id]: { ...prev[item.id], submitted: false } }))}
+                                                className="w-full bg-gray-100 text-gray-600 font-black py-3 rounded-xl transition-all active:scale-95 text-[10px] uppercase tracking-widest"
+                                            >
+                                                Edit Ulasan
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
                 <button
                     onClick={onClose}
