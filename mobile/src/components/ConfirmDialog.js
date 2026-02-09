@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect, memo } from 'react';
 import {
     StyleSheet,
     View,
@@ -24,28 +24,39 @@ const ConfirmDialog = ({
     type = 'primary' // 'primary', 'danger', 'info', 'warning'
 }) => {
     // Animation
-    const [scale] = React.useState(new Animated.Value(0.9));
-    const [opacity] = React.useState(new Animated.Value(0));
+    const scale = useRef(new Animated.Value(0.95)).current;
+    const opacity = useRef(new Animated.Value(0)).current;
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (visible) {
             Animated.parallel([
                 Animated.spring(scale, {
                     toValue: 1,
-                    friction: 8,
+                    friction: 9,
+                    tension: 60,
                     useNativeDriver: true,
                 }),
                 Animated.timing(opacity, {
                     toValue: 1,
-                    duration: 200,
+                    duration: 150,
                     useNativeDriver: true,
                 }),
             ]).start();
         } else {
-            scale.setValue(0.9);
-            opacity.setValue(0);
+            Animated.parallel([
+                Animated.timing(scale, {
+                    toValue: 0.95,
+                    duration: 100,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(opacity, {
+                    toValue: 0,
+                    duration: 100,
+                    useNativeDriver: true,
+                }),
+            ]).start();
         }
-    }, [visible]);
+    }, [visible, scale, opacity]);
 
     const getIcon = () => {
         switch (type) {
@@ -64,8 +75,6 @@ const ConfirmDialog = ({
             default: return '#138FEA';
         }
     };
-
-    if (!visible) return null;
 
     return (
         <Modal
@@ -95,6 +104,7 @@ const ConfirmDialog = ({
                         <TouchableOpacity
                             onPress={onCancel}
                             style={styles.cancelBtn}
+                            activeOpacity={0.7}
                         >
                             <Text style={styles.cancelBtnText}>{cancelText}</Text>
                         </TouchableOpacity>
@@ -102,6 +112,7 @@ const ConfirmDialog = ({
                         <TouchableOpacity
                             onPress={onConfirm}
                             style={[styles.confirmBtn, { backgroundColor: getConfirmColor() }]}
+                            activeOpacity={0.8}
                         >
                             <Text style={styles.confirmBtnText}>{confirmText}</Text>
                         </TouchableOpacity>
@@ -200,4 +211,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default ConfirmDialog;
+export default memo(ConfirmDialog);

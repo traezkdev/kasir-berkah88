@@ -179,6 +179,14 @@ const AllFeatures = () => {
             category: 'Admin'
         },
         {
+            title: 'Pelanggan',
+            description: 'Manajemen data pelanggan, riwayat belanja, dan loyalitas',
+            icon: 'User',
+            route: '/customer-management',
+            color: 'teal',
+            category: 'Admin'
+        },
+        {
             title: 'Kalkulator Cepat',
             description: 'Alat bantu hitung angka secara instan',
             icon: 'Calculator',
@@ -210,6 +218,15 @@ const AllFeatures = () => {
             color: 'primary',
             category: 'Smart'
         },
+        {
+            title: 'Poin & Loyalitas',
+            description: 'Kelola sistem reward dan poin belanja pelanggan',
+            icon: 'Gift',
+            route: '/point-loyalty',
+            color: 'warning',
+            category: 'Admin'
+        },
+
 
         // Pengaturan
         {
@@ -263,6 +280,7 @@ const AllFeatures = () => {
             case 'info': return 'bg-cyan-50 text-cyan-600 shadow-cyan-100';
             case 'secondary': return 'bg-purple-50 text-purple-600 shadow-purple-100';
             case 'slate': return 'bg-slate-100 text-slate-600 shadow-slate-200';
+            case 'teal': return 'bg-teal-50 text-teal-600 shadow-teal-100';
             default: return 'bg-gray-50 text-gray-600 shadow-gray-100';
         }
     };

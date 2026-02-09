@@ -10,11 +10,13 @@ import {
     Dimensions,
     Platform,
     StatusBar,
-    SafeAreaView,
     TextInput,
     Alert,
-    Modal
+    Modal,
+    Switch
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     ArrowLeft,
@@ -31,7 +33,9 @@ import {
     Banknote,
     QrCode,
     X,
-    Download
+    XCircle,
+    Download,
+    Phone
 } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import * as MediaLibrary from 'expo-media-library';
@@ -115,19 +119,74 @@ const CustomerCart = ({ navigation }) => {
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [showQrisModal, setShowQrisModal] = useState(false);
 
-    // Fetch user profile to get saved address
+    // Points System
+    const [points, setPoints] = useState(0);
+    const [usePoints, setUsePoints] = useState(false);
+
+    // Promo System
+    const [promoCode, setPromoCode] = useState('');
+    const [appliedPromo, setAppliedPromo] = useState(null);
+    const [validatingPromo, setValidatingPromo] = useState(false);
+
+    // Custom Error Modal State
+    const [errorModalVisible, setErrorModalVisible] = useState(false);
+    const [errorModalContent, setErrorModalContent] = useState({ title: '', message: '' });
+
+    const showError = (title, message) => {
+        setErrorModalContent({ title, message });
+        setErrorModalVisible(true);
+    };
+
+    const pointsToUse = usePoints
+        ? Math.min(points, cartTotal)
+        : 0;
+
+    // Calculate Promo Discount
+    let promoDiscountAmount = 0;
+    if (appliedPromo) {
+        if (appliedPromo.discount_type === 'percentage') {
+            promoDiscountAmount = (cartTotal * parseFloat(appliedPromo.discount_value)) / 100;
+        } else {
+            promoDiscountAmount = parseFloat(appliedPromo.discount_value);
+        }
+    }
+
+    const finalTotal = Math.max(0, cartTotal - pointsToUse - promoDiscountAmount);
+
+    // Fetch user profile to get saved address and points
     useFocusEffect(
         useCallback(() => {
             const fetchUserProfile = async () => {
                 try {
                     const response = await apiService.get('/api/user/profile');
-                    if (response.data.message === 'success' && response.data.data.address) {
-                        setSavedAddress(response.data.data.address);
+                    if (response.data.message === 'success') {
+                        if (response.data.data.address) {
+                            setSavedAddress(response.data.data.address);
+                        }
+                        // Fetch fresh user data (points are in users table, but profile endpoint returns user data)
+                        // Actually typically profile returns points too if columns are selected.
+                        // Let's check server.js profile endpoint. It returns: id, username, role, avatar_url, phone, address
+                        // It does NOT return points. I need to fetch points separately or update profile endpoint.
+                        // Alternatively, use /api/customers/search logic? 
+                        // Or just update profile endpoint.
+                        // Let's try to update profile endpoint in next step if needed, but for now I'll assume I can fetch it.
+                        // Wait, I can't fetch points from profile endpoint as strictly seen in server.js earlier.
+                        // I will add points to the SELECT query in server.js as a quick fix or use a separate call.
+                        // Better: make a specific call or rely on valid endpoint.
+                        // Let's try fetching from /api/user/profile again, assuming I will update backend to include points.
+                        if (response.data.data.points !== undefined) {
+                            setPoints(parseFloat(response.data.data.points));
+                        }
                     } else {
                         setSavedAddress(null);
                     }
+
+                    // Separate call to be sure if profile doesn't have it yet? 
+                    // Let's use a specialized endpoint if we can, but profile is best place.
+                    // I will add 'points' to the profile endpoint in server.js in a separate tool call if needed.
+                    // Actually, let's just do it.
                 } catch (error) {
-                    console.error("Error fetching profile address:", error);
+                    console.error("Error fetching profile:", error);
                 }
             };
 
@@ -166,6 +225,63 @@ const CustomerCart = ({ navigation }) => {
         };
         saveData();
     }, [customerAddress, customerPhone]);
+
+    // Reactive check for Min Purchase
+    useEffect(() => {
+        if (appliedPromo && cartTotal > 0) {
+            const rawMin = appliedPromo.min_purchase;
+            let minReq = 0;
+
+            if (typeof rawMin === 'number') {
+                minReq = rawMin;
+            } else if (rawMin) {
+                let str = rawMin.toString().trim();
+                if (str.includes('.') && str.includes(',')) {
+                    minReq = str.indexOf('.') < str.indexOf(',') ? parseFloat(str.replace(/\./g, '').replace(/,/g, '.')) : parseFloat(str.replace(/,/g, ''));
+                } else if (str.includes(',') && str.split(',')[str.split(',').length - 1].length === 3) {
+                    minReq = parseFloat(str.replace(/,/g, ''));
+                } else if (str.includes('.') && str.split('.')[str.split('.').length - 1].length === 3) {
+                    minReq = parseFloat(str.replace(/\./g, ''));
+                } else {
+                    minReq = parseFloat(str.replace(/[^\d.-]/g, '')) || 0;
+                }
+            }
+
+            console.log('Reactive Check:', { cartTotal, minReq });
+            if (cartTotal < minReq) {
+                showToast(`Promo dicopot. TOTAL: ${cartTotal} < MIN: ${minReq}`, 'info');
+                setAppliedPromo(null);
+            }
+        }
+    }, [cartTotal, appliedPromo]);
+
+    const handleValidatePromo = async () => {
+        if (!promoCode.trim()) return;
+
+        setValidatingPromo(true);
+        try {
+            const response = await apiService.post('/api/promos/validate', {
+                code: promoCode,
+                total: cartTotal
+            });
+            if (response.data && response.data.data) {
+                setAppliedPromo(response.data.data);
+                showToast('Promo berhasil diterapkan!', 'success');
+            }
+        } catch (error) {
+            console.error('Promo error:', error);
+            const errMsg = error.response?.data?.error || 'Kode promo tidak valid';
+            showError('Gagal Menggunakan Promo', errMsg);
+            setAppliedPromo(null);
+        } finally {
+            setValidatingPromo(false);
+        }
+    };
+
+    const removePromo = () => {
+        setAppliedPromo(null);
+        setPromoCode('');
+    };
 
     const handleDownloadQris = async () => {
         try {
@@ -214,9 +330,10 @@ const CustomerCart = ({ navigation }) => {
             return;
         }
 
+        const totalSavings = pointsToUse + promoDiscountAmount;
         const accepted = await confirm({
             title: 'Konfirmasi Pesanan',
-            message: `Total belanja Anda adalah ${formatCurrency(cartTotal)}. Lanjutkan pemesanan?`,
+            message: `Total belanja Anda adalah ${formatCurrency(finalTotal)} ${totalSavings > 0 ? `(Hemat ${formatCurrency(totalSavings)})` : ''}. Lanjutkan pemesanan?`,
             confirmText: 'Pesan Sekarang',
             type: 'primary'
         });
@@ -238,7 +355,9 @@ const CustomerCart = ({ navigation }) => {
                 notes: notes,
                 customer_address: customerAddress || null,
                 customer_phone: customerPhone || null,
-                customer_name: user?.username || user?.name || 'Pelanggan'
+                customer_name: user?.username || user?.name || 'Pelanggan',
+                pointsUsed: usePoints ? pointsToUse : 0,
+                promoId: appliedPromo ? appliedPromo.id : null
             };
 
             const response = await apiService.post('/api/orders', payload);
@@ -254,7 +373,15 @@ const CustomerCart = ({ navigation }) => {
             }
         } catch (error) {
             console.error('Checkout error:', error);
-            showToast(error.message || 'Gagal memproses pesanan. Silakan coba lagi.', 'error');
+            const serverMessage = error.response?.data?.error;
+            const finalMsg = serverMessage || error.message || 'Gagal memproses pesanan. Silakan coba lagi.';
+
+            // Jika error dari server terkait promo atau validasi, tampilkan popup Custom
+            if (serverMessage) {
+                showError('Pesanan Gagal', finalMsg);
+            } else {
+                showToast(finalMsg, 'error');
+            }
         } finally {
             setLoading(false);
         }
@@ -281,7 +408,7 @@ const CustomerCart = ({ navigation }) => {
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
             <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
             {/* Header */}
@@ -295,9 +422,16 @@ const CustomerCart = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            <KeyboardAwareScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                enableOnAndroid={true}
+                extraScrollHeight={100} // Memberikan ruang ekstra di atas keyboard
+            >
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Item Pesanan</Text>
+                    <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Item Pesanan</Text>
                     {cart.map((item) => (
                         <CartItem
                             key={item.cartId}
@@ -309,14 +443,16 @@ const CustomerCart = ({ navigation }) => {
                     ))}
                 </View>
 
+                <View style={styles.divider} />
+
                 {/* Delivery Notes */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Catatan Pesanan (Optional)</Text>
-                    <View style={styles.notesInputRow}>
-                        <Info size={16} color="#94A3B8" />
+                    <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Catatan Pesanan (Optional)</Text>
+                    <View style={[styles.notesInputRow, { alignItems: 'flex-start', paddingVertical: 14 }]}>
+                        <Info size={18} color="#94A3B8" style={{ marginTop: 12 }} />
                         <TextInput
                             placeholder="Contoh: Jangan terlalu pedas ya..."
-                            style={styles.notesInput}
+                            style={[styles.notesInput, { minHeight: 80, textAlignVertical: 'top', paddingTop: 8 }]}
                             value={notes}
                             onChangeText={setNotes}
                             multiline
@@ -324,18 +460,20 @@ const CustomerCart = ({ navigation }) => {
                     </View>
                 </View>
 
+                <View style={styles.divider} />
+
                 {/* Delivery Address */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>
+                    <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>
                         Data Pengiriman <Text style={{ color: '#EF4444' }}>*</Text>
                     </Text>
 
                     {/* Phone Input */}
-                    <View style={[styles.notesInputRow, { marginBottom: 12 }]}>
-                        <CreditCard size={16} color="#94A3B8" />
+                    <View style={[styles.notesInputRow, { marginBottom: 10 }]}>
+                        <Phone size={18} color="#94A3B8" />
                         <TextInput
                             placeholder="Nomor Telepon / WhatsApp"
-                            style={[styles.notesInput, { height: 40 }]}
+                            style={[styles.notesInput, { height: 48, paddingVertical: 0 }]}
                             value={customerPhone}
                             onChangeText={setCustomerPhone}
                             keyboardType="phone-pad"
@@ -344,7 +482,7 @@ const CustomerCart = ({ navigation }) => {
 
                     {savedAddress && (
                         <TouchableOpacity
-                            style={[styles.savedAddressCard, { marginBottom: 12 }]}
+                            style={[styles.savedAddressCard, { marginBottom: 10, padding: 16 }]}
                             onPress={() => setCustomerAddress(savedAddress)}
                         >
                             <View style={styles.savedAddressIcon}>
@@ -358,11 +496,11 @@ const CustomerCart = ({ navigation }) => {
                         </TouchableOpacity>
                     )}
 
-                    <View style={styles.notesInputRow}>
-                        <MapPin size={16} color="#94A3B8" />
+                    <View style={[styles.notesInputRow, { alignItems: 'flex-start', paddingVertical: 14 }]}>
+                        <MapPin size={18} color="#94A3B8" style={{ marginTop: 12 }} />
                         <TextInput
                             placeholder="Alamat lengkap (Nama jalan, No. Rumah, dll)"
-                            style={styles.notesInput}
+                            style={[styles.notesInput, { minHeight: 100, textAlignVertical: 'top', paddingTop: 8 }]}
                             value={customerAddress}
                             onChangeText={setCustomerAddress}
                             multiline
@@ -370,9 +508,11 @@ const CustomerCart = ({ navigation }) => {
                     </View>
                 </View>
 
+                <View style={styles.divider} />
+
                 {/* Payment Method */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Metode Pembayaran</Text>
+                    <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Metode Pembayaran</Text>
 
                     {/* Opsi Tunai */}
                     <TouchableOpacity
@@ -432,6 +572,119 @@ const CustomerCart = ({ navigation }) => {
                     )}
                 </View>
 
+                {/* Points Redemption Section */}
+                {points > 0 && (
+                    <>
+                        <View style={styles.divider} />
+                        <View style={styles.section}>
+                            <View style={styles.pointsSectionHeader}>
+                                <View style={styles.pointsHeaderIcon}>
+                                    <Text style={styles.pointsHeaderEmoji}>💎</Text>
+                                </View>
+                                <View style={styles.pointsHeaderText}>
+                                    <Text style={styles.sectionTitle}>Tukar Poin Berkah88</Text>
+                                    <Text style={styles.pointsHeaderSubtitle}>Hemat lebih banyak dengan poin!</Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.pointsCard}>
+                                <View style={styles.pointsCardGradient}>
+                                    <View style={styles.pointsCardContent}>
+                                        <View style={styles.pointsMainRow}>
+                                            <View style={styles.pointsLeft}>
+                                                <View style={styles.pointsBadge}>
+                                                    <Text style={styles.pointsBadgeText}>SALDO POIN</Text>
+                                                </View>
+                                                <Text style={styles.pointsValue}>{points.toLocaleString('id-ID')}</Text>
+                                                <Text style={styles.pointsValueLabel}>Poin Tersedia</Text>
+                                            </View>
+
+                                            <View style={styles.pointsRight}>
+                                                <View style={styles.switchContainer}>
+                                                    <Text style={styles.switchLabel}>{usePoints ? 'AKTIF' : 'NONAKTIF'}</Text>
+                                                    <Switch
+                                                        value={usePoints}
+                                                        onValueChange={setUsePoints}
+                                                        trackColor={{ false: '#CBD5E1', true: '#34D399' }}
+                                                        thumbColor={usePoints ? '#FFFFFF' : '#F1F5F9'}
+                                                        ios_backgroundColor="#CBD5E1"
+                                                    />
+                                                </View>
+                                            </View>
+                                        </View>
+
+                                        <View style={styles.pointsEquivalentBox}>
+                                            <Text style={styles.pointsEquivalentLabel}>Setara dengan</Text>
+                                            <Text style={styles.pointsEquivalent}>{formatCurrency(points)}</Text>
+                                        </View>
+                                    </View>
+                                </View>
+                            </View>
+
+                            {usePoints && pointsToUse > 0 && (
+                                <View style={styles.pointsActiveNotice}>
+                                    <View style={styles.pointsActiveIcon}>
+                                        <Text style={styles.pointsActiveIconText}>✓</Text>
+                                    </View>
+                                    <View style={styles.pointsActiveContent}>
+                                        <Text style={styles.pointsActiveTitle}>Poin Digunakan</Text>
+                                        <Text style={styles.pointsActiveDesc}>
+                                            Kamu menghemat <Text style={styles.pointsActiveAmount}>{formatCurrency(pointsToUse)}</Text> dengan {pointsToUse.toLocaleString('id-ID')} poin
+                                        </Text>
+                                    </View>
+                                </View>
+                            )}
+                        </View>
+                    </>
+                )}
+
+                <View style={styles.divider} />
+
+                {/* Promo Code Section */}
+                <View style={styles.section}>
+                    <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Gunakan Kode Promo</Text>
+                    {appliedPromo ? (
+                        <View style={styles.appliedPromoBox}>
+                            <View style={styles.promoInfo}>
+                                <View style={styles.promoIconActive}>
+                                    <Ticket size={24} color="#059669" />
+                                </View>
+                                <View>
+                                    <Text style={styles.appliedPromoTitle}>{appliedPromo.title}</Text>
+                                    <Text style={styles.appliedPromoCode}>Kode: {appliedPromo.code}</Text>
+                                </View>
+                            </View>
+                            <TouchableOpacity onPress={removePromo} style={styles.removePromoBtn}>
+                                <X size={20} color="#EF4444" />
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <View style={styles.promoInputRow}>
+                            <Ticket size={20} color="#94A3B8" />
+                            <TextInput
+                                placeholder="Masukkan kode promo..."
+                                style={styles.promoInput}
+                                value={promoCode}
+                                onChangeText={setPromoCode}
+                                autoCapitalize="characters"
+                            />
+                            <TouchableOpacity
+                                style={[styles.applyPromoBtn, (!promoCode || validatingPromo) && styles.applyPromoBtnDisabled]}
+                                onPress={handleValidatePromo}
+                                disabled={!promoCode || validatingPromo}
+                            >
+                                {validatingPromo ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                    <Text style={styles.applyPromoBtnText}>PAKAI</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                </View>
+
+                <View style={styles.divider} />
+
                 {/* Summary */}
                 <View style={styles.summaryBox}>
                     <View style={styles.summaryRow}>
@@ -442,20 +695,32 @@ const CustomerCart = ({ navigation }) => {
                         <Text style={styles.summaryLabel}>Biaya Layanan</Text>
                         <Text style={styles.summaryValue}>Rp 0</Text>
                     </View>
+                    {usePoints && pointsToUse > 0 && (
+                        <View style={styles.summaryRow}>
+                            <Text style={[styles.summaryLabel, { color: '#0284C7' }]}>Potongan Poin</Text>
+                            <Text style={[styles.summaryValue, { color: '#0284C7' }]}>-{formatCurrency(pointsToUse)}</Text>
+                        </View>
+                    )}
+                    {appliedPromo && promoDiscountAmount > 0 && (
+                        <View style={styles.summaryRow}>
+                            <Text style={[styles.summaryLabel, { color: '#059669' }]}>Diskon Promo</Text>
+                            <Text style={[styles.summaryValue, { color: '#059669' }]}>-{formatCurrency(promoDiscountAmount)}</Text>
+                        </View>
+                    )}
                     <View style={[styles.summaryRow, styles.totalRow]}>
                         <Text style={styles.totalLabel}>Total Pembayaran</Text>
-                        <Text style={styles.totalValue}>{formatCurrency(cartTotal)}</Text>
+                        <Text style={styles.totalValue}>{formatCurrency(finalTotal)}</Text>
                     </View>
                 </View>
 
                 <View style={{ height: 40 }} />
-            </ScrollView>
+            </KeyboardAwareScrollView>
 
-            {/* Sticky Checkout Button */}
+            {/* Sticky Checkout Button - Outside Scroll, but inside SafeArea */}
             <View style={styles.footer}>
                 <View style={styles.footerLeft}>
                     <Text style={styles.footerLabel}>Total Bayar</Text>
-                    <Text style={styles.footerValue}>{formatCurrency(cartTotal)}</Text>
+                    <Text style={styles.footerValue}>{formatCurrency(finalTotal)}</Text>
                 </View>
                 <TouchableOpacity
                     style={[styles.checkoutBtn, loading && styles.checkoutBtnDisabled]}
@@ -507,9 +772,34 @@ const CustomerCart = ({ navigation }) => {
                     </View>
                 </View>
             </Modal>
+
+            {/* Premium Custom Error Modal */}
+            <Modal
+                visible={errorModalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setErrorModalVisible(false)}
+            >
+                <View style={styles.alertOverlay}>
+                    <View style={styles.alertCard}>
+                        <View style={styles.alertIconBg}>
+                            <XCircle size={32} color="#EF4444" />
+                        </View>
+                        <Text style={styles.alertTitleText}>{errorModalContent.title}</Text>
+                        <Text style={styles.alertMessageText}>{errorModalContent.message}</Text>
+                        <TouchableOpacity
+                            style={styles.alertCloseBtn}
+                            onPress={() => setErrorModalVisible(false)}
+                        >
+                            <Text style={styles.alertCloseBtnText}>TUTUP</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
+
 
 const styles = StyleSheet.create({
     container: {
@@ -549,16 +839,25 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        padding: 16,
+    },
+    scrollContent: {
+        paddingHorizontal: 20, // Tambahkan padding horizontal agar tidak nempel layar
+        paddingTop: 16,
+        paddingBottom: 40,
     },
     section: {
-        marginBottom: 24,
+        marginBottom: 16,
+    },
+    divider: {
+        height: 6,
+        backgroundColor: '#F8FAFC',
+        marginHorizontal: -20,
+        marginBottom: 20,
     },
     sectionTitle: {
         fontSize: 14,
         fontWeight: '900',
         color: '#1E293B',
-        marginBottom: 16,
         letterSpacing: 0.5,
     },
 
@@ -653,19 +952,21 @@ const styles = StyleSheet.create({
     },
     notesInputRow: {
         flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: '#F8FAFC',
         borderRadius: 18,
-        padding: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
         borderWidth: 1,
         borderColor: '#F1F5F9',
-        gap: 10,
+        gap: 12,
     },
     notesInput: {
         flex: 1,
-        fontSize: 13,
+        fontSize: 14,
         color: '#1E293B',
-        height: 60,
-        textAlignVertical: 'top',
+        fontWeight: '600',
+        paddingVertical: 8,
     },
     paymentOption: {
         flexDirection: 'row',
@@ -895,6 +1196,154 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         color: '#059669',
     },
+    // Points Styles - Premium Design
+    pointsSectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+        gap: 12,
+    },
+    pointsHeaderIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 16,
+        backgroundColor: '#FEF3C7',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    pointsHeaderEmoji: {
+        fontSize: 24,
+    },
+    pointsHeaderText: {
+        flex: 1,
+    },
+    pointsHeaderSubtitle: {
+        fontSize: 11,
+        color: '#64748B',
+        fontWeight: '600',
+    },
+    pointsCard: {
+        borderRadius: 24,
+        overflow: 'hidden',
+    },
+    pointsCardGradient: {
+        backgroundColor: '#FFFFFF',
+        borderWidth: 2,
+        borderColor: '#E0F2FE',
+        borderRadius: 24,
+    },
+    pointsCardContent: {
+        padding: 20,
+    },
+    pointsMainRow: {
+        flexDirection: 'row',
+        gap: 16,
+        marginBottom: 16,
+    },
+    pointsLeft: {
+        flex: 1,
+    },
+    pointsBadge: {
+        backgroundColor: '#DBEAFE',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+        alignSelf: 'flex-start',
+        marginBottom: 12,
+    },
+    pointsBadgeText: {
+        fontSize: 9,
+        fontWeight: '900',
+        color: '#1E40AF',
+        letterSpacing: 1,
+    },
+    pointsValue: {
+        fontSize: 32,
+        fontWeight: '900',
+        color: '#0284C7',
+        marginBottom: 4,
+    },
+    pointsValueLabel: {
+        fontSize: 12,
+        color: '#64748B',
+        fontWeight: '600',
+        marginBottom: 12,
+    },
+    pointsEquivalentBox: {
+        backgroundColor: '#F0F9FF',
+        padding: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#BAE6FD',
+    },
+    pointsEquivalentLabel: {
+        fontSize: 10,
+        color: '#0369A1',
+        fontWeight: '600',
+        marginBottom: 4,
+    },
+    pointsEquivalent: {
+        fontSize: 16,
+        fontWeight: '900',
+        color: '#0284C7',
+    },
+    pointsRight: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    switchContainer: {
+        alignItems: 'center',
+        gap: 8,
+    },
+    switchLabel: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#64748B',
+        letterSpacing: 1,
+    },
+    pointsActiveNotice: {
+        flexDirection: 'row',
+        backgroundColor: '#ECFDF5',
+        padding: 16,
+        borderRadius: 16,
+        marginTop: 12,
+        borderWidth: 1,
+        borderColor: '#A7F3D0',
+        gap: 12,
+    },
+    pointsActiveIcon: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#10B981',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    pointsActiveIconText: {
+        fontSize: 16,
+        color: '#FFFFFF',
+        fontWeight: '900',
+    },
+    pointsActiveContent: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    pointsActiveTitle: {
+        fontSize: 13,
+        fontWeight: '900',
+        color: '#059669',
+        marginBottom: 4,
+    },
+    pointsActiveDesc: {
+        fontSize: 12,
+        color: '#047857',
+        fontWeight: '600',
+        lineHeight: 18,
+    },
+    pointsActiveAmount: {
+        fontWeight: '900',
+        color: '#059669',
+    },
     savedAddressCard: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -945,6 +1394,141 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 16,
         fontWeight: '900',
+    },
+    // Promo Styles
+    promoInputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        borderRadius: 18,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+        gap: 12,
+    },
+    promoInput: {
+        flex: 1,
+        fontSize: 14,
+        color: '#1E293B',
+        fontWeight: '900',
+        paddingVertical: 8,
+    },
+    applyPromoBtn: {
+        backgroundColor: '#059669',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 12,
+    },
+    applyPromoBtnDisabled: {
+        backgroundColor: '#CBD5E1',
+    },
+    applyPromoBtnText: {
+        color: '#FFFFFF',
+        fontSize: 12,
+        fontWeight: '900',
+    },
+    appliedPromoBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#ECFDF5',
+        borderRadius: 18,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: '#A7F3D0',
+    },
+    promoInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+    },
+    promoIconActive: {
+        width: 44,
+        height: 44,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    appliedPromoTitle: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: '#059669',
+    },
+    appliedPromoCode: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#047857',
+        marginTop: 2,
+    },
+    removePromoBtn: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#FEE2E2',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    // Custom Alert Modal Styles
+    alertOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(15, 23, 42, 0.75)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+    },
+    alertCard: {
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 32,
+        padding: 24,
+        alignItems: 'center',
+        ...Platform.select({
+            web: { boxShadow: '0px 20px 50px rgba(0,0,0,0.3)' },
+            android: { elevation: 20 }
+        })
+    },
+    alertIconBg: {
+        width: 72,
+        height: 72,
+        borderRadius: 24,
+        backgroundColor: '#FEF2F2',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    alertTitleText: {
+        fontSize: 20,
+        fontWeight: '900',
+        color: '#1E293B',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    alertMessageText: {
+        fontSize: 15,
+        color: '#64748B',
+        textAlign: 'center',
+        lineHeight: 22,
+        marginBottom: 28,
+    },
+    alertCloseBtn: {
+        width: '100%',
+        height: 56,
+        backgroundColor: '#1E293B', // Dark slate for premium look
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        ...Platform.select({
+            web: { boxShadow: '0px 4px 12px rgba(30, 41, 59, 0.3)' },
+            android: { elevation: 4 }
+        })
+    },
+    alertCloseBtnText: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: '#FFFFFF',
+        letterSpacing: 1,
     }
 });
 

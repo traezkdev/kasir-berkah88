@@ -26,20 +26,28 @@ import {
     Store,
     Clock,
     UserCircle,
-    X
+    X,
+    Check,
+    Camera,
+    PlayCircle,
+    Ticket
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useToast } from '../../context/ToastContext';
+import { useOrderNotification } from '../../context/OrderNotificationContext';
 import apiService, { API_URL } from '../../api/apiService';
-import { Check, Camera } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import BottomModalTemplate from '../../components/templates/BottomModalTemplate';
 
 const ProfileScreen = ({ navigation }) => {
-    const { user, logout, refreshUser, updateUser } = useAuth();
+    const { user, logout, refreshUser } = useAuth();
     const { confirm } = useConfirm();
     const { showToast } = useToast();
+    const {
+        selectedSoundId,
+        changeNotificationSound
+    } = useOrderNotification();
 
     // Modal States
     const [activeModal, setActiveModal] = useState(null); // 'info', 'security', 'notif'
@@ -48,6 +56,7 @@ const ProfileScreen = ({ navigation }) => {
     // Form States
     const [formData, setFormData] = useState({
         username: user?.name || '',
+        email: user?.email || '',
         phone: user?.phone || '',
         address: user?.address || ''
     });
@@ -64,17 +73,26 @@ const ProfileScreen = ({ navigation }) => {
         promo: false
     });
 
-    React.useEffect(() => {
+    const NOTIFICATION_SOUNDS = [
+        { id: 'default', name: 'Standard Chime' },
+        { id: 'bell', name: 'Reception Bell' },
+        { id: 'modern', name: 'Digital Alert' },
+        { id: 'urgent', name: 'Triple Beep' },
+        { id: 'zte', name: 'ZTE Alert' },
+    ];
+
+    useEffect(() => {
         if (user) {
             setFormData({
                 username: user.name || '',
+                email: user.email || '',
                 phone: user.phone || '',
                 address: user.address || ''
             });
         }
     }, [user]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         loadNotificationSettings();
     }, []);
 
@@ -97,13 +115,12 @@ const ProfileScreen = ({ navigation }) => {
 
         setIsSaving(true);
         try {
-            // Update Username
             if (formData.username !== user.name) {
                 await apiService.put('/api/user/profile/username', { username: formData.username });
             }
 
-            // Update Phone & Address
             await apiService.put('/api/user/profile', {
+                email: formData.email,
                 phone: formData.phone,
                 address: formData.address
             });
@@ -178,16 +195,14 @@ const ProfileScreen = ({ navigation }) => {
                 type: `image/${fileType}`,
             });
 
-            const response = await apiService.post('/api/user/profile/avatar', formData, {
+            await apiService.post('/api/user/profile/avatar', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
             });
 
-            if (response.data && response.data.data) {
-                await refreshUser();
-                showToast('Foto profil diperbarui', 'success');
-            }
+            await refreshUser();
+            showToast('Foto profil diperbarui', 'success');
         } catch (error) {
             console.error('Upload avatar error:', error);
             showToast('Gagal mengunggah foto profil', 'error');
@@ -254,9 +269,17 @@ const ProfileScreen = ({ navigation }) => {
                     <Text style={styles.userName}>{user?.name || 'User'}</Text>
                     <View style={styles.roleBadge}>
                         <Shield size={12} color="#138FEA" />
-                        <Text style={styles.roleText}>{user?.role?.toUpperCase() || 'SELLER'}</Text>
+                        <Text style={styles.roleText}>{user?.role?.toUpperCase() || 'GUEST'}</Text>
                     </View>
-                    <Text style={styles.userEmail}>{user?.phone || 'Belum ada nomor telepon'}</Text>
+                    <Text style={styles.userId}>ID: #{user?.id || '0'}</Text>
+                    <View style={styles.contactRow}>
+                        <Text style={styles.userContactText}>{user?.email || 'Email belum diatur'}</Text>
+                        <Text style={styles.userContactDivider}> • </Text>
+                        <Text style={styles.userContactText}>{user?.phone || 'No. Telp belum ada'}</Text>
+                    </View>
+                    <Text style={[styles.userContactText, { marginTop: 4, fontStyle: 'italic', opacity: 0.8 }]}>
+                        {user?.address || 'Alamat belum diatur'}
+                    </Text>
                 </View>
 
                 {/* Stats / Info Summary */}
@@ -277,9 +300,12 @@ const ProfileScreen = ({ navigation }) => {
                 {/* Menu Sections */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>PENGATURAN AKUN</Text>
-                    {renderMenuItem(<User size={20} color="#138FEA" />, 'Informasi Pribadi', 'Nama, Email, dan Foto Profil', () => setActiveModal('info'), '#138FEA')}
+                    {renderMenuItem(<User size={20} color="#138FEA" />, 'Informasi Pribadi', 'Username, Email, No. Telp, & Alamat', () => setActiveModal('info'), '#138FEA')}
                     {renderMenuItem(<Shield size={20} color="#10B981" />, 'Keamanan', 'Kata sandi dan Autentikasi', () => setActiveModal('security'), '#10B981')}
                     {renderMenuItem(<Bell size={20} color="#F59E0B" />, 'Notifikasi', 'Pengaturan pemberitahuan', () => setActiveModal('notif'), '#F59E0B')}
+                    {(user?.role === 'admin' || user?.role === 'owner') &&
+                        renderMenuItem(<Ticket size={20} color="#059669" />, 'Manajemen Promo', 'Kelola Voucher & Diskon', () => navigation.navigate('PromoManagement'), '#059669')
+                    }
                 </View>
 
                 <View style={styles.section}>
@@ -287,8 +313,14 @@ const ProfileScreen = ({ navigation }) => {
                     {renderMenuItem(<HelpCircle size={20} color="#6366F1" />, 'Pusat Bantuan', 'FAQ dan Kontak Admin', () => { }, '#6366F1')}
                 </View>
 
-                <Text style={styles.versionText}>Versi 2.1.0 (Alpha)</Text>
-                <Text style={styles.developerText}>Develop By traezkdev</Text>
+                <TouchableOpacity
+                    style={{ alignItems: 'center', marginTop: 15 }}
+                    onPress={() => navigation.navigate('DeveloperCreditsScreen')}
+                    activeOpacity={0.7}
+                >
+                    <Text style={styles.versionText}>Versi 2.1.0 (Alpha)</Text>
+                    <Text style={styles.developerText}>Develop By traezkdev</Text>
+                </TouchableOpacity>
                 <View style={{ height: 100 }} />
             </ScrollView>
 
@@ -319,6 +351,17 @@ const ProfileScreen = ({ navigation }) => {
                             value={formData.username}
                             onChangeText={(val) => setFormData({ ...formData, username: val })}
                             placeholder="Masukkan username"
+                        />
+                    </View>
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>ALAMAT EMAIL</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={formData.email}
+                            onChangeText={(val) => setFormData({ ...formData, email: val })}
+                            placeholder="Masukkan alamat email"
+                            keyboardType="email-address"
+                            autoCapitalize="none"
                         />
                     </View>
                     <View style={styles.inputGroup}>
@@ -436,17 +479,27 @@ const ProfileScreen = ({ navigation }) => {
                             thumbColor={notifSettings.chat ? '#138FEA' : '#94A3B8'}
                         />
                     </View>
-                    <View style={styles.notifRow}>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.notifTitle}>Promo & Update</Text>
-                            <Text style={styles.notifSubtitle}>Info terbaru tentang fitur dan promo</Text>
+
+                    {/* Sound Selection */}
+                    <View style={{ marginTop: 24 }}>
+                        <Text style={styles.sectionTitle}>SUARA NOTIFIKASI</Text>
+                        <View style={styles.soundGrid}>
+                            {NOTIFICATION_SOUNDS.map((sound) => {
+                                const isSelected = selectedSoundId === sound.id;
+                                return (
+                                    <TouchableOpacity
+                                        key={sound.id}
+                                        style={[styles.soundCard, isSelected && styles.soundCardSelected]}
+                                        onPress={() => changeNotificationSound(sound.id)}
+                                    >
+                                        <View style={[styles.soundIcon, isSelected && styles.soundIconSelected]}>
+                                            {isSelected ? <Check size={16} color="#FFFFFF" /> : <PlayCircle size={16} color="#64748B" />}
+                                        </View>
+                                        <Text style={[styles.soundName, isSelected && styles.soundNameSelected]}>{sound.name}</Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
                         </View>
-                        <Switch
-                            value={notifSettings.promo}
-                            onValueChange={(val) => setNotifSettings({ ...notifSettings, promo: val })}
-                            trackColor={{ false: '#E2E8F0', true: '#BFDBFE' }}
-                            thumbColor={notifSettings.promo ? '#138FEA' : '#94A3B8'}
-                        />
                     </View>
                 </View>
             </BottomModalTemplate>
@@ -551,6 +604,31 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#64748B',
         fontWeight: '500',
+    },
+    userId: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#94A3B8',
+        backgroundColor: '#F1F5F9',
+        paddingHorizontal: 10,
+        paddingVertical: 2,
+        borderRadius: 6,
+        marginBottom: 8,
+    },
+    contactRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    userContactText: {
+        fontSize: 13,
+        color: '#64748B',
+        fontWeight: '600',
+    },
+    userContactDivider: {
+        fontSize: 13,
+        color: '#CBD5E1',
+        marginHorizontal: 4,
     },
     statsRow: {
         flexDirection: 'row',
@@ -687,29 +765,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: 8,
     },
-    saveBtn: {
-        backgroundColor: '#1E293B',
-        paddingVertical: 16,
-        borderRadius: 16,
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'row',
-        gap: 8,
-        ...Platform.select({
-            ios: {
-                shadowColor: '#1E293B',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.2,
-                shadowRadius: 8,
-            },
-            android: {
-                elevation: 4,
-            },
-            web: {
-                boxShadow: '0px 4px 12px rgba(30, 41, 59, 0.2)',
-            },
-        }),
-    },
     saveBtnText: {
         color: '#FFFFFF',
         fontSize: 16,
@@ -753,6 +808,47 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#94A3B8',
         marginTop: 2,
+    },
+    soundGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+        marginTop: 10,
+    },
+    soundCard: {
+        width: '48%',
+        backgroundColor: '#F8FAFC',
+        borderRadius: 16,
+        padding: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    soundCardSelected: {
+        backgroundColor: '#EFF6FF',
+        borderColor: '#3B82F6',
+    },
+    soundIcon: {
+        width: 24,
+        height: 24,
+        borderRadius: 8,
+        backgroundColor: '#E2E8F0',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    soundIconSelected: {
+        backgroundColor: '#3B82F6',
+    },
+    soundName: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#64748B',
+        flex: 1,
+    },
+    soundNameSelected: {
+        color: '#1E3A8A',
     }
 });
 

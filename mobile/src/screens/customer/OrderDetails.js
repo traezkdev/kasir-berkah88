@@ -9,7 +9,9 @@ import {
     Dimensions,
     Platform,
     StatusBar,
-    SafeAreaView
+    SafeAreaView,
+    Alert,
+    Modal
 } from 'react-native';
 import {
     ArrowLeft,
@@ -31,6 +33,8 @@ const OrderDetails = ({ navigation, route }) => {
     const { orderId } = route.params || {};
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    const [showCancelModal, setShowCancelModal] = useState(false);
 
     const fetchOrderDetail = async () => {
         if (!orderId) {
@@ -64,11 +68,29 @@ const OrderDetails = ({ navigation, route }) => {
         }).format(val || 0);
     };
 
+    const handleCancelOrder = () => {
+        setShowCancelModal(true);
+    };
+
+    const confirmCancelOrder = async () => {
+        setShowCancelModal(false);
+        try {
+            setLoading(true);
+            await apiService.put(`/api/orders/${orderId}/status`, { status: "cancelled" });
+            Alert.alert("Berhasil", "Pesanan berhasil dibatalkan");
+            fetchOrderDetail();
+        } catch (error) {
+            console.error("Error cancelling order:", error);
+            Alert.alert("Gagal", "Gagal membatalkan pesanan. Silakan coba lagi.");
+            setLoading(false);
+        }
+    };
+
     const getStatusInfo = (status) => {
         switch (status) {
             case 'pending':
                 return {
-                    label: 'MENUNGGU KONFIRMASI',
+                    label: 'BARU',
                     color: '#F59E0B',
                     bg: '#FFFBEB',
                     icon: Clock,
@@ -77,10 +99,18 @@ const OrderDetails = ({ navigation, route }) => {
             case 'accepted':
                 return {
                     label: 'SEDANG DIPROSES',
+                    color: '#138FEA',
+                    bg: '#EFF6FF',
+                    icon: ShoppingBag,
+                    desc: 'Yeay! Pesanan Anda telah diterima dan sedang disiapkan.'
+                };
+            case 'ready':
+                return {
+                    label: 'SIAP DIAMBIL',
                     color: '#10B981',
                     bg: '#ECFDF5',
                     icon: ShoppingBag,
-                    desc: 'Yeay! Pesanan Anda telah diterima dan sedang disiapkan.'
+                    desc: 'Pesanan Anda sudah siap! Silakan ambil di toko.'
                 };
             case 'rejected':
                 return {
@@ -92,8 +122,8 @@ const OrderDetails = ({ navigation, route }) => {
                 };
             case 'cancelled':
                 return {
-                    label: 'PESANAN DIBATALKAN',
-                    color: '#94A3B8',
+                    label: 'PESANAN BATAL',
+                    color: '#64748B',
                     bg: '#F8FAFC',
                     icon: XCircle,
                     desc: 'Pesanan ini telah dibatalkan.'
@@ -101,8 +131,8 @@ const OrderDetails = ({ navigation, route }) => {
             case 'completed':
                 return {
                     label: 'PESANAN SELESAI',
-                    color: '#3B82F6',
-                    bg: '#EFF6FF',
+                    color: '#059669',
+                    bg: '#ECFDF5',
                     icon: CheckCircle2,
                     desc: 'Terima kasih! Pesanan Anda telah selesai. Sampai jumpa lagi!'
                 };
@@ -212,8 +242,24 @@ const OrderDetails = ({ navigation, route }) => {
                         <View style={styles.priceDivider} />
 
                         <View style={styles.summaryRow}>
+                            <Text style={styles.summaryLabel}>Subtotal</Text>
+                            <Text style={[styles.summaryLabel, { color: '#1E293B', fontSize: 15, fontWeight: '900' }]}>{formatCurrency((parseFloat(order.total) || 0) + (parseFloat(order.points_used) || 0) + (parseFloat(order.promo_discount) || 0))}</Text>
+                        </View>
+                        {order.points_used > 0 && (
+                            <View style={styles.summaryRow}>
+                                <Text style={[styles.summaryLabel, { color: '#0284C7' }]}>Potongan Poin</Text>
+                                <Text style={[styles.summaryLabel, { color: '#0284C7', fontWeight: '900', fontSize: 13 }]}>-{formatCurrency(parseFloat(order.points_used) || 0)}</Text>
+                            </View>
+                        )}
+                        {order.promo_discount > 0 && (
+                            <View style={styles.summaryRow}>
+                                <Text style={[styles.summaryLabel, { color: '#059669' }]}>Diskon Promo</Text>
+                                <Text style={[styles.summaryLabel, { color: '#059669', fontWeight: '900', fontSize: 13 }]}>-{formatCurrency(parseFloat(order.promo_discount) || 0)}</Text>
+                            </View>
+                        )}
+                        <View style={[styles.summaryRow, { marginTop: 12 }]}>
                             <Text style={styles.summaryLabel}>Total Bayar</Text>
-                            <Text style={styles.summaryValue}>{formatCurrency(order.total)}</Text>
+                            <Text style={styles.summaryValue}>{formatCurrency(parseFloat(order.total) || 0)}</Text>
                         </View>
                         <View style={styles.summaryRow}>
                             <Text style={styles.summaryLabel}>Metode Pembayaran</Text>
@@ -228,13 +274,26 @@ const OrderDetails = ({ navigation, route }) => {
                 <View style={styles.actionCard}>
                     <Text style={styles.cardTitle}>Butuh bantuan?</Text>
                     <Text style={styles.cardDesc}>Hubungi penjual jika Anda memiliki pertanyaan terkait pesanan Anda.</Text>
-                    <TouchableOpacity
-                        style={styles.chatBtn}
-                        onPress={() => navigation.navigate('ChatScreen')}
-                    >
-                        <MessageCircle size={20} color="#FFFFFF" />
-                        <Text style={styles.chatBtnText}>Tanya Penjual</Text>
-                    </TouchableOpacity>
+
+                    <View style={styles.actionButtons}>
+                        <TouchableOpacity
+                            style={styles.chatBtn}
+                            onPress={() => navigation.navigate('ChatScreen')}
+                        >
+                            <MessageCircle size={20} color="#FFFFFF" />
+                            <Text style={styles.chatBtnText}>Tanya Penjual</Text>
+                        </TouchableOpacity>
+
+                        {order.status === 'pending' && (
+                            <TouchableOpacity
+                                style={styles.cancelBtn}
+                                onPress={handleCancelOrder}
+                            >
+                                <XCircle size={20} color="#FFFFFF" />
+                                <Text style={styles.cancelBtnText}>Batalkan Pesanan</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
                 </View>
 
                 <View style={{ height: 40 }} />
@@ -248,6 +307,40 @@ const OrderDetails = ({ navigation, route }) => {
                     <Text style={styles.primaryBtnText}>Kembali ke Beranda</Text>
                 </TouchableOpacity>
             </View>
+
+            {/* Custom Cancel Confirmation Modal */}
+            <Modal
+                transparent={true}
+                visible={showCancelModal}
+                animationType="fade"
+                onRequestClose={() => setShowCancelModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalIconWrap}>
+                            <XCircle size={32} color="#EF4444" />
+                        </View>
+                        <Text style={styles.modalTitle}>Batalkan Pesanan?</Text>
+                        <Text style={styles.modalDesc}>
+                            Apakah Anda yakin ingin membatalkan pesanan ini? Tindakan ini tidak dapat dibatalkan.
+                        </Text>
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity
+                                style={styles.modalBtnCancel}
+                                onPress={() => setShowCancelModal(false)}
+                            >
+                                <Text style={styles.modalBtnCancelText}>Tidak, Kembali</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.modalBtnConfirm}
+                                onPress={confirmCancelOrder}
+                            >
+                                <Text style={styles.modalBtnConfirmText}>Ya, Batalkan</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -527,7 +620,88 @@ const styles = StyleSheet.create({
         color: '#1E293B',
         fontSize: 16,
         fontWeight: '900',
-    }
+    },
+    actionButtons: {
+        gap: 12,
+    },
+    cancelBtn: {
+        backgroundColor: '#EF4444',
+        height: 54,
+        borderRadius: 18,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 10,
+    },
+    cancelBtnText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '900',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+    },
+    modalContent: {
+        backgroundColor: '#FFFFFF',
+        width: '100%',
+        borderRadius: 30,
+        padding: 24,
+        alignItems: 'center',
+    },
+    modalIconWrap: {
+        width: 64,
+        height: 64,
+        backgroundColor: '#FEF2F2',
+        borderRadius: 32,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: '900',
+        color: '#1E293B',
+        marginBottom: 8,
+    },
+    modalDesc: {
+        fontSize: 14,
+        color: '#64748B',
+        textAlign: 'center',
+        marginBottom: 24,
+        lineHeight: 22,
+    },
+    modalActions: {
+        width: '100%',
+        gap: 12,
+    },
+    modalBtnConfirm: {
+        backgroundColor: '#EF4444',
+        height: 54,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalBtnConfirmText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '900',
+    },
+    modalBtnCancel: {
+        backgroundColor: '#F1F5F9',
+        height: 54,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalBtnCancelText: {
+        color: '#64748B',
+        fontSize: 16,
+        fontWeight: '900',
+    },
 });
 
 export default OrderDetails;

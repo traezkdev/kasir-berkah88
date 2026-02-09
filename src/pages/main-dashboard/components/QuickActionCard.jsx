@@ -20,7 +20,10 @@ const QuickActionCard = ({ title, description, icon, route, action, color = 'pri
     success: 'text-emerald-600 bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800/20',
     accent: 'text-amber-600 bg-amber-50 border-amber-100 dark:bg-amber-900/20 dark:border-amber-800/20',
     secondary: 'text-indigo-600 bg-indigo-50 border-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800/20',
-    destructive: 'text-rose-600 bg-rose-50 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800/20'
+    destructive: 'text-rose-600 bg-rose-50 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800/20',
+    teal: 'text-teal-600 bg-teal-50 border-teal-100 dark:bg-teal-900/20 dark:border-teal-800/20',
+    warning: 'text-amber-600 bg-amber-50 border-amber-100 dark:bg-amber-900/20 dark:border-amber-800/20',
+    info: 'text-blue-600 bg-blue-50 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800/20'
   };
 
   const activeStyle = colorStyles[color] || colorStyles.primary;

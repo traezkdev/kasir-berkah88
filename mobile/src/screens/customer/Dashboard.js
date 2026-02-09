@@ -12,10 +12,13 @@ import {
     Platform,
     StatusBar,
     RefreshControl,
-    Animated
+    Animated,
+    AppState,
+    SafeAreaView
 } from 'react-native';
 import {
     Search,
+    ShoppingCart,
     ShoppingBag,
     Bell,
     MessageCircle,
@@ -50,6 +53,7 @@ const CustomerDashboard = ({ navigation }) => {
     const [menus, setMenus] = useState([]);
     const [categories, setCategories] = useState([]);
     const [banners, setBanners] = useState([]);
+    const [points, setPoints] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [orderNotificationCount, setOrderNotificationCount] = useState(0);
@@ -68,6 +72,14 @@ const CustomerDashboard = ({ navigation }) => {
             // Fetch Categories
             const catRes = await apiService.get('/api/categories');
             if (catRes.data.data) setCategories(catRes.data.data.slice(0, 5));
+
+            // Fetch Points
+            try {
+                const pointsRes = await apiService.get('/api/customer/points');
+                if (pointsRes.data.data) setPoints(pointsRes.data.data.points);
+            } catch (pErr) {
+                console.log("Error fetching points:", pErr.message);
+            }
 
             // Fetch Recommended Menus (Top 6)
             const menuRes = await apiService.get('/api/menu-items?limit=6');
@@ -104,6 +116,19 @@ const CustomerDashboard = ({ navigation }) => {
         fetchData();
         const pollInterval = setInterval(() => fetchData(true), 30000);
         return () => clearInterval(pollInterval);
+    }, [fetchData]);
+
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', nextAppState => {
+            if (nextAppState === 'active') {
+                console.log('App (Customer) has come to the foreground! Refreshing data...');
+                fetchData(true);
+            }
+        });
+
+        return () => {
+            subscription.remove();
+        };
     }, [fetchData]);
 
     const onRefresh = () => {
@@ -181,7 +206,7 @@ const CustomerDashboard = ({ navigation }) => {
     }
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
             <StatusBar barStyle="light-content" backgroundColor="#059669" />
 
             {/* Compact Header on Scroll */}
@@ -200,6 +225,16 @@ const CustomerDashboard = ({ navigation }) => {
                             {unreadCount > 0 && (
                                 <View style={[styles.statusBadge, { top: -6, right: -6, width: 14, height: 14, borderRadius: 7, borderWidth: 1.5 }]}>
                                     <Text style={[styles.statusBadgeText, { fontSize: 7 }]}>{unreadCount}</Text>
+                                </View>
+                            )}
+                        </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => navigation.navigate('Cart')}>
+                        <View>
+                            <ShoppingCart size={20} color="#64748B" />
+                            {cartCount > 0 && (
+                                <View style={[styles.statusBadge, { top: -6, right: -6, width: 14, height: 14, borderRadius: 7, borderWidth: 1.5 }]}>
+                                    <Text style={[styles.statusBadgeText, { fontSize: 7 }]}>{cartCount}</Text>
                                 </View>
                             )}
                         </View>
@@ -223,19 +258,38 @@ const CustomerDashboard = ({ navigation }) => {
                             <Text style={styles.greetingText}>{getGreeting()},</Text>
                             <Text style={styles.userName}>{user?.name || 'Pelanggan'}</Text>
                         </View>
-                        <TouchableOpacity
-                            style={styles.notificationBtn}
-                            onPress={() => navigation.navigate('ChatScreen')}
-                        >
-                            <View>
-                                <MessageCircle size={22} color="#FFFFFF" />
-                                {unreadCount > 0 && (
-                                    <View style={[styles.statusBadge, { top: -5, right: -5 }]}>
-                                        <Text style={styles.statusBadgeText}>{unreadCount}</Text>
-                                    </View>
-                                )}
-                            </View>
-                        </TouchableOpacity>
+                        <View style={styles.headerActions}>
+                            <TouchableOpacity
+                                style={styles.notificationBtn}
+                                onPress={() => navigation.navigate('ChatScreen')}
+                            >
+                                <View>
+                                    <MessageCircle size={22} color="#FFFFFF" />
+                                    {unreadCount > 0 && (
+                                        <View style={[styles.statusBadge, { top: -5, right: -5 }]}>
+                                            <Text style={styles.statusBadgeText}>{unreadCount}</Text>
+                                        </View>
+                                    )}
+                                </View>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.notificationBtn}
+                                onPress={() => navigation.navigate('Cart')}
+                            >
+                                <View>
+                                    <ShoppingCart size={22} color="#FFFFFF" />
+                                    {cartCount > 0 && (
+                                        <View style={[styles.statusBadge, { top: -5, right: -5 }]}>
+                                            <Text style={styles.statusBadgeText}>{cartCount}</Text>
+                                        </View>
+                                    )}
+                                </View>
+                            </TouchableOpacity>
+                            <Image
+                                source={require('../../../assets/logo.png')}
+                                style={styles.headerLogo}
+                            />
+                        </View>
                     </View>
 
                     {!isOpen && (
@@ -288,17 +342,14 @@ const CustomerDashboard = ({ navigation }) => {
                 <View style={styles.actionCard}>
                     <View style={styles.saldoRow}>
                         <View>
-                            <Text style={styles.saldoLabel}>BERKAHPAY</Text>
-                            <Text style={styles.saldoValue}>Rp 0</Text>
+                            <Text style={styles.saldoLabel}>Poin Berkah 88</Text>
+                            <Text style={styles.saldoValue}>{new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(points)} Poin</Text>
                         </View>
                         <View style={styles.saldoActions}>
-                            <TouchableOpacity style={styles.saldoBtn}>
-                                <View style={styles.saldoIconWrap}>
-                                    <PlusCircle size={20} color="#10B981" />
-                                </View>
-                                <Text style={styles.saldoBtnText}>TOP UP</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.saldoBtn}>
+                            <TouchableOpacity
+                                style={styles.saldoBtn}
+                                onPress={() => navigation.navigate('PointsHistory')}
+                            >
                                 <View style={[styles.saldoIconWrap, { backgroundColor: '#EFF6FF' }]}>
                                     <History size={20} color="#3B82F6" />
                                 </View>
@@ -363,6 +414,7 @@ const CustomerDashboard = ({ navigation }) => {
                                 styles.bannerCard,
                                 { backgroundColor: getBannerColor(banner.color_class) }
                             ]}
+                            onPress={() => navigation.navigate('PromoScreen')}
                         >
                             <View style={styles.bannerInfo}>
                                 <Text style={styles.bannerTitle}>{banner.title}</Text>
@@ -488,7 +540,7 @@ const CustomerDashboard = ({ navigation }) => {
                 {/* Footer Padding */}
                 <View style={{ height: 100 }} />
             </Animated.ScrollView>
-        </View>
+        </SafeAreaView>
     );
 };
 
@@ -559,6 +611,16 @@ const styles = StyleSheet.create({
         fontSize: 24,
         color: '#FFFFFF',
         fontWeight: '900',
+    },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    headerLogo: {
+        width: 44,
+        height: 44,
+        resizeMode: 'contain',
     },
     notificationBtn: {
         width: 44,

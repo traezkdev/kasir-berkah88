@@ -12,6 +12,7 @@ import {
     Animated,
     PanResponder
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { X } from 'lucide-react-native';
 
 /**
@@ -133,15 +134,18 @@ const BottomModalTemplate = ({
                         </View>
                     </View>
 
-                    {/* Scrollable Content */}
-                    <ScrollView
+                    {/* Scrollable Content dengan Keyboard Awareness */}
+                    <KeyboardAwareScrollView
                         style={{ flex: 1, width: '100%' }}
                         contentContainerStyle={styles.scrollContent}
                         showsVerticalScrollIndicator={false}
                         bounces={true}
+                        enableOnAndroid={true}
+                        extraScrollHeight={20}
+                        keyboardShouldPersistTaps="handled"
                     >
                         {children}
-                    </ScrollView>
+                    </KeyboardAwareScrollView>
 
                     {/* Footer - Fixed di bawah (jika ada) */}
                     {footer && (

@@ -12,7 +12,8 @@ import {
     Utensils,
     History,
     MessageCircle,
-    Search
+    Search,
+    Ticket
 } from 'lucide-react-native';
 import NewOrderPopup from '../components/NewOrderPopup';
 import { useAuth } from '../context/AuthContext';
@@ -31,6 +32,18 @@ import TransactionHistory from '../screens/seller/TransactionHistory';
 import SalesPOS from '../screens/seller/SalesPOS';
 import Banners from '../screens/seller/Banners';
 import CategoryManagement from '../screens/seller/CategoryManagement';
+import CustomerDetails from '../screens/seller/CustomerDetails';
+import PointManagement from '../screens/seller/PointManagement';
+import CustomerManagement from '../screens/seller/CustomerManagement';
+import SellerMenu from '../screens/seller/SellerMenu';
+import ExpenseManagement from '../screens/seller/ExpenseManagement';
+import LapakDeposit from '../screens/seller/LapakDeposit';
+import CashReconciliation from '../screens/seller/CashReconciliation';
+import DailyReport from '../screens/seller/DailyReport';
+import DeveloperCreditsScreen from '../screens/DeveloperCreditsScreen';
+import TransactionTrash from '../screens/seller/TransactionTrash';
+import BusinessReports from '../screens/seller/BusinessReports';
+import PromoManagement from '../screens/seller/PromoManagement';
 
 // Customer Screens
 import CustomerMenu from '../screens/customer/Menu';
@@ -38,56 +51,13 @@ import CustomerCart from '../screens/customer/Cart';
 import OrderHistory from '../screens/customer/OrderHistory';
 import OrderDetails from '../screens/customer/OrderDetails';
 import CustomerProfile from '../screens/customer/CustomerProfile';
-import { View, Text, TouchableOpacity } from 'react-native';
+import PointsHistory from '../screens/customer/PointsHistory';
+import PromoScreen from '../screens/customer/PromoScreen';
+import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
-
-const SellerStack = () => (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="SellerDashboard" component={SellerDashboard} />
-        <Stack.Screen name="OrderManagement" component={OrderManagement} />
-        <Stack.Screen name="MenuManagement" component={MenuManagement} />
-        <Stack.Screen name="TransactionHistory" component={TransactionHistory} />
-        <Stack.Screen name="SalesPOS" component={SalesPOS} />
-        <Stack.Screen name="ChatScreen" component={ChatScreen} />
-    </Stack.Navigator>
-);
-
-const ProfilePlaceholder = () => {
-    const { logout, user } = useAuth();
-    const { confirm } = useConfirm();
-
-    const handleLogout = async () => {
-        const accepted = await confirm({
-            title: 'Keluar Akun',
-            message: 'Apakah Anda yakin ingin keluar dari akun Anda?',
-            confirmText: 'Ya, Keluar',
-            type: 'danger'
-        });
-        if (accepted) logout();
-    };
-
-    return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
-            <View style={{ backgroundColor: '#FFFFFF', padding: 30, borderRadius: 20, alignItems: 'center', width: '80%', borderWidth: 1, borderColor: '#E2E8F0' }}>
-                <View style={{ width: 80, height: 80, backgroundColor: '#138FEA', borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
-                    <User color="#FFFFFF" size={40} />
-                </View>
-                <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#1E293B' }}>{user?.name}</Text>
-                <Text style={{ fontSize: 14, color: '#64748B', marginBottom: 30 }}>Role: {user?.role}</Text>
-
-                <TouchableOpacity
-                    onPress={handleLogout}
-                    style={{ backgroundColor: '#EF4444', paddingVertical: 12, paddingHorizontal: 40, borderRadius: 12 }}
-                >
-                    <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Keluar Akun</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
-};
 
 const SellerTabs = () => {
     const { pendingCount } = useOrderNotification();
@@ -139,7 +109,6 @@ const SellerTabs = () => {
         </Tab.Navigator>
     );
 };
-
 const SellerRootStack = () => (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="MainTabs" component={SellerTabs} />
@@ -147,39 +116,134 @@ const SellerRootStack = () => (
         <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
         <Stack.Screen name="Banners" component={Banners} />
         <Stack.Screen name="CategoryManagement" component={CategoryManagement} />
+        <Stack.Screen name="CustomerManagement" component={CustomerManagement} />
+        <Stack.Screen name="CustomerDetails" component={CustomerDetails} />
+        <Stack.Screen name="PointManagement" component={PointManagement} />
+        <Stack.Screen name="SellerMenu" component={SellerMenu} />
+        <Stack.Screen name="ExpenseManagement" component={ExpenseManagement} />
+        <Stack.Screen name="LapakDeposit" component={LapakDeposit} />
+        <Stack.Screen name="CashReconciliation" component={CashReconciliation} />
+        <Stack.Screen name="DailyReport" component={DailyReport} />
+        <Stack.Screen name="DeveloperCreditsScreen" component={DeveloperCreditsScreen} />
+        <Stack.Screen name="TransactionTrash" component={TransactionTrash} />
+        <Stack.Screen name="BusinessReports" component={BusinessReports} />
+        <Stack.Screen name="PromoManagement" component={PromoManagement} />
     </Stack.Navigator>
 );
+
+const CustomCustomerTabBar = ({ state, descriptors, navigation }) => {
+    return (
+        <View style={navStyles.bottomNav}>
+            {state.routes.map((route, index) => {
+                const { options } = descriptors[route.key];
+                const label = options.tabBarLabel !== undefined ? options.tabBarLabel : options.title !== undefined ? options.title : route.name;
+                const isFocused = state.index === index;
+
+                const onPress = () => {
+                    const event = navigation.emit({
+                        type: 'tabPress',
+                        target: route.key,
+                        canPreventDefault: true,
+                    });
+
+                    if (!isFocused && !event.defaultPrevented) {
+                        navigation.navigate(route.name);
+                    }
+                };
+
+                const iconColor = isFocused ? '#059669' : '#94A3B8';
+                const strokeWidth = isFocused ? 2.5 : 2;
+
+                const renderIcon = () => {
+                    if (route.name === 'Home') return <Home size={24} color={iconColor} strokeWidth={strokeWidth} />;
+                    if (route.name === 'Menu') return <Search size={24} color={iconColor} strokeWidth={strokeWidth} />;
+                    if (route.name === 'Promo') {
+                        return (
+                            <View style={[navStyles.promoIconContainer, isFocused && navStyles.activePromoIcon]}>
+                                <Ticket size={24} color={isFocused ? '#FFFFFF' : '#059669'} fill={isFocused ? '#FFFFFF' : 'none'} strokeWidth={2.5} />
+                            </View>
+                        );
+                    }
+                    if (route.name === 'Orders') return <ClipboardList size={24} color={iconColor} strokeWidth={strokeWidth} />;
+                    if (route.name === 'Profile') return <User size={24} color={iconColor} strokeWidth={strokeWidth} />;
+                    return null;
+                };
+
+                return (
+                    <TouchableOpacity
+                        key={index}
+                        onPress={onPress}
+                        style={[navStyles.navItem, route.name === 'Promo' && navStyles.promoNavItem]}
+                        activeOpacity={0.7}
+                    >
+                        {renderIcon()}
+                        <Text style={[navStyles.navLabel, isFocused && navStyles.activeNavLabel]}>
+                            {label}
+                        </Text>
+                    </TouchableOpacity>
+                );
+            })}
+        </View>
+    );
+};
+
+const navStyles = {
+    bottomNav: {
+        flexDirection: 'row',
+        backgroundColor: '#FFFFFF',
+        borderTopWidth: 1,
+        borderTopColor: '#F1F5F9',
+        paddingTop: 12,
+        paddingBottom: Platform.OS === 'ios' ? 30 : 15,
+        paddingHorizontal: 16,
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        height: Platform.OS === 'ios' ? 95 : 75,
+    },
+    navItem: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+    },
+    promoNavItem: {
+        marginTop: -20,
+    },
+    promoIconContainer: {
+        width: 54,
+        height: 54,
+        borderRadius: 20,
+        backgroundColor: '#ECFDF5',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#D1FAE5',
+        ...Platform.select({
+            web: { boxShadow: '0px 8px 15px rgba(5, 150, 105, 0.15)' },
+            android: { elevation: 6 }
+        })
+    },
+    activePromoIcon: {
+        backgroundColor: '#059669',
+        borderColor: '#059669',
+    },
+    navLabel: {
+        fontSize: 9,
+        fontWeight: '700',
+        color: '#94A3B8',
+        textTransform: 'uppercase',
+    },
+    activeNavLabel: {
+        color: '#059669',
+        fontWeight: '900',
+    }
+};
 
 const CustomerTabs = () => {
     return (
         <Tab.Navigator
-            screenOptions={({ route }) => ({
-                headerShown: false,
-                tabBarStyle: {
-                    height: 75,
-                    paddingBottom: 15,
-                    paddingTop: 10,
-                    backgroundColor: '#FFFFFF',
-                    borderTopWidth: 1,
-                    borderTopColor: '#F1F5F9',
-                },
-                tabBarActiveTintColor: '#059669',
-                tabBarInactiveTintColor: '#94A3B8',
-                tabBarLabelStyle: {
-                    fontSize: 9,
-                    fontWeight: '900',
-                    textTransform: 'uppercase',
-                    letterSpacing: 0,
-                },
-                tabBarIcon: ({ color, size, focused }) => {
-                    const iconProps = { size, color, strokeWidth: focused ? 2.5 : 2 };
-                    if (route.name === 'Home') return <Home {...iconProps} />;
-                    if (route.name === 'Menu') return <Search {...iconProps} />;
-                    if (route.name === 'Orders') return <ClipboardList {...iconProps} />;
-                    if (route.name === 'Profile') return <User {...iconProps} />;
-                    return null;
-                },
-            })}
+            tabBar={props => <CustomCustomerTabBar {...props} />}
+            screenOptions={{ headerShown: false }}
         >
             <Tab.Screen
                 name="Home"
@@ -190,6 +254,11 @@ const CustomerTabs = () => {
                 name="Menu"
                 component={CustomerMenu}
                 options={{ tabBarLabel: 'Cari' }}
+            />
+            <Tab.Screen
+                name="Promo"
+                component={PromoScreen}
+                options={{ tabBarLabel: 'Promo' }}
             />
             <Tab.Screen
                 name="Orders"
@@ -212,6 +281,9 @@ const CustomerRootStack = () => (
         <Stack.Screen name="Cart" component={CustomerCart} />
         <Stack.Screen name="OrderDetails" component={OrderDetails} />
         <Stack.Screen name="ChatScreen" component={ChatScreen} />
+        <Stack.Screen name="PointsHistory" component={PointsHistory} />
+        <Stack.Screen name="PromoScreen" component={PromoScreen} />
+        <Stack.Screen name="DeveloperCreditsScreen" component={DeveloperCreditsScreen} />
     </Stack.Navigator>
 );
 

@@ -11,7 +11,8 @@ import {
     Platform,
     Animated,
     Easing,
-    StatusBar
+    StatusBar,
+    AppState
 } from 'react-native';
 import {
     Store,
@@ -29,7 +30,13 @@ import {
     ChevronRight,
     Clock,
     User,
-    Image as ImageIcon
+    Gift,
+    Image as ImageIcon,
+    TrendingDown,
+    Wallet,
+    Calculator,
+    ClipboardCheck,
+    Ticket
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
@@ -122,6 +129,19 @@ const SellerDashboard = ({ navigation }) => {
         return () => clearInterval(interval);
     }, [fetchData]);
 
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', nextAppState => {
+            if (nextAppState === 'active') {
+                console.log('App has come to the foreground! Refreshing data...');
+                fetchData();
+            }
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, [fetchData]);
+
     const onRefresh = () => {
         setRefreshing(true);
         fetchData();
@@ -138,7 +158,7 @@ const SellerDashboard = ({ navigation }) => {
         }
     };
 
-    const handleUpdateStatus = async (orderId, status) => {
+    const handleUpdateStatus = useCallback(async (orderId, status) => {
         try {
             await apiService.put(`/api/orders/${orderId}/status`, { status });
             showToast(`Pesanan telah ${status === 'accepted' ? 'diterima' : 'ditolak'}`, 'success');
@@ -146,12 +166,20 @@ const SellerDashboard = ({ navigation }) => {
         } catch (error) {
             showToast(error.response?.data?.error || 'Gagal memperbarui status pesanan', 'error');
         }
-    };
+    }, [showToast, fetchData]);
 
-    const handleViewDetail = (order) => {
+    const handleViewDetail = useCallback((order) => {
         setSelectedOrderForDetail(order);
         setShowDetailModal(true);
-    };
+    }, []);
+
+    const handleAccept = useCallback((orderId) => {
+        handleUpdateStatus(orderId, 'accepted');
+    }, [handleUpdateStatus]);
+
+    const handleReject = useCallback((orderId) => {
+        handleUpdateStatus(orderId, 'rejected');
+    }, [handleUpdateStatus]);
 
     if (loading && !refreshing) {
         return (
@@ -293,17 +321,20 @@ const SellerDashboard = ({ navigation }) => {
 
                 {/* Quick Actions */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Aksi Cepat</Text>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Aksi Cepat</Text>
+                        <TouchableOpacity onPress={() => navigation.navigate('SellerMenu')}>
+                            <Text style={styles.viewAll}>Lainnya</Text>
+                        </TouchableOpacity>
+                    </View>
                     <View style={styles.actionGrid}>
                         {[
+                            { label: 'Laporan', icon: ClipboardCheck, color: '#10B981', bgColor: '#ECFDF5', target: 'DailyReport' },
                             { label: 'Chat', icon: MessageCircle, color: '#3B82F6', bgColor: '#EFF6FF', target: 'ChatScreen' },
                             { label: 'Jual', icon: ShoppingCart, color: '#FFFFFF', bgColor: '#138FEA', target: 'Jual' },
-                            { label: 'Katalog', icon: PlusCircle, color: '#10B981', bgColor: '#ECFDF5', target: 'Katalog' },
-                            { label: 'Kategori', icon: BarChart3, color: '#A855F7', bgColor: '#FAF5FF', target: 'CategoryManagement' },
-                            { label: 'Banner', icon: ImageIcon, color: '#F59E0B', bgColor: '#FFFBEB', target: 'Banners' },
-                            { label: 'Pesanan', icon: ShoppingBag, color: '#6366F1', bgColor: '#EEF2FF', target: 'Pesanan' },
-                            { label: 'Riwayat', icon: History, color: '#8B5CF6', bgColor: '#F5F3FF', target: 'Transaksi' },
-                            { label: 'Profil', icon: User, color: '#64748B', bgColor: '#F1F5F9', target: 'ProfileScreen' },
+                            { label: 'Rekon', icon: Calculator, color: '#F59E0B', bgColor: '#FFFBEB', target: 'CashReconciliation' },
+                            { label: 'Pengeluaran', icon: TrendingDown, color: '#EF4444', bgColor: '#FEF2F2', target: 'ExpenseManagement' },
+                            { label: 'Deposit', icon: Wallet, color: '#138FEA', bgColor: '#E0F2FE', target: 'LapakDeposit' },
                         ].map((action, index) => (
                             <TouchableOpacity
                                 key={index}
@@ -316,6 +347,26 @@ const SellerDashboard = ({ navigation }) => {
                                 <Text style={styles.actionLabel}>{action.label}</Text>
                             </TouchableOpacity>
                         ))}
+                        {(user?.role === 'admin' || user?.role === 'owner') && (
+                            <TouchableOpacity
+                                style={styles.actionItem}
+                                onPress={() => navigation.navigate('PromoManagement')}
+                            >
+                                <View style={[styles.actionIcon, { backgroundColor: '#ECFDF5' }]}>
+                                    <Ticket size={25} color="#059669" />
+                                </View>
+                                <Text style={styles.actionLabel}>Promo</Text>
+                            </TouchableOpacity>
+                        )}
+                        <TouchableOpacity
+                            style={styles.actionItem}
+                            onPress={() => navigation.navigate('Transaksi')}
+                        >
+                            <View style={[styles.actionIcon, { backgroundColor: '#F5F3FF' }]}>
+                                <History size={25} color="#8B5CF6" />
+                            </View>
+                            <Text style={styles.actionLabel}>Riwayat</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
 
@@ -333,8 +384,8 @@ const SellerDashboard = ({ navigation }) => {
                             <SellerOrderCard
                                 key={order.id}
                                 order={order}
-                                onAccept={() => handleUpdateStatus(order.id, 'accepted')}
-                                onReject={() => handleUpdateStatus(order.id, 'rejected')}
+                                onAccept={handleAccept}
+                                onReject={handleReject}
                                 onViewDetail={handleViewDetail}
                             />
                         ))
@@ -562,7 +613,6 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         color: '#1E293B',
-        marginBottom: 15,
     },
     viewAll: {
         fontSize: 14,
@@ -586,10 +636,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 8,
-        ...Platform.select({
-            web: { boxShadow: '0px 8px 16px rgba(0,0,0,0.06)' },
-            android: { elevation: 3 }
-        })
     },
     actionLabel: {
         fontSize: 11,

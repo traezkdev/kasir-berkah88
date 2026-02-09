@@ -16,6 +16,15 @@ const CustomerOrderConfirmation = () => {
     const [selectedOrderForRating, setSelectedOrderForRating] = useState(null);
     const [submittingRating, setSubmittingRating] = useState(false);
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+    const [scrolled, setScrolled] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 20);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     const handleChatWithSeller = async (order = null) => {
         try {
@@ -25,7 +34,7 @@ const CustomerOrderConfirmation = () => {
                 const staff = data.data.find(c => c.role === 'admin') || data.data[0];
                 setActiveChat({ user_id: staff.id, ...staff });
                 if (order) setActiveOrder(order);
-                setIsOpen(true);
+                navigate('/customer/chat');
             }
         } catch (error) {
             console.error("Error starting chat:", error);
@@ -35,7 +44,7 @@ const CustomerOrderConfirmation = () => {
     const fetchOrders = useCallback(async (pageNum = 1) => {
         try {
             if (pageNum === 1) setIsLoading(true);
-            const response = await authFetch(`${API_URL}/api/orders?page=${pageNum}&limit=5`);
+            const response = await authFetch(`${API_URL}/api/orders?page=${pageNum}&limit=10`);
             const result = await response.json();
 
             if (result.message === 'success') {
@@ -45,7 +54,7 @@ const CustomerOrderConfirmation = () => {
                 } else {
                     setOrders(prev => [...prev, ...newOrders]);
                 }
-                setHasMore(newOrders.length === 5);
+                setHasMore(newOrders.length === 10);
                 setPage(pageNum);
             }
         } catch (error) {
@@ -81,13 +90,17 @@ const CustomerOrderConfirmation = () => {
     const getStatusInfo = (status) => {
         switch (status) {
             case 'pending':
-                return { label: 'Menunggu', icon: 'Clock', color: 'text-yellow-500', bg: 'bg-yellow-50' };
+                return { label: 'Baru', icon: 'Clock', color: 'text-yellow-500', bg: 'bg-yellow-50' };
             case 'accepted':
-                return { label: 'Diterima', icon: 'CheckCircle', color: 'text-green-600', bg: 'bg-green-50' };
+                return { label: 'Diproses', icon: 'ShoppingBag', color: 'text-blue-500', bg: 'bg-blue-50' };
+            case 'ready':
+                return { label: 'Siap Diambil', icon: 'CheckCircle', color: 'text-green-500', bg: 'bg-green-50' };
             case 'rejected':
-                return { label: 'Ditolak', icon: 'XCircle', color: 'text-red-600', bg: 'bg-red-50' };
+                return { label: 'Ditolak', icon: 'XCircle', color: 'text-red-500', bg: 'bg-red-50' };
             case 'cancelled':
-                return { label: 'Dibatalkan', icon: 'Slash', color: 'text-gray-400', bg: 'bg-gray-50' };
+                return { label: 'Batal', icon: 'Slash', color: 'text-gray-400', bg: 'bg-gray-50' };
+            case 'completed':
+                return { label: 'Selesai', icon: 'CheckCircle', color: 'text-emerald-600', bg: 'bg-emerald-50' };
             default:
                 return { label: status, icon: 'Info', color: 'text-gray-500', bg: 'bg-gray-50' };
         }
@@ -151,13 +164,17 @@ const CustomerOrderConfirmation = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-24 font-sans">
-            <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-8 pb-16 text-white rounded-b-[2.5rem] shadow-lg mb-[-40px]">
-                <div className="flex items-center gap-3 mb-2">
-                    <button onClick={() => navigate('/customer/dashboard')} className="p-2 bg-white/20 rounded-full">
-                        <Icon name="ArrowLeft" className="w-5 h-5 text-white" />
+            {/* Fixed Header */}
+            <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 px-8 ${scrolled ? 'bg-white shadow-md py-5' : 'bg-transparent py-8'}`}>
+                <div className="flex items-center gap-3">
+                    <button onClick={() => navigate('/customer/dashboard')} className={`p-2 rounded-full transition-colors ${scrolled ? 'bg-gray-100' : 'bg-white/20'}`}>
+                        <Icon name="ArrowLeft" className={`w-5 h-5 ${scrolled ? 'text-gray-800' : 'text-white'}`} />
                     </button>
-                    <h1 className="text-2xl font-black tracking-tight">Status Pesanan</h1>
+                    <h1 className={`text-2xl font-black tracking-tight transition-colors ${scrolled ? 'text-gray-800' : 'text-white'}`}>Status Pesanan</h1>
                 </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-8 pt-20 pb-16 text-white rounded-b-[2.5rem] shadow-lg mb-[-40px]">
                 <p className="text-green-100 text-xs font-medium opacity-80 uppercase tracking-widest ml-12">Lacak Pesanan Anda Secara Real-time</p>
             </div>
 
@@ -199,12 +216,15 @@ const CustomerOrderConfirmation = () => {
                                 </div>
 
                                 <div className="space-y-3 mb-4">
-                                    {items.map((item, idx) => (
+                                    {items.slice(0, 2).map((item, idx) => (
                                         <div key={idx} className="flex justify-between items-center text-sm">
                                             <span className="text-gray-600 font-bold">{item.name} <span className="text-gray-400 ml-1">x{item.quantity}</span></span>
                                             <span className="text-gray-900 font-black">{formatCurrency(item.price * item.quantity)}</span>
                                         </div>
                                     ))}
+                                    {items.length > 2 && (
+                                        <p className="text-[11px] text-gray-400 italic mt-2">+{items.length - 2} item lainnya</p>
+                                    )}
                                 </div>
 
                                 <div className="pt-4 border-t border-dashed border-gray-100 space-y-4">
@@ -241,13 +261,24 @@ const CustomerOrderConfirmation = () => {
                                         >
                                             <Icon name="RefreshCw" className="w-4 h-4" />
                                         </button>
-                                        {order.status === 'accepted' && (
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => navigate(`/customer/order-details/${order.id}`)}
+                                            className={`${order.status === 'completed' ? 'flex-1' : 'w-full'} flex items-center justify-center gap-2 bg-green-50 text-green-600 py-3 rounded-2xl active:scale-95 transition-all border border-green-100`}
+                                        >
+                                            <span className="text-[11px] font-black uppercase tracking-wider">Detail</span>
+                                            <Icon name="ChevronRight" className="w-3.5 h-3.5" />
+                                        </button>
+
+                                        {order.status === 'completed' && (
                                             <button
-                                                className="flex-1 bg-amber-50 text-amber-600 font-extrabold py-3 rounded-2xl active:scale-95 transition-all text-xs uppercase tracking-wider border border-amber-100 flex items-center justify-center gap-2"
                                                 onClick={() => handleOpenRatingModal(order)}
+                                                className="flex-1 flex items-center justify-center gap-2 bg-amber-50 text-amber-600 py-3 rounded-2xl active:scale-95 transition-all border border-amber-100 shadow-sm shadow-amber-100/30 animate-in zoom-in-95 duration-500"
                                             >
-                                                <Icon name="Star" className="w-4 h-4 fill-current" />
-                                                Beri Ulasan
+                                                <Icon name="Star" className="w-3.5 h-3.5 fill-current" />
+                                                <span className="text-[11px] font-black uppercase tracking-wider">Beri Rating</span>
                                             </button>
                                         )}
                                     </div>
@@ -295,18 +326,47 @@ const CustomerOrderConfirmation = () => {
 const RatingModal = ({ order, onClose, onSubmit, submitting }) => {
     const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
     const [ratedItems, setRatedItems] = useState({});
+    const [loadingExisting, setLoadingExisting] = useState(true);
+
+    useEffect(() => {
+        const fetchExistingReviews = async () => {
+            try {
+                const itemIds = items.map(i => i.id).join(',');
+                const res = await authFetch(`${import.meta.env.VITE_API_URL}/api/my-reviews?menu_item_ids=${itemIds}`);
+                const result = await res.json();
+
+                if (result.message === 'success' && result.data.length > 0) {
+                    const existingData = {};
+                    result.data.forEach(rev => {
+                        existingData[rev.menu_item_id] = {
+                            rating: rev.rating,
+                            comment: rev.comment || '',
+                            submitted: true,
+                            isEdit: true
+                        };
+                    });
+                    setRatedItems(prev => ({ ...prev, ...existingData }));
+                }
+            } catch (err) {
+                console.error("Error fetching existing reviews:", err);
+            } finally {
+                setLoadingExisting(false);
+            }
+        };
+        fetchExistingReviews();
+    }, [order.id]);
 
     const handleRate = (itemId, rating) => {
         setRatedItems(prev => ({
             ...prev,
-            [itemId]: { ...prev[itemId], rating }
+            [itemId]: { ...prev[itemId], rating, submitted: false, isEdit: prev[itemId]?.isEdit || false }
         }));
     };
 
     const handleComment = (itemId, comment) => {
         setRatedItems(prev => ({
             ...prev,
-            [itemId]: { ...prev[itemId], comment }
+            [itemId]: { ...prev[itemId], comment, submitted: false, isEdit: prev[itemId]?.isEdit || false }
         }));
     };
 
@@ -341,55 +401,74 @@ const RatingModal = ({ order, onClose, onSubmit, submitting }) => {
                     </button>
                 </div>
 
-                <div className="overflow-y-auto flex-1 space-y-8 pr-1 pb-4">
-                    {items.map((item, idx) => {
-                        const state = ratedItems[item.id] || { rating: 0, comment: '', submitted: false };
-                        return (
-                            <div key={idx} className={`space-y-4 pb-6 border-b border-gray-50 last:border-0 ${state.submitted ? 'opacity-50 pointer-events-none' : ''}`}>
-                                <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center shrink-0">
-                                        <Icon name="Utensils" className="w-6 h-6 text-gray-300" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <h4 className="font-extrabold text-gray-800 text-sm">{item.name}</h4>
-                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Pilih Bintang & Komentar</p>
-                                    </div>
-                                    {state.submitted && (
-                                        <div className="flex items-center gap-1 text-green-600 font-black text-[10px] uppercase">
-                                            <Icon name="Check" className="w-3 h-3" />
-                                            <span>Terkirim</span>
+                <div className="overflow-y-auto flex-1 pr-1 pb-4 custom-scrollbar">
+                    {loadingExisting ? (
+                        <div className="flex flex-col items-center justify-center py-20">
+                            <div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Memuat Ulasan...</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-8">
+                            {items.map((item, idx) => {
+                                const state = ratedItems[item.id] || { rating: 0, comment: '', submitted: false };
+                                return (
+                                    <div key={idx} className={`space-y-4 pb-6 border-b border-gray-50 last:border-0 transition-all ${state.submitted ? 'bg-green-50/30 rounded-[2rem] p-4 -mx-2' : ''}`}>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center shrink-0">
+                                                <Icon name="Utensils" className="w-6 h-6 text-gray-300" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="font-extrabold text-gray-800 text-sm">{item.name}</h4>
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                                                    {state.submitted ? 'Ulasan Terkirim' : 'Pilih Bintang & Komentar'}
+                                                </p>
+                                            </div>
+                                            {state.submitted && (
+                                                <div className="flex items-center gap-1 text-green-600 font-black text-[10px] uppercase bg-white px-3 py-1.5 rounded-full shadow-sm">
+                                                    <Icon name="Check" className="w-3 h-3" />
+                                                    <span>Terkirim</span>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
-                                <div className="flex justify-center gap-3 py-2">
-                                    {[1, 2, 3, 4, 5].map(star => (
-                                        <button
-                                            key={star}
-                                            onClick={() => handleRate(item.id, star)}
-                                            className={`transition-all duration-300 ${state.rating >= star ? 'scale-125' : 'grayscale opacity-30 hover:opacity-100'}`}
-                                        >
-                                            <Icon name="Star" className={`w-8 h-8 ${state.rating >= star ? 'text-amber-400 fill-current' : 'text-gray-300'}`} />
-                                        </button>
-                                    ))}
-                                </div>
-                                <textarea
-                                    placeholder="Tulis ulasan Anda (Opsional)..."
-                                    className="w-full bg-gray-50 border-2 border-transparent focus:border-amber-400 focus:bg-white rounded-2xl p-4 text-xs text-gray-700 font-bold transition-all outline-none min-h-[80px]"
-                                    value={state.comment}
-                                    onChange={(e) => handleComment(item.id, e.target.value)}
-                                />
-                                {!state.submitted && (
-                                    <button
-                                        onClick={() => submitItem(item)}
-                                        disabled={!state.rating || submitting}
-                                        className="w-full bg-amber-500 text-white font-black py-3 rounded-2xl"
-                                    >
-                                        Kirim Ulasan Untuk Menu Ini
-                                    </button>
-                                )}
-                            </div>
-                        );
-                    })}
+                                        <div className="flex justify-center gap-3 py-2">
+                                            {[1, 2, 3, 4, 5].map(star => (
+                                                <button
+                                                    key={star}
+                                                    onClick={() => handleRate(item.id, star)}
+                                                    className={`transition-all duration-300 ${state.rating >= star ? 'scale-125' : 'grayscale opacity-30 hover:opacity-100'}`}
+                                                >
+                                                    <Icon name="Star" className={`w-8 h-8 ${state.rating >= star ? 'text-amber-400 fill-current' : 'text-gray-300'}`} />
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <textarea
+                                            placeholder="Tulis ulasan Anda (Opsional)..."
+                                            className="w-full bg-gray-50 border-2 border-transparent focus:border-amber-400 focus:bg-white rounded-2xl p-4 text-xs text-gray-700 font-bold transition-all outline-none min-h-[80px]"
+                                            value={state.comment}
+                                            onChange={(e) => handleComment(item.id, e.target.value)}
+                                        />
+                                        {!state.submitted && (
+                                            <button
+                                                onClick={() => submitItem(item)}
+                                                disabled={!state.rating || submitting}
+                                                className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-gray-200 text-white font-black py-4 rounded-2xl shadow-lg shadow-amber-200/50 transition-all active:scale-95 text-xs uppercase tracking-widest"
+                                            >
+                                                {submitting ? 'Mengirim...' : (state.isEdit ? 'Simpan Perubahan' : 'Kirim Ulasan')}
+                                            </button>
+                                        )}
+                                        {state.submitted && (
+                                            <button
+                                                onClick={() => setRatedItems(prev => ({ ...prev, [item.id]: { ...prev[item.id], submitted: false } }))}
+                                                className="w-full bg-gray-100 text-gray-600 font-black py-3 rounded-xl transition-all active:scale-95 text-[10px] uppercase tracking-widest"
+                                            >
+                                                Edit Ulasan
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
                 <button
                     onClick={onClose}

@@ -4,6 +4,7 @@ import { io } from 'socket.io-client';
 import Icon from '../../../components/AppIcon';
 import authFetch from '../../../utils/authFetch';
 import { useAppSettings } from '../../../contexts/AppSettingsContext';
+import { useCart } from '../context/CartContext';
 
 const CustomerDashboard = () => {
     const navigate = useNavigate();
@@ -11,6 +12,8 @@ const CustomerDashboard = () => {
     const [categories, setCategories] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [userName, setUserName] = useState('Pelanggan');
+    const [points, setPoints] = useState(0);
+    const { cartCount } = useCart();
     const { isOpen } = useAppSettings();
 
     const [banners, setBanners] = useState([]);
@@ -43,6 +46,15 @@ const CustomerDashboard = () => {
                 const catRes = await authFetch(`${import.meta.env.VITE_API_URL}/api/categories`);
                 const catData = await catRes.json();
                 if (catData.data) setCategories(catData.data.slice(0, 5));
+
+                // Fetch Points
+                try {
+                    const pointsRes = await authFetch(`${import.meta.env.VITE_API_URL}/api/customer/points`);
+                    const pointsData = await pointsRes.json();
+                    if (pointsData.data) setPoints(pointsData.data.points);
+                } catch (pErr) {
+                    console.log("Error fetching points:", pErr.message);
+                }
 
                 // Fetch Recommended Menus (Top 5)
                 const menuRes = await authFetch(`${import.meta.env.VITE_API_URL}/api/menu-items?limit=6`);
@@ -144,8 +156,16 @@ const CustomerDashboard = () => {
                         <Icon name="Search" className="w-4 h-4 text-gray-400" />
                         <span className="text-gray-400 text-xs font-medium">Cari menu favorit...</span>
                     </div>
-                    <Link to="/customer/profile" className="p-2 text-gray-400">
-                        <Icon name="Bell" className="w-5 h-5" />
+                    <Link to="/customer/chat" className="p-2 text-gray-400 hover:text-green-600 transition-colors">
+                        <Icon name="MessageCircle" className="w-5 h-5" />
+                    </Link>
+                    <Link to="/customer/cart" className="p-2 text-gray-400 hover:text-green-600 transition-colors relative">
+                        <Icon name="ShoppingCart" className="w-5 h-5" />
+                        {cartCount > 0 && (
+                            <span className="absolute top-1 right-1 bg-red-500 text-white text-[8px] font-bold px-1 min-w-[14px] h-[14px] flex items-center justify-center rounded-full border-2 border-white">
+                                {cartCount}
+                            </span>
+                        )}
                     </Link>
                 </div>
             </div>
@@ -157,9 +177,19 @@ const CustomerDashboard = () => {
                         <p className="text-green-100 text-sm font-medium">{getGreeting()},</p>
                         <h1 className="text-2xl font-bold">{userName}</h1>
                     </div>
-                    <Link to="/customer/profile" className="bg-white/20 p-2 rounded-full hover:bg-white/30 transition-colors backdrop-blur-sm">
-                        <Icon name="Bell" className="w-5 h-5 text-white" />
-                    </Link>
+                    <div className="flex gap-3">
+                        <Link to="/customer/chat" className="bg-white/20 p-2 rounded-full hover:bg-white/30 transition-colors backdrop-blur-sm relative">
+                            <Icon name="MessageCircle" className="w-5 h-5 text-white" />
+                        </Link>
+                        <Link to="/customer/cart" className="bg-white/20 p-2 rounded-full hover:bg-white/30 transition-colors backdrop-blur-sm relative">
+                            <Icon name="ShoppingCart" className="w-5 h-5 text-white" />
+                            {cartCount > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full border-2 border-green-600 shadow-sm animate-in zoom-in duration-300">
+                                    {cartCount}
+                                </span>
+                            )}
+                        </Link>
+                    </div>
                 </div>
 
                 {!isOpen && (
@@ -209,17 +239,14 @@ const CustomerDashboard = () => {
                 {/* Saldo Section */}
                 <div className="p-5 flex justify-between items-center border-b border-gray-50">
                     <div className="flex flex-col">
-                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.15em] mb-0.5">BerkahPay</span>
-                        <span className="text-xl font-black text-gray-900 tracking-tight">Rp 0</span>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.15em] mb-0.5">Poin Berkah 88</span>
+                        <span className="text-xl font-black text-gray-900 tracking-tight">{new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(points)} Poin</span>
                     </div>
                     <div className="flex gap-4">
-                        <div className="flex flex-col items-center gap-1 cursor-pointer group">
-                            <div className="bg-green-50 p-2 rounded-xl text-green-600 border border-green-100 group-active:scale-90 transition-transform">
-                                <Icon name="PlusCircle" className="w-5 h-5" />
-                            </div>
-                            <span className="text-[9px] font-black text-gray-500 uppercase">Top Up</span>
-                        </div>
-                        <div className="flex flex-col items-center gap-1 cursor-pointer group">
+                        <div
+                            onClick={() => navigate('/customer/points-history')}
+                            className="flex flex-col items-center gap-1 cursor-pointer group"
+                        >
                             <div className="bg-blue-50 p-2 rounded-xl text-blue-600 border border-blue-100 group-active:scale-90 transition-transform">
                                 <Icon name="History" className="w-5 h-5" />
                             </div>
@@ -261,7 +288,11 @@ const CustomerDashboard = () => {
                 </div>
                 <div className="overflow-x-auto no-scrollbar flex gap-4 pb-4 snap-x animate-scroll-hint scroll-smooth" id="banner-scroll">
                     {banners.map((banner) => (
-                        <div key={banner.id} className={`${banner.color_class} min-w-[90%] h-40 rounded-3xl p-6 text-white flex flex-col justify-between shadow-xl snap-center active:scale-95 transition-all cursor-pointer relative overflow-hidden`}>
+                        <div
+                            key={banner.id}
+                            onClick={() => navigate('/customer/promo')}
+                            className={`${banner.color_class} min-w-[90%] h-40 rounded-3xl p-6 text-white flex flex-col justify-between shadow-xl snap-center active:scale-95 transition-all cursor-pointer relative overflow-hidden`}
+                        >
                             <div className="z-10 relative">
                                 <h3 className="font-black text-2xl tracking-tighter leading-tight mb-1">{banner.title}</h3>
                                 <p className="text-xs font-bold opacity-80">{banner.subtitle}</p>
@@ -270,7 +301,7 @@ const CustomerDashboard = () => {
                                 <div className="bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-white/20">Ambil Promo</div>
                             </div>
                             {/* Decorative Icon */}
-                            <Icon name={banner.icon_name} size={120} className="absolute -bottom-6 -right-6 text-white/10 rotate-12" />
+                            <Icon name="Sparkles" size={140} className="absolute -bottom-6 -right-6 text-white/10 rotate-12" />
                         </div>
                     ))}
                 </div>

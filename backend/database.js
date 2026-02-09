@@ -129,26 +129,110 @@ const setupDatabase = async () => {
       );
     `;
 
+    const createPromosTable = `
+      CREATE TABLE IF NOT EXISTS promos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        code VARCHAR(50) UNIQUE,
+        icon VARCHAR(50) DEFAULT 'Ticket',
+        color VARCHAR(20) DEFAULT '#059669',
+        expiry VARCHAR(255),
+        is_hero BOOLEAN DEFAULT FALSE,
+        image_url VARCHAR(255),
+        badge_text VARCHAR(255),
+        discount_value DECIMAL(15, 2) DEFAULT 0.00,
+        discount_type ENUM('fixed', 'percentage') DEFAULT 'fixed',
+        min_purchase DECIMAL(15, 2) DEFAULT 0.00,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `;
+
     await connection.query(createNotesTable);
     console.log('notes table is ready.');
     await connection.query(createBannersTable);
     console.log('banners table is ready.');
+    await connection.query(createPromosTable);
+    console.log('promos table is ready.');
+
+    // Migration for promos table
+    const [isHeroCol] = await connection.query("SHOW COLUMNS FROM promos LIKE 'is_hero'");
+    if (isHeroCol.length === 0) {
+      await connection.query("ALTER TABLE promos ADD COLUMN is_hero BOOLEAN DEFAULT FALSE");
+      console.log("Added is_hero column to promos table.");
+    }
+    const [imageUrlCol] = await connection.query("SHOW COLUMNS FROM promos LIKE 'image_url'");
+    if (imageUrlCol.length === 0) {
+      await connection.query("ALTER TABLE promos ADD COLUMN image_url VARCHAR(255)");
+      console.log("Added image_url column to promos table.");
+    }
+    const [badgeTextCol] = await connection.query("SHOW COLUMNS FROM promos LIKE 'badge_text'");
+    if (badgeTextCol.length === 0) {
+      await connection.query("ALTER TABLE promos ADD COLUMN badge_text VARCHAR(255)");
+      console.log("Added badge_text column to promos table.");
+    }
+    const [isOneTimeCol] = await connection.query("SHOW COLUMNS FROM promos LIKE 'is_one_time'");
+    if (isOneTimeCol.length === 0) {
+      await connection.query("ALTER TABLE promos ADD COLUMN is_one_time BOOLEAN DEFAULT FALSE");
+      console.log("Added is_one_time column to promos table.");
+    }
 
     const createOrdersTable = `
-      CREATE TABLE IF NOT EXISTS orders(
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      user_id INT NULL,
-      customer_name VARCHAR(255) NOT NULL,
-      customer_address TEXT,
-      items JSON NOT NULL,
-      total DECIMAL(10, 2) NOT NULL,
-      status VARCHAR(50) NOT NULL DEFAULT 'pending',
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-    );
+      CREATE TABLE IF NOT EXISTS orders (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id INT NOT NULL,
+          customer_name VARCHAR(255),
+          customer_address TEXT,
+          customer_phone VARCHAR(50),
+          items JSON NOT NULL,
+          total DECIMAL(15, 2) NOT NULL,
+          status ENUM('pending', 'accepted', 'rejected', 'cancelled', 'completed') DEFAULT 'pending',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          payment_method VARCHAR(50),
+          note TEXT,
+          points_used DECIMAL(15, 2) DEFAULT 0,
+          promo_id INT DEFAULT NULL,
+          FOREIGN KEY (user_id) REFERENCES users(id),
+          FOREIGN KEY (promo_id) REFERENCES promos(id) ON DELETE SET NULL
+      );
     `;
     await connection.query(createOrdersTable);
     console.log('orders table is ready.');
+
+    // Check if points_used column exists in orders table
+    const [pointsUsedColumnorders] = await connection.query("SHOW COLUMNS FROM orders LIKE 'points_used'");
+    if (pointsUsedColumnorders.length === 0) {
+      await connection.query("ALTER TABLE orders ADD COLUMN points_used DECIMAL(15, 2) DEFAULT 0");
+      console.log("Added points_used column to orders table.");
+    }
+
+    // Check if promo_id column exists in orders table
+    const [promoIdColumnOrders] = await connection.query("SHOW COLUMNS FROM orders LIKE 'promo_id'");
+    if (promoIdColumnOrders.length === 0) {
+      // Step 1: Add the column
+      await connection.query("ALTER TABLE orders ADD COLUMN promo_id INT DEFAULT NULL");
+
+      // Step 2: Add the foreign key separate just in case (to avoid ER_FK_CANNOT_OPEN_PARENT on some environments)
+      try {
+        await connection.query("ALTER TABLE orders ADD FOREIGN KEY (promo_id) REFERENCES promos(id) ON DELETE SET NULL");
+      } catch (fkError) {
+        console.warn("Warming: Gagal menambahkan foreign key promo_id ke tabel orders. Kolom tetap ditambahkan.", fkError.message);
+      }
+
+      console.log("Added promo_id column to orders table.");
+    }
+
+    // Check if promo_discount column exists in orders table
+    const [promoDiscountColumnOrders] = await connection.query("SHOW COLUMNS FROM orders LIKE 'promo_discount'");
+    if (promoDiscountColumnOrders.length === 0) {
+      await connection.query("ALTER TABLE orders ADD COLUMN promo_discount DECIMAL(15, 2) DEFAULT 0");
+      console.log("Added promo_discount column to orders table.");
+    }
+
+    // Check if subtotal column exists in orders? (optional, but good)
+    // Actually items JSON has subtotal, but it's good to have it as a column too.
+    // For now let's just stick to promo_discount.
 
     // Check and add payment_method to orders
     const checkPaymentMethodColumn = `
@@ -226,6 +310,39 @@ const setupDatabase = async () => {
     if (addrUsersRows[0]['COUNT(*)'] === 0) {
       await connection.query("ALTER TABLE users ADD COLUMN address TEXT DEFAULT NULL");
       console.log('Added address column to users table.');
+    }
+
+    // Check and add phone to users
+    const checkUserPhoneColumnMigration = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'phone';
+    `;
+    const [phoneUsersRowsMigration] = await connection.query(checkUserPhoneColumnMigration);
+    if (phoneUsersRowsMigration[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE users ADD COLUMN phone VARCHAR(25) DEFAULT NULL");
+      console.log('Added phone column to users table.');
+    }
+
+    // Check and add points to users
+    const checkUserPointsColumnMigration = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'points';
+    `;
+    const [pointsUsersRowsMigration] = await connection.query(checkUserPointsColumnMigration);
+    if (pointsUsersRowsMigration[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE users ADD COLUMN points DECIMAL(10, 2) DEFAULT 0");
+      console.log('Added points column to users table.');
+    }
+
+    // Check and add created_at to users
+    const checkUserCreatedAtColumnMigration = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'created_at';
+    `;
+    const [createdAtUsersRowsMigration] = await connection.query(checkUserCreatedAtColumnMigration);
+    if (createdAtUsersRowsMigration[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+      console.log('Added created_at column to users table.');
     }
 
     // Execute the create table statements
@@ -877,6 +994,20 @@ const setupDatabase = async () => {
       console.log('Added phone column to users table.');
     }
 
+    // Check and add email column to users if it doesn't exist
+    const checkEmailColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'email';
+    `;
+    const addEmailColumn = `
+      ALTER TABLE users ADD COLUMN email VARCHAR(255) DEFAULT NULL;
+    `;
+    const [emailRows] = await connection.query(checkEmailColumn);
+    if (emailRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addEmailColumn);
+      console.log('Added email column to users table.');
+    }
+
     // Check and add address column to users if it doesn't exist
     const checkAddressColumn = `
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
@@ -1004,6 +1135,20 @@ const setupDatabase = async () => {
       console.log('Added manual_discount column to transactions table.');
     }
 
+    // Check and add promo_discount column to transactions if it doesn't exist
+    const checkPromoDiscountColumnTx = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'promo_discount';
+    `;
+    const addPromoDiscountColumnTx = `
+      ALTER TABLE transactions ADD COLUMN promo_discount DECIMAL(15, 2) DEFAULT 0;
+    `;
+    const [promoDiscountTxRows] = await connection.query(checkPromoDiscountColumnTx);
+    if (promoDiscountTxRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addPromoDiscountColumnTx);
+      console.log('Added promo_discount column to transactions table.');
+    }
+
     // Check and add deleted_at column to transactions if it doesn't exist
     const checkDeletedAtColumn = `
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
@@ -1065,6 +1210,17 @@ const setupDatabase = async () => {
       console.log('Added customer_address column to transactions table.');
     }
 
+    // Check and add catatan column to transactions if it doesn't exist
+    const checkCatatanColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'catatan';
+    `;
+    const [catatanRows] = await connection.query(checkCatatanColumn);
+    if (catatanRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE transactions ADD COLUMN catatan TEXT DEFAULT NULL");
+      console.log('Added catatan column to transactions table.');
+    }
+
     // Check and add hpp column to menu_items if it doesn't exist
     const checkHppColumn = `
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
@@ -1123,6 +1279,8 @@ const setupDatabase = async () => {
       console.log('Added user_id column and foreign key to transactions table.');
     }
 
+
+
     // Check and add user_id column to expenses if it doesn't exist
     const checkExpenseUserIdColumn = `
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
@@ -1138,6 +1296,7 @@ const setupDatabase = async () => {
       await connection.query(addExpenseUserIdColumn);
       console.log('Added user_id column and foreign key to expenses table.');
     }
+
 
 
     // --- Logika Pembuatan Admin Default ---
@@ -1403,6 +1562,20 @@ const setupDatabase = async () => {
       console.log('Added deleted_at column to messages table.');
     }
 
+    // Check and add image_url column to messages if it doesn't exist
+    const checkImageUrlMsgColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'messages' AND COLUMN_NAME = 'image_url';
+    `;
+    const addImageUrlMsgColumn = `
+      ALTER TABLE messages ADD COLUMN image_url VARCHAR(255) DEFAULT NULL;
+    `;
+    const [msgImageUrlRows] = await connection.query(checkImageUrlMsgColumn);
+    if (msgImageUrlRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addImageUrlMsgColumn);
+      console.log('Added image_url column to messages table.');
+    }
+
     // Ensure messages table supports emojis (utf8mb4)
     try {
       await connection.query("ALTER TABLE messages CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
@@ -1424,13 +1597,311 @@ const setupDatabase = async () => {
         FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL,
-        UNIQUE KEY \`unique_user_item_order\` (user_id, menu_item_id(191), order_id)
+        UNIQUE KEY \`unique_user_item\` (user_id, menu_item_id(191))
       );
     `;
     await connection.query(createMenuReviewsTable);
     console.log('menu_reviews table is ready.');
 
+    // Migration for unique constraint
+    try {
+      const [existingConstraints] = await connection.query(`
+            SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS 
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'menu_reviews' AND INDEX_NAME = 'unique_user_item_order'
+        `);
+      if (existingConstraints.length > 0) {
+        await connection.query("ALTER TABLE menu_reviews DROP INDEX unique_user_item_order");
+        await connection.query("ALTER TABLE menu_reviews ADD UNIQUE KEY unique_user_item (user_id, menu_item_id(191))");
+        console.log('Successfully updated menu_reviews unique constraint.');
+      }
+    } catch (err) {
+      console.error('Error migrating menu_reviews constraints:', err.message);
+    }
+
+    // --- Points System Migration ---
+    // Check and add points column to users if it doesn't exist
+    const checkPointsColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'points';
+    `;
+    const [pointsRows] = await connection.query(checkPointsColumn);
+    if (pointsRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE users ADD COLUMN points DECIMAL(10, 2) DEFAULT 0.00");
+      console.log('Added points column to users table.');
+    }
+
+    // Ensure points_per_item setting exists
+    const ensurePointsSetting = `
+      INSERT IGNORE INTO settings(\`key\`, \`value\`) VALUES
+      ('points_per_item', '100'),
+      ('point_system_enabled', '1');
+    `;
+    await connection.query(ensurePointsSetting);
+
+    // Create points_history table
+    const createPointsHistoryTable = `
+      CREATE TABLE IF NOT EXISTS points_history (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        transaction_id VARCHAR(255) NULL,
+        amount DECIMAL(10, 2) NOT NULL,
+        type ENUM('earn', 'spend') NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE SET NULL
+      );
+    `;
+    await connection.query(createPointsHistoryTable);
+    console.log('points_history table is ready.');
+
+
+    // Check and add points column to users if it doesn't exist
+    const checkUserPointsColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'points';
+    `;
+    const [pointsUserRows] = await connection.query(checkUserPointsColumn);
+    if (pointsUserRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE users ADD COLUMN points DECIMAL(15, 2) DEFAULT 0.00");
+      console.log('Added points column to users table.');
+    }
+
+    // Check and add customer_id, points_used, points_earned to transactions
+    const checkTxCustomerIdColumn = `
+        SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'customer_id';
+    `;
+    const [txCustRows] = await connection.query(checkTxCustomerIdColumn);
+    if (txCustRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE transactions ADD COLUMN customer_id INT NULL, ADD FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE SET NULL");
+      console.log('Added customer_id column to transactions table.');
+    }
+
+    const checkTxPointsUsedColumn = `
+        SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'points_used';
+    `;
+    const [txPointsUsedRows] = await connection.query(checkTxPointsUsedColumn);
+    if (txPointsUsedRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE transactions ADD COLUMN points_used DECIMAL(15, 2) DEFAULT 0.00");
+      console.log('Added points_used column to transactions table.');
+    }
+
+    const checkTxPointsEarnedColumn = `
+        SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'points_earned';
+    `;
+    const [txPointsEarnedRows] = await connection.query(checkTxPointsEarnedColumn);
+    if (txPointsEarnedRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE transactions ADD COLUMN points_earned DECIMAL(15, 2) DEFAULT 0.00");
+      console.log('Added points_earned column to transactions table.');
+    }
+
+    // Check and add discount_value to promos
+    const checkPromoDiscountValueColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promos' AND COLUMN_NAME = 'discount_value';
+    `;
+    const [promoDiscValueRows] = await connection.query(checkPromoDiscountValueColumn);
+    if (promoDiscValueRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE promos ADD COLUMN discount_value DECIMAL(15, 2) DEFAULT 0.00");
+      console.log('Added discount_value column to promos table.');
+    }
+
+    // Check and add discount_type to promos
+    const checkPromoDiscountTypeColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promos' AND COLUMN_NAME = 'discount_type';
+    `;
+    const [promoDiscTypeRows] = await connection.query(checkPromoDiscountTypeColumn);
+    if (promoDiscTypeRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE promos ADD COLUMN discount_type ENUM('fixed', 'percentage') DEFAULT 'fixed'");
+      console.log('Added discount_type column to promos table.');
+    }
+
+    // Check and add min_purchase to promos
+    const checkPromoMinPurchaseColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promos' AND COLUMN_NAME = 'min_purchase';
+    `;
+    const [promoMinPurchaseRows] = await connection.query(checkPromoMinPurchaseColumn);
+    if (promoMinPurchaseRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE promos ADD COLUMN min_purchase DECIMAL(15, 2) DEFAULT 0.00");
+      console.log('Added min_purchase column to promos table.');
+    }
+
+
+    // --- Promos Table Setup ---
+    try {
+      const createPromosTable = `
+        CREATE TABLE IF NOT EXISTS promos (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          title VARCHAR(255) NOT NULL,
+          description TEXT,
+          code VARCHAR(50) UNIQUE,
+          icon VARCHAR(50),
+          color VARCHAR(50),
+          expiry DATETIME,
+          is_active BOOLEAN DEFAULT TRUE,
+          discount_value DECIMAL(10, 2) DEFAULT 0,
+          discount_type VARCHAR(20) DEFAULT 'percentage',
+          min_purchase DECIMAL(10, 2) DEFAULT 0,
+          is_hero BOOLEAN DEFAULT FALSE,
+          image_url TEXT,
+          badge_text VARCHAR(50),
+          is_one_time BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `;
+      await connection.query(createPromosTable);
+      console.log('promos table checked/created.');
+
+      // Check and add columns if missing
+      const promoColsToCheck = [
+        { name: 'is_active', type: 'BOOLEAN DEFAULT TRUE' },
+        { name: 'is_hero', type: 'BOOLEAN DEFAULT FALSE' },
+        { name: 'is_one_time', type: 'BOOLEAN DEFAULT FALSE' },
+        { name: 'min_purchase', type: 'DECIMAL(10, 2) DEFAULT 0' },
+        { name: 'image_url', type: 'TEXT' },
+        { name: 'badge_text', type: 'VARCHAR(50)' },
+        { name: 'discount_value', type: 'DECIMAL(10, 2) DEFAULT 0' },
+        { name: 'discount_type', type: "VARCHAR(20) DEFAULT 'percentage'" },
+        { name: 'code', type: 'VARCHAR(50)' },
+        { name: 'expiry', type: 'DATETIME' },
+        { name: 'icon', type: 'VARCHAR(50)' },
+        { name: 'color', type: 'VARCHAR(50)' }
+      ];
+
+      for (const col of promoColsToCheck) {
+        const checkColSql = `
+          SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS
+          WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promos' AND COLUMN_NAME = '${col.name}';
+        `;
+        const [rows] = await connection.query(checkColSql);
+        if (rows[0].count === 0) {
+          console.log(`Adding missing column ${col.name} to promos table...`);
+          await connection.query(`ALTER TABLE promos ADD COLUMN ${col.name} ${col.type}`);
+        }
+      }
+    } catch (promoErr) {
+      console.error("Error setting up promos table:", promoErr);
+    }
+
+
+
+    // --- Points History Table Setup ---
+    try {
+      const createPointsHistoryTable = `
+        CREATE TABLE IF NOT EXISTS points_history (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id INT NOT NULL,
+          amount DECIMAL(10, 2) NOT NULL,
+          type VARCHAR(50) NOT NULL,
+          description TEXT,
+          transaction_id VARCHAR(255),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+      `;
+      await connection.query(createPointsHistoryTable);
+      console.log('points_history table checked/created.');
+
+      // Ensure type column is VARCHAR(50) if it already exists as ENUM or shorter VARCHAR
+      // This handles the migration for existing tables that might have the strict ENUM
+      const checkTypeColumn = `
+        SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'points_history' AND COLUMN_NAME = 'type';
+      `;
+      const [typeColRows] = await connection.query(checkTypeColumn);
+      if (typeColRows.length > 0 && typeColRows[0].COLUMN_TYPE.toLowerCase().includes('enum')) {
+        await connection.query("ALTER TABLE points_history MODIFY COLUMN type VARCHAR(50) NOT NULL");
+        console.log('Migrated points_history.type to VARCHAR(50).');
+      }
+
+    } catch (err) {
+      console.error('Error setting up points_history table:', err);
+    }
+
+
+    // --- Activity Logs Table Setup ---
+    try {
+      const createActivityLogsTable = `
+        CREATE TABLE IF NOT EXISTS activity_logs (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id INT,
+          action VARCHAR(255) NOT NULL,
+          target_type VARCHAR(50),
+          target_id VARCHAR(255),
+          details TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `;
+      await connection.query(createActivityLogsTable);
+      console.log('activity_logs table checked/created.');
+    } catch (err) {
+      console.error('Error setting up activity_logs table:', err);
+    }
+
+
+    // --- Ensure Point System Settings ---
+    try {
+      const ensurePointSettings = `
+        INSERT IGNORE INTO settings (\`key\`, \`value\`) VALUES
+        ('point_system_enabled', '1'),
+        ('points_per_item', '100');
+      `;
+      // Use IGNORE to not overwrite if they exist, but ensure defaults are there
+      await connection.query(ensurePointSettings);
+      console.log('Point system settings checked/ensured.');
+    } catch (settingsErr) {
+      console.error("Error ensuring point settings:", settingsErr);
+    }
+
+
+    // --- Menu Reviews Table Setup ---
+    try {
+      const createMenuReviewsTable = `
+        CREATE TABLE IF NOT EXISTS menu_reviews (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          menu_item_id VARCHAR(255) NOT NULL,
+          user_id INT NOT NULL,
+          order_id INT,
+          rating DECIMAL(2, 1) NOT NULL,
+          comment TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          UNIQUE KEY unique_user_item_review (user_id, menu_item_id)
+        );
+      `;
+      await connection.query(createMenuReviewsTable);
+      console.log('menu_reviews table checked/created.');
+    } catch (err) {
+      console.error('Error setting up menu_reviews table:', err);
+    }
+
+
+    // --- Expense Categories Table Setup ---
+    try {
+      const createExpenseCategoriesTable = `
+        CREATE TABLE IF NOT EXISTS expense_categories (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL UNIQUE
+        );
+      `;
+      await connection.query(createExpenseCategoriesTable);
+      console.log('expense_categories table checked/created.');
+    } catch (err) {
+      console.error('Error setting up expense_categories table:', err);
+    }
+
     connection.release();
+
+
+
+
+
 
   } catch (error) {
     console.error('Error setting up the database:', error);

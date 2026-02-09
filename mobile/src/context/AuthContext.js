@@ -65,6 +65,7 @@ export const AuthProvider = ({ children }) => {
                     ...user,
                     id: profile.id,
                     name: profile.username,
+                    email: profile.email,
                     role: profile.role,
                     avatar_url: profile.avatar_url,
                     phone: profile.phone,

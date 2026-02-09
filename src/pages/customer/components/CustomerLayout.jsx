@@ -21,32 +21,34 @@ const CustomerLayout = () => {
             </main>
 
             {/* Bottom Navigation */}
-            <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-50 max-w-md mx-auto">
-                <div className="flex justify-around items-center h-16">
-                    {navItems.map((item) => {
-                        const isActive = currentPath.startsWith(item.path);
-                        return (
-                            <Link
-                                key={item.path}
-                                to={item.path}
-                                className={`flex flex-col items-center justify-center w-full h-full transition-colors duration-200 ${isActive ? 'text-green-600' : 'text-gray-400 hover:text-gray-600'
-                                    }`}
-                            >
-                                <div className={`p-1.5 rounded-full ${isActive ? 'bg-green-50' : ''} transition-all duration-300`}>
-                                    <Icon
-                                        name={item.icon}
-                                        className={`w-6 h-6 ${isActive ? 'fill-current' : 'stroke-2'}`}
-                                        strokeWidth={isActive ? 2.5 : 2}
-                                    />
-                                </div>
-                                <span className={`text-[10px] font-medium mt-0.5 ${isActive ? 'text-green-600' : 'text-gray-500'}`}>
-                                    {item.label}
-                                </span>
-                            </Link>
-                        );
-                    })}
-                </div>
-            </nav>
+            {currentPath !== '/customer/chat' && currentPath !== '/customer/cart' && (
+                <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-50 max-w-md mx-auto">
+                    <div className="flex justify-around items-center h-16">
+                        {navItems.map((item) => {
+                            const isActive = currentPath.startsWith(item.path);
+                            return (
+                                <Link
+                                    key={item.path}
+                                    to={item.path}
+                                    className={`flex flex-col items-center justify-center w-full h-full transition-colors duration-200 ${isActive ? 'text-green-600' : 'text-gray-400 hover:text-gray-600'
+                                        }`}
+                                >
+                                    <div className={`p-1.5 rounded-full ${isActive ? 'bg-green-50' : ''} transition-all duration-300`}>
+                                        <Icon
+                                            name={item.icon}
+                                            className={`w-6 h-6 ${isActive ? 'fill-current' : 'stroke-2'}`}
+                                            strokeWidth={isActive ? 2.5 : 2}
+                                        />
+                                    </div>
+                                    <span className={`text-[10px] font-medium mt-0.5 ${isActive ? 'text-green-600' : 'text-gray-500'}`}>
+                                        {item.label}
+                                    </span>
+                                </Link>
+                            );
+                        })}
+                    </div>
+                </nav>
+            )}
         </div>
     );
 };

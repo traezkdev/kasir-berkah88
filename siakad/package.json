@@ -1,0 +1,35 @@
+{
+  "name": "siakad",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "vite",
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.13.4",
+    "clsx": "^2.1.1",
+    "framer-motion": "^10.18.0",
+    "jwt-decode": "^4.0.0",
+    "lucide-react": "^0.545.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hot-toast": "^2.6.0",
+    "react-icons": "^5.5.0",
+    "react-router-dom": "6.0.2",
+    "tailwind-merge": "^2.3.1",
+    "tailwindcss-animate": "^1.0.7"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "4.3.4",
+    "autoprefixer": "10.4.2",
+    "eslint": "^8.57.1",
+    "postcss": "8.4.8",
+    "tailwindcss": "3.4.6",
+    "vite": "5.0.0"
+  }
+}

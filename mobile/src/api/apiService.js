@@ -29,4 +29,20 @@ apiService.interceptors.request.use(
     }
 );
 
+// Interceptor untuk menangani error response (terutama 401 Unauthorized)
+apiService.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        if (error.response && error.response.status === 401) {
+            console.log('Session expired (401). Clearing token...');
+            // Token kedaluwarsa atau tidak valid
+            await AsyncStorage.multiRemove(['userToken', 'userRole', 'userData']);
+
+            // Opsional: Anda bisa menambahkan event emitter di sini untuk memberitahu AuthContext agar logout
+            // Tapi menghapus token biasanya cukup untuk request berikutnya gagal dan diredirect di splash/login check
+        }
+        return Promise.reject(error);
+    }
+);
+
 export default apiService;

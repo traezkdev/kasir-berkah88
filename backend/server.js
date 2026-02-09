@@ -120,7 +120,8 @@ app.use(cors({
 app.options('*', cors());
 
 // 2. Body Parser
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // 3. Security Headers
 app.use(helmet({
@@ -319,6 +320,32 @@ const sendUniversalNotification = async (userIds, message, heading, data = {}, e
         }
     } catch (e) {
         console.error('Expo Push Helper Error:', e);
+    }
+};
+
+// --- HELPER UNTUK BASE64 IMAGE UPLOAD ---
+const processBase64Image = async (base64String, prefix = 'promo') => {
+    if (!base64String || !base64String.startsWith('data:image')) {
+        return base64String; // Return as is if not base64 or already a path
+    }
+
+    try {
+        const matches = base64String.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (!matches || matches.length !== 3) {
+            console.error('Invalid base64 string format');
+            return null;
+        }
+
+        const extension = matches[1].split('/')[1]; // e.g. 'jpeg', 'png'
+        const data = Buffer.from(matches[2], 'base64');
+        const fileName = `${prefix}_${Date.now()}.${extension}`;
+        const filePath = path.join(__dirname, 'public', 'uploads', fileName);
+
+        fs.writeFileSync(filePath, data);
+        return `/public/uploads/${fileName}`;
+    } catch (err) {
+        console.error('Error processing base64 image:', err);
+        return null;
     }
 };
 
@@ -793,23 +820,31 @@ app.get("/api/menu-items/all", authenticateToken, authorizeRoles('user', 'admin'
         const sql = `
             SELECT 
                 mi.*,
-                COALESCE(
-                    (
-                        SELECT JSON_ARRAYAGG(
-                            JSON_OBJECT(
-                                'id', mio.id, 
-                                'name', mio.name, 
-                                'price_adjustment', mio.price_adjustment
-                            )
-                        )
-                        FROM menu_item_options mio 
-                        WHERE mio.menu_item_id = mi.id
-                    ),
-                    '[]'
-                ) AS options,
-                (SELECT COALESCE(AVG(rating), 0) FROM menu_reviews WHERE menu_item_id = mi.id) as average_rating,
-                (SELECT COUNT(*) FROM menu_reviews WHERE menu_item_id = mi.id) as total_reviews
+                COALESCE(opt.options_json, '[]') AS options,
+                COALESCE(rev.average_rating, 0) AS average_rating,
+                COALESCE(rev.total_reviews, 0) AS total_reviews
             FROM menu_items mi
+            LEFT JOIN (
+                SELECT 
+                    menu_item_id, 
+                    JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'id', id, 
+                            'name', name, 
+                            'price_adjustment', price_adjustment
+                        )
+                    ) AS options_json
+                FROM menu_item_options
+                GROUP BY menu_item_id
+            ) opt ON mi.id = opt.menu_item_id
+            LEFT JOIN (
+                SELECT 
+                    menu_item_id, 
+                    AVG(rating) as average_rating, 
+                    COUNT(*) as total_reviews 
+                FROM menu_reviews 
+                GROUP BY menu_item_id
+            ) rev ON mi.id = rev.menu_item_id
             ORDER BY mi.order_index ASC;
         `;
         const [rows] = await db.query(sql);
@@ -1075,8 +1110,44 @@ app.post("/api/menu-reviews", authenticateToken, authorizeRoles('pelanggan', 'us
         const user_id = req.user.userId;
 
         if (!menu_item_id || !rating) {
-            return res.status(400).json({ error: "menu_item_id and rating are required" });
+            return res.status(400).json({ error: "ID menu dan rating wajib diisi" });
         }
+
+        // Anti-Spam & Validation: Check if order exists, belongs to user, is completed, AND contains the menu item
+        if (order_id) {
+            const [orderRows] = await db.query('SELECT items, status, user_id FROM orders WHERE id = ?', [order_id]);
+            if (orderRows.length === 0) {
+                return res.status(404).json({ error: "Pesanan tidak ditemukan" });
+            }
+            const order = orderRows[0];
+            if (order.user_id !== user_id) {
+                return res.status(403).json({ error: "Anda tidak memiliki akses ke pesanan ini" });
+            }
+            if (order.status !== 'completed') {
+                return res.status(400).json({ error: "Anda hanya bisa memberi ulasan pada pesanan yang sudah selesai" });
+            }
+
+            const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+            const hasItem = items.some(item => item.id.toString() === menu_item_id.toString());
+            if (!hasItem) {
+                return res.status(400).json({ error: "Menu ini tidak ada dalam pesanan Anda" });
+            }
+        } else {
+            // If no order_id is provided, we check if they HAVE EVER ordered it in a completed order
+            const [everOrderedRows] = await db.query(`
+                SELECT id FROM orders 
+                WHERE user_id = ? AND status = 'completed' AND items LIKE ?
+            `, [user_id, `%${menu_item_id}%`]);
+
+            if (everOrderedRows.length === 0) {
+                return res.status(403).json({ error: "Anda hanya bisa mengulas menu yang pernah Anda pesan" });
+            }
+        }
+
+        // Use a unique constraint on (user_id, menu_item_id) if we want "one rating per menu"
+        // But the database current unique is (user_id, menu_item_id, order_id).
+        // If we want to allow EDITING regardless of order_id, we can find existing one first
+        // OR we change the DB constraint. Let's stick to the DB constraint for now but handle updates.
 
         const sql = `
             INSERT INTO menu_reviews (menu_item_id, user_id, order_id, rating, comment)
@@ -1091,6 +1162,27 @@ app.post("/api/menu-reviews", authenticateToken, authorizeRoles('pelanggan', 'us
         res.status(201).json({ message: "success", data: { menu_item_id, rating, comment } });
     } catch (err) {
         console.error("Error submitting review:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get my reviews for specific items
+app.get("/api/my-reviews", authenticateToken, async (req, res) => {
+    try {
+        const { menu_item_ids } = req.query; // Expecting comma separated IDs
+        const user_id = req.user.userId;
+
+        if (!menu_item_ids) {
+            return res.json({ message: "success", data: [] });
+        }
+
+        const idArray = menu_item_ids.split(',');
+        const [rows] = await db.query(
+            "SELECT * FROM menu_reviews WHERE user_id = ? AND menu_item_id IN (?)",
+            [user_id, idArray]
+        );
+        res.json({ message: "success", data: rows });
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
@@ -1336,13 +1428,25 @@ app.delete("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penju
 // --- Expense Categories Endpoints ---
 
 // Get all expense categories
-app.get("/api/expense-categories", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'owner'), async (req, res) => {
+app.get("/api/expense-categories", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'owner', 'penjual', 'guest'), async (req, res) => {
     try {
-        const sql = "SELECT * FROM expense_categories ORDER BY name ASC";
-        const [rows] = await db.query(sql);
+        // Get categories from fixed table
+        const [categoryRows] = await db.query("SELECT name FROM expense_categories ORDER BY name ASC");
+        let categoriesFromTable = categoryRows.map(r => r.name);
+
+        // Get categories from expenses table
+        const [expenseRows] = await db.query('SELECT DISTINCT category FROM expenses WHERE category IS NOT NULL AND category != ""');
+        let categoriesFromExpenses = expenseRows.map(r => r.category);
+
+        // Merge and unique
+        const allUniqueNames = [...new Set([...categoriesFromTable, ...categoriesFromExpenses])].sort();
+
+        // Convert back to object format for web compatibility
+        const finalData = allUniqueNames.map(name => ({ name }));
+
         res.json({
             "message": "success",
-            "data": rows
+            "data": finalData
         });
     } catch (err) {
         res.status(500).json({ "error": err.message });
@@ -1900,8 +2004,8 @@ app.get("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 
 
         // Search Filtering
         if (search) {
-            whereClauses.push('(t.id LIKE ? OR t.items LIKE ?)');
-            queryParams.push(`%${search}%`, `%${search}%`);
+            whereClauses.push('(t.id LIKE ? OR t.items LIKE ? OR t.customer_name LIKE ? OR t.customer_phone LIKE ? OR t.customer_address LIKE ?)');
+            queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
         }
 
         const whereSql = `WHERE ${whereClauses.join(' AND ')}`;
@@ -2099,11 +2203,72 @@ app.get("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
 });
 
 
+
+// Search customers for POS
+app.get("/api/customers/search", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'owner'), async (req, res) => {
+    try {
+        const { query } = req.query;
+        if (!query) return res.json({ message: "success", data: [] });
+
+        // Search by name or phone
+        const sql = "SELECT id, username as name, phone, points, address FROM users WHERE role = 'pelanggan' AND (username LIKE ? OR phone LIKE ?) LIMIT 10";
+        const [rows] = await db.query(sql, [`%${query}%`, `%${query}%`]);
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get all customers with stats
+app.get("/api/customers", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'owner', 'penjual'), async (req, res) => {
+    try {
+        const { search, limit = 50, offset = 0 } = req.query;
+
+        let conditions = ["u.role = 'pelanggan'"];
+        const params = [];
+
+        if (search) {
+            conditions.push("(u.username LIKE ? OR u.phone LIKE ?)");
+            params.push(`%${search}%`, `%${search}%`);
+        }
+
+        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : "";
+
+        // Query with subqueries/joins can be tricky depending on MySQL version for aggregate + limit.
+        // Using a simpler approach:
+        const sql = `
+            SELECT 
+                u.id, 
+                u.username, 
+                u.phone, 
+                u.address, 
+                u.points, 
+                COUNT(o.id) as total_orders,
+                COALESCE(SUM(o.total), 0) as total_spent
+            FROM users u
+            LEFT JOIN orders o ON u.id = o.user_id AND o.status = 'completed'
+            ${whereClause}
+            GROUP BY u.id, u.username, u.phone, u.address, u.points
+            ORDER BY u.id DESC 
+            LIMIT ? OFFSET ?
+        `;
+
+        params.push(parseInt(limit), parseInt(offset));
+
+        const [rows] = await db.query(sql, params);
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        console.error("Error fetching customers:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
 // Create a new transaction
-app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'pelanggan'), async (req, res, next) => {
+app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin', 'kasir', 'pelanggan', 'owner', 'penjual'), async (req, res, next) => {
     let connection;
     try {
-        const { items, total: frontendTotal, ppn: frontendPpn, cashPaid, change, isEmployeeMeal, payment_method, manual_discount, catatan, customer_name, customer_phone, customer_address } = req.body;
+        const { items, total: frontendTotal, ppn: frontendPpn, cashPaid, change, isEmployeeMeal, payment_method, manual_discount, catatan, customer_name, customer_phone, customer_address, customerId, pointsUsed } = req.body;
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ "error": "No items specified" });
@@ -2161,10 +2326,16 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
             return { ...item, price: price, quantity: quantity };
         });
 
+        // Ensure manual_discount is treated as a number
+        const manualDiscountVal = parseFloat(manual_discount || 0);
+        const subtotalAfterManualDiscount = Math.max(0, calculatedSubtotal - manualDiscountVal);
+
         const [ppnSetting] = await connection.query("SELECT value FROM settings WHERE `key` = ?", ['ppn']);
         const ppnRate = ppnSetting.length > 0 ? parseFloat(ppnSetting[0].value) : 0.12;
-        const calculatedPpn = calculatedSubtotal * ppnRate;
-        const calculatedTotal = calculatedSubtotal + calculatedPpn;
+
+        // PPN is calculated after manual discount
+        const calculatedPpn = subtotalAfterManualDiscount * ppnRate;
+        const calculatedTotal = subtotalAfterManualDiscount + calculatedPpn;
 
         const finalTotal = (frontendTotal !== undefined && frontendTotal !== null && !isNaN(parseFloat(frontendTotal)))
             ? parseFloat(frontendTotal)
@@ -2179,7 +2350,47 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
         const finalPaymentMethod = payment_method || 'tunai';
         const finalUserId = req.user ? req.user.userId : null;
 
-        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock, cash_paid, `change`, user_id, manual_discount, catatan, customer_name, customer_phone, customer_address) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
+        // --- Points Logic ---
+        let finalPointsUsed = 0;
+        let finalPointsEarned = 0;
+        let finalCustomerId = null;
+
+        if (customerId) {
+            // Validate customer exists and lock row
+            const [userRows] = await connection.query("SELECT id, points FROM users WHERE id = ? FOR UPDATE", [customerId]);
+            if (userRows.length === 0) {
+                await connection.rollback();
+                return res.status(400).json({ error: "Customer not found." });
+            }
+
+            finalCustomerId = userRows[0].id;
+            const currentPoints = parseFloat(userRows[0].points || 0);
+
+            // Deduct points if used
+            if (pointsUsed && pointsUsed > 0) {
+                finalPointsUsed = parseFloat(pointsUsed);
+                if (currentPoints < finalPointsUsed) {
+                    await connection.rollback();
+                    return res.status(400).json({ error: "Insufficient points balance." });
+                }
+            }
+
+            // Calculate Earned Points (1% of Total - Discount + PPN, basically Amount Paid)
+            // Or usually points logic is based on Subtotal before tax, or Grand Total.
+            // Let's use Grand Total minus Points Used (Amount actually paid in cash/transfer).
+            const amountPaidCompatible = finalTotal - finalPointsUsed;
+            // 1% cashback
+            finalPointsEarned = Math.floor(amountPaidCompatible * 0.01);
+
+            const newBalance = currentPoints - finalPointsUsed + finalPointsEarned;
+
+            // Update User Points
+            await connection.query("UPDATE users SET points = ? WHERE id = ?", [newBalance, finalCustomerId]);
+        }
+
+        const promoDiscountVal = parseFloat(req.body.promo_discount || 0);
+
+        const sql = 'INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, ignore_stock, cash_paid, `change`, user_id, manual_discount, catatan, customer_name, customer_phone, customer_address, customer_id, points_used, points_earned, promo_discount) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
         const params = [
             newTransactionId,
             timestamp,
@@ -2196,7 +2407,11 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
             catatan || null,
             customer_name || null,
             customer_phone || null,
-            customer_address || null
+            customer_address || null,
+            finalCustomerId,
+            finalPointsUsed.toFixed(2),
+            finalPointsEarned.toFixed(2),
+            promoDiscountVal
         ];
 
         await connection.query(sql, params);
@@ -2206,9 +2421,110 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
             await connection.query('UPDATE menu_items SET stock = stock - ? WHERE id = ?', [item.quantity, item.id]);
         }
 
+        // --- Points Awarding Logic ---
+        // Award points to the user who made the transaction (if they are a customer)
+        try {
+            const [pointSettingRows] = await connection.query("SELECT value FROM settings WHERE `key` = 'point_system_enabled'");
+            const pointSystemEnabled = pointSettingRows.length > 0 ? pointSettingRows[0].value === '1' : true;
+
+            if (pointSystemEnabled) {
+                let pointsAwarded = false;
+
+                // Priority 1: Check if logged-in user is a customer
+                if (finalUserId) {
+                    console.log(`[POINTS] Checking points for logged-in user ID: ${finalUserId}`);
+
+                    const [userRows] = await connection.query('SELECT id, points, username, role FROM users WHERE id = ?', [finalUserId]);
+
+                    if (userRows.length > 0 && userRows[0].role === 'pelanggan') {
+                        const customerId = userRows[0].id;
+                        const customerName = userRows[0].username;
+                        console.log(`[POINTS] ✓ User is a customer: ${customerName} (ID: ${customerId})`);
+
+                        const [pointsSetting] = await connection.query("SELECT value FROM settings WHERE `key` = ?", ['points_per_item']);
+                        const pointsPerItem = pointsSetting.length > 0 ? parseFloat(pointsSetting[0].value) : 100;
+
+                        const totalItemsCount = itemsWithDetails.reduce((sum, item) => sum + item.quantity, 0);
+                        const pointsEarned = totalItemsCount * pointsPerItem;
+
+                        console.log(`[POINTS] Calculation: ${totalItemsCount} items × ${pointsPerItem} = ${pointsEarned} points`);
+
+                        if (pointsEarned > 0) {
+                            await connection.query('UPDATE users SET points = points + ? WHERE id = ?', [pointsEarned, customerId]);
+                            await connection.query(
+                                'INSERT INTO points_history (user_id, transaction_id, amount, type, description) VALUES (?, ?, ?, ?, ?)',
+                                [customerId, newTransactionId, pointsEarned, 'earn', `Beli ${totalItemsCount} item`]
+                            );
+                            console.log(`[POINTS] ✅ Awarded ${pointsEarned} points to ${customerName}`);
+                            pointsAwarded = true;
+                        }
+                    } else if (userRows.length > 0) {
+                        console.log(`[POINTS] ⚠️ User is not a customer (role: ${userRows[0].role})`);
+                    }
+                }
+
+                // Priority 2: If no points awarded yet and customer_phone provided, try to find customer by phone
+                if (!pointsAwarded && customer_phone) {
+                    console.log(`[POINTS] Checking customer by phone: ${customer_phone}`);
+
+                    const [customerRows] = await connection.query('SELECT id, points, username, role FROM users WHERE phone = ? AND role = "pelanggan"', [customer_phone]);
+
+                    if (customerRows.length > 0) {
+                        const customerId = customerRows[0].id;
+                        const customerName = customerRows[0].username;
+                        console.log(`[POINTS] ✓ Found customer by phone: ${customerName} (ID: ${customerId})`);
+
+                        const [pointsSetting] = await connection.query("SELECT value FROM settings WHERE `key` = ?", ['points_per_item']);
+                        const pointsPerItem = pointsSetting.length > 0 ? parseFloat(pointsSetting[0].value) : 100;
+
+                        const totalItemsCount = itemsWithDetails.reduce((sum, item) => sum + item.quantity, 0);
+                        const pointsEarned = totalItemsCount * pointsPerItem;
+
+                        console.log(`[POINTS] Calculation: ${totalItemsCount} items × ${pointsPerItem} = ${pointsEarned} points`);
+
+                        if (pointsEarned > 0) {
+                            await connection.query('UPDATE users SET points = points + ? WHERE id = ?', [pointsEarned, customerId]);
+                            await connection.query(
+                                'INSERT INTO points_history (user_id, transaction_id, amount, type, description) VALUES (?, ?, ?, ?, ?)',
+                                [customerId, newTransactionId, pointsEarned, 'earn', `Beli ${totalItemsCount} item`]
+                            );
+                            console.log(`[POINTS] ✅ Awarded ${pointsEarned} points to ${customerName} (via phone)`);
+                            pointsAwarded = true;
+                        }
+                    } else {
+                        console.log(`[POINTS] ⚠️ No customer found with phone: ${customer_phone}`);
+                    }
+                }
+
+                if (!pointsAwarded) {
+                    console.log(`[POINTS] ℹ️ No points awarded for this transaction`);
+                }
+            } else {
+                console.log(`[POINTS] ℹ️ Point system is DISABLED`);
+            }
+        } catch (pointsError) {
+            console.error(`[POINTS] ❌ Error in points logic:`, pointsError);
+            // Don't fail the transaction if points fail - just log the error
+        }
+        // --- End Points Logic ---
+
         await connection.commit();
 
         await logActivity(finalUserId, 'Membuat Transaksi', 'transaction', newTransactionId, `Transaksi baru ${newTransactionId} senilai Rp ${parseFloat(finalTotal).toLocaleString('id-ID')}`);
+
+        // Emit Socket Event for Real-time Updates
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('new_order', {
+                id: newTransactionId,
+                total: finalTotal,
+                timestamp: timestamp,
+                items: itemsWithDetails,
+                status: 'completed', // Transactions are instantly completed
+                payment_method: finalPaymentMethod,
+                is_transaction: true // Marker so frontend knows it's a direct transaction
+            });
+        }
 
         res.json({
             "message": "success",
@@ -2239,21 +2555,73 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
     }
 });
 
+// --- Point Settings Endpoints ---
+app.get("/api/point-settings", authenticateToken, authorizeRoles('admin', 'owner', 'penjual'), async (req, res) => {
+    try {
+        const [rows] = await db.query("SELECT `key`, `value` FROM settings WHERE `key` IN ('points_per_item', 'point_system_enabled')");
+        const settings = {};
+        rows.forEach(row => {
+            settings[row.key] = row.value;
+        });
+        res.json({ message: "success", data: settings });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put("/api/point-settings", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { points_per_item, point_system_enabled } = req.body;
+
+        if (points_per_item !== undefined) {
+            await db.query("INSERT INTO settings (`key`, `value`) VALUES ('points_per_item', ?) ON DUPLICATE KEY UPDATE `value` = ?", [points_per_item.toString(), points_per_item.toString()]);
+        }
+
+        if (point_system_enabled !== undefined) {
+            await db.query("INSERT INTO settings (`key`, `value`) VALUES ('point_system_enabled', ?) ON DUPLICATE KEY UPDATE `value` = ?", [point_system_enabled ? '1' : '0', point_system_enabled ? '1' : '0']);
+        }
+
+        await logActivity(req.user.userId, 'Update Pengaturan Poin', 'settings', 'points', `Mengubah pengaturan poin: Aktif=${point_system_enabled}, Poin per item=${points_per_item}`);
+
+        res.json({ message: "Pengaturan poin berhasil diperbarui" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- Customer Points Endpoints ---
+app.get("/api/customer/points", authenticateToken, async (req, res) => {
+    try {
+        const [rows] = await db.query("SELECT points FROM users WHERE id = ?", [req.user.userId]);
+        if (rows.length === 0) return res.status(404).json({ error: "User not found" });
+        res.json({ message: "success", data: { points: rows[0].points || 0 } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
 // Update a transaction
 app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin', 'kasir'), async (req, res, next) => {
     try {
-        const { total, ppn, isEmployeeMeal, payment_method, timestamp, manual_discount, catatan, items } = req.body;
+        const { total, ppn, isEmployeeMeal, payment_method, timestamp, manual_discount, catatan, items, customer_name, customer_phone, customer_address } = req.body;
         const { id } = req.params;
 
         const sql = `UPDATE transactions SET 
-           total = COALESCE(?, total), 
-           ppn = COALESCE(?, ppn), 
-           isEmployeeMeal = COALESCE(?, isEmployeeMeal), 
-           payment_method = COALESCE(?, payment_method),
-           timestamp = COALESCE(?, timestamp),
-           manual_discount = COALESCE(?, manual_discount),
-           catatan = COALESCE(?, catatan),
-           items = COALESCE(?, items)
+           \`total\` = COALESCE(?, \`total\`), 
+           \`ppn\` = COALESCE(?, \`ppn\`), 
+           \`isEmployeeMeal\` = COALESCE(?, \`isEmployeeMeal\`), 
+           \`payment_method\` = COALESCE(?, \`payment_method\`),
+           \`timestamp\` = COALESCE(?, \`timestamp\`),
+           \`manual_discount\` = COALESCE(?, \`manual_discount\`),
+           \`catatan\` = COALESCE(?, \`catatan\`),
+           \`items\` = COALESCE(?, \`items\`),
+           \`cash_paid\` = COALESCE(?, \`cash_paid\`),
+           \`change\` = COALESCE(?, \`change\`),
+           \`customer_name\` = COALESCE(?, \`customer_name\`),
+           \`customer_phone\` = COALESCE(?, \`customer_phone\`),
+           \`customer_address\` = COALESCE(?, \`customer_address\`),
+           \`customer_id\` = COALESCE(?, \`customer_id\`)
            WHERE id = ? AND deleted_at IS NULL`;
 
         const params = [
@@ -2261,10 +2629,16 @@ app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
             ppn,
             isEmployeeMeal !== undefined ? (isEmployeeMeal ? 1 : 0) : null,
             payment_method,
-            timestamp ? new Date(timestamp) : null,
+            timestamp ? timestamp : null,
             manual_discount,
             catatan,
             items ? (typeof items === 'string' ? items : JSON.stringify(items)) : null,
+            req.body.cash_paid !== undefined ? parseFloat(req.body.cash_paid) : null,
+            req.body.change !== undefined ? parseFloat(req.body.change) : null,
+            customer_name !== undefined ? customer_name : null,
+            customer_phone !== undefined ? customer_phone : null,
+            customer_address !== undefined ? customer_address : null,
+            req.body.customerId !== undefined ? req.body.customerId : (req.body.customer_id !== undefined ? req.body.customer_id : null),
             id
         ];
 
@@ -2275,6 +2649,17 @@ app.put("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admi
         }
 
         await logActivity(req.user.userId, 'Sunting Transaksi', 'transaction', id, `Transaksi ${id} diperbarui. Total: Rp ${parseFloat(total).toLocaleString('id-ID')}`);
+
+        // Emit Socket Update
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('order_update', {
+                id: id,
+                status: 'updated',
+                is_transaction: true
+            });
+        }
+
         res.json({ message: "success", data: req.body, changes: result.affectedRows });
     } catch (err) {
         res.status(400).json({ "error": err.message, "stack": err.stack });
@@ -2289,9 +2674,137 @@ app.delete("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'a
 
         await logActivity(req.user.userId, 'Menghapus Transaksi', 'transaction', req.params.id, `Transaksi ${req.params.id} dipindahkan ke sampah`);
 
+        // Emit Socket Update
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('order_update', {
+                id: req.params.id,
+                status: 'deleted',
+                is_transaction: true
+            });
+        }
+
         res.json({ "message": "deleted", changes: result.affectedRows });
     } catch (err) {
         res.status(400).json({ "error": err.message });
+    }
+});
+
+// --- Points System Endpoints ---
+
+// Get current user's points (Pelanggan)
+app.get("/api/customer/points", authenticateToken, authorizeRoles('pelanggan', 'user', 'admin'), async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT points FROM users WHERE id = ?', [req.user.userId]);
+        if (rows.length === 0) return res.status(404).json({ error: "User not found" });
+        res.json({ message: "success", data: { points: rows[0].points } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get current user's point history (Pelanggan)
+app.get("/api/customer/points/history", authenticateToken, authorizeRoles('pelanggan', 'user', 'admin'), async (req, res) => {
+    try {
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 10;
+        const offset = (page - 1) * limit;
+
+        // Count total items for pagination
+        const [countRows] = await db.query('SELECT COUNT(*) as total FROM points_history WHERE user_id = ?', [req.user.userId]);
+        const totalItems = countRows[0].total;
+        const totalPages = Math.ceil(totalItems / limit);
+
+        // Get paginated data
+        const [rows] = await db.query(
+            'SELECT * FROM points_history WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+            [req.user.userId, limit, offset]
+        );
+
+        res.json({
+            message: "success",
+            data: rows,
+            pagination: {
+                currentPage: page,
+                totalPages: totalPages,
+                totalItems: totalItems,
+                limit: limit
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get all customers with points (Seller/Admin)
+app.get("/api/points/customers", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT id, username, name, phone, points FROM users WHERE role = "pelanggan" ORDER BY points DESC');
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Top up points manually (Seller/Admin)
+app.post("/api/points/topup", authenticateToken, authorizeRoles('admin', 'owner', 'penjual'), async (req, res) => {
+    let connection;
+    try {
+        const { userId, amount, description } = req.body;
+        if (!userId || !amount) {
+            return res.status(400).json({ error: "userId and amount are required" });
+        }
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // Update user's points
+        await connection.query('UPDATE users SET points = points + ? WHERE id = ?', [amount, userId]);
+
+        // Log to points_history
+        await connection.query(
+            'INSERT INTO points_history (user_id, amount, type, description) VALUES (?, ?, ?, ?)',
+            [userId, amount, 'earn', description || 'Top up manual oleh seller']
+        );
+
+        await connection.commit();
+        await logActivity(req.user.userId, 'Top Up Poin', 'user', userId, `Top up poin sebesar ${amount} untuk user ID ${userId}`);
+
+        res.json({ message: "Points topped up successfully", data: { userId, amount } });
+    } catch (err) {
+        if (connection) await connection.rollback();
+        res.status(500).json({ error: err.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// Get points setting
+app.get("/api/points/settings", authenticateToken, authorizeRoles('admin', 'owner', 'penjual'), async (req, res) => {
+    try {
+        const [rows] = await db.query("SELECT value FROM settings WHERE `key` = 'points_per_item'");
+        const pointsPerItem = rows.length > 0 ? parseFloat(rows[0].value) : 500;
+        res.json({ message: "success", data: { points_per_item: pointsPerItem } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update points setting
+app.post("/api/points/settings", authenticateToken, authorizeRoles('admin', 'owner', 'penjual'), async (req, res) => {
+    try {
+        const { points_per_item } = req.body;
+        if (points_per_item === undefined) {
+            return res.status(400).json({ error: "points_per_item is required" });
+        }
+
+        const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+        await db.query(sql, ['points_per_item', points_per_item.toString()]);
+
+        await logActivity(req.user.userId, 'Update Pengaturan Poin', 'settings', null, `Mengubah poin per menu menjadi ${points_per_item}`);
+        res.json({ message: "Points setting updated successfully", data: { points_per_item } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -2444,31 +2957,33 @@ app.get("/api/expenses", authenticateToken, authorizeRoles('user', 'admin', 'gue
         const lastClosingDate = closingRow.length > 0 ? closingRow[0].value : null;
 
         if (startDate) {
-            let effectiveStartDate = startDate;
-            if (lastClosingDate) {
-                const closingTime = new Date(lastClosingDate).getTime();
-                const startReqTime = startDate.includes(':') ? new Date(startDate).getTime() : new Date(`${startDate} 00:00:00`).getTime();
-                if (closingTime > startReqTime) {
-                    effectiveStartDate = lastClosingDate;
-                }
-            }
             whereClauses.push('e.date >= ?');
-            queryParams.push(effectiveStartDate);
+            queryParams.push(startDate.includes(':') ? startDate : `${startDate} 00:00:00`);
         } else if (lastClosingDate) {
             whereClauses.push('e.date >= ?');
             queryParams.push(lastClosingDate);
         }
         if (endDate) {
             whereClauses.push('e.date <= ?');
-            queryParams.push(endDate);
+            const effectiveEndDate = endDate.includes(':') ? endDate : `${endDate} 23:59:59`;
+            queryParams.push(effectiveEndDate);
+        }
+        if (req.query.category) {
+            whereClauses.push('e.category = ?');
+            queryParams.push(req.query.category);
+        }
+        if (req.query.search) {
+            whereClauses.push('(e.name LIKE ? OR e.notes LIKE ?)');
+            queryParams.push(`%${req.query.search}%`, `%${req.query.search}%`);
         }
 
         const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-        // Query to get total count
-        const countSql = `SELECT COUNT(*) as totalItems FROM expenses e ${whereSql}`;
-        const [countRows] = await db.query(countSql, queryParams);
-        const totalItems = countRows[0].totalItems;
+        // Query to get total count and sum
+        const statsSql = `SELECT COUNT(*) as totalItems, IFNULL(SUM(amount), 0) as totalAmount FROM expenses e ${whereSql}`;
+        const [statsRows] = await db.query(statsSql, queryParams);
+        const totalItems = statsRows[0].totalItems;
+        const totalAmount = statsRows[0].totalAmount;
         const totalPages = Math.ceil(totalItems / limit);
 
         // Query to get paginated data
@@ -2494,6 +3009,7 @@ app.get("/api/expenses", authenticateToken, authorizeRoles('user', 'admin', 'gue
         res.json({
             "message": "success",
             "data": rows,
+            "totalAmount": totalAmount,
             "pagination": {
                 "currentPage": page,
                 "totalPages": totalPages,
@@ -3118,7 +3634,7 @@ app.post("/api/orders", (req, res, next) => {
     }
 }, async (req, res) => {
     try {
-        const { customer_name, customer_address, customer_phone, items, payment_method, note, notes } = req.body; // 'total' will be calculated on backend
+        const { customer_name, customer_address, customer_phone, items, payment_method, note, notes, pointsUsed, promoId } = req.body; // 'total' will be calculated on backend
         if (!customer_name || !items || items.length === 0) {
             return res.status(400).json({ error: "Missing required fields: customer_name, items" });
         }
@@ -3185,11 +3701,76 @@ app.post("/api/orders", (req, res, next) => {
         const paymentMethodValue = payment_method || 'Tunai';
         const orderNote = note || notes || null;
 
-        const sql = 'INSERT INTO orders (user_id, customer_name, customer_address, customer_phone, items, total, status, payment_method, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
-        const params = [userId, customer_name, customer_address, customer_phone || null, JSON.stringify(orderItemsWithDetails), calculatedTotal, 'pending', paymentMethodValue, orderNote];
+        let finalPointsUsed = 0;
+        // Validate and Deduct Points
+        if (userId && pointsUsed && pointsUsed > 0) {
+            // Check user points balance
+            const [userRows] = await db.query('SELECT points FROM users WHERE id = ?', [userId]);
+            if (userRows.length > 0) {
+                const currentPoints = parseFloat(userRows[0].points || 0);
+                if (currentPoints >= pointsUsed) {
+                    // Check if pointsUsed exceeds total order amount
+                    if (pointsUsed > calculatedTotal) {
+                        return res.status(400).json({ error: "Points used cannot exceed order total." });
+                    }
+
+                    // Deduct points
+                    await db.query('UPDATE users SET points = points - ? WHERE id = ?', [pointsUsed, userId]);
+                    await db.query(
+                        'INSERT INTO points_history (user_id, amount, type, description) VALUES (?, ?, ?, ?)',
+                        [userId, pointsUsed, 'redeem', `Digunakan untuk Order`]
+                    );
+                    finalPointsUsed = parseFloat(pointsUsed);
+                    calculatedTotal -= finalPointsUsed; // Apply discount
+                } else {
+                    return res.status(400).json({ error: "Insufficient points balance." });
+                }
+            }
+        }
+
+        // --- Promo Deduction Logic ---
+        let finalPromoDiscount = 0;
+        if (promoId) {
+            const [promoRows] = await db.query('SELECT * FROM promos WHERE id = ? AND is_active = 1', [promoId]);
+            if (promoRows.length > 0) {
+                const promo = promoRows[0];
+
+                // Check if one-time use per user is enabled
+                if (promo.is_one_time && userId) {
+                    const [usageRows] = await db.query(
+                        "SELECT id FROM orders WHERE user_id = ? AND promo_id = ? AND status NOT IN ('cancelled', 'rejected') LIMIT 1",
+                        [userId, promoId]
+                    );
+                    if (usageRows.length > 0) {
+                        return res.status(400).json({ error: "Anda sudah menggunakan kupon ini sebelumnya. Kupon ini hanya berlaku 1x per pengguna." });
+                    }
+                }
+
+                const promoMinPurchase = parseFloat(promo.min_purchase || 0);
+                const subtotalForPromo = calculatedTotal + finalPointsUsed;
+
+                if (subtotalForPromo >= promoMinPurchase) {
+                    if (promo.discount_type === 'percentage') {
+                        finalPromoDiscount = (subtotalForPromo * parseFloat(promo.discount_value)) / 100;
+                    } else {
+                        finalPromoDiscount = parseFloat(promo.discount_value);
+                    }
+                    calculatedTotal -= finalPromoDiscount;
+                } else {
+                    console.log(`[Order] Promo ${promo.code} rejected: Subtotal ${subtotalForPromo} < Min ${promoMinPurchase}`);
+                }
+            }
+        }
+        // Ensure total doesn't go below 0
+        if (calculatedTotal < 0) calculatedTotal = 0;
+
+        const sql = 'INSERT INTO orders (user_id, customer_name, customer_address, customer_phone, items, total, points_used, promo_discount, status, payment_method, note, promo_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        const params = [userId, customer_name, customer_address, customer_phone || null, JSON.stringify(orderItemsWithDetails), calculatedTotal, finalPointsUsed, finalPromoDiscount, 'pending', paymentMethodValue, orderNote, promoId || null];
         const [result] = await db.query(sql, params);
 
         const orderId = result.insertId;
+
+        // --- Points Awarding Logic for Orders moved to status update 'completed' ---
 
         // Kirim Notifikasi Push (async, tidak menunggu selesai agar response cepat)
         setImmediate(() => {
@@ -3206,7 +3787,9 @@ app.post("/api/orders", (req, res, next) => {
             id: orderId,
             customer_name,
             total: calculatedTotal,
-            status: 'pending'
+            promo_discount: finalPromoDiscount,
+            status: 'pending',
+            created_at: new Date()
         });
 
         res.status(201).json({
@@ -3218,6 +3801,8 @@ app.post("/api/orders", (req, res, next) => {
                 customer_address,
                 items: orderItemsWithDetails,
                 total: calculatedTotal,
+                points_used: finalPointsUsed,
+                promo_discount: finalPromoDiscount,
                 status: 'pending',
                 payment_method: paymentMethodValue
             }
@@ -3246,6 +3831,13 @@ app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user', 'pelan
         if (status) {
             whereClauses.push('status = ?');
             queryParams.push(status);
+        }
+
+        const { search } = req.query;
+        if (search) {
+            whereClauses.push('(customer_name LIKE ? OR customer_phone LIKE ? OR customer_address LIKE ? OR items LIKE ?)');
+            const searchPattern = `%${search}%`;
+            queryParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
         }
 
         const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
@@ -3334,7 +3926,7 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
         await connection.beginTransaction();
 
         // Get the order to check ownership and current status
-        const [orderRows] = await connection.query('SELECT user_id, status, customer_name, customer_address, customer_phone, items, total, payment_method FROM orders WHERE id = ? FOR UPDATE', [id]);
+        const [orderRows] = await connection.query('SELECT user_id, status, customer_name, customer_address, customer_phone, items, total, payment_method, note, points_used, promo_discount FROM orders WHERE id = ? FOR UPDATE', [id]);
 
         if (orderRows.length === 0) {
             await connection.rollback();
@@ -3359,6 +3951,69 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
         if (status === 'rejected' || status === 'cancelled' || status === 'completed') {
             const updateSql = 'UPDATE orders SET status = ? WHERE id = ?';
             await connection.query(updateSql, [status, id]);
+
+            // --- REFUND POINTS if Rejected or Cancelled ---
+            if ((status === 'rejected' || status === 'cancelled') && order.points_used > 0 && order.user_id) {
+                await connection.query('UPDATE users SET points = points + ? WHERE id = ?', [order.points_used, order.user_id]);
+                await connection.query(
+                    'INSERT INTO points_history (user_id, amount, type, description) VALUES (?, ?, ?, ?)',
+                    [order.user_id, order.points_used, 'refund', `Refund poin dari Order #${id} (${status})`]
+                );
+                console.log(`[Order] Refunded ${order.points_used} points to user ${order.user_id} for order ${id}`);
+            }
+            // --- End Refund Logic ---
+
+            // --- Points Awarding Logic for Completed Orders ---
+            if (status === 'completed' && order.user_id) {
+                console.log(`[POINTS-ORDER] Order #${id} completed, checking points for user ID: ${order.user_id}`);
+
+                try {
+                    const [pointSettingRows] = await connection.query("SELECT value FROM settings WHERE `key` = 'point_system_enabled'");
+                    const pointSystemEnabled = pointSettingRows.length > 0 ? pointSettingRows[0].value === '1' : true;
+
+                    if (pointSystemEnabled) {
+                        const [userRows] = await connection.query('SELECT id, points, username, role FROM users WHERE id = ?', [order.user_id]);
+
+                        if (userRows.length > 0 && userRows[0].role === 'pelanggan') {
+                            const customerId = userRows[0].id;
+                            const customerName = userRows[0].username;
+                            console.log(`[POINTS-ORDER] ✓ User is a customer: ${customerName} (ID: ${customerId})`);
+
+                            const [pointsSetting] = await connection.query("SELECT value FROM settings WHERE `key` = ?", ['points_per_item']);
+                            const pointsPerItem = pointsSetting.length > 0 ? parseFloat(pointsSetting[0].value) : 100;
+
+                            // Parse items from order
+                            const orderItems = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+                            const totalItemsCount = orderItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                            const pointsEarned = totalItemsCount * pointsPerItem;
+
+                            console.log(`[POINTS-ORDER] Calculation: ${totalItemsCount} items × ${pointsPerItem} = ${pointsEarned} points`);
+
+                            if (pointsEarned > 0) {
+                                await connection.query('UPDATE users SET points = points + ? WHERE id = ?', [pointsEarned, customerId]);
+
+                                // Lookup valid transaction ID for foreign key constraint
+                                const [trxRows] = await connection.query('SELECT id FROM transactions WHERE order_id = ? LIMIT 1', [id]);
+                                const transactionRefId = trxRows.length > 0 ? trxRows[0].id : null;
+
+                                await connection.query(
+                                    'INSERT INTO points_history (user_id, transaction_id, amount, type, description) VALUES (?, ?, ?, ?, ?)',
+                                    [customerId, transactionRefId, pointsEarned, 'earn', `Order #${id} selesai (${totalItemsCount} item)`]
+                                );
+                                console.log(`[POINTS-ORDER] ✅ Awarded ${pointsEarned} points to ${customerName} (Trx: ${transactionRefId})`);
+                            }
+                        } else if (userRows.length > 0) {
+                            console.log(`[POINTS-ORDER] ⚠️ User is not a customer (role: ${userRows[0].role})`);
+                        }
+                    } else {
+                        console.log(`[POINTS-ORDER] ℹ️ Point system is DISABLED`);
+                    }
+                } catch (pointsError) {
+                    console.error(`[POINTS-ORDER] ❌ Error awarding points:`, pointsError);
+                    // Don't fail the order update if points fail
+                }
+            }
+            // --- End Points Logic ---
 
             // Kirim Notifikasi ke Pelanggan (async)
             if (order.user_id) {
@@ -3563,18 +4218,18 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
 
 
             const transactionData = {
-
                 id: newTransactionId,
-
                 timestamp: new Date(),
-
                 items: JSON.stringify(items),
                 total: totalWithPpn,
                 ppn: ppnAmount,
                 isEmployeeMeal: 0,
                 payment_method: order.payment_method || 'Tunai',
                 order_id: id,
-                ignore_stock: effectivelyIgnoreStock ? 1 : 0
+                ignore_stock: effectivelyIgnoreStock ? 1 : 0,
+                customer_id: order.user_id || null,
+                points_used: order.points_used || 0,
+                promo_discount: order.promo_discount || 0
             };
 
             const transactionParams = [
@@ -3589,10 +4244,14 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
                 transactionData.ignore_stock,
                 order.customer_name || null,
                 order.customer_phone || null,
-                order.customer_address || null
+                order.customer_address || null,
+                order.note || null,
+                transactionData.customer_id,
+                transactionData.points_used,
+                order.promo_discount || 0
             ];
 
-            await connection.query('INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, order_id, ignore_stock, customer_name, customer_phone, customer_address) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)', transactionParams);
+            await connection.query('INSERT INTO transactions (id, timestamp, items, total, ppn, isEmployeeMeal, payment_method, order_id, ignore_stock, customer_name, customer_phone, customer_address, catatan, customer_id, points_used, promo_discount) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', transactionParams);
 
             // 5. Update the order status to 'accepted'
             await connection.query('UPDATE orders SET status = ? WHERE id = ?', ['accepted', id]);
@@ -4016,6 +4675,72 @@ app.post("/api/settings", authenticateToken, authorizeRoles('admin'), async (req
     }
 });
 
+// --- NEW SETTING ENDPOINTS ---
+
+// Generic update single setting (used by frontend for various fields dynamically)
+app.put("/api/settings/:key", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    const { key } = req.params;
+    let { value } = req.body;
+    let dbKey = key;
+
+    // Mapping key frontend -> key database jika berbeda
+    if (key === 'website_title') dbKey = 'website_title';
+    if (key === 'header_title') dbKey = 'header_title';
+    if (key === 'cashier_dashboard_title') dbKey = 'cashier_dashboard_title';
+    if (key === 'web_description') dbKey = 'web_description';
+
+    try {
+        const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+        await db.query(sql, [dbKey, value]);
+
+        await logActivity(req.user.userId, 'Update Pengaturan', 'settings', dbKey, `Mengubah ${dbKey}`);
+
+        res.json({ message: `${dbKey} updated successfully`, data: { value } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Upload Logo
+app.post('/api/settings/logo', authenticateToken, authorizeRoles('admin'), upload.single('logo'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No logo file uploaded.' });
+        }
+        const logoUrl = `/public/uploads/${req.file.filename}`;
+
+        const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+        await db.query(sql, ['logo_url', logoUrl]);
+
+        res.json({ message: 'Logo updated successfully!', data: { logo_url: logoUrl } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete Logo
+app.delete('/api/settings/logo', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        // Clear DB entry.
+        const sql = 'UPDATE settings SET `value` = NULL WHERE `key` = ?';
+        await db.query(sql, ['logo_url']);
+        res.json({ message: 'Logo removed successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get Logo specifically
+app.get('/api/settings/logo', async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT value FROM settings WHERE `key` = ?', ['logo_url']);
+        const logoUrl = rows.length > 0 ? rows[0].value : null;
+        res.json({ message: 'success', data: { logo_url: logoUrl } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Update last_monthly_reset_date setting
 app.put('/api/settings/last_monthly_reset_date', authenticateToken, authorizeRoles('admin'), async (req, res) => {
     try {
@@ -4274,7 +4999,7 @@ app.delete("/api/admin/users/:id", authenticateToken, authorizeRoles('admin'), a
 // Get User Profile
 app.get("/api/user/profile", authenticateToken, async (req, res) => {
     try {
-        const sql = 'SELECT id, username, role, avatar_url, phone, address FROM users WHERE id = ?';
+        const sql = 'SELECT id, username, email, role, avatar_url, phone, address, points FROM users WHERE id = ?';
         const [rows] = await db.query(sql, [req.user.userId]);
         if (rows.length > 0) {
             res.json({ message: "success", data: rows[0] });
@@ -4290,7 +5015,7 @@ app.get("/api/user/profile", authenticateToken, async (req, res) => {
 // Update Profile Info (Phone & Address)
 app.put("/api/user/profile", authenticateToken, async (req, res) => {
     try {
-        const { phone, address } = req.body;
+        const { email, phone, address } = req.body;
 
         // Check if user exists first
         const [userCheck] = await db.query('SELECT id FROM users WHERE id = ?', [req.user.userId]);
@@ -4298,8 +5023,8 @@ app.put("/api/user/profile", authenticateToken, async (req, res) => {
             return res.status(404).json({ error: "User not found" });
         }
 
-        const sql = 'UPDATE users SET phone = ?, address = ? WHERE id = ?';
-        await db.query(sql, [phone || null, address || null, req.user.userId]);
+        const sql = 'UPDATE users SET email = ?, phone = ?, address = ? WHERE id = ?';
+        await db.query(sql, [email || null, phone || null, address || null, req.user.userId]);
 
         // Always return "success" so the frontend can handle it correctly
         // (CustomerProfile.js expects response.data.message === 'success')
@@ -4883,6 +5608,54 @@ app.post("/api/database/restore", authenticateToken, authorizeRoles('admin', 'ow
 });
 
 
+// --- Manual Point Management Endpoints ---
+
+// Get all customers (simple list for selection)
+app.get("/api/customers/simple", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual'), async (req, res) => {
+    try {
+        const [rows] = await db.query("SELECT id, username, phone, points FROM users WHERE role = 'pelanggan' ORDER BY username ASC");
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Add manual points
+app.post("/api/customers/points/manual", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    const connection = await db.getConnection();
+    try {
+        const { customer_id, amount, description } = req.body;
+        const adminId = req.user.userId;
+
+        if (!customer_id || !amount) {
+            return res.status(400).json({ error: "Customer ID and amount are required" });
+        }
+
+        await connection.beginTransaction();
+
+        // Update user points
+        await connection.query("UPDATE users SET points = points + ? WHERE id = ?", [amount, customer_id]);
+
+        // Record history
+        await connection.query(
+            "INSERT INTO points_history (user_id, amount, type, description) VALUES (?, ?, ?, ?)",
+            [customer_id, amount, amount >= 0 ? 'earn' : 'redeem', description || 'Manual adjustment by admin']
+        );
+
+        await connection.commit();
+
+        await logActivity(adminId, 'Manual Point Adjustment', 'user', customer_id, `Adjusted points for user ${customer_id} by ${amount}`);
+
+        res.json({ message: "Points updated successfully" });
+    } catch (err) {
+        await connection.rollback();
+        res.status(500).json({ error: err.message });
+    } finally {
+        connection.release();
+    }
+});
+
+
 // --- Employee Credits Endpoints ---
 
 // Get all credits
@@ -4990,15 +5763,18 @@ app.post("/api/admin/send-daily-summary", authenticateToken, authorizeRoles('adm
 // Kirim Pesan
 app.post("/api/messages", authenticateToken, async (req, res) => {
     try {
-        const { receiver_id, message, order_id } = req.body;
+        const { receiver_id, message, order_id, image_url } = req.body;
         const sender_id = req.user.userId;
 
-        if (!receiver_id || !message) {
-            return res.status(400).json({ error: "Receiver ID dan pesan wajib diisi" });
+        if (!receiver_id || (!message && !image_url)) {
+            return res.status(400).json({ error: "Receiver ID dan pesan/gambar wajib diisi" });
         }
 
-        const sql = "INSERT INTO messages (sender_id, receiver_id, message, order_id) VALUES (?, ?, ?, ?)";
-        const [result] = await db.query(sql, [sender_id, receiver_id, message, order_id || null]);
+        // Process image if it's base64
+        const processedImageUrl = await processBase64Image(image_url, 'chat');
+
+        const sql = "INSERT INTO messages (sender_id, receiver_id, message, order_id, image_url) VALUES (?, ?, ?, ?, ?)";
+        const [result] = await db.query(sql, [sender_id, receiver_id, message || '', order_id || null, processedImageUrl || null]);
 
         // Kirim Notifikasi Push
         // 1. Cek peran penerima
@@ -5017,15 +5793,21 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
         // 3. Jalankan pengiriman notifikasi (kecuali ke pengirim sendiri)
         sendUniversalNotification(
             targetUserIds,
-            message,
+            message || '[Gambar]',
             `Pesan dari ${req.user.username}`,
-            { type: 'chat', senderId: sender_id, orderId: order_id },
+            { type: 'chat', senderId: sender_id, orderId: order_id, hasImage: !!processedImageUrl },
             sender_id // excludedUserId
         );
 
+        const io = req.app.get('io');
+        const messageData = { id: result.insertId, sender_id, receiver_id, message, order_id, image_url: processedImageUrl, created_at: new Date() };
+
+        // Emit to the specific receiver
+        io.emit('new_message', messageData);
+
         res.status(201).json({
             message: "Pesan terkirim",
-            data: { id: result.insertId, sender_id, receiver_id, message, order_id, created_at: new Date() }
+            data: messageData
         });
     } catch (err) {
         console.error("Error sending message:", err);
@@ -5197,6 +5979,13 @@ app.put("/api/messages/read/:senderId", authenticateToken, async (req, res) => {
             await db.query(sql, [myId]);
         }
 
+        const io = req.app.get('io');
+        io.emit('messages_read', {
+            readerId: myId,
+            senderId: senderId,
+            isSeller: isSeller
+        });
+
         res.json({ message: "Pesan ditandai sudah dibaca" });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -5248,16 +6037,23 @@ app.get("/api/user/notification-settings", authenticateToken, async (req, res) =
             return res.status(404).json({ error: "User not found" });
         }
 
-        // Default settings if not set
         const defaultSettings = {
             orders: true,
             chat: true,
             promo: false
         };
 
-        const settings = rows[0].notification_settings
-            ? JSON.parse(rows[0].notification_settings)
-            : defaultSettings;
+        let settings = defaultSettings;
+        if (rows[0].notification_settings) {
+            try {
+                settings = typeof rows[0].notification_settings === 'string'
+                    ? JSON.parse(rows[0].notification_settings)
+                    : rows[0].notification_settings;
+            } catch (e) {
+                console.error('Error parsing notification settings:', e);
+                settings = defaultSettings;
+            }
+        }
 
         res.json({
             message: "success",
@@ -5293,6 +6089,223 @@ app.put("/api/user/notification-settings", authenticateToken, async (req, res) =
     }
 });
 
+// --- Promo Management Endpoints ---
+
+// Get all promos (Seller/Admin view - including inactive)
+app.get("/api/promos", authenticateToken, authorizeRoles('admin', 'owner', 'penjual'), async (req, res) => {
+    try {
+        const sql = "SELECT * FROM promos ORDER BY created_at DESC";
+        const [rows] = await db.query(sql);
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get active promos (Public/Customer view)
+app.get("/api/customer/promos", async (req, res) => {
+    try {
+        const sql = "SELECT * FROM promos WHERE is_active = 1 ORDER BY created_at DESC";
+        const [rows] = await db.query(sql);
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Add new promo
+app.post("/api/promos", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { title, description, code, icon, color, expiry, is_active, discount_value, discount_type, min_purchase, is_hero, image_url, badge_text, is_one_time } = req.body;
+        if (!title && !is_hero) { // Title mandatory unless it's a banner (sometimes banners have no title)
+            // But let's keep validation simple for now or align with frontend
+        }
+        if (!title) {
+            return res.status(400).json({ error: "Judul promo wajib diisi" });
+        }
+
+        // Process image if it's base64
+        const processedImageUrl = await processBase64Image(image_url, 'promo');
+
+        const sql = `
+            INSERT INTO promos (title, description, code, icon, color, expiry, is_active, discount_value, discount_type, min_purchase, is_hero, image_url, badge_text, is_one_time)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        const cleanMin = min_purchase ? (typeof min_purchase === 'string' ? parseFloat(min_purchase.replace(/[^\d.]/g, '')) : parseFloat(min_purchase)) : 0;
+        const params = [
+            title,
+            description,
+            code || null,
+            icon || 'Ticket',
+            color || '#059669',
+            expiry || null,
+            is_active === undefined ? 1 : is_active,
+            discount_value || 0,
+            discount_type || 'fixed',
+            cleanMin,
+            is_hero ? 1 : 0,
+            processedImageUrl || null,
+            badge_text || null,
+            is_one_time ? 1 : 0
+        ];
+
+        const [result] = await db.query(sql, params);
+
+        await logActivity(req.user.userId, 'Tambah Promo', 'promo', result.insertId, `Promo baru: ${title}`);
+
+        res.status(201).json({
+            message: "Promo berhasil ditambahkan",
+            data: { id: result.insertId, ...req.body, image_url: processedImageUrl }
+        });
+    } catch (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ error: "Kode promo sudah digunakan" });
+        }
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update promo
+app.put("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, description, code, icon, color, expiry, is_active, discount_value, discount_type, min_purchase, is_hero, image_url, badge_text, is_one_time } = req.body;
+
+        if (!title) {
+            return res.status(400).json({ error: "Judul promo wajib diisi" });
+        }
+
+        const cleanMin = min_purchase ? (typeof min_purchase === 'string' ? parseFloat(min_purchase.replace(/[^\d.]/g, '')) : parseFloat(min_purchase)) : 0;
+
+        // Process image if it's base64
+        const processedImageUrl = await processBase64Image(image_url, 'promo');
+
+        const sql = `
+            UPDATE promos 
+            SET title=?, description=?, code=?, icon=?, color=?, expiry=?, is_active=?, discount_value=?, discount_type=?, min_purchase=?, is_hero=?, image_url=?, badge_text=?, is_one_time=?
+            WHERE id=?
+        `;
+        const params = [
+            title,
+            description,
+            code || null,
+            icon || 'Ticket',
+            color || '#059669',
+            expiry || null,
+            is_active === undefined ? 1 : is_active,
+            discount_value || 0,
+            discount_type || 'fixed',
+            cleanMin,
+            is_hero ? 1 : 0,
+            processedImageUrl || null,
+            badge_text || null,
+            is_one_time ? 1 : 0,
+            id
+        ];
+
+        const [result] = await db.query(sql, params);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Promo tidak ditemukan" });
+        }
+
+        await logActivity(req.user.userId, 'Edit Promo', 'promo', id, `Promo diperbarui: ${title}`);
+
+        res.json({ message: "Promo berhasil diperbarui", image_url: processedImageUrl });
+    } catch (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ error: "Kode promo sudah digunakan" });
+        }
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete promo
+app.delete("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [promo] = await db.query("SELECT title FROM promos WHERE id = ?", [id]);
+
+        const sql = "DELETE FROM promos WHERE id = ?";
+        const [result] = await db.query(sql, [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Promo tidak ditemukan" });
+        }
+
+        await logActivity(req.user.userId, 'Hapus Promo', 'promo', id, `Promo dihapus: ${promo[0]?.title || id}`);
+
+        res.json({ message: "Promo berhasil dihapus" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Validate promo code
+app.post("/api/promos/validate", (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token) {
+        jwt.verify(token, ACTUAL_JWT_SECRET, (err, user) => {
+            if (!err) {
+                req.user = { userId: user.userId, username: user.username, role: user.role.trim() };
+            }
+            next();
+        });
+    } else {
+        next();
+    }
+}, async (req, res) => {
+    try {
+        const { code, total } = req.body;
+        const userId = req.user ? req.user.userId : null;
+
+        if (!code) {
+            return res.status(400).json({ error: "Kode promo harus diisi" });
+        }
+
+        const sql = "SELECT * FROM promos WHERE code = ? AND is_active = 1 AND is_hero = 0";
+        const [rows] = await db.query(sql, [code]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Kode promo tidak valid atau sudah tidak aktif" });
+        }
+
+        const promo = rows[0];
+
+        // Check if one-time use per user is enabled
+        if (promo.is_one_time && userId) {
+            const [usageRows] = await db.query(
+                "SELECT id FROM orders WHERE user_id = ? AND promo_id = ? AND status NOT IN ('cancelled', 'rejected') LIMIT 1",
+                [userId, promo.id]
+            );
+            if (usageRows.length > 0) {
+                return res.status(400).json({ error: "Anda sudah menggunakan kupon ini sebelumnya. Kupon ini hanya berlaku 1x per pengguna." });
+            }
+        }
+
+        const cleanTotal = total !== undefined ? (typeof total === 'string' ? parseFloat(total.replace(/[^\d.]/g, '')) : parseFloat(total)) : undefined;
+        const cleanMin = typeof promo.min_purchase === 'string' ? parseFloat(promo.min_purchase.replace(/[^\d.]/g, '')) : parseFloat(promo.min_purchase);
+
+        console.log('Validating promo:', { code, total: cleanTotal, promo_min_purchase: cleanMin });
+
+        // Check minimum purchase if total is provided
+        if (cleanTotal !== undefined && cleanTotal < cleanMin) {
+            return res.status(400).json({
+                error: `Minimal pembelian untuk promo ini adalah Rp ${cleanMin.toLocaleString('id-ID')}`,
+                min_purchase: cleanMin
+            });
+        }
+
+        res.json({
+            message: "Promo berhasil diterapkan",
+            data: promo
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get("/api/guest/menu-items", async (req, res) => {
     try {
         const sql = "SELECT id, name, price, stock, category, image_url, discount FROM menu_items";
@@ -5303,6 +6316,53 @@ app.get("/api/guest/menu-items", async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({ "error": err.message });
+    }
+});
+
+// Get usage history for a specific promo with pagination
+app.get("/api/promos/:id/usage", authenticateToken, authorizeRoles('admin', 'owner', 'penjual'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = (page - 1) * limit;
+
+        // In the orders table, we have customer_name, customer_phone, customer_address
+        const sql = `
+            SELECT 
+                o.id as order_id,
+                o.customer_name,
+                o.customer_phone,
+                o.total,
+                o.promo_discount,
+                o.created_at,
+                o.status,
+                u.username as user_account
+            FROM orders o
+            LEFT JOIN users u ON o.user_id = u.id
+            WHERE o.promo_id = ?
+            ORDER BY o.created_at DESC
+            LIMIT ? OFFSET ?
+        `;
+        const [rows] = await db.query(sql, [id, limit, offset]);
+
+        // Also get total count for pagination info
+        const [countResult] = await db.query("SELECT COUNT(*) as total FROM orders WHERE promo_id = ?", [id]);
+        const totalCount = countResult[0].total;
+
+        res.json({
+            message: "success",
+            data: rows,
+            pagination: {
+                total: totalCount,
+                page,
+                limit,
+                hasMore: offset + rows.length < totalCount
+            }
+        });
+    } catch (err) {
+        console.error("Error fetching promo usage:", err);
+        res.status(500).json({ error: err.message });
     }
 });
 

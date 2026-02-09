@@ -34,26 +34,28 @@ export const ChatProvider = ({ children }) => {
         return () => clearInterval(interval);
     }, [fetchConversations]);
 
-    const markAsRead = async (senderId) => {
+    const markAsRead = useCallback(async (senderId) => {
         try {
             await apiService.put(`/api/messages/read/${senderId}`);
             fetchConversations();
         } catch (error) {
             console.error('Failed to mark as read:', error);
         }
-    };
+    }, [fetchConversations]);
+
+    const contextValue = React.useMemo(() => ({
+        unreadCount,
+        conversations,
+        fetchConversations,
+        activeChat,
+        setActiveChat,
+        markAsRead,
+        activeOrder,
+        setActiveOrder
+    }), [unreadCount, conversations, fetchConversations, activeChat, markAsRead, activeOrder]);
 
     return (
-        <ChatContext.Provider value={{
-            unreadCount,
-            conversations,
-            fetchConversations,
-            activeChat,
-            setActiveChat,
-            markAsRead,
-            activeOrder,
-            setActiveOrder
-        }}>
+        <ChatContext.Provider value={contextValue}>
             {children}
         </ChatContext.Provider>
     );

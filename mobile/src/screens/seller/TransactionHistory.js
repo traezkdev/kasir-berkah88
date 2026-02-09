@@ -30,14 +30,105 @@ import {
     Receipt,
     Banknote,
     QrCode,
-    CreditCard
+    CreditCard,
+    User,
+    ArrowRight,
+    MessageSquare
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 import ReceiptModal from '../../components/ReceiptModal';
+import EditTransactionModal from './EditTransactionModal';
+import TransactionDetailModal from './TransactionDetailModal';
+import ModernLoader from '../../components/ModernLoader';
+import { useOrderNotification } from '../../context/OrderNotificationContext';
+import { useAuth } from '../../context/AuthContext';
+import { Alert } from 'react-native';
+import { Trash2, AlertTriangle } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 
+const TransactionCard = React.memo(({ item, setSelectedTx, formatDate, formatCurrency }) => {
+    const scale = React.useRef(new Animated.Value(1)).current;
+
+    const handlePressIn = () => {
+        Animated.spring(scale, {
+            toValue: 0.98,
+            useNativeDriver: Platform.OS !== 'web',
+            speed: 50,
+            bounciness: 4
+        }).start();
+    };
+
+    const handlePressOut = () => {
+        Animated.spring(scale, {
+            toValue: 1,
+            useNativeDriver: Platform.OS !== 'web',
+            speed: 50,
+            bounciness: 4
+        }).start();
+    };
+
+    const getMethodIcon = () => {
+        const method = (item.payment_method || '').toLowerCase();
+        if (method.includes('transfer')) return <QrCode size={120} color="#3B82F6" />;
+        if (method.includes('cash') || method.includes('tunai')) return <Banknote size={120} color="#22C55E" />;
+        if (method.includes('qris')) return <QrCode size={120} color="#3B82F6" />;
+        return <CreditCard size={120} color="#3B82F6" />;
+    };
+
+    return (
+        <Pressable
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+            onPress={() => setSelectedTx(item)}
+        >
+            <Animated.View style={[styles.txCard, { transform: [{ scale }] }]}>
+                {/* Background Icon */}
+                <View style={styles.cardBgIcon}>
+                    {getMethodIcon()}
+                </View>
+
+                <View style={styles.cardHeader}>
+                    <View>
+                        <View style={styles.idBadge}>
+                            <Text style={styles.idText}>#{item.id}</Text>
+                        </View>
+                        <Text style={styles.dateText}>{formatDate(item.timestamp)}</Text>
+                    </View>
+                    <View style={[styles.methodBadge, { backgroundColor: (item.payment_method?.toLowerCase() === 'cash' || item.payment_method?.toLowerCase() === 'tunai') ? '#F0FDF4' : '#EFF6FF' }]}>
+                        <Text style={[styles.methodText, { color: (item.payment_method?.toLowerCase() === 'cash' || item.payment_method?.toLowerCase() === 'tunai') ? '#166534' : '#1E40AF' }]}>
+                            {item.payment_method?.toLowerCase() === 'transfer' ? 'QRIS' : (item.payment_method || 'Tunai').toUpperCase()}
+                        </Text>
+                    </View>
+                </View>
+
+                <View style={styles.divider} />
+
+                <View style={styles.itemsPreview}>
+                    {item.items.slice(0, 2).map((prod, idx) => (
+                        <View key={idx} style={styles.previewRow}>
+                            <Text style={styles.previewName} numberOfLines={1}>{prod.name}</Text>
+                            <Text style={styles.previewQty}>x{prod.qty || prod.quantity || 1}</Text>
+                        </View>
+                    ))}
+                    {item.items.length > 2 && (
+                        <Text style={styles.moreItemsText}>+ {item.items.length - 2} item lainnya</Text>
+                    )}
+                </View>
+
+                <View style={styles.cardFooter}>
+                    <Text style={styles.totalLabel}>Total Bayar</Text>
+                    <Text style={styles.totalValue}>{formatCurrency(item.total)}</Text>
+                </View>
+            </Animated.View>
+        </Pressable>
+    );
+});
+
 const TransactionHistory = ({ navigation }) => {
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'admin';
+    const { refreshTrigger } = useOrderNotification();
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -46,6 +137,8 @@ const TransactionHistory = ({ navigation }) => {
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [selectedTx, setSelectedTx] = useState(null);
     const [showReceipt, setShowReceipt] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     // Pagination state
     const [page, setPage] = useState(1);
@@ -53,7 +146,15 @@ const TransactionHistory = ({ navigation }) => {
     const [totalItems, setTotalItems] = useState(0);
     const [totalAmount, setTotalAmount] = useState(0);
     const [hasMore, setHasMore] = useState(true);
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]); // Default ke hari ini
+    // Helper to get local date string (YYYY-MM-DD)
+    const getLocalDateString = (date = new Date()) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const [selectedDate, setSelectedDate] = useState(getLocalDateString()); // Default ke hari ini (Local Time)
     const [showFilterModal, setShowFilterModal] = useState(false);
 
     const fetchTransactions = useCallback(async (pageNum = 1, isRefresh = false, search = '', date = null) => {
@@ -94,6 +195,15 @@ const TransactionHistory = ({ navigation }) => {
         }
     }, []);
 
+    // Real-time update listener
+    useEffect(() => {
+        // Refresh data when a new order/transaction is detected globally via Socket
+        if (refreshTrigger > 0) {
+            console.log('Real-time update: Refreshing transactions...');
+            fetchTransactions(1, true, debouncedSearch, selectedDate);
+        }
+    }, [refreshTrigger]);
+
     // Debounce search
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -122,11 +232,11 @@ const TransactionHistory = ({ navigation }) => {
         }
     };
 
-    const formatCurrency = (val) => {
+    const formatCurrency = useCallback((val) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val || 0);
-    };
+    }, []);
 
-    const formatDate = (date) => {
+    const formatDate = useCallback((date) => {
         if (!date) return '-';
         return new Intl.DateTimeFormat('id-ID', {
             day: 'numeric',
@@ -135,94 +245,42 @@ const TransactionHistory = ({ navigation }) => {
             hour: '2-digit',
             minute: '2-digit'
         }).format(date);
+    }, []);
+
+    const confirmDeleteAction = async () => {
+        if (!selectedTx) return;
+        try {
+            setLoading(true);
+            const response = await apiService.delete(`/api/transactions/${selectedTx.id}`);
+            if (response.data && response.data.message === 'deleted') {
+                setShowDeleteConfirm(false);
+                setSelectedTx(null);
+                fetchTransactions(1, true, debouncedSearch, selectedDate);
+            } else {
+                Alert.alert("Gagal", "Gagal menghapus transaksi.");
+            }
+        } catch (error) {
+            console.error('Delete transaction error:', error);
+            Alert.alert("Error", "Terjadi kesalahan saat menghapus data.");
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const TransactionCard = ({ item, setSelectedTx, formatDate, formatCurrency }) => {
-        const scale = React.useRef(new Animated.Value(1)).current;
 
-        const handlePressIn = () => {
-            Animated.spring(scale, {
-                toValue: 0.98,
-                useNativeDriver: Platform.OS !== 'web',
-                speed: 50,
-                bounciness: 4
-            }).start();
-        };
 
-        const handlePressOut = () => {
-            Animated.spring(scale, {
-                toValue: 1,
-                useNativeDriver: Platform.OS !== 'web',
-                speed: 50,
-                bounciness: 4
-            }).start();
-        };
-
-        const getMethodIcon = () => {
-            const method = (item.payment_method || '').toLowerCase();
-            if (method.includes('transfer')) return <Wallet size={120} color="#3B82F6" />;
-            if (method.includes('cash') || method.includes('tunai')) return <Banknote size={120} color="#22C55E" />;
-            if (method.includes('qris')) return <QrCode size={120} color="#3B82F6" />;
-            return <CreditCard size={120} color="#3B82F6" />;
-        };
-
-        return (
-            <Pressable
-                onPressIn={handlePressIn}
-                onPressOut={handlePressOut}
-                onPress={() => setSelectedTx(item)}
-            >
-                <Animated.View style={[styles.txCard, { transform: [{ scale }] }]}>
-                    {/* Background Icon */}
-                    <View style={styles.cardBgIcon}>
-                        {getMethodIcon()}
-                    </View>
-
-                    <View style={styles.cardHeader}>
-                        <View>
-                            <View style={styles.idBadge}>
-                                <Text style={styles.idText}>#{item.id}</Text>
-                            </View>
-                            <Text style={styles.dateText}>{formatDate(item.timestamp)}</Text>
-                        </View>
-                        <View style={[styles.methodBadge, { backgroundColor: (item.payment_method?.toLowerCase() === 'cash' || item.payment_method?.toLowerCase() === 'tunai') ? '#F0FDF4' : '#EFF6FF' }]}>
-                            <Text style={[styles.methodText, { color: (item.payment_method?.toLowerCase() === 'cash' || item.payment_method?.toLowerCase() === 'tunai') ? '#166534' : '#1E40AF' }]}>
-                                {(item.payment_method || 'Tunai').toUpperCase()}
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.divider} />
-
-                    <View style={styles.itemsPreview}>
-                        {item.items.slice(0, 2).map((prod, idx) => (
-                            <View key={idx} style={styles.previewRow}>
-                                <Text style={styles.previewName} numberOfLines={1}>{prod.name}</Text>
-                                <Text style={styles.previewQty}>x{prod.qty || prod.quantity || 1}</Text>
-                            </View>
-                        ))}
-                        {item.items.length > 2 && (
-                            <Text style={styles.moreItemsText}>+ {item.items.length - 2} item lainnya</Text>
-                        )}
-                    </View>
-
-                    <View style={styles.cardFooter}>
-                        <Text style={styles.totalLabel}>Total Bayar</Text>
-                        <Text style={styles.totalValue}>{formatCurrency(item.total)}</Text>
-                    </View>
-                </Animated.View>
-            </Pressable>
-        );
-    };
-
-    const renderItem = ({ item }) => (
+    const renderItem = useCallback(({ item }) => (
         <TransactionCard
             item={item}
             setSelectedTx={setSelectedTx}
             formatDate={formatDate}
             formatCurrency={formatCurrency}
         />
-    );
+    ), [formatDate, formatCurrency]);
+
+    const handleDeleteTransaction = (tx) => {
+        setShowDeleteConfirm(true);
+    };
 
     const renderFooter = () => {
         if (!loadingMore) return <View style={{ height: 20 }} />;
@@ -248,17 +306,27 @@ const TransactionHistory = ({ navigation }) => {
                         <Text style={styles.headerSubtitle}>{totalItems} Transaksi tercatat</Text>
                     </View>
                 </View>
-                <TouchableOpacity
-                    onPress={onRefresh}
-                    style={styles.refreshBtn}
-                    disabled={refreshing || loading}
-                >
-                    {refreshing || loading ? (
-                        <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                        <RefreshCw size={20} color="#FFFFFF" />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <TouchableOpacity
+                        onPress={onRefresh}
+                        style={styles.refreshBtn}
+                        disabled={refreshing || loading}
+                    >
+                        {refreshing || loading ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                            <RefreshCw size={20} color="#FFFFFF" />
+                        )}
+                    </TouchableOpacity>
+                    {isAdmin && (
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('TransactionTrash')}
+                            style={[styles.refreshBtn, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}
+                        >
+                            <Trash2 size={20} color="#FFFFFF" />
+                        </TouchableOpacity>
                     )}
-                </TouchableOpacity>
+                </View>
             </View>
 
             <View style={styles.heroArea}>
@@ -307,10 +375,8 @@ const TransactionHistory = ({ navigation }) => {
             </View>
 
             {/* Content */}
-            {loading ? (
-                <View style={styles.loadingArea}>
-                    <ActivityIndicator size="large" color="#1E40AF" />
-                </View>
+            {loading && transactions.length === 0 ? (
+                <ModernLoader type="list" />
             ) : (
                 <FlatList
                     data={transactions}
@@ -331,72 +397,50 @@ const TransactionHistory = ({ navigation }) => {
             )}
 
             {/* Detail Modal Overlay */}
-            <Modal
+            <TransactionDetailModal
                 visible={!!selectedTx}
-                animationType="slide"
-                transparent={false}
-                onRequestClose={() => setSelectedTx(null)}
-            >
-                <View style={styles.modalContent}>
-                    <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-                    <View style={styles.modalHeader}>
-                        <View>
-                            <Text style={styles.modalTitle}>Detail Transaksi</Text>
-                            <Text style={styles.modalId}>#{selectedTx?.id}</Text>
-                        </View>
-                        <TouchableOpacity onPress={() => setSelectedTx(null)} style={styles.closeBtn}>
-                            <X size={20} color="#94A3B8" />
-                        </TouchableOpacity>
-                    </View>
+                transaction={selectedTx}
+                onClose={() => setSelectedTx(null)}
+                onEdit={() => setShowEditModal(true)}
+                onPrint={() => setShowReceipt(true)}
+                onDelete={() => handleDeleteTransaction(selectedTx)}
+                isAdmin={isAdmin}
+                navigation={navigation}
+                formatCurrency={formatCurrency}
+                formatDate={formatDate}
+            />
 
-                    <View style={styles.modalScrollContainer}>
-                        <FlatList
-                            data={selectedTx?.items || []}
-                            keyExtractor={(_, i) => i.toString()}
-                            style={styles.modalScroll}
-                            contentContainerStyle={styles.modalScrollContent}
-                            showsVerticalScrollIndicator={false}
-                            ListHeaderComponent={() => (
-                                <View style={styles.txInfoCard}>
-                                    <View style={styles.txInfoRow}>
-                                        <Text style={styles.txInfoLabel}>Waktu</Text>
-                                        <Text style={styles.txInfoValue}>{selectedTx ? formatDate(selectedTx.timestamp) : ''}</Text>
-                                    </View>
-                                    <View style={styles.txInfoRow}>
-                                        <Text style={styles.txInfoLabel}>Metode Pembayaran</Text>
-                                        <Text style={[styles.txInfoValue, { color: '#1E40AF', fontWeight: '900' }]}>{(selectedTx?.payment_method || 'Tunai').toUpperCase()}</Text>
-                                    </View>
-                                </View>
-                            )}
-                            renderItem={({ item }) => (
-                                <View style={styles.modalItemRow}>
-                                    <View style={styles.modalItemLeft}>
-                                        <View style={styles.modalQtyBadge}>
-                                            <Text style={styles.modalQtyText}>x{item.qty || item.quantity || 1}</Text>
-                                        </View>
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={styles.modalItemName}>{item.name}</Text>
-                                            <Text style={styles.modalItemPrice}>@{formatCurrency(item.price)}</Text>
-                                        </View>
-                                    </View>
-                                    <Text style={styles.modalItemSubtotal}>{formatCurrency(item.price * (item.qty || item.quantity || 1))}</Text>
-                                </View>
-                            )}
-                        />
-                    </View>
-
-                    <View style={styles.modalFooter}>
-                        <View style={styles.totalRow}>
-                            <Text style={styles.grandTotalLabel}>Total Bayar</Text>
-                            <Text style={styles.grandTotalValue}>{selectedTx ? formatCurrency(selectedTx.total) : '0'}</Text>
+            {/* Premium Delete Confirmation Modal */}
+            <Modal visible={showDeleteConfirm} transparent animationType="fade">
+                <View style={styles.confirmOverlay}>
+                    <View style={styles.confirmCard}>
+                        <View style={styles.confirmIconBg}>
+                            <AlertTriangle size={32} color="#DC2626" />
                         </View>
-                        <TouchableOpacity
-                            style={styles.printBtn}
-                            onPress={() => setShowReceipt(true)}
-                        >
-                            <Download size={20} color="#FFFFFF" />
-                            <Text style={styles.printBtnText}>Unduh Struk</Text>
-                        </TouchableOpacity>
+                        <Text style={styles.confirmTitle}>Hapus Transaksi?</Text>
+                        <Text style={styles.confirmSubtitle}>
+                            Transaksi <Text style={{ color: '#1E293B', fontWeight: '900' }}>#{selectedTx?.id}</Text> akan dipindahkan ke tempat sampah. Anda dapat memulihkannya nanti di menu utama jika diperlukan.
+                        </Text>
+                        <View style={styles.confirmActions}>
+                            <TouchableOpacity
+                                style={styles.confirmCancelBtn}
+                                onPress={() => setShowDeleteConfirm(false)}
+                                disabled={loading}
+                            >
+                                <Text style={styles.confirmCancelText}>Batal</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.confirmDeleteBtn}
+                                onPress={confirmDeleteAction}
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                    <Text style={styles.confirmDeleteText}>Ya, Hapus</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
             </Modal>
@@ -406,6 +450,18 @@ const TransactionHistory = ({ navigation }) => {
                     visible={showReceipt}
                     onClose={() => setShowReceipt(false)}
                     transaction={selectedTx}
+                />
+            )}
+
+            {showEditModal && (
+                <EditTransactionModal
+                    visible={showEditModal}
+                    onClose={() => setShowEditModal(false)}
+                    transaction={selectedTx}
+                    onSave={() => {
+                        fetchTransactions(1, true, debouncedSearch, selectedDate);
+                        setSelectedTx(null);
+                    }}
                 />
             )}
 
@@ -441,25 +497,25 @@ const TransactionHistory = ({ navigation }) => {
                             </TouchableOpacity>
 
                             <TouchableOpacity
-                                style={[styles.filterOption, selectedDate === new Date().toISOString().split('T')[0] && styles.filterOptionActive]}
+                                style={[styles.filterOption, selectedDate === getLocalDateString() && styles.filterOptionActive]}
                                 onPress={() => {
-                                    setSelectedDate(new Date().toISOString().split('T')[0]);
+                                    setSelectedDate(getLocalDateString());
                                     setShowFilterModal(false);
                                 }}
                             >
-                                <Calendar size={20} color={selectedDate === new Date().toISOString().split('T')[0] ? "#1E40AF" : "#64748B"} />
-                                <Text style={[styles.filterOptionText, selectedDate === new Date().toISOString().split('T')[0] && styles.filterOptionTextActive]}>Hari Ini</Text>
+                                <Calendar size={20} color={selectedDate === getLocalDateString() ? "#1E40AF" : "#64748B"} />
+                                <Text style={[styles.filterOptionText, selectedDate === getLocalDateString() && styles.filterOptionTextActive]}>Hari Ini</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity
-                                style={[styles.filterOption, selectedDate === new Date(Date.now() - 86400000).toISOString().split('T')[0] && styles.filterOptionActive]}
+                                style={[styles.filterOption, selectedDate === getLocalDateString(new Date(Date.now() - 86400000)) && styles.filterOptionActive]}
                                 onPress={() => {
-                                    setSelectedDate(new Date(Date.now() - 86400000).toISOString().split('T')[0]);
+                                    setSelectedDate(getLocalDateString(new Date(Date.now() - 86400000)));
                                     setShowFilterModal(false);
                                 }}
                             >
-                                <Calendar size={20} color={selectedDate === new Date(Date.now() - 86400000).toISOString().split('T')[0] ? "#1E40AF" : "#64748B"} />
-                                <Text style={[styles.filterOptionText, selectedDate === new Date(Date.now() - 86400000).toISOString().split('T')[0] && styles.filterOptionTextActive]}>Kemarin</Text>
+                                <Calendar size={20} color={selectedDate === getLocalDateString(new Date(Date.now() - 86400000)) ? "#1E40AF" : "#64748B"} />
+                                <Text style={[styles.filterOptionText, selectedDate === getLocalDateString(new Date(Date.now() - 86400000)) && styles.filterOptionTextActive]}>Kemarin</Text>
                             </TouchableOpacity>
 
                             <View style={styles.filterDivider} />
@@ -469,9 +525,7 @@ const TransactionHistory = ({ navigation }) => {
                             <TouchableOpacity
                                 style={styles.filterOption}
                                 onPress={() => {
-                                    // Set to today for simplicity if they want "month" it would need range support
-                                    // For now just presets that the backend supports via startDate=endDate
-                                    setSelectedDate(new Date().toISOString().split('T')[0]);
+                                    setSelectedDate(getLocalDateString());
                                     setShowFilterModal(false);
                                 }}
                             >
@@ -840,168 +894,80 @@ const styles = StyleSheet.create({
         color: '#64748B',
         fontWeight: 'bold',
     },
-    modalContent: {
-        backgroundColor: '#FFFFFF',
+    confirmOverlay: {
         flex: 1,
-        width: '100%',
-        flexDirection: 'column',
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'center',
         alignItems: 'center',
         padding: 24,
-        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 15 : (Platform.OS === 'ios' ? 50 : 25),
-        borderBottomWidth: 1,
-        borderBottomColor: '#F1F5F9',
     },
-    modalTitle: {
+    confirmCard: {
+        backgroundColor: '#FFFFFF',
+        width: '100%',
+        maxWidth: 340,
+        borderRadius: 32,
+        padding: 24,
+        alignItems: 'center',
+        elevation: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+    },
+    confirmIconBg: {
+        width: 64,
+        height: 64,
+        backgroundColor: '#FEF2F2',
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    confirmTitle: {
         fontSize: 20,
         fontWeight: '900',
         color: '#1E293B',
-    },
-    modalId: {
-        fontSize: 12,
-        fontWeight: 'bold',
-        color: '#94A3B8',
-        marginTop: 2,
-    },
-    closeBtn: {
-        width: 44,
-        height: 44,
-        backgroundColor: '#F1F5F9',
-        borderRadius: 22,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalScroll: {
-        flex: 1,
-        paddingHorizontal: 24,
-    },
-    modalScrollContainer: {
-        flex: 1,
-        backgroundColor: '#FFFFFF',
-    },
-    modalScrollContent: {
-        paddingBottom: 40,
-        flexGrow: 1,
-    },
-    txInfoCard: {
-        backgroundColor: '#F8FAFC',
-        padding: 16,
-        borderRadius: 20,
-        marginTop: 16,
-        marginBottom: 24,
-    },
-    txInfoRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
         marginBottom: 8,
     },
-    txInfoLabel: {
-        fontSize: 12,
-        fontWeight: 'bold',
+    confirmSubtitle: {
+        fontSize: 14,
         color: '#64748B',
-    },
-    txInfoValue: {
-        fontSize: 12,
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 24,
         fontWeight: 'bold',
-        color: '#1E293B',
     },
-    modalItemRow: {
+    confirmActions: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 16,
+        gap: 12,
+        width: '100%',
     },
-    modalItemLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
+    confirmCancelBtn: {
         flex: 1,
-    },
-    modalQtyBadge: {
-        backgroundColor: '#EFF6FF',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
-        marginRight: 12,
-    },
-    modalQtyText: {
-        fontSize: 11,
-        fontWeight: '900',
-        color: '#1E40AF',
-    },
-    modalItemName: {
-        fontSize: 14,
-        fontWeight: '900',
-        color: '#1E293B',
-    },
-    modalItemPrice: {
-        fontSize: 11,
-        color: '#94A3B8',
-        fontWeight: 'bold',
-    },
-    modalItemSubtotal: {
-        fontSize: 14,
-        fontWeight: '900',
-        color: '#1E293B',
-        marginLeft: 10,
-    },
-    modalFooter: {
-        padding: 24,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 30,
-        backgroundColor: '#FFFFFF',
-        borderTopWidth: 1,
-        borderTopColor: '#F1F5F9',
-        zIndex: 999,
-        elevation: 20,
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: -10 },
-                shadowOpacity: 0.1,
-                shadowRadius: 10,
-            },
-            android: {
-                elevation: 20,
-                borderTopWidth: 0,
-            },
-            web: {
-                boxShadow: '0px -15px 30px rgba(0,0,0,0.08)',
-                borderTopWidth: 0,
-            }
-        })
-    },
-    totalRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    grandTotalLabel: {
-        fontSize: 16,
-        fontWeight: '900',
-        color: '#1E293B',
-    },
-    grandTotalValue: {
-        fontSize: 24,
-        fontWeight: '900',
-        color: '#1E40AF',
-    },
-    printBtn: {
-        backgroundColor: '#1E40AF',
-        height: 50,
-        borderRadius: 16,
-        flexDirection: 'row',
+        height: 54,
+        borderRadius: 18,
+        backgroundColor: '#F1F5F9',
         justifyContent: 'center',
         alignItems: 'center',
-        gap: 10,
     },
-    printBtnText: {
-        color: '#FFFFFF',
-        fontSize: 16,
+    confirmCancelText: {
+        fontSize: 15,
         fontWeight: '900',
-    }
+        color: '#64748B',
+    },
+    confirmDeleteBtn: {
+        flex: 1,
+        height: 54,
+        borderRadius: 18,
+        backgroundColor: '#DC2626',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    confirmDeleteText: {
+        fontSize: 15,
+        fontWeight: '900',
+        color: '#FFFFFF',
+    },
 });
 
 export default TransactionHistory;

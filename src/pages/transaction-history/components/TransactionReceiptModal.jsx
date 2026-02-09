@@ -126,6 +126,16 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
         ? 'TUNAI'
         : transaction.payment_method.toUpperCase();
     text += `Metode: ${paymentMethodText}\n`;
+
+    // Customer Info
+    if (transaction.customer_name || transaction.customer_phone || transaction.customer_address) {
+      text += `--------------------------------\n`;
+      text += `PELANGGAN:\n`;
+      if (transaction.customer_name) text += `${transaction.customer_name}\n`;
+      if (transaction.customer_phone) text += `${transaction.customer_phone}\n`;
+      if (transaction.customer_address) text += `${transaction.customer_address}\n`;
+    }
+
     text += `--------------------------------\n`;
 
     transaction.items.forEach(item => {
@@ -155,17 +165,31 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
     text += `${subtotalLabel}${" ".repeat(32 - subtotalLabel.length - subtotalVal.length)}${subtotalVal}\n`;
 
     // Item Discounts
-    if (subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts > 0) {
+    if (itemsDiscountAmount > 0) {
       const discLabel = "DISKON ITEM";
-      const discVal = `-Rp ${(subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts).toLocaleString("id-ID")}`;
+      const discVal = `-Rp ${itemsDiscountAmount.toLocaleString("id-ID")}`;
       text += `${discLabel}${" ".repeat(32 - discLabel.length - discVal.length)}${discVal}\n`;
     }
 
     // Manual Discount
     if (manualDiscountAmount > 0) {
-      const manualDiscLabel = "DISKON TAMBAHAN";
+      const manualDiscLabel = "DISKON TRANSAKSI";
       const manualDiscVal = `-Rp ${manualDiscountAmount.toLocaleString("id-ID")}`;
       text += `${manualDiscLabel}${" ".repeat(32 - manualDiscLabel.length - manualDiscVal.length)}${manualDiscVal}\n`;
+    }
+
+    // Points Discount
+    if (pointsDiscountAmount > 0) {
+      const pointsDiscLabel = "DISKON POIN";
+      const pointsDiscVal = `-Rp ${pointsDiscountAmount.toLocaleString("id-ID")}`;
+      text += `${pointsDiscLabel}${" ".repeat(32 - pointsDiscLabel.length - pointsDiscVal.length)}${pointsDiscVal}\n`;
+    }
+
+    // Promo Discount
+    if (transaction.promo_discount > 0) {
+      const promoDiscLabel = "DISKON PROMO";
+      const promoDiscVal = `-Rp ${Number(transaction.promo_discount).toLocaleString("id-ID")}`;
+      text += `${promoDiscLabel}${" ".repeat(32 - promoDiscLabel.length - promoDiscVal.length)}${promoDiscVal}\n`;
     }
 
     // PPN/Tax
@@ -219,6 +243,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
 
   const ppnAmount = Number(transaction.ppn) || 0;
   const manualDiscountAmount = Number(transaction.manual_discount) || 0;
+  const pointsDiscountAmount = Number(transaction.points_used || 0);
 
   // Calculate subtotal based on original prices (basePrice + options) for all items
   const subtotalBeforeAllDiscounts = transaction.items.reduce((sum, item) => {
@@ -230,16 +255,18 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
 
   // Subtotal after item-level discounts, before manual discount and PPN
   const subtotalAfterItemDiscounts = transaction.items.reduce((sum, item) => {
-    const pricePerUnit = Number(item.price) || 0;
     const itemDiscount = Number(item.discount) || 0;
+    const basePrice = Number(item.basePrice || item.price) || 0;
     const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
 
-    const effectivePriceWithOptions = item.basePrice
-      ? pricePerUnit
-      : (itemDiscount > 0 ? (pricePerUnit * (1 - itemDiscount)) + optionAdjustment : pricePerUnit + optionAdjustment);
+    const priceAfterDiscount = itemDiscount > 0
+      ? Math.round(basePrice * (1 - (itemDiscount / 100)))
+      : basePrice;
 
-    return sum + (effectivePriceWithOptions * (Number(item.quantity) || 0));
+    return sum + ((priceAfterDiscount + optionAdjustment) * (Number(item.quantity) || 0));
   }, 0);
+
+  const itemsDiscountAmount = subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts;
 
   return (
     <>
@@ -312,6 +339,42 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
                     </div>
                   </div>
 
+                  {/* Customer Details Section */}
+                  {(transaction.customer_name || transaction.customer_phone || transaction.customer_address) && (
+                    <div className="mb-8 relative p-4 bg-primary/5 rounded-2xl border border-primary/10 overflow-hidden">
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-primary/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-lg shadow-primary/20">
+                          <Icon name="User" size={12} className="text-white" />
+                        </div>
+                        <h3 className="text-[10px] font-black text-primary uppercase tracking-widest">Penerima / Pelanggan:</h3>
+                      </div>
+
+                      <div className="space-y-2">
+                        {transaction.customer_name && (
+                          <div className="flex items-center gap-2">
+                            <Icon name="User" size={12} className="text-gray-400" />
+                            <span className="text-xs font-bold text-gray-900">{transaction.customer_name}</span>
+                          </div>
+                        )}
+                        {transaction.customer_name && (transaction.customer_phone || transaction.customer_address) && <div className="h-px bg-gray-100 w-full my-1"></div>}
+                        {transaction.customer_phone && (
+                          <div className="flex items-center gap-2">
+                            <Icon name="Phone" size={12} className="text-gray-400" />
+                            <span className="text-xs font-bold text-gray-900">{transaction.customer_phone}</span>
+                          </div>
+                        )}
+                        {transaction.customer_phone && transaction.customer_address && <div className="h-px bg-gray-100 w-full my-1"></div>}
+                        {transaction.customer_address && (
+                          <div className="flex items-center gap-2">
+                            <Icon name="MapPin" size={12} className="text-gray-400" />
+                            <span className="text-xs font-bold text-gray-900">{transaction.customer_address}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Modern Product List */}
                   <div className="mb-8 px-1">
                     <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-2">
@@ -326,13 +389,15 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
 
                     <div className="space-y-4">
                       {transaction.items.map((item, index) => {
-                        const pricePerUnit = Number(item.price) || 0;
                         const itemDiscount = Number(item.discount) || 0;
+                        const basePrice = Number(item.basePrice || item.price) || 0;
                         const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0) : 0;
 
-                        const lineTotalAfterDiscount = item.basePrice
-                          ? (pricePerUnit * (Number(item.quantity) || 0))
-                          : (((itemDiscount > 0 ? pricePerUnit * (1 - itemDiscount) : pricePerUnit) + optionAdjustment) * (Number(item.quantity) || 0));
+                        const priceAfterDiscount = itemDiscount > 0
+                          ? Math.round(basePrice * (1 - (itemDiscount / 100)))
+                          : basePrice;
+
+                        const lineTotalAfterDiscount = (priceAfterDiscount + optionAdjustment) * (Number(item.quantity) || 0);
 
                         return (
                           <div key={index} className="relative group pl-3">
@@ -384,16 +449,43 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
 
                       <div className="space-y-3 mb-6">
                         <div className="flex justify-between items-center text-[10px]">
-                          <span className="text-gray-400 font-black uppercase tracking-widest">Harga Dasar</span>
+                          <span className="text-gray-400 font-black uppercase tracking-widest">Subtotal</span>
                           <span className="text-gray-900 font-bold font-mono">Rp {Number(subtotalBeforeAllDiscounts).toLocaleString("id-ID")}</span>
                         </div>
 
-                        {(subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts > 0 || manualDiscountAmount > 0) && (
+                        {itemsDiscountAmount > 0 && (
                           <div className="flex justify-between items-center text-[10px] text-rose-500 bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100/50">
                             <span className="font-black uppercase tracking-widest flex items-center gap-1.5">
-                              <Icon name="Tag" size={10} /> Diskon
+                              <Icon name="Tag" size={10} /> Diskon Item
                             </span>
-                            <span className="font-black font-mono">-Rp {(subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts + manualDiscountAmount).toLocaleString("id-ID")}</span>
+                            <span className="font-black font-mono">-Rp {itemsDiscountAmount.toLocaleString("id-ID")}</span>
+                          </div>
+                        )}
+
+                        {manualDiscountAmount > 0 && (
+                          <div className="flex justify-between items-center text-[10px] text-rose-500 bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100/50">
+                            <span className="font-black uppercase tracking-widest flex items-center gap-1.5">
+                              <Icon name="Tag" size={10} /> Diskon Transaksi
+                            </span>
+                            <span className="font-black font-mono">-Rp {manualDiscountAmount.toLocaleString("id-ID")}</span>
+                          </div>
+                        )}
+
+                        {pointsDiscountAmount > 0 && (
+                          <div className="flex justify-between items-center text-[10px] text-rose-500 bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100/50">
+                            <span className="font-black uppercase tracking-widest flex items-center gap-1.5">
+                              <Icon name="Tag" size={10} /> Diskon Poin
+                            </span>
+                            <span className="font-black font-mono">-Rp {pointsDiscountAmount.toLocaleString("id-ID")}</span>
+                          </div>
+                        )}
+
+                        {transaction.promo_discount > 0 && (
+                          <div className="flex justify-between items-center text-[10px] text-emerald-500 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100/50">
+                            <span className="font-black uppercase tracking-widest flex items-center gap-1.5">
+                              <Icon name="Tag" size={10} /> Diskon Promo
+                            </span>
+                            <span className="font-black font-mono">-Rp {Number(transaction.promo_discount).toLocaleString("id-ID")}</span>
                           </div>
                         )}
 
@@ -426,15 +518,15 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
                   </div>
 
                   {/* Additional Payment Info (V2 Style) */}
-                  {(transaction.payment_method === 'Tunai' || transaction.payment_method === 'tunai' || transaction.payment_method === 'cash') && transaction.cash_paid > 0 && (
+                  {(transaction.payment_method === 'Tunai' || transaction.payment_method === 'tunai' || transaction.payment_method === 'cash') && (
                     <div className="flex gap-3 mb-8 px-2">
                       <div className="flex-1 px-4 py-3 bg-gray-50 rounded-2xl border border-gray-100 flex flex-col items-center">
                         <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">DIBAYAR</span>
-                        <span className="text-sm font-mono font-black text-gray-900">Rp {Number(transaction.cash_paid).toLocaleString("id-ID")}</span>
+                        <span className="text-sm font-mono font-black text-gray-900">Rp {Number(transaction.cash_paid || 0).toLocaleString("id-ID")}</span>
                       </div>
                       <div className="flex-1 px-4 py-3 bg-emerald-50 rounded-2xl border border-emerald-100 flex flex-col items-center shadow-sm shadow-emerald-100/50">
                         <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest mb-1">KEMBALI</span>
-                        <span className="text-sm font-mono font-black text-emerald-700">Rp {Number(transaction.change).toLocaleString("id-ID")}</span>
+                        <span className="text-sm font-mono font-black text-emerald-700">Rp {Number(transaction.change || 0).toLocaleString("id-ID")}</span>
                       </div>
                     </div>
                   )}
@@ -445,7 +537,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
                       <div className="flex flex-col items-center border-r border-gray-700 pr-4">
                         <span className="text-[7px] font-black text-gray-500 uppercase tracking-widest mb-0.5">METODE</span>
                         <span className="text-[9px] font-black text-white uppercase tracking-tight">
-                          {transaction.payment_method === 'employee_meal' ? 'MAKAN KARYAWAN' : (transaction.payment_method === 'cash' ? 'TUNAI' : transaction.payment_method.toUpperCase())}
+                          {transaction.payment_method === 'employee_meal' ? 'MAKAN KARYAWAN' : (transaction.payment_method === 'cash' || transaction.payment_method === 'tunai' || transaction.payment_method === 'Tunai' ? 'TUNAI' : transaction.payment_method.toUpperCase())}
                         </span>
                       </div>
 
@@ -532,7 +624,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
                     <div>
                       <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Metode Bayar</span>
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase">
-                        {transaction.payment_method === 'employee_meal' ? 'Makan Karyawan' : (transaction.payment_method === 'cash' ? 'Tunai' : transaction.payment_method)}
+                        {transaction.payment_method === 'employee_meal' ? 'Makan Karyawan' : (transaction.payment_method === 'cash' || transaction.payment_method === 'tunai' || transaction.payment_method === 'Tunai' ? 'Tunai' : transaction.payment_method)}
                       </span>
                     </div>
                     <div className="text-right">
@@ -540,6 +632,38 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
                       <span className="text-[10px] font-bold text-emerald-600 uppercase">Lunas & Terverifikasi</span>
                     </div>
                   </div>
+
+                  {/* Customer Details (Classic Style) */}
+                  {(transaction.customer_name || transaction.customer_phone || transaction.customer_address) && (
+                    <div className="mb-8 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Icon name="User" size={14} className="text-primary" strokeWidth={3} />
+                        <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Data Pelanggan</h3>
+                      </div>
+                      <div className="space-y-2">
+                        {transaction.customer_name && (
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-400 font-bold uppercase tracking-tight">Nama</span>
+                            <span className="text-gray-900 font-bold">{transaction.customer_name}</span>
+                          </div>
+                        )}
+                        {transaction.customer_phone && (
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-400 font-bold uppercase tracking-tight">Telepon</span>
+                            <span className="text-gray-900 font-bold">{transaction.customer_phone}</span>
+                          </div>
+                        )}
+                        {transaction.customer_address && (
+                          <div className="flex flex-col gap-1 mt-1">
+                            <span className="text-gray-400 font-bold uppercase tracking-tight text-[10px]">Alamat</span>
+                            <span className="text-gray-900 font-medium text-xs bg-white p-2 rounded-lg border border-gray-100 shadow-sm leading-relaxed">
+                              {transaction.customer_address}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Items Selection */}
                   <div className="mb-8">
@@ -553,13 +677,15 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
 
                     <div className="space-y-4">
                       {transaction.items.map((item, index) => {
-                        const pricePerUnit = Number(item.price) || 0;
                         const itemDiscount = Number(item.discount) || 0;
+                        const basePrice = Number(item.basePrice || item.price) || 0;
                         const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0) : 0;
 
-                        const lineTotalAfterDiscount = item.basePrice
-                          ? (pricePerUnit * (Number(item.quantity) || 0))
-                          : (((itemDiscount > 0 ? pricePerUnit * (1 - itemDiscount) : pricePerUnit) + optionAdjustment) * (Number(item.quantity) || 0));
+                        const priceAfterDiscount = itemDiscount > 0
+                          ? Math.round(basePrice * (1 - (itemDiscount / 100)))
+                          : basePrice;
+
+                        const lineTotalAfterDiscount = (priceAfterDiscount + optionAdjustment) * (Number(item.quantity) || 0);
 
                         const originalBasePrice = Number(item.basePrice || item.price) || 0;
                         const optionAdjustmentForOriginalPrice = Array.isArray(item.options) ? item.options.reduce((sum, opt) => sum + (Number(opt.price_adjustment) || 0), 0) : 0;
@@ -615,24 +741,38 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
                         <span className="text-gray-900 font-bold font-mono">Rp {Number(subtotalBeforeAllDiscounts).toLocaleString("id-ID")}</span>
                       </div>
 
-                      {subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts > 0 && (
+                      {itemsDiscountAmount > 0 && (
                         <div className="flex justify-between text-xs text-red-500">
-                          <span className="font-bold uppercase tracking-wider">Item Savings</span>
-                          <span className="font-bold font-mono">-Rp {(subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts).toLocaleString("id-ID")}</span>
-                        </div>
-                      )}
-
-                      {ppnAmount > 0 && (
-                        <div className="flex justify-between text-xs">
-                          <span className="text-gray-400 font-bold uppercase tracking-wider">Tax (PPN)</span>
-                          <span className="text-gray-900 font-bold font-mono">Rp {ppnAmount.toLocaleString("id-ID")}</span>
+                          <span className="font-bold uppercase tracking-wider">Diskon Item</span>
+                          <span className="font-bold font-mono">-Rp {itemsDiscountAmount.toLocaleString("id-ID")}</span>
                         </div>
                       )}
 
                       {manualDiscountAmount > 0 && (
                         <div className="flex justify-between text-xs text-red-500">
-                          <span className="font-bold uppercase tracking-wider">Extra Discount</span>
+                          <span className="font-bold uppercase tracking-wider">Diskon Transaksi</span>
                           <span className="font-bold font-mono">-Rp {manualDiscountAmount.toLocaleString("id-ID")}</span>
+                        </div>
+                      )}
+
+                      {pointsDiscountAmount > 0 && (
+                        <div className="flex justify-between text-xs text-red-500">
+                          <span className="font-bold uppercase tracking-wider">Diskon Poin</span>
+                          <span className="font-bold font-mono">-Rp {pointsDiscountAmount.toLocaleString("id-ID")}</span>
+                        </div>
+                      )}
+
+                      {transaction.promo_discount > 0 && (
+                        <div className="flex justify-between text-xs text-green-600">
+                          <span className="font-bold uppercase tracking-wider">Diskon Promo</span>
+                          <span className="font-bold font-mono">-Rp {Number(transaction.promo_discount).toLocaleString("id-ID")}</span>
+                        </div>
+                      )}
+
+                      {ppnAmount > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-gray-400 font-bold uppercase tracking-wider">PPN (Tax)</span>
+                          <span className="text-gray-900 font-bold font-mono">Rp {ppnAmount.toLocaleString("id-ID")}</span>
                         </div>
                       )}
                     </div>
@@ -641,7 +781,7 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
 
                     <div className="flex justify-between items-center bg-gray-900 text-white rounded-xl p-4 shadow-lg shadow-gray-200">
                       <div>
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 block mb-1">Grand Total</span>
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 block mb-1">Total Tagihan</span>
                         <span className="text-lg font-black font-mono tracking-tight">
                           Rp {Number(transaction.total).toLocaleString("id-ID")}
                         </span>
@@ -653,15 +793,15 @@ const TransactionReceiptModal = ({ isOpen, onClose, transaction }) => {
                   </div>
 
                   {/* Additional Payment Info */}
-                  {(transaction.payment_method === 'Tunai' || transaction.payment_method === 'tunai' || transaction.payment_method === 'cash') && transaction.cash_paid > 0 && (
+                  {(transaction.payment_method === 'Tunai' || transaction.payment_method === 'tunai' || transaction.payment_method === 'cash') && (
                     <div className="mt-6 flex justify-between gap-4 px-4">
                       <div className="flex-1 text-center py-2 bg-gray-50 rounded-xl border border-gray-100">
-                        <span className="text-[8px] font-bold text-gray-400 uppercase block">Cash Paid</span>
-                        <span className="text-xs font-bold text-gray-900">Rp {Number(transaction.cash_paid).toLocaleString("id-ID")}</span>
+                        <span className="text-[8px] font-bold text-gray-400 uppercase block">Uang Dibayar</span>
+                        <span className="text-xs font-bold text-gray-900">Rp {Number(transaction.cash_paid || 0).toLocaleString("id-ID")}</span>
                       </div>
                       <div className="flex-1 text-center py-2 bg-emerald-50 rounded-xl border border-emerald-100">
-                        <span className="text-[8px] font-bold text-emerald-600 uppercase block">Change</span>
-                        <span className="text-xs font-extrabold text-emerald-700">Rp {Number(transaction.change).toLocaleString("id-ID")}</span>
+                        <span className="text-[8px] font-bold text-emerald-600 uppercase block">Kembalian</span>
+                        <span className="text-xs font-extrabold text-emerald-700">Rp {Number(transaction.change || 0).toLocaleString("id-ID")}</span>
                       </div>
                     </div>
                   )}

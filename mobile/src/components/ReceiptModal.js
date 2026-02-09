@@ -12,18 +12,22 @@ import {
     Share,
     ActivityIndicator,
     Alert,
-    StatusBar
+    StatusBar,
+    useWindowDimensions
 } from 'react-native';
-import { X, Printer, Share2, CheckCircle2, ShoppingCart, MessageSquare, Zap, ShieldCheck, Download, Copy, User, Phone, MapPin } from 'lucide-react-native';
+import { X, Printer, Share2, CheckCircle2, ShoppingCart, MessageSquare, Zap, ShieldCheck, Download, Copy, User, Phone, MapPin, AlertCircle, XCircle, Info } from 'lucide-react-native';
 import apiService, { API_URL } from '../api/apiService';
-import { useToast } from '../context/ToastContext';
+// import { useToast } from '../context/ToastContext';
 import { captureRef } from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing'; // Import Sharing
+import BluetoothPrinter from '../utils/BluetoothPrinter';
+import PrinterSelectionModal from './PrinterSelectionModal';
 
 const { width } = Dimensions.get('window');
 
 const ReceiptModal = ({ visible, onClose, transaction }) => {
+    const { width, height } = useWindowDimensions();
     const [settings, setSettings] = useState({
         restaurant_name: 'Berkah 88',
         restaurant_slogan: 'Kasir Pintar & Berkah',
@@ -31,7 +35,14 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
     });
     const [logoUrl, setLogoUrl] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
-    const { showToast } = useToast();
+    // const { showToast } = useToast();
+    const [localToast, setLocalToast] = useState({ visible: false, message: '', type: 'success' });
+
+    const showToast = (message, type = 'success') => {
+        setLocalToast({ visible: true, message, type });
+        setTimeout(() => setLocalToast(prev => ({ ...prev, visible: false })), 3000);
+    };
+    const [showPrinterModal, setShowPrinterModal] = useState(false);
     const receiptRef = React.useRef();
 
     useEffect(() => {
@@ -88,6 +99,188 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
             showToast('Terjadi kesalahan saat menyimpan struk.', 'error');
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleConnectAndPrint = async () => {
+        try {
+            const isConnected = await BluetoothPrinter.isConnected();
+            if (!isConnected) {
+                setShowPrinterModal(true);
+                return;
+            }
+
+            await executePrint();
+        } catch (error) {
+            console.error('Print trigger error:', error);
+            showToast('Gagal memproses cetak.', 'error');
+        }
+    };
+
+    const executePrint = async () => {
+        try {
+            // Siapkan Data Print
+            const printData = [];
+            const restaurantName = settings.restaurant_name || 'BERKAH 88';
+            const restaurantSlogan = settings.restaurant_slogan || 'Kasir Pintar & Berkah';
+            const restaurantUrl = settings.restaurant_url || 'www.berkah88.id';
+
+            printData.push({ text: restaurantName.toUpperCase(), align: 'center', bold: true, size: 'large' });
+            if (restaurantSlogan) printData.push({ text: restaurantSlogan, align: 'center', bold: false, size: 'normal' });
+            printData.push({ text: '--------------------------------', align: 'center' });
+
+            printData.push({ text: `ID: ${transaction.id}`, align: 'left' });
+            printData.push({ text: `Waktu: ${formatDateFull(transaction.timestamp)}`, align: 'left' });
+            printData.push({ text: `Kasir: ${transaction.cashier_name || transaction.seller_name || 'System'}`, align: 'left' });
+            printData.push({ text: '--------------------------------', align: 'center' });
+
+            if (transaction.customer_name || transaction.customer_phone || transaction.customer_address) {
+                printData.push({ text: 'PELANGGAN:', align: 'left', bold: true });
+                if (transaction.customer_name) printData.push({ text: `Nama  : ${transaction.customer_name}`, align: 'left' });
+                if (transaction.customer_phone) printData.push({ text: `Telp  : ${transaction.customer_phone}`, align: 'left' });
+                if (transaction.customer_address) printData.push({ text: `Alamat: ${transaction.customer_address}`, align: 'left' });
+                printData.push({ text: '--------------------------------', align: 'center' });
+            }
+
+            const paymentMethodText = transaction.payment_method === 'employee_meal'
+                ? 'MAKAN KARYAWAN'
+                : (transaction.payment_method === 'cash' || transaction.payment_method === 'tunai' || transaction.payment_method === 'Tunai')
+                    ? 'TUNAI'
+                    : (transaction.payment_method === 'transfer' || transaction.payment_method === 'TRANSFER')
+                        ? 'QRIS'
+                        : (transaction.payment_method || 'TUNAI').toUpperCase();
+
+            printData.push({ text: `METODE: ${paymentMethodText}`, align: 'left' });
+            printData.push({ text: 'STATUS: LUNAS', align: 'left' });
+            printData.push({ text: '--------------------------------', align: 'center' });
+
+            // Calculate subtotals like website
+            const subtotalBeforeAllDiscounts = transaction.items.reduce((sum, item) => {
+                const originalBasePrice = Number(item.basePrice || item.price) || 0;
+                const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+                const pricePerUnitBeforeDiscount = originalBasePrice + optionAdjustment;
+                return sum + (pricePerUnitBeforeDiscount * (Number(item.quantity || item.qty) || 0));
+            }, 0);
+
+            const subtotalAfterItemDiscounts = transaction.items.reduce((sum, item) => {
+                const pricePerUnit = Number(item.price) || 0;
+                const itemDiscount = Number(item.discount) || 0;
+                const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+                const effectivePriceWithOptions = item.basePrice
+                    ? pricePerUnit
+                    : (itemDiscount > 0 ? (pricePerUnit * (1 - itemDiscount / 100)) + optionAdjustment : pricePerUnit + optionAdjustment);
+                return sum + (effectivePriceWithOptions * (Number(item.quantity || item.qty) || 0));
+            }, 0);
+
+            // Items
+            transaction.items.forEach(item => {
+                const qtyVal = Number(item.quantity || item.qty) || 1;
+                const originalBasePrice = Number(item.basePrice || item.price) || 0;
+                const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+                const originalPricePerUnit = originalBasePrice + optionAdjustment;
+
+                printData.push({ text: item.name.substring(0, 32), align: 'left', bold: true });
+                printData.push({
+                    text: BluetoothPrinter.formatColumns(`${qtyVal} x ${originalPricePerUnit.toLocaleString('id-ID')}`, (qtyVal * originalPricePerUnit).toLocaleString('id-ID')),
+                    align: 'left'
+                });
+
+                if (item.notes || item.catatan) {
+                    printData.push({ text: ` + Catatan: ${item.notes || item.catatan}`, align: 'left' });
+                }
+                if (item.options && Array.isArray(item.options) && item.options.length > 0) {
+                    item.options.forEach(opt => {
+                        const priceAdjustment = Number(opt.price_adjustment) || 0;
+                        printData.push({ text: ` + ${opt.name}${priceAdjustment > 0 ? ` (+Rp ${priceAdjustment.toLocaleString('id-ID')})` : ''}`, align: 'left' });
+                    });
+                }
+            });
+
+            printData.push({ text: '--------------------------------', align: 'center' });
+
+            // Subtotal
+            printData.push({
+                text: BluetoothPrinter.formatColumns('SUBTOTAL', `Rp ${Number(subtotalBeforeAllDiscounts).toLocaleString("id-ID")}`),
+                align: 'left'
+            });
+
+            // Item Discounts
+            const itemsDiscountAmount = subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts;
+            if (itemsDiscountAmount > 0) {
+                printData.push({
+                    text: BluetoothPrinter.formatColumns('DISKON ITEM', `-Rp ${itemsDiscountAmount.toLocaleString("id-ID")}`),
+                    align: 'left'
+                });
+            }
+
+            // Promo Discount
+            const promoDiscountAmount = Number(transaction.promo_discount) || 0;
+            if (promoDiscountAmount > 0) {
+                printData.push({
+                    text: BluetoothPrinter.formatColumns('DISKON PROMO', `-Rp ${promoDiscountAmount.toLocaleString("id-ID")}`),
+                    align: 'left'
+                });
+            }
+
+            // Manual Discount
+            const manualDiscountAmount = Number(transaction.manual_discount) || 0;
+            if (manualDiscountAmount > 0) {
+                printData.push({
+                    text: BluetoothPrinter.formatColumns('DISKON TRANS', `-Rp ${manualDiscountAmount.toLocaleString("id-ID")}`),
+                    align: 'left'
+                });
+            }
+
+            // PPN
+            const ppnAmount = Number(transaction.ppn) || 0;
+            if (ppnAmount > 0) {
+                printData.push({
+                    text: BluetoothPrinter.formatColumns('PPN/TAX', `Rp ${ppnAmount.toLocaleString("id-ID")}`),
+                    align: 'left'
+                });
+            }
+
+            printData.push({ text: '--------------------------------', align: 'center' });
+
+            // Total
+            printData.push({
+                text: BluetoothPrinter.formatColumns('TOTAL', `Rp ${Number(transaction.total).toLocaleString("id-ID")}`),
+                align: 'left',
+                bold: true
+            });
+
+            // Cash details
+            const methodAttr = (transaction.payment_method || 'tunai').toLowerCase();
+            const cashValue = Number(transaction.cash_paid || transaction.cashPaid || 0);
+            if ((methodAttr === 'tunai' || methodAttr === 'cash') && cashValue > 0) {
+                printData.push({ text: '--------------------------------', align: 'center' });
+                printData.push({
+                    text: BluetoothPrinter.formatColumns('BAYAR', `Rp ${cashValue.toLocaleString("id-ID")}`),
+                    align: 'left'
+                });
+                printData.push({
+                    text: BluetoothPrinter.formatColumns('KEMBALI', `Rp ${Number(transaction.change || 0).toLocaleString("id-ID")}`),
+                    align: 'left'
+                });
+            }
+
+            if (transaction.catatan || transaction.notes) {
+                printData.push({ text: '--------------------------------', align: 'center' });
+                printData.push({ text: 'CATATAN TRANSAKSI:', align: 'left' });
+                printData.push({ text: `"${transaction.catatan || transaction.notes}"`, align: 'left' });
+            }
+
+            printData.push({ text: '--------------------------------', align: 'center' });
+            printData.push({ text: 'TERIMA KASIH', align: 'center', bold: true });
+            if (settings.owner_phone) printData.push({ text: `WA: ${settings.owner_phone}`, align: 'center' });
+            printData.push({ text: restaurantUrl, align: 'center' });
+
+            await BluetoothPrinter.printReceipt(printData);
+            await BluetoothPrinter.cut();
+            showToast('Sedang mencetak struk...', 'success');
+        } catch (error) {
+            console.error('Print error:', error);
+            showToast('Gagal mencetak struk. Pastikan printer menyala.', 'error');
         }
     };
 
@@ -189,13 +382,14 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
         const restaurantUrl = settings.restaurant_url || 'www.berkah88.id';
 
         let text = `${centerText(restaurantName.toUpperCase())}\n`;
-        text += `${centerText(restaurantSlogan)}\n`;
+        if (restaurantSlogan) text += `${centerText(restaurantSlogan)}\n`;
         text += `--------------------------------\n`;
         text += `ID: ${transaction.id}\n`;
-        text += `Tanggal: ${formatDateFull(transaction.timestamp)}\n`;
-        text += `Kasir: ${transaction.cashier_name || transaction.seller_name || 'SISTEM'}\n`;
+        text += `Waktu: ${formatDateFull(transaction.timestamp)}\n`;
+        text += `Kasir: ${transaction.cashier_name || transaction.seller_name || 'System'}\n`;
         text += `--------------------------------\n`;
 
+        // Customer Info Section
         if (transaction.customer_name || transaction.customer_phone || transaction.customer_address) {
             text += `PENERIMA / PELANGGAN:\n`;
             if (transaction.customer_name) text += ` Nama  : ${transaction.customer_name}\n`;
@@ -208,8 +402,12 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
             ? 'MAKAN KARYAWAN'
             : (transaction.payment_method === 'cash' || transaction.payment_method === 'tunai' || transaction.payment_method === 'Tunai')
                 ? 'TUNAI'
-                : (transaction.payment_method || 'TUNAI').toUpperCase();
-        text += `Metode: ${paymentMethodText}\n`;
+                : (transaction.payment_method === 'transfer' || transaction.payment_method === 'TRANSFER')
+                    ? 'QRIS'
+                    : (transaction.payment_method || 'TUNAI').toUpperCase();
+
+        text += `Metode Bayar: ${paymentMethodText}\n`;
+        text += `Status: LUNAS\n`;
         text += `--------------------------------\n`;
 
         // Calculate subtotals like website
@@ -236,7 +434,6 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
             text += `${item.name.substring(0, 32)}\n`;
             const qtyVal = Number(item.quantity || item.qty) || 1;
 
-            // Gunakan harga ASLI (sebelum diskon) untuk rincian per item
             const originalBasePrice = Number(item.basePrice || item.price) || 0;
             const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
             const originalPricePerUnit = originalBasePrice + optionAdjustment;
@@ -247,10 +444,13 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
             text += `${qtyPrice}${" ".repeat(Math.max(1, spaces))}${subtotalLine}\n`;
 
             if (item.notes || item.catatan) {
-                text += ` + ${item.notes || item.catatan}\n`;
+                text += ` + Catatan: ${item.notes || item.catatan}\n`;
             }
             if (item.options && Array.isArray(item.options) && item.options.length > 0) {
-                item.options.forEach(opt => text += ` + ${opt.name}\n`);
+                item.options.forEach(opt => {
+                    const priceAdjustment = Number(opt.price_adjustment) || 0;
+                    text += ` + ${opt.name}${priceAdjustment > 0 ? ` (+Rp ${priceAdjustment.toLocaleString('id-ID')})` : ''}\n`;
+                });
             }
         });
 
@@ -269,10 +469,18 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
             text += `${discLabel}${" ".repeat(Math.max(1, 32 - discLabel.length - discValue.length))}${discValue}\n`;
         }
 
+        // Promo Discount
+        const promoDiscountAmount = Number(transaction.promo_discount) || 0;
+        if (promoDiscountAmount > 0) {
+            const promoDiscLabel = "DISKON PROMO";
+            const promoDiscVal = `-Rp ${promoDiscountAmount.toLocaleString("id-ID")}`;
+            text += `${promoDiscLabel}${" ".repeat(Math.max(1, 32 - promoDiscLabel.length - promoDiscVal.length))}${promoDiscVal}\n`;
+        }
+
         // Manual Discount
         const manualDiscountAmount = Number(transaction.manual_discount) || 0;
         if (manualDiscountAmount > 0) {
-            const manualDiscLabel = "DISKON TAMBAHAN";
+            const manualDiscLabel = "DISKON TRANSAKSI";
             const manualDiscVal = `-Rp ${manualDiscountAmount.toLocaleString("id-ID")}`;
             text += `${manualDiscLabel}${" ".repeat(Math.max(1, 32 - manualDiscLabel.length - manualDiscVal.length))}${manualDiscVal}\n`;
         }
@@ -293,10 +501,12 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
         text += `${totalLabel}${" ".repeat(Math.max(1, 32 - totalLabel.length - totalValue.length))}${totalValue}\n`;
 
         // Cash details
-        if (((transaction.payment_method || 'tunai').toLowerCase() === 'tunai' || (transaction.payment_method || 'tunai').toLowerCase() === 'cash') && (transaction.cash_paid || transaction.cashPaid) > 0) {
+        const method = (transaction.payment_method || 'tunai').toLowerCase();
+        const cashValue = Number(transaction.cash_paid || transaction.cashPaid || 0);
+        if ((method === 'tunai' || method === 'cash') && cashValue > 0) {
             text += `--------------------------------\n`;
             const bayarLabel = "BAYAR";
-            const bayarVal = `Rp ${Number(transaction.cash_paid || transaction.cashPaid || 0).toLocaleString("id-ID")}`;
+            const bayarVal = `Rp ${cashValue.toLocaleString("id-ID")}`;
             text += `${bayarLabel}${" ".repeat(Math.max(1, 32 - bayarLabel.length - bayarVal.length))}${bayarVal}\n`;
 
             const kembaliLabel = "KEMBALI";
@@ -304,14 +514,23 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
             text += `${kembaliLabel}${" ".repeat(Math.max(1, 32 - kembaliLabel.length - kembaliVal.length))}${kembaliVal}\n`;
         }
 
+        if (Number(transaction.points_used || 0) > 0) {
+            text += `--------------------------------\n`;
+            const pointsLabel = "DISKON POIN";
+            const pointsVal = `-${formatCurrency(transaction.points_used)}`;
+            text += `${pointsLabel}${" ".repeat(Math.max(1, 32 - pointsLabel.length - pointsVal.length))}${pointsVal}\n`;
+        }
+
+
         if (transaction.catatan || transaction.notes) {
             text += `--------------------------------\n`;
-            text += `CATATAN:\n`;
+            text += `CATATAN TRANSAKSI:\n`;
             text += `"${transaction.catatan || transaction.notes}"\n`;
         }
 
         text += `--------------------------------\n`;
         text += `${centerText('TERIMA KASIH')}\n`;
+        if (settings.owner_phone) text += `${centerText(`WA: ${settings.owner_phone}`)}\n`;
         text += `${centerText(restaurantUrl)}`;
 
         return text;
@@ -333,6 +552,32 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
         }
     };
 
+    // Calculations for UI display
+    const items = transaction.items || [];
+    const subtotalBeforeAllDiscounts = items.reduce((sum, item) => {
+        const originalBasePrice = Number(item.basePrice || item.price) || 0;
+        const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+        const pricePerUnitBeforeDiscount = originalBasePrice + optionAdjustment;
+        return sum + (pricePerUnitBeforeDiscount * (Number(item.quantity || item.qty) || 0));
+    }, 0);
+
+    const subtotalAfterItemDiscounts = items.reduce((sum, item) => {
+        const itemDiscount = Number(item.discount) || 0;
+        const basePrice = Number(item.basePrice || item.price) || 0;
+        const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+
+        const priceAfterDiscount = itemDiscount > 0
+            ? Math.round(basePrice * (1 - (itemDiscount / 100)))
+            : basePrice;
+
+        return sum + ((priceAfterDiscount + optionAdjustment) * (Number(item.quantity || item.qty) || 0));
+    }, 0);
+
+    const itemsDiscountAmount = subtotalBeforeAllDiscounts - subtotalAfterItemDiscounts;
+    const manualDiscountAmount = Number(transaction.manual_discount) || 0;
+    const ppnAmount = Number(transaction.ppn) || 0;
+    const ppnRate = itemsDiscountAmount > 0 || manualDiscountAmount > 0 ? (ppnAmount / (subtotalAfterItemDiscounts - manualDiscountAmount)) : (ppnAmount / subtotalBeforeAllDiscounts);
+
     return (
         <Modal
             visible={visible}
@@ -340,13 +585,19 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
             transparent={false}
             onRequestClose={onClose}
         >
-            <View style={styles.modalContainer}>
+            <View style={[styles.modalContainer, { height: height }]}>
                 <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
                 <View style={styles.topHeader}>
                     <Text style={styles.topHeaderText}>Bukti Transaksi</Text>
-                    <TouchableOpacity onPress={onClose} style={styles.closeHeaderBtn}>
-                        <X size={20} color="#64748B" />
-                    </TouchableOpacity>
+                    <View style={styles.headerActions}>
+                        <TouchableOpacity style={styles.headerPrintBtn} onPress={handleConnectAndPrint}>
+                            <Printer size={18} color="#1E40AF" />
+                            <Text style={styles.headerPrintText}>Cetak</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={onClose} style={styles.closeHeaderBtn}>
+                            <X size={20} color="#64748B" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 <View style={styles.modalScrollContainer}>
@@ -420,12 +671,14 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                             <Text style={styles.customerInfoText}>{transaction.customer_name}</Text>
                                         </View>
                                     )}
+                                    {transaction.customer_name && (transaction.customer_phone || transaction.customer_address) && <View style={styles.customerInfoDivider} />}
                                     {transaction.customer_phone && (
                                         <View style={styles.customerInfoRow}>
                                             <Phone size={12} color="#64748B" />
                                             <Text style={styles.customerInfoText}>{transaction.customer_phone}</Text>
                                         </View>
                                     )}
+                                    {transaction.customer_phone && transaction.customer_address && <View style={styles.customerInfoDivider} />}
                                     {transaction.customer_address && (
                                         <View style={styles.customerInfoRow}>
                                             <MapPin size={12} color="#64748B" />
@@ -461,9 +714,59 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                                 <View style={styles.summaryGlow} />
                                 <View style={styles.summaryContent}>
                                     <View style={styles.summaryRow}>
-                                        <Text style={styles.summaryLabel}>Harga Dasar</Text>
-                                        <Text style={styles.summaryValue}>{formatCurrency(transaction.total - (transaction.ppn || 0))}</Text>
+                                        <Text style={styles.summaryLabel}>Subtotal</Text>
+                                        <Text style={styles.summaryValue}>{formatCurrency(subtotalBeforeAllDiscounts)}</Text>
                                     </View>
+
+                                    {itemsDiscountAmount > 0 && (
+                                        <View style={styles.summaryRow}>
+                                            <Text style={styles.summaryLabel}>Diskon Item</Text>
+                                            <Text style={styles.summaryValue}>-{formatCurrency(itemsDiscountAmount)}</Text>
+                                        </View>
+                                    )}
+
+                                    {Number(transaction.promo_discount || 0) > 0 && (
+                                        <View style={styles.summaryRow}>
+                                            <Text style={styles.summaryLabel}>Diskon Promo</Text>
+                                            <Text style={[styles.summaryValue, { color: '#059669' }]}>-{formatCurrency(transaction.promo_discount)}</Text>
+                                        </View>
+                                    )}
+
+                                    {manualDiscountAmount > 0 && (
+                                        <View style={styles.summaryRow}>
+                                            <Text style={styles.summaryLabel}>Diskon Transaksi</Text>
+                                            <Text style={styles.summaryValue}>-{formatCurrency(manualDiscountAmount)}</Text>
+                                        </View>
+                                    )}
+
+                                    {ppnAmount > 0 && (
+                                        <View style={styles.summaryRow}>
+                                            <Text style={styles.summaryLabel}>PPN ({(ppnRate * 100).toFixed(0)}%)</Text>
+                                            <Text style={styles.summaryValue}>{formatCurrency(ppnAmount)}</Text>
+                                        </View>
+                                    )}
+
+
+                                    {/* Additional Payment Info for Cash */}
+                                    {((transaction.payment_method || '').toLowerCase() === 'tunai' || (transaction.payment_method || '').toLowerCase() === 'cash') && (
+                                        <>
+                                            <View style={styles.summaryRow}>
+                                                <Text style={styles.summaryLabel}>Uang Dibayar</Text>
+                                                <Text style={styles.summaryValue}>{formatCurrency(transaction.cash_paid || transaction.cashPaid || 0)}</Text>
+                                            </View>
+                                            <View style={styles.summaryRow}>
+                                                <Text style={styles.summaryLabel}>Kembalian</Text>
+                                                <Text style={styles.summaryValue}>{formatCurrency(transaction.change || 0)}</Text>
+                                            </View>
+                                        </>
+                                    )}
+
+                                    {Number(transaction.points_used || 0) > 0 && (
+                                        <View style={styles.summaryRow}>
+                                            <Text style={styles.summaryLabel}>Diskon Poin</Text>
+                                            <Text style={styles.summaryValue}>-{formatCurrency(transaction.points_used)}</Text>
+                                        </View>
+                                    )}
                                     <View style={styles.thickDivider} />
                                     <View style={styles.totalSection}>
                                         <Text style={styles.totalLabel}>TOTAL TAGIHAN</Text>
@@ -482,13 +785,23 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                             <View style={styles.paymentPill}>
                                 <View style={styles.pillPart}>
                                     <Text style={styles.pillLabel}>METODE</Text>
-                                    <Text style={styles.pillValue}>{(transaction.payment_method || 'Tunai').toUpperCase()}</Text>
+                                    <Text style={styles.pillValue}>{(transaction.payment_method === 'transfer' || transaction.payment_method === 'TRANSFER') ? 'QRIS' : (transaction.payment_method || 'Tunai').toUpperCase()}</Text>
                                 </View>
                                 <View style={[styles.pillPart, styles.pillBorder]}>
                                     <Text style={styles.pillLabel}>STATUS</Text>
                                     <ShieldCheck size={14} color="#10B981" />
                                 </View>
                             </View>
+
+                            {(transaction.catatan || transaction.notes) && (
+                                <View style={styles.notesContainer}>
+                                    <View style={styles.notesHeader}>
+                                        <MessageSquare size={10} color="#94A3B8" />
+                                        <Text style={styles.notesLabel}>CATATAN TRANSAKSI</Text>
+                                    </View>
+                                    <Text style={styles.notesText}>"{transaction.catatan || transaction.notes}"</Text>
+                                </View>
+                            )}
 
                             <View style={styles.receiptFooter}>
                                 <View style={styles.footerDecoration}>
@@ -508,7 +821,7 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.actionBtnCopy} onPress={handleCopyText}>
                         <Copy size={18} color="#EA580C" />
-                        <Text style={styles.actionBtnTextCopy}>Salin Teks</Text>
+                        <Text style={styles.actionBtnTextCopy}>Teks</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.actionBtnPrimary, isSaving && { opacity: 0.7 }]}
@@ -526,6 +839,34 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                     </TouchableOpacity>
                 </View>
             </View >
+
+            <PrinterSelectionModal
+                visible={showPrinterModal}
+                onClose={() => setShowPrinterModal(false)}
+                onSelect={() => {
+                    showToast('Printer terhubung!', 'success');
+                    executePrint();
+                }}
+            />
+            {/* Local Toast UI */}
+            {localToast.visible && (
+                <View style={[styles.toastContainer, { borderLeftColor: localToast.type === 'error' ? '#EF4444' : (localToast.type === 'warning' ? '#F59E0B' : '#10B981') }]}>
+                    <View style={styles.toastContent}>
+                        <View style={styles.iconArea}>
+                            {localToast.type === 'error' ? <XCircle size={24} color="#EF4444" /> :
+                                localToast.type === 'warning' ? <AlertCircle size={24} color="#F59E0B" /> :
+                                    <CheckCircle2 size={24} color="#10B981" />}
+                        </View>
+                        <View style={styles.textArea}>
+                            <Text style={styles.toastTitle}>{localToast.type.toUpperCase()}</Text>
+                            <Text style={styles.toastMessage}>{localToast.message}</Text>
+                        </View>
+                        <TouchableOpacity onPress={() => setLocalToast(prev => ({ ...prev, visible: false }))} style={styles.closeBtn}>
+                            <X size={18} color="#94A3B8" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            )}
         </Modal >
     );
 };
@@ -539,8 +880,10 @@ const styles = StyleSheet.create({
     modalContainer: {
         backgroundColor: '#F8FAFC',
         flex: 1,
+        width: '100%',
         flexDirection: 'column',
-        zIndex: 9999, // Super high z-index to overlay everything
+        zIndex: 9999,
+        overflow: 'hidden',
     },
     topHeader: {
         flexDirection: 'row',
@@ -561,6 +904,27 @@ const styles = StyleSheet.create({
         padding: 8,
         backgroundColor: '#F1F5F9',
         borderRadius: 12,
+    },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    headerPrintBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#EFF6FF',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 10,
+        gap: 6,
+        borderWidth: 1,
+        borderColor: '#DBEAFE',
+    },
+    headerPrintText: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        color: '#1E40AF',
     },
     scrollBody: {
         flex: 1,
@@ -721,53 +1085,59 @@ const styles = StyleSheet.create({
     itemRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 16,
-        paddingLeft: 4,
+        alignItems: 'center',
+        marginBottom: 10,
+        backgroundColor: '#F8FAFC',
+        padding: 12,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
     },
     itemLeft: {
         flexDirection: 'row',
         flex: 1,
+        alignItems: 'center',
     },
     itemIndicator: {
-        width: 2,
-        height: '100%',
-        backgroundColor: '#E2E8F0',
-        borderRadius: 2,
-        marginRight: 10,
+        width: 4,
+        height: 24,
+        backgroundColor: '#138FEA',
+        borderRadius: 4,
+        marginRight: 12,
     },
     itemNameRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
+        gap: 8,
     },
     itemName: {
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: '900',
         color: '#1E293B',
     },
     itemQtyBadge: {
-        backgroundColor: '#F1F5F9',
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 6,
+        backgroundColor: '#1E293B',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 8,
     },
     itemQtyText: {
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: '900',
-        color: '#64748B',
+        color: '#FFFFFF',
     },
     itemRight: {
         alignItems: 'flex-end',
     },
     itemSublabel: {
-        fontSize: 8,
+        fontSize: 9,
         fontWeight: '900',
         color: '#94A3B8',
         marginBottom: 2,
+        textTransform: 'uppercase',
     },
     itemPriceText: {
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: '900',
         color: '#1E293B',
     },
@@ -803,6 +1173,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginBottom: 12,
+    },
+    pointLabelRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
     },
     summaryLabel: {
         fontSize: 12,
@@ -978,6 +1353,23 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#FFFFFF',
     },
+    actionBtnPrint: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 14,
+        borderRadius: 16,
+        backgroundColor: '#EFF6FF',
+        borderWidth: 1,
+        borderColor: '#BFDBFE',
+        gap: 8,
+    },
+    actionBtnTextPrint: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        color: '#1E40AF',
+    },
     // Customer Section Styles
     customerSection: {
         backgroundColor: '#FFFFFF',
@@ -998,7 +1390,6 @@ const styles = StyleSheet.create({
     customerInfoRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 4,
         gap: 8,
     },
     customerInfoText: {
@@ -1006,6 +1397,91 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#1E293B',
     },
+    customerInfoDivider: {
+        height: 1,
+        backgroundColor: '#F1F5F9',
+        marginVertical: 8,
+    },
+    // Notes Section Styles
+    notesContainer: {
+        backgroundColor: '#F8FAFC',
+        padding: 14,
+        borderRadius: 16,
+        borderStyle: 'dashed',
+        borderWidth: 1,
+        borderColor: '#CBD5E1',
+        marginBottom: 25,
+        marginHorizontal: 10,
+    },
+    notesHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        marginBottom: 6,
+    },
+    notesLabel: {
+        fontSize: 8,
+        fontWeight: '900',
+        color: '#94A3B8',
+        letterSpacing: 1.5,
+    },
+    notesText: {
+        fontSize: 12,
+        color: '#475569',
+        fontStyle: 'italic',
+        fontWeight: 'bold',
+        textAlign: 'center',
+        lineHeight: 18,
+    },
+    // Local Toast Styles
+    toastContainer: {
+        position: 'absolute',
+        top: 40,
+        left: 20,
+        right: 20,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        zIndex: 999999, // High z-index inside Modal
+        elevation: 50,
+        borderLeftWidth: 6,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        // Android elevation hack
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.05)',
+    },
+    toastContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    iconArea: {
+        marginRight: 12,
+    },
+    textArea: {
+        flex: 1,
+    },
+    toastTitle: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#94A3B8',
+        letterSpacing: 1,
+        marginBottom: 2,
+    },
+    toastMessage: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#1E293B',
+    },
+    closeBtn: {
+        padding: 4,
+    }
 });
 
 export default ReceiptModal;

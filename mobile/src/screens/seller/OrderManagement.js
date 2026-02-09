@@ -27,14 +27,21 @@ import { useConfirm } from '../../context/ConfirmContext';
 import { useOrderNotification } from '../../context/OrderNotificationContext';
 import { useToast } from '../../context/ToastContext';
 
-const OrderManagement = ({ navigation }) => {
+const OrderManagement = ({ navigation, route }) => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [activeTab, setActiveTab] = useState('pending');
+    const [activeTab, setActiveTab] = useState(route.params?.status || 'pending');
     const { confirm } = useConfirm();
     const { refreshTrigger } = useOrderNotification();
     const { showToast } = useToast();
+
+    // Efek untuk menangkap perubahan status dari navigasi luar (misal: dari Chat)
+    useEffect(() => {
+        if (route.params?.status) {
+            setActiveTab(route.params.status);
+        }
+    }, [route.params?.status]);
 
     // Receipt & Detail Modal State
     const [selectedOrderForReceipt, setSelectedOrderForReceipt] = useState(null);
@@ -64,17 +71,27 @@ const OrderManagement = ({ navigation }) => {
         fetchOrders(true);
     };
 
-    const handleUpdateStatus = async (orderId, status) => {
+    const handleUpdateStatus = useCallback(async (orderId, status, forceIgnoreStock = false) => {
         try {
-            await apiService.put(`/api/orders/${orderId}/status`, { status });
+            await apiService.put(`/api/orders/${orderId}/status`, {
+                status,
+                ignoreStock: forceIgnoreStock
+            });
             showToast('Status berhasil diperbarui', 'success');
             fetchOrders(true);
         } catch (error) {
             const errorMsg = error.response?.data?.error || 'Gagal memperbarui status';
+
+            // Handle Stock Validation Error - Auto Retry with Ignore Stock
+            if (status === 'accepted' && !forceIgnoreStock && (errorMsg.includes('stok') || errorMsg.includes('Stok'))) {
+                console.log('Stock validation failed, auto-retrying with ignoreStock...');
+                return handleUpdateStatus(orderId, status, true);
+            }
+
             showToast(errorMsg, 'error');
             console.error('Error updating status:', error);
         }
-    };
+    }, [showToast, fetchOrders]);
 
     const handleViewReceipt = (order) => {
         // Tetap simpan ini jika nanti ingin mencetak struk dari sini
@@ -93,10 +110,32 @@ const OrderManagement = ({ navigation }) => {
         setShowReceiptModal(true);
     };
 
-    const handleViewDetail = (order) => {
+    const handleViewDetail = useCallback((order) => {
         setSelectedOrderForDetail(order);
         setShowDetailModal(true);
-    };
+    }, []);
+
+    const handleAccept = useCallback((orderId) => {
+        handleUpdateStatus(orderId, 'accepted');
+    }, [handleUpdateStatus]);
+
+    const handleComplete = useCallback((orderId) => {
+        handleUpdateStatus(orderId, 'completed');
+    }, [handleUpdateStatus]);
+
+    const handleReject = useCallback((orderId) => {
+        handleUpdateStatus(orderId, 'cancelled');
+    }, [handleUpdateStatus]);
+
+    const renderOrderItem = useCallback(({ item }) => (
+        <SellerOrderCard
+            order={item}
+            onViewDetail={handleViewDetail}
+            onAccept={activeTab === 'pending' ? handleAccept : null}
+            onComplete={activeTab === 'accepted' ? handleComplete : null}
+            onReject={(activeTab === 'pending' || activeTab === 'accepted') ? handleReject : null}
+        />
+    ), [activeTab, handleViewDetail, handleAccept, handleComplete, handleReject]);
 
     const tabs = [
         { id: 'pending', label: 'Baru', icon: Clock },
@@ -161,45 +200,7 @@ const OrderManagement = ({ navigation }) => {
                             <Text style={styles.emptyText}>Tidak ada pesanan {tabs.find(t => t.id === activeTab).label.toLowerCase()}</Text>
                         </View>
                     }
-                    renderItem={({ item }) => (
-                        <SellerOrderCard
-                            order={item}
-                            onViewDetail={handleViewDetail}
-                            onAccept={activeTab === 'pending' ? async () => {
-                                const accepted = await confirm({
-                                    title: 'Terima Pesanan',
-                                    message: `Terima pesanan dari ${item.customer_name}?`,
-                                    confirmText: 'Ya, Terima',
-                                    type: 'primary'
-                                });
-                                if (accepted) {
-                                    handleUpdateStatus(item.id, 'accepted');
-                                }
-                            } : null}
-                            onComplete={activeTab === 'accepted' ? async () => {
-                                const completed = await confirm({
-                                    title: 'Selesaikan Pesanan',
-                                    message: `Pesanan #${item.id} sudah selesai dan siap diambil/diantar?`,
-                                    confirmText: 'Ya, Selesai',
-                                    type: 'primary'
-                                });
-                                if (completed) {
-                                    handleUpdateStatus(item.id, 'completed');
-                                }
-                            } : null}
-                            onReject={activeTab === 'pending' || activeTab === 'accepted' ? async () => {
-                                const rejected = await confirm({
-                                    title: 'Batalkan Pesanan',
-                                    message: `Apakah Anda yakin ingin membatalkan pesanan #${item.id}?`,
-                                    confirmText: 'Ya, Batalkan',
-                                    type: 'danger'
-                                });
-                                if (rejected) {
-                                    handleUpdateStatus(item.id, 'cancelled');
-                                }
-                            } : null}
-                        />
-                    )}
+                    renderItem={renderOrderItem}
                 />
             )}
 

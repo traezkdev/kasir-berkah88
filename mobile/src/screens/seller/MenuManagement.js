@@ -58,7 +58,7 @@ const MenuManagement = ({ navigation }) => {
     });
     const [imageUri, setImageUri] = useState(null);
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         try {
             const [menuRes, catRes] = await Promise.all([
@@ -72,7 +72,7 @@ const MenuManagement = ({ navigation }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useFocusEffect(
         useCallback(() => {
@@ -80,14 +80,15 @@ const MenuManagement = ({ navigation }) => {
         }, [])
     );
 
-    const handleOpenModal = (item = null) => {
+    const handleOpenModal = useCallback((item = null) => {
         if (item) {
             setEditingItem(item);
+            const currentCategory = (item.category || '').trim();
             setFormData({
                 name: item.name,
                 price: item.price.toString(),
                 stock: item.stock.toString(),
-                category: item.category,
+                category: currentCategory || (categories.length > 0 ? categories[0].name : 'Lainnya'),
                 hpp: (item.hpp || '0').toString(),
                 discount: (item.discount || '0').toString(),
                 is_featured: item.is_featured === 1 || item.is_featured === true,
@@ -109,7 +110,14 @@ const MenuManagement = ({ navigation }) => {
             setImageUri(null);
         }
         setIsModalOpen(true);
-    };
+    }, [categories]);
+
+    // Sinkronisasi kategori saat daftar kategori dari backend tersedia
+    useEffect(() => {
+        if (isModalOpen && !formData.category && categories.length > 0) {
+            setFormData(prev => ({ ...prev, category: categories[0].name }));
+        }
+    }, [isModalOpen, categories, formData.category]);
 
     const pickImage = async () => {
         try {
@@ -202,7 +210,7 @@ const MenuManagement = ({ navigation }) => {
         }
     };
 
-    const handleDelete = async (id) => {
+    const handleDelete = useCallback(async (id) => {
         const accepted = await confirm({
             title: 'Hapus Menu',
             message: 'Apakah Anda yakin ingin menghapus menu ini? Tindakan ini tidak dapat dibatalkan.',
@@ -218,7 +226,7 @@ const MenuManagement = ({ navigation }) => {
                 console.error('Error deleting menu:', error);
             }
         }
-    };
+    }, [confirm, fetchData]);
 
     const filteredItems = menuItems.filter(item => {
         const matchesCategory = activeCategory === 'Semua' || item.category === activeCategory;
@@ -230,61 +238,13 @@ const MenuManagement = ({ navigation }) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
     };
 
-    const renderItem = ({ item }) => (
-        <View style={styles.menuCard}>
-            {item.is_featured === 1 && (
-                <View style={styles.featuredBadge}>
-                    <Text style={styles.featuredText}>FEATURED</Text>
-                </View>
-            )}
-            <View style={styles.cardTop}>
-                <View style={styles.imageContainer}>
-                    {item.image_url ? (
-                        <Image
-                            source={{ uri: `${API_URL}${item.image_url}` }}
-                            style={styles.menuImage}
-                        />
-                    ) : (
-                        <View style={styles.placeholderContainer}>
-                            <ImageIcon size={30} color="#CBD5E1" />
-                        </View>
-                    )}
-                </View>
-                <View style={styles.cardInfo}>
-                    <Text style={styles.catText}>{item.category}</Text>
-                    <Text style={styles.nameText} numberOfLines={1}>{item.name}</Text>
-                    <Text style={styles.priceText}>{formatCurrency(item.price)}</Text>
-
-                    <View style={styles.stockRow}>
-                        <View style={[styles.stockDot, { backgroundColor: item.stock > 0 ? '#22C55E' : '#EF4444' }]} />
-                        <Text style={styles.stockText}>Stok: {item.stock}</Text>
-                        {item.total_reviews > 0 && (
-                            <View style={styles.ratingRow}>
-                                <Star size={10} color="#FBBF24" fill="#FBBF24" />
-                                <Text style={styles.ratingText}>{parseFloat(item.average_rating).toFixed(1)}</Text>
-                            </View>
-                        )}
-                    </View>
-                </View>
-            </View>
-
-            <View style={styles.cardActions}>
-                <TouchableOpacity
-                    onPress={() => handleOpenModal(item)}
-                    style={styles.editBtn}
-                >
-                    <Settings size={18} color="#64748B" />
-                    <Text style={styles.editBtnText}>Atur Menu</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    onPress={() => handleDelete(item.id)}
-                    style={styles.deleteBtn}
-                >
-                    <Trash2 size={18} color="#EF4444" />
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
+    const renderItem = useCallback(({ item }) => (
+        <MenuItem
+            item={item}
+            onEdit={handleOpenModal}
+            onDelete={handleDelete}
+        />
+    ), [handleOpenModal, handleDelete]);
 
     return (
         <View style={styles.container}>
@@ -430,15 +390,27 @@ const MenuManagement = ({ navigation }) => {
                     <Text style={styles.label}>KATEGORI</Text>
                     <View style={styles.categoryPicker}>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
-                            {categories.map(cat => (
+                            {categories.map(cat => {
+                                const isActive = (formData.category || '').trim().toLowerCase() === (cat.name || '').trim().toLowerCase();
+                                return (
+                                    <TouchableOpacity
+                                        key={cat.id}
+                                        onPress={() => setFormData({ ...formData, category: cat.name })}
+                                        style={[styles.catPickBtn, isActive && styles.activeCatPickBtn]}
+                                    >
+                                        <Text style={[styles.catPickText, isActive && styles.activeCatPickText]}>{(cat.name || '').trim()}</Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                            {/* Jika kategori item tidak ada di list utama (case-insensitive), tetap tampilkan sebagai terpilih agar tidak hilang */}
+                            {formData.category && !categories.find(c => (c.name || '').trim().toLowerCase() === (formData.category || '').trim().toLowerCase()) && (
                                 <TouchableOpacity
-                                    key={cat.id}
-                                    onPress={() => setFormData({ ...formData, category: cat.name })}
-                                    style={[styles.catPickBtn, formData.category === cat.name && styles.activeCatPickBtn]}
+                                    onPress={() => { }}
+                                    style={[styles.catPickBtn, styles.activeCatPickBtn]}
                                 >
-                                    <Text style={[styles.catPickText, formData.category === cat.name && styles.activeCatPickText]}>{cat.name}</Text>
+                                    <Text style={[styles.catPickText, styles.activeCatPickText]}>{formData.category.trim()}</Text>
                                 </TouchableOpacity>
-                            ))}
+                            )}
                         </ScrollView>
                     </View>
                 </View>
@@ -493,6 +465,75 @@ const MenuManagement = ({ navigation }) => {
         </View >
     );
 };
+
+const MenuItem = React.memo(({ item, onEdit, onDelete }) => {
+    const formatCurrency = (val) => {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
+    };
+
+    return (
+        <View style={styles.menuCard}>
+            <View style={styles.badgesContainer}>
+                {item.is_featured === 1 && (
+                    <View style={styles.featuredBadge}>
+                        <Text style={styles.featuredText}>FEATURED</Text>
+                    </View>
+                )}
+                {item.discount > 0 && (
+                    <View style={styles.discountBadge}>
+                        <Text style={styles.discountText}>Hemat {parseFloat(item.discount)}%</Text>
+                    </View>
+                )}
+            </View>
+            <View style={styles.cardTop}>
+                <View style={styles.imageContainer}>
+                    {item.image_url ? (
+                        <Image
+                            source={{ uri: `${API_URL}${item.image_url}` }}
+                            style={styles.menuImage}
+                        />
+                    ) : (
+                        <View style={styles.placeholderContainer}>
+                            <ImageIcon size={30} color="#CBD5E1" />
+                        </View>
+                    )}
+                </View>
+                <View style={styles.cardInfo}>
+                    <Text style={styles.catText}>{item.category}</Text>
+                    <Text style={styles.nameText} numberOfLines={1}>{item.name}</Text>
+                    <Text style={styles.priceText}>{formatCurrency(item.price)}</Text>
+
+                    <View style={styles.stockRow}>
+                        <View style={[styles.stockDot, { backgroundColor: item.stock > 0 ? '#22C55E' : '#EF4444' }]} />
+                        <Text style={styles.stockText}>Stok: {item.stock}</Text>
+                        {item.total_reviews > 0 && (
+                            <View style={styles.ratingRow}>
+                                <Star size={10} color="#FBBF24" fill="#FBBF24" />
+                                <Text style={styles.ratingText}>{parseFloat(item.average_rating).toFixed(1)}</Text>
+                            </View>
+                        )}
+                    </View>
+                </View>
+            </View>
+
+            <View style={styles.cardActions}>
+                <TouchableOpacity
+                    onPress={() => onEdit(item)}
+                    style={styles.editBtn}
+                >
+                    <Settings size={18} color="#2563EB" />
+                    <Text style={styles.editBtnText}>Atur Menu</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => onDelete(item.id)}
+                    style={styles.deleteBtn}
+                >
+                    <Trash2 size={18} color="#EF4444" />
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
+});
 
 const styles = StyleSheet.create({
     container: {
@@ -595,25 +636,40 @@ const styles = StyleSheet.create({
         padding: 16,
         marginBottom: 16,
         borderWidth: 1,
-        borderColor: '#F1F5F9',
-        ...Platform.select({
-            web: { boxShadow: '0px 4px 12px rgba(0,0,0,0.05)' },
-            android: { elevation: 2 }
-        })
+        borderColor: '#E2E8F0',
     },
-    featuredBadge: {
+    badgesContainer: {
         position: 'absolute',
         top: 10,
         right: 10,
+        zIndex: 1,
+        alignItems: 'flex-end',
+        gap: 6,
+    },
+    featuredBadge: {
         backgroundColor: '#F97316',
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 8,
-        zIndex: 1,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.1)',
     },
     featuredText: {
         color: '#FFFFFF',
         fontSize: 8,
+        fontWeight: '900',
+    },
+    discountBadge: {
+        backgroundColor: '#EF4444',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.1)',
+    },
+    discountText: {
+        color: '#FFFFFF',
+        fontSize: 10,
         fontWeight: '900',
     },
     cardTop: {
@@ -702,7 +758,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#F8FAFC',
+        backgroundColor: '#EFF6FF',
         paddingVertical: 10,
         borderRadius: 12,
         gap: 8,
@@ -710,7 +766,7 @@ const styles = StyleSheet.create({
     editBtnText: {
         fontSize: 13,
         fontWeight: 'bold',
-        color: '#64748B',
+        color: '#2563EB',
     },
     deleteBtn: {
         width: 44,
@@ -814,8 +870,8 @@ const styles = StyleSheet.create({
         borderColor: '#E2E8F0',
     },
     activeCatPickBtn: {
-        backgroundColor: '#EFF6FF',
-        borderColor: '#2563EB',
+        backgroundColor: '#1E40AF',
+        borderColor: '#1E40AF',
     },
     catPickText: {
         fontSize: 12,
@@ -823,7 +879,7 @@ const styles = StyleSheet.create({
         color: '#64748B',
     },
     activeCatPickText: {
-        color: '#2563EB',
+        color: '#FFFFFF',
     },
     featuredToggle: {
         flexDirection: 'row',

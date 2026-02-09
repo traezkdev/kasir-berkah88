@@ -62,10 +62,17 @@ import SellerBanners from './pages/customer/Dashboard/SellerBanners';
 import SellerMenuManagement from './pages/customer/Dashboard/SellerMenuManagement';
 import SellerTransactionHistory from './pages/customer/Dashboard/SellerTransactionHistory';
 import SellerReceipt from './pages/customer/Dashboard/SellerReceipt';
+import SellerTransactionTrash from './pages/customer/Dashboard/SellerTransactionTrash';
 import SellerOrderManagement from './pages/customer/Dashboard/SellerOrderManagement';
 import SellerTransactions from './pages/customer/Dashboard/SellerTransactions';
 import SellerChatPage from './pages/seller/Chat';
 import AdminChatPage from './pages/admin/Chat';
+import PointLoyalty from './pages/PointLoyalty';
+import CustomerManagement from './pages/CustomerManagement';
+import CustomerPointsHistory from './pages/customer/PointsHistory';
+import CustomerOrderDetails from './pages/customer/OrderDetails';
+import CustomerChat from './pages/customer/Chat';
+import CustomerPromo from './pages/customer/Promo';
 
 // ... (existing imports)
 
@@ -203,6 +210,8 @@ const AppRoutes = () => {
       </Route>
 
 
+
+
       {/* Cashier Dashboard Routes */}
       <Route
         element={
@@ -217,13 +226,17 @@ const AppRoutes = () => {
       {/* Lapak Deposit Routes (Accessible by Admin, User, Kasir, Owner) */}
       <Route
         element={
-          <ProtectedRoute allowedRoles={['admin', 'user', 'kasir', 'owner']}>
+          <ProtectedRoute allowedRoles={['admin', 'user', 'kasir', 'owner', 'penjual']}>
             <DynamicLayout />
           </ProtectedRoute>
         }
       >
+
         <Route path="/lapak-deposit" element={<LapakDeposit />} />
+        <Route path="/point-loyalty" element={<PointLoyalty />} />
+        <Route path="/customer-management" element={<CustomerManagement />} />
       </Route>
+
       <Route path="/receipt" element={<ProtectedRoute allowedRoles={['admin', 'kasir', 'user', 'penjual', 'owner']}><ReceiptPage /></ProtectedRoute>} />
 
       {/* Shared Admin/Owner Routes */}
@@ -265,6 +278,10 @@ const AppRoutes = () => {
         <Route path="/customer/cart" element={<CustomerCart />} />
         <Route path="/customer/profile" element={<CustomerProfile />} />
         <Route path="/customer/order-confirmation" element={<CustomerOrderConfirmation />} />
+        <Route path="/customer/points-history" element={<CustomerPointsHistory />} />
+        <Route path="/customer/order-details/:orderId" element={<CustomerOrderDetails />} />
+        <Route path="/customer/chat" element={<CustomerChat />} />
+        <Route path="/customer/promo" element={<CustomerPromo />} />
 
       </Route>
 
@@ -281,6 +298,7 @@ const AppRoutes = () => {
         <Route path="/seller/banners" element={<SellerBanners />} />
         <Route path="/seller/menu-management" element={<SellerMenuManagement />} />
         <Route path="/seller/transaction-history" element={<SellerTransactionHistory />} />
+        <Route path="/seller/transaction-trash" element={<SellerTransactionTrash />} />
         <Route path="/seller/orders" element={<SellerOrderManagement />} />
         <Route path="/seller/transactions" element={<SellerTransactions />} />
         <Route path="/seller/receipt" element={<SellerReceipt />} />

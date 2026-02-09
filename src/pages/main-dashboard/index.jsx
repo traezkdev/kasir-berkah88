@@ -670,8 +670,23 @@ const MainDashboard = ({ headerTitle }) => {
       icon: 'Bot',
       route: '/chatbot',
       color: 'accent'
+    },
+    {
+      title: 'Poin & Loyalitas',
+      description: 'Manajemen reward pelanggan',
+      icon: 'Gift',
+      route: '/point-loyalty',
+      color: 'warning'
+    },
+    {
+      title: 'Pelanggan',
+      description: 'Manajemen data pelanggan',
+      icon: 'User',
+      route: '/customer-management',
+      color: 'teal'
     }
   ];
+
 
   // --- Main Metrics (Always Visible) ---
   const monthlyProfit = (dashboardData.metrics?.totalRevenue || 0) - (dashboardData.metrics?.totalExpenses || 0);

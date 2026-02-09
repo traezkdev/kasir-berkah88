@@ -10,6 +10,7 @@ import {
     Platform,
     StatusBar
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import {
     X,
     User,
@@ -22,34 +23,71 @@ import {
     Calendar,
     Hash,
     Clock,
-    CreditCard
+    CreditCard,
+    ArrowRight
 } from 'lucide-react-native';
 import { useToast } from '../context/ToastContext';
 
 
 import BottomModalTemplate from './templates/BottomModalTemplate';
 
+const formatCurrency = (val) => {
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency', currency: 'IDR', minimumFractionDigits: 0
+    }).format(val || 0);
+};
+
+const formatDate = (dateStr) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('id-ID', {
+        day: '2-digit', month: 'long', year: 'numeric'
+    }) + ' • ' + date.toLocaleTimeString('id-ID', {
+        hour: '2-digit', minute: '2-digit'
+    });
+};
+
 const OrderDetailModal = ({ visible, onClose, order }) => {
     const { showToast } = useToast();
+    const navigation = useNavigation();
+
+    // Memoize parsed items and price calculations
+    const { parsedItems, subtotalGross, subtotalNetItems, itemDiscountAmount, manualDiscount, ppnAmount, grandTotal } = useMemo(() => {
+        if (!order) return { parsedItems: [] };
+
+        const items = Array.isArray(order.items) ? order.items : (typeof order.items === 'string' ? JSON.parse(order.items) : []);
+
+        const gross = items.reduce((sum, item) => {
+            const qty = Number(item.quantity || item.qty) || 0;
+            const originalBasePrice = Number(item.basePrice || item.price) || 0;
+            const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+            return sum + ((originalBasePrice + optionAdjustment) * qty);
+        }, 0);
+
+        const netItems = items.reduce((sum, item) => {
+            const qty = Number(item.quantity || item.qty) || 0;
+            const itemPrice = Number(item.price) || 0;
+            const itemDiscount = Number(item.discount) || 0;
+            const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+
+            const effectivePrice = item.basePrice
+                ? itemPrice
+                : (itemDiscount > 0 ? (itemPrice * (1 - itemDiscount / 100)) + optionAdjustment : itemPrice + optionAdjustment);
+
+            return sum + (effectivePrice * qty);
+        }, 0);
+
+        return {
+            parsedItems: items,
+            subtotalGross: gross,
+            subtotalNetItems: netItems,
+            itemDiscountAmount: gross - netItems,
+            manualDiscount: Number(order.manual_discount || 0),
+            ppnAmount: Number(order.ppn || 0),
+            grandTotal: Number(order.total) || 0
+        };
+    }, [order]);
 
     if (!order) return null;
-
-    const parsedItems = Array.isArray(order.items) ? order.items : (typeof order.items === 'string' ? JSON.parse(order.items) : []);
-
-    const formatCurrency = (val) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency', currency: 'IDR', minimumFractionDigits: 0
-        }).format(val || 0);
-    };
-
-    const formatDate = (dateStr) => {
-        const date = new Date(dateStr);
-        return date.toLocaleDateString('id-ID', {
-            day: '2-digit', month: 'long', year: 'numeric'
-        }) + ' • ' + date.toLocaleTimeString('id-ID', {
-            hour: '2-digit', minute: '2-digit'
-        });
-    };
 
     return (
         <BottomModalTemplate
@@ -69,10 +107,23 @@ const OrderDetailModal = ({ visible, onClose, order }) => {
             <View style={{ width: '100%', paddingBottom: 20 }}>
                 {/* Status Badge */}
                 <View style={styles.statusSection}>
-                    <View style={styles.statusBadge}>
-                        <Clock size={14} color="#1E40AF" />
-                        <Text style={styles.statusText}>{(order.status || 'PENDING').toUpperCase()}</Text>
-                    </View>
+                    {(() => {
+                        const statusConfig = {
+                            pending: { label: 'Baru', color: '#F59E0B' },
+                            accepted: { label: 'Diproses', color: '#138FEA' },
+                            ready: { label: 'Siap Diambil', color: '#10B981' },
+                            completed: { label: 'Selesai', color: '#059669' },
+                            rejected: { label: 'Ditolak', color: '#EF4444' },
+                            cancelled: { label: 'Batal', color: '#64748B' }
+                        };
+                        const currentStatus = statusConfig[order.status] || { label: order.status, color: '#138FEA' };
+                        return (
+                            <View style={[styles.statusBadge, { backgroundColor: currentStatus.color + '15' }]}>
+                                <Clock size={14} color={currentStatus.color} />
+                                <Text style={[styles.statusText, { color: currentStatus.color }]}>{currentStatus.label.toUpperCase()}</Text>
+                            </View>
+                        );
+                    })()}
                     <Text style={styles.timestamp}>{formatDate(order.created_at || new Date())}</Text>
                 </View>
 
@@ -84,7 +135,24 @@ const OrderDetailModal = ({ visible, onClose, order }) => {
                     </View>
 
                     <View style={styles.infoRow}>
-                        <Text style={styles.infoName}>{order.customer_name || 'Pelanggan'}</Text>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.infoName}>{order.customer_name || 'Pelanggan'}</Text>
+                            <Text style={styles.infoPhone}>{order.customer_phone || '-'}</Text>
+                        </View>
+                        <TouchableOpacity
+                            style={styles.viewProfileBtn}
+                            onPress={() => {
+                                onClose();
+                                navigation.navigate('CustomerDetails', {
+                                    customerName: order.customer_name,
+                                    customerPhone: order.customer_phone,
+                                    customerAddress: order.customer_address
+                                });
+                            }}
+                        >
+                            <Text style={styles.viewProfileText}>Lihat Profil</Text>
+                            <ArrowRight size={14} color="#138FEA" />
+                        </TouchableOpacity>
                     </View>
 
                     <View style={styles.divider} />
@@ -135,66 +203,50 @@ const OrderDetailModal = ({ visible, onClose, order }) => {
 
                     <View style={styles.totalDivider} />
 
-                    {(() => {
-                        const subtotalGross = parsedItems.reduce((sum, item) => {
-                            const qty = Number(item.quantity || item.qty) || 0;
-                            const originalBasePrice = Number(item.basePrice || item.price) || 0;
-                            const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
-                            return sum + ((originalBasePrice + optionAdjustment) * qty);
-                        }, 0);
+                    <View style={styles.totalRow}>
+                        <Text style={styles.totalLabel}>Subtotal</Text>
+                        <Text style={styles.totalValue}>{formatCurrency(subtotalGross)}</Text>
+                    </View>
 
-                        const subtotalNetItems = parsedItems.reduce((sum, item) => {
-                            const qty = Number(item.quantity || item.qty) || 0;
-                            const itemPrice = Number(item.price) || 0;
-                            const itemDiscount = Number(item.discount) || 0;
-                            const optionAdjustment = Array.isArray(item.options) ? item.options.reduce((optSum, opt) => optSum + (Number(opt.price_adjustment) || 0), 0) : 0;
+                    {itemDiscountAmount > 0 && (
+                        <View style={styles.totalRow}>
+                            <Text style={[styles.totalLabel, { color: '#EF4444' }]}>Diskon Item</Text>
+                            <Text style={[styles.totalValue, { color: '#EF4444' }]}>-{formatCurrency(itemDiscountAmount)}</Text>
+                        </View>
+                    )}
 
-                            const effectivePrice = item.basePrice
-                                ? itemPrice
-                                : (itemDiscount > 0 ? (itemPrice * (1 - itemDiscount / 100)) + optionAdjustment : itemPrice + optionAdjustment);
+                    {manualDiscount > 0 && (
+                        <View style={styles.totalRow}>
+                            <Text style={[styles.totalLabel, { color: '#EF4444' }]}>Diskon Tambahan</Text>
+                            <Text style={[styles.totalValue, { color: '#EF4444' }]}>-{formatCurrency(manualDiscount)}</Text>
+                        </View>
+                    )}
 
-                            return sum + (effectivePrice * qty);
-                        }, 0);
+                    {order.points_used > 0 && (
+                        <View style={styles.totalRow}>
+                            <Text style={[styles.totalLabel, { color: '#0284C7' }]}>Potongan Poin</Text>
+                            <Text style={[styles.totalValue, { color: '#0284C7' }]}>-{formatCurrency(order.points_used)}</Text>
+                        </View>
+                    )}
 
-                        const itemDiscountAmount = subtotalGross - subtotalNetItems;
-                        const manualDiscount = Number(order.manual_discount || 0);
-                        const ppnAmount = Number(order.ppn || 0);
+                    {order.promo_discount > 0 && (
+                        <View style={styles.totalRow}>
+                            <Text style={[styles.totalLabel, { color: '#059669' }]}>Diskon Promo</Text>
+                            <Text style={[styles.totalValue, { color: '#059669' }]}>-{formatCurrency(order.promo_discount)}</Text>
+                        </View>
+                    )}
 
-                        return (
-                            <>
-                                <View style={styles.totalRow}>
-                                    <Text style={styles.totalLabel}>Subtotal</Text>
-                                    <Text style={styles.totalValue}>{formatCurrency(subtotalGross)}</Text>
-                                </View>
+                    {ppnAmount > 0 && (
+                        <View style={styles.totalRow}>
+                            <Text style={styles.totalLabel}>Pajak/PPN</Text>
+                            <Text style={styles.totalValue}>{formatCurrency(ppnAmount)}</Text>
+                        </View>
+                    )}
 
-                                {itemDiscountAmount > 0 && (
-                                    <View style={styles.totalRow}>
-                                        <Text style={[styles.totalLabel, { color: '#EF4444' }]}>Diskon Item</Text>
-                                        <Text style={[styles.totalValue, { color: '#EF4444' }]}>-{formatCurrency(itemDiscountAmount)}</Text>
-                                    </View>
-                                )}
-
-                                {manualDiscount > 0 && (
-                                    <View style={styles.totalRow}>
-                                        <Text style={[styles.totalLabel, { color: '#EF4444' }]}>Diskon Tambahan</Text>
-                                        <Text style={[styles.totalValue, { color: '#EF4444' }]}>-{formatCurrency(manualDiscount)}</Text>
-                                    </View>
-                                )}
-
-                                {ppnAmount > 0 && (
-                                    <View style={styles.totalRow}>
-                                        <Text style={styles.totalLabel}>Pajak/PPN</Text>
-                                        <Text style={styles.totalValue}>{formatCurrency(ppnAmount)}</Text>
-                                    </View>
-                                )}
-
-                                <View style={[styles.totalRow, { marginTop: 12 }]}>
-                                    <Text style={styles.grandTotalLabel}>TOTAL BAYAR</Text>
-                                    <Text style={styles.grandTotalValue}>{formatCurrency(Number(order.total))}</Text>
-                                </View>
-                            </>
-                        );
-                    })()}
+                    <View style={[styles.totalRow, { marginTop: 12 }]}>
+                        <Text style={styles.grandTotalLabel}>TOTAL BAYAR</Text>
+                        <Text style={styles.grandTotalValue}>{formatCurrency(grandTotal)}</Text>
+                    </View>
                 </View>
 
                 {/* Logistics info or note if applicable */}
@@ -210,6 +262,7 @@ const OrderDetailModal = ({ visible, onClose, order }) => {
         </BottomModalTemplate>
     );
 };
+
 
 const styles = StyleSheet.create({
     // Styles that were handled by layout/template logic are removed.
@@ -263,11 +316,36 @@ const styles = StyleSheet.create({
         color: '#64748B',
         letterSpacing: 1,
     },
+    infoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: 4,
+    },
     infoName: {
         fontSize: 18,
         fontWeight: '900',
         color: '#1E293B',
-        marginBottom: 4,
+    },
+    infoPhone: {
+        fontSize: 12,
+        color: '#94A3B8',
+        fontWeight: 'bold',
+        marginTop: 2,
+    },
+    viewProfileBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F0F9FF',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 12,
+        gap: 6,
+    },
+    viewProfileText: {
+        fontSize: 12,
+        fontWeight: '900',
+        color: '#138FEA',
     },
     divider: {
         height: 1,
@@ -298,35 +376,41 @@ const styles = StyleSheet.create({
     itemRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: 10,
+        backgroundColor: '#F8FAFC',
+        padding: 12,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
     },
     itemQtyContainer: {
-        backgroundColor: '#F1F5F9',
+        backgroundColor: '#1E293B',
         paddingHorizontal: 8,
         paddingVertical: 4,
-        borderRadius: 8,
+        borderRadius: 10,
         marginRight: 12,
     },
     itemQty: {
         fontSize: 12,
         fontWeight: '900',
-        color: '#1E40AF',
+        color: '#FFFFFF',
     },
     itemMain: {
         flex: 1,
     },
     itemName: {
-        fontSize: 14,
-        fontWeight: 'bold',
+        fontSize: 15,
+        fontWeight: '900',
         color: '#1E293B',
     },
     itemPrice: {
         fontSize: 12,
         color: '#64748B',
-        fontWeight: '500',
+        fontWeight: 'bold',
+        marginTop: 2,
     },
     itemTotal: {
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: '900',
         color: '#1E293B',
     },

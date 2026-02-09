@@ -48,84 +48,86 @@ const LoginScreen = ({ navigation }) => {
     };
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.container}
-        >
-            <View style={styles.inner}>
-                {/* Header Section */}
-                <View style={styles.header}>
-                    <View style={[styles.logoPlaceholder, logoUrl && styles.logoPlaceholderImage]}>
-                        {logoUrl ? (
-                            <Image
-                                source={getLogoSource()}
-                                style={styles.logoImage}
-                                resizeMode="contain"
+        <View style={styles.container}>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+            >
+                <View style={styles.inner}>
+                    {/* Header Section */}
+                    <View style={styles.header}>
+                        <View style={[styles.logoPlaceholder, logoUrl && styles.logoPlaceholderImage]}>
+                            {logoUrl ? (
+                                <Image
+                                    source={getLogoSource()}
+                                    style={styles.logoImage}
+                                    resizeMode="contain"
+                                />
+                            ) : (
+                                <LogIn size={40} color="#138FEA" />
+                            )}
+                        </View>
+                        <Text style={styles.title}>Kasir Berkah88</Text>
+                        <Text style={styles.subtitle}>Selamat datang kembali, silakan login ke akun Anda.</Text>
+                    </View>
+
+                    {/* Form Section */}
+                    <View style={styles.form}>
+                        <View style={styles.inputContainer}>
+                            <User size={20} color="#94A3B8" style={styles.inputIcon} />
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Username"
+                                placeholderTextColor="#94A3B8"
+                                value={username}
+                                onChangeText={setUsername}
+                                autoCapitalize="none"
                             />
-                        ) : (
-                            <LogIn size={40} color="#138FEA" />
-                        )}
-                    </View>
-                    <Text style={styles.title}>Kasir Berkah88</Text>
-                    <Text style={styles.subtitle}>Selamat datang kembali, silakan login ke akun Anda.</Text>
-                </View>
+                        </View>
 
-                {/* Form Section */}
-                <View style={styles.form}>
-                    <View style={styles.inputContainer}>
-                        <User size={20} color="#94A3B8" style={styles.inputIcon} />
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Username"
-                            placeholderTextColor="#94A3B8"
-                            value={username}
-                            onChangeText={setUsername}
-                            autoCapitalize="none"
-                        />
-                    </View>
+                        <View style={styles.inputContainer}>
+                            <Lock size={20} color="#94A3B8" style={styles.inputIcon} />
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Password"
+                                placeholderTextColor="#94A3B8"
+                                value={password}
+                                onChangeText={setPassword}
+                                secureTextEntry
+                            />
+                        </View>
 
-                    <View style={styles.inputContainer}>
-                        <Lock size={20} color="#94A3B8" style={styles.inputIcon} />
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Password"
-                            placeholderTextColor="#94A3B8"
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry
-                        />
-                    </View>
-
-                    <TouchableOpacity
-                        style={[styles.button, loading && styles.buttonDisabled]}
-                        onPress={handleLogin}
-                        disabled={loading}
-                    >
-                        {loading ? (
-                            <ActivityIndicator color="#FFFFFF" />
-                        ) : (
-                            <Text style={styles.buttonText}>Masuk Sekarang</Text>
-                        )}
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.forgotPass}>
-                        <Text style={styles.forgotPassText}>Lupa Password?</Text>
-                    </TouchableOpacity>
-
-                    <View style={styles.registerContainer}>
-                        <Text style={styles.registerText}>Belum punya akun? </Text>
-                        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                            <Text style={styles.registerBtn}>Daftar Disini</Text>
+                        <TouchableOpacity
+                            style={[styles.button, loading && styles.buttonDisabled]}
+                            onPress={handleLogin}
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <ActivityIndicator color="#FFFFFF" />
+                            ) : (
+                                <Text style={styles.buttonText}>Masuk Sekarang</Text>
+                            )}
                         </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.forgotPass}>
+                            <Text style={styles.forgotPassText}>Lupa Password?</Text>
+                        </TouchableOpacity>
+
+                        <View style={styles.registerContainer}>
+                            <Text style={styles.registerText}>Belum punya akun? </Text>
+                            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                                <Text style={styles.registerBtn}>Daftar Disini</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
+            </KeyboardAvoidingView>
 
-                {/* Footer */}
-                <View style={styles.footer}>
-                    <Text style={styles.footerText}>© 2024 Kasir Berkah88. All Rights Reserved.</Text>
-                </View>
+            {/* Footer - Stay at bottom, unaffected by keyboard */}
+            <View style={styles.footer}>
+                <Text style={styles.footerText}>© 2026 Kasir Berkah88. All Rights Reserved.</Text>
             </View>
-        </KeyboardAvoidingView>
+        </View>
     );
 };
 
@@ -154,7 +156,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     logoPlaceholderImage: {
-        backgroundColor: 'transparent', // Or keep white
+        backgroundColor: 'transparent',
         padding: 0,
         overflow: 'hidden',
     },
@@ -203,7 +205,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginTop: 10,
-        // Gunakan boxShadow untuk standar terbaru (terutama Web)
         ...Platform.select({
             web: {
                 boxShadow: '0px 4px 12px rgba(19, 143, 234, 0.3)',
@@ -254,6 +255,8 @@ const styles = StyleSheet.create({
     footer: {
         position: 'absolute',
         bottom: 30,
+        width: '100%',
+        alignItems: 'center',
     },
     footerText: {
         color: '#94A3B8',

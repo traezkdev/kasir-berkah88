@@ -28,7 +28,9 @@ const SellerLayout = () => {
         { name: 'Menu', path: '/seller/menu-management', icon: 'Utensils', label: 'Katalog' },
         { name: 'Riwayat', path: '/seller/transaction-history', icon: 'History', label: 'Transaksi' },
         { name: 'Banner', path: '/seller/banners', icon: 'Image', label: 'Banner' },
+        { name: 'Poin', path: '/point-loyalty', icon: 'Gift', label: 'Loyalty' },
     ];
+
 
     const handleLogout = () => {
         localStorage.removeItem('token');

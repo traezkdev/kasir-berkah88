@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, View, Text, StatusBar, ActivityIndicator } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -7,6 +8,9 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import AppNavigator from './src/navigation/AppNavigator';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+// Mencegah splash screen menghilang otomatis
+SplashScreen.preventAutoHideAsync();
 
 import { ToastProvider } from './src/context/ToastContext';
 import { OrderNotificationProvider } from './src/context/OrderNotificationContext';
@@ -51,6 +55,15 @@ const MainApp = () => {
 };
 
 export default function App() {
+  useEffect(() => {
+    // Sembunyikan splash screen setelah 3 detik
+    const timer = setTimeout(async () => {
+      await SplashScreen.hideAsync();
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <ToastProvider>
       <ConfirmProvider>
