@@ -30,26 +30,29 @@ const ProfileModal = ({ title, isOpen, onClose, children }) => {
   );
 };
 
-// Reusable Card Component
+// Reusable Card Component - Scaled Down
 const ProfileCard = ({ icon, title, description, onClick, isDestructive = false }) => (
   <div
     onClick={onClick}
     className={`
-      bg-card p-6 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-800
-      transition-all duration-300 ease-in-out cursor-pointer group hover:-translate-y-2
+      relative overflow-hidden bg-card p-5 rounded-[1.5rem] shadow-[0_10px_30px_rgba(0,0,0,0.05)] border border-gray-100 dark:border-slate-800
+      transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer group hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)]
       ${isDestructive
-        ? 'hover:border-destructive/30 hover:shadow-destructive/10'
-        : 'hover:border-blue-500/30 hover:shadow-blue-500/10'
+        ? 'hover:border-destructive/30'
+        : 'hover:border-blue-500/30'
       }
     `}
   >
-    <div className="flex items-center gap-4 mb-3">
-      <div className={`p-3 rounded-2xl transition-all duration-300 ${isDestructive ? 'bg-rose-50 dark:bg-rose-900/20 text-destructive group-hover:bg-destructive group-hover:text-white' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white'}`}>
-        <AppIcon name={icon} className="w-6 h-6" />
+    {/* Animated Background Accent */}
+    <div className={`absolute -right-4 -bottom-4 w-20 h-20 rounded-full blur-3xl opacity-0 group-hover:opacity-20 transition-opacity duration-700 ${isDestructive ? 'bg-destructive' : 'bg-blue-600'}`}></div>
+
+    <div className="flex items-center gap-4 mb-3 relative z-10">
+      <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-500 transform group-hover:rotate-6 ${isDestructive ? 'bg-rose-50 dark:bg-rose-900/20 text-destructive group-hover:bg-destructive group-hover:text-white' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white'}`}>
+        <AppIcon name={icon} size={20} />
       </div>
-      <h3 className="text-sm font-black text-text-primary tracking-tight uppercase transition-colors">{title}</h3>
+      <h3 className="text-sm font-black text-text-primary tracking-tight uppercase transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">{title}</h3>
     </div>
-    <p className="text-xs font-bold text-text-secondary leading-relaxed pl-1 opacity-70 group-hover:opacity-100 transition-opacity">{description}</p>
+    <p className="text-[11px] font-bold text-text-secondary leading-relaxed pl-1 opacity-60 group-hover:opacity-100 transition-opacity relative z-10">{description}</p>
   </div>
 );
 
@@ -57,8 +60,9 @@ const UserProfile = ({ headerTitle }) => {
   const { theme } = useTheme();
   const { toggleSidebar } = useAppSettings();
   // --- States ---
-  const [user, setUser] = useState({ id: '', username: '', role: '', avatar_url: null, phone: '', address: '' });
+  const [user, setUser] = useState({ id: '', username: '', email: '', role: '', avatar_url: null, phone: '', address: '', points: 0 });
   const [newUsername, setNewUsername] = useState('');
+  const [newEmail, setNewEmail] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newAddress, setNewAddress] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -87,6 +91,7 @@ const UserProfile = ({ headerTitle }) => {
       if (response.ok) {
         setUser(data.data);
         setNewUsername(data.data.username);
+        setNewEmail(data.data.email || '');
         setNewPhone(data.data.phone || '');
         setNewAddress(data.data.address || '');
       } else {
@@ -139,7 +144,7 @@ const UserProfile = ({ headerTitle }) => {
       const response = await authFetch(`${apiUrl}/api/user/profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: newPhone, address: newAddress }),
+        body: JSON.stringify({ email: newEmail, phone: newPhone, address: newAddress }),
       });
       const data = await response.json();
       if (response.ok) {
@@ -279,81 +284,112 @@ const UserProfile = ({ headerTitle }) => {
           </header>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-24 lg:mt-0 -mt-20 relative z-20">
-            {/* Premium Info Card */}
-            <div className="md:col-span-3 relative overflow-hidden bg-gradient-to-br from-[#138FEA] to-[#0A56B1] text-white rounded-[2rem] p-6 lg:p-10 shadow-2xl shadow-blue-500/20 group">
-              {/* Decorative Background Elements */}
-              <div className="absolute -right-20 -top-20 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-blob"></div>
-              <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
+            {/* Ultra Premium Profile Header Card - Scaled Down */}
+            <div className="md:col-span-3 relative overflow-hidden bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] text-white rounded-[2rem] p-6 lg:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] group border border-white/5">
+              {/* Animated Mesh Gradients */}
+              <div className="absolute -right-20 -top-20 w-[300px] h-[300px] bg-blue-600/20 rounded-full blur-[80px] animate-pulse"></div>
+              <div className="absolute -left-20 -bottom-20 w-[300px] h-[300px] bg-emerald-600/10 rounded-full blur-[80px] animate-pulse delay-700"></div>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none"></div>
 
-              <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 lg:gap-12">
-                {/* Avatar Section with Glow */}
-                <div className="relative shrink-0 group/avatar">
-                  <div className="absolute -inset-4 bg-white/20 rounded-full blur-xl group-hover/avatar:bg-white/30 transition-all duration-500"></div>
-                  <div className="relative">
-                    <img
-                      src={avatarSrc}
-                      alt="Foto Profil"
-                      className="w-32 h-32 lg:w-40 lg:h-40 rounded-full object-cover border-4 border-white/30 shadow-2xl transition-transform duration-500 group-hover/avatar:scale-105"
-                    />
-                    {/* Active Status Badge */}
-                    <div className="absolute bottom-2 right-2 w-6 h-6 lg:w-8 lg:h-8 bg-green-500 border-4 border-[#138FEA] rounded-full shadow-lg"></div>
+              <div className="relative z-10 flex flex-col md:flex-row items-center md:items-stretch gap-8 lg:gap-12">
+                {/* Left Side: Avatar & Identity - Compact */}
+                <div className="relative shrink-0 flex flex-col items-center md:items-center text-center w-full md:w-auto md:border-r md:border-white/10 md:pr-10 lg:pr-14">
+                  <div className="relative group/avatar mb-6">
+                    <div className="absolute -inset-4 bg-gradient-to-tr from-blue-500 to-emerald-400 rounded-full blur-xl opacity-20 group-hover/avatar:opacity-40 transition-opacity duration-700 animate-spin-slow"></div>
+                    <div className="absolute -inset-1 bg-gradient-to-tr from-white/20 to-transparent rounded-full border border-white/10"></div>
+
+                    <div className="relative w-28 h-28 lg:w-36 lg:h-36 rounded-full p-1.5 bg-white/5 backdrop-blur-sm border border-white/10 shadow-2xl">
+                      <img
+                        src={avatarSrc}
+                        alt="Foto Profil"
+                        className="w-full h-full rounded-full object-cover shadow-inner transition-transform duration-700 group-hover/avatar:scale-105"
+                      />
+                      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 px-3 py-1 bg-blue-600 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl border border-blue-400/50 whitespace-nowrap">
+                        Verified Member
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Identity below Avatar */}
+                  <div className="mb-4">
+                    <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[9px] font-black uppercase tracking-widest mb-3 mx-auto">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping"></div>
+                      Status: Online
+                    </div>
+                    <h2 className="text-2xl lg:text-3xl font-black tracking-tight mb-1 bg-gradient-to-r from-white via-white to-blue-200 bg-clip-text text-transparent">
+                      {user.username}
+                    </h2>
+                    <p className="text-white/40 font-bold uppercase tracking-[0.25em] text-[10px]">
+                      {user.role} • ID: #{user.id}
+                    </p>
+                  </div>
+
+                  {user.role === 'pelanggan' && (
+                    <div className="px-5 py-2.5 rounded-xl bg-white/5 backdrop-blur-md border border-white/10 flex flex-col items-center">
+                      <span className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-0.5">Loyalty Points</span>
+                      <span className="text-lg font-black text-blue-400">{user.points || 0}</span>
+                    </div>
+                  )}
                 </div>
 
-                {/* Info Side */}
-                <div className="flex-grow w-full">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-                    <div>
-                      <h3 className="text-2xl lg:text-3xl font-black tracking-tight uppercase">Informasi Akun</h3>
-                      <p className="text-blue-100/60 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Data autentikasi & identitas</p>
-                    </div>
-                    <div className="px-4 py-2 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center gap-2 self-start sm:self-center">
-                      <div className="w-2 h-2 rounded-full bg-blue-300 animate-pulse"></div>
-                      <span className="text-xs font-black uppercase tracking-widest">{user.role}</span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
-                    {/* Info Items */}
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                      <div className="flex items-center gap-3 mb-1">
-                        <AppIcon name="Fingerprint" className="w-4 h-4 text-blue-200" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-100/50">ID Pengguna</span>
+                {/* Right Side: Information Tiles Container - No empty space */}
+                <div className="flex-grow w-full flex flex-col justify-center">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4">
+                    {/* Compact Tile: Email */}
+                    <div className="relative group/tile overflow-hidden p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.07] hover:border-white/10 transition-all duration-300">
+                      <div className="absolute top-0 right-0 p-3 opacity-5 group-hover/tile:opacity-10 transition-opacity">
+                        <AppIcon name="Mail" size={40} />
                       </div>
-                      <p className="font-bold tracking-tight text-lg">#{user.id}</p>
-                    </div>
-
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                      <div className="flex items-center gap-3 mb-1">
-                        <AppIcon name="User" className="w-4 h-4 text-blue-200" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-100/50">Username</span>
-                      </div>
-                      <p className="font-bold tracking-tight text-lg">{user.username}</p>
-                    </div>
-
-                    {user.phone && (
-                      <div className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                        <div className="flex items-center gap-3 mb-1">
-                          <AppIcon name="Phone" className="w-4 h-4 text-blue-200" />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-blue-100/50">Nomor HP</span>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
+                          <AppIcon name="Mail" size={14} />
                         </div>
-                        <p className="font-bold tracking-tight text-lg">{user.phone}</p>
+                        <div>
+                          <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em]">Email Address</p>
+                          <p className="font-bold text-xs text-white/90 truncate">{user.email || 'Not configured'}</p>
+                        </div>
                       </div>
-                    )}
+                    </div>
 
-                    <div className={`p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors ${user.phone ? 'sm:col-span-2' : ''}`}>
-                      <div className="flex items-center gap-3 mb-1">
-                        <AppIcon name="MapPin" className="w-4 h-4 text-blue-200" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-100/50">Alamat Lengkap</span>
+                    {/* Compact Tile: Phone */}
+                    <div className="relative group/tile overflow-hidden p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.07] hover:border-white/10 transition-all duration-300">
+                      <div className="absolute top-0 right-0 p-3 opacity-5 group-hover/tile:opacity-10 transition-opacity">
+                        <AppIcon name="Phone" size={40} />
                       </div>
-                      <p className="font-bold tracking-tight text-sm lg:text-base leading-relaxed">
-                        {user.address || 'Alamat belum diatur'}
-                      </p>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                          <AppIcon name="Phone" size={14} />
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em]">Contact Number</p>
+                          <p className="font-bold text-xs text-white/90 truncate">{user.phone || 'No phone set'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Full Width Tile: Address */}
+                    <div className="relative group/tile overflow-hidden p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.07] hover:border-white/10 transition-all duration-300 lg:col-span-2">
+                      <div className="absolute top-0 right-0 p-3 opacity-5 group-hover/tile:opacity-10 transition-opacity">
+                        <AppIcon name="MapPin" size={40} />
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-400 shrink-0">
+                          <AppIcon name="MapPin" size={14} />
+                        </div>
+                        <div className="flex-grow">
+                          <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em]">Primary Address</p>
+                          <p className="font-bold text-white/90 leading-relaxed text-[11px] lg:text-xs">
+                            {user.address || 'No address configured in profile'}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+
+
             <ProfileCard
               icon="Camera"
               title="Ubah Foto Profil"
@@ -424,6 +460,7 @@ const UserProfile = ({ headerTitle }) => {
 
       <ProfileModal title="Informasi Kontak & Alamat" isOpen={activeModal === 'contact'} onClose={handleModalClose}>
         <form onSubmit={handleUpdateContact} className="space-y-4">
+          <Input label="Alamat Email" name="newEmail" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Contoh: user@example.com" />
           <Input label="Nomor WhatsApp / HP" name="newPhone" type="tel" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="Contoh: 08123456789" />
           <div className="space-y-2">
             <label className="text-sm font-medium text-text-primary pl-1">Alamat Lengkap</label>

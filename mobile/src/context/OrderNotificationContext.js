@@ -69,19 +69,20 @@ export const OrderNotificationProvider = ({ children }) => {
     }, []);
 
     const loadSound = async (soundId = selectedSoundId) => {
-        if (Platform.OS === 'web' || !Audio || !Audio.Sound) return;
-
-        // Unload existing sound if any
-        if (soundRef.current) {
-            try {
-                await soundRef.current.unloadAsync();
-            } catch (e) { }
-        }
+        if (Platform.OS === 'web') return;
 
         try {
+            // Unload previous sound if exists
+            if (soundRef.current) {
+                await soundRef.current.unloadAsync();
+            }
+
             const soundConfig = NOTIFICATION_SOUNDS.find(s => s.id === soundId) || NOTIFICATION_SOUNDS[0];
             const { sound } = await Audio.Sound.createAsync(soundConfig.source);
-            if (isMounted.current) soundRef.current = sound;
+
+            if (isMounted.current) {
+                soundRef.current = sound;
+            }
         } catch (error) {
             console.warn('Failed to load notification sound:', error);
         }
@@ -93,13 +94,14 @@ export const OrderNotificationProvider = ({ children }) => {
         await loadSound(soundId);
         // Play once for preview
         if (soundRef.current) {
-            await soundRef.current.replayAsync();
+            soundRef.current.play();
         }
     };
 
     const playNotificationSound = async () => {
-        if (Platform.OS === 'web' || !soundRef.current) {
-            // If sound not loaded yet, try loading it now
+        if (Platform.OS === 'web') return;
+
+        if (!soundRef.current) {
             await loadSound();
         }
 
@@ -109,7 +111,6 @@ export const OrderNotificationProvider = ({ children }) => {
             }
         } catch (error) {
             console.warn('Error playing sound:', error);
-            // Fallback: try reloading
             await loadSound();
         }
     };
@@ -302,8 +303,9 @@ export const OrderNotificationProvider = ({ children }) => {
 
         return () => {
             isMounted.current = false;
+            // Cleanup sound on unmount
             if (soundRef.current) {
-                soundRef.current.unloadAsync();
+                soundRef.current.unloadAsync().catch(() => { });
             }
         };
     }, [user]);

@@ -994,6 +994,20 @@ const setupDatabase = async () => {
       console.log('Added phone column to users table.');
     }
 
+    // Check and add email column to users if it doesn't exist
+    const checkEmailColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'email';
+    `;
+    const addEmailColumn = `
+      ALTER TABLE users ADD COLUMN email VARCHAR(255) DEFAULT NULL;
+    `;
+    const [emailRows] = await connection.query(checkEmailColumn);
+    if (emailRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addEmailColumn);
+      console.log('Added email column to users table.');
+    }
+
     // Check and add address column to users if it doesn't exist
     const checkAddressColumn = `
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
@@ -1265,6 +1279,8 @@ const setupDatabase = async () => {
       console.log('Added user_id column and foreign key to transactions table.');
     }
 
+
+
     // Check and add user_id column to expenses if it doesn't exist
     const checkExpenseUserIdColumn = `
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
@@ -1280,6 +1296,7 @@ const setupDatabase = async () => {
       await connection.query(addExpenseUserIdColumn);
       console.log('Added user_id column and foreign key to expenses table.');
     }
+
 
 
     // --- Logika Pembuatan Admin Default ---
@@ -1756,7 +1773,119 @@ const setupDatabase = async () => {
       console.error("Error setting up promos table:", promoErr);
     }
 
+
+
+    // --- Points History Table Setup ---
+    try {
+      const createPointsHistoryTable = `
+        CREATE TABLE IF NOT EXISTS points_history (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id INT NOT NULL,
+          amount DECIMAL(10, 2) NOT NULL,
+          type VARCHAR(50) NOT NULL,
+          description TEXT,
+          transaction_id VARCHAR(255),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+      `;
+      await connection.query(createPointsHistoryTable);
+      console.log('points_history table checked/created.');
+
+      // Ensure type column is VARCHAR(50) if it already exists as ENUM or shorter VARCHAR
+      // This handles the migration for existing tables that might have the strict ENUM
+      const checkTypeColumn = `
+        SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'points_history' AND COLUMN_NAME = 'type';
+      `;
+      const [typeColRows] = await connection.query(checkTypeColumn);
+      if (typeColRows.length > 0 && typeColRows[0].COLUMN_TYPE.toLowerCase().includes('enum')) {
+        await connection.query("ALTER TABLE points_history MODIFY COLUMN type VARCHAR(50) NOT NULL");
+        console.log('Migrated points_history.type to VARCHAR(50).');
+      }
+
+    } catch (err) {
+      console.error('Error setting up points_history table:', err);
+    }
+
+
+    // --- Activity Logs Table Setup ---
+    try {
+      const createActivityLogsTable = `
+        CREATE TABLE IF NOT EXISTS activity_logs (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id INT,
+          action VARCHAR(255) NOT NULL,
+          target_type VARCHAR(50),
+          target_id VARCHAR(255),
+          details TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `;
+      await connection.query(createActivityLogsTable);
+      console.log('activity_logs table checked/created.');
+    } catch (err) {
+      console.error('Error setting up activity_logs table:', err);
+    }
+
+
+    // --- Ensure Point System Settings ---
+    try {
+      const ensurePointSettings = `
+        INSERT IGNORE INTO settings (\`key\`, \`value\`) VALUES
+        ('point_system_enabled', '1'),
+        ('points_per_item', '100');
+      `;
+      // Use IGNORE to not overwrite if they exist, but ensure defaults are there
+      await connection.query(ensurePointSettings);
+      console.log('Point system settings checked/ensured.');
+    } catch (settingsErr) {
+      console.error("Error ensuring point settings:", settingsErr);
+    }
+
+
+    // --- Menu Reviews Table Setup ---
+    try {
+      const createMenuReviewsTable = `
+        CREATE TABLE IF NOT EXISTS menu_reviews (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          menu_item_id VARCHAR(255) NOT NULL,
+          user_id INT NOT NULL,
+          order_id INT,
+          rating DECIMAL(2, 1) NOT NULL,
+          comment TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          UNIQUE KEY unique_user_item_review (user_id, menu_item_id)
+        );
+      `;
+      await connection.query(createMenuReviewsTable);
+      console.log('menu_reviews table checked/created.');
+    } catch (err) {
+      console.error('Error setting up menu_reviews table:', err);
+    }
+
+
+    // --- Expense Categories Table Setup ---
+    try {
+      const createExpenseCategoriesTable = `
+        CREATE TABLE IF NOT EXISTS expense_categories (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL UNIQUE
+        );
+      `;
+      await connection.query(createExpenseCategoriesTable);
+      console.log('expense_categories table checked/created.');
+    } catch (err) {
+      console.error('Error setting up expense_categories table:', err);
+    }
+
     connection.release();
+
+
+
+
 
 
   } catch (error) {

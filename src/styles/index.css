@@ -712,3 +712,9 @@
 .animate-scroll-hint {
   animation: bounce-left 1.2s ease-in-out 1;
 }
+
+@layer utilities {
+  .animate-spin-slow {
+    animation: spin 12s linear infinite;
+  }
+}

@@ -67,6 +67,8 @@ import SellerOrderManagement from './pages/customer/Dashboard/SellerOrderManagem
 import SellerTransactions from './pages/customer/Dashboard/SellerTransactions';
 import SellerChatPage from './pages/seller/Chat';
 import AdminChatPage from './pages/admin/Chat';
+import PointLoyalty from './pages/PointLoyalty';
+import CustomerManagement from './pages/CustomerManagement';
 
 // ... (existing imports)
 
@@ -204,6 +206,8 @@ const AppRoutes = () => {
       </Route>
 
 
+
+
       {/* Cashier Dashboard Routes */}
       <Route
         element={
@@ -218,13 +222,17 @@ const AppRoutes = () => {
       {/* Lapak Deposit Routes (Accessible by Admin, User, Kasir, Owner) */}
       <Route
         element={
-          <ProtectedRoute allowedRoles={['admin', 'user', 'kasir', 'owner']}>
+          <ProtectedRoute allowedRoles={['admin', 'user', 'kasir', 'owner', 'penjual']}>
             <DynamicLayout />
           </ProtectedRoute>
         }
       >
+
         <Route path="/lapak-deposit" element={<LapakDeposit />} />
+        <Route path="/point-loyalty" element={<PointLoyalty />} />
+        <Route path="/customer-management" element={<CustomerManagement />} />
       </Route>
+
       <Route path="/receipt" element={<ProtectedRoute allowedRoles={['admin', 'kasir', 'user', 'penjual', 'owner']}><ReceiptPage /></ProtectedRoute>} />
 
       {/* Shared Admin/Owner Routes */}

@@ -49,70 +49,58 @@ const Settings = () => {
   const { appMode, toggleAppMode, toggleSidebar } = useAppSettings();
   const { showToast } = useToast();
 
-  // Reusable Card Component (Updated for Ultra Premium Style)
+  // Reusable Card Component (Updated for Ultra Premium - Scaled Down)
   const SettingsCard = ({ icon, title, description, onClick, disabled = false }) => (
     <div
       onClick={!disabled ? onClick : undefined}
       className={`
-        relative overflow-hidden p-5 h-full rounded-[2rem] bg-card border border-gray-100/80 dark:border-slate-800/50
+        relative overflow-hidden p-4 h-full rounded-2xl bg-card border border-gray-100/80 dark:border-slate-800/50
         transition-all duration-700 ease-out group gpu-acceleration
         ${disabled
           ? 'opacity-50 cursor-not-allowed grayscale'
-          : 'cursor-pointer hover:shadow-[0_20px_50px_rgba(19,143,234,0.15)] hover:border-blue-500/50 hover:-translate-y-2 active:scale-[0.96] bg-gradient-to-br from-white to-gray-50/30 dark:from-slate-900 dark:to-slate-950/50'
+          : 'cursor-pointer hover:shadow-[0_15px_40px_rgba(19,143,234,0.12)] hover:border-blue-500/50 hover:-translate-y-1.5 active:scale-[0.97] bg-gradient-to-br from-white to-gray-50/30 dark:from-slate-900 dark:to-slate-950/50'
         }
       `}
     >
-      {/* Dynamic Background Elements (Visible but faint in idle) */}
+      {/* Dynamic Background Elements */}
       {!disabled && (
         <>
-          <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-500/[0.03] dark:bg-blue-500/[0.05] rounded-full blur-xl group-hover:bg-blue-500/20 group-hover:scale-150 transition-all duration-1000 animate-blob" style={{ willChange: 'transform, opacity' }}></div>
-          <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-indigo-500/[0.02] dark:bg-indigo-500/[0.04] rounded-full blur-xl group-hover:bg-indigo-500/10 group-hover:scale-150 transition-all duration-1000 animate-blob animation-delay-2000" style={{ willChange: 'transform, opacity' }}></div>
-
+          <div className="absolute -right-8 -top-8 w-24 h-24 bg-blue-500/[0.03] dark:bg-blue-500/[0.05] rounded-full blur-lg group-hover:bg-blue-500/15 group-hover:scale-150 transition-all duration-1000"></div>
           {/* Subtle Grid Pattern */}
-          <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none gpu-acceleration"
-            style={{ backgroundImage: 'radial-gradient(circle, #138fea 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+          <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04] pointer-events-none"
+            style={{ backgroundImage: 'radial-gradient(circle, #138fea 1px, transparent 1px)', backgroundSize: '16px 16px' }}></div>
         </>
       )}
 
-      <div className="relative z-10 flex flex-col gap-6 h-full justify-between">
+      <div className="relative z-10 flex flex-col gap-4 h-full justify-between">
         <div>
           <div className={`
-            w-12 h-12 rounded-[1.2rem] flex items-center justify-center transition-all duration-700 transform
+            w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-700 transform
             ${disabled
               ? 'bg-gray-100 dark:bg-gray-800 text-gray-400'
-              : 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm border border-gray-100 dark:border-slate-700 group-hover:scale-110 group-hover:-rotate-6 group-hover:bg-gradient-to-br group-hover:from-[#138FEA] group-hover:to-[#0A56B1] group-hover:text-white group-hover:shadow-2xl group-hover:shadow-blue-500/40 group-hover:border-transparent'
+              : 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm border border-gray-100 dark:border-slate-700 group-hover:scale-110 group-hover:-rotate-6 group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-xl group-hover:border-transparent'
             }
           `}>
-            <AppIcon name={icon} size={22} />
+            <AppIcon name={icon} size={20} />
           </div>
 
-          <div className="mt-4 space-y-1.5">
-            <div className="flex items-center gap-2">
-              <h3 className="text-base font-black text-text-primary tracking-tight uppercase leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                {title}
-              </h3>
-              {!disabled && (
-                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-20 group-hover:opacity-100 group-hover:scale-150 transition-all duration-500"></div>
-              )}
-            </div>
-            <p className="text-[10px] font-bold text-text-secondary uppercase tracking-[0.2em] leading-relaxed opacity-40 group-hover:opacity-100 transition-opacity">
+          <div className="mt-3 space-y-1">
+            <h3 className="text-sm font-black text-text-primary tracking-tight uppercase group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+              {title}
+            </h3>
+            <p className="text-[9px] font-bold text-text-secondary uppercase tracking-[0.15em] leading-snug opacity-40 group-hover:opacity-100 transition-opacity">
               {description}
             </p>
           </div>
         </div>
 
-        {/* Small Action Indicator */}
         {!disabled && (
-          <div className="mt-4 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-tighter text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-all duration-700 transform translate-x-[-10px] group-hover:translate-x-0">
+          <div className="mt-2 flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-tighter text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-all duration-700 transform translate-x-[-10px] group-hover:translate-x-0">
               <span>Konfigurasi</span>
-              <AppIcon name="ArrowRight" size={14} />
+              <AppIcon name="ArrowRight" size={12} />
             </div>
-
-            {/* Visual Flair in Idle */}
-            <div className="w-8 h-1 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden group-hover:w-0 transition-all duration-500">
-              <div className="w-full h-full bg-blue-500/20 animate-pulse" style={{ willChange: 'opacity' }}></div>
-            </div>
+            <div className="w-6 h-0.5 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden group-hover:w-0 transition-all duration-500"></div>
           </div>
         )}
       </div>

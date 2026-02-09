@@ -56,7 +56,9 @@
           "photosPermission": "Izinkan Kasir Berkah88 mengakses foto Anda untuk banner promo."
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-audio",
+      "expo-video"
     ],
     "extra": {
       "eas": {

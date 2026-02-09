@@ -4942,7 +4942,7 @@ app.delete("/api/admin/users/:id", authenticateToken, authorizeRoles('admin'), a
 // Get User Profile
 app.get("/api/user/profile", authenticateToken, async (req, res) => {
     try {
-        const sql = 'SELECT id, username, role, avatar_url, phone, address, points FROM users WHERE id = ?';
+        const sql = 'SELECT id, username, email, role, avatar_url, phone, address, points FROM users WHERE id = ?';
         const [rows] = await db.query(sql, [req.user.userId]);
         if (rows.length > 0) {
             res.json({ message: "success", data: rows[0] });
@@ -4958,7 +4958,7 @@ app.get("/api/user/profile", authenticateToken, async (req, res) => {
 // Update Profile Info (Phone & Address)
 app.put("/api/user/profile", authenticateToken, async (req, res) => {
     try {
-        const { phone, address } = req.body;
+        const { email, phone, address } = req.body;
 
         // Check if user exists first
         const [userCheck] = await db.query('SELECT id FROM users WHERE id = ?', [req.user.userId]);
@@ -4966,8 +4966,8 @@ app.put("/api/user/profile", authenticateToken, async (req, res) => {
             return res.status(404).json({ error: "User not found" });
         }
 
-        const sql = 'UPDATE users SET phone = ?, address = ? WHERE id = ?';
-        await db.query(sql, [phone || null, address || null, req.user.userId]);
+        const sql = 'UPDATE users SET email = ?, phone = ?, address = ? WHERE id = ?';
+        await db.query(sql, [email || null, phone || null, address || null, req.user.userId]);
 
         // Always return "success" so the frontend can handle it correctly
         // (CustomerProfile.js expects response.data.message === 'success')
@@ -5967,16 +5967,23 @@ app.get("/api/user/notification-settings", authenticateToken, async (req, res) =
             return res.status(404).json({ error: "User not found" });
         }
 
-        // Default settings if not set
         const defaultSettings = {
             orders: true,
             chat: true,
             promo: false
         };
 
-        const settings = rows[0].notification_settings
-            ? JSON.parse(rows[0].notification_settings)
-            : defaultSettings;
+        let settings = defaultSettings;
+        if (rows[0].notification_settings) {
+            try {
+                settings = typeof rows[0].notification_settings === 'string'
+                    ? JSON.parse(rows[0].notification_settings)
+                    : rows[0].notification_settings;
+            } catch (e) {
+                console.error('Error parsing notification settings:', e);
+                settings = defaultSettings;
+            }
+        }
 
         res.json({
             message: "success",

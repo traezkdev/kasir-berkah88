@@ -36,12 +36,14 @@ import {
     PackageX,
     ArrowRight
 } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+// LinearGradient removed to avoid native module errors
 import apiService, { API_URL } from '../../api/apiService';
 import ReceiptModal from '../../components/ReceiptModal';
 import ModernLoader from '../../components/ModernLoader';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useAppSettings } from '../../context/AppSettingsContext';
+
+// LinearGradient wrapper removed
 
 const { width, height } = Dimensions.get('window');
 const COLUMN_WIDTH = (width - 48) / 2;
@@ -878,28 +880,33 @@ const SalesPOS = () => {
                             </View>
                         </View>
 
-                        <TouchableOpacity
-                            activeOpacity={0.8}
-                            style={[styles.payBtnTouchable, (isProcessing || (paymentMethod === 'tunai' && parseFloat(cashPaid || 0) < finalTotal)) && styles.disabledBtn]}
-                            disabled={isProcessing || (paymentMethod === 'tunai' && parseFloat(cashPaid || 0) < finalTotal)}
-                            onPress={handleProcessTransaction}
-                        >
-                            <LinearGradient
-                                colors={['#1e3a8a', '#1e40af']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={styles.payBtn}
-                            >
-                                {isProcessing ? (
-                                    <ActivityIndicator color="#FFFFFF" size="small" />
-                                ) : (
-                                    <>
-                                        <Text style={styles.payBtnText}>KONFIRMASI PEMBAYARAN</Text>
-                                        <ArrowRight size={20} color="#FFFFFF" strokeWidth={3} />
-                                    </>
-                                )}
-                            </LinearGradient>
-                        </TouchableOpacity>
+                        {(() => {
+                            const isDisabled = isProcessing || (paymentMethod === 'tunai' && parseFloat(cashPaid || 0) < finalTotal);
+                            return (
+                                <TouchableOpacity
+                                    activeOpacity={0.8}
+                                    style={styles.payBtnTouchable}
+                                    disabled={isDisabled}
+                                    onPress={handleProcessTransaction}
+                                >
+                                    <View
+                                        style={[
+                                            styles.payBtn,
+                                            { backgroundColor: isDisabled ? '#94A3B8' : '#2563EB' }
+                                        ]}
+                                    >
+                                        {isProcessing ? (
+                                            <ActivityIndicator color="#FFFFFF" size="small" />
+                                        ) : (
+                                            <>
+                                                <Text style={styles.payBtnText}>KONFIRMASI PEMBAYARAN</Text>
+                                                <ArrowRight size={20} color="#FFFFFF" strokeWidth={3} />
+                                            </>
+                                        )}
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })()}
                     </View>
                 </View>
             </Modal>

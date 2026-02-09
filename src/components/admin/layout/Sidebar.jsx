@@ -4,8 +4,10 @@ import {
   FaTachometerAlt, FaBoxOpen, FaClipboardList, FaChartLine,
   FaUsers, FaCog, FaFileInvoiceDollar, FaCalculator, FaBook, FaSignOutAlt, FaRobot,
   FaCashRegister, FaExclamationTriangle, FaTrashAlt, FaWallet, FaBalanceScale,
-  FaFileAlt, FaHandHoldingUsd, FaUserCircle, FaHistory, FaCheckCircle, FaBars, FaAngleDoubleLeft, FaAngleDoubleRight
+  FaFileAlt, FaHandHoldingUsd, FaUserCircle, FaHistory, FaCheckCircle, FaBars, FaAngleDoubleLeft, FaAngleDoubleRight,
+  FaGift
 } from 'react-icons/fa';
+
 import { useAppSettings } from '../../../contexts/AppSettingsContext';
 
 // Component untuk menu item - Dipindah ke luar agar tidak re-mount setiap render Sidebar
@@ -511,6 +513,18 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
                 Daftar Karyawan
               </MenuItem>
               <MenuItem
+                to="/customer-management"
+                icon={FaUserCircle}
+                onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+                isCollapsed={isCollapsed}
+                handleMouseEnter={handleMouseEnter}
+                handleMouseLeave={handleMouseLeave}
+                navLinkClasses={navLinkClasses}
+                activeLinkClasses={activeLinkClasses}
+              >
+                Pelanggan
+              </MenuItem>
+              <MenuItem
                 to="/credits"
                 icon={FaHandHoldingUsd}
                 onClick={() => window.innerWidth < 1024 && toggleSidebar()}
@@ -534,6 +548,19 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
               >
                 Catatan
               </MenuItem>
+              <MenuItem
+                to="/point-loyalty"
+                icon={FaGift}
+                onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+                isCollapsed={isCollapsed}
+                handleMouseEnter={handleMouseEnter}
+                handleMouseLeave={handleMouseLeave}
+                navLinkClasses={navLinkClasses}
+                activeLinkClasses={activeLinkClasses}
+              >
+                Poin & Loyalitas
+              </MenuItem>
+
 
               {/* Grup Fitur Penjual */}
               {!isCollapsed && <div className={groupTitleClasses}>Fitur Penjual</div>}

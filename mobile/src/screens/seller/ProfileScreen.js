@@ -56,6 +56,7 @@ const ProfileScreen = ({ navigation }) => {
     // Form States
     const [formData, setFormData] = useState({
         username: user?.name || '',
+        email: user?.email || '',
         phone: user?.phone || '',
         address: user?.address || ''
     });
@@ -84,6 +85,7 @@ const ProfileScreen = ({ navigation }) => {
         if (user) {
             setFormData({
                 username: user.name || '',
+                email: user.email || '',
                 phone: user.phone || '',
                 address: user.address || ''
             });
@@ -118,6 +120,7 @@ const ProfileScreen = ({ navigation }) => {
             }
 
             await apiService.put('/api/user/profile', {
+                email: formData.email,
                 phone: formData.phone,
                 address: formData.address
             });
@@ -266,9 +269,17 @@ const ProfileScreen = ({ navigation }) => {
                     <Text style={styles.userName}>{user?.name || 'User'}</Text>
                     <View style={styles.roleBadge}>
                         <Shield size={12} color="#138FEA" />
-                        <Text style={styles.roleText}>{user?.role?.toUpperCase() || 'SELLER'}</Text>
+                        <Text style={styles.roleText}>{user?.role?.toUpperCase() || 'GUEST'}</Text>
                     </View>
-                    <Text style={styles.userEmail}>{user?.phone || 'Belum ada nomor telepon'}</Text>
+                    <Text style={styles.userId}>ID: #{user?.id || '0'}</Text>
+                    <View style={styles.contactRow}>
+                        <Text style={styles.userContactText}>{user?.email || 'Email belum diatur'}</Text>
+                        <Text style={styles.userContactDivider}> • </Text>
+                        <Text style={styles.userContactText}>{user?.phone || 'No. Telp belum ada'}</Text>
+                    </View>
+                    <Text style={[styles.userContactText, { marginTop: 4, fontStyle: 'italic', opacity: 0.8 }]}>
+                        {user?.address || 'Alamat belum diatur'}
+                    </Text>
                 </View>
 
                 {/* Stats / Info Summary */}
@@ -289,7 +300,7 @@ const ProfileScreen = ({ navigation }) => {
                 {/* Menu Sections */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>PENGATURAN AKUN</Text>
-                    {renderMenuItem(<User size={20} color="#138FEA" />, 'Informasi Pribadi', 'Nama, Email, dan Foto Profil', () => setActiveModal('info'), '#138FEA')}
+                    {renderMenuItem(<User size={20} color="#138FEA" />, 'Informasi Pribadi', 'Username, Email, No. Telp, & Alamat', () => setActiveModal('info'), '#138FEA')}
                     {renderMenuItem(<Shield size={20} color="#10B981" />, 'Keamanan', 'Kata sandi dan Autentikasi', () => setActiveModal('security'), '#10B981')}
                     {renderMenuItem(<Bell size={20} color="#F59E0B" />, 'Notifikasi', 'Pengaturan pemberitahuan', () => setActiveModal('notif'), '#F59E0B')}
                     {(user?.role === 'admin' || user?.role === 'owner') &&
@@ -340,6 +351,17 @@ const ProfileScreen = ({ navigation }) => {
                             value={formData.username}
                             onChangeText={(val) => setFormData({ ...formData, username: val })}
                             placeholder="Masukkan username"
+                        />
+                    </View>
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>ALAMAT EMAIL</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={formData.email}
+                            onChangeText={(val) => setFormData({ ...formData, email: val })}
+                            placeholder="Masukkan alamat email"
+                            keyboardType="email-address"
+                            autoCapitalize="none"
                         />
                     </View>
                     <View style={styles.inputGroup}>
@@ -582,6 +604,31 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#64748B',
         fontWeight: '500',
+    },
+    userId: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#94A3B8',
+        backgroundColor: '#F1F5F9',
+        paddingHorizontal: 10,
+        paddingVertical: 2,
+        borderRadius: 6,
+        marginBottom: 8,
+    },
+    contactRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    userContactText: {
+        fontSize: 13,
+        color: '#64748B',
+        fontWeight: '600',
+    },
+    userContactDivider: {
+        fontSize: 13,
+        color: '#CBD5E1',
+        marginHorizontal: 4,
     },
     statsRow: {
         flexDirection: 'row',
