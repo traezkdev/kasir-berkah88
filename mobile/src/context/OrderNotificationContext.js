@@ -429,7 +429,8 @@ export const OrderNotificationProvider = ({ children }) => {
             onlineUsers,
             selectedSoundId,
             changeNotificationSound,
-            playNotificationSound
+            playNotificationSound,
+            socket: socketRef.current
         }}>
             {children}
         </OrderNotificationContext.Provider>

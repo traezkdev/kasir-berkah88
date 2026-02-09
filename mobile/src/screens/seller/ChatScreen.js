@@ -9,7 +9,7 @@ import {
     Platform,
     Image,
     ActivityIndicator,
-    SafeAreaView,
+
     StatusBar,
     Modal,
     KeyboardAvoidingView,
@@ -35,6 +35,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useChat } from '../../context/ChatContext';
 import apiService, { API_URL } from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useOrderNotification } from '../../context/OrderNotificationContext';
 
@@ -71,7 +72,12 @@ const MessageItem = memo(({ item, isMine, formatTime }) => {
                             {item.sending ? (
                                 <Clock size={10} color="rgba(255,255,255,0.5)" />
                             ) : (
-                                <Check size={10} color={item.is_read ? '#FFFFFF' : 'rgba(255,255,255,0.5)'} />
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Check size={10} color={item.is_read ? '#38BDF8' : 'rgba(255,255,255,0.5)'} />
+                                    <View style={{ marginLeft: -6 }}>
+                                        <Check size={10} color={item.is_read ? '#38BDF8' : 'rgba(255,255,255,0.5)'} />
+                                    </View>
+                                </View>
                             )}
                         </View>
                     )}
@@ -203,7 +209,7 @@ const ChatScreen = ({ navigation }) => {
         setActiveOrder,
         fetchConversations
     } = useChat();
-    const { onlineUsers } = useOrderNotification();
+    const { onlineUsers, socket } = useOrderNotification();
 
     const [messages, setMessages] = useState([]);
     const [isTransitioning, setIsTransitioning] = useState(false);
@@ -349,7 +355,6 @@ const ChatScreen = ({ navigation }) => {
         }
     }, [activeChat, user, setActiveOrder]);
 
-    // WhatsApp-style: Longer polling interval (or use WebSocket in production)
     useEffect(() => {
         if (activeChat) {
             setIsTransitioning(true);
@@ -359,18 +364,61 @@ const ChatScreen = ({ navigation }) => {
                 markAsRead(activeChat.user_id);
             });
 
-            // Poll every 15 seconds (WhatsApp uses WebSocket, but this is acceptable fallback)
-            const interval = setInterval(() => {
-                fetchMessages();
-            }, 15000);
-
             return () => {
                 task.cancel();
-                clearInterval(interval);
             };
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeChat?.user_id]); // Only re-run if USER ID changes, not object reference
+
+    // Listen for real-time socket events
+    useEffect(() => {
+        if (!socket || !user) return;
+
+        const handleNewMessage = (msg) => {
+            if (!activeChat) return;
+
+            // Ignore messages sent by myself (already handled by optimistic update)
+            if (String(msg.sender_id) === String(user.id)) return;
+
+            // If the message is from the person I'm chatting with
+            const isRelevant = String(msg.sender_id) === String(activeChat.user_id) && String(msg.receiver_id) === String(user.id);
+
+            if (isRelevant) {
+                setMessages(prev => {
+                    // Avoid duplicates
+                    if (prev.some(m => String(m.id) === String(msg.id))) return prev;
+                    return [...prev, msg];
+                });
+
+                // Mark it as read since I'm viewing the chat
+                markAsRead(activeChat.user_id);
+            }
+        };
+
+        const handleMessagesRead = ({ readerId, senderId }) => {
+            if (!activeChat) return;
+
+            // If the person I'm chatting with (readerId) just read my messages (senderId)
+            const isPartnerReadingMyMsgs = String(readerId) === String(activeChat.user_id) && String(senderId) === String(user.id);
+
+            // Or if I'm a seller and another seller read the messages
+            const sellerRoles = ['admin', 'owner', 'penjual', 'kasir'];
+            const isOtherSellerReading = sellerRoles.includes(user.role) && String(senderId) === String(activeChat.user_id);
+
+            if (isPartnerReadingMyMsgs || isOtherSellerReading) {
+                setMessages(prev => prev.map(m => ({ ...m, is_read: 1 })));
+            }
+        };
+
+        socket.on('new_message', handleNewMessage);
+        socket.on('messages_read', handleMessagesRead);
+
+        return () => {
+            socket.off('new_message', handleNewMessage);
+            socket.off('messages_read', handleMessagesRead);
+        };
+    }, [socket, activeChat, user, markAsRead]);
 
     // For customers, auto-select the first contact (admin/seller)
     useEffect(() => {
@@ -490,7 +538,7 @@ const ChatScreen = ({ navigation }) => {
 
     if (activeChat) {
         return (
-            <View style={styles.container}>
+            <SafeAreaView style={styles.container}>
                 {/* Message Header */}
                 <View style={styles.header}>
                     <View style={styles.headerLeft}>
@@ -607,7 +655,7 @@ const ChatScreen = ({ navigation }) => {
                         </>
                     )}
                 </KeyboardAvoidingView>
-            </View>
+            </SafeAreaView>
         );
     }
 
@@ -756,7 +804,7 @@ const styles = StyleSheet.create({
         paddingBottom: 15,
         borderBottomWidth: 1,
         borderBottomColor: '#F1F5F9',
-        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 15 : (Platform.OS === 'ios' ? 50 : 25),
+        paddingTop: 15,
     },
     headerLeft: {
         flexDirection: 'row',

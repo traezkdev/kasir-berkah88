@@ -11,6 +11,7 @@ const CustomerDashboard = () => {
     const [categories, setCategories] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [userName, setUserName] = useState('Pelanggan');
+    const [points, setPoints] = useState(0);
     const { isOpen } = useAppSettings();
 
     const [banners, setBanners] = useState([]);
@@ -43,6 +44,15 @@ const CustomerDashboard = () => {
                 const catRes = await authFetch(`${import.meta.env.VITE_API_URL}/api/categories`);
                 const catData = await catRes.json();
                 if (catData.data) setCategories(catData.data.slice(0, 5));
+
+                // Fetch Points
+                try {
+                    const pointsRes = await authFetch(`${import.meta.env.VITE_API_URL}/api/customer/points`);
+                    const pointsData = await pointsRes.json();
+                    if (pointsData.data) setPoints(pointsData.data.points);
+                } catch (pErr) {
+                    console.log("Error fetching points:", pErr.message);
+                }
 
                 // Fetch Recommended Menus (Top 5)
                 const menuRes = await authFetch(`${import.meta.env.VITE_API_URL}/api/menu-items?limit=6`);
@@ -209,17 +219,14 @@ const CustomerDashboard = () => {
                 {/* Saldo Section */}
                 <div className="p-5 flex justify-between items-center border-b border-gray-50">
                     <div className="flex flex-col">
-                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.15em] mb-0.5">BerkahPay</span>
-                        <span className="text-xl font-black text-gray-900 tracking-tight">Rp 0</span>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.15em] mb-0.5">Poin Berkah 88</span>
+                        <span className="text-xl font-black text-gray-900 tracking-tight">{new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(points)} Poin</span>
                     </div>
                     <div className="flex gap-4">
-                        <div className="flex flex-col items-center gap-1 cursor-pointer group">
-                            <div className="bg-green-50 p-2 rounded-xl text-green-600 border border-green-100 group-active:scale-90 transition-transform">
-                                <Icon name="PlusCircle" className="w-5 h-5" />
-                            </div>
-                            <span className="text-[9px] font-black text-gray-500 uppercase">Top Up</span>
-                        </div>
-                        <div className="flex flex-col items-center gap-1 cursor-pointer group">
+                        <div
+                            onClick={() => navigate('/customer/points-history')}
+                            className="flex flex-col items-center gap-1 cursor-pointer group"
+                        >
                             <div className="bg-blue-50 p-2 rounded-xl text-blue-600 border border-blue-100 group-active:scale-90 transition-transform">
                                 <Icon name="History" className="w-5 h-5" />
                             </div>

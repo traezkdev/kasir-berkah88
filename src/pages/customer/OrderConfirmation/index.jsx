@@ -16,6 +16,15 @@ const CustomerOrderConfirmation = () => {
     const [selectedOrderForRating, setSelectedOrderForRating] = useState(null);
     const [submittingRating, setSubmittingRating] = useState(false);
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+    const [scrolled, setScrolled] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 20);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     const handleChatWithSeller = async (order = null) => {
         try {
@@ -25,7 +34,7 @@ const CustomerOrderConfirmation = () => {
                 const staff = data.data.find(c => c.role === 'admin') || data.data[0];
                 setActiveChat({ user_id: staff.id, ...staff });
                 if (order) setActiveOrder(order);
-                setIsOpen(true);
+                navigate('/customer/chat');
             }
         } catch (error) {
             console.error("Error starting chat:", error);
@@ -35,7 +44,7 @@ const CustomerOrderConfirmation = () => {
     const fetchOrders = useCallback(async (pageNum = 1) => {
         try {
             if (pageNum === 1) setIsLoading(true);
-            const response = await authFetch(`${API_URL}/api/orders?page=${pageNum}&limit=5`);
+            const response = await authFetch(`${API_URL}/api/orders?page=${pageNum}&limit=10`);
             const result = await response.json();
 
             if (result.message === 'success') {
@@ -45,7 +54,7 @@ const CustomerOrderConfirmation = () => {
                 } else {
                     setOrders(prev => [...prev, ...newOrders]);
                 }
-                setHasMore(newOrders.length === 5);
+                setHasMore(newOrders.length === 10);
                 setPage(pageNum);
             }
         } catch (error) {
@@ -81,13 +90,17 @@ const CustomerOrderConfirmation = () => {
     const getStatusInfo = (status) => {
         switch (status) {
             case 'pending':
-                return { label: 'Menunggu', icon: 'Clock', color: 'text-yellow-500', bg: 'bg-yellow-50' };
+                return { label: 'Baru', icon: 'Clock', color: 'text-yellow-500', bg: 'bg-yellow-50' };
             case 'accepted':
-                return { label: 'Diterima', icon: 'CheckCircle', color: 'text-green-600', bg: 'bg-green-50' };
+                return { label: 'Diproses', icon: 'ShoppingBag', color: 'text-blue-500', bg: 'bg-blue-50' };
+            case 'ready':
+                return { label: 'Siap Diambil', icon: 'CheckCircle', color: 'text-green-500', bg: 'bg-green-50' };
             case 'rejected':
-                return { label: 'Ditolak', icon: 'XCircle', color: 'text-red-600', bg: 'bg-red-50' };
+                return { label: 'Ditolak', icon: 'XCircle', color: 'text-red-500', bg: 'bg-red-50' };
             case 'cancelled':
-                return { label: 'Dibatalkan', icon: 'Slash', color: 'text-gray-400', bg: 'bg-gray-50' };
+                return { label: 'Batal', icon: 'Slash', color: 'text-gray-400', bg: 'bg-gray-50' };
+            case 'completed':
+                return { label: 'Selesai', icon: 'CheckCircle', color: 'text-emerald-600', bg: 'bg-emerald-50' };
             default:
                 return { label: status, icon: 'Info', color: 'text-gray-500', bg: 'bg-gray-50' };
         }
@@ -151,13 +164,17 @@ const CustomerOrderConfirmation = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-24 font-sans">
-            <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-8 pb-16 text-white rounded-b-[2.5rem] shadow-lg mb-[-40px]">
-                <div className="flex items-center gap-3 mb-2">
-                    <button onClick={() => navigate('/customer/dashboard')} className="p-2 bg-white/20 rounded-full">
-                        <Icon name="ArrowLeft" className="w-5 h-5 text-white" />
+            {/* Fixed Header */}
+            <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 px-8 ${scrolled ? 'bg-white shadow-md py-5' : 'bg-transparent py-8'}`}>
+                <div className="flex items-center gap-3">
+                    <button onClick={() => navigate('/customer/dashboard')} className={`p-2 rounded-full transition-colors ${scrolled ? 'bg-gray-100' : 'bg-white/20'}`}>
+                        <Icon name="ArrowLeft" className={`w-5 h-5 ${scrolled ? 'text-gray-800' : 'text-white'}`} />
                     </button>
-                    <h1 className="text-2xl font-black tracking-tight">Status Pesanan</h1>
+                    <h1 className={`text-2xl font-black tracking-tight transition-colors ${scrolled ? 'text-gray-800' : 'text-white'}`}>Status Pesanan</h1>
                 </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-8 pt-20 pb-16 text-white rounded-b-[2.5rem] shadow-lg mb-[-40px]">
                 <p className="text-green-100 text-xs font-medium opacity-80 uppercase tracking-widest ml-12">Lacak Pesanan Anda Secara Real-time</p>
             </div>
 
@@ -199,12 +216,15 @@ const CustomerOrderConfirmation = () => {
                                 </div>
 
                                 <div className="space-y-3 mb-4">
-                                    {items.map((item, idx) => (
+                                    {items.slice(0, 2).map((item, idx) => (
                                         <div key={idx} className="flex justify-between items-center text-sm">
                                             <span className="text-gray-600 font-bold">{item.name} <span className="text-gray-400 ml-1">x{item.quantity}</span></span>
                                             <span className="text-gray-900 font-black">{formatCurrency(item.price * item.quantity)}</span>
                                         </div>
                                     ))}
+                                    {items.length > 2 && (
+                                        <p className="text-[11px] text-gray-400 italic mt-2">+{items.length - 2} item lainnya</p>
+                                    )}
                                 </div>
 
                                 <div className="pt-4 border-t border-dashed border-gray-100 space-y-4">
@@ -241,16 +261,15 @@ const CustomerOrderConfirmation = () => {
                                         >
                                             <Icon name="RefreshCw" className="w-4 h-4" />
                                         </button>
-                                        {order.status === 'accepted' && (
-                                            <button
-                                                className="flex-1 bg-amber-50 text-amber-600 font-extrabold py-3 rounded-2xl active:scale-95 transition-all text-xs uppercase tracking-wider border border-amber-100 flex items-center justify-center gap-2"
-                                                onClick={() => handleOpenRatingModal(order)}
-                                            >
-                                                <Icon name="Star" className="w-4 h-4 fill-current" />
-                                                Beri Ulasan
-                                            </button>
-                                        )}
                                     </div>
+
+                                    <button
+                                        onClick={() => navigate(`/customer/order-details/${order.id}`)}
+                                        className="w-full flex items-center justify-center gap-2 bg-green-50 text-green-600 py-3 rounded-2xl active:scale-95 transition-all border border-green-100"
+                                    >
+                                        <span className="text-[11px] font-black uppercase tracking-wider">Lihat Detail</span>
+                                        <Icon name="ChevronRight" className="w-3.5 h-3.5" />
+                                    </button>
                                 </div>
                             </div>
                         );

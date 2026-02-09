@@ -5742,9 +5742,15 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
             sender_id // excludedUserId
         );
 
+        const io = req.app.get('io');
+        const messageData = { id: result.insertId, sender_id, receiver_id, message, order_id, image_url: processedImageUrl, created_at: new Date() };
+
+        // Emit to the specific receiver
+        io.emit('new_message', messageData);
+
         res.status(201).json({
             message: "Pesan terkirim",
-            data: { id: result.insertId, sender_id, receiver_id, message, order_id, image_url: processedImageUrl, created_at: new Date() }
+            data: messageData
         });
     } catch (err) {
         console.error("Error sending message:", err);
@@ -5915,6 +5921,13 @@ app.put("/api/messages/read/:senderId", authenticateToken, async (req, res) => {
             sql = "UPDATE messages SET is_read = 1 WHERE sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND receiver_id = ? AND is_read = 0";
             await db.query(sql, [myId]);
         }
+
+        const io = req.app.get('io');
+        io.emit('messages_read', {
+            readerId: myId,
+            senderId: senderId,
+            isSeller: isSeller
+        });
 
         res.json({ message: "Pesan ditandai sudah dibaca" });
     } catch (err) {

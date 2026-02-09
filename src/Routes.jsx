@@ -69,6 +69,9 @@ import SellerChatPage from './pages/seller/Chat';
 import AdminChatPage from './pages/admin/Chat';
 import PointLoyalty from './pages/PointLoyalty';
 import CustomerManagement from './pages/CustomerManagement';
+import CustomerPointsHistory from './pages/customer/PointsHistory';
+import CustomerOrderDetails from './pages/customer/OrderDetails';
+import CustomerChat from './pages/customer/Chat';
 
 // ... (existing imports)
 
@@ -274,6 +277,9 @@ const AppRoutes = () => {
         <Route path="/customer/cart" element={<CustomerCart />} />
         <Route path="/customer/profile" element={<CustomerProfile />} />
         <Route path="/customer/order-confirmation" element={<CustomerOrderConfirmation />} />
+        <Route path="/customer/points-history" element={<CustomerPointsHistory />} />
+        <Route path="/customer/order-details/:orderId" element={<CustomerOrderDetails />} />
+        <Route path="/customer/chat" element={<CustomerChat />} />
 
       </Route>
 
