@@ -31,7 +31,12 @@ import {
     Wallet,
     Copy,
     Info,
-    ShoppingBag
+    ShoppingBag,
+    Bell,
+    Home,
+    Search,
+    ClipboardList,
+    User
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
 
@@ -198,7 +203,9 @@ const PromoScreen = ({ navigation }) => {
                     <ArrowLeft size={24} color="#1E293B" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Promo & Penawaran</Text>
-                <View style={{ width: 40 }} />
+                <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={styles.backBtn}>
+                    <Bell size={24} color="#1E293B" />
+                </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -328,6 +335,7 @@ const PromoScreen = ({ navigation }) => {
                     </View>
                 </View>
             </Modal>
+
         </SafeAreaView>
     );
 };
@@ -780,6 +788,11 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '800',
         color: '#FFFFFF',
+    },
+    activeNavLabel: {
+        color: '#059669',
+        fontWeight: '900',
+        marginTop: 2,
     }
 });
 

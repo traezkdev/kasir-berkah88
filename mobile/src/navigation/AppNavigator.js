@@ -12,7 +12,8 @@ import {
     Utensils,
     History,
     MessageCircle,
-    Search
+    Search,
+    Ticket
 } from 'lucide-react-native';
 import NewOrderPopup from '../components/NewOrderPopup';
 import { useAuth } from '../context/AuthContext';
@@ -52,7 +53,7 @@ import OrderDetails from '../screens/customer/OrderDetails';
 import CustomerProfile from '../screens/customer/CustomerProfile';
 import PointsHistory from '../screens/customer/PointsHistory';
 import PromoScreen from '../screens/customer/PromoScreen';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 const Tab = createBottomTabNavigator();
@@ -130,36 +131,119 @@ const SellerRootStack = () => (
     </Stack.Navigator>
 );
 
+const CustomCustomerTabBar = ({ state, descriptors, navigation }) => {
+    return (
+        <View style={navStyles.bottomNav}>
+            {state.routes.map((route, index) => {
+                const { options } = descriptors[route.key];
+                const label = options.tabBarLabel !== undefined ? options.tabBarLabel : options.title !== undefined ? options.title : route.name;
+                const isFocused = state.index === index;
+
+                const onPress = () => {
+                    const event = navigation.emit({
+                        type: 'tabPress',
+                        target: route.key,
+                        canPreventDefault: true,
+                    });
+
+                    if (!isFocused && !event.defaultPrevented) {
+                        navigation.navigate(route.name);
+                    }
+                };
+
+                const iconColor = isFocused ? '#059669' : '#94A3B8';
+                const strokeWidth = isFocused ? 2.5 : 2;
+
+                const renderIcon = () => {
+                    if (route.name === 'Home') return <Home size={24} color={iconColor} strokeWidth={strokeWidth} />;
+                    if (route.name === 'Menu') return <Search size={24} color={iconColor} strokeWidth={strokeWidth} />;
+                    if (route.name === 'Promo') {
+                        return (
+                            <View style={[navStyles.promoIconContainer, isFocused && navStyles.activePromoIcon]}>
+                                <Ticket size={24} color={isFocused ? '#FFFFFF' : '#059669'} fill={isFocused ? '#FFFFFF' : 'none'} strokeWidth={2.5} />
+                            </View>
+                        );
+                    }
+                    if (route.name === 'Orders') return <ClipboardList size={24} color={iconColor} strokeWidth={strokeWidth} />;
+                    if (route.name === 'Profile') return <User size={24} color={iconColor} strokeWidth={strokeWidth} />;
+                    return null;
+                };
+
+                return (
+                    <TouchableOpacity
+                        key={index}
+                        onPress={onPress}
+                        style={[navStyles.navItem, route.name === 'Promo' && navStyles.promoNavItem]}
+                        activeOpacity={0.7}
+                    >
+                        {renderIcon()}
+                        <Text style={[navStyles.navLabel, isFocused && navStyles.activeNavLabel]}>
+                            {label}
+                        </Text>
+                    </TouchableOpacity>
+                );
+            })}
+        </View>
+    );
+};
+
+const navStyles = {
+    bottomNav: {
+        flexDirection: 'row',
+        backgroundColor: '#FFFFFF',
+        borderTopWidth: 1,
+        borderTopColor: '#F1F5F9',
+        paddingTop: 12,
+        paddingBottom: Platform.OS === 'ios' ? 30 : 15,
+        paddingHorizontal: 16,
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        height: Platform.OS === 'ios' ? 95 : 75,
+    },
+    navItem: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+    },
+    promoNavItem: {
+        marginTop: -20,
+    },
+    promoIconContainer: {
+        width: 54,
+        height: 54,
+        borderRadius: 20,
+        backgroundColor: '#ECFDF5',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#D1FAE5',
+        ...Platform.select({
+            web: { boxShadow: '0px 8px 15px rgba(5, 150, 105, 0.15)' },
+            android: { elevation: 6 }
+        })
+    },
+    activePromoIcon: {
+        backgroundColor: '#059669',
+        borderColor: '#059669',
+    },
+    navLabel: {
+        fontSize: 9,
+        fontWeight: '700',
+        color: '#94A3B8',
+        textTransform: 'uppercase',
+    },
+    activeNavLabel: {
+        color: '#059669',
+        fontWeight: '900',
+    }
+};
+
 const CustomerTabs = () => {
     return (
         <Tab.Navigator
-            screenOptions={({ route }) => ({
-                headerShown: false,
-                tabBarStyle: {
-                    height: 75,
-                    paddingBottom: 15,
-                    paddingTop: 10,
-                    backgroundColor: '#FFFFFF',
-                    borderTopWidth: 1,
-                    borderTopColor: '#F1F5F9',
-                },
-                tabBarActiveTintColor: '#059669',
-                tabBarInactiveTintColor: '#94A3B8',
-                tabBarLabelStyle: {
-                    fontSize: 9,
-                    fontWeight: '900',
-                    textTransform: 'uppercase',
-                    letterSpacing: 0,
-                },
-                tabBarIcon: ({ color, size, focused }) => {
-                    const iconProps = { size, color, strokeWidth: focused ? 2.5 : 2 };
-                    if (route.name === 'Home') return <Home {...iconProps} />;
-                    if (route.name === 'Menu') return <Search {...iconProps} />;
-                    if (route.name === 'Orders') return <ClipboardList {...iconProps} />;
-                    if (route.name === 'Profile') return <User {...iconProps} />;
-                    return null;
-                },
-            })}
+            tabBar={props => <CustomCustomerTabBar {...props} />}
+            screenOptions={{ headerShown: false }}
         >
             <Tab.Screen
                 name="Home"
@@ -170,6 +254,11 @@ const CustomerTabs = () => {
                 name="Menu"
                 component={CustomerMenu}
                 options={{ tabBarLabel: 'Cari' }}
+            />
+            <Tab.Screen
+                name="Promo"
+                component={PromoScreen}
+                options={{ tabBarLabel: 'Promo' }}
             />
             <Tab.Screen
                 name="Orders"

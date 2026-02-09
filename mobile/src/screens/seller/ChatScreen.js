@@ -218,6 +218,15 @@ const ChatScreen = ({ navigation }) => {
     const [isOptionsVisible, setIsOptionsVisible] = useState(false);
     const listRef = useRef(null);
     const lastFetchTime = useRef(0);
+    const autoSelectAttempted = useRef(false);
+    const activeChatRef = useRef(activeChat);
+    const userRef = useRef(user);
+
+    // Keep refs in sync
+    useEffect(() => {
+        activeChatRef.current = activeChat;
+        userRef.current = user;
+    }, [activeChat, user]);
 
     const themeColor = '#138FEA';
 
@@ -353,60 +362,92 @@ const ChatScreen = ({ navigation }) => {
         } catch (e) {
             console.error("Error fetching active order:", e);
         }
-    }, [activeChat, user, setActiveOrder]);
+    }, [activeChat?.user_id, user?.id, user?.role, user?.userId, setActiveOrder]);
 
     useEffect(() => {
         if (activeChat) {
             setIsTransitioning(true);
-            const task = InteractionManager.runAfterInteractions(() => {
-                fetchMessages();
-                fetchActiveOrder();
-                markAsRead(activeChat.user_id);
-            });
 
-            return () => {
-                task.cancel();
-            };
+            // Execute fetching directly without InteractionManager to prevent deadlock
+            fetchMessages();
+            fetchActiveOrder();
+            markAsRead(activeChat.user_id);
+
+            // Safety timeout: Ensure loading stops after 5s if fetch hangs
+            const timer = setTimeout(() => {
+                setIsTransitioning(false);
+            }, 5000);
+
+            return () => clearTimeout(timer);
         }
+
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeChat?.user_id]); // Only re-run if USER ID changes, not object reference
 
     // Listen for real-time socket events
     useEffect(() => {
-        if (!socket || !user) return;
+        if (!socket) return; // Subscribe as long as socket exists
 
         const handleNewMessage = (msg) => {
-            if (!activeChat) return;
+            const currentActiveChat = activeChatRef.current;
+            const currentUser = userRef.current;
+
+            // Validate in handler to allow latet user hydration
+            if (!currentActiveChat || !currentUser) return;
 
             // Ignore messages sent by myself (already handled by optimistic update)
-            if (String(msg.sender_id) === String(user.id)) return;
+            if (String(msg.sender_id) === String(currentUser.id)) return;
 
-            // If the message is from the person I'm chatting with
-            const isRelevant = String(msg.sender_id) === String(activeChat.user_id) && String(msg.receiver_id) === String(user.id);
+            const partnerId = String(currentActiveChat.user_id);
+            const msgSender = String(msg.sender_id);
+            const msgReceiver = String(msg.receiver_id);
 
-            if (isRelevant) {
+            // Logic Relevansi Pesan:
+            // 1. Pesan DARI Partner Chat (Customer mengirim ke Toko)
+            const isFromPartner = msgSender === partnerId;
+
+            // 2. Pesan KE Partner Chat (Staff lain membalas Customer ini)
+            // Ini memungkinkan fitur "Shared Inbox" realtime antar seller
+            const isToPartner = msgReceiver === partnerId;
+
+            // 3. KHUSUS PELANGGAN: Terima pesan dari SIAPAPUN yang ditujukan ke saya
+            // Karena pelanggan bisa menerima pesan dari Admin, Owner, atau Kasir (beda ID)
+            const isCustomer = currentUser.role === 'pelanggan' || currentUser.role === 'user';
+            const isToMe = msgReceiver === String(currentUser.id);
+
+            if (isFromPartner || isToPartner || (isCustomer && isToMe)) {
                 setMessages(prev => {
                     // Avoid duplicates
                     if (prev.some(m => String(m.id) === String(msg.id))) return prev;
                     return [...prev, msg];
                 });
 
-                // Mark it as read since I'm viewing the chat
-                markAsRead(activeChat.user_id);
+                // Jika pesan dari partner atau untuk saya (pelanggan), tandai sebagai dibaca
+                if (isFromPartner || (isCustomer && isToMe)) {
+                    // Untuk pelanggan, kita markAsRead sender pesan ini (siapapun staffnya)
+                    markAsRead(msg.sender_id);
+                }
             }
         };
 
         const handleMessagesRead = ({ readerId, senderId }) => {
-            if (!activeChat) return;
+            const currentActiveChat = activeChatRef.current;
+            const currentUser = userRef.current;
 
-            // If the person I'm chatting with (readerId) just read my messages (senderId)
-            const isPartnerReadingMyMsgs = String(readerId) === String(activeChat.user_id) && String(senderId) === String(user.id);
+            if (!currentActiveChat || !currentUser) return;
 
-            // Or if I'm a seller and another seller read the messages
-            const sellerRoles = ['admin', 'owner', 'penjual', 'kasir'];
-            const isOtherSellerReading = sellerRoles.includes(user.role) && String(senderId) === String(activeChat.user_id);
+            const partnerId = String(currentActiveChat.user_id);
+            const rId = String(readerId);
+            const sId = String(senderId);
 
-            if (isPartnerReadingMyMsgs || isOtherSellerReading) {
+            // 1. Partner (di chat ini) terlibat (membaca atau dibaca)
+            const isPartnerInvolved = rId === partnerId || sId === partnerId;
+
+            // 2. KHUSUS PELANGGAN: Pesan SAYA dibaca oleh SIAPAPUN (Staff Toko)
+            const isCustomer = currentUser.role === 'pelanggan' || currentUser.role === 'user';
+            const isMyMessageRead = isCustomer && sId === String(currentUser.id);
+
+            if (isPartnerInvolved || isMyMessageRead) {
                 setMessages(prev => prev.map(m => ({ ...m, is_read: 1 })));
             }
         };
@@ -418,7 +459,7 @@ const ChatScreen = ({ navigation }) => {
             socket.off('new_message', handleNewMessage);
             socket.off('messages_read', handleMessagesRead);
         };
-    }, [socket, activeChat, user, markAsRead]);
+    }, [socket, markAsRead]); // Keep stable dependencies
 
     // For customers, auto-select the first contact (admin/seller)
     useEffect(() => {
