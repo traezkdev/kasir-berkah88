@@ -13,9 +13,9 @@ import {
     StatusBar,
     RefreshControl,
     Animated,
-    AppState,
-    SafeAreaView
+    AppState
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Search,
     ShoppingCart,
@@ -207,7 +207,7 @@ const CustomerDashboard = ({ navigation }) => {
 
     return (
         <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
-            <StatusBar barStyle="light-content" backgroundColor="#059669" />
+            <StatusBar barStyle="light-content" backgroundColor="#059669" translucent={false} />
 
             {/* Compact Header on Scroll */}
             <Animated.View style={[styles.compactHeader, { transform: [{ translateY: compactHeaderTranslateY }] }]}>
@@ -414,7 +414,7 @@ const CustomerDashboard = ({ navigation }) => {
                                 styles.bannerCard,
                                 { backgroundColor: getBannerColor(banner.color_class) }
                             ]}
-                            onPress={() => navigation.navigate('PromoScreen')}
+                            onPress={() => navigation.navigate('Promo')}
                         >
                             <View style={styles.bannerInfo}>
                                 <Text style={styles.bannerTitle}>{banner.title}</Text>

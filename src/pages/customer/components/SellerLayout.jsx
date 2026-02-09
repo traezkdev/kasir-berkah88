@@ -28,6 +28,7 @@ const SellerLayout = () => {
         { name: 'Menu', path: '/seller/menu-management', icon: 'Utensils', label: 'Katalog' },
         { name: 'Riwayat', path: '/seller/transaction-history', icon: 'History', label: 'Transaksi' },
         { name: 'Banner', path: '/seller/banners', icon: 'Image', label: 'Banner' },
+        { name: 'Promo', path: '/seller/promos', icon: 'Ticket', label: 'Promo' },
         { name: 'Poin', path: '/point-loyalty', icon: 'Gift', label: 'Loyalty' },
     ];
 
