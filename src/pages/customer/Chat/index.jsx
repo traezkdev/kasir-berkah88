@@ -424,7 +424,7 @@ const CustomerChat = () => {
                                 );
                             })
                         ) : (
-                            <div className="flex flex-col items-center justify-center h-full text-center p-6 opacity-60 transform rotate-180">
+                            <div className="flex flex-col items-center justify-center h-full text-center p-6 opacity-60">
                                 <FiMessageCircle size={48} className="text-gray-300 mb-4" />
                                 <p className="text-sm text-gray-400 font-bold">Mulai percakapan dengan sapaan hangat!</p>
                             </div>
