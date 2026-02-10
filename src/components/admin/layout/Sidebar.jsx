@@ -5,7 +5,7 @@ import {
   FaUsers, FaCog, FaFileInvoiceDollar, FaCalculator, FaBook, FaSignOutAlt, FaRobot,
   FaCashRegister, FaExclamationTriangle, FaTrashAlt, FaWallet, FaBalanceScale,
   FaFileAlt, FaHandHoldingUsd, FaUserCircle, FaHistory, FaCheckCircle, FaBars, FaAngleDoubleLeft, FaAngleDoubleRight,
-  FaGift
+  FaGift, FaInfoCircle
 } from 'react-icons/fa';
 
 import { useAppSettings } from '../../../contexts/AppSettingsContext';
@@ -321,7 +321,8 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
                 Stok Bahan Mentah
               </MenuItem>
               <MenuItem
-                to="/admin/promos"
+
+                to="/promos"
                 icon={FaGift}
                 onClick={() => window.innerWidth < 1024 && toggleSidebar()}
                 isCollapsed={isCollapsed}
@@ -331,6 +332,18 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
                 activeLinkClasses={activeLinkClasses}
               >
                 Manajemen Promo
+              </MenuItem>
+              <MenuItem
+                to="/information"
+                icon={FaInfoCircle}
+                onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+                isCollapsed={isCollapsed}
+                handleMouseEnter={handleMouseEnter}
+                handleMouseLeave={handleMouseLeave}
+                navLinkClasses={navLinkClasses}
+                activeLinkClasses={activeLinkClasses}
+              >
+                Pusat Informasi
               </MenuItem>
               <MenuItem
                 to="/main-critical-stock"

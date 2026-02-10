@@ -10,10 +10,11 @@ import {
     Alert,
     Image,
     KeyboardAvoidingView,
-    Platform
+    Platform,
+    Switch // Added Switch for visibility toggle
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Plus, Trash2, Image as ImageIcon, Send, X, Camera, CheckCircle2, BellOff, Edit2, Link2, ExternalLink, ChevronRight } from 'lucide-react-native';
+import { ChevronLeft, Plus, Trash2, Image as ImageIcon, Send, X, Camera, CheckCircle2, BellOff, Edit2, Link2, ExternalLink, ChevronRight, Eye, EyeOff } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import apiService, { API_URL } from '../../api/apiService';
 import BottomModalTemplate from '../../components/templates/BottomModalTemplate';
@@ -29,6 +30,7 @@ const ManageInformation = ({ navigation }) => {
     // Form states
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
+    const [isActive, setIsActive] = useState(true); // Default active
     const [image, setImage] = useState(null);
     const [editingId, setEditingId] = useState(null);
     const [showImageModal, setShowImageModal] = useState(false);
@@ -178,7 +180,8 @@ const ManageInformation = ({ navigation }) => {
                     content,
                     image_url: image,
                     link_type: linkType,
-                    link_value: linkValue
+                    link_value: linkValue,
+                    is_active: isActive // Send active status
                 });
                 showToast('Informasi berhasil diperbarui!', 'success');
             } else {
@@ -187,7 +190,8 @@ const ManageInformation = ({ navigation }) => {
                     content,
                     image_url: image,
                     link_type: linkType,
-                    link_value: linkValue
+                    link_value: linkValue,
+                    is_active: isActive // Send active status
                 });
                 showToast('Informasi berhasil disimpan!', 'success');
             }
@@ -198,6 +202,7 @@ const ManageInformation = ({ navigation }) => {
             setLinkType('none');
             setLinkValue(null);
             setSelectedProductName('');
+            setIsActive(true); // Reset to true
             setEditingId(null);
             setShowForm(false);
             // Kembali ke halaman 1 jika menambah data baru, tetap di halaman saat ini jika edit
@@ -217,6 +222,7 @@ const ManageInformation = ({ navigation }) => {
         setImage(info.image_url ? info.image_url : null);
         setLinkType(info.link_type || 'none');
         setLinkValue(info.link_value);
+        setIsActive(info.is_active !== 0 && info.is_active !== false); // Handle 0 or false
 
         if (info.link_type === 'product' && info.link_value) {
             const product = menuItems.find(m => m.id === info.link_value);
@@ -240,6 +246,7 @@ const ManageInformation = ({ navigation }) => {
         setLinkType('none');
         setLinkValue(null);
         setSelectedProductName('');
+        setIsActive(true); // Reset
         setShowForm(false);
     };
 
@@ -272,6 +279,10 @@ const ManageInformation = ({ navigation }) => {
     };
 
     const handleBroadcast = (info) => {
+        if (!info.is_active && info.is_active !== undefined) {
+            showToast('Informasi harus ditampilkan/aktif untuk dibroadcast', 'warning');
+            return;
+        }
         setPendingInfo(info);
         setShowConfirmModal(true);
     };
@@ -287,6 +298,27 @@ const ManageInformation = ({ navigation }) => {
             showToast('Gagal mengirim broadcast', 'error');
         } finally {
             setPendingInfo(null);
+        }
+    };
+
+    const handleToggleStatus = async (info) => {
+        try {
+            // Optimistic update
+            const updatedInfos = infos.map(item =>
+                item.id === info.id ? { ...item, is_active: !item.is_active } : item
+            );
+            setInfos(updatedInfos);
+
+            // We need to send content as well because backend PUT requires validation
+            await apiService.put(`/api/information/${info.id}`, {
+                ...info,
+                is_active: !info.is_active
+            });
+            showToast(`Informasi berhasil ${!info.is_active ? 'ditampilkan' : 'disembunyikan'}`, 'success');
+        } catch (error) {
+            console.error('Error toggling status:', error);
+            showToast('Gagal mengubah status', 'error');
+            fetchInfos(currentPage); // Revert on error
         }
     };
 
@@ -392,6 +424,12 @@ const ManageInformation = ({ navigation }) => {
                                                     <Text style={[styles.cardLinkText, { color: '#F59E0B' }]}>Tautan: Promo</Text>
                                                 </View>
                                             )}
+                                            {(!info.is_active) && (
+                                                <View style={styles.hiddenBadge}>
+                                                    <EyeOff size={10} color="#64748B" />
+                                                    <Text style={styles.hiddenBadgeText}>Tersembunyi</Text>
+                                                </View>
+                                            )}
                                         </View>
                                     </View>
 
@@ -407,6 +445,16 @@ const ManageInformation = ({ navigation }) => {
                                             </View>
                                         </TouchableOpacity>
                                         <View style={styles.cardActions}>
+                                            <TouchableOpacity
+                                                style={[styles.modernActionBtn, { backgroundColor: info.is_active ? '#EEF2FF' : '#F1F5F9' }]}
+                                                onPress={() => handleToggleStatus(info)}
+                                            >
+                                                {info.is_active ? (
+                                                    <Eye size={16} color="#6366F1" />
+                                                ) : (
+                                                    <EyeOff size={16} color="#94A3B8" />
+                                                )}
+                                            </TouchableOpacity>
                                             <TouchableOpacity
                                                 style={styles.modernActionBtn}
                                                 onPress={() => handleEdit(info)}
@@ -626,6 +674,19 @@ const ManageInformation = ({ navigation }) => {
                                 onChangeText={setContent}
                                 textAlignVertical="top"
                                 placeholderTextColor="#94A3B8"
+                            />
+                        </View>
+
+                        <View style={styles.inputGroupRow}>
+                            <View>
+                                <Text style={styles.inputLabel}>Tampilkan ke Pelanggan</Text>
+                                <Text style={styles.inputSubLabel}>Sembunyikan jika masih draft</Text>
+                            </View>
+                            <Switch
+                                value={isActive}
+                                onValueChange={setIsActive}
+                                trackColor={{ false: "#E2E8F0", true: "#C7D2FE" }}
+                                thumbColor={isActive ? "#4F46E5" : "#f4f3f4"}
                             />
                         </View>
 
@@ -1366,6 +1427,35 @@ const styles = StyleSheet.create({
     paginationTextBold: {
         fontWeight: '900',
         color: '#1E293B',
+    },
+    hiddenBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F1F5F9',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+        gap: 4,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        alignSelf: 'flex-start',
+        marginTop: 6
+    },
+    hiddenBadgeText: {
+        fontSize: 10,
+        fontWeight: '800',
+        color: '#64748B'
+    },
+    inputGroupRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20
+    },
+    inputSubLabel: {
+        fontSize: 12,
+        color: '#94A3B8',
+        marginTop: 2
     }
 });
 

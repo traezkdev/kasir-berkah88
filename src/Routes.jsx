@@ -75,6 +75,7 @@ import CustomerChat from './pages/customer/Chat';
 import CustomerPromo from './pages/customer/Promo';
 import InformationCenter from './pages/customer/InformationCenter';
 import SellerPromoManagement from './pages/customer/Dashboard/SellerPromoManagement';
+import SellerInformationManagement from './pages/customer/Dashboard/SellerInformationManagement';
 
 // ... (existing imports)
 
@@ -209,7 +210,8 @@ const AppRoutes = () => {
         <Route path="/chatbot" element={<ChatbotPage />} />
         <Route path="/all-features" element={<AllFeatures />} />
         <Route path="/admin/chat" element={<AdminChatPage />} />
-        <Route path="/admin/promos" element={<SellerPromoManagement />} />
+        <Route path="/promos" element={<SellerPromoManagement />} />
+        <Route path="/information" element={<SellerInformationManagement />} />
       </Route>
 
 
@@ -308,6 +310,7 @@ const AppRoutes = () => {
         <Route path="/seller/receipt" element={<SellerReceipt />} />
         <Route path="/seller/chat" element={<SellerChatPage />} />
         <Route path="/seller/promos" element={<SellerPromoManagement />} />
+        <Route path="/seller/information" element={<SellerInformationManagement />} />
       </Route>
 
       {/* Catch all other routes */}

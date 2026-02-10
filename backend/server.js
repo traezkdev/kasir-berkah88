@@ -1447,14 +1447,17 @@ app.get("/api/information", authenticateToken, async (req, res) => {
         const limit = parseInt(req.query.limit, 10) || 10;
         const offset = (page - 1) * limit;
 
+        const isSeller = ['admin', 'owner', 'penjual', 'kasir'].includes(req.user.role);
+        const whereClause = isSeller ? "" : "WHERE is_active = 1";
+
         // Get total count
-        const countSql = "SELECT COUNT(*) as total FROM information";
+        const countSql = `SELECT COUNT(*) as total FROM information ${whereClause}`;
         const [countRows] = await db.query(countSql);
         const totalItems = countRows[0].total;
         const totalPages = Math.ceil(totalItems / limit);
 
         // Get paginated data
-        const sql = "SELECT * FROM information ORDER BY created_at DESC LIMIT ? OFFSET ?";
+        const sql = `SELECT * FROM information ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
         const [rows] = await db.query(sql, [limit, offset]);
 
         res.json({
@@ -1475,7 +1478,7 @@ app.get("/api/information", authenticateToken, async (req, res) => {
 // Add new information (Seller only)
 app.post("/api/information", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
     try {
-        const { title, content, image_url, link_type, link_value } = req.body;
+        const { title, content, image_url, link_type, link_value, is_active } = req.body;
         if (!title || !content) {
             return res.status(400).json({ error: "Judul dan isi informasi wajib diisi" });
         }
@@ -1486,14 +1489,15 @@ app.post("/api/information", authenticateToken, authorizeRoles('admin', 'owner',
             finalImageUrl = await processBase64Image(image_url, 'info');
         }
 
-        const sql = 'INSERT INTO information (title, content, image_url, link_type, link_value) VALUES (?, ?, ?, ?, ?)';
-        const [result] = await db.query(sql, [title, content, finalImageUrl, link_type || 'none', link_value || null]);
+        const activeVal = (is_active === 'false' || is_active === false || is_active === '0' || is_active === 0) ? 0 : 1;
+        const sql = 'INSERT INTO information (title, content, image_url, link_type, link_value, is_active) VALUES (?, ?, ?, ?, ?, ?)';
+        const [result] = await db.query(sql, [title, content, finalImageUrl, link_type || 'none', link_value || null, activeVal]);
 
         await logActivity(req.user.userId, 'Tambah Informasi', 'information', result.insertId, `Info baru: ${title}`);
 
         res.status(201).json({
             message: "success",
-            data: { id: result.insertId, title, content, image_url: finalImageUrl, link_type, link_value }
+            data: { id: result.insertId, title, content, image_url: finalImageUrl, link_type, link_value, is_active: activeVal === 1 }
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -1504,7 +1508,7 @@ app.post("/api/information", authenticateToken, authorizeRoles('admin', 'owner',
 app.put("/api/information/:id", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, content, image_url, link_type, link_value } = req.body;
+        const { title, content, image_url, link_type, link_value, is_active } = req.body;
 
         if (!title || !content) {
             return res.status(400).json({ error: "Judul dan isi informasi wajib diisi" });
@@ -1516,8 +1520,20 @@ app.put("/api/information/:id", authenticateToken, authorizeRoles('admin', 'owne
             finalImageUrl = await processBase64Image(image_url, 'info');
         }
 
-        const sql = 'UPDATE information SET title = ?, content = ?, image_url = ?, link_type = ?, link_value = ? WHERE id = ?';
-        const [result] = await db.query(sql, [title, content, finalImageUrl, link_type || 'none', link_value || null, id]);
+        // Check if is_active is provided, otherwise keep it as is (need to fetch first? No, default to what user sent or if undefined dont update it?
+        // Better: if undefined, assume we keep it. But usually frontend sends full object.
+        // Let's assume if it is active it is sent. But wait, standard PUT replaces.
+        // Let's check if undefined.
+        // Simplified: The frontend for edit usually sends everything.
+        // But to be safe from "undefined" converting to 0 or 1 incorrectly:
+        // Let's use logic: if undefined, do we update?
+        // SQL needs value.
+        // Let's just default to keeping it active if not specified, OR fetch current.
+        // For efficiency, let's required frontend to send it. Or default 1.
+        const activeVal = (is_active === 'false' || is_active === false || is_active === '0' || is_active === 0) ? 0 : 1;
+
+        const sql = 'UPDATE information SET title = ?, content = ?, image_url = ?, link_type = ?, link_value = ?, is_active = ? WHERE id = ?';
+        const [result] = await db.query(sql, [title, content, finalImageUrl, link_type || 'none', link_value || null, activeVal, id]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: "Informasi tidak ditemukan" });
@@ -1527,7 +1543,7 @@ app.put("/api/information/:id", authenticateToken, authorizeRoles('admin', 'owne
 
         res.json({
             message: "success",
-            data: { id, title, content, image_url: finalImageUrl, link_type, link_value }
+            data: { id, title, content, image_url: finalImageUrl, link_type, link_value, is_active: activeVal === 1 }
         });
     } catch (err) {
         res.status(500).json({ error: err.message });

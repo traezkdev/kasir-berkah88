@@ -193,6 +193,13 @@ const setupDatabase = async () => {
       console.log("Added is_one_time column to promos table.");
     }
 
+    // Check and add is_active to information table
+    const [isActiveInfoCol] = await connection.query("SHOW COLUMNS FROM information LIKE 'is_active'");
+    if (isActiveInfoCol.length === 0) {
+      await connection.query("ALTER TABLE information ADD COLUMN is_active BOOLEAN DEFAULT TRUE");
+      console.log("Added is_active column to information table.");
+    }
+
     const createOrdersTable = `
       CREATE TABLE IF NOT EXISTS orders (
           id INT AUTO_INCREMENT PRIMARY KEY,

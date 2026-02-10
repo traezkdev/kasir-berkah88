@@ -111,8 +111,25 @@ const InformationScreen = ({ navigation }) => {
             >
                 {infos.length === 0 ? (
                     <View style={styles.emptyContainer}>
-                        <Info size={64} color="#CBD5E1" />
-                        <Text style={styles.emptyText}>Belum ada informasi terbaru.</Text>
+                        <View style={styles.emptyIconContainer}>
+                            <View style={styles.emptyIconBackground}>
+                                <Sparkles size={48} color="#10B981" />
+                            </View>
+                            {/* Floating elements for effect */}
+                            <View style={[styles.minifloater, { top: 0, right: -10, backgroundColor: '#FEF3C7' }]}>
+                                <Tag size={16} color="#D97706" />
+                            </View>
+                            <View style={[styles.minifloater, { bottom: 0, left: -10, backgroundColor: '#DBEAFE' }]}>
+                                <Bell size={16} color="#2563EB" />
+                            </View>
+                        </View>
+                        <Text style={styles.emptyTitle}>Belum Ada Kabar Baru</Text>
+                        <Text style={styles.emptySubtitle}>
+                            Saat ini belum ada informasi promo atau pengumuman penting untukmu. Cek lagi nanti ya!
+                        </Text>
+                        <TouchableOpacity style={styles.refreshButton} onPress={onRefresh} activeOpacity={0.8}>
+                            <Text style={styles.refreshButtonText}>Muat Ulang</Text>
+                        </TouchableOpacity>
                     </View>
                 ) : (
                     infos.map((info, index) => {
@@ -283,15 +300,65 @@ const styles = StyleSheet.create({
         backgroundColor: '#F8FAFC', // Putih gelap (Off-white)
     },
     emptyContainer: {
-        marginTop: 100,
+        marginTop: 80,
         alignItems: 'center',
         justifyContent: 'center',
+        paddingHorizontal: 32,
     },
-    emptyText: {
-        marginTop: 16,
+    emptyIconContainer: {
+        position: 'relative',
+        marginBottom: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 100,
+        height: 100,
+    },
+    emptyIconBackground: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: '#ECFDF5',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 4,
+        borderColor: '#FFFFFF',
+    },
+    minifloater: {
+        position: 'absolute',
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 3,
+        borderColor: '#FFFFFF',
+    },
+    emptyTitle: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#1E293B',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    emptySubtitle: {
         fontSize: 14,
-        color: '#94A3B8',
-        fontWeight: '500',
+        color: '#64748B',
+        textAlign: 'center',
+        lineHeight: 22,
+        marginBottom: 24,
+    },
+    refreshButton: {
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 30,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    refreshButtonText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#334155',
     },
     infoCard: {
         backgroundColor: '#FFFFFF',
