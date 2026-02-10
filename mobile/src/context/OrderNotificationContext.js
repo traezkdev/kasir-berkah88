@@ -279,7 +279,27 @@ export const OrderNotificationProvider = ({ children }) => {
 
             const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
                 const data = response.notification.request.content.data;
-                console.log('Notification clicked:', data);
+                console.log('Notification clicked handled:', data);
+
+                if (data) {
+                    const { navigationRef } = require('../navigation/navigationRef');
+                    if (navigationRef.isReady()) {
+                        if (data.type === 'info') {
+                            if (data.link_type === 'product' && data.link_value) {
+                                navigationRef.navigate('Menu', { itemId: data.link_value });
+                            } else {
+                                navigationRef.navigate('InformationScreen');
+                            }
+                        } else if (data.type === 'chat') {
+                            navigationRef.navigate('ChatScreen', {
+                                senderId: data.senderId,
+                                orderId: data.orderId
+                            });
+                        } else if (data.orderId) {
+                            navigationRef.navigate('OrderDetails', { orderId: data.orderId });
+                        }
+                    }
+                }
             });
 
             const tokenSubscription = Notifications.addPushTokenListener(newToken => {

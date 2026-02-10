@@ -67,6 +67,7 @@ const CustomerDashboard = ({ navigation }) => {
     const [refreshing, setRefreshing] = useState(false);
     const [orderNotificationCount, setOrderNotificationCount] = useState(0);
     const [latestOrder, setLatestOrder] = useState(null);
+    const [hasNewInfo, setHasNewInfo] = useState(false);
     const [scrolled, setScrolled] = useState(false);
 
     const scrollY = useRef(new Animated.Value(0)).current;
@@ -116,6 +117,22 @@ const CustomerDashboard = ({ navigation }) => {
                     setLatestOrder(null);
                 }
             }
+
+            // Fetch Information to check for unread items
+            const infoRes = await apiService.get('/api/information');
+            if (infoRes.data.data && infoRes.data.data.length > 0) {
+                const latestInfoId = parseInt(infoRes.data.data[0].id);
+                const lastSeenIdRaw = await AsyncStorage.getItem('@last_seen_info_id');
+                const lastSeenId = lastSeenIdRaw ? parseInt(lastSeenIdRaw) : 0;
+
+                if (lastSeenId < latestInfoId) {
+                    setHasNewInfo(true);
+                } else {
+                    setHasNewInfo(false);
+                }
+            } else {
+                setHasNewInfo(false);
+            }
         } catch (error) {
             console.error("Error fetching dashboard data:", error);
         } finally {
@@ -127,8 +144,17 @@ const CustomerDashboard = ({ navigation }) => {
     useEffect(() => {
         fetchData();
         const pollInterval = setInterval(() => fetchData(true), 30000);
-        return () => clearInterval(pollInterval);
-    }, [fetchData]);
+
+        // Add focus listener to refresh data when user returns to dashboard
+        const unsubscribe = navigation.addListener('focus', () => {
+            fetchData(true);
+        });
+
+        return () => {
+            clearInterval(pollInterval);
+            unsubscribe();
+        };
+    }, [fetchData, navigation]);
 
     useEffect(() => {
         const subscription = AppState.addEventListener('change', nextAppState => {
@@ -280,9 +306,15 @@ const CustomerDashboard = ({ navigation }) => {
                 {/* Header Section */}
                 <View style={styles.mainHeader}>
                     <View style={styles.headerTop}>
-                        <View>
-                            <Text style={styles.greetingText}>{getGreeting()},</Text>
-                            <Text style={styles.userName}>{user?.name || 'Pelanggan'}</Text>
+                        <View style={styles.userInfoWrapper}>
+                            <Image
+                                source={require('../../../assets/logo.png')}
+                                style={styles.headerLogo}
+                            />
+                            <View>
+                                <Text style={styles.greetingText}>{getGreeting()},</Text>
+                                <Text style={styles.userName}>{user?.name || 'Pelanggan'}</Text>
+                            </View>
                         </View>
                         <View style={styles.headerActions}>
                             <TouchableOpacity
@@ -311,10 +343,20 @@ const CustomerDashboard = ({ navigation }) => {
                                     )}
                                 </View>
                             </TouchableOpacity>
-                            <Image
-                                source={require('../../../assets/logo.png')}
-                                style={styles.headerLogo}
-                            />
+                            <TouchableOpacity
+                                style={styles.notificationBtn}
+                                onPress={() => {
+                                    setHasNewInfo(false);
+                                    navigation.navigate('InformationScreen');
+                                }}
+                            >
+                                <View>
+                                    <Bell size={22} color="#FFFFFF" />
+                                    {hasNewInfo && (
+                                        <View style={[styles.statusBadge, { top: -2, right: -2, backgroundColor: '#EF4444', width: 10, height: 10, borderRadius: 5, borderOuterWidth: 0, borderWidth: 1.5, borderColor: '#059669' }]} />
+                                    )}
+                                </View>
+                            </TouchableOpacity>
                         </View>
                     </View>
 
@@ -345,6 +387,7 @@ const CustomerDashboard = ({ navigation }) => {
                         contentContainerStyle={{ paddingHorizontal: 20 }}
                     >
                         {[
+                            { label: 'Pusat Info', icon: Bell, color: '#10B981', target: 'InformationScreen' },
                             { label: 'Sedang Promo', icon: Zap, color: '#FBBF24' },
                             { label: 'Paling Laris', icon: TrendingUp, color: '#F43F5E' },
                             { label: 'Paket Hemat', icon: Package, color: '#0EA5E9' },
@@ -353,10 +396,16 @@ const CustomerDashboard = ({ navigation }) => {
                             <TouchableOpacity
                                 key={idx}
                                 style={styles.shortcutChip}
-                                onPress={() => navigation.navigate('Menu', { filter: chip.label })}
+                                onPress={() => {
+                                    if (chip.label === 'Pusat Info') setHasNewInfo(false);
+                                    chip.target ? navigation.navigate(chip.target) : navigation.navigate('Menu', { filter: chip.label });
+                                }}
                             >
                                 <View style={[styles.chipIconWrap, { backgroundColor: chip.color }]}>
                                     <chip.icon size={12} color="#FFFFFF" />
+                                    {chip.label === 'Pusat Info' && hasNewInfo && (
+                                        <View style={{ position: 'absolute', top: -2, right: -2, width: 6, height: 6, borderRadius: 3, backgroundColor: '#EF4444', borderWidth: 1, borderColor: '#FFFFFF' }} />
+                                    )}
                                 </View>
                                 <Text style={styles.chipText}>{chip.label}</Text>
                             </TouchableOpacity>
@@ -639,6 +688,11 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 20,
+    },
+    userInfoWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
     },
     greetingText: {
         fontSize: 14,

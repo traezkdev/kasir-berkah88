@@ -37,7 +37,8 @@ import {
     Wallet,
     Calculator,
     ClipboardCheck,
-    Ticket
+    Ticket,
+    Bell
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
@@ -334,9 +335,9 @@ const SellerDashboard = ({ navigation }) => {
                             { label: 'Laporan', icon: ClipboardCheck, color: '#10B981', bgColor: '#ECFDF5', target: 'DailyReport' },
                             { label: 'Chat', icon: MessageCircle, color: '#3B82F6', bgColor: '#EFF6FF', target: 'ChatScreen' },
                             { label: 'Jual', icon: ShoppingCart, color: '#FFFFFF', bgColor: '#138FEA', target: 'Jual' },
-                            { label: 'Rekon', icon: Calculator, color: '#F59E0B', bgColor: '#FFFBEB', target: 'CashReconciliation' },
+                            { label: 'Informasi', icon: Bell, color: '#F59E0B', bgColor: '#FFFBEB', target: 'ManageInformation' },
+                            { label: 'Rekon', icon: Calculator, color: '#6366F1', bgColor: '#F5F3FF', target: 'CashReconciliation' },
                             { label: 'Pengeluaran', icon: TrendingDown, color: '#EF4444', bgColor: '#FEF2F2', target: 'ExpenseManagement' },
-                            { label: 'Deposit', icon: Wallet, color: '#138FEA', bgColor: '#E0F2FE', target: 'LapakDeposit' },
                         ].map((action, index) => (
                             <TouchableOpacity
                                 key={index}

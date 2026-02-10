@@ -1438,6 +1438,137 @@ app.post("/api/banners", authenticateToken, authorizeRoles('admin', 'penjual'), 
     }
 });
 
+// --- Information / Announcements Endpoints ---
+
+// Get all information (Public)
+app.get("/api/information", authenticateToken, async (req, res) => {
+    try {
+        const sql = "SELECT * FROM information ORDER BY created_at DESC";
+        const [rows] = await db.query(sql);
+        res.json({ message: "success", data: rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Add new information (Seller only)
+app.post("/api/information", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
+    try {
+        const { title, content, image_url, link_type, link_value } = req.body;
+        if (!title || !content) {
+            return res.status(400).json({ error: "Judul dan isi informasi wajib diisi" });
+        }
+
+        // Process image if it's base64
+        let finalImageUrl = image_url;
+        if (image_url && image_url.startsWith('data:image')) {
+            finalImageUrl = await processBase64Image(image_url, 'info');
+        }
+
+        const sql = 'INSERT INTO information (title, content, image_url, link_type, link_value) VALUES (?, ?, ?, ?, ?)';
+        const [result] = await db.query(sql, [title, content, finalImageUrl, link_type || 'none', link_value || null]);
+
+        await logActivity(req.user.userId, 'Tambah Informasi', 'information', result.insertId, `Info baru: ${title}`);
+
+        res.status(201).json({
+            message: "success",
+            data: { id: result.insertId, title, content, image_url: finalImageUrl, link_type, link_value }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update existing information
+app.put("/api/information/:id", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, content, image_url, link_type, link_value } = req.body;
+
+        if (!title || !content) {
+            return res.status(400).json({ error: "Judul dan isi informasi wajib diisi" });
+        }
+
+        // Process image if it's base64 (new upload)
+        let finalImageUrl = image_url;
+        if (image_url && image_url.startsWith('data:image')) {
+            finalImageUrl = await processBase64Image(image_url, 'info');
+        }
+
+        const sql = 'UPDATE information SET title = ?, content = ?, image_url = ?, link_type = ?, link_value = ? WHERE id = ?';
+        const [result] = await db.query(sql, [title, content, finalImageUrl, link_type || 'none', link_value || null, id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Informasi tidak ditemukan" });
+        }
+
+        await logActivity(req.user.userId, 'Update Informasi', 'information', id, `Info ID ${id} diperbarui: ${title}`);
+
+        res.json({
+            message: "success",
+            data: { id, title, content, image_url: finalImageUrl, link_type, link_value }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete information
+app.delete("/api/information/:id", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const sql = 'DELETE FROM information WHERE id = ?';
+        const [result] = await db.query(sql, [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Informasi tidak ditemukan" });
+        }
+
+        await logActivity(req.user.userId, 'Hapus Informasi', 'information', id, `Info ID ${id} dihapus`);
+        res.json({ message: "success" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Broadcast existing information
+app.post("/api/information/:id/broadcast", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Update created_at so it moves to the top of the feed
+        const updateSql = "UPDATE information SET created_at = NOW() WHERE id = ?";
+        const [updateResult] = await db.query(updateSql, [id]);
+
+        if (updateResult.affectedRows === 0) {
+            return res.status(404).json({ error: "Informasi tidak ditemukan" });
+        }
+
+        const infoSql = "SELECT * FROM information WHERE id = ?";
+        const [infos] = await db.query(infoSql, [id]);
+        const info = infos[0];
+
+        // Send push notification to all users
+        sendUniversalNotification(
+            null, // null means send to all
+            info.content.length > 50 ? info.content.substring(0, 50) + '...' : info.content,
+            `📢 ${info.title}`,
+            {
+                type: 'info',
+                infoId: id,
+                link_type: info.link_type || 'none',
+                link_value: info.link_value || null
+            }
+        ).catch(e => console.error('Error broadcasting info notification:', e));
+
+        await logActivity(req.user.userId, 'Broadcast Informasi', 'information', id, `Resend & Refresh info: ${info.title}`);
+
+        res.json({ message: "success", info: info.title });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Update a banner
 app.put("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penjual'), upload.single('image'), async (req, res) => {
     try {

@@ -45,8 +45,10 @@ import DeveloperCreditsScreen from '../screens/DeveloperCreditsScreen';
 import TransactionTrash from '../screens/seller/TransactionTrash';
 import BusinessReports from '../screens/seller/BusinessReports';
 import PromoManagement from '../screens/seller/PromoManagement';
+import ManageInformation from '../screens/seller/ManageInformation';
 
 // Customer Screens
+import InformationScreen from '../screens/customer/InformationScreen';
 import CustomerMenu from '../screens/customer/Menu';
 import CustomerCart from '../screens/customer/Cart';
 import OrderHistory from '../screens/customer/OrderHistory';
@@ -57,6 +59,7 @@ import PromoScreen from '../screens/customer/PromoScreen';
 import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { getSafeBottomPadding, getSafeFooterHeight } from '../utils/safeArea';
+import { navigationRef } from './navigationRef';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -158,6 +161,7 @@ const SellerRootStack = () => (
         <Stack.Screen name="TransactionTrash" component={TransactionTrash} />
         <Stack.Screen name="BusinessReports" component={BusinessReports} />
         <Stack.Screen name="PromoManagement" component={PromoManagement} />
+        <Stack.Screen name="ManageInformation" component={ManageInformation} />
     </Stack.Navigator>
 );
 
@@ -321,6 +325,7 @@ const CustomerRootStack = () => (
         {/* PointsHistory is now inside HomeStack and ProfileStack */}
         <Stack.Screen name="PromoScreen" component={PromoScreen} />
         <Stack.Screen name="DeveloperCreditsScreen" component={DeveloperCreditsScreen} />
+        <Stack.Screen name="InformationScreen" component={InformationScreen} />
     </Stack.Navigator>
 );
 
@@ -332,7 +337,7 @@ const AppNavigator = () => {
 
     if (isSeller) {
         return (
-            <NavigationContainer>
+            <NavigationContainer ref={navigationRef}>
                 <SellerRootStack />
                 <NewOrderPopup />
             </NavigationContainer>
@@ -340,7 +345,7 @@ const AppNavigator = () => {
     }
 
     return (
-        <NavigationContainer>
+        <NavigationContainer ref={navigationRef}>
             <CustomerRootStack />
             <NewOrderPopup />
         </NavigationContainer>

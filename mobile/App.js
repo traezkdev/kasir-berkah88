@@ -7,6 +7,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import RegisterScreen from './src/screens/RegisterScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import AppNavigator from './src/navigation/AppNavigator';
+import { navigationRef } from './src/navigation/navigationRef';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 // Mencegah splash screen menghilang otomatis
@@ -22,7 +23,7 @@ import { AppSettingsProvider } from './src/context/AppSettingsContext';
 const AuthStack = createNativeStackNavigator();
 
 const AuthNavigator = () => (
-  <NavigationContainer>
+  <NavigationContainer ref={navigationRef}>
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
       <AuthStack.Screen name="Login" component={LoginScreen} />
       <AuthStack.Screen name="Register" component={RegisterScreen} />

@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'transparent',
     },
     modalContainer: {
-        backgroundColor: '#F8FAFC',
+        backgroundColor: '#FFFFFF',
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
         width: '100%',
