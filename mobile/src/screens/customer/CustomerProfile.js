@@ -73,7 +73,22 @@ const CustomerProfile = ({ navigation }) => {
         new: false,
         confirm: false
     });
-    const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+    const [notifSettings, setNotifSettings] = useState({
+        orders: true,
+        chat: true,
+        promo: false
+    });
+
+    const fetchNotificationSettings = async () => {
+        try {
+            const response = await apiService.get('/api/user/notification-settings');
+            if (response.data && response.data.message === 'success') {
+                setNotifSettings(response.data.data);
+            }
+        } catch (error) {
+            console.error('Failed to load notification settings:', error);
+        }
+    };
 
     const fetchProfile = async () => {
         try {
@@ -93,6 +108,7 @@ const CustomerProfile = ({ navigation }) => {
 
     useEffect(() => {
         fetchProfile();
+        fetchNotificationSettings();
     }, []);
 
     const handleUpdateProfile = async () => {
@@ -463,14 +479,61 @@ const CustomerProfile = ({ navigation }) => {
 
                                 <View style={styles.settingItem}>
                                     <View style={styles.settingTextWrap}>
-                                        <Text style={styles.settingLabel}>Push Notification</Text>
-                                        <Text style={styles.settingDesc}>Terima update pesanan & promo</Text>
+                                        <Text style={styles.settingLabel}>Notifikasi Pesanan</Text>
+                                        <Text style={styles.settingDesc}>Update status pesanan aktif</Text>
                                     </View>
                                     <TouchableOpacity
-                                        onPress={() => setNotificationsEnabled(!notificationsEnabled)}
-                                        style={[styles.miniToggle, notificationsEnabled ? styles.toggleOn : styles.toggleOff]}
+                                        onPress={async () => {
+                                            const newVal = !notifSettings.orders;
+                                            const updated = { ...notifSettings, orders: newVal };
+                                            setNotifSettings(updated);
+                                            try {
+                                                await apiService.put('/api/user/notification-settings', updated);
+                                            } catch (e) { showToast('Gagal update', 'error'); }
+                                        }}
+                                        style={[styles.miniToggle, notifSettings.orders ? styles.toggleOn : styles.toggleOff]}
                                     >
-                                        <View style={[styles.toggleCircle, notificationsEnabled ? styles.circleOn : styles.circleOff]} />
+                                        <View style={[styles.toggleCircle, notifSettings.orders ? styles.circleOn : styles.circleOff]} />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <View style={[styles.settingItem, { marginTop: 12 }]}>
+                                    <View style={styles.settingTextWrap}>
+                                        <Text style={styles.settingLabel}>Pesan Chat</Text>
+                                        <Text style={styles.settingDesc}>Pemberitahuan chat dari toko</Text>
+                                    </View>
+                                    <TouchableOpacity
+                                        onPress={async () => {
+                                            const newVal = !notifSettings.chat;
+                                            const updated = { ...notifSettings, chat: newVal };
+                                            setNotifSettings(updated);
+                                            try {
+                                                await apiService.put('/api/user/notification-settings', updated);
+                                            } catch (e) { showToast('Gagal update', 'error'); }
+                                        }}
+                                        style={[styles.miniToggle, notifSettings.chat ? styles.toggleOn : styles.toggleOff]}
+                                    >
+                                        <View style={[styles.toggleCircle, notifSettings.chat ? styles.circleOn : styles.circleOff]} />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <View style={[styles.settingItem, { marginTop: 12 }]}>
+                                    <View style={styles.settingTextWrap}>
+                                        <Text style={styles.settingLabel}>Promo & Voucher</Text>
+                                        <Text style={styles.settingDesc}>Informasi diskon menarik</Text>
+                                    </View>
+                                    <TouchableOpacity
+                                        onPress={async () => {
+                                            const newVal = !notifSettings.promo;
+                                            const updated = { ...notifSettings, promo: newVal };
+                                            setNotifSettings(updated);
+                                            try {
+                                                await apiService.put('/api/user/notification-settings', updated);
+                                            } catch (e) { showToast('Gagal update', 'error'); }
+                                        }}
+                                        style={[styles.miniToggle, notifSettings.promo ? styles.toggleOn : styles.toggleOff]}
+                                    >
+                                        <View style={[styles.toggleCircle, notifSettings.promo ? styles.circleOn : styles.circleOff]} />
                                     </TouchableOpacity>
                                 </View>
                             </View>

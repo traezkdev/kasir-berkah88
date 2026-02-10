@@ -63,11 +63,13 @@ const OwnerProfile = ({ headerTitle }) => { // Component name changed to OwnerPr
   const [isLoading, setIsLoading] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
   const [isLogoutConfirmationOpen, setIsLogoutConfirmationOpen] = useState(false);
+  const [notifSettings, setNotifSettings] = useState({ orders: true, chat: true, promo: false, stock_alert: true });
   const navigate = useNavigate();
 
   // --- Effects ---
   useEffect(() => {
     fetchUserProfile();
+    fetchNotificationSettings();
   }, []);
 
   // --- Handlers ---
@@ -86,6 +88,35 @@ const OwnerProfile = ({ headerTitle }) => { // Component name changed to OwnerPr
       setError('Kesalahan jaringan. Logout dan coba lagi.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchNotificationSettings = async () => {
+    try {
+      const response = await authFetch(`${apiUrl}/api/user/notification-settings`);
+      const data = await response.json();
+      if (response.ok) {
+        setNotifSettings(data.data);
+      }
+    } catch (err) {
+      console.error('Failed to load notification settings:', err);
+    }
+  };
+
+  const updateNotificationSettings = async (updated) => {
+    try {
+      const response = await authFetch(`${apiUrl}/api/user/notification-settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      });
+      if (response.ok) {
+        setNotifSettings(updated);
+        setMessage('Pengaturan notifikasi diperbarui!');
+        setTimeout(() => setMessage(''), 2000);
+      }
+    } catch (err) {
+      setError('Gagal memperbarui pengaturan notifikasi');
     }
   };
 
@@ -251,6 +282,12 @@ const OwnerProfile = ({ headerTitle }) => { // Component name changed to OwnerPr
               onClick={() => setActiveModal('password')}
             />
             <ProfileCard
+              icon="Bell"
+              title="Pengaturan Notifikasi"
+              description="Atur notifikasi pesanan, chat, dan lainnya."
+              onClick={() => setActiveModal('notifications')}
+            />
+            <ProfileCard
               icon="LogOut"
               title="Keluar"
               description="Keluar dari sesi Anda saat ini."
@@ -292,6 +329,40 @@ const OwnerProfile = ({ headerTitle }) => { // Component name changed to OwnerPr
           {message && <p className="text-sm text-center text-green-500 mt-2">{message}</p>}
           {error && <p className="text-sm text-center text-red-500 mt-2">{error}</p>}
         </form>
+      </ProfileModal>
+
+      <ProfileModal title="Pengaturan Notifikasi" isOpen={activeModal === 'notifications'} onClose={handleModalClose}>
+        <div className="space-y-4">
+          <p className="text-sm text-text-secondary mb-4">Pilih notifikasi yang ingin Anda terima.</p>
+
+          {[
+            { id: 'orders', label: 'Notifikasi Pesanan', desc: 'Status pesanan & order baru', icon: 'ShoppingBag' },
+            { id: 'chat', label: 'Pesan Chat', desc: 'Chat dari pelanggan & admin', icon: 'MessageCircle' },
+            { id: 'promo', label: 'Promo & Voucher', desc: 'Info diskon menarik', icon: 'Ticket' },
+            { id: 'stock_alert', label: 'Peringatan Stok', desc: 'Stok menipis / kritis', icon: 'AlertTriangle' }
+          ].map(notif => (
+            <div key={notif.id} className="flex items-center justify-between p-4 bg-background border border-border rounded-xl hover:border-primary/30 transition-all group">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center">
+                  <AppIcon name={notif.icon} size={18} />
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-text-primary">{notif.label}</p>
+                  <p className="text-[10px] text-text-secondary uppercase tracking-tight opacity-60 group-hover:opacity-100 transition-opacity">{notif.desc}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => updateNotificationSettings({ ...notifSettings, [notif.id]: !notifSettings[notif.id] })}
+                className={`w-12 h-6 rounded-full transition-all relative ${notifSettings[notif.id] ? 'bg-primary' : 'bg-gray-200 dark:bg-slate-700'}`}
+              >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 shadow-sm ${notifSettings[notif.id] ? 'left-7' : 'left-1'}`}></div>
+              </button>
+            </div>
+          ))}
+
+          {message && <p className="text-sm text-center text-green-500 mt-2">{message}</p>}
+          {error && <p className="text-sm text-center text-red-500 mt-2">{error}</p>}
+        </div>
       </ProfileModal>
 
       <ConfirmationModal

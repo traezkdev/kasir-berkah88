@@ -29,11 +29,17 @@ const CustomerProfile = () => {
     const [tempAddress, setTempAddress] = useState('');
     const [tempPhone, setTempPhone] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [notifSettings, setNotifSettings] = useState({
+        orders: true,
+        chat: true,
+        promo: false
+    });
 
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
     useEffect(() => {
         fetchProfile();
+        fetchNotificationSettings();
     }, []);
 
     const fetchProfile = async () => {
@@ -52,6 +58,39 @@ const CustomerProfile = () => {
             }
         } catch (error) {
             console.error("Error fetching profile:", error);
+        }
+    };
+
+    const fetchNotificationSettings = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        try {
+            const response = await fetch(`${API_URL}/api/user/notification-settings`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await response.json();
+            if (result.message === 'success') {
+                setNotifSettings(result.data);
+            }
+        } catch (error) {
+            console.error('Failed to load notification settings:', error);
+        }
+    };
+
+    const updateNotificationSettings = async (updated) => {
+        const token = localStorage.getItem('token');
+        try {
+            await fetch(`${API_URL}/api/user/notification-settings`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updated)
+            });
+            setNotifSettings(updated);
+        } catch (error) {
+            toast.error('Gagal menyimpan pengaturan');
         }
     };
 
@@ -395,6 +434,52 @@ const CustomerProfile = () => {
                             >
                                 {isLoading ? 'Memproses...' : 'Perbarui Password'}
                             </button>
+
+                            <div className="flex items-center gap-2 mt-8 mb-2 border-b border-gray-50 pb-2">
+                                <Icon name="Bell" className="w-4 h-4 text-green-600" />
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pengaturan Notifikasi</span>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                                    <div>
+                                        <p className="font-bold text-gray-800 text-sm">Pesanan Saya</p>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Status order & detail</p>
+                                    </div>
+                                    <button
+                                        onClick={() => updateNotificationSettings({ ...notifSettings, orders: !notifSettings.orders })}
+                                        className={`w-12 h-6 rounded-full transition-colors relative ${notifSettings.orders ? 'bg-green-500' : 'bg-gray-200'}`}
+                                    >
+                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${notifSettings.orders ? 'right-1' : 'left-1'}`}></div>
+                                    </button>
+                                </div>
+
+                                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                                    <div>
+                                        <p className="font-bold text-gray-800 text-sm">Pesan Chat</p>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Pesan dari tim toko</p>
+                                    </div>
+                                    <button
+                                        onClick={() => updateNotificationSettings({ ...notifSettings, chat: !notifSettings.chat })}
+                                        className={`w-12 h-6 rounded-full transition-colors relative ${notifSettings.chat ? 'bg-green-500' : 'bg-gray-200'}`}
+                                    >
+                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${notifSettings.chat ? 'right-1' : 'left-1'}`}></div>
+                                    </button>
+                                </div>
+
+                                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                                    <div>
+                                        <p className="font-bold text-gray-800 text-sm">Info Promo</p>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Diskon & voucher baru</p>
+                                    </div>
+                                    <button
+                                        onClick={() => updateNotificationSettings({ ...notifSettings, promo: !notifSettings.promo })}
+                                        className={`w-12 h-6 rounded-full transition-colors relative ${notifSettings.promo ? 'bg-green-500' : 'bg-gray-200'}`}
+                                    >
+                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${notifSettings.promo ? 'right-1' : 'left-1'}`}></div>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -277,49 +277,77 @@ const logActivity = async (userId, action, targetType = null, targetId = null, d
  * @param {object} data - Data tambahan
  */
 const sendUniversalNotification = async (userIds, message, heading, data = {}, excludedUserId = null) => {
-    // 1. OneSignal (Existing)
-    let normalizedUserIds = userIds ? (Array.isArray(userIds) ? userIds : [userIds]) : null;
-
-    // Filter out the excluded user
-    if (normalizedUserIds && excludedUserId) {
-        normalizedUserIds = normalizedUserIds.filter(id => id.toString() !== excludedUserId.toString());
-    }
-
-    // Don't send if no targets left
-    if (normalizedUserIds !== null && normalizedUserIds.length === 0) return;
-
-    sendPushNotification(message, heading, data, normalizedUserIds).catch(e => console.error('OneSignal Error:', e));
-
-    // 2. Expo Push
     try {
-        let pushTokens = [];
+        let normalizedUserIds = userIds ? (Array.isArray(userIds) ? userIds : [userIds]) : null;
+        const type = data.type || 'orders'; // Default type is 'orders'
+
+        // 1. Fetch users and their preferences
+        let sql = "SELECT id, role, push_token, notification_settings FROM users WHERE 1=1";
+        let params = [];
+
         if (normalizedUserIds && normalizedUserIds.length > 0) {
-            // Ambil token dari DB untuk user ID tertentu
-            const [rows] = await db.query('SELECT push_token FROM users WHERE id IN (?) AND push_token IS NOT NULL', [normalizedUserIds]);
-            pushTokens = rows.map(r => r.push_token);
+            sql += " AND id IN (?)";
+            params.push(normalizedUserIds);
         } else {
-            // Ambil semua token jika userIds null (Broadcast)
-            let sql = "SELECT push_token FROM users WHERE push_token IS NOT NULL";
-            let params = [];
-
-            if (data.type === 'new_order') {
-                sql = "SELECT push_token FROM users WHERE role IN ('admin', 'penjual', 'owner', 'kasir') AND push_token IS NOT NULL";
+            // Broadcast case (e.g. for new_order or promos)
+            if (type === 'new_order') {
+                sql += " AND role IN ('admin', 'penjual', 'owner', 'kasir')";
             }
-
-            if (excludedUserId) {
-                sql += (sql.includes('WHERE') ? ' AND ' : ' WHERE ') + "id != ?";
-                params.push(excludedUserId);
-            }
-
-            const [rows] = await db.query(sql, params);
-            pushTokens = rows.map(r => r.push_token);
         }
 
-        if (pushTokens.length > 0) {
-            await sendExpoPushNotification(pushTokens, heading, message, data);
+        if (excludedUserId) {
+            sql += " AND id != ?";
+            params.push(excludedUserId);
         }
-    } catch (e) {
-        console.error('Expo Push Helper Error:', e);
+
+        const [users] = await db.query(sql, params);
+
+        if (!users || users.length === 0) return;
+
+        // 2. Filter users based on their notification_settings
+        const filteredUsers = users.filter(user => {
+            // Default settings
+            let settings = { orders: true, chat: true, promo: false };
+
+            if (user.notification_settings) {
+                try {
+                    const parsed = typeof user.notification_settings === 'string'
+                        ? JSON.parse(user.notification_settings)
+                        : user.notification_settings;
+                    settings = { ...settings, ...parsed };
+                } catch (e) {
+                    console.error(`Error parsing settings for user ${user.id}:`, e);
+                }
+            }
+
+            // check specific type settings
+            if (type === 'chat') return settings.chat !== false;
+            if (type === 'promo') return settings.promo !== false;
+            if (type === 'new_order' || type === 'orders') return settings.orders !== false;
+
+            // default to true for other types like daily_summary or stock_alert
+            return true;
+        });
+
+        if (filteredUsers.length === 0) return;
+
+        const targetExternalIds = filteredUsers.map(u => u.id.toString());
+        const expoTokens = filteredUsers.map(u => u.push_token).filter(t => !!t);
+
+        // 3. Send via OneSignal (Web & Mobile SDKs linked by external_id)
+        if (targetExternalIds.length > 0) {
+            sendPushNotification(message, heading, data, targetExternalIds)
+                .catch(e => console.error('OneSignal Notification Error:', e));
+        }
+
+        // 4. Send via Expo Push (Native Mobile specific)
+        if (expoTokens.length > 0) {
+            sendExpoPushNotification(expoTokens, heading, message, data)
+                .catch(e => console.error('Expo Push Notification Error:', e));
+        }
+
+    } catch (err) {
+        console.error('sendUniversalNotification Error:', err);
     }
 };
 
@@ -4064,7 +4092,7 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
                 }
 
                 setImmediate(() => {
-                    sendUniversalNotification([order.user_id], statusMsg, title, { orderId: id, status })
+                    sendUniversalNotification([order.user_id], statusMsg, title, { orderId: id, status, type: 'orders' })
                         .catch(err => console.error('Push notification error:', err));
                 });
             }
@@ -4211,7 +4239,7 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
                             ownerIds,
                             `Stok ${updatedStock[0].name} hampir habis (Tersisa: ${updatedStock[0].stock})`,
                             'Peringatan Stok! ⚠️',
-                            { itemId: item.id }
+                            { itemId: item.id, type: 'stock_alert' }
                         );
                     }
                 }
@@ -4297,7 +4325,7 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
                         [order.user_id],
                         'Pesanan Anda telah diterima dan sedang diproses!',
                         'Pesanan Diterima! ✅',
-                        { orderId: id, status: 'accepted' }
+                        { orderId: id, status: 'accepted', type: 'orders' }
                     ).catch(err => console.error('Push notification error:', err));
                 });
             }
