@@ -325,29 +325,27 @@ export const OrderNotificationProvider = ({ children }) => {
         const activeUserId = user.id || user.userId;
         if (!activeUserId) return;
 
-        console.log('--- Inisialisasi Socket Production ---');
         const newSocket = io(API_URL, {
             transports: ['websocket', 'polling'],
             reconnection: true,
-            reconnectionAttempts: Infinity, // Terus mencoba re-koneksi
+            reconnectionAttempts: Infinity,
             reconnectionDelay: 1000,
             reconnectionDelayMax: 5000,
             timeout: 20000,
-            forceNew: false // Gunakan koneksi yang ada jika memungkinkan
+            forceNew: true, // Gunakan koneksi baru setiap inisialisasi
+            autoConnect: true
         });
 
         newSocket.on('connect', () => {
-            console.log('Socket Connected:', newSocket.id);
             newSocket.emit('user_connected', { userId: activeUserId, role: user.role });
         });
 
         newSocket.on('connect_error', (error) => {
-            console.error('Socket Connect Error:', error.message);
+            // Error handling remains but log removed
         });
 
         newSocket.on('disconnect', (reason) => {
-            console.log('Socket Disconnected:', reason);
-            if (reason === 'io server disconnect') {
+            if (reason === 'io server disconnect' || reason === 'transport close') {
                 newSocket.connect();
             }
         });
@@ -381,7 +379,6 @@ export const OrderNotificationProvider = ({ children }) => {
 
         newSocket.on('order_update', (data) => {
             if (isMounted.current) {
-                console.log('Order update received:', data);
                 setRefreshTrigger(prev => prev + 1);
                 if (user.role === 'pelanggan') {
                     checkCustomerNotifications();
@@ -420,7 +417,6 @@ export const OrderNotificationProvider = ({ children }) => {
         setSocket(newSocket);
 
         return () => {
-            console.log('Cleaning up socket...');
             newSocket.disconnect();
             setSocket(null);
         };

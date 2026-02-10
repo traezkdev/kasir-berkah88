@@ -392,11 +392,11 @@ const ChatScreen = ({ navigation }) => {
             const currentActiveChat = activeChatRef.current;
             const currentUser = userRef.current;
 
-            // Validate in handler to allow latet user hydration
             if (!currentActiveChat || !currentUser) return;
 
             // Ignore messages sent by myself (already handled by optimistic update)
-            if (String(msg.sender_id) === String(currentUser.id)) return;
+            const myId = String(currentUser.id || currentUser.userId || '');
+            if (String(msg.sender_id) === myId) return;
 
             const partnerId = String(currentActiveChat.user_id);
             const msgSender = String(msg.sender_id);
@@ -413,7 +413,7 @@ const ChatScreen = ({ navigation }) => {
             // 3. KHUSUS PELANGGAN: Terima pesan dari SIAPAPUN yang ditujukan ke saya
             // Karena pelanggan bisa menerima pesan dari Admin, Owner, atau Kasir (beda ID)
             const isCustomer = currentUser.role === 'pelanggan' || currentUser.role === 'user';
-            const isToMe = msgReceiver === String(currentUser.id);
+            const isToMe = msgReceiver === myId;
 
             if (isFromPartner || isToPartner || (isCustomer && isToMe)) {
                 setMessages(prev => {
