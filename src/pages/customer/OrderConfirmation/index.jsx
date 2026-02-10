@@ -165,12 +165,12 @@ const CustomerOrderConfirmation = () => {
     return (
         <div className="min-h-screen bg-gray-50 pb-24 font-sans">
             {/* Fixed Header */}
-            <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 px-8 ${scrolled ? 'bg-white shadow-md py-5' : 'bg-transparent py-8'}`}>
+            <div className={`fixed top-0 left-0 right-0 z-50 px-8 ${scrolled ? 'bg-white shadow-md py-5' : 'bg-transparent py-8'}`}>
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/customer/dashboard')} className={`p-2 rounded-full transition-colors ${scrolled ? 'bg-gray-100' : 'bg-white/20'}`}>
+                    <button onClick={() => navigate('/customer/dashboard')} className={`p-2 rounded-full ${scrolled ? 'bg-gray-100' : 'bg-white/20'}`}>
                         <Icon name="ArrowLeft" className={`w-5 h-5 ${scrolled ? 'text-gray-800' : 'text-white'}`} />
                     </button>
-                    <h1 className={`text-2xl font-black tracking-tight transition-colors ${scrolled ? 'text-gray-800' : 'text-white'}`}>Status Pesanan</h1>
+                    <h1 className={`text-xl font-black tracking-tight ${scrolled ? 'text-gray-800' : 'text-white'}`}>Status Pesanan</h1>
                 </div>
             </div>
 

@@ -17,12 +17,12 @@ const CustomerLayout = () => {
     return (
         <div className="min-h-screen bg-gray-50 font-sans">
             {/* Main Content Area */}
-            <main className="w-full max-w-md lg:max-w-7xl mx-auto min-h-screen relative overflow-x-hidden pb-24">
+            <main className={`w-full max-w-md lg:max-w-7xl mx-auto min-h-screen relative overflow-x-hidden ${currentPath !== '/customer/chat' && currentPath !== '/customer/cart' ? 'pb-24' : ''}`}>
                 <Outlet />
             </main>
 
             {/* Bottom Navigation */}
-            {currentPath !== '/customer/chat' && (
+            {currentPath !== '/customer/chat' && currentPath !== '/customer/cart' && (
                 <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 z-50 max-w-md mx-auto h-[75px] px-4 pt-3 pb-[15px]">
                     <div className="flex justify-between items-center h-full gap-1">
                         {navItems.map((item) => {
@@ -33,7 +33,7 @@ const CustomerLayout = () => {
                                     <Link
                                         key={item.path}
                                         to={item.path}
-                                        className="flex-1 flex flex-col items-center justify-center gap-1.5 -mt-10"
+                                        className="flex-1 flex flex-col items-center justify-center gap-1.5 -mt-6"
                                     >
                                         <div className={`w-[54px] h-[54px] rounded-[20px] flex items-center justify-center border shadow-lg transition-all duration-300 ${isActive
                                             ? 'bg-green-600 border-green-500 shadow-green-200 scale-110'

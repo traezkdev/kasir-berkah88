@@ -59,7 +59,7 @@ export default function App() {
     // Sembunyikan splash screen setelah 3 detik
     const timer = setTimeout(async () => {
       await SplashScreen.hideAsync();
-    }, 3000);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, []);

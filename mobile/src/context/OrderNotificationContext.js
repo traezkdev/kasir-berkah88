@@ -48,9 +48,9 @@ export const OrderNotificationProvider = ({ children }) => {
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [onlineUsers, setOnlineUsers] = useState([]); // Store online user objects {userId, role}
     const [selectedSoundId, setSelectedSoundId] = useState('default');
+    const [socket, setSocket] = useState(null);
     const soundRef = useRef(null);
     const pollingInterval = useRef(null);
-    const socketRef = useRef(null);
     const isMounted = useRef(true);
 
     const previousOrdersRef = useRef([]);
@@ -134,7 +134,7 @@ export const OrderNotificationProvider = ({ children }) => {
     // Seller Logic: Check for new pending orders
     const fetchPendingCount = useCallback(async () => {
         const currentUser = user;
-        if (!currentUser || !['admin', 'penjual', 'owner'].includes(currentUser.role)) return;
+        if (!currentUser || !['admin', 'penjual', 'owner', 'kasir'].includes(currentUser.role)) return;
 
         try {
             const response = await apiService.get('/api/orders?status=pending&limit=1');
@@ -142,38 +142,37 @@ export const OrderNotificationProvider = ({ children }) => {
             const count = data.pagination?.totalItems || 0;
 
             if (isMounted.current) {
-                if (count > pendingCount) {
-                    playNotificationSound();
-                    if (data.data && data.data.length > 0) {
-                        const latestOrder = data.data[0];
-                        sendLocalNotification(
-                            "Pesanan Baru Masuk! 🛍️",
-                            `Ada pesanan baru #${latestOrder.id} senilai Rp ${new Intl.NumberFormat('id-ID').format(latestOrder.total)}`,
-                            { orderId: latestOrder.id }
-                        );
-                        setNewOrder(latestOrder);
-                        setShowPopup(true);
+                // Gunakan functional update untuk menghindari dependensi pada pendingCount
+                setPendingCount(prevCount => {
+                    if (count > prevCount) {
+                        playNotificationSound();
+                        if (data.data && data.data.length > 0) {
+                            const latestOrder = data.data[0];
+                            sendLocalNotification(
+                                "Pesanan Baru Masuk! 🛍️",
+                                `Ada pesanan baru #${latestOrder.id} senilai Rp ${new Intl.NumberFormat('id-ID').format(latestOrder.total)}`,
+                                { orderId: latestOrder.id }
+                            );
+                            setNewOrder(latestOrder);
+                            setShowPopup(true);
+                        }
+                        setRefreshTrigger(t => t + 1);
+                    } else if (count < prevCount) {
+                        setRefreshTrigger(t => t + 1);
                     }
-                    setRefreshTrigger(prev => prev + 1);
-                } else if (count < pendingCount) {
-                    setRefreshTrigger(prev => prev + 1);
-                }
-
-                setPendingCount(count);
+                    return count;
+                });
                 setLastSync(new Date());
             }
         } catch (error) {
             console.error('Failed to fetch pending orders count:', error);
         }
-    }, [pendingCount, user]);
+    }, [user]); // Hanya bergantung pada user
 
     // Customer Logic: Check for order status updates
     const checkCustomerNotifications = useCallback(async () => {
         const currentUser = user;
         if (!currentUser) return;
-        // Only customers or logged in users who aren't exclusively sellers might care? 
-        // Actually, sellers might also want status updates if they follow their own orders?
-        // But the prompt says "Admin/User: all, Pelanggan: their own".
 
         try {
             const response = await apiService.get('/api/orders?limit=10');
@@ -228,14 +227,12 @@ export const OrderNotificationProvider = ({ children }) => {
                 return;
             }
 
-            // Dapatkan token dari Expo
             const tokenResponse = await Notifications.getExpoPushTokenAsync({
                 projectId: '62f9fb68-21b9-4aca-9206-5ed3e86b51b1'
             });
             const token = tokenResponse.data;
             console.log('Mobile Push Token Berhasil Didapat:', token);
 
-            // Kirim ke server jika ada user yang login
             if (user) {
                 try {
                     const res = await apiService.post('/api/users/push-token', { pushToken: token });
@@ -245,7 +242,6 @@ export const OrderNotificationProvider = ({ children }) => {
                 }
             }
 
-            // Setting Channel khusus Android (Sangat penting agar notifikasi muncul di luar app)
             if (Platform.OS === 'android') {
                 await Notifications.setNotificationChannelAsync('orders', {
                     name: 'Pesanan Baru',
@@ -255,7 +251,6 @@ export const OrderNotificationProvider = ({ children }) => {
                     lightColor: '#FF231F7C',
                     enableVibrate: true,
                     showBadge: true,
-                    // Kita akan hubungkan ini dengan suara kustom nanti
                 });
 
                 await Notifications.setNotificationChannelAsync('default', {
@@ -274,18 +269,15 @@ export const OrderNotificationProvider = ({ children }) => {
             loadSound();
             if (user) registerForPushNotifications();
 
-            // Handle notification that arrives while app is open
             const foregroundSubscription = Notifications.addNotificationReceivedListener(notification => {
                 console.log('Notification received in foreground:', notification);
             });
 
-            // Handle notification interaction (click)
             const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
                 const data = response.notification.request.content.data;
                 console.log('Notification clicked:', data);
             });
 
-            // Re-register if token changes
             const tokenSubscription = Notifications.addPushTokenListener(newToken => {
                 console.log('Push token changed while running:', newToken.data);
                 if (user) {
@@ -303,7 +295,6 @@ export const OrderNotificationProvider = ({ children }) => {
 
         return () => {
             isMounted.current = false;
-            // Cleanup sound on unmount
             if (soundRef.current) {
                 soundRef.current.unloadAsync().catch(() => { });
             }
@@ -314,7 +305,7 @@ export const OrderNotificationProvider = ({ children }) => {
         if (user) {
             if (['admin', 'penjual', 'owner', 'kasir'].includes(user.role)) {
                 fetchPendingCount();
-                pollingInterval.current = setInterval(fetchPendingCount, 8000); // 8s untuk response lebih cepat
+                pollingInterval.current = setInterval(fetchPendingCount, 8000); // 8s polling as safe backup
             } else {
                 checkCustomerNotifications();
                 pollingInterval.current = setInterval(checkCustomerNotifications, 8000);
@@ -326,52 +317,49 @@ export const OrderNotificationProvider = ({ children }) => {
         };
     }, [user, fetchPendingCount, checkCustomerNotifications]);
 
-    // Socket.io initialization with better reconnection
+    // Socket.io initialization - Stabilized for Production
     useEffect(() => {
         if (!user || !io) return;
 
-        const socket = io(API_URL, {
-            transports: ['websocket', 'polling'], // Fallback ke polling jika websocket gagal
+        // Gunakan ID yang stabil
+        const activeUserId = user.id || user.userId;
+        if (!activeUserId) return;
+
+        console.log('--- Inisialisasi Socket Production ---');
+        const newSocket = io(API_URL, {
+            transports: ['websocket', 'polling'],
             reconnection: true,
-            reconnectionAttempts: 10,
+            reconnectionAttempts: Infinity, // Terus mencoba re-koneksi
             reconnectionDelay: 1000,
             reconnectionDelayMax: 5000,
             timeout: 20000,
-            forceNew: true
+            forceNew: false // Gunakan koneksi yang ada jika memungkinkan
         });
 
-        socket.on('connect', () => {
-            console.log('Socket.io connected:', socket.id);
-            // Register user presence
-            // AuthContext stores id as user.id, but sometimes we might have userId from raw token decoding
-            const activeUserId = user.id || user.userId;
-            console.log('Emitting user_connected for:', activeUserId);
-            socket.emit('user_connected', { userId: activeUserId, role: user.role });
+        newSocket.on('connect', () => {
+            console.log('Socket Connected:', newSocket.id);
+            newSocket.emit('user_connected', { userId: activeUserId, role: user.role });
         });
 
-        socket.on('connect_error', (error) => {
-            console.error('Socket connection error:', error.message);
+        newSocket.on('connect_error', (error) => {
+            console.error('Socket Connect Error:', error.message);
         });
 
-        socket.on('disconnect', (reason) => {
-            console.log('Socket disconnected:', reason);
+        newSocket.on('disconnect', (reason) => {
+            console.log('Socket Disconnected:', reason);
             if (reason === 'io server disconnect') {
-                // Server memutuskan koneksi, reconnect manual
-                socket.connect();
+                newSocket.connect();
             }
         });
 
-        socket.on('online_users', (users) => {
-            if (isMounted.current) {
-                setOnlineUsers(users);
-            }
+        newSocket.on('online_users', (users) => {
+            if (isMounted.current) setOnlineUsers(users);
         });
 
-        socket.on('user_status', ({ userId, role, status }) => {
+        newSocket.on('user_status', ({ userId, role, status }) => {
             if (isMounted.current) {
                 setOnlineUsers(prev => {
                     if (status === 'online') {
-                        // Filter out existing to avoid duplicates
                         const otherUsers = prev.filter(u => String(u.userId) !== String(userId));
                         return [...otherUsers, { userId, role }];
                     } else {
@@ -381,21 +369,19 @@ export const OrderNotificationProvider = ({ children }) => {
             }
         });
 
-        socket.on('new_order', (order) => {
+        newSocket.on('new_order', (order) => {
             if (isMounted.current && ['admin', 'penjual', 'owner', 'kasir'].includes(user.role)) {
-                console.log('New order received via socket:', order.id);
                 playNotificationSound();
                 setNewOrder(order);
                 setShowPopup(true);
                 setRefreshTrigger(prev => prev + 1);
-                // Fetch ulang untuk memastikan data sinkron
                 fetchPendingCount();
             }
         });
 
-        socket.on('order_update', (data) => {
+        newSocket.on('order_update', (data) => {
             if (isMounted.current) {
-                console.log('Order update received via socket:', data);
+                console.log('Order update received:', data);
                 setRefreshTrigger(prev => prev + 1);
                 if (user.role === 'pelanggan') {
                     checkCustomerNotifications();
@@ -405,51 +391,40 @@ export const OrderNotificationProvider = ({ children }) => {
             }
         });
 
-        // Listen for new chat messages
-        socket.on('new_message', (message) => {
-            if (!isMounted.current || !user) return;
-
-            // Don't notify for my own messages
-            if (message.sender_id === user.userId || message.sender_id === user.id) return;
+        newSocket.on('new_message', (message) => {
+            if (!isMounted.current) return;
+            const myId = String(activeUserId);
+            if (String(message.sender_id) === myId) return;
 
             const amISeller = ['admin', 'owner', 'penjual', 'kasir'].includes(user.role);
+            const isToMe = String(message.receiver_id) === myId;
             const isFromCustomer = message.sender_role === 'pelanggan' || message.sender_role === 'user';
 
             let shouldNotify = false;
-
-            // 1. If I am the direct receiver
-            if (message.receiver_id === (user.userId || user.id)) {
+            if (isToMe) {
                 shouldNotify = true;
-            }
-            // 2. If I am a seller and the message is from a customer (Team Inbox logic)
-            // AND the message was sent to a seller (which it should be if I'm seeing it contextually, but good to check)
-            else if (amISeller && isFromCustomer) {
+            } else if (amISeller && isFromCustomer) {
                 shouldNotify = true;
             }
 
             if (shouldNotify) {
-                console.log('New chat message notification triggered');
                 playNotificationSound();
-
-                // Only send local notification if we aren't already looking at the chat? 
-                // For simplicity, always send it for now, the system handles foreground presentation config.
                 sendLocalNotification(
-                    `Pesan dari ${message.sender_role === 'pelanggan' ? 'Pelanggan' : 'Admin/Penjual'}`,
-                    message.message || 'Mengirim foto',
+                    `Pesan dari ${message.sender_name || (isFromCustomer ? 'Pelanggan' : 'Admin')}`,
+                    message.message || '[Gambar]',
                     { type: 'chat', senderId: message.sender_id, orderId: message.order_id }
                 );
             }
         });
 
-        socketRef.current = socket;
+        setSocket(newSocket);
 
         return () => {
-            if (socket) {
-                socket.removeAllListeners();
-                socket.disconnect();
-            }
+            console.log('Cleaning up socket...');
+            newSocket.disconnect();
+            setSocket(null);
         };
-    }, [user, checkCustomerNotifications, fetchPendingCount]);
+    }, [user?.id, user?.role, fetchPendingCount, checkCustomerNotifications]);
 
     const closePopup = () => setShowPopup(false);
 
@@ -466,7 +441,7 @@ export const OrderNotificationProvider = ({ children }) => {
             selectedSoundId,
             changeNotificationSound,
             playNotificationSound,
-            socket: socketRef.current
+            socket
         }}>
             {children}
         </OrderNotificationContext.Provider>

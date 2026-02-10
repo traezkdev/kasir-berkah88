@@ -376,7 +376,7 @@ const CustomerChat = () => {
                         <OrderPinWidget order={activeOrder} />
                     </div>
 
-                    <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-0 pt-4 flex flex-col-reverse">
+                    <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-20 pt-4 flex flex-col-reverse">
                         {messages.length > 0 ? (
                             messages.slice().reverse().map((msg, idx) => {
                                 const isMine = msg.sender_id === myId;
