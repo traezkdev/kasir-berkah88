@@ -12,21 +12,13 @@ import {
     Animated,
     PanResponder
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getSafeBottomPadding } from '../../utils/safeArea';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { X } from 'lucide-react-native';
 
 /**
  * BottomModalTemplate
- * 
- * Template modal yang muncul dari bawah dengan tinggi responsif dan layout stabil di mobile web.
- * 
- * Props:
- * - visible (boolean): Kontrol visibilitas modal
- * - onClose (function): Fungsi yang dipanggil saat tombol tutup/backdrop ditekan
- * - title (string): Judul modal
- * - children (node): Konten yang bisa di-scroll
- * - footer (node): Konten footer yang fixed di bawah (opsional)
- * - heightPercentage (number): Tinggi modal relatif terhadap layar (default 0.85 atau 85%)
  */
 const BottomModalTemplate = ({
     visible,
@@ -37,13 +29,14 @@ const BottomModalTemplate = ({
     heightPercentage = 0.85
 }) => {
     const { height: screenHeight } = useWindowDimensions();
+    const insets = useSafeAreaInsets();
 
     // Calculate modal height explicitly for mobile web stability
     const modalHeight = useMemo(() => screenHeight * heightPercentage, [screenHeight, heightPercentage]);
 
     const isFullscreen = heightPercentage >= 1;
     const safeTopPadding = isFullscreen
-        ? (Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 30)
+        ? Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0) + 10
         : 10;
 
     // Animation & Gesture State
@@ -149,7 +142,13 @@ const BottomModalTemplate = ({
 
                     {/* Footer - Fixed di bawah (jika ada) */}
                     {footer && (
-                        <View style={styles.footer}>
+                        <View style={[
+                            styles.footer,
+                            {
+                                paddingBottom: getSafeBottomPadding(insets),
+                                backgroundColor: '#FFFFFF'
+                            }
+                        ]}>
                             {footer}
                         </View>
                     )}
@@ -225,7 +224,6 @@ const styles = StyleSheet.create({
     footer: {
         width: '100%',
         padding: 24,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 24,
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',
         backgroundColor: '#FFFFFF',

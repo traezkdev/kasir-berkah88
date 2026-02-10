@@ -10,6 +10,7 @@ import {
     Platform
 } from 'react-native';
 import { Bluetooth, X, RefreshCw, Printer } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BluetoothPrinter from '../utils/BluetoothPrinter';
 
 const PrinterSelectionModal = ({ visible, onClose, onSelect }) => {

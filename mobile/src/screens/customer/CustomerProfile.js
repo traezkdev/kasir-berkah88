@@ -13,7 +13,8 @@ import {
     TextInput,
     Modal
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getSafeBottomPadding } from '../../utils/safeArea';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import {
     User,
@@ -44,6 +45,7 @@ import { useConfirm } from '../../context/ConfirmContext';
 const { width } = Dimensions.get('window');
 
 const CustomerProfile = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
     const { logout } = useAuth();
     const { showToast } = useToast();
     const { confirm } = useConfirm();
@@ -187,11 +189,13 @@ const CustomerProfile = ({ navigation }) => {
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
+        <SafeAreaView style={styles.container} edges={['left', 'right']}>
             <StatusBar barStyle="light-content" backgroundColor="#059669" />
 
             {/* Header Premium */}
-            <View style={styles.header}>
+            <View style={[styles.header, {
+                paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 15 : (insets.top > 0 ? insets.top + 10 : 25)
+            }]}>
                 <Text style={styles.headerTitle}>Profil Saya</Text>
                 <Text style={styles.headerSubtitle}>INFORMASI & PENGATURAN AKUN</Text>
             </View>
@@ -311,8 +315,6 @@ const CustomerProfile = ({ navigation }) => {
                     <Text style={styles.versionText}>BERKAH88 • VERSI 2.1.0</Text>
                     <Text style={styles.developerText}>by traezkdev</Text>
                 </TouchableOpacity>
-
-                <View style={{ height: 40 }} />
             </ScrollView>
 
             {/* Profile Modal */}
@@ -323,7 +325,7 @@ const CustomerProfile = ({ navigation }) => {
                 onRequestClose={() => setIsProfileModalOpen(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, { paddingBottom: getSafeBottomPadding(insets) }]}>
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>Atur Profil</Text>
                             <TouchableOpacity onPress={() => setIsProfileModalOpen(false)} style={styles.modalClose}>
@@ -392,7 +394,7 @@ const CustomerProfile = ({ navigation }) => {
                 onRequestClose={() => setIsAccountModalOpen(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { maxHeight: '90%' }]}>
+                    <View style={[styles.modalContent, { maxHeight: '90%', paddingBottom: getSafeBottomPadding(insets) }]}>
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>Pengaturan Akun</Text>
                             <TouchableOpacity onPress={() => setIsAccountModalOpen(false)} style={styles.modalClose}>
@@ -537,7 +539,6 @@ const CustomerProfile = ({ navigation }) => {
                                     </TouchableOpacity>
                                 </View>
                             </View>
-                            <View style={{ height: 40 }} />
                         </KeyboardAwareScrollView>
                     </View>
                 </View>
@@ -558,7 +559,6 @@ const styles = StyleSheet.create({
     },
     header: {
         backgroundColor: '#059669',
-        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : (Platform.OS === 'web' ? 15 : 20),
         paddingBottom: 70,
         paddingHorizontal: 24,
         borderBottomLeftRadius: 40,
@@ -749,7 +749,6 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 40,
         borderTopRightRadius: 40,
         padding: 30,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 30,
     },
     modalHeader: {
         flexDirection: 'row',

@@ -16,6 +16,8 @@ import {
     useWindowDimensions
 } from 'react-native';
 import { X, Printer, Share2, CheckCircle2, ShoppingCart, MessageSquare, Zap, ShieldCheck, Download, Copy, User, Phone, MapPin, AlertCircle, XCircle, Info } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getSafeBottomPadding } from '../utils/safeArea';
 import apiService, { API_URL } from '../api/apiService';
 // import { useToast } from '../context/ToastContext';
 import { captureRef } from 'react-native-view-shot';
@@ -28,6 +30,7 @@ const { width } = Dimensions.get('window');
 
 const ReceiptModal = ({ visible, onClose, transaction }) => {
     const { width, height } = useWindowDimensions();
+    const insets = useSafeAreaInsets();
     const [settings, setSettings] = useState({
         restaurant_name: 'Berkah 88',
         restaurant_slogan: 'Kasir Pintar & Berkah',
@@ -585,9 +588,14 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
             transparent={false}
             onRequestClose={onClose}
         >
-            <View style={[styles.modalContainer, { height: height }]}>
+            <View style={[
+                styles.modalContainer,
+                {
+                    height: height,
+                }
+            ]}>
                 <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-                <View style={styles.topHeader}>
+                <View style={[styles.topHeader, { paddingTop: Math.max(insets.top, 10), height: 60 + insets.top }]}>
                     <Text style={styles.topHeaderText}>Bukti Transaksi</Text>
                     <View style={styles.headerActions}>
                         <TouchableOpacity style={styles.headerPrintBtn} onPress={handleConnectAndPrint}>
@@ -814,7 +822,7 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                     </ScrollView>
                 </View>
 
-                <View style={styles.actionFooter}>
+                <View style={[styles.actionFooter, { paddingBottom: getSafeBottomPadding(insets) }]}>
                     <TouchableOpacity style={styles.actionBtnOutline} onPress={handleShareImage}>
                         <Share2 size={18} color="#64748B" />
                         <Text style={styles.actionBtnTextOutline}>Share</Text>
@@ -849,24 +857,26 @@ const ReceiptModal = ({ visible, onClose, transaction }) => {
                 }}
             />
             {/* Local Toast UI */}
-            {localToast.visible && (
-                <View style={[styles.toastContainer, { borderLeftColor: localToast.type === 'error' ? '#EF4444' : (localToast.type === 'warning' ? '#F59E0B' : '#10B981') }]}>
-                    <View style={styles.toastContent}>
-                        <View style={styles.iconArea}>
-                            {localToast.type === 'error' ? <XCircle size={24} color="#EF4444" /> :
-                                localToast.type === 'warning' ? <AlertCircle size={24} color="#F59E0B" /> :
-                                    <CheckCircle2 size={24} color="#10B981" />}
+            {
+                localToast.visible && (
+                    <View style={[styles.toastContainer, { borderLeftColor: localToast.type === 'error' ? '#EF4444' : (localToast.type === 'warning' ? '#F59E0B' : '#10B981') }]}>
+                        <View style={styles.toastContent}>
+                            <View style={styles.iconArea}>
+                                {localToast.type === 'error' ? <XCircle size={24} color="#EF4444" /> :
+                                    localToast.type === 'warning' ? <AlertCircle size={24} color="#F59E0B" /> :
+                                        <CheckCircle2 size={24} color="#10B981" />}
+                            </View>
+                            <View style={styles.textArea}>
+                                <Text style={styles.toastTitle}>{localToast.type.toUpperCase()}</Text>
+                                <Text style={styles.toastMessage}>{localToast.message}</Text>
+                            </View>
+                            <TouchableOpacity onPress={() => setLocalToast(prev => ({ ...prev, visible: false }))} style={styles.closeBtn}>
+                                <X size={18} color="#94A3B8" />
+                            </TouchableOpacity>
                         </View>
-                        <View style={styles.textArea}>
-                            <Text style={styles.toastTitle}>{localToast.type.toUpperCase()}</Text>
-                            <Text style={styles.toastMessage}>{localToast.message}</Text>
-                        </View>
-                        <TouchableOpacity onPress={() => setLocalToast(prev => ({ ...prev, visible: false }))} style={styles.closeBtn}>
-                            <X size={18} color="#94A3B8" />
-                        </TouchableOpacity>
                     </View>
-                </View>
-            )}
+                )
+            }
         </Modal >
     );
 };
@@ -889,8 +899,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 20,
-        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 15 : (Platform.OS === 'ios' ? 50 : 25),
+        paddingHorizontal: 20,
         backgroundColor: '#FFFFFF',
         borderBottomWidth: 1,
         borderBottomColor: '#F1F5F9',
@@ -1288,7 +1297,6 @@ const styles = StyleSheet.create({
     actionFooter: {
         flexDirection: 'row',
         padding: 20,
-        paddingBottom: Platform.OS === 'ios' ? 35 : 25, // Increased padding for safety
         backgroundColor: '#FFFFFF',
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',

@@ -7,15 +7,17 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     Dimensions,
+    TextInput,
+    KeyboardAvoidingView,
     Platform,
     StatusBar,
     SafeAreaView,
     FlatList,
     RefreshControl,
-    Modal,
-    TextInput,
-    KeyboardAvoidingView
+    Modal
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getSafeBottomPadding } from '../../utils/safeArea';
 import {
     ArrowLeft,
     ShoppingBag,
@@ -47,6 +49,7 @@ const OrderHistory = ({ navigation }) => {
     const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
     const [selectedOrderForRating, setSelectedOrderForRating] = useState(null);
     const [submittingRating, setSubmittingRating] = useState(false);
+    const insets = useSafeAreaInsets();
 
     const fetchOrders = useCallback(async (pageNum = 1, isRefresh = false) => {
         if (!isRefresh && pageNum === 1) setIsLoading(true);
@@ -239,20 +242,19 @@ const OrderHistory = ({ navigation }) => {
                 />
             )}
 
-            {isRatingModalOpen && selectedOrderForRating && (
-                <RatingModal
-                    visible={isRatingModalOpen}
-                    order={selectedOrderForRating}
-                    onClose={() => setIsRatingModalOpen(false)}
-                    onSubmit={handleSubmitRating}
-                    submitting={submittingRating}
-                />
-            )}
+            <RatingModal
+                visible={isRatingModalOpen}
+                order={selectedOrderForRating}
+                onClose={() => setIsRatingModalOpen(false)}
+                onSubmit={handleSubmitRating}
+                submitting={submittingRating}
+                insets={insets}
+            />
         </SafeAreaView>
     );
 };
 
-const RatingModal = ({ visible, order, onClose, onSubmit, submitting }) => {
+const RatingModal = ({ visible, order, onClose, onSubmit, submitting, insets }) => {
     const items = typeof order?.items === 'string' ? JSON.parse(order.items) : (order?.items || []);
     const [ratedItems, setRatedItems] = useState({});
     const [loadingExisting, setLoadingExisting] = useState(true);
@@ -328,7 +330,7 @@ const RatingModal = ({ visible, order, onClose, onSubmit, submitting }) => {
             <View style={styles.modalOverlay}>
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    style={styles.modalContent}
+                    style={[styles.modalContent, { paddingBottom: getSafeBottomPadding(insets) }]}
                 >
                     <View style={styles.modalHeader}>
                         <View>
@@ -643,7 +645,8 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
         height: '85%',
-        padding: 24,
+        paddingHorizontal: 24,
+        paddingTop: 24,
     },
     modalHeader: {
         flexDirection: 'row',

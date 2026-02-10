@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
         marginTop: 24,
     },
     listContent: {
-        paddingBottom: 20,
+        paddingBottom: 100,
     },
     emptyState: {
         alignItems: 'center',

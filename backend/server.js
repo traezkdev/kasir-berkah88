@@ -55,6 +55,15 @@ io.on('connection', (socket) => {
         }
         onlineUsers.get(userId).sockets.add(socket.id);
 
+        // Join user-specific room for targeted notifications
+        socket.join(`user_${userId}`);
+
+        // Join sellers room if applicable
+        const sellerRoles = ['admin', 'owner', 'penjual', 'kasir'];
+        if (sellerRoles.includes(role)) {
+            socket.join('sellers');
+        }
+
         // Broadcast to all that this user is online (including role)
         io.emit('user_status', { userId, role, status: 'online' });
 
@@ -5874,8 +5883,17 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
             receiver_role: receiverRole
         };
 
-        // Emit to the specific receiver
-        io.emit('new_message', messageData);
+        // Emit to specific rooms instead of global broadcast for stability and performance
+        // 1. To the specific receiver
+        // 2. To the sender (for multi-device sync)
+        // 3. To 'sellers' room if receiver is part of the staff
+        let emitTarget = io.to(`user_${receiver_id}`).to(`user_${sender_id}`);
+
+        if (sellerRoles.includes(receiverRole)) {
+            emitTarget = emitTarget.to('sellers');
+        }
+
+        emitTarget.emit('new_message', messageData);
 
         res.status(201).json({
             message: "Pesan terkirim",

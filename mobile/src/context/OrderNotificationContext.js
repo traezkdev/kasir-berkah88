@@ -325,32 +325,36 @@ export const OrderNotificationProvider = ({ children }) => {
         const activeUserId = user.id || user.userId;
         if (!activeUserId) return;
 
+        console.log(`[Socket] Mencoba terhubung ke: ${API_URL} untuk user: ${activeUserId}`);
         const newSocket = io(API_URL, {
-            transports: ['websocket', 'polling'],
+            transports: ['polling', 'websocket'],
             reconnection: true,
             reconnectionAttempts: Infinity,
             reconnectionDelay: 1000,
             reconnectionDelayMax: 5000,
             timeout: 20000,
-            forceNew: true, // Gunakan koneksi baru setiap inisialisasi
+            forceNew: true,
             autoConnect: true
         });
 
         newSocket.on('connect', () => {
+            console.log('[Socket] Terhubung! ID:', newSocket.id);
             newSocket.emit('user_connected', { userId: activeUserId, role: user.role });
         });
 
         newSocket.on('connect_error', (error) => {
-            // Error handling remains but log removed
+            console.error('[Socket] Koneksi Error:', error.message);
         });
 
         newSocket.on('disconnect', (reason) => {
+            console.log('[Socket] Terputus:', reason);
             if (reason === 'io server disconnect' || reason === 'transport close') {
                 newSocket.connect();
             }
         });
 
         newSocket.on('online_users', (users) => {
+            console.log('[Socket] Online users updated:', users.length);
             if (isMounted.current) setOnlineUsers(users);
         });
 

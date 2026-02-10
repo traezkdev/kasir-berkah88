@@ -20,6 +20,7 @@ import { useAuth } from '../context/AuthContext';
 import { useOrderNotification } from '../context/OrderNotificationContext';
 import { useChat } from '../context/ChatContext';
 import { useConfirm } from '../context/ConfirmContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Screens
 import ChatScreen from '../screens/seller/ChatScreen';
@@ -55,27 +56,54 @@ import PointsHistory from '../screens/customer/PointsHistory';
 import PromoScreen from '../screens/customer/PromoScreen';
 import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { getSafeBottomPadding, getSafeFooterHeight } from '../utils/safeArea';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+
+// Stack for Home Tab to allow screens like PointsHistory to show navbar
+const HomeStack = () => (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="CustomerDashboard" component={CustomerDashboard} />
+        <Stack.Screen name="PointsHistory" component={PointsHistory} />
+    </Stack.Navigator>
+);
+
+// Stack for Profile Tab to allow screens like PointsHistory to show navbar
+const ProfileStack = () => (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="CustomerProfile" component={CustomerProfile} />
+        <Stack.Screen name="PointsHistory" component={PointsHistory} />
+    </Stack.Navigator>
+);
+
+// Stack for Promo Tab
+const PromoStack = () => (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="PromoScreen" component={PromoScreen} />
+        <Stack.Screen name="PointsHistory" component={PointsHistory} />
+    </Stack.Navigator>
+);
 
 import Svg, { Path } from 'react-native-svg';
 
 const SellerTabs = () => {
     const { pendingCount } = useOrderNotification();
     const { unreadCount } = useChat();
+    const insets = useSafeAreaInsets();
 
     return (
         <Tab.Navigator
             screenOptions={({ route }) => ({
                 headerShown: false,
                 tabBarStyle: {
-                    height: 75,
-                    paddingBottom: 15,
+                    height: getSafeFooterHeight(insets, 70),
+                    paddingBottom: getSafeBottomPadding(insets, 5, 20),
                     paddingTop: 10,
                     backgroundColor: '#FFFFFF',
                     borderTopWidth: 1,
                     borderTopColor: '#F1F5F9',
+                    elevation: 8,
                 },
                 tabBarActiveTintColor: '#138FEA',
                 tabBarInactiveTintColor: '#94A3B8',
@@ -134,8 +162,16 @@ const SellerRootStack = () => (
 );
 
 const CustomCustomerTabBar = ({ state, descriptors, navigation }) => {
+    const insets = useSafeAreaInsets();
+
     return (
-        <View style={navStyles.bottomNav}>
+        <View style={[
+            navStyles.bottomNav,
+            {
+                height: getSafeFooterHeight(insets, 60),
+                paddingBottom: getSafeBottomPadding(insets, 0, 15)
+            }
+        ]}>
             {state.routes.map((route, index) => {
                 const { options } = descriptors[route.key];
                 const label = options.tabBarLabel !== undefined ? options.tabBarLabel : options.title !== undefined ? options.title : route.name;
@@ -196,11 +232,9 @@ const navStyles = {
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',
         paddingTop: 12,
-        paddingBottom: Platform.OS === 'ios' ? 30 : 15,
         paddingHorizontal: 16,
         justifyContent: 'space-between',
         alignItems: 'center',
-        height: Platform.OS === 'ios' ? 95 : 75,
     },
     navItem: {
         flex: 1,
@@ -249,7 +283,7 @@ const CustomerTabs = () => {
         >
             <Tab.Screen
                 name="Home"
-                component={CustomerDashboard}
+                component={HomeStack}
                 options={{ tabBarLabel: 'Beranda' }}
             />
             <Tab.Screen
@@ -259,7 +293,7 @@ const CustomerTabs = () => {
             />
             <Tab.Screen
                 name="Promo"
-                component={PromoScreen}
+                component={PromoStack}
                 options={{ tabBarLabel: 'Promo' }}
             />
             <Tab.Screen
@@ -269,7 +303,7 @@ const CustomerTabs = () => {
             />
             <Tab.Screen
                 name="Profile"
-                component={CustomerProfile}
+                component={ProfileStack}
                 options={{ tabBarLabel: 'Profil' }}
             />
         </Tab.Navigator>
@@ -283,7 +317,7 @@ const CustomerRootStack = () => (
         <Stack.Screen name="Cart" component={CustomerCart} />
         <Stack.Screen name="OrderDetails" component={OrderDetails} />
         <Stack.Screen name="ChatScreen" component={ChatScreen} />
-        <Stack.Screen name="PointsHistory" component={PointsHistory} />
+        {/* PointsHistory is now inside HomeStack and ProfileStack */}
         <Stack.Screen name="PromoScreen" component={PromoScreen} />
         <Stack.Screen name="DeveloperCreditsScreen" component={DeveloperCreditsScreen} />
     </Stack.Navigator>

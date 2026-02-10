@@ -232,7 +232,7 @@ const CustomerDashboard = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
+        <SafeAreaView style={styles.container} edges={['left', 'right']}>
             <StatusBar barStyle="light-content" backgroundColor="#059669" translucent={false} />
 
             {/* Compact Header on Scroll */}
@@ -576,7 +576,7 @@ const CustomerDashboard = ({ navigation }) => {
                 </View>
 
                 {/* Footer Padding */}
-                <View style={{ height: 100 }} />
+                <View style={{ height: 30 }} />
             </Animated.ScrollView>
         </SafeAreaView>
     );

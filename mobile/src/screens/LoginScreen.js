@@ -16,6 +16,7 @@ import { useAuth } from '../context/AuthContext';
 import { useAppSettings } from '../context/AppSettingsContext';
 import { User, Lock, LogIn } from 'lucide-react-native';
 import { API_URL } from '../api/apiService';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -25,6 +26,7 @@ const LoginScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(false);
     const { login } = useAuth();
     const { logoUrl } = useAppSettings();
+    const insets = useSafeAreaInsets();
 
     const handleLogin = async () => {
         if (!username || !password) {
@@ -124,7 +126,7 @@ const LoginScreen = ({ navigation }) => {
             </KeyboardAvoidingView>
 
             {/* Footer - Stay at bottom, unaffected by keyboard */}
-            <View style={styles.footer}>
+            <View style={[styles.footer, { bottom: Math.max(insets.bottom, 20) }]}>
                 <Text style={styles.footerText}>© 2026 Kasir Berkah88. All Rights Reserved.</Text>
             </View>
         </View>

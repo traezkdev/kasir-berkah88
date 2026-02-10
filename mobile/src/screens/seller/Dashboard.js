@@ -14,6 +14,7 @@ import {
     StatusBar,
     AppState
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     Store,
     Package,
@@ -48,6 +49,7 @@ import { useChat } from '../../context/ChatContext';
 const { width } = Dimensions.get('window');
 
 const SellerDashboard = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
     const { user } = useAuth();
     const { showToast } = useToast();
     const [stats, setStats] = useState({
@@ -191,9 +193,9 @@ const SellerDashboard = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#1E40AF" />
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
             {/* Fixed Gradient Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
                 <View style={styles.headerTop}>
                     <View>
                         <View style={styles.roleBadge}>
@@ -425,7 +427,6 @@ const styles = StyleSheet.create({
     },
     header: {
         backgroundColor: '#1E40AF',
-        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : (Platform.OS === 'web' ? 15 : 20),
         paddingBottom: 80,
         paddingHorizontal: 25,
         borderBottomLeftRadius: 32,

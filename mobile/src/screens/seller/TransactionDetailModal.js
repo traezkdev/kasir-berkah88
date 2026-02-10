@@ -10,6 +10,8 @@ import {
     StatusBar,
     Platform
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getSafeBottomPadding } from '../../utils/safeArea';
 import {
     X,
     User,
@@ -33,6 +35,7 @@ const TransactionDetailModal = ({
     onDelete,
     isAdmin
 }) => {
+    const insets = useSafeAreaInsets();
 
     const items = useMemo(() => transaction?.items || [], [transaction]);
 
@@ -133,7 +136,7 @@ const TransactionDetailModal = ({
                 <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
                 {/* Header */}
-                <View style={styles.modalHeader}>
+                <View style={[styles.modalHeader, { paddingTop: Math.max(insets.top + 15, 35) }]}>
                     <View>
                         <Text style={styles.modalTitle}>Detail Transaksi</Text>
                         <Text style={styles.modalId}>#{transaction.id}</Text>
@@ -161,7 +164,7 @@ const TransactionDetailModal = ({
                 </View>
 
                 {/* Footer */}
-                <View style={styles.modalFooter}>
+                <View style={[styles.modalFooter, { paddingBottom: getSafeBottomPadding(insets) }]}>
                     {/* Footer Breakdown */}
                     <View style={{ marginBottom: 15, gap: 4 }}>
                         {transaction.manual_discount > 0 && (
@@ -234,7 +237,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: 24,
-        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 15 : (Platform.OS === 'ios' ? 50 : 25),
+        paddingTop: 15,
         borderBottomWidth: 1,
         borderBottomColor: '#F1F5F9',
         backgroundColor: '#FFFFFF',
@@ -394,7 +397,6 @@ const styles = StyleSheet.create({
     },
     modalFooter: {
         padding: 24,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 30,
         backgroundColor: '#FFFFFF',
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',

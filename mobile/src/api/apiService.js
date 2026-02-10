@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const localUrl = process.env.EXPO_PUBLIC_API_URL_LOCAL || 'http://localhost:4000';
 const prodUrl = process.env.EXPO_PUBLIC_API_URL_PROD || 'https://api.inviteshare.my.id';
 
+// Pilih URL berdasarkan environment
 export const API_URL = __DEV__ ? localUrl : prodUrl;
 
 const apiService = axios.create({
