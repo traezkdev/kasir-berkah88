@@ -35,6 +35,7 @@ import {
     ArrowRight,
     MessageSquare
 } from 'lucide-react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import apiService from '../../api/apiService';
 import ReceiptModal from '../../components/ReceiptModal';
 import EditTransactionModal from './EditTransactionModal';
@@ -212,11 +213,13 @@ const TransactionHistory = ({ navigation }) => {
         return () => clearTimeout(timer);
     }, [searchTerm]);
 
-    // Fetch when page or debounced search or date changes
-    useEffect(() => {
-        setPage(1);
-        fetchTransactions(1, false, debouncedSearch, selectedDate);
-    }, [debouncedSearch, selectedDate, fetchTransactions]);
+    // Fetch when focused or when search/date changes
+    useFocusEffect(
+        useCallback(() => {
+            setPage(1);
+            fetchTransactions(1, false, debouncedSearch, selectedDate);
+        }, [debouncedSearch, selectedDate, fetchTransactions])
+    );
 
     const onRefresh = () => {
         setRefreshing(true);
