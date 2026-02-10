@@ -14,6 +14,7 @@ import {
     StatusBar,
     AppState
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     Store,
     Package,
@@ -36,7 +37,8 @@ import {
     Wallet,
     Calculator,
     ClipboardCheck,
-    Ticket
+    Ticket,
+    Bell
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
@@ -48,6 +50,7 @@ import { useChat } from '../../context/ChatContext';
 const { width } = Dimensions.get('window');
 
 const SellerDashboard = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
     const { user } = useAuth();
     const { showToast } = useToast();
     const [stats, setStats] = useState({
@@ -191,9 +194,9 @@ const SellerDashboard = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#1E40AF" />
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
             {/* Fixed Gradient Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
                 <View style={styles.headerTop}>
                     <View>
                         <View style={styles.roleBadge}>
@@ -332,9 +335,9 @@ const SellerDashboard = ({ navigation }) => {
                             { label: 'Laporan', icon: ClipboardCheck, color: '#10B981', bgColor: '#ECFDF5', target: 'DailyReport' },
                             { label: 'Chat', icon: MessageCircle, color: '#3B82F6', bgColor: '#EFF6FF', target: 'ChatScreen' },
                             { label: 'Jual', icon: ShoppingCart, color: '#FFFFFF', bgColor: '#138FEA', target: 'Jual' },
-                            { label: 'Rekon', icon: Calculator, color: '#F59E0B', bgColor: '#FFFBEB', target: 'CashReconciliation' },
+                            { label: 'Informasi', icon: Bell, color: '#F59E0B', bgColor: '#FFFBEB', target: 'ManageInformation' },
+                            { label: 'Rekon', icon: Calculator, color: '#6366F1', bgColor: '#F5F3FF', target: 'CashReconciliation' },
                             { label: 'Pengeluaran', icon: TrendingDown, color: '#EF4444', bgColor: '#FEF2F2', target: 'ExpenseManagement' },
-                            { label: 'Deposit', icon: Wallet, color: '#138FEA', bgColor: '#E0F2FE', target: 'LapakDeposit' },
                         ].map((action, index) => (
                             <TouchableOpacity
                                 key={index}
@@ -425,7 +428,6 @@ const styles = StyleSheet.create({
     },
     header: {
         backgroundColor: '#1E40AF',
-        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : (Platform.OS === 'web' ? 15 : 20),
         paddingBottom: 80,
         paddingHorizontal: 25,
         borderBottomLeftRadius: 32,

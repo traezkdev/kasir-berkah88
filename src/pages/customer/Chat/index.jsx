@@ -28,6 +28,7 @@ const CustomerChat = () => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     const scrollRef = useRef(null);
+    const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
     const myId = parseInt(localStorage.getItem('userId'));
 
@@ -45,26 +46,11 @@ const CustomerChat = () => {
     // Customer Green Theme
     const themeColor = '#10B981'; // Closer to emerald for premium feel
 
-    const scrollToBottom = (force = false, smooth = true) => {
-        if (!scrollRef.current) return;
-        const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-        const maxScroll = scrollHeight - clientHeight;
-
-        // Logic for flex-col-reverse:
-        // When content < viewport, scrollTop is negative or 0 depending on browser implementation of flex-reverse, 
-        // but generally standard scrollTo works if we target the appropriate position.
-        // Actually for flex-col-reverse, usually we want to scroll to 0 to see the "bottom" (newest) if it's inverted?
-        // No, standard browser behavior for flex-col-reverse:
-        // - Scroll bar is at the top?
-        // Let's stick to standard layout logic with flex-col-reverse for grouping.
-        // Actually, let's use the proven logic from the previous step which user accepted (flex-col-reverse).
-
-        const isNearBottom = maxScroll - scrollTop < 150;
-
-        if (force || isNearBottom) {
-            scrollRef.current.scrollTo({
-                top: maxScroll,
-                behavior: smooth ? 'smooth' : 'auto'
+    const scrollToBottom = () => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({
+                behavior: 'auto',
+                block: 'end'
             });
         }
     };
@@ -142,9 +128,14 @@ const CustomerChat = () => {
 
     // Force scroll on new messages
     useEffect(() => {
-        const shouldForce = messages.length > 0;
-        setTimeout(() => scrollToBottom(shouldForce), 100);
-    }, [messages]);
+        if (messages.length > 0) {
+            // Instant positioning without any scrolling animation
+            scrollToBottom();
+            // Solidify position after a tiny delay for any image rendering
+            const timer = setTimeout(scrollToBottom, 50);
+            return () => clearTimeout(timer);
+        }
+    }, [messages.length]);
 
     const fetchMessages = async () => {
         if (!activeChat) return;
@@ -376,9 +367,9 @@ const CustomerChat = () => {
                         <OrderPinWidget order={activeOrder} />
                     </div>
 
-                    <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-20 pt-4 flex flex-col-reverse">
+                    <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-24 pt-4 flex flex-col gap-1">
                         {messages.length > 0 ? (
-                            messages.slice().reverse().map((msg, idx) => {
+                            messages.map((msg, idx) => {
                                 const isMine = msg.sender_id === myId;
                                 const imageUrl = msg.image_url ?
                                     (msg.image_url.startsWith('http') ? msg.image_url : `${import.meta.env.VITE_API_URL}${msg.image_url}`)
@@ -429,6 +420,7 @@ const CustomerChat = () => {
                                 <p className="text-sm text-gray-400 font-bold">Mulai percakapan dengan sapaan hangat!</p>
                             </div>
                         )}
+                        <div ref={messagesEndRef} />
                     </div>
 
                     {/* Input Area */}

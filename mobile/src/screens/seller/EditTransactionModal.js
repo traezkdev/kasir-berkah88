@@ -13,8 +13,10 @@ import {
     FlatList,
     InteractionManager
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import BottomModalTemplate from '../../components/templates/BottomModalTemplate';
+import { getSafeBottomPadding } from '../../utils/safeArea';
 import {
     X,
     Plus,
@@ -39,6 +41,7 @@ import apiService from '../../api/apiService';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 const EditTransactionModal = ({ visible, onClose, transaction, onSave }) => {
+    const insets = useSafeAreaInsets();
     const [loading, setLoading] = useState(false);
     const [menuItems, setMenuItems] = useState([]);
     const [fetchingMenu, setFetchingMenu] = useState(false);
@@ -343,7 +346,9 @@ const EditTransactionModal = ({ visible, onClose, transaction, onSave }) => {
         <RNModal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
             <View style={styles.container}>
                 <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-                <View style={styles.header}>
+                <View style={[styles.header, {
+                    paddingTop: Math.max(insets.top + 15, 35)
+                }]}>
                     <TouchableOpacity onPress={onClose} style={styles.backBtn}>
                         <X size={24} color="#1E293B" />
                     </TouchableOpacity>
@@ -653,7 +658,7 @@ const EditTransactionModal = ({ visible, onClose, transaction, onSave }) => {
                     </View>
                 </KeyboardAwareScrollView>
 
-                <View style={styles.footer}>
+                <View style={[styles.footer, { paddingBottom: getSafeBottomPadding(insets) }]}>
                     <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
                         <Text style={styles.cancelBtnText}>Batal</Text>
                     </TouchableOpacity>
@@ -743,8 +748,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 24,
-        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 15 : (Platform.OS === 'ios' ? 50 : 30),
         paddingBottom: 20,
+        backgroundColor: '#FFFFFF',
         borderBottomWidth: 1,
         borderBottomColor: '#F1F5F9',
     },
@@ -993,7 +998,6 @@ const styles = StyleSheet.create({
     footer: {
         flexDirection: 'row',
         padding: 24,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 25,
         backgroundColor: '#FFFFFF',
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',

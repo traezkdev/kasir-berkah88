@@ -15,7 +15,7 @@ import {
     Modal,
     FlatList
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     ArrowLeft,
     Ticket,
@@ -40,6 +40,7 @@ import {
     User
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
+import { getSafeBottomPadding } from '../../utils/safeArea';
 
 const { width } = Dimensions.get('window');
 
@@ -49,6 +50,7 @@ const PromoScreen = ({ navigation }) => {
     const [codeModalVisible, setCodeModalVisible] = useState(false);
     const [selectedPromo, setSelectedPromo] = useState(null);
     const [copied, setCopied] = useState(false);
+    const insets = useSafeAreaInsets();
 
     const getImageUrl = (url) => {
         if (!url) return null;
@@ -212,7 +214,13 @@ const PromoScreen = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={[
+                    styles.scrollContent,
+                    { paddingBottom: getSafeBottomPadding(insets, 15, 90) }
+                ]}
+            >
                 {loading ? (
                     <View style={{ paddingVertical: 100, alignItems: 'center' }}>
                         <ActivityIndicator size="large" color="#059669" />

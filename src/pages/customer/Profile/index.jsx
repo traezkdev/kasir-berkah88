@@ -16,6 +16,26 @@ const CustomerProfile = () => {
     });
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+    const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
+    const [selectedSoundId, setSelectedSoundId] = useState(localStorage.getItem('notificationSound') || 'default');
+    const NOTIFICATION_SOUNDS = [
+        { id: 'default', name: 'Standard Chime' },
+        { id: 'bell', name: 'Reception Bell' },
+        { id: 'modern', name: 'Digital Alert' },
+        { id: 'urgent', name: 'Triple Beep' },
+        { id: 'zte', name: 'ZTE Alert' }
+    ];
+
+    const changeNotificationSound = (soundId) => {
+        setSelectedSoundId(soundId);
+        localStorage.setItem('notificationSound', soundId);
+        toast.success(`Suara notifikasi diatur ke: ${soundId}`);
+
+        // Optional: Play a preview sound on web if needed
+        // const audio = new Audio(`/sounds/${soundId}.mp3`);
+        // audio.play().catch(() => {});
+    };
+
     const [securityData, setSecurityData] = useState({
         currentPassword: '',
         newPassword: '',
@@ -175,7 +195,7 @@ const CustomerProfile = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-24 font-sans max-w-md mx-auto relative shadow-2xl overflow-x-hidden">
+        <div className="min-h-screen bg-gray-50 pb-10 font-sans relative overflow-x-hidden">
             {/* Fixed Top Section */}
             <div className="fixed top-0 left-0 right-0 z-50 max-w-md mx-auto">
                 {/* Header Premium (Dana Look) */}
@@ -256,12 +276,20 @@ const CustomerProfile = () => {
                             onClick: () => navigate('/customer/chat')
                         },
                         {
-                            icon: 'Settings',
-                            label: 'Pengaturan Akun',
-                            color: 'text-emerald-500',
-                            bg: 'bg-emerald-50',
-                            desc: 'Keamanan & Notifikasi',
+                            icon: 'Shield',
+                            label: 'Keamanan Akun',
+                            color: 'text-green-600',
+                            bg: 'bg-green-50',
+                            desc: 'Ubah password & keamanan',
                             onClick: () => setIsAccountModalOpen(true)
+                        },
+                        {
+                            icon: 'Bell',
+                            label: 'Pengaturan Notifikasi',
+                            color: 'text-blue-600',
+                            bg: 'bg-blue-50',
+                            desc: 'Suara & Pemberitahuan',
+                            onClick: () => setIsNotifModalOpen(true)
                         }
                     ].map((item, idx) => (
                         <div
@@ -293,8 +321,8 @@ const CustomerProfile = () => {
                 </button>
 
                 {/* Footer Copy */}
-                <div className="text-center py-6 opacity-20">
-                    <p className="text-[10px] font-black uppercase tracking-[0.4em]">Berkah88 • Versi 2.0.4</p>
+                <div className="text-center py-2 opacity-20">
+                    <p className="text-[10px] font-black uppercase tracking-[0.4em]">Berkah88 • Versi 1.6.1</p>
                 </div>
             </div>
 
@@ -353,12 +381,12 @@ const CustomerProfile = () => {
                 </div>
             )}
 
-            {/* Account Settings Modal (Sync with Mobile) */}
+            {/* Security Modal */}
             {isAccountModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
                     <div className="w-full max-w-md bg-white rounded-[2.5rem] p-8 animate-in slide-in-from-bottom-10 duration-500 shadow-2xl overflow-y-auto max-h-[90vh]">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-black text-gray-900 tracking-tight">Pengaturan Akun</h2>
+                            <h2 className="text-xl font-black text-gray-900 tracking-tight">Keamanan Akun</h2>
                             <button onClick={() => setIsAccountModalOpen(false)} className="p-2 bg-gray-100 rounded-full text-gray-500 active:scale-90 transition-transform">
                                 <Icon name="X" className="w-5 h-5" />
                             </button>
@@ -367,7 +395,7 @@ const CustomerProfile = () => {
                         <div className="space-y-6">
                             <div className="flex items-center gap-2 mb-2 border-b border-gray-50 pb-2">
                                 <Icon name="Shield" className="w-4 h-4 text-green-600" />
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Keamanan Akun</span>
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ubah Password</span>
                             </div>
 
                             <div>
@@ -434,10 +462,26 @@ const CustomerProfile = () => {
                             >
                                 {isLoading ? 'Memproses...' : 'Perbarui Password'}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
-                            <div className="flex items-center gap-2 mt-8 mb-2 border-b border-gray-50 pb-2">
-                                <Icon name="Bell" className="w-4 h-4 text-green-600" />
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pengaturan Notifikasi</span>
+            {/* Notification Modal */}
+            {isNotifModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                    <div className="w-full max-w-md bg-white rounded-[2.5rem] p-8 animate-in slide-in-from-bottom-10 duration-500 shadow-2xl overflow-y-auto max-h-[90vh]">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-black text-gray-900 tracking-tight">Pengaturan Notifikasi</h2>
+                            <button onClick={() => setIsNotifModalOpen(false)} className="p-2 bg-gray-100 rounded-full text-gray-500 active:scale-90 transition-transform">
+                                <Icon name="X" className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-2 mb-2 border-b border-gray-50 pb-2">
+                                <Icon name="Bell" className="w-4 h-4 text-blue-600" />
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tipe Pemberitahuan</span>
                             </div>
 
                             <div className="space-y-4">
@@ -479,6 +523,28 @@ const CustomerProfile = () => {
                                         <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${notifSettings.promo ? 'right-1' : 'left-1'}`}></div>
                                     </button>
                                 </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 mt-8 mb-2 border-b border-gray-50 pb-2">
+                                <Icon name="PlayCircle" className="w-4 h-4 text-blue-600" />
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Suara Notifikasi</span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                {NOTIFICATION_SOUNDS.map((sound) => (
+                                    <div
+                                        key={sound.id}
+                                        onClick={() => changeNotificationSound(sound.id)}
+                                        className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-2 ${selectedSoundId === sound.id ? 'border-green-500 bg-green-50' : 'border-gray-100 bg-gray-50 active:bg-gray-100'}`}
+                                    >
+                                        <div className={`p-1.5 rounded-lg ${selectedSoundId === sound.id ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-400'}`}>
+                                            <Icon name={selectedSoundId === sound.id ? 'Check' : 'PlayCircle'} size={14} />
+                                        </div>
+                                        <span className={`text-[10px] font-black truncate ${selectedSoundId === sound.id ? 'text-green-700' : 'text-gray-500'}`}>
+                                            {sound.name}
+                                        </span>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>

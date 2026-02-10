@@ -30,6 +30,8 @@ const BreadcrumbNavigation = ({ customPath = null, className = "", title = null,
     '/admin-uang-bisnis': 'Riwayat Transaksi Owner',
     '/raw-material-stock': 'Stok Bahan Baku',
     '/lapak-deposit': 'Pengeluaran Lapak',
+    '/information': 'Pusat Informasi',
+    '/promos': 'Manajemen Promo',
   };
 
   const generateBreadcrumbs = () => {
@@ -66,7 +68,7 @@ const BreadcrumbNavigation = ({ customPath = null, className = "", title = null,
       currentPath += `/${segment}`;
       const isLast = index === pathSegments?.length - 1;
 
-      if (currentPath === '/owner' && !isLast) {
+      if ((currentPath === '/owner' || currentPath === '/admin' || currentPath === '/seller') && !isLast) {
         return;
       }
 

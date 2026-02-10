@@ -13,7 +13,8 @@ import {
     TextInput,
     Modal
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getSafeBottomPadding } from '../../utils/safeArea';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import {
     User,
@@ -32,7 +33,9 @@ import {
     Banknote,
     Lock,
     Eye,
-    EyeOff
+    EyeOff,
+    Check,
+    PlayCircle
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
 
@@ -40,13 +43,16 @@ import apiService, { API_URL } from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
+import { useOrderNotification, NOTIFICATION_SOUNDS } from '../../context/OrderNotificationContext';
 
 const { width } = Dimensions.get('window');
 
 const CustomerProfile = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
     const { logout } = useAuth();
     const { showToast } = useToast();
     const { confirm } = useConfirm();
+    const { selectedSoundId, changeNotificationSound } = useOrderNotification();
 
     const [userData, setUserData] = useState({
         username: 'Pelanggan',
@@ -63,6 +69,7 @@ const CustomerProfile = ({ navigation }) => {
 
     // Account Settings States
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+    const [isNotifModalOpen, setIsNotifModalOpen] = useState(false);
     const [securityData, setSecurityData] = useState({
         currentPassword: '',
         newPassword: '',
@@ -187,11 +194,13 @@ const CustomerProfile = ({ navigation }) => {
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
+        <SafeAreaView style={styles.container} edges={['left', 'right']}>
             <StatusBar barStyle="light-content" backgroundColor="#059669" />
 
             {/* Header Premium */}
-            <View style={styles.header}>
+            <View style={[styles.header, {
+                paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 15 : (insets.top > 0 ? insets.top + 10 : 25)
+            }]}>
                 <Text style={styles.headerTitle}>Profil Saya</Text>
                 <Text style={styles.headerSubtitle}>INFORMASI & PENGATURAN AKUN</Text>
             </View>
@@ -266,12 +275,20 @@ const CustomerProfile = ({ navigation }) => {
                             onClick: () => navigation.navigate('ChatScreen')
                         },
                         {
-                            icon: Settings,
-                            label: 'Pengaturan Akun',
-                            color: '#10B981',
+                            icon: Shield,
+                            label: 'Keamanan Akun',
+                            color: '#059669',
                             bg: '#ECFDF5',
-                            desc: 'Keamanan & Notifikasi',
+                            desc: 'Ubah password & keamanan',
                             onClick: () => setIsAccountModalOpen(true)
+                        },
+                        {
+                            icon: Bell,
+                            label: 'Pengaturan Notifikasi',
+                            color: '#6366F1',
+                            bg: '#EEF2FF',
+                            desc: 'Suara & Pemberitahuan',
+                            onClick: () => setIsNotifModalOpen(true)
                         }
                     ].map((item, idx) => (
                         <TouchableOpacity
@@ -308,11 +325,9 @@ const CustomerProfile = ({ navigation }) => {
                     onPress={() => navigation.navigate('DeveloperCreditsScreen')}
                     activeOpacity={0.7}
                 >
-                    <Text style={styles.versionText}>BERKAH88 • VERSI 2.1.0</Text>
+                    <Text style={styles.versionText}>BERKAH88 • VERSI 1.6.1</Text>
                     <Text style={styles.developerText}>by traezkdev</Text>
                 </TouchableOpacity>
-
-                <View style={{ height: 40 }} />
             </ScrollView>
 
             {/* Profile Modal */}
@@ -323,7 +338,7 @@ const CustomerProfile = ({ navigation }) => {
                 onRequestClose={() => setIsProfileModalOpen(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, { paddingBottom: getSafeBottomPadding(insets) }]}>
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>Atur Profil</Text>
                             <TouchableOpacity onPress={() => setIsProfileModalOpen(false)} style={styles.modalClose}>
@@ -384,7 +399,7 @@ const CustomerProfile = ({ navigation }) => {
                 </View>
             </Modal>
 
-            {/* Account & Security Modal */}
+            {/* Security Modal */}
             <Modal
                 visible={isAccountModalOpen}
                 animationType="slide"
@@ -392,9 +407,9 @@ const CustomerProfile = ({ navigation }) => {
                 onRequestClose={() => setIsAccountModalOpen(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { maxHeight: '90%' }]}>
+                    <View style={[styles.modalContent, { maxHeight: '90%', paddingBottom: getSafeBottomPadding(insets) }]}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Pengaturan Akun</Text>
+                            <Text style={styles.modalTitle}>Keamanan Akun</Text>
                             <TouchableOpacity onPress={() => setIsAccountModalOpen(false)} style={styles.modalClose}>
                                 <X size={20} color="#64748B" />
                             </TouchableOpacity>
@@ -405,10 +420,9 @@ const CustomerProfile = ({ navigation }) => {
                             keyboardShouldPersistTaps="handled"
                         >
                             <View style={styles.modalBody}>
-                                {/* Security Section */}
                                 <View style={styles.sectionHeader}>
                                     <Shield size={18} color="#059669" />
-                                    <Text style={styles.sectionTitle}>KEAMANAN AKUN</Text>
+                                    <Text style={styles.sectionTitle}>UBAH PASSWORD</Text>
                                 </View>
 
                                 <View style={styles.inputGroup}>
@@ -470,11 +484,36 @@ const CustomerProfile = ({ navigation }) => {
                                         <Text style={styles.saveBtnText}>Perbarui Password</Text>
                                     )}
                                 </TouchableOpacity>
+                            </View>
+                        </KeyboardAwareScrollView>
+                    </View>
+                </View>
+            </Modal>
 
-                                {/* Notification Section */}
-                                <View style={[styles.sectionHeader, { marginTop: 30 }]}>
-                                    <Bell size={18} color="#059669" />
-                                    <Text style={styles.sectionTitle}>NOTIFIKASI</Text>
+            {/* Notification Modal */}
+            <Modal
+                visible={isNotifModalOpen}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setIsNotifModalOpen(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, { maxHeight: '90%', paddingBottom: getSafeBottomPadding(insets) }]}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Pengaturan Notifikasi</Text>
+                            <TouchableOpacity onPress={() => setIsNotifModalOpen(false)} style={styles.modalClose}>
+                                <X size={20} color="#64748B" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <KeyboardAwareScrollView
+                            showsVerticalScrollIndicator={false}
+                            keyboardShouldPersistTaps="handled"
+                        >
+                            <View style={styles.modalBody}>
+                                <View style={styles.sectionHeader}>
+                                    <Bell size={18} color="#6366F1" />
+                                    <Text style={[styles.sectionTitle, { color: '#6366F1' }]}>TIPE PEMBERITAHUAN</Text>
                                 </View>
 
                                 <View style={styles.settingItem}>
@@ -487,9 +526,7 @@ const CustomerProfile = ({ navigation }) => {
                                             const newVal = !notifSettings.orders;
                                             const updated = { ...notifSettings, orders: newVal };
                                             setNotifSettings(updated);
-                                            try {
-                                                await apiService.put('/api/user/notification-settings', updated);
-                                            } catch (e) { showToast('Gagal update', 'error'); }
+                                            try { await apiService.put('/api/user/notification-settings', updated); } catch (e) { showToast('Gagal update', 'error'); }
                                         }}
                                         style={[styles.miniToggle, notifSettings.orders ? styles.toggleOn : styles.toggleOff]}
                                     >
@@ -507,9 +544,7 @@ const CustomerProfile = ({ navigation }) => {
                                             const newVal = !notifSettings.chat;
                                             const updated = { ...notifSettings, chat: newVal };
                                             setNotifSettings(updated);
-                                            try {
-                                                await apiService.put('/api/user/notification-settings', updated);
-                                            } catch (e) { showToast('Gagal update', 'error'); }
+                                            try { await apiService.put('/api/user/notification-settings', updated); } catch (e) { showToast('Gagal update', 'error'); }
                                         }}
                                         style={[styles.miniToggle, notifSettings.chat ? styles.toggleOn : styles.toggleOff]}
                                     >
@@ -527,17 +562,40 @@ const CustomerProfile = ({ navigation }) => {
                                             const newVal = !notifSettings.promo;
                                             const updated = { ...notifSettings, promo: newVal };
                                             setNotifSettings(updated);
-                                            try {
-                                                await apiService.put('/api/user/notification-settings', updated);
-                                            } catch (e) { showToast('Gagal update', 'error'); }
+                                            try { await apiService.put('/api/user/notification-settings', updated); } catch (e) { showToast('Gagal update', 'error'); }
                                         }}
                                         style={[styles.miniToggle, notifSettings.promo ? styles.toggleOn : styles.toggleOff]}
                                     >
                                         <View style={[styles.toggleCircle, notifSettings.promo ? styles.circleOn : styles.circleOff]} />
                                     </TouchableOpacity>
                                 </View>
+
+                                <View style={[styles.sectionHeader, { marginTop: 30 }]}>
+                                    <PlayCircle size={18} color="#6366F1" />
+                                    <Text style={[styles.sectionTitle, { color: '#6366F1' }]}>SUARA NOTIFIKASI</Text>
+                                </View>
+
+                                <View style={styles.soundGrid}>
+                                    {NOTIFICATION_SOUNDS.map((sound) => {
+                                        const isSelected = selectedSoundId === sound.id;
+                                        return (
+                                            <TouchableOpacity
+                                                key={sound.id}
+                                                style={[styles.soundCard, isSelected && styles.soundCardSelected]}
+                                                onPress={() => changeNotificationSound(sound.id)}
+                                                activeOpacity={0.7}
+                                            >
+                                                <View style={[styles.soundIcon, isSelected && styles.soundIconSelected]}>
+                                                    {isSelected ? <Check size={16} color="#FFFFFF" /> : <PlayCircle size={16} color="#64748B" />}
+                                                </View>
+                                                <Text style={[styles.soundName, isSelected && styles.soundNameSelected]} numberOfLines={1}>
+                                                    {sound.name}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
                             </View>
-                            <View style={{ height: 40 }} />
                         </KeyboardAwareScrollView>
                     </View>
                 </View>
@@ -558,7 +616,6 @@ const styles = StyleSheet.create({
     },
     header: {
         backgroundColor: '#059669',
-        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : (Platform.OS === 'web' ? 15 : 20),
         paddingBottom: 70,
         paddingHorizontal: 24,
         borderBottomLeftRadius: 40,
@@ -749,7 +806,6 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 40,
         borderTopRightRadius: 40,
         padding: 30,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 30,
     },
     modalHeader: {
         flexDirection: 'row',
@@ -800,6 +856,49 @@ const styles = StyleSheet.create({
     textAreaWrap: {
         alignItems: 'flex-start',
     },
+    // New styles for sound grid
+    soundGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+        marginTop: 10,
+    },
+    soundCard: {
+        width: '48%',
+        backgroundColor: '#F8FAFC',
+        borderRadius: 16,
+        padding: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    soundCardSelected: {
+        backgroundColor: '#ECFDF5',
+        borderColor: '#10B981',
+    },
+    soundIcon: {
+        width: 28,
+        height: 28,
+        borderRadius: 10,
+        backgroundColor: '#E2E8F0',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    soundIconSelected: {
+        backgroundColor: '#10B981',
+    },
+    soundName: {
+        fontSize: 11,
+        fontWeight: 'bold',
+        color: '#64748B',
+        flex: 1,
+    },
+    soundNameSelected: {
+        color: '#065F46',
+    },
+
     textArea: {
         height: 120,
         textAlignVertical: 'top',

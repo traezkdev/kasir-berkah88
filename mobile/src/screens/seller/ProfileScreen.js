@@ -15,6 +15,8 @@ import {
     ActivityIndicator,
     Switch
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getSafeBottomPadding } from '../../utils/safeArea';
 import {
     User,
     ChevronLeft,
@@ -41,6 +43,7 @@ import * as ImagePicker from 'expo-image-picker';
 import BottomModalTemplate from '../../components/templates/BottomModalTemplate';
 
 const ProfileScreen = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
     const { user, logout, refreshUser } = useAuth();
     const { confirm } = useConfirm();
     const { showToast } = useToast();
@@ -242,7 +245,9 @@ const ProfileScreen = ({ navigation }) => {
             <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, {
+                paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 15 : (insets.top > 0 ? insets.top + 10 : 25)
+            }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                     <ChevronLeft size={24} color="#1E293B" />
                 </TouchableOpacity>
@@ -318,14 +323,14 @@ const ProfileScreen = ({ navigation }) => {
                     onPress={() => navigation.navigate('DeveloperCreditsScreen')}
                     activeOpacity={0.7}
                 >
-                    <Text style={styles.versionText}>Versi 2.1.0 (Alpha)</Text>
+                    <Text style={styles.versionText}>Versi 1.6.1 (Alpha)</Text>
                     <Text style={styles.developerText}>Develop By traezkdev</Text>
                 </TouchableOpacity>
                 <View style={{ height: 100 }} />
             </ScrollView>
 
             {/* Fixed Logout Button */}
-            <View style={styles.fixedFooter}>
+            <View style={[styles.fixedFooter, { paddingBottom: getSafeBottomPadding(insets) }]}>
                 <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
                     <LogOut size={20} color="#EF4444" />
                     <Text style={styles.logoutText}>Keluar dari Akun</Text>
@@ -517,7 +522,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 20,
-        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 20,
         paddingBottom: 15,
         backgroundColor: '#FFFFFF',
     },
@@ -722,7 +726,6 @@ const styles = StyleSheet.create({
         right: 0,
         backgroundColor: '#FFFFFF',
         padding: 20,
-        paddingBottom: Platform.OS === 'ios' ? 30 : 20,
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',
         ...Platform.select({

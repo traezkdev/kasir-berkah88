@@ -20,6 +20,8 @@ import {
     Pressable,
     InteractionManager
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getSafeBottomPadding } from '../../utils/safeArea';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -104,6 +106,7 @@ const qtyBadgeTextStyles = {
 };
 
 const SalesPOS = () => {
+    const insets = useSafeAreaInsets();
     const [menuItems, setMenuItems] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -606,7 +609,7 @@ const SalesPOS = () => {
             >
                 <View style={styles.modalContent}>
                     <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-                    <View style={styles.modalHeader}>
+                    <View style={[styles.modalHeader, { paddingTop: Math.max(insets.top + 15, 35) }]}>
                         <View>
                             <Text style={styles.modalTitle}>Detail Pesanan</Text>
                             <Text style={styles.modalSubtitle}>{totalItemsCount} ITEM TERPILIH</Text>
@@ -840,7 +843,8 @@ const SalesPOS = () => {
                         </View>
                     </KeyboardAvoidingView>
 
-                    <View style={[styles.modalFooter, { position: 'absolute', bottom: 0, left: 0, right: 0 }]}>
+                    {/* Modal Footer */}
+                    <View style={[styles.modalFooter, { paddingBottom: getSafeBottomPadding(insets) }]}>
                         <View style={{ gap: 8, marginBottom: 15 }}>
                             {parseFloat(manualDiscount || 0) > 0 && (
                                 <View style={styles.totalRow}>
@@ -929,7 +933,7 @@ const SalesPOS = () => {
             >
                 <View style={styles.customerSearchOverlay}>
                     <View style={styles.customerSearchContainer}>
-                        <View style={styles.customerSearchHeader}>
+                        <View style={[styles.customerSearchHeader, { paddingTop: Math.max(insets.top, 20) }]}>
                             <Text style={styles.customerSearchTitle}>Cari Pelanggan</Text>
                             <TouchableOpacity onPress={() => {
                                 setShowCustomerSearch(false);
@@ -1308,7 +1312,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: 24,
-        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 15 : (Platform.OS === 'ios' ? 50 : 25),
+        paddingTop: 15,
         borderBottomWidth: 1,
         borderBottomColor: '#F1F5F9',
         zIndex: 100,
@@ -1525,7 +1529,6 @@ const styles = StyleSheet.create({
     },
     modalFooter: {
         padding: 20,
-        paddingBottom: Platform.OS === 'ios' ? 25 : 15,
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',
         backgroundColor: '#FFFFFF',

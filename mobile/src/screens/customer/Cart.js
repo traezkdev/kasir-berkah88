@@ -15,7 +15,8 @@ import {
     Modal,
     Switch
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getSafeBottomPadding } from '../../utils/safeArea';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -100,6 +101,7 @@ const CartItem = React.memo(({ item, updateQuantity, handleRemoveItem, formatCur
 });
 
 const CustomerCart = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
     const {
         cart,
         updateQuantity,
@@ -718,7 +720,7 @@ const CustomerCart = ({ navigation }) => {
             </KeyboardAwareScrollView>
 
             {/* Sticky Checkout Button - Outside Scroll, but inside SafeArea */}
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: getSafeBottomPadding(insets, -18, 20) }]}>
                 <View style={styles.footerLeft}>
                     <Text style={styles.footerLabel}>Total Bayar</Text>
                     <Text style={styles.footerValue}>{formatCurrency(finalTotal)}</Text>
@@ -1171,7 +1173,6 @@ const styles = StyleSheet.create({
     },
     footer: {
         padding: 20,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 20,
         backgroundColor: '#FFFFFF',
         flexDirection: 'row',
         justifyContent: 'space-between',

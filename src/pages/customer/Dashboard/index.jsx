@@ -20,6 +20,9 @@ const CustomerDashboard = () => {
     const [scrolled, setScrolled] = useState(false);
     const [orderNotificationCount, setOrderNotificationCount] = useState(0);
 
+    // Information Center States - Only keep essential for notification dot
+    const [hasNewInfo, setHasNewInfo] = useState(false);
+
     useEffect(() => {
         const handleScroll = () => {
             const isScrolled = window.scrollY > 150;
@@ -93,6 +96,21 @@ const CustomerDashboard = () => {
                     // Store current orders temporarily to mark as read when clicked
                     window.currentDashboardOrders = currentOrders;
                 }
+
+                // Fetch Information Center Data (Only checks for new info)
+                const infoRes = await authFetch(`${import.meta.env.VITE_API_URL}/api/information?limit=1`);
+                const infoData = await infoRes.json();
+                if (infoData.data && infoData.data.length > 0) {
+                    const latestInfo = infoData.data[0];
+                    const latestTimestamp = new Date(latestInfo.created_at).getTime();
+                    const lastSeenTimestamp = parseInt(localStorage.getItem('last_seen_info_timestamp') || '0');
+
+                    if (lastSeenTimestamp < latestTimestamp) {
+                        setHasNewInfo(true);
+                    } else {
+                        setHasNewInfo(false);
+                    }
+                }
             } catch (error) {
                 console.error("Error fetching dashboard data:", error);
             } finally {
@@ -143,6 +161,15 @@ const CustomerDashboard = () => {
         return 'Selamat Malam';
     };
 
+    const handleOpenInfo = () => {
+        // Navigate to Information Center page
+        navigate('/customer/information');
+    };
+
+    const formatCurrency = (val) => {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
+    };
+
     const getCategoryIcon = (categoryName) => {
         const name = categoryName ? categoryName.toUpperCase() : '';
         if (name.includes('AYAM') || name.includes('CHICKEN') || name.includes('BEBEK') || name.includes('DUCK')) return 'Drumstick';
@@ -154,10 +181,6 @@ const CustomerDashboard = () => {
         if (name.includes('SNACK') || name.includes('CEMILAN') || name.includes('GORENGAN') || name.includes('KERUPUK')) return 'Cookie';
         if (name.includes('LAIN') || name.includes('EXTRA')) return 'MoreHorizontal';
         return 'Utensils';
-    };
-
-    const formatCurrency = (val) => {
-        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
     };
 
     return (
@@ -194,6 +217,15 @@ const CustomerDashboard = () => {
                         <h1 className="text-2xl font-bold">{userName}</h1>
                     </div>
                     <div className="flex gap-3">
+                        <button
+                            onClick={handleOpenInfo}
+                            className="bg-white/20 p-2 rounded-full hover:bg-white/30 transition-colors backdrop-blur-sm relative"
+                        >
+                            <Icon name="Bell" className="w-5 h-5 text-white" />
+                            {hasNewInfo && (
+                                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border border-white"></span>
+                            )}
+                        </button>
                         <Link to="/customer/chat" className="bg-white/20 p-2 rounded-full hover:bg-white/30 transition-colors backdrop-blur-sm relative">
                             <Icon name="MessageCircle" className="w-5 h-5 text-white" />
                         </Link>

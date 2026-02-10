@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { User, Lock, Phone, MapPin, ArrowRight, ArrowLeft } from 'lucide-react-native';
 import apiService from '../api/apiService';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -26,6 +27,7 @@ const RegisterScreen = ({ navigation }) => {
         confirmPassword: ''
     });
     const [loading, setLoading] = useState(false);
+    const insets = useSafeAreaInsets();
 
     const handleRegister = async () => {
         const { username, phone, address, password, confirmPassword } = formData;
@@ -148,7 +150,7 @@ const RegisterScreen = ({ navigation }) => {
             </KeyboardAvoidingView>
 
             {/* Footer - Outside KeyboardAvoidingView to stay at bottom */}
-            <View style={styles.footerOutside}>
+            <View style={[styles.footerOutside, { paddingBottom: Math.max(insets.bottom, 20) }]}>
                 <Text style={styles.footerText}>© 2024 Kasir Berkah88. All Rights Reserved.</Text>
             </View>
         </View>

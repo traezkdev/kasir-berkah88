@@ -149,12 +149,27 @@ const setupDatabase = async () => {
       );
     `;
 
+    const createInformationTable = `
+      CREATE TABLE IF NOT EXISTS information (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        image_url VARCHAR(255),
+        link_type VARCHAR(50) DEFAULT 'none',
+        link_value VARCHAR(255) DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      );
+    `;
+
     await connection.query(createNotesTable);
     console.log('notes table is ready.');
     await connection.query(createBannersTable);
     console.log('banners table is ready.');
     await connection.query(createPromosTable);
     console.log('promos table is ready.');
+    await connection.query(createInformationTable);
+    console.log('information table is ready.');
 
     // Migration for promos table
     const [isHeroCol] = await connection.query("SHOW COLUMNS FROM promos LIKE 'is_hero'");
@@ -176,6 +191,13 @@ const setupDatabase = async () => {
     if (isOneTimeCol.length === 0) {
       await connection.query("ALTER TABLE promos ADD COLUMN is_one_time BOOLEAN DEFAULT FALSE");
       console.log("Added is_one_time column to promos table.");
+    }
+
+    // Check and add is_active to information table
+    const [isActiveInfoCol] = await connection.query("SHOW COLUMNS FROM information LIKE 'is_active'");
+    if (isActiveInfoCol.length === 0) {
+      await connection.query("ALTER TABLE information ADD COLUMN is_active BOOLEAN DEFAULT TRUE");
+      console.log("Added is_active column to information table.");
     }
 
     const createOrdersTable = `
@@ -1916,6 +1938,22 @@ const setupDatabase = async () => {
       console.log('expense_categories table checked/created.');
     } catch (err) {
       console.error('Error setting up expense_categories table:', err);
+    }
+
+    // --- Information Table Migrations ---
+    try {
+      const [linkTypeCol] = await connection.query("SHOW COLUMNS FROM information LIKE 'link_type'");
+      if (linkTypeCol.length === 0) {
+        await connection.query("ALTER TABLE information ADD COLUMN link_type VARCHAR(50) DEFAULT 'none'");
+        console.log("Added link_type column to information table.");
+      }
+      const [linkValueCol] = await connection.query("SHOW COLUMNS FROM information LIKE 'link_value'");
+      if (linkValueCol.length === 0) {
+        await connection.query("ALTER TABLE information ADD COLUMN link_value VARCHAR(255) DEFAULT NULL");
+        console.log("Added link_value column to information table.");
+      }
+    } catch (err) {
+      console.error('Error migrating information table:', err);
     }
 
     connection.release();

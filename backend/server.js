@@ -55,6 +55,15 @@ io.on('connection', (socket) => {
         }
         onlineUsers.get(userId).sockets.add(socket.id);
 
+        // Join user-specific room for targeted notifications
+        socket.join(`user_${userId}`);
+
+        // Join sellers room if applicable
+        const sellerRoles = ['admin', 'owner', 'penjual', 'kasir'];
+        if (sellerRoles.includes(role)) {
+            socket.join('sellers');
+        }
+
         // Broadcast to all that this user is online (including role)
         io.emit('user_status', { userId, role, status: 'online' });
 
@@ -1426,6 +1435,182 @@ app.post("/api/banners", authenticateToken, authorizeRoles('admin', 'penjual'), 
     } catch (err) {
         console.error("Error adding banner:", err);
         res.status(400).json({ "error": err.message });
+    }
+});
+
+// --- Information / Announcements Endpoints ---
+
+// Get all information (Public) with pagination
+app.get("/api/information", authenticateToken, async (req, res) => {
+    try {
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 10;
+        const offset = (page - 1) * limit;
+
+        const isSeller = ['admin', 'owner', 'penjual', 'kasir'].includes(req.user.role);
+        const whereClause = isSeller ? "" : "WHERE is_active = 1";
+
+        // Get total count
+        const countSql = `SELECT COUNT(*) as total FROM information ${whereClause}`;
+        const [countRows] = await db.query(countSql);
+        const totalItems = countRows[0].total;
+        const totalPages = Math.ceil(totalItems / limit);
+
+        // Get paginated data
+        const sql = `SELECT * FROM information ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+        const [rows] = await db.query(sql, [limit, offset]);
+
+        res.json({
+            message: "success",
+            data: rows,
+            pagination: {
+                currentPage: page,
+                totalPages: totalPages,
+                totalItems: totalItems,
+                itemsPerPage: limit
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Add new information (Seller only)
+app.post("/api/information", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
+    try {
+        const { title, content, image_url, link_type, link_value, is_active } = req.body;
+        if (!title || !content) {
+            return res.status(400).json({ error: "Judul dan isi informasi wajib diisi" });
+        }
+
+        // Process image if it's base64
+        let finalImageUrl = image_url;
+        if (image_url && image_url.startsWith('data:image')) {
+            finalImageUrl = await processBase64Image(image_url, 'info');
+        }
+
+        const activeVal = (is_active === 'false' || is_active === false || is_active === '0' || is_active === 0) ? 0 : 1;
+        const sql = 'INSERT INTO information (title, content, image_url, link_type, link_value, is_active) VALUES (?, ?, ?, ?, ?, ?)';
+        const [result] = await db.query(sql, [title, content, finalImageUrl, link_type || 'none', link_value || null, activeVal]);
+
+        await logActivity(req.user.userId, 'Tambah Informasi', 'information', result.insertId, `Info baru: ${title}`);
+
+        res.status(201).json({
+            message: "success",
+            data: { id: result.insertId, title, content, image_url: finalImageUrl, link_type, link_value, is_active: activeVal === 1 }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update existing information
+app.put("/api/information/:id", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, content, image_url, link_type, link_value, is_active } = req.body;
+
+        if (!title || !content) {
+            return res.status(400).json({ error: "Judul dan isi informasi wajib diisi" });
+        }
+
+        // Process image if it's base64 (new upload)
+        let finalImageUrl = image_url;
+        if (image_url && image_url.startsWith('data:image')) {
+            finalImageUrl = await processBase64Image(image_url, 'info');
+        }
+
+        // Check if is_active is provided, otherwise keep it as is (need to fetch first? No, default to what user sent or if undefined dont update it?
+        // Better: if undefined, assume we keep it. But usually frontend sends full object.
+        // Let's assume if it is active it is sent. But wait, standard PUT replaces.
+        // Let's check if undefined.
+        // Simplified: The frontend for edit usually sends everything.
+        // But to be safe from "undefined" converting to 0 or 1 incorrectly:
+        // Let's use logic: if undefined, do we update?
+        // SQL needs value.
+        // Let's just default to keeping it active if not specified, OR fetch current.
+        // For efficiency, let's required frontend to send it. Or default 1.
+        const activeVal = (is_active === 'false' || is_active === false || is_active === '0' || is_active === 0) ? 0 : 1;
+
+        const sql = 'UPDATE information SET title = ?, content = ?, image_url = ?, link_type = ?, link_value = ?, is_active = ? WHERE id = ?';
+        const [result] = await db.query(sql, [title, content, finalImageUrl, link_type || 'none', link_value || null, activeVal, id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Informasi tidak ditemukan" });
+        }
+
+        await logActivity(req.user.userId, 'Update Informasi', 'information', id, `Info ID ${id} diperbarui: ${title}`);
+
+        res.json({
+            message: "success",
+            data: { id, title, content, image_url: finalImageUrl, link_type, link_value, is_active: activeVal === 1 }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete information
+app.delete("/api/information/:id", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const sql = 'DELETE FROM information WHERE id = ?';
+        const [result] = await db.query(sql, [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Informasi tidak ditemukan" });
+        }
+
+        await logActivity(req.user.userId, 'Hapus Informasi', 'information', id, `Info ID ${id} dihapus`);
+        res.json({ message: "success" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Broadcast existing information
+app.post("/api/information/:id/broadcast", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Update created_at so it moves to the top of the feed
+        const updateSql = "UPDATE information SET created_at = NOW() WHERE id = ?";
+        const [updateResult] = await db.query(updateSql, [id]);
+
+        if (updateResult.affectedRows === 0) {
+            return res.status(404).json({ error: "Informasi tidak ditemukan" });
+        }
+
+        const infoSql = "SELECT * FROM information WHERE id = ?";
+        const [infos] = await db.query(infoSql, [id]);
+        const info = infos[0];
+
+        // Get all customers (pelanggan) to send notification
+        const customerSql = "SELECT id FROM users WHERE role = 'pelanggan'";
+        const [customers] = await db.query(customerSql);
+        const customerIds = customers.map(c => c.id);
+
+        // Send push notification only to customers (pelanggan), exclude the sender
+        if (customerIds.length > 0) {
+            sendUniversalNotification(
+                customerIds, // Only send to customers
+                info.content.length > 50 ? info.content.substring(0, 50) + '...' : info.content,
+                `📢 ${info.title}`,
+                {
+                    type: 'info',
+                    infoId: id,
+                    link_type: info.link_type || 'none',
+                    link_value: info.link_value || null
+                },
+                req.user.userId // Exclude the seller who is broadcasting
+            ).catch(e => console.error('Error broadcasting info notification:', e));
+        }
+
+        await logActivity(req.user.userId, 'Broadcast Informasi', 'information', id, `Resend & Refresh info: ${info.title}`);
+
+        res.json({ message: "success", info: info.title });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -5874,8 +6059,17 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
             receiver_role: receiverRole
         };
 
-        // Emit to the specific receiver
-        io.emit('new_message', messageData);
+        // Emit to specific rooms instead of global broadcast for stability and performance
+        // 1. To the specific receiver
+        // 2. To the sender (for multi-device sync)
+        // 3. To 'sellers' room if receiver is part of the staff
+        let emitTarget = io.to(`user_${receiver_id}`).to(`user_${sender_id}`);
+
+        if (sellerRoles.includes(receiverRole)) {
+            emitTarget = emitTarget.to('sellers');
+        }
+
+        emitTarget.emit('new_message', messageData);
 
         res.status(201).json({
             message: "Pesan terkirim",

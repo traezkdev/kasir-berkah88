@@ -13,6 +13,8 @@ import {
     Alert,
     Modal
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getSafeBottomPadding } from '../../utils/safeArea';
 import {
     ArrowLeft,
     CheckCircle2,
@@ -31,6 +33,7 @@ const { width } = Dimensions.get('window');
 
 const OrderDetails = ({ navigation, route }) => {
     const { orderId } = route.params || {};
+    const insets = useSafeAreaInsets();
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -299,7 +302,7 @@ const OrderDetails = ({ navigation, route }) => {
                 <View style={{ height: 40 }} />
             </ScrollView>
 
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: getSafeBottomPadding(insets) }]}>
                 <TouchableOpacity
                     style={styles.primaryBtn}
                     onPress={() => navigation.navigate('MainTabs')}
@@ -604,7 +607,6 @@ const styles = StyleSheet.create({
     },
     footer: {
         padding: 20,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 20,
         backgroundColor: '#FFFFFF',
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',

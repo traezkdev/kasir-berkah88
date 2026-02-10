@@ -106,7 +106,7 @@ export const OrderNotificationProvider = ({ children }) => {
         if (!token || !userId) return;
 
         const newSocket = io(API_BASE_URL, {
-            transports: ['websocket', 'polling'],
+            transports: ['polling', 'websocket'],
             reconnection: true,
             auth: { token }
         });

@@ -20,6 +20,7 @@ import { useAuth } from '../context/AuthContext';
 import { useOrderNotification } from '../context/OrderNotificationContext';
 import { useChat } from '../context/ChatContext';
 import { useConfirm } from '../context/ConfirmContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Screens
 import ChatScreen from '../screens/seller/ChatScreen';
@@ -44,8 +45,10 @@ import DeveloperCreditsScreen from '../screens/DeveloperCreditsScreen';
 import TransactionTrash from '../screens/seller/TransactionTrash';
 import BusinessReports from '../screens/seller/BusinessReports';
 import PromoManagement from '../screens/seller/PromoManagement';
+import ManageInformation from '../screens/seller/ManageInformation';
 
 // Customer Screens
+import InformationScreen from '../screens/customer/InformationScreen';
 import CustomerMenu from '../screens/customer/Menu';
 import CustomerCart from '../screens/customer/Cart';
 import OrderHistory from '../screens/customer/OrderHistory';
@@ -55,27 +58,55 @@ import PointsHistory from '../screens/customer/PointsHistory';
 import PromoScreen from '../screens/customer/PromoScreen';
 import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { getSafeBottomPadding, getSafeFooterHeight } from '../utils/safeArea';
+import { navigationRef } from './navigationRef';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+
+// Stack for Home Tab to allow screens like PointsHistory to show navbar
+const HomeStack = () => (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="CustomerDashboard" component={CustomerDashboard} />
+        <Stack.Screen name="PointsHistory" component={PointsHistory} />
+    </Stack.Navigator>
+);
+
+// Stack for Profile Tab to allow screens like PointsHistory to show navbar
+const ProfileStack = () => (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="CustomerProfile" component={CustomerProfile} />
+        <Stack.Screen name="PointsHistory" component={PointsHistory} />
+    </Stack.Navigator>
+);
+
+// Stack for Promo Tab
+const PromoStack = () => (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="PromoScreen" component={PromoScreen} />
+        <Stack.Screen name="PointsHistory" component={PointsHistory} />
+    </Stack.Navigator>
+);
 
 import Svg, { Path } from 'react-native-svg';
 
 const SellerTabs = () => {
     const { pendingCount } = useOrderNotification();
     const { unreadCount } = useChat();
+    const insets = useSafeAreaInsets();
 
     return (
         <Tab.Navigator
             screenOptions={({ route }) => ({
                 headerShown: false,
                 tabBarStyle: {
-                    height: 75,
-                    paddingBottom: 15,
+                    height: getSafeFooterHeight(insets, 70),
+                    paddingBottom: getSafeBottomPadding(insets, 5, 20),
                     paddingTop: 10,
                     backgroundColor: '#FFFFFF',
                     borderTopWidth: 1,
                     borderTopColor: '#F1F5F9',
+                    elevation: 8,
                 },
                 tabBarActiveTintColor: '#138FEA',
                 tabBarInactiveTintColor: '#94A3B8',
@@ -130,12 +161,22 @@ const SellerRootStack = () => (
         <Stack.Screen name="TransactionTrash" component={TransactionTrash} />
         <Stack.Screen name="BusinessReports" component={BusinessReports} />
         <Stack.Screen name="PromoManagement" component={PromoManagement} />
+        <Stack.Screen name="ManageInformation" component={ManageInformation} />
     </Stack.Navigator>
 );
 
 const CustomCustomerTabBar = ({ state, descriptors, navigation }) => {
+    const insets = useSafeAreaInsets();
+
     return (
-        <View style={navStyles.bottomNav}>
+        <View style={[
+            navStyles.bottomNav,
+            {
+                height: getSafeFooterHeight(insets, insets.bottom > 0 ? 60 : 66),
+                paddingBottom: getSafeBottomPadding(insets, 0, 15),
+                paddingTop: insets.bottom > 0 ? 12 : 18
+            }
+        ]}>
             {state.routes.map((route, index) => {
                 const { options } = descriptors[route.key];
                 const label = options.tabBarLabel !== undefined ? options.tabBarLabel : options.title !== undefined ? options.title : route.name;
@@ -196,11 +237,9 @@ const navStyles = {
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',
         paddingTop: 12,
-        paddingBottom: Platform.OS === 'ios' ? 30 : 15,
         paddingHorizontal: 16,
         justifyContent: 'space-between',
         alignItems: 'center',
-        height: Platform.OS === 'ios' ? 95 : 75,
     },
     navItem: {
         flex: 1,
@@ -249,7 +288,7 @@ const CustomerTabs = () => {
         >
             <Tab.Screen
                 name="Home"
-                component={CustomerDashboard}
+                component={HomeStack}
                 options={{ tabBarLabel: 'Beranda' }}
             />
             <Tab.Screen
@@ -259,7 +298,7 @@ const CustomerTabs = () => {
             />
             <Tab.Screen
                 name="Promo"
-                component={PromoScreen}
+                component={PromoStack}
                 options={{ tabBarLabel: 'Promo' }}
             />
             <Tab.Screen
@@ -269,7 +308,7 @@ const CustomerTabs = () => {
             />
             <Tab.Screen
                 name="Profile"
-                component={CustomerProfile}
+                component={ProfileStack}
                 options={{ tabBarLabel: 'Profil' }}
             />
         </Tab.Navigator>
@@ -283,9 +322,10 @@ const CustomerRootStack = () => (
         <Stack.Screen name="Cart" component={CustomerCart} />
         <Stack.Screen name="OrderDetails" component={OrderDetails} />
         <Stack.Screen name="ChatScreen" component={ChatScreen} />
-        <Stack.Screen name="PointsHistory" component={PointsHistory} />
-        <Stack.Screen name="PromoScreen" component={PromoScreen} />
+        {/* PointsHistory is now inside HomeStack and ProfileStack */}
+        {/* PromoString removed to force navigation via MainTabs > PromoStack */}
         <Stack.Screen name="DeveloperCreditsScreen" component={DeveloperCreditsScreen} />
+        <Stack.Screen name="InformationScreen" component={InformationScreen} />
     </Stack.Navigator>
 );
 
@@ -297,7 +337,7 @@ const AppNavigator = () => {
 
     if (isSeller) {
         return (
-            <NavigationContainer>
+            <NavigationContainer ref={navigationRef}>
                 <SellerRootStack />
                 <NewOrderPopup />
             </NavigationContainer>
@@ -305,7 +345,7 @@ const AppNavigator = () => {
     }
 
     return (
-        <NavigationContainer>
+        <NavigationContainer ref={navigationRef}>
             <CustomerRootStack />
             <NewOrderPopup />
         </NavigationContainer>

@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
+import BreadcrumbNavigation from '../../../components/ui/BreadcrumbNavigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import {
@@ -40,6 +42,8 @@ const getImageUrl = (url) => {
 };
 
 const SellerPromoManagement = () => {
+    const location = useLocation();
+    const isAdmin = location.pathname.startsWith('/admin') || location.pathname === '/promos';
     const [promos, setPromos] = useState([]);
     const [heroPromos, setHeroPromos] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -306,29 +310,59 @@ const SellerPromoManagement = () => {
     return (
         <div className="space-y-6 pb-20">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">Manajemen Promo</h1>
-                    <p className="text-sm text-gray-500 font-medium mt-1">Kelola Voucher, Diskon Otomatis & Banner Promosi</p>
+            {isAdmin ? (
+                <div className="mb-6">
+                    <BreadcrumbNavigation />
+                    <div className="mt-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h1 className="text-2xl font-black text-gray-900 tracking-tight">Manajemen Promo</h1>
+                            <p className="text-sm text-gray-500 font-medium mt-1">Kelola Voucher, Diskon Otomatis & Banner Promosi</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => handleOpenModal()}
+                                className="px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-2"
+                            >
+                                <Plus size={18} />
+                                <span className="hidden md:inline">Buat Promo Baru</span>
+                                <span className="md:hidden">Baru</span>
+                            </button>
+                            <button
+                                onClick={() => handleOpenModal(null, true)}
+                                className="px-4 py-2.5 bg-purple-600 text-white rounded-xl font-bold shadow-lg shadow-purple-200 hover:bg-purple-700 transition-all active:scale-95 flex items-center gap-2"
+                            >
+                                <Sparkles size={18} />
+                                <span className="hidden md:inline">Pasang Banner</span>
+                                <span className="md:hidden">Banner</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => handleOpenModal()}
-                        className="px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-2"
-                    >
-                        <Plus size={18} />
-                        <span className="hidden md:inline">Buat Promo Baru</span>
-                        <span className="md:hidden">Baru</span>
-                    </button>
-                    <button
-                        onClick={() => handleOpenModal(null, true)}
-                        className="px-4 py-2.5 bg-purple-600 text-white rounded-xl font-bold shadow-lg shadow-purple-200 hover:bg-purple-700 transition-all active:scale-95 flex items-center gap-2"
-                    >
-                        <Sparkles size={18} />
-                        <span className="hidden md:inline">Pasang Banner</span>
-                    </button>
+            ) : (
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl font-black text-gray-900 tracking-tight">Manajemen Promo</h1>
+                        <p className="text-sm text-gray-500 font-medium mt-1">Kelola Voucher, Diskon Otomatis & Banner Promosi</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => handleOpenModal()}
+                            className="px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-2"
+                        >
+                            <Plus size={18} />
+                            <span className="hidden md:inline">Buat Promo Baru</span>
+                            <span className="md:hidden">Baru</span>
+                        </button>
+                        <button
+                            onClick={() => handleOpenModal(null, true)}
+                            className="px-4 py-2.5 bg-purple-600 text-white rounded-xl font-bold shadow-lg shadow-purple-200 hover:bg-purple-700 transition-all active:scale-95 flex items-center gap-2"
+                        >
+                            <Sparkles size={18} />
+                            <span className="hidden md:inline">Pasang Banner</span>
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

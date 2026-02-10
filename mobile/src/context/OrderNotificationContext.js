@@ -94,7 +94,11 @@ export const OrderNotificationProvider = ({ children }) => {
         await loadSound(soundId);
         // Play once for preview
         if (soundRef.current) {
-            soundRef.current.play();
+            try {
+                await soundRef.current.replayAsync();
+            } catch (error) {
+                console.warn('Error playing preview sound:', error);
+            }
         }
     };
 
@@ -275,7 +279,27 @@ export const OrderNotificationProvider = ({ children }) => {
 
             const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
                 const data = response.notification.request.content.data;
-                console.log('Notification clicked:', data);
+                console.log('Notification clicked handled:', data);
+
+                if (data) {
+                    const { navigationRef } = require('../navigation/navigationRef');
+                    if (navigationRef.isReady()) {
+                        if (data.type === 'info') {
+                            if (data.link_type === 'product' && data.link_value) {
+                                navigationRef.navigate('Menu', { itemId: data.link_value });
+                            } else {
+                                navigationRef.navigate('InformationScreen');
+                            }
+                        } else if (data.type === 'chat') {
+                            navigationRef.navigate('ChatScreen', {
+                                senderId: data.senderId,
+                                orderId: data.orderId
+                            });
+                        } else if (data.orderId) {
+                            navigationRef.navigate('OrderDetails', { orderId: data.orderId });
+                        }
+                    }
+                }
             });
 
             const tokenSubscription = Notifications.addPushTokenListener(newToken => {
@@ -325,34 +349,36 @@ export const OrderNotificationProvider = ({ children }) => {
         const activeUserId = user.id || user.userId;
         if (!activeUserId) return;
 
-        console.log('--- Inisialisasi Socket Production ---');
+        console.log(`[Socket] Mencoba terhubung ke: ${API_URL} untuk user: ${activeUserId}`);
         const newSocket = io(API_URL, {
-            transports: ['websocket', 'polling'],
+            transports: ['polling', 'websocket'],
             reconnection: true,
-            reconnectionAttempts: Infinity, // Terus mencoba re-koneksi
+            reconnectionAttempts: Infinity,
             reconnectionDelay: 1000,
             reconnectionDelayMax: 5000,
             timeout: 20000,
-            forceNew: false // Gunakan koneksi yang ada jika memungkinkan
+            forceNew: true,
+            autoConnect: true
         });
 
         newSocket.on('connect', () => {
-            console.log('Socket Connected:', newSocket.id);
+            console.log('[Socket] Terhubung! ID:', newSocket.id);
             newSocket.emit('user_connected', { userId: activeUserId, role: user.role });
         });
 
         newSocket.on('connect_error', (error) => {
-            console.error('Socket Connect Error:', error.message);
+            console.error('[Socket] Koneksi Error:', error.message);
         });
 
         newSocket.on('disconnect', (reason) => {
-            console.log('Socket Disconnected:', reason);
-            if (reason === 'io server disconnect') {
+            console.log('[Socket] Terputus:', reason);
+            if (reason === 'io server disconnect' || reason === 'transport close') {
                 newSocket.connect();
             }
         });
 
         newSocket.on('online_users', (users) => {
+            console.log('[Socket] Online users updated:', users.length);
             if (isMounted.current) setOnlineUsers(users);
         });
 
@@ -381,7 +407,6 @@ export const OrderNotificationProvider = ({ children }) => {
 
         newSocket.on('order_update', (data) => {
             if (isMounted.current) {
-                console.log('Order update received:', data);
                 setRefreshTrigger(prev => prev + 1);
                 if (user.role === 'pelanggan') {
                     checkCustomerNotifications();
@@ -420,7 +445,6 @@ export const OrderNotificationProvider = ({ children }) => {
         setSocket(newSocket);
 
         return () => {
-            console.log('Cleaning up socket...');
             newSocket.disconnect();
             setSocket(null);
         };

@@ -221,6 +221,24 @@ const ChatScreen = ({ navigation }) => {
     const autoSelectAttempted = useRef(false);
     const activeChatRef = useRef(activeChat);
     const userRef = useRef(user);
+    // Manual Keyboard Handling untuk Android
+    const [keyboardPadding, setKeyboardPadding] = useState(0);
+
+    useEffect(() => {
+        if (Platform.OS === 'android') {
+            const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+                // Manual: Set padding sebesar tinggi keyboard
+                setKeyboardPadding(e.endCoordinates.height);
+            });
+            const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+                setKeyboardPadding(0); // Reset ke 0 saat turun
+            });
+            return () => {
+                showSub.remove();
+                hideSub.remove();
+            };
+        }
+    }, []);
 
     // Keep refs in sync
     useEffect(() => {
@@ -324,26 +342,32 @@ const ChatScreen = ({ navigation }) => {
     }, []);
 
     // WhatsApp-style: Smart fetching with debounce
-    const fetchMessages = useCallback(async () => {
+    const fetchMessages = useCallback(async (silent = false) => {
         if (!activeChat) return;
 
         const now = Date.now();
-        // Prevent fetching more than once per 2 seconds
-        if (now - lastFetchTime.current < 2000) {
+        // Prevent fetching more than once per 2 seconds, unless it's silent polling
+        if (!silent && now - lastFetchTime.current < 2000) {
             setIsTransitioning(false);
             return;
         }
-        lastFetchTime.current = now;
+        if (!silent) lastFetchTime.current = now;
 
+        if (!silent) setIsTransitioning(true);
         try {
             const res = await apiService.get(`/api/messages/history/${activeChat.user_id}`);
             if (res.data && res.data.data) {
-                setMessages(res.data.data);
+                setMessages(prev => {
+                    const newData = res.data.data;
+                    // Only update state if message count is different to save resources
+                    if (prev.length === newData.length) return prev;
+                    return newData;
+                });
             }
         } catch (e) {
             console.error("Error fetching messages:", e);
         } finally {
-            setIsTransitioning(false);
+            if (!silent) setIsTransitioning(false);
         }
     }, [activeChat]);
 
@@ -392,11 +416,11 @@ const ChatScreen = ({ navigation }) => {
             const currentActiveChat = activeChatRef.current;
             const currentUser = userRef.current;
 
-            // Validate in handler to allow latet user hydration
             if (!currentActiveChat || !currentUser) return;
 
             // Ignore messages sent by myself (already handled by optimistic update)
-            if (String(msg.sender_id) === String(currentUser.id)) return;
+            const myId = String(currentUser.id || currentUser.userId || '');
+            if (String(msg.sender_id) === myId) return;
 
             const partnerId = String(currentActiveChat.user_id);
             const msgSender = String(msg.sender_id);
@@ -413,9 +437,10 @@ const ChatScreen = ({ navigation }) => {
             // 3. KHUSUS PELANGGAN: Terima pesan dari SIAPAPUN yang ditujukan ke saya
             // Karena pelanggan bisa menerima pesan dari Admin, Owner, atau Kasir (beda ID)
             const isCustomer = currentUser.role === 'pelanggan' || currentUser.role === 'user';
-            const isToMe = msgReceiver === String(currentUser.id);
+            const isToMe = msgReceiver === myId;
 
             if (isFromPartner || isToPartner || (isCustomer && isToMe)) {
+                console.log('[ChatScreen] Pesan relevan diterima via socket:', msg.id);
                 setMessages(prev => {
                     // Avoid duplicates
                     if (prev.some(m => String(m.id) === String(msg.id))) return prev;
@@ -427,6 +452,8 @@ const ChatScreen = ({ navigation }) => {
                     // Untuk pelanggan, kita markAsRead sender pesan ini (siapapun staffnya)
                     markAsRead(msg.sender_id);
                 }
+            } else {
+                console.log('[ChatScreen] Pesan diabaikan (tidak relevan dengan chat aktif ini)');
             }
         };
 
@@ -460,6 +487,25 @@ const ChatScreen = ({ navigation }) => {
             socket.off('messages_read', handleMessagesRead);
         };
     }, [socket, markAsRead]); // Keep stable dependencies
+
+    // Fallback polling jika socket tidak terhubung atau sebagai pengaman tambahan di production
+    useEffect(() => {
+        let interval;
+        if (activeChat) {
+            interval = setInterval(() => {
+                const isConnected = socket && socket.connected;
+
+                // Jika socket tidak terhubung, lakukan fetch manual (polling)
+                if (!isConnected) {
+                    console.log('[ChatScreen] Socket tidak terhubung, melakukan fallback fetch...');
+                    fetchMessages(true);
+                }
+            }, 8000); // Poll setiap 8 detik jika socket mati
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [activeChat, socket, fetchMessages]);
 
     // For customers, auto-select the first contact (admin/seller)
     useEffect(() => {
@@ -606,7 +652,8 @@ const ChatScreen = ({ navigation }) => {
 
                 {/* Body & Input */}
                 <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                    enabled={Platform.OS === 'ios'}
                     style={{ flex: 1 }}
                     keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
                 >
@@ -693,6 +740,7 @@ const ChatScreen = ({ navigation }) => {
                                 onPickImage={pickImage}
                                 themeColor={themeColor}
                             />
+                            {Platform.OS === 'android' && <View style={{ height: keyboardPadding }} />}
                         </>
                     )}
                 </KeyboardAvoidingView>

@@ -9,13 +9,15 @@ import {
     TextInput,
     ActivityIndicator,
     Dimensions,
+    SafeAreaView,
     Platform,
     StatusBar,
     FlatList,
     Modal,
-    Animated,
-    SafeAreaView
+    Animated
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getSafeBottomPadding } from '../../utils/safeArea';
 import {
     Search,
     ArrowLeft,
@@ -174,6 +176,7 @@ const CustomerMenu = ({ navigation, route }) => {
         cartTotal,
         cartCount
     } = useCart();
+    const insets = useSafeAreaInsets();
     const { isOpen, ignoreStock } = useAppSettings();
 
     const [menus, setMenus] = useState([]);
@@ -415,7 +418,7 @@ const CustomerMenu = ({ navigation, route }) => {
 
             {/* Float Cart */}
             {cartCount > 0 && (
-                <View style={styles.cartFloatContainer}>
+                <View style={[styles.cartFloatContainer, { bottom: getSafeBottomPadding(insets, -20, 20) }]}>
                     <TouchableOpacity
                         style={styles.cartFloatBtn}
                         activeOpacity={0.9}
@@ -539,7 +542,7 @@ const CustomerMenu = ({ navigation, route }) => {
                         </ScrollView>
 
                         {/* Modal Footer */}
-                        <View style={styles.modalFooter}>
+                        <View style={[styles.modalFooter, { paddingBottom: getSafeBottomPadding(insets) }]}>
                             {(() => {
                                 const modalIsOutOfStock = !ignoreStock && selectedItem?.stock <= 0;
 
@@ -857,7 +860,6 @@ const styles = StyleSheet.create({
     },
     cartFloatContainer: {
         position: 'absolute',
-        bottom: Platform.OS === 'ios' ? 40 : 20,
         left: 16,
         right: 16,
         zIndex: 50,
@@ -1183,7 +1185,6 @@ const styles = StyleSheet.create({
     },
     modalFooter: {
         padding: 20,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 20,
         backgroundColor: '#FFFFFF',
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',

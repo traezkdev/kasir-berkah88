@@ -23,52 +23,54 @@ const CustomerLayout = () => {
 
             {/* Bottom Navigation */}
             {currentPath !== '/customer/chat' && currentPath !== '/customer/cart' && (
-                <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 z-50 max-w-md mx-auto h-[75px] px-4 pt-3 pb-[15px]">
-                    <div className="flex justify-between items-center h-full gap-1">
-                        {navItems.map((item) => {
-                            const isActive = currentPath === item.path;
+                <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 z-50 h-[75px] pb-[env(safe-area-inset-bottom)]">
+                    <div className="max-w-md mx-auto h-full px-4 pt-3 pb-[15px]">
+                        <div className="flex justify-between items-center h-full gap-1">
+                            {navItems.map((item) => {
+                                const isActive = currentPath === item.path;
 
-                            if (item.isSpecial) {
+                                if (item.isSpecial) {
+                                    return (
+                                        <Link
+                                            key={item.path}
+                                            to={item.path}
+                                            className="flex-1 flex flex-col items-center justify-center gap-1.5 -mt-6"
+                                        >
+                                            <div className={`w-[54px] h-[54px] rounded-[20px] flex items-center justify-center border shadow-lg transition-all duration-300 ${isActive
+                                                ? 'bg-green-600 border-green-500 shadow-green-200 scale-110'
+                                                : 'bg-green-50 border-green-100 shadow-green-100/50 hover:bg-green-100'
+                                                }`}>
+                                                <Icon
+                                                    name={item.icon}
+                                                    className={`w-6 h-6 ${isActive ? 'text-white' : 'text-green-600'}`}
+                                                    strokeWidth={2.5}
+                                                />
+                                            </div>
+                                            <span className={`text-[9px] uppercase tracking-wider font-black ${isActive ? 'text-green-600' : 'text-slate-400'}`}>
+                                                {item.label}
+                                            </span>
+                                        </Link>
+                                    );
+                                }
+
                                 return (
                                     <Link
                                         key={item.path}
                                         to={item.path}
-                                        className="flex-1 flex flex-col items-center justify-center gap-1.5 -mt-6"
+                                        className="flex-1 flex flex-col items-center justify-center gap-1.5 transition-all duration-200"
                                     >
-                                        <div className={`w-[54px] h-[54px] rounded-[20px] flex items-center justify-center border shadow-lg transition-all duration-300 ${isActive
-                                            ? 'bg-green-600 border-green-500 shadow-green-200 scale-110'
-                                            : 'bg-green-50 border-green-100 shadow-green-100/50 hover:bg-green-100'
-                                            }`}>
-                                            <Icon
-                                                name={item.icon}
-                                                className={`w-6 h-6 ${isActive ? 'text-white' : 'text-green-600'}`}
-                                                strokeWidth={2.5}
-                                            />
-                                        </div>
-                                        <span className={`text-[9px] uppercase tracking-wider font-black ${isActive ? 'text-green-600' : 'text-slate-400'}`}>
+                                        <Icon
+                                            name={item.icon}
+                                            className={`w-6 h-6 ${isActive ? 'text-green-600' : 'text-slate-400'}`}
+                                            strokeWidth={isActive ? 2.5 : 2}
+                                        />
+                                        <span className={`text-[9px] uppercase tracking-wider ${isActive ? 'font-black text-green-600' : 'font-bold text-slate-400'}`}>
                                             {item.label}
                                         </span>
                                     </Link>
                                 );
-                            }
-
-                            return (
-                                <Link
-                                    key={item.path}
-                                    to={item.path}
-                                    className="flex-1 flex flex-col items-center justify-center gap-1.5 transition-all duration-200"
-                                >
-                                    <Icon
-                                        name={item.icon}
-                                        className={`w-6 h-6 ${isActive ? 'text-green-600' : 'text-slate-400'}`}
-                                        strokeWidth={isActive ? 2.5 : 2}
-                                    />
-                                    <span className={`text-[9px] uppercase tracking-wider ${isActive ? 'font-black text-green-600' : 'font-bold text-slate-400'}`}>
-                                        {item.label}
-                                    </span>
-                                </Link>
-                            );
-                        })}
+                            })}
+                        </div>
                     </div>
                 </nav>
             )}
