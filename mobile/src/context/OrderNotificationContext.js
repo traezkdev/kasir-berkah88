@@ -94,7 +94,11 @@ export const OrderNotificationProvider = ({ children }) => {
         await loadSound(soundId);
         // Play once for preview
         if (soundRef.current) {
-            soundRef.current.play();
+            try {
+                await soundRef.current.replayAsync();
+            } catch (error) {
+                console.warn('Error playing preview sound:', error);
+            }
         }
     };
 

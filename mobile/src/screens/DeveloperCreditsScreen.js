@@ -53,7 +53,7 @@ const DeveloperCreditsScreen = ({ navigation }) => {
                         resizeMode="contain"
                     />
                     <Text style={styles.appName}>Kasir Berkah88</Text>
-                    <Text style={styles.appVersion}>Versi 1.0.2 (Alpha)</Text>
+                    <Text style={styles.appVersion}>Versi 1.6.1 (Alpha)</Text>
                 </View>
 
                 {/* Developer Info Card */}

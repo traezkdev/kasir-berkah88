@@ -168,8 +168,9 @@ const CustomCustomerTabBar = ({ state, descriptors, navigation }) => {
         <View style={[
             navStyles.bottomNav,
             {
-                height: getSafeFooterHeight(insets, 60),
-                paddingBottom: getSafeBottomPadding(insets, 0, 15)
+                height: getSafeFooterHeight(insets, insets.bottom > 0 ? 60 : 66),
+                paddingBottom: getSafeBottomPadding(insets, 0, 15),
+                paddingTop: insets.bottom > 0 ? 12 : 18
             }
         ]}>
             {state.routes.map((route, index) => {

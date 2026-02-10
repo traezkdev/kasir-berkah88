@@ -323,7 +323,7 @@ const ProfileScreen = ({ navigation }) => {
                     onPress={() => navigation.navigate('DeveloperCreditsScreen')}
                     activeOpacity={0.7}
                 >
-                    <Text style={styles.versionText}>Versi 2.1.0 (Alpha)</Text>
+                    <Text style={styles.versionText}>Versi 1.6.1 (Alpha)</Text>
                     <Text style={styles.developerText}>Develop By traezkdev</Text>
                 </TouchableOpacity>
                 <View style={{ height: 100 }} />
