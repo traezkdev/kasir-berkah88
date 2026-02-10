@@ -103,6 +103,7 @@ const InformationScreen = ({ navigation }) => {
 
             <ScrollView
                 style={styles.content}
+                contentContainerStyle={{ paddingVertical: 16 }}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#059669" />
                 }
@@ -121,62 +122,64 @@ const InformationScreen = ({ navigation }) => {
                             <TouchableOpacity
                                 key={info.id}
                                 style={styles.infoCard}
-                                activeOpacity={0.8}
+                                activeOpacity={0.9}
                                 onPress={() => {
                                     setSelectedInfo(info);
                                     setShowDetail(true);
                                 }}
                             >
-                                <View style={styles.cardHeader}>
-                                    {info.image_url ? (
-                                        <View style={styles.thumbnailWrapper}>
-                                            <Image
-                                                source={{ uri: `${API_URL}${info.image_url}` }}
-                                                style={styles.thumbnail}
-                                                resizeMode="cover"
-                                            />
-                                        </View>
-                                    ) : (
-                                        <View style={styles.iconPlaceholder}>
-                                            <Bell size={24} color="#6366F1" />
+                                {/* Header Date & Status */}
+                                <View style={styles.cardHeaderTop}>
+                                    <View style={styles.metaBadge}>
+                                        <Clock size={12} color="#2563EB" />
+                                        <Text style={styles.metaDate}>{formatDate(info.created_at).split(' pukul ')[0]}</Text>
+                                    </View>
+                                    {isNew && (
+                                        <View style={styles.newBadge}>
+                                            <View style={styles.redDot} />
+                                            <Text style={styles.newBadgeText}>BARU</Text>
                                         </View>
                                     )}
-
-                                    <View style={styles.mainContent}>
-                                        <View style={styles.topRow}>
-                                            <View style={styles.metaBadge}>
-                                                <Clock size={10} color="#6366F1" />
-                                                <Text style={styles.metaDate}>{formatDate(info.created_at).split(' pukul ')[0]}</Text>
-                                            </View>
-                                            {isNew && (
-                                                <View style={styles.dotBadge}>
-                                                    <View style={styles.redDot} />
-                                                    <Text style={styles.redDotText}>BARU</Text>
-                                                </View>
-                                            )}
-                                        </View>
-
-                                        <Text style={styles.infoTitle} numberOfLines={1}>{info.title}</Text>
-                                        <Text style={styles.infoContent} numberOfLines={2}>
-                                            {info.content}
-                                        </Text>
-
-                                        {info.link_type === 'product' && (
-                                            <View style={styles.compactAction}>
-                                                <ShoppingBag size={12} color="#10B981" />
-                                                <Text style={styles.compactActionText}>Lihat Produk</Text>
-                                                <ChevronRight size={12} color="#10B981" />
-                                            </View>
-                                        )}
-                                        {info.link_type === 'promo' && (
-                                            <View style={[styles.compactAction, { backgroundColor: '#FEF3C7' }]}>
-                                                <Tag size={12} color="#F59E0B" />
-                                                <Text style={[styles.compactActionText, { color: '#F59E0B' }]}>Lihat Promo</Text>
-                                                <ChevronRight size={12} color="#F59E0B" />
-                                            </View>
-                                        )}
-                                    </View>
                                 </View>
+
+                                {/* Main Image */}
+                                {info.image_url && (
+                                    <View style={styles.imageContainer}>
+                                        <Image
+                                            source={{ uri: `${API_URL}${info.image_url}` }}
+                                            style={styles.cardImage}
+                                            resizeMode="cover"
+                                        />
+                                    </View>
+                                )}
+
+                                {/* Title & Content */}
+                                <Text style={styles.infoTitle} numberOfLines={2}>{info.title}</Text>
+                                <View style={styles.contentWrapper}>
+                                    <Text style={styles.infoContent} numberOfLines={3}>
+                                        {info.content}
+                                    </Text>
+                                </View>
+
+                                {/* Footer Action */}
+                                {info.link_type !== 'none' && (
+                                    <View style={styles.footerAction}>
+                                        {info.link_type === 'promo' ? (
+                                            <View style={[styles.actionBadge, { backgroundColor: '#FEF3C7' }]}>
+                                                <Tag size={12} color="#D97706" />
+                                                <Text style={[styles.actionText, { color: '#D97706' }]}>Lihat Promo</Text>
+                                            </View>
+                                        ) : (
+                                            <View style={[styles.actionBadge, { backgroundColor: '#DCFCE7' }]}>
+                                                <ShoppingBag size={12} color="#15803D" />
+                                                <Text style={[styles.actionText, { color: '#15803D' }]}>Lihat Produk</Text>
+                                            </View>
+                                        )}
+                                        <View style={styles.actionArrow}>
+                                            <ChevronRight size={16} color="#94A3B8" />
+                                        </View>
+                                    </View>
+                                )}
                             </TouchableOpacity>
                         );
                     })
@@ -292,64 +295,41 @@ const styles = StyleSheet.create({
     },
     infoCard: {
         backgroundColor: '#FFFFFF',
-        width: '100%',
-        marginBottom: 8, // Beri jarak sedikit agar bg terlihat
-        borderBottomWidth: 1,
-        borderBottomColor: '#F1F5F9',
+        marginHorizontal: 16,
+        marginBottom: 16,
+        borderRadius: 20,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
     },
-    cardHeader: {
-        flexDirection: 'row',
-        gap: 16,
-        paddingHorizontal: 20,
-        paddingVertical: 18,
-    },
-    thumbnailWrapper: {
-        width: 80,
-        height: 80,
-        borderRadius: 18,
-        overflow: 'hidden',
-        backgroundColor: '#F8FAFC',
-    },
-    thumbnail: {
-        width: '100%',
-        height: '100%',
-    },
-    iconPlaceholder: {
-        width: 80,
-        height: 80,
-        borderRadius: 18,
-        backgroundColor: '#EEF2FF',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    mainContent: {
-        flex: 1,
-        justifyContent: 'center',
-    },
-    topRow: {
+    cardHeaderTop: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 6,
+        marginBottom: 12,
     },
     metaBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
-        backgroundColor: '#F1F5F9',
-        paddingHorizontal: 8,
-        paddingVertical: 3,
+        gap: 6,
+        backgroundColor: '#EFF6FF',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
         borderRadius: 8,
     },
     metaDate: {
         fontSize: 10,
-        color: '#64748B',
+        color: '#2563EB',
         fontWeight: '700',
     },
-    dotBadge: {
+    newBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
+        backgroundColor: '#FEF2F2',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 100,
     },
     redDot: {
         width: 6,
@@ -357,33 +337,74 @@ const styles = StyleSheet.create({
         borderRadius: 3,
         backgroundColor: '#EF4444',
     },
-    redDotText: {
+    newBadgeText: {
         fontSize: 9,
         fontWeight: '900',
         color: '#EF4444',
     },
+    imageContainer: {
+        width: '100%',
+        aspectRatio: 16 / 9,
+        borderRadius: 16,
+        backgroundColor: '#F1F5F9',
+        overflow: 'hidden',
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#F8FAFC',
+    },
+    cardImage: {
+        width: '100%',
+        height: '100%',
+    },
     infoTitle: {
-        fontSize: 16,
-        fontWeight: '900',
+        fontSize: 18,
+        fontWeight: '800',
         color: '#1E293B',
-        marginBottom: 4,
+        marginBottom: 8,
+        lineHeight: 24,
+    },
+    contentWrapper: {
+        backgroundColor: '#F8FAFC',
+        padding: 12,
+        borderRadius: 12,
+        marginBottom: 12,
     },
     infoContent: {
         fontSize: 13,
         color: '#64748B',
-        lineHeight: 18,
+        lineHeight: 20,
         fontWeight: '500',
     },
-    compactAction: {
+    footerAction: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#F8FAFC',
+        borderStyle: 'dashed', // Note: dashed border style works on iOS, Android needs specific impl or just solid
+    },
+    actionBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
-        marginTop: 8,
+        gap: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 8,
     },
-    compactActionText: {
+    actionText: {
         fontSize: 11,
         fontWeight: '800',
-        color: '#10B981',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    actionArrow: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#F8FAFC',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     // Modal Styles
     modalContent: {
