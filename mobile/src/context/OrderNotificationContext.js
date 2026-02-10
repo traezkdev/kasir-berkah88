@@ -397,11 +397,20 @@ export const OrderNotificationProvider = ({ children }) => {
 
         newSocket.on('new_order', (order) => {
             if (isMounted.current && ['admin', 'penjual', 'owner', 'kasir'].includes(user.role)) {
+                // Selalu refresh data jika ada update pesanan baru
+                setRefreshTrigger(prev => prev + 1);
+                fetchPendingCount();
+
+                // Jangan tampilkan popup jika ini adalah transaksi langsung dari POS (kasir jual)
+                // karena kasir sudah tahu transaksi itu sedang berlangsung.
+                if (order.is_transaction) {
+                    console.log('[Socket] Transaksi langsung diterima, melewati popup.');
+                    return;
+                }
+
                 playNotificationSound();
                 setNewOrder(order);
                 setShowPopup(true);
-                setRefreshTrigger(prev => prev + 1);
-                fetchPendingCount();
             }
         });
 

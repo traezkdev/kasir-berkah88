@@ -2764,6 +2764,7 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
         if (io) {
             io.emit('new_order', {
                 id: newTransactionId,
+                customer_name: customer_name || 'Pelanggan POS',
                 total: finalTotal,
                 timestamp: timestamp,
                 items: itemsWithDetails,
