@@ -1440,12 +1440,33 @@ app.post("/api/banners", authenticateToken, authorizeRoles('admin', 'penjual'), 
 
 // --- Information / Announcements Endpoints ---
 
-// Get all information (Public)
+// Get all information (Public) with pagination
 app.get("/api/information", authenticateToken, async (req, res) => {
     try {
-        const sql = "SELECT * FROM information ORDER BY created_at DESC";
-        const [rows] = await db.query(sql);
-        res.json({ message: "success", data: rows });
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 10;
+        const offset = (page - 1) * limit;
+
+        // Get total count
+        const countSql = "SELECT COUNT(*) as total FROM information";
+        const [countRows] = await db.query(countSql);
+        const totalItems = countRows[0].total;
+        const totalPages = Math.ceil(totalItems / limit);
+
+        // Get paginated data
+        const sql = "SELECT * FROM information ORDER BY created_at DESC LIMIT ? OFFSET ?";
+        const [rows] = await db.query(sql, [limit, offset]);
+
+        res.json({
+            message: "success",
+            data: rows,
+            pagination: {
+                currentPage: page,
+                totalPages: totalPages,
+                totalItems: totalItems,
+                itemsPerPage: limit
+            }
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

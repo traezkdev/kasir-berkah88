@@ -13,7 +13,7 @@ import {
     Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Plus, Trash2, Image as ImageIcon, Send, X, Camera, CheckCircle2, BellOff, Edit2, Link2, ExternalLink } from 'lucide-react-native';
+import { ChevronLeft, Plus, Trash2, Image as ImageIcon, Send, X, Camera, CheckCircle2, BellOff, Edit2, Link2, ExternalLink, ChevronRight } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import apiService, { API_URL } from '../../api/apiService';
 import BottomModalTemplate from '../../components/templates/BottomModalTemplate';
@@ -44,12 +44,23 @@ const ManageInformation = ({ navigation }) => {
     const [showProductPicker, setShowProductPicker] = useState(false);
     const [selectedProductName, setSelectedProductName] = useState('');
 
-    const fetchInfos = async () => {
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const itemsPerPage = 10;
+
+    const fetchInfos = async (page = 1) => {
         setIsLoading(true);
         try {
-            const res = await apiService.get('/api/information');
+            const res = await apiService.get(`/api/information?page=${page}&limit=${itemsPerPage}`);
             if (res.data.data) {
                 setInfos(res.data.data);
+                if (res.data.pagination) {
+                    setCurrentPage(res.data.pagination.currentPage);
+                    setTotalPages(res.data.pagination.totalPages);
+                    setTotalItems(res.data.pagination.totalItems);
+                }
             }
         } catch (error) {
             console.error('Error fetching information:', error);
@@ -189,7 +200,8 @@ const ManageInformation = ({ navigation }) => {
             setSelectedProductName('');
             setEditingId(null);
             setShowForm(false);
-            fetchInfos();
+            // Kembali ke halaman 1 jika menambah data baru, tetap di halaman saat ini jika edit
+            fetchInfos(editingId ? currentPage : 1);
         } catch (error) {
             console.error('Error submitting information:', error);
             showToast(error.response?.data?.error || 'Gagal menyimpan informasi', 'error');
@@ -245,7 +257,11 @@ const ManageInformation = ({ navigation }) => {
                     onPress: async () => {
                         try {
                             await apiService.delete(`/api/information/${id}`);
-                            fetchInfos();
+                            // Tetap di halaman saat ini, kecuali jika halaman tersebut menjadi kosong
+                            const newTotalItems = totalItems - 1;
+                            const newTotalPages = Math.ceil(newTotalItems / itemsPerPage);
+                            const targetPage = currentPage > newTotalPages ? newTotalPages : currentPage;
+                            fetchInfos(targetPage || 1);
                         } catch (error) {
                             Alert.alert('Error', 'Gagal menghapus informasi');
                         }
@@ -328,7 +344,7 @@ const ManageInformation = ({ navigation }) => {
                         <View style={styles.sectionHeader}>
                             <Text style={styles.sectionTitle}>Riwayat Terbitan</Text>
                             <View style={styles.badge}>
-                                <Text style={styles.badgeText}>{infos.length} Total</Text>
+                                <Text style={styles.badgeText}>{totalItems} Total</Text>
                             </View>
                         </View>
 
@@ -421,6 +437,44 @@ const ManageInformation = ({ navigation }) => {
                                 )}
                             </View>
                         )}
+
+                        {/* Pagination Controls */}
+                        {!isLoading && totalPages > 1 && (
+                            <View style={styles.paginationContainer}>
+                                <TouchableOpacity
+                                    style={[styles.paginationBtn, currentPage === 1 && styles.paginationBtnDisabled]}
+                                    onPress={() => {
+                                        if (currentPage > 1) {
+                                            fetchInfos(currentPage - 1);
+                                        }
+                                    }}
+                                    disabled={currentPage === 1}
+                                >
+                                    <ChevronLeft size={18} color={currentPage === 1 ? '#CBD5E1' : '#6366F1'} />
+                                    <Text style={[styles.paginationBtnText, currentPage === 1 && styles.paginationBtnTextDisabled]}>Sebelumnya</Text>
+                                </TouchableOpacity>
+
+                                <View style={styles.paginationInfo}>
+                                    <Text style={styles.paginationText}>
+                                        Halaman <Text style={styles.paginationTextBold}>{currentPage}</Text> dari <Text style={styles.paginationTextBold}>{totalPages}</Text>
+                                    </Text>
+                                </View>
+
+                                <TouchableOpacity
+                                    style={[styles.paginationBtn, currentPage === totalPages && styles.paginationBtnDisabled]}
+                                    onPress={() => {
+                                        if (currentPage < totalPages) {
+                                            fetchInfos(currentPage + 1);
+                                        }
+                                    }}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    <Text style={[styles.paginationBtnText, currentPage === totalPages && styles.paginationBtnTextDisabled]}>Selanjutnya</Text>
+                                    <ChevronRight size={18} color={currentPage === totalPages ? '#CBD5E1' : '#6366F1'} />
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
                         <View style={{ height: 40 }} />
                     </ScrollView>
                 </KeyboardAvoidingView>
@@ -1253,6 +1307,49 @@ const styles = StyleSheet.create({
         fontSize: 10,
         fontWeight: '800',
         color: '#6366F1',
+    },
+    // Pagination Styles
+    paginationContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: 24,
+        paddingHorizontal: 4,
+    },
+    paginationBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        backgroundColor: '#EEF2FF',
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: '#E0E7FF',
+    },
+    paginationBtnDisabled: {
+        backgroundColor: '#F8FAFC',
+        borderColor: '#F1F5F9',
+    },
+    paginationBtnText: {
+        fontSize: 13,
+        fontWeight: '800',
+        color: '#6366F1',
+    },
+    paginationBtnTextDisabled: {
+        color: '#CBD5E1',
+    },
+    paginationInfo: {
+        paddingHorizontal: 12,
+    },
+    paginationText: {
+        fontSize: 13,
+        color: '#64748B',
+        fontWeight: '600',
+    },
+    paginationTextBold: {
+        fontWeight: '900',
+        color: '#1E293B',
     }
 });
 

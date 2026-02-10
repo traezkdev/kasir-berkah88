@@ -121,11 +121,13 @@ const CustomerDashboard = ({ navigation }) => {
             // Fetch Information to check for unread items
             const infoRes = await apiService.get('/api/information');
             if (infoRes.data.data && infoRes.data.data.length > 0) {
-                const latestInfoId = parseInt(infoRes.data.data[0].id);
-                const lastSeenIdRaw = await AsyncStorage.getItem('@last_seen_info_id');
-                const lastSeenId = lastSeenIdRaw ? parseInt(lastSeenIdRaw) : 0;
+                const latestInfo = infoRes.data.data[0];
+                const latestTimestamp = new Date(latestInfo.created_at).getTime();
 
-                if (lastSeenId < latestInfoId) {
+                const lastSeenTimestampRaw = await AsyncStorage.getItem('@last_seen_info_timestamp');
+                const lastSeenTimestamp = lastSeenTimestampRaw ? parseInt(lastSeenTimestampRaw) : 0;
+
+                if (lastSeenTimestamp < latestTimestamp) {
                     setHasNewInfo(true);
                 } else {
                     setHasNewInfo(false);

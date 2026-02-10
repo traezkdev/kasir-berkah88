@@ -29,17 +29,21 @@ const InformationScreen = ({ navigation }) => {
 
     const fetchInfos = async () => {
         try {
-            const res = await apiService.get('/api/information');
+            const res = await apiService.get('/api/information?limit=100');
             if (res.data.data) {
                 setInfos(res.data.data);
 
-                // Get last seen before updating it
-                const savedId = await AsyncStorage.getItem('@last_seen_info_id');
-                if (savedId) setLastSeenId(parseInt(savedId));
+                // Get last seen timestamp before updating it
+                const savedTimestampRaw = await AsyncStorage.getItem('@last_seen_info_timestamp');
+                if (savedTimestampRaw) {
+                    const savedTimestamp = parseInt(savedTimestampRaw);
+                    setLastSeenId(savedTimestamp); // We'll use this to compare timestamps
+                }
 
-                // Mark as seen
+                // Mark as seen - save the timestamp of the latest info
                 if (res.data.data.length > 0) {
-                    await AsyncStorage.setItem('@last_seen_info_id', res.data.data[0].id.toString());
+                    const latestTimestamp = new Date(res.data.data[0].created_at).getTime();
+                    await AsyncStorage.setItem('@last_seen_info_timestamp', latestTimestamp.toString());
                 }
             }
         } catch (error) {
@@ -107,7 +111,8 @@ const InformationScreen = ({ navigation }) => {
                     </View>
                 ) : (
                     infos.map((info, index) => {
-                        const isNew = lastSeenId < info.id;
+                        const infoTimestamp = new Date(info.created_at).getTime();
+                        const isNew = lastSeenId < infoTimestamp;
                         return (
                             <TouchableOpacity
                                 key={info.id}
