@@ -1569,18 +1569,26 @@ app.post("/api/information/:id/broadcast", authenticateToken, authorizeRoles('ad
         const [infos] = await db.query(infoSql, [id]);
         const info = infos[0];
 
-        // Send push notification to all users
-        sendUniversalNotification(
-            null, // null means send to all
-            info.content.length > 50 ? info.content.substring(0, 50) + '...' : info.content,
-            `📢 ${info.title}`,
-            {
-                type: 'info',
-                infoId: id,
-                link_type: info.link_type || 'none',
-                link_value: info.link_value || null
-            }
-        ).catch(e => console.error('Error broadcasting info notification:', e));
+        // Get all customers (pelanggan) to send notification
+        const customerSql = "SELECT id FROM users WHERE role = 'pelanggan'";
+        const [customers] = await db.query(customerSql);
+        const customerIds = customers.map(c => c.id);
+
+        // Send push notification only to customers (pelanggan), exclude the sender
+        if (customerIds.length > 0) {
+            sendUniversalNotification(
+                customerIds, // Only send to customers
+                info.content.length > 50 ? info.content.substring(0, 50) + '...' : info.content,
+                `📢 ${info.title}`,
+                {
+                    type: 'info',
+                    infoId: id,
+                    link_type: info.link_type || 'none',
+                    link_value: info.link_value || null
+                },
+                req.user.userId // Exclude the seller who is broadcasting
+            ).catch(e => console.error('Error broadcasting info notification:', e));
+        }
 
         await logActivity(req.user.userId, 'Broadcast Informasi', 'information', id, `Resend & Refresh info: ${info.title}`);
 

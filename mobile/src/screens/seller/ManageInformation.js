@@ -38,7 +38,7 @@ const ManageInformation = ({ navigation }) => {
     const [pendingInfo, setPendingInfo] = useState(null);
 
     // Link states
-    const [linkType, setLinkType] = useState('none'); // 'none', 'product'
+    const [linkType, setLinkType] = useState('none'); // 'none', 'product', 'promo'
     const [linkValue, setLinkValue] = useState(null);
     const [menuItems, setMenuItems] = useState([]);
     const [showProductPicker, setShowProductPicker] = useState(false);
@@ -386,6 +386,12 @@ const ManageInformation = ({ navigation }) => {
                                                     <Text style={styles.cardLinkText}>Tautan: Produk</Text>
                                                 </View>
                                             )}
+                                            {info.link_type === 'promo' && (
+                                                <View style={[styles.cardLinkTag, { backgroundColor: '#FEF3C7' }]}>
+                                                    <ExternalLink size={10} color="#F59E0B" />
+                                                    <Text style={[styles.cardLinkText, { color: '#F59E0B' }]}>Tautan: Promo</Text>
+                                                </View>
+                                            )}
                                         </View>
                                     </View>
 
@@ -641,6 +647,16 @@ const ManageInformation = ({ navigation }) => {
                                     onPress={() => setLinkType('product')}
                                 >
                                     <Text style={[styles.linkTypeBtnText, linkType === 'product' && styles.linkTypeBtnTextActive]}>Pilih Menu</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.linkTypeBtn, linkType === 'promo' && styles.linkTypeBtnActive]}
+                                    onPress={() => {
+                                        setLinkType('promo');
+                                        setLinkValue('promo_screen'); // Static value for promo
+                                        setSelectedProductName('');
+                                    }}
+                                >
+                                    <Text style={[styles.linkTypeBtnText, linkType === 'promo' && styles.linkTypeBtnTextActive]}>Promo</Text>
                                 </TouchableOpacity>
                             </View>
 

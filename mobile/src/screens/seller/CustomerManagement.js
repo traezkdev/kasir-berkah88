@@ -24,6 +24,7 @@ import {
     MessageCircle
 } from 'lucide-react-native';
 import { useChat } from '../../context/ChatContext';
+import { useOrderNotification } from '../../context/OrderNotificationContext';
 import apiService, { API_URL } from '../../api/apiService';
 import { useToast } from '../../context/ToastContext';
 import ModernLoader from '../../components/ModernLoader';
@@ -35,6 +36,13 @@ const CustomerManagement = ({ navigation }) => {
     const [searchText, setSearchText] = useState('');
     const { showToast } = useToast();
     const { setActiveChat } = useChat();
+    const { onlineUsers } = useOrderNotification();
+
+    const isUserOnline = (userId) => {
+        // Simple check: is userId in the onlineUsers array?
+        if (!onlineUsers || !Array.isArray(onlineUsers)) return false;
+        return onlineUsers.some(u => String(u.userId) === String(userId));
+    };
 
     // Debounce search
     const [query, setQuery] = useState('');
@@ -85,67 +93,80 @@ const CustomerManagement = ({ navigation }) => {
         navigation.navigate('ChatScreen');
     };
 
-    const renderCustomerCard = ({ item }) => (
-        <TouchableOpacity
-            style={styles.card}
-            onPress={() => navigation.navigate('CustomerDetails', {
-                customerName: item.username,
-                customerPhone: item.phone,
-                customerAddress: item.address,
-                customerId: item.id
-            })}
-        >
-            <View style={styles.cardHeader}>
-                <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>{(item.username || '?').charAt(0).toUpperCase()}</Text>
+    const renderCustomerCard = ({ item }) => {
+        const isOnline = isUserOnline(item.id);
+
+        return (
+            <TouchableOpacity
+                style={styles.card}
+                onPress={() => navigation.navigate('CustomerDetails', {
+                    customerName: item.username,
+                    customerPhone: item.phone,
+                    customerAddress: item.address,
+                    customerId: item.id
+                })}
+            >
+                <View style={styles.cardHeader}>
+                    <View style={styles.avatar}>
+                        <Text style={styles.avatarText}>{(item.username || '?').charAt(0).toUpperCase()}</Text>
+                        {isOnline && <View style={styles.onlineBadge} />}
+                    </View>
+                    <View style={styles.headerInfo}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <Text style={styles.customerName}>{item.username}</Text>
+                            {isOnline && (
+                                <View style={styles.activeLabel}>
+                                    <View style={styles.activeDot} />
+                                    <Text style={styles.activeText}>Aktif</Text>
+                                </View>
+                            )}
+                        </View>
+                        <View style={styles.phoneRow}>
+                            <Phone size={12} color="#64748B" />
+                            <Text style={styles.customerPhone}>{item.phone || 'No Phone'}</Text>
+                        </View>
+                    </View>
+                    <View style={styles.pointsBadge}>
+                        <Coins size={12} color="#D97706" fill="#D97706" />
+                        <Text style={styles.pointsText}>{new Intl.NumberFormat('id-ID').format(item.points || 0)}</Text>
+                    </View>
+                    <TouchableOpacity
+                        style={styles.chatBtn}
+                        onPress={() => handleChat(item)}
+                    >
+                        <MessageCircle size={16} color="#FFFFFF" />
+                    </TouchableOpacity>
                 </View>
-                <View style={styles.headerInfo}>
-                    <Text style={styles.customerName}>{item.username}</Text>
-                    <View style={styles.phoneRow}>
-                        <Phone size={12} color="#64748B" />
-                        <Text style={styles.customerPhone}>{item.phone || 'No Phone'}</Text>
+
+                <View style={styles.divider} />
+
+                <View style={styles.statsRow}>
+                    <View style={styles.statItem}>
+                        <Text style={styles.statLabel}>Total Belanja</Text>
+                        <View style={styles.statValueRow}>
+                            <ShoppingBag size={14} color="#64748B" />
+                            <Text style={styles.statValue}>{formatCurrency(item.total_spent)}</Text>
+                        </View>
+                    </View>
+                    <View style={styles.verticalDivider} />
+                    <View style={styles.statItem}>
+                        <Text style={styles.statLabel}>Total Order</Text>
+                        <View style={styles.statValueRow}>
+                            <Calendar size={14} color="#64748B" />
+                            <Text style={styles.statValue}>{item.total_orders || 0}x</Text>
+                        </View>
                     </View>
                 </View>
-                <View style={styles.pointsBadge}>
-                    <Coins size={12} color="#D97706" fill="#D97706" />
-                    <Text style={styles.pointsText}>{new Intl.NumberFormat('id-ID').format(item.points || 0)}</Text>
-                </View>
-                <TouchableOpacity
-                    style={styles.chatBtn}
-                    onPress={() => handleChat(item)}
-                >
-                    <MessageCircle size={16} color="#FFFFFF" />
-                </TouchableOpacity>
-            </View>
 
-            <View style={styles.divider} />
-
-            <View style={styles.statsRow}>
-                <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>Total Belanja</Text>
-                    <View style={styles.statValueRow}>
-                        <ShoppingBag size={14} color="#64748B" />
-                        <Text style={styles.statValue}>{formatCurrency(item.total_spent)}</Text>
+                {item.address && (
+                    <View style={styles.addressBox}>
+                        <MapPin size={12} color="#94A3B8" />
+                        <Text style={styles.addressText} numberOfLines={1}>{item.address}</Text>
                     </View>
-                </View>
-                <View style={styles.verticalDivider} />
-                <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>Total Order</Text>
-                    <View style={styles.statValueRow}>
-                        <Calendar size={14} color="#64748B" />
-                        <Text style={styles.statValue}>{item.total_orders || 0}x</Text>
-                    </View>
-                </View>
-            </View>
-
-            {item.address && (
-                <View style={styles.addressBox}>
-                    <MapPin size={12} color="#94A3B8" />
-                    <Text style={styles.addressText} numberOfLines={1}>{item.address}</Text>
-                </View>
-            )}
-        </TouchableOpacity>
-    );
+                )}
+            </TouchableOpacity>
+        );
+    };
 
     return (
         <View style={styles.container}>
@@ -286,6 +307,17 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#1E40AF',
     },
+    onlineBadge: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        width: 14,
+        height: 14,
+        borderRadius: 7,
+        backgroundColor: '#10B981', // Green for online
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
+    },
     headerInfo: {
         flex: 1,
         marginLeft: 12,
@@ -295,6 +327,27 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#1E293B',
         marginBottom: 4,
+    },
+    activeLabel: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#DCFCE7',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 20,
+        gap: 4,
+        marginTop: 2,
+    },
+    activeDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#10B981',
+    },
+    activeText: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: '#15803D',
     },
     phoneRow: {
         flexDirection: 'row',

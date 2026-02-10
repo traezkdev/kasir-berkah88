@@ -323,7 +323,7 @@ const CustomerRootStack = () => (
         <Stack.Screen name="OrderDetails" component={OrderDetails} />
         <Stack.Screen name="ChatScreen" component={ChatScreen} />
         {/* PointsHistory is now inside HomeStack and ProfileStack */}
-        <Stack.Screen name="PromoScreen" component={PromoScreen} />
+        {/* PromoString removed to force navigation via MainTabs > PromoStack */}
         <Stack.Screen name="DeveloperCreditsScreen" component={DeveloperCreditsScreen} />
         <Stack.Screen name="InformationScreen" component={InformationScreen} />
     </Stack.Navigator>

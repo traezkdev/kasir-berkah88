@@ -12,7 +12,7 @@ import {
     Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Info, Calendar, ChevronRight, ShoppingBag, Sparkles, Clock, Bell } from 'lucide-react-native';
+import { ChevronLeft, Info, Calendar, ChevronRight, ShoppingBag, Sparkles, Clock, Bell, Tag } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiService, { API_URL } from '../../api/apiService';
 import BottomModalTemplate from '../../components/templates/BottomModalTemplate';
@@ -72,6 +72,10 @@ const InformationScreen = ({ navigation }) => {
         if (info.link_type === 'product' && info.link_value) {
             setShowDetail(false);
             navigation.navigate('Menu', { itemId: info.link_value });
+        } else if (info.link_type === 'promo') {
+            setShowDetail(false);
+            // Navigate to Promo tab in MainTabs to show navbar
+            navigation.navigate('MainTabs', { screen: 'Promo' });
         }
     };
 
@@ -164,6 +168,13 @@ const InformationScreen = ({ navigation }) => {
                                                 <ChevronRight size={12} color="#10B981" />
                                             </View>
                                         )}
+                                        {info.link_type === 'promo' && (
+                                            <View style={[styles.compactAction, { backgroundColor: '#FEF3C7' }]}>
+                                                <Tag size={12} color="#F59E0B" />
+                                                <Text style={[styles.compactActionText, { color: '#F59E0B' }]}>Lihat Promo</Text>
+                                                <ChevronRight size={12} color="#F59E0B" />
+                                            </View>
+                                        )}
                                     </View>
                                 </View>
                             </TouchableOpacity>
@@ -178,14 +189,23 @@ const InformationScreen = ({ navigation }) => {
                 onClose={() => setShowDetail(false)}
                 title="Detail Informasi"
                 height="85%"
-                footer={selectedInfo?.link_type === 'product' && (
+                footer={(selectedInfo?.link_type === 'product' || selectedInfo?.link_type === 'promo') && (
                     <TouchableOpacity
-                        style={styles.modalActionBtn}
+                        style={[styles.modalActionBtn, selectedInfo?.link_type === 'promo' && { backgroundColor: '#F59E0B' }]}
                         onPress={() => handleAction(selectedInfo)}
                         activeOpacity={0.8}
                     >
-                        <ShoppingBag size={18} color="#FFFFFF" strokeWidth={2.5} />
-                        <Text style={styles.modalActionBtnText}>Pesan Sekarang</Text>
+                        {selectedInfo?.link_type === 'product' ? (
+                            <>
+                                <ShoppingBag size={18} color="#FFFFFF" strokeWidth={2.5} />
+                                <Text style={styles.modalActionBtnText}>Pesan Sekarang</Text>
+                            </>
+                        ) : (
+                            <>
+                                <Tag size={18} color="#FFFFFF" strokeWidth={2.5} />
+                                <Text style={styles.modalActionBtnText}>Lihat Promo</Text>
+                            </>
+                        )}
                         <ChevronRight size={18} color="#FFFFFF" strokeWidth={3} />
                     </TouchableOpacity>
                 )}
