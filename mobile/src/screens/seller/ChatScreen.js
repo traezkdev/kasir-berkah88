@@ -31,7 +31,8 @@ import {
     Image as ImageIcon,
     Camera,
     Download,
-    Share2
+    Share2,
+    Pencil
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Sharing from 'expo-sharing';
@@ -48,17 +49,22 @@ import { useToast } from '../../context/ToastContext';
 // --- WHATSAPP-STYLE OPTIMIZATIONS ---
 
 // 1. Optimistic Message Item with minimal re-renders
-const MessageItem = memo(({ item, isMine, formatTime, onImagePress }) => {
+const MessageItem = memo(({ item, isMine, formatTime, onImagePress, onLongPress }) => {
     const imageUrl = item.image_url ?
         (item.image_url.startsWith('http') ? item.image_url : `${API_URL}${item.image_url}`)
         : null;
 
     return (
-        <View style={[
-            styles.messageWrapper,
-            isMine ? styles.myMsgWrapper : styles.theirMsgWrapper,
-            imageUrl && { maxWidth: '100%' } // Allow image bubbles to define their own width
-        ]}>
+        <TouchableOpacity
+            style={[
+                styles.messageWrapper,
+                isMine ? styles.myMsgWrapper : styles.theirMsgWrapper,
+                imageUrl && { maxWidth: '100%' }
+            ]}
+            onLongPress={() => isMine && !item.sending && onLongPress(item)}
+            activeOpacity={0.9}
+            delayLongPress={300}
+        >
             <View style={[
                 styles.messageBubble,
                 isMine ? styles.myMsgBubble : styles.theirMsgBubble,
@@ -87,6 +93,11 @@ const MessageItem = memo(({ item, isMine, formatTime, onImagePress }) => {
                     </Text>
                 ) : null}
                 <View style={styles.messageFooter}>
+                    {item.is_edited === 1 && (
+                        <Text style={[styles.editedLabel, isMine ? styles.myMsgTime : styles.theirMsgTime]}>
+                            (diedit)
+                        </Text>
+                    )}
                     <Text style={[styles.msgTime, isMine ? styles.myMsgTime : styles.theirMsgTime]}>
                         {formatTime(item.created_at)}
                     </Text>
@@ -106,13 +117,15 @@ const MessageItem = memo(({ item, isMine, formatTime, onImagePress }) => {
                     )}
                 </View>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 }, (prevProps, nextProps) => {
     // WhatsApp-style: Only re-render if message content or status changes
     return prevProps.item.id === nextProps.item.id &&
         prevProps.item.is_read === nextProps.item.is_read &&
-        prevProps.item.sending === nextProps.item.sending;
+        prevProps.item.sending === nextProps.item.sending &&
+        prevProps.item.message === nextProps.item.message &&
+        prevProps.item.is_edited === nextProps.item.is_edited;
 });
 
 const ConversationItem = memo(({ item, isActive, onPress, onLongPress, getDisplayName, formatTime, isOnline }) => (
@@ -156,65 +169,87 @@ const ConversationItem = memo(({ item, isActive, onPress, onLongPress, getDispla
 ));
 
 // 2. Isolated Input Component (WhatsApp-style)
-const ChatInput = memo(({ onSendMessage, onPickImage, themeColor }) => {
+const ChatInput = memo(({ onSendMessage, onPickImage, themeColor, editMode, initialValue, onCancelEdit }) => {
     const [localMessage, setLocalMessage] = useState('');
     const [isSendingLocal, setIsSendingLocal] = useState(false);
+
+    // Sync local state when entering edit mode
+    useEffect(() => {
+        if (editMode && initialValue) {
+            setLocalMessage(initialValue);
+        } else if (!editMode) {
+            setLocalMessage('');
+        }
+    }, [editMode, initialValue]);
 
     const handleSend = async () => {
         if (!localMessage.trim() || isSendingLocal) return;
 
         const messageText = localMessage.trim();
-        setLocalMessage(''); // Clear immediately (optimistic UI)
         setIsSendingLocal(true);
 
         const success = await onSendMessage(messageText);
-        if (!success) {
-            // Restore message if failed
-            setLocalMessage(messageText);
+        if (success) {
+            setLocalMessage(''); // Clear only on success for manual sends
         }
         setIsSendingLocal(false);
     };
 
     const handlePick = async () => {
-        if (isSendingLocal) return;
+        if (isSendingLocal || editMode) return;
         setIsSendingLocal(true);
         await onPickImage();
         setIsSendingLocal(false);
     };
 
     return (
-        <View style={styles.inputArea}>
-            <TouchableOpacity
-                style={styles.attachBtn}
-                onPress={handlePick}
-                disabled={isSendingLocal}
-            >
-                <ImageIcon size={24} color="#64748B" />
-            </TouchableOpacity>
-            <TextInput
-                style={styles.chatInput}
-                placeholder="Ketik pesan..."
-                value={localMessage}
-                onChangeText={setLocalMessage}
-                multiline
-                maxLength={1000}
-                editable={!isSendingLocal}
-            />
-            <TouchableOpacity
-                style={[
-                    styles.sendBtn,
-                    (!localMessage.trim() && !isSendingLocal) && styles.sendBtnDisabled,
-                    isSendingLocal && { opacity: 0.8 }
-                ]}
-                onPress={handleSend}
-                disabled={!localMessage.trim() || isSendingLocal}
-            >
-                {isSendingLocal ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                    <Send size={20} color="#FFFFFF" />
-                )}
-            </TouchableOpacity>
+        <View>
+            {editMode && (
+                <View style={styles.editBar}>
+                    <View style={styles.editInfo}>
+                        <Pencil size={14} color="#138FEA" />
+                        <Text style={styles.editText} numberOfLines={1}>Edit Pesan: {initialValue}</Text>
+                    </View>
+                    <TouchableOpacity onPress={onCancelEdit}>
+                        <X size={20} color="#64748B" />
+                    </TouchableOpacity>
+                </View>
+            )}
+            <View style={styles.inputArea}>
+                <TouchableOpacity
+                    style={[styles.attachBtn, editMode && { opacity: 0.3 }]}
+                    onPress={handlePick}
+                    disabled={isSendingLocal || editMode}
+                >
+                    <ImageIcon size={24} color="#64748B" />
+                </TouchableOpacity>
+                <TextInput
+                    style={styles.chatInput}
+                    placeholder="Ketik pesan..."
+                    value={localMessage}
+                    onChangeText={setLocalMessage}
+                    multiline
+                    maxLength={1000}
+                    editable={!isSendingLocal}
+                    autoFocus={editMode}
+                />
+                <TouchableOpacity
+                    style={[
+                        styles.sendBtn,
+                        (!localMessage.trim() && !isSendingLocal) && styles.sendBtnDisabled,
+                        isSendingLocal && { opacity: 0.8 },
+                        editMode && { backgroundColor: '#10B981' }
+                    ]}
+                    onPress={handleSend}
+                    disabled={!localMessage.trim() || isSendingLocal}
+                >
+                    {isSendingLocal ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                        editMode ? <Check size={20} color="#FFFFFF" /> : <Send size={20} color="#FFFFFF" />
+                    )}
+                </TouchableOpacity>
+            </View>
         </View>
     );
 });
@@ -240,6 +275,10 @@ const ChatScreen = ({ navigation }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedConv, setSelectedConv] = useState(null);
     const [isOptionsVisible, setIsOptionsVisible] = useState(false);
+    const [isMsgMenuVisible, setIsMsgMenuVisible] = useState(false);
+    const [selectedMsgForMenu, setSelectedMsgForMenu] = useState(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editingMsgData, setEditingMsgData] = useState(null);
     const [previewImage, setPreviewImage] = useState(null);
     const [isDownloading, setIsDownloading] = useState(false);
     const listRef = useRef(null);
@@ -274,9 +313,32 @@ const ChatScreen = ({ navigation }) => {
 
     const themeColor = '#138FEA';
 
+    // Define performUpdateMessage first (before handleSendMessage uses it)
+    const performUpdateMessage = useCallback(async (newText) => {
+        if (!editingMsgData) return false;
+        try {
+            await apiService.put(`/api/messages/${editingMsgData.id}`, {
+                message: newText
+            });
+            setIsEditing(false);
+            setEditingMsgData(null);
+            showToast('Pesan berhasil diperbarui', 'success');
+            return true;
+        } catch (error) {
+            console.error('Update message error:', error);
+            showToast('Gagal memperbarui pesan', 'error');
+            return false;
+        }
+    }, [editingMsgData, showToast]);
+
     // WhatsApp-style: Optimistic message sending
     const handleSendMessage = useCallback(async (text = '', base64Image = null) => {
         if ((!text.trim() && !base64Image) || !activeChat) return false;
+
+        // Jika sedang mode edit, panggil fungsi update
+        if (isEditing && editingMsgData) {
+            return performUpdateMessage(text.trim());
+        }
 
         // Create optimistic message
         const optimisticMessage = {
@@ -323,7 +385,34 @@ const ChatScreen = ({ navigation }) => {
             Alert.alert('Gagal', 'Pesan gagal dikirim. Silakan coba lagi.');
             return false;
         }
-    }, [activeChat, activeOrder, fetchConversations, user.id]);
+    }, [activeChat, activeOrder, fetchConversations, user.id, isEditing, editingMsgData, performUpdateMessage]);
+
+    const handleDeleteMessage = useCallback(async () => {
+        if (!selectedMsgForMenu) return;
+        setIsMsgMenuVisible(false);
+
+        confirm({
+            title: 'Hapus Pesan',
+            message: 'Apakah Anda yakin ingin menghapus pesan ini?',
+            confirmLabel: 'Hapus',
+            onConfirm: async () => {
+                try {
+                    await apiService.delete(`/api/messages/${selectedMsgForMenu.id}`);
+                    showToast('Pesan berhasil dihapus', 'success');
+                } catch (error) {
+                    console.error('Delete message error:', error);
+                    showToast('Gagal menghapus pesan', 'error');
+                }
+            }
+        });
+    }, [selectedMsgForMenu, confirm, showToast]);
+
+    const startEditMessage = useCallback(() => {
+        if (!selectedMsgForMenu) return;
+        setIsMsgMenuVisible(false);
+        setIsEditing(true);
+        setEditingMsgData(selectedMsgForMenu);
+    }, [selectedMsgForMenu]);
 
     const downloadImage = useCallback(async (url) => {
         if (isDownloading) return;
@@ -531,6 +620,22 @@ const ChatScreen = ({ navigation }) => {
             }
         };
 
+        const handleMessageEdited = ({ id, message }) => {
+            console.log('[ChatScreen] Pesan diedit via socket:', id);
+            setMessages(prev => prev.map(m =>
+                String(m.id) === String(id) ? { ...m, message, is_edited: 1 } : m
+            ));
+        };
+
+        const handleMessageDeleted = ({ id }) => {
+            console.log('[ChatScreen] Pesan dihapus via socket:', id);
+            setMessages(prev => prev.filter(m => String(m.id) === String(id)));
+        };
+
+        socket.on('new_message', handleNewMessage);
+        socket.on('message_edited', handleMessageEdited);
+        socket.on('message_deleted', handleMessageDeleted);
+
         const handleMessagesRead = ({ readerId, senderId }) => {
             const currentActiveChat = activeChatRef.current;
             const currentUser = userRef.current;
@@ -554,10 +659,14 @@ const ChatScreen = ({ navigation }) => {
         };
 
         socket.on('new_message', handleNewMessage);
+        socket.on('message_edited', handleMessageEdited);
+        socket.on('message_deleted', handleMessageDeleted);
         socket.on('messages_read', handleMessagesRead);
 
         return () => {
             socket.off('new_message', handleNewMessage);
+            socket.off('message_edited', handleMessageEdited);
+            socket.off('message_deleted', handleMessageDeleted);
             socket.off('messages_read', handleMessagesRead);
         };
     }, [socket, markAsRead]); // Keep stable dependencies
@@ -685,9 +794,13 @@ const ChatScreen = ({ navigation }) => {
     const renderMessageItem = useCallback(({ item }) => (
         <MessageItem
             item={item}
-            isMine={item.sender_id === user.id}
+            isMine={String(item.sender_id) === String(user.id)}
             formatTime={formatTime}
             onImagePress={setPreviewImage}
+            onLongPress={(msg) => {
+                setSelectedMsgForMenu(msg);
+                setIsMsgMenuVisible(true);
+            }}
         />
     ), [user.id, formatTime]);
 
@@ -814,6 +927,12 @@ const ChatScreen = ({ navigation }) => {
                                 onSendMessage={handleSendMessage}
                                 onPickImage={pickImage}
                                 themeColor={themeColor}
+                                editMode={isEditing}
+                                initialValue={editingMsgData?.message}
+                                onCancelEdit={() => {
+                                    setIsEditing(false);
+                                    setEditingMsgData(null);
+                                }}
                             />
                             {Platform.OS === 'android' && <View style={{ height: keyboardPadding }} />}
                         </>
@@ -866,6 +985,54 @@ const ChatScreen = ({ navigation }) => {
                             </TouchableOpacity>
                         </View>
                     </View>
+                </Modal>
+
+                {/* Message Options Modal */}
+                <Modal
+                    visible={isMsgMenuVisible}
+                    transparent={true}
+                    animationType="fade"
+                    onRequestClose={() => setIsMsgMenuVisible(false)}
+                >
+                    <TouchableOpacity
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setIsMsgMenuVisible(false)}
+                    >
+                        <View style={styles.optionContainer}>
+                            <View style={styles.optionHeader}>
+                                <View style={styles.optionHandle} />
+                                <Text style={styles.optionTitle}>Opsi Pesan</Text>
+                                <Text style={styles.optionSubtitle}>Pilih tindakan untuk pesan ini</Text>
+                            </View>
+
+                            {selectedMsgForMenu?.message && (
+                                <TouchableOpacity style={styles.optionItem} onPress={startEditMessage}>
+                                    <View style={[styles.optionIcon, { backgroundColor: '#E0F2FE' }]}>
+                                        <Pencil size={20} color="#0EA5E9" />
+                                    </View>
+                                    <Text style={styles.optionText}>Edit Pesan</Text>
+                                </TouchableOpacity>
+                            )}
+
+                            <TouchableOpacity style={styles.optionItem} onPress={handleDeleteMessage}>
+                                <View style={[styles.optionIcon, { backgroundColor: '#FEE2E2' }]}>
+                                    <Trash2 size={20} color="#EF4444" />
+                                </View>
+                                <Text style={[styles.optionText, { color: '#EF4444' }]}>Hapus Pesan</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.optionItem, { borderBottomWidth: 0 }]}
+                                onPress={() => setIsMsgMenuVisible(false)}
+                            >
+                                <View style={[styles.optionIcon, { backgroundColor: '#F1F5F9' }]}>
+                                    <X size={20} color="#64748B" />
+                                </View>
+                                <Text style={styles.optionText}>Batal</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </TouchableOpacity>
                 </Modal>
             </SafeAreaView>
         );
@@ -938,6 +1105,7 @@ const ChatScreen = ({ navigation }) => {
                     }
                 />
             )}
+
             {/* Modal Opsi Percakapan */}
             <Modal
                 visible={isOptionsVisible}
@@ -964,8 +1132,7 @@ const ChatScreen = ({ navigation }) => {
                                 const accepted = await confirm({
                                     title: 'Hapus Obrolan',
                                     message: `Hapus seluruh riwayat pesan dengan ${selectedConv?.username}?`,
-                                    confirmText: 'Ya, Hapus',
-                                    type: 'danger'
+                                    confirmLabel: 'Ya, Hapus',
                                 });
                                 if (accepted) {
                                     try {
@@ -974,8 +1141,10 @@ const ChatScreen = ({ navigation }) => {
                                             setMessages([]);
                                         }
                                         fetchConversations();
+                                        showToast('Riwayat chat berhasil dihapus', 'success');
                                     } catch (e) {
                                         console.error("Error deleting history:", e);
+                                        showToast('Gagal menghapus riwayat chat', 'error');
                                     }
                                 }
                             }}
@@ -1459,6 +1628,33 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontWeight: '700',
         fontSize: 15,
+    },
+    // --- New Styles for Edit/Delete ---
+    editedLabel: {
+        fontSize: 10,
+        fontStyle: 'italic',
+        marginRight: 4,
+    },
+    editBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        backgroundColor: '#F8FAFC',
+        borderTopWidth: 1,
+        borderTopColor: '#E2E8F0',
+        justifyContent: 'space-between',
+    },
+    editInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        flex: 1,
+    },
+    editText: {
+        fontSize: 13,
+        color: '#64748B',
+        fontStyle: 'italic',
     },
 });
 

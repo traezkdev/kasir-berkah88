@@ -6127,6 +6127,70 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
     }
 });
 
+// Edit Pesan Individual
+app.put("/api/messages/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { message } = req.body;
+        const userId = req.user.userId;
+
+        if (!message) {
+            return res.status(400).json({ error: "Pesan tidak boleh kosong" });
+        }
+
+        // Pastikan hanya pengirim yang bisa mengedit pesannya sendiri
+        const [rows] = await db.query("SELECT sender_id FROM messages WHERE id = ?", [id]);
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Pesan tidak ditemukan" });
+        }
+
+        if (rows[0].sender_id !== userId) {
+            return res.status(403).json({ error: "Anda tidak memiliki izin untuk mengedit pesan ini" });
+        }
+
+        await db.query("UPDATE messages SET message = ?, is_edited = 1 WHERE id = ?", [message, id]);
+
+        const io = req.app.get('io');
+        // Beritahu semua client yang terlibat bahwa pesan telah diupdate
+        io.emit('message_edited', { id: parseInt(id), message });
+
+        res.json({ message: "Pesan berhasil diupdate" });
+    } catch (err) {
+        console.error("Error editing message:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Hapus Pesan Individual
+app.delete("/api/messages/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.userId;
+
+        // Pastikan hanya pengirim yang bisa menghapus pesannya sendiri
+        const [rows] = await db.query("SELECT sender_id FROM messages WHERE id = ?", [id]);
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Pesan tidak ditemukan" });
+        }
+
+        if (rows[0].sender_id !== userId) {
+            return res.status(403).json({ error: "Anda tidak memiliki izin untuk menghapus pesan ini" });
+        }
+
+        // Gunakan hard delete sesuai pola penghapusan riwayat chat di atas
+        await db.query("DELETE FROM messages WHERE id = ?", [id]);
+
+        const io = req.app.get('io');
+        // Beritahu semua client yang terlibat bahwa pesan telah dihapus
+        io.emit('message_deleted', { id: parseInt(id) });
+
+        res.json({ message: "Pesan berhasil dihapus" });
+    } catch (err) {
+        console.error("Error deleting message:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Ambil Riwayat Chat dengan User Tertentu
 app.get("/api/messages/history/:otherUserId", authenticateToken, async (req, res) => {
     try {

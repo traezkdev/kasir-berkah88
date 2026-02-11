@@ -1623,6 +1623,20 @@ const setupDatabase = async () => {
       console.log('Added image_url column to messages table.');
     }
 
+    // Check and add is_edited column to messages if it doesn't exist
+    const checkIsEditedMsgColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'messages' AND COLUMN_NAME = 'is_edited';
+    `;
+    const addIsEditedMsgColumn = `
+      ALTER TABLE messages ADD COLUMN is_edited TINYINT(1) DEFAULT 0;
+    `;
+    const [msgIsEditedRows] = await connection.query(checkIsEditedMsgColumn);
+    if (msgIsEditedRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addIsEditedMsgColumn);
+      console.log('Added is_edited column to messages table.');
+    }
+
     // Ensure messages table supports emojis (utf8mb4)
     try {
       await connection.query("ALTER TABLE messages CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
