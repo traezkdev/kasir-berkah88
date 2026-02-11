@@ -45,6 +45,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useOrderNotification } from '../../context/OrderNotificationContext';
 import { useToast } from '../../context/ToastContext';
+import { useIsFocused } from '@react-navigation/native';
 
 // --- WHATSAPP-STYLE OPTIMIZATIONS ---
 
@@ -255,6 +256,7 @@ const ChatInput = memo(({ onSendMessage, onPickImage, themeColor, editMode, init
 });
 
 const ChatScreen = ({ navigation }) => {
+    const isFocused = useIsFocused();
     const { user } = useAuth();
     const { confirm } = useConfirm();
     const { showToast } = useToast();
@@ -584,7 +586,9 @@ const ChatScreen = ({ navigation }) => {
             // Execute fetching directly without InteractionManager to prevent deadlock
             fetchMessages();
             fetchActiveOrder();
-            markAsRead(activeChat.user_id);
+            if (isFocused) {
+                markAsRead(activeChat.user_id);
+            }
 
             // Safety timeout: Ensure loading stops after 5s if fetch hangs
             const timer = setTimeout(() => {
@@ -640,8 +644,11 @@ const ChatScreen = ({ navigation }) => {
                 });
 
                 // Jika pesan dari partner atau untuk saya (pelanggan), tandai sebagai dibaca
-                if (isFromPartner || (isCustomer && isToMe)) {
+                if (isFocused && (isFromPartner || (isCustomer && isToMe))) {
+                    console.log('[ChatScreen] Di layar Chat, menandai sebagai dibaca...');
                     markAsRead(msg.sender_id);
+                } else {
+                    console.log(`[ChatScreen] Tidak menandai dibaca karena: isFocused=${isFocused}`);
                 }
             } else {
                 console.log('[ChatScreen] Pesan diabaikan (tidak relevan). Partner:', partnerId, 'MsgFrom:', msgSender, 'MsgTo:', msgReceiver);
@@ -697,7 +704,7 @@ const ChatScreen = ({ navigation }) => {
             socket.off('message_deleted', handleMessageDeleted);
             socket.off('messages_read', handleMessagesRead);
         };
-    }, [socket, markAsRead]); // Keep stable dependencies
+    }, [socket, markAsRead, isFocused]); // Ditambah isFocused agar peka terhadap perubahan layar
 
     // Fallback polling: Selalu poll sebagai backup, tapi lebih cepat jika socket disconnect
     useEffect(() => {

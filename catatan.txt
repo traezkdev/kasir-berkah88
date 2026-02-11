@@ -1,1 +1,3 @@
-ulang modal ini dengan desain yang jauh lebih modern, premium, dan native style dengan gradient header, better form layout, dan animasi yang smooth:
+Saya menggunakan React Native dengan Expo development build untuk aplikasi mobile Android/iOS.
+Saya tidak menggunakan Expo Web Preview sebagai acuan utama.
+Mohon setiap solusi, layout, dan debugging difokuskan ke native mobile environment.

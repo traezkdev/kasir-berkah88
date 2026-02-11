@@ -57,7 +57,7 @@ const CustomerDashboard = ({ navigation }) => {
     const { user } = useAuth();
     const { isOpen, ignoreStock } = useAppSettings();
     const { cartCount } = useCart();
-    const { unreadCount } = useChat();
+    const { unreadCount, fetchConversations } = useChat();
 
     const [menus, setMenus] = useState([]);
     const [categories, setCategories] = useState([]);

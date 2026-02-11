@@ -6143,9 +6143,8 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
             io.to('sellers').emit('new_message', messageData);
         }
 
-        // Global broadcast sebagai fallback untuk memastikan pesan sampai
-        // Terutama untuk customer yang mungkin belum join room saat pesan dikirim
-        io.emit('new_message', messageData);
+        // Global broadcast removed to prevent duplicates as we already use room-based emits
+        // io.emit('new_message', messageData); 
 
 
         res.status(201).json({
@@ -6336,32 +6335,21 @@ app.get("/api/messages/conversations", authenticateToken, async (req, res) => {
             `;
             params = [];
         } else {
-            // Logika Inbox untuk Pelanggan (Hanya menampilkan satu entitas "Toko")
+            // Query Super Akurat (Tanpa Cache)
             sql = `
                 SELECT 
-                    u.id as user_id, 
+                    SQL_NO_CACHE
+                    COALESCE((SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller') LIMIT 1), 1) as user_id, 
                     'Pusat Bantuan (Toko)' as username, 
-                    u.role,
-                    u.avatar_url,
-                    m.message as last_message, 
-                    m.created_at as last_message_time,
-                    (SELECT COUNT(*) FROM messages WHERE sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')) AND receiver_id = ? AND is_read = 0) as unread_count
-                FROM users u
-                JOIN messages m ON m.id = (
-                    SELECT MAX(id) 
-                    FROM messages 
-                    WHERE (sender_id = ? AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')))
-                       OR (sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')) AND receiver_id = ?)
-                )
-                WHERE u.id = m.sender_id OR u.id = m.receiver_id
-                LIMIT 1
+                    'admin' as role,
+                    (SELECT message FROM messages WHERE (sender_id = ? OR receiver_id = ?) ORDER BY id DESC LIMIT 1) as last_message,
+                    (SELECT created_at FROM messages WHERE (sender_id = ? OR receiver_id = ?) ORDER BY id DESC LIMIT 1) as last_message_time,
+                    COALESCE((SELECT COUNT(*) FROM messages WHERE receiver_id = ? AND is_read = 0), 0) as unread_count
             `;
-            params = [myId, myId, myId];
+            params = [myId, myId, myId, myId, myId];
         }
 
         const [rows] = await db.query(sql, params);
-
-
         res.json({ data: rows });
     } catch (err) {
         console.error("Error fetching conversations:", err);
@@ -6383,8 +6371,8 @@ app.put("/api/messages/read/:senderId", authenticateToken, async (req, res) => {
             sql = "UPDATE messages SET is_read = 1 WHERE sender_id = ? AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')) AND is_read = 0";
             await db.query(sql, [senderId]);
         } else {
-            // Jika dibaca oleh PELANGGAN, tandai SEMUA pesan dari SELURUH TIM SELLER ke Pelanggan ini sebagai sudah dibaca
-            sql = "UPDATE messages SET is_read = 1 WHERE sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')) AND receiver_id = ? AND is_read = 0";
+            // Jika dibaca oleh PELANGGAN, tandai SEMUA pesan ke Pelanggan ini sebagai sudah dibaca (Sapu bersih)
+            sql = "UPDATE messages SET is_read = 1 WHERE receiver_id = ? AND is_read = 0";
             await db.query(sql, [myId]);
         }
 
