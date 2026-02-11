@@ -96,6 +96,7 @@ const ProfileScreen = ({ navigation }) => {
     }, [user]);
 
     useEffect(() => {
+        refreshUser();
         loadNotificationSettings();
     }, []);
 

@@ -389,6 +389,7 @@ const ChatScreen = ({ navigation }) => {
 
     const handleDeleteMessage = useCallback(async () => {
         if (!selectedMsgForMenu) return;
+        const messageToDelete = selectedMsgForMenu;
         setIsMsgMenuVisible(false);
 
         confirm({
@@ -396,12 +397,28 @@ const ChatScreen = ({ navigation }) => {
             message: 'Apakah Anda yakin ingin menghapus pesan ini?',
             confirmLabel: 'Hapus',
             onConfirm: async () => {
+                // Optimistic UI update: Remove message immediately
+                setMessages(prev => prev.filter(m => String(m.id) !== String(messageToDelete.id)));
+
                 try {
-                    await apiService.delete(`/api/messages/${selectedMsgForMenu.id}`);
+                    await apiService.delete(`/api/messages/${messageToDelete.id}`);
                     showToast('Pesan berhasil dihapus', 'success');
+                    // Socket event will sync to other devices
                 } catch (error) {
                     console.error('Delete message error:', error);
                     showToast('Gagal menghapus pesan', 'error');
+
+                    // Rollback: Re-add the message if deletion failed
+                    setMessages(prev => {
+                        // Check if message already exists (from socket event)
+                        const exists = prev.some(m => String(m.id) === String(messageToDelete.id));
+                        if (!exists) {
+                            return [...prev, messageToDelete].sort((a, b) =>
+                                new Date(a.created_at) - new Date(b.created_at)
+                            );
+                        }
+                        return prev;
+                    });
                 }
             }
         });
@@ -520,9 +537,20 @@ const ChatScreen = ({ navigation }) => {
             if (res.data && res.data.data) {
                 setMessages(prev => {
                     const newData = res.data.data;
-                    // Only update state if message count is different to save resources
-                    if (prev.length === newData.length) return prev;
-                    return newData;
+                    const sendingMessages = prev.filter(m => m.sending);
+
+                    // Optimized update logic:
+                    // Only update if count has changed (server data + our local pending messages)
+                    if (prev.length === (newData.length + sendingMessages.length)) {
+                        // Check if metadata like is_read changed for existing messages
+                        const hasChanges = newData.some((msg, idx) =>
+                            prev[idx] && (msg.is_read !== prev[idx].is_read || msg.message !== prev[idx].message)
+                        );
+                        if (!hasChanges) return prev;
+                    }
+
+                    // Always combine server data with messages that are still being sent locally
+                    return [...newData, ...sendingMessages];
                 });
             }
         } catch (e) {
@@ -629,7 +657,7 @@ const ChatScreen = ({ navigation }) => {
 
         const handleMessageDeleted = ({ id }) => {
             console.log('[ChatScreen] Pesan dihapus via socket:', id);
-            setMessages(prev => prev.filter(m => String(m.id) === String(id)));
+            setMessages(prev => prev.filter(m => String(m.id) !== String(id)));
         };
 
         socket.on('new_message', handleNewMessage);
@@ -671,24 +699,28 @@ const ChatScreen = ({ navigation }) => {
         };
     }, [socket, markAsRead]); // Keep stable dependencies
 
-    // Fallback polling jika socket tidak terhubung atau sebagai pengaman tambahan di production
+    // Fallback polling: Selalu poll sebagai backup, tapi lebih cepat jika socket disconnect
     useEffect(() => {
         let interval;
-        if (activeChat) {
-            interval = setInterval(() => {
-                const isConnected = socket && socket.connected;
+        const POLL_INTERVAL = (socket && socket.connected) ? 5000 : 3000; // 3s jika disconnect, 5s jika connect (backup)
 
-                // Jika socket tidak terhubung, lakukan fetch manual (polling)
-                if (!isConnected) {
-                    console.log('[ChatScreen] Socket tidak terhubung, melakukan fallback fetch...');
-                    fetchMessages(true);
-                }
-            }, 8000); // Poll setiap 8 detik jika socket mati
+        if (activeChat) {
+            console.log(`[ChatScreen] Polling started with interval: ${POLL_INTERVAL}ms. Socket Status: ${socket && socket.connected ? 'Connected' : 'Disconnected'}`);
+
+            // Initial Check
+            if (!socket || !socket.connected) {
+                console.log('[ChatScreen] Socket not connected, fetching messages immediately...');
+                fetchMessages(true);
+            }
+
+            interval = setInterval(() => {
+                fetchMessages(true);
+            }, POLL_INTERVAL);
         }
         return () => {
             if (interval) clearInterval(interval);
         };
-    }, [activeChat, socket, fetchMessages]);
+    }, [activeChat, socket?.connected, fetchMessages]); // Depend on socket.connected state
 
     // For customers, auto-select the first contact (admin/seller)
     useEffect(() => {
@@ -752,7 +784,7 @@ const ChatScreen = ({ navigation }) => {
 
     const getDisplayName = useCallback((contact) => {
         if (!contact) return '';
-        if (['admin', 'owner', 'kasir', 'penjual'].includes(contact.role)) {
+        if (['admin', 'owner', 'kasir', 'penjual', 'seller'].includes(contact.role)) {
             return 'Staf Berkah 88';
         }
         return contact.username;
@@ -763,8 +795,8 @@ const ChatScreen = ({ navigation }) => {
         const partnerRole = partner.role;
         const partnerId = partner.user_id || partner.id;
 
-        if (['admin', 'owner', 'kasir', 'penjual'].includes(partnerRole)) {
-            return onlineUsers.some(u => ['admin', 'owner', 'kasir', 'penjual'].includes(u.role));
+        if (['admin', 'owner', 'kasir', 'penjual', 'seller'].includes(partnerRole)) {
+            return onlineUsers.some(u => ['admin', 'owner', 'kasir', 'penjual', 'seller'].includes(u.role));
         }
 
         return onlineUsers.some(u => String(u.userId) === String(partnerId));

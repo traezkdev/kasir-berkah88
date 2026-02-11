@@ -493,15 +493,31 @@ const CustomerDashboard = ({ navigation }) => {
                             ]}
                             onPress={() => navigation.navigate('Promo')}
                         >
-                            <View style={styles.bannerInfo}>
-                                <Text style={styles.bannerTitle}>{banner.title}</Text>
-                                <Text style={styles.bannerSubTitle}>{banner.subtitle}</Text>
-                                <View style={styles.promoBadge}>
-                                    <Text style={styles.promoBadgeText}>AMBIL PROMO</Text>
-                                </View>
-                            </View>
+                            {banner.image_url && (
+                                <Image
+                                    source={{ uri: `${API_URL}${banner.image_url}` }}
+                                    style={styles.bannerBackgroundImage}
+                                    resizeMode="cover"
+                                />
+                            )}
+                            {banner.image_url && (banner.show_text === 1 || banner.show_text === true) && <View style={styles.bannerOverlay} />}
+
                             {/* Decorative Icon Background */}
-                            <Sparkles size={120} color="rgba(255,255,255,0.1)" style={styles.bannerDecor} />
+                            {(banner.show_text === 1 || banner.show_text === true) && (
+                                <Sparkles size={120} color="rgba(255,255,255,0.1)" style={styles.bannerDecor} />
+                            )}
+
+                            {(banner.show_text === 1 || banner.show_text === true) && (
+                                <View style={styles.bannerContentWrapper}>
+                                    <View style={styles.bannerInfo}>
+                                        <Text style={styles.bannerTitle}>{banner.title}</Text>
+                                        <Text style={styles.bannerSubTitle}>{banner.subtitle}</Text>
+                                        <View style={styles.promoBadge}>
+                                            <Text style={styles.promoBadgeText}>AMBIL PROMO</Text>
+                                        </View>
+                                    </View>
+                                </View>
+                            )}
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
@@ -879,6 +895,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderWidth: 2,
         borderColor: '#FFFFFF',
+        zIndex: 10,
+        ...Platform.select({
+            web: { boxShadow: '0px 2px 4px rgba(0,0,0,0.2)' },
+            android: { elevation: 5 }
+        })
     },
     statusBadgeText: {
         color: '#FFFFFF',
@@ -942,14 +963,17 @@ const styles = StyleSheet.create({
         height: 160,
         borderRadius: 30,
         marginLeft: 20,
+        overflow: 'hidden',
+    },
+    bannerContentWrapper: {
+        ...StyleSheet.absoluteFillObject,
         padding: 24,
         flexDirection: 'row',
         justifyContent: 'space-between',
-        overflow: 'hidden',
+        zIndex: 10,
     },
     bannerInfo: {
         flex: 1,
-        zIndex: 1,
         justifyContent: 'space-between',
     },
     bannerTitle: {
@@ -986,6 +1010,17 @@ const styles = StyleSheet.create({
         bottom: -20,
         right: -20,
         transform: [{ rotate: '15deg' }],
+    },
+    bannerBackgroundImage: {
+        ...StyleSheet.absoluteFillObject,
+        width: '100%',
+        height: '100%',
+        borderRadius: 30,
+    },
+    bannerOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        borderRadius: 30,
     },
     categoriesScroll: {
         paddingHorizontal: 12,

@@ -300,7 +300,7 @@ const sendUniversalNotification = async (userIds, message, heading, data = {}, e
         } else {
             // Broadcast case (e.g. for new_order or promos)
             if (type === 'new_order') {
-                sql += " AND role IN ('admin', 'penjual', 'owner', 'kasir')";
+                sql += " AND role IN ('admin', 'penjual', 'owner', 'kasir', 'seller')";
             }
         }
 
@@ -1413,7 +1413,7 @@ app.post("/api/banners", authenticateToken, authorizeRoles('admin', 'penjual'), 
             bannerData = req.body;
         }
 
-        const { title, subtitle, color_class, icon_name, link_url, is_active } = bannerData;
+        const { title, subtitle, color_class, icon_name, link_url, is_active, show_text } = bannerData;
 
         // Validasi field wajib
         if (!title) {
@@ -1422,15 +1422,16 @@ app.post("/api/banners", authenticateToken, authorizeRoles('admin', 'penjual'), 
 
         const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
         const final_is_active = is_active !== undefined ? (is_active ? 1 : 0) : 1;
+        const final_show_text = show_text !== undefined ? (show_text ? 1 : 0) : 1;
 
-        const sql = 'INSERT INTO banners (title, subtitle, image_url, color_class, icon_name, link_url, is_active) VALUES (?,?,?,?,?,?,?)';
-        const [result] = await db.query(sql, [title, subtitle || '', image_url, color_class, icon_name, link_url || '', final_is_active]);
+        const sql = 'INSERT INTO banners (title, subtitle, image_url, color_class, icon_name, link_url, is_active, show_text) VALUES (?,?,?,?,?,?,?,?)';
+        const [result] = await db.query(sql, [title, subtitle || '', image_url, color_class, icon_name, link_url || '', final_is_active, final_show_text]);
 
         await logActivity(req.user.userId, 'Tambah Banner', 'banner', result.insertId, `Banner baru: ${title}`);
 
         res.status(201).json({
             "message": "success",
-            "data": { id: result.insertId, ...bannerData, image_url, is_active: final_is_active }
+            "data": { id: result.insertId, ...bannerData, image_url, is_active: final_is_active, show_text: final_show_text }
         });
     } catch (err) {
         console.error("Error adding banner:", err);
@@ -1632,16 +1633,33 @@ app.put("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penjual'
             bannerData = req.body;
         }
 
-        const { title, subtitle, color_class, icon_name, link_url, is_active } = bannerData;
+        const { title, subtitle, color_class, icon_name, link_url, is_active, show_text, remove_image } = bannerData;
         const final_is_active = is_active !== undefined ? (is_active ? 1 : 0) : 1;
+        const final_show_text = show_text !== undefined ? (show_text ? 1 : 0) : 1;
 
-        let sql = 'UPDATE banners SET title = ?, subtitle = ?, color_class = ?, icon_name = ?, link_url = ?, is_active = ?';
-        let params = [title, subtitle || '', color_class, icon_name, link_url || '', final_is_active];
+        // Fetch current banner to handle image cleanup
+        const [currentBanner] = await db.query('SELECT image_url FROM banners WHERE id = ?', [id]);
+
+        let sql = 'UPDATE banners SET title = ?, subtitle = ?, color_class = ?, icon_name = ?, link_url = ?, is_active = ?, show_text = ?';
+        let params = [title, subtitle || '', color_class, icon_name, link_url || '', final_is_active, final_show_text];
 
         if (req.file) {
             const image_url = `/public/uploads/${req.file.filename}`;
             sql += ', image_url = ?';
             params.push(image_url);
+
+            // Delete old image if it exists
+            if (currentBanner.length > 0 && currentBanner[0].image_url) {
+                const oldPath = path.join(__dirname, currentBanner[0].image_url);
+                if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+            }
+        } else if (remove_image === true || remove_image === 'true') {
+            sql += ', image_url = NULL';
+            // Delete old image if it exists
+            if (currentBanner.length > 0 && currentBanner[0].image_url) {
+                const oldPath = path.join(__dirname, currentBanner[0].image_url);
+                if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+            }
         }
 
         sql += ' WHERE id = ?';
@@ -1651,7 +1669,7 @@ app.put("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penjual'
         await logActivity(req.user.userId, 'Update Banner', 'banner', id, `Banner ID ${id} diperbarui`);
         res.json({
             "message": "success",
-            "data": { id, ...bannerData, is_active: final_is_active }
+            "data": { id, ...bannerData, is_active: final_is_active, show_text: final_show_text }
         });
     } catch (err) {
         console.error("Error updating banner:", err);
@@ -1663,11 +1681,22 @@ app.put("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penjual'
 app.delete("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penjual'), async (req, res) => {
     try {
         const { id } = req.params;
+
+        // Fetch image_url for cleanup
+        const [rows] = await db.query('SELECT image_url FROM banners WHERE id = ?', [id]);
+        if (rows.length > 0 && rows[0].image_url) {
+            const imagePath = path.join(__dirname, rows[0].image_url);
+            if (fs.existsSync(imagePath)) {
+                fs.unlinkSync(imagePath);
+            }
+        }
+
         const sql = 'DELETE FROM banners WHERE id = ?';
         await db.query(sql, [id]);
         await logActivity(req.user.userId, 'Hapus Banner', 'banner', id, `Banner ID ${id} dihapus`);
         res.json({ "message": "success" });
     } catch (err) {
+        console.error("Error deleting banner:", err);
         res.status(400).json({ "error": err.message });
     }
 });
@@ -6103,6 +6132,7 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
             sender_name: req.user.username || 'User'
         };
 
+
         // Emit to specific rooms for better reliability
         io.to(`user_${receiver_id}`).emit('new_message', messageData);
         io.to(`user_${sender_id}`).emit('new_message', messageData);
@@ -6112,6 +6142,11 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
         if (sellerRoles.includes(receiverRole) || sellerRoles.includes(req.user.role)) {
             io.to('sellers').emit('new_message', messageData);
         }
+
+        // Global broadcast sebagai fallback untuk memastikan pesan sampai
+        // Terutama untuk customer yang mungkin belum join room saat pesan dikirim
+        io.emit('new_message', messageData);
+
 
         res.status(201).json({
             message: "Pesan terkirim",
@@ -6209,8 +6244,8 @@ app.get("/api/messages/history/:otherUserId", authenticateToken, async (req, res
                 SELECT m.*, u.username as sender_name 
                 FROM messages m
                 JOIN users u ON m.sender_id = u.id
-                WHERE (m.sender_id = ? AND m.receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')))
-                   OR (m.sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND m.receiver_id = ?)
+                WHERE (m.sender_id = ? AND m.receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')))
+                   OR (m.sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')) AND m.receiver_id = ?)
                 ORDER BY m.created_at ASC
             `;
             params = [otherUserId, otherUserId];
@@ -6221,8 +6256,8 @@ app.get("/api/messages/history/:otherUserId", authenticateToken, async (req, res
                 SELECT m.*, u.username as sender_name 
                 FROM messages m
                 JOIN users u ON m.sender_id = u.id
-                WHERE (m.sender_id = ? AND m.receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')))
-                   OR (m.sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND m.receiver_id = ?)
+                WHERE (m.sender_id = ? AND m.receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')))
+                   OR (m.sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')) AND m.receiver_id = ?)
                 ORDER BY m.created_at ASC
             `;
             params = [myId, myId];
@@ -6242,7 +6277,7 @@ app.delete("/api/messages/history/:otherUserId", authenticateToken, async (req, 
         const { otherUserId } = req.params;
         const myId = req.user.userId;
         const myRole = req.user.role;
-        const sellerRoles = ['admin', 'owner', 'penjual', 'kasir'];
+        const sellerRoles = ['admin', 'owner', 'penjual', 'kasir', 'seller'];
         const isSeller = sellerRoles.includes(myRole);
 
         // Target user ID adalah pelanggan (jika saya seller, itu otherUserId. Jika saya pelanggan, itu myId)
@@ -6252,8 +6287,8 @@ app.delete("/api/messages/history/:otherUserId", authenticateToken, async (req, 
         // Gunakan hard delete sesuai kode asli agar benar-benar hilang dari DB
         const sql = `
             DELETE FROM messages 
-            WHERE (sender_id = ? AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')))
-               OR (sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND receiver_id = ?)
+            WHERE (sender_id = ? AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')))
+               OR (sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')) AND receiver_id = ?)
         `;
         await db.query(sql, [targetCustomerId, targetCustomerId]);
 
@@ -6272,7 +6307,7 @@ app.get("/api/messages/conversations", authenticateToken, async (req, res) => {
     try {
         const myId = req.user.userId;
         const myRole = req.user.role;
-        const sellerRoles = ['admin', 'owner', 'penjual', 'kasir'];
+        const sellerRoles = ['admin', 'owner', 'penjual', 'kasir', 'seller'];
         const isSeller = sellerRoles.includes(myRole);
 
         let sql;
@@ -6288,15 +6323,15 @@ app.get("/api/messages/conversations", authenticateToken, async (req, res) => {
                     u.avatar_url,
                     m.message as last_message, 
                     m.created_at as last_message_time,
-                    (SELECT COUNT(*) FROM messages WHERE sender_id = u.id AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND is_read = 0) as unread_count
+                    (SELECT COUNT(*) FROM messages WHERE sender_id = u.id AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')) AND is_read = 0) as unread_count
                 FROM users u
                 JOIN messages m ON m.id = (
                     SELECT MAX(id) 
                     FROM messages 
-                    WHERE (sender_id = u.id AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')))
-                       OR (sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND receiver_id = u.id)
+                    WHERE (sender_id = u.id AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')))
+                       OR (sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')) AND receiver_id = u.id)
                 )
-                WHERE u.role NOT IN ('admin', 'owner', 'penjual', 'kasir')
+                WHERE u.role NOT IN ('admin', 'owner', 'penjual', 'kasir', 'seller')
                 ORDER BY m.created_at DESC
             `;
             params = [];
@@ -6310,13 +6345,13 @@ app.get("/api/messages/conversations", authenticateToken, async (req, res) => {
                     u.avatar_url,
                     m.message as last_message, 
                     m.created_at as last_message_time,
-                    (SELECT COUNT(*) FROM messages WHERE sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND receiver_id = ? AND is_read = 0) as unread_count
+                    (SELECT COUNT(*) FROM messages WHERE sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')) AND receiver_id = ? AND is_read = 0) as unread_count
                 FROM users u
                 JOIN messages m ON m.id = (
                     SELECT MAX(id) 
                     FROM messages 
-                    WHERE (sender_id = ? AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')))
-                       OR (sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND receiver_id = ?)
+                    WHERE (sender_id = ? AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')))
+                       OR (sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')) AND receiver_id = ?)
                 )
                 WHERE u.id = m.sender_id OR u.id = m.receiver_id
                 LIMIT 1
@@ -6325,6 +6360,8 @@ app.get("/api/messages/conversations", authenticateToken, async (req, res) => {
         }
 
         const [rows] = await db.query(sql, params);
+
+
         res.json({ data: rows });
     } catch (err) {
         console.error("Error fetching conversations:", err);
@@ -6338,16 +6375,16 @@ app.put("/api/messages/read/:senderId", authenticateToken, async (req, res) => {
         const { senderId } = req.params;
         const myId = req.user.userId;
         const myRole = req.user.role;
-        const isSeller = ['admin', 'owner', 'penjual', 'kasir'].includes(myRole);
+        const isSeller = ['admin', 'owner', 'penjual', 'kasir', 'seller'].includes(myRole);
 
         let sql;
         if (isSeller) {
             // Jika dibaca oleh salah satu SELLER, tandai pesan dari PELANGGAN ini (senderId) sudah dibaca oleh TIM SELLER
-            sql = "UPDATE messages SET is_read = 1 WHERE sender_id = ? AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND is_read = 0";
+            sql = "UPDATE messages SET is_read = 1 WHERE sender_id = ? AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')) AND is_read = 0";
             await db.query(sql, [senderId]);
         } else {
             // Jika dibaca oleh PELANGGAN, tandai SEMUA pesan dari SELURUH TIM SELLER ke Pelanggan ini sebagai sudah dibaca
-            sql = "UPDATE messages SET is_read = 1 WHERE sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND receiver_id = ? AND is_read = 0";
+            sql = "UPDATE messages SET is_read = 1 WHERE sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')) AND receiver_id = ? AND is_read = 0";
             await db.query(sql, [myId]);
         }
 
@@ -6369,8 +6406,8 @@ app.get("/api/messages/contacts", authenticateToken, async (req, res) => {
     try {
         let sql;
         if (req.user.role === 'pelanggan' || req.user.role === 'user' || req.user.role === 'keluarga') {
-            // Pelanggan/User/Keluarga hanya bisa melihat Admin, Owner, Penjual, dan Kasir
-            sql = "SELECT id, username, role, avatar_url FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')";
+            // Pelanggan/User/Keluarga hanya bisa melihat Admin, Owner, Penjual, Kasir, dan Seller
+            sql = "SELECT id, username, role, avatar_url FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')";
         } else {
             // Admin/Owner/Penjual/Kasir bisa melihat semua tipe pelanggan
             sql = "SELECT id, username, role, avatar_url FROM users WHERE role IN ('pelanggan', 'user', 'keluarga', 'guest')";

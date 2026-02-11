@@ -124,6 +124,7 @@ const setupDatabase = async () => {
         color_class VARCHAR(50) DEFAULT 'bg-green-600',
         icon_name VARCHAR(50) DEFAULT 'Percent',
         link_url VARCHAR(255),
+        show_text BOOLEAN DEFAULT TRUE,
         is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -198,6 +199,13 @@ const setupDatabase = async () => {
     if (isActiveInfoCol.length === 0) {
       await connection.query("ALTER TABLE information ADD COLUMN is_active BOOLEAN DEFAULT TRUE");
       console.log("Added is_active column to information table.");
+    }
+
+    // Check and add show_text to banners table
+    const [showTextBannerCol] = await connection.query("SHOW COLUMNS FROM banners LIKE 'show_text'");
+    if (showTextBannerCol.length === 0) {
+      await connection.query("ALTER TABLE banners ADD COLUMN show_text BOOLEAN DEFAULT TRUE");
+      console.log("Added show_text column to banners table.");
     }
 
     const createOrdersTable = `

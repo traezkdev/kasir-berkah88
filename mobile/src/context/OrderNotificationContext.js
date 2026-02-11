@@ -138,7 +138,7 @@ export const OrderNotificationProvider = ({ children }) => {
     // Seller Logic: Check for new pending orders
     const fetchPendingCount = useCallback(async () => {
         const currentUser = user;
-        if (!currentUser || !['admin', 'penjual', 'owner', 'kasir'].includes(currentUser.role)) return;
+        if (!currentUser || !['admin', 'penjual', 'owner', 'kasir', 'seller'].includes(currentUser.role)) return;
 
         try {
             const response = await apiService.get('/api/orders?status=pending&limit=1');
@@ -327,7 +327,7 @@ export const OrderNotificationProvider = ({ children }) => {
 
     useEffect(() => {
         if (user) {
-            if (['admin', 'penjual', 'owner', 'kasir'].includes(user.role)) {
+            if (['admin', 'penjual', 'owner', 'kasir', 'seller'].includes(user.role)) {
                 fetchPendingCount();
                 pollingInterval.current = setInterval(fetchPendingCount, 8000); // 8s polling as safe backup
             } else {
@@ -396,7 +396,7 @@ export const OrderNotificationProvider = ({ children }) => {
         });
 
         newSocket.on('new_order', (order) => {
-            if (isMounted.current && ['admin', 'penjual', 'owner', 'kasir'].includes(user.role)) {
+            if (isMounted.current && ['admin', 'penjual', 'owner', 'kasir', 'seller'].includes(user.role)) {
                 // Selalu refresh data jika ada update pesanan baru
                 setRefreshTrigger(prev => prev + 1);
                 fetchPendingCount();
@@ -430,7 +430,7 @@ export const OrderNotificationProvider = ({ children }) => {
             const myId = String(activeUserId);
             if (String(message.sender_id) === myId) return;
 
-            const amISeller = ['admin', 'owner', 'penjual', 'kasir'].includes(user.role);
+            const amISeller = ['admin', 'owner', 'penjual', 'kasir', 'seller'].includes(user.role);
             const isToMe = String(message.receiver_id) === myId;
             const isFromCustomer = message.sender_role === 'pelanggan' || message.sender_role === 'user';
 

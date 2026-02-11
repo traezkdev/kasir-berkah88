@@ -44,6 +44,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useOrderNotification, NOTIFICATION_SOUNDS } from '../../context/OrderNotificationContext';
+import { useChat } from '../../context/ChatContext';
 
 const { width } = Dimensions.get('window');
 
@@ -53,6 +54,7 @@ const CustomerProfile = ({ navigation }) => {
     const { showToast } = useToast();
     const { confirm } = useConfirm();
     const { selectedSoundId, changeNotificationSound } = useOrderNotification();
+    const { unreadCount } = useChat();
 
     const [userData, setUserData] = useState({
         username: 'Pelanggan',
@@ -299,6 +301,11 @@ const CustomerProfile = ({ navigation }) => {
                         >
                             <View style={[styles.menuIconWrap, { backgroundColor: item.bg }]}>
                                 <item.icon size={22} color={item.color} />
+                                {item.label === 'Bantuan & Dukungan' && unreadCount > 0 && (
+                                    <View style={styles.unreadBadge}>
+                                        <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
+                                    </View>
+                                )}
                             </View>
                             <View style={styles.menuLabelWrap}>
                                 <Text style={styles.menuLabel}>{item.label}</Text>
@@ -736,6 +743,27 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
+        position: 'relative',
+    },
+    unreadBadge: {
+        position: 'absolute',
+        top: -4,
+        right: -4,
+        backgroundColor: '#EF4444',
+        minWidth: 18,
+        height: 18,
+        borderRadius: 9,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 4,
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
+        zIndex: 10,
+    },
+    unreadBadgeText: {
+        color: '#FFFFFF',
+        fontSize: 9,
+        fontWeight: '900',
     },
     menuLabelWrap: {
         flex: 1,

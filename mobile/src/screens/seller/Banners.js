@@ -82,9 +82,11 @@ const Banners = ({ navigation }) => {
         color_class: 'bg-indigo-600',
         icon_name: 'Percent',
         link_url: '',
+        show_text: true,
         is_active: true
     });
     const [imageUri, setImageUri] = useState(null);
+    const [isImageRemoved, setIsImageRemoved] = useState(false);
 
     const colors = [
         { name: 'Indigo', class: 'bg-indigo-600' },
@@ -131,9 +133,11 @@ const Banners = ({ navigation }) => {
                 color_class: item.color_class || 'bg-indigo-600',
                 icon_name: item.icon_name || 'Percent',
                 link_url: item.link_url || '',
+                show_text: item.show_text === 1 || item.show_text === true,
                 is_active: item.is_active === 1 || item.is_active === true
             });
             setImageUri(item.image_url ? `${API_URL}${item.image_url}` : null);
+            setIsImageRemoved(false);
         } else {
             setEditingItem(null);
             setFormData({
@@ -142,9 +146,11 @@ const Banners = ({ navigation }) => {
                 color_class: 'bg-indigo-600',
                 icon_name: 'Percent',
                 link_url: '',
+                show_text: true,
                 is_active: true
             });
             setImageUri(null);
+            setIsImageRemoved(false);
         }
         setIsModalOpen(true);
     };
@@ -166,6 +172,7 @@ const Banners = ({ navigation }) => {
 
             if (!result.canceled) {
                 setImageUri(result.assets[0].uri);
+                setIsImageRemoved(false);
             }
         } catch (error) {
             console.error('Error picking image:', error);
@@ -187,7 +194,10 @@ const Banners = ({ navigation }) => {
             // However, the web version appends 'data' as JSON under 'data' field.
             // Let's check how many fields the backend expects.
             // If the backend uses multer and then JSON.parse(req.body.data):
-            formDataToSend.append('data', JSON.stringify(formData));
+            formDataToSend.append('data', JSON.stringify({
+                ...formData,
+                remove_image: isImageRemoved
+            }));
 
             if (imageUri && !imageUri.startsWith('http')) {
                 const filename = imageUri.split('/').pop();
@@ -259,35 +269,42 @@ const Banners = ({ navigation }) => {
                         />
                     )}
                     {/* Overlay untuk memastikan text tetap terbaca */}
-                    {item.image_url && <View style={styles.bannerOverlay} />}
+                    {item.image_url && (item.show_text === 1 || item.show_text === true) && <View style={styles.bannerOverlay} />}
 
-                    <View style={styles.bannerContent}>
-                        <View style={styles.bannerText}>
-                            <Text style={styles.bannerTitle} numberOfLines={1}>{item.title}</Text>
-                            <Text style={styles.bannerSubtitle} numberOfLines={1}>{item.subtitle}</Text>
-                        </View>
-                        <View style={styles.bannerIconBadge}>
-                            <IconComp size={22} color="#FFFFFF" strokeWidth={2.5} />
-                        </View>
-                    </View>
-                    <View style={styles.bannerFooter}>
-                        <View style={[styles.statusBadge, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                            <Text style={styles.statusText}>
-                                {item.is_active ? 'AKTIF' : 'NON-AKTIF'}
-                            </Text>
-                        </View>
-                        <View style={styles.arrowCircle}>
-                            <ArrowRight size={14} color="#1E293B" />
-                        </View>
-                    </View>
                     {/* Background decoration */}
-                    <IconComp
-                        size={120}
-                        color="#FFFFFF"
-                        style={styles.bgDecoration}
-                        strokeWidth={1}
-                        opacity={0.1}
-                    />
+                    {(item.show_text === 1 || item.show_text === true) && (
+                        <IconComp
+                            size={120}
+                            color="#FFFFFF"
+                            style={styles.bgDecoration}
+                            strokeWidth={1}
+                            opacity={0.1}
+                        />
+                    )}
+
+                    <View style={styles.bannerContentWrapper}>
+                        {item.show_text === 1 || item.show_text === true ? (
+                            <View style={styles.bannerContent}>
+                                <View style={styles.bannerText}>
+                                    <Text style={styles.bannerTitle} numberOfLines={1}>{item.title}</Text>
+                                    <Text style={styles.bannerSubtitle} numberOfLines={1}>{item.subtitle}</Text>
+                                </View>
+                                <View style={styles.bannerIconBadge}>
+                                    <IconComp size={22} color="#FFFFFF" strokeWidth={2.5} />
+                                </View>
+                            </View>
+                        ) : null}
+                        <View style={styles.bannerFooter}>
+                            <View style={[styles.statusBadge, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                                <Text style={styles.statusText}>
+                                    {item.is_active ? 'AKTIF' : 'NON-AKTIF'}
+                                </Text>
+                            </View>
+                            <View style={styles.arrowCircle}>
+                                <ArrowRight size={14} color="#1E293B" />
+                            </View>
+                        </View>
+                    </View>
                 </View>
 
                 <View style={styles.cardActions}>
@@ -392,30 +409,35 @@ const Banners = ({ navigation }) => {
                                     />
                                 )}
                                 {/* Overlay untuk memastikan text tetap terbaca */}
-                                {imageUri && <View style={styles.bannerOverlay} />}
+                                {imageUri && formData.show_text && <View style={styles.bannerOverlay} />}
 
-                                <View style={styles.bannerContent}>
-                                    <View style={styles.bannerText}>
-                                        <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '900' }}>{formData.title || 'Judul Banner'}</Text>
-                                        <Text style={{ color: '#FFFFFF', fontSize: 13, opacity: 0.8, marginTop: 2 }}>{formData.subtitle || 'Sub-titel banner Anda'}</Text>
-                                    </View>
-                                    <View style={styles.bannerIconBadge}>
-                                        {React.createElement(ICON_MAP[formData.icon_name] || Percent, { size: 24, color: '#FFFFFF', strokeWidth: 2.5 })}
-                                    </View>
-                                </View>
-                                <View style={styles.bannerFooter}>
-                                    <View style={styles.footerLine} />
-                                    <View style={styles.arrowCircle}>
-                                        <ArrowRight size={14} color="#1E293B" />
-                                    </View>
-                                </View>
-                                {React.createElement(ICON_MAP[formData.icon_name] || Percent, {
+                                {formData.show_text && React.createElement(ICON_MAP[formData.icon_name] || Percent, {
                                     size: 120,
                                     color: '#FFFFFF',
                                     style: styles.bgDecoration,
                                     strokeWidth: 1,
                                     opacity: 0.1
                                 })}
+
+                                <View style={styles.bannerContentWrapper}>
+                                    {formData.show_text ? (
+                                        <View style={styles.bannerContent}>
+                                            <View style={styles.bannerText}>
+                                                <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '900' }}>{formData.title || 'Judul Banner'}</Text>
+                                                <Text style={{ color: '#FFFFFF', fontSize: 13, opacity: 0.8, marginTop: 2 }}>{formData.subtitle || 'Sub-titel banner Anda'}</Text>
+                                            </View>
+                                            <View style={styles.bannerIconBadge}>
+                                                {React.createElement(ICON_MAP[formData.icon_name] || Percent, { size: 24, color: '#FFFFFF', strokeWidth: 2.5 })}
+                                            </View>
+                                        </View>
+                                    ) : null}
+                                    <View style={styles.bannerFooter}>
+                                        <View style={styles.footerLine} />
+                                        <View style={styles.arrowCircle}>
+                                            <ArrowRight size={14} color="#1E293B" />
+                                        </View>
+                                    </View>
+                                </View>
                             </View>
 
                             {/* Form Inputs */}
@@ -452,7 +474,10 @@ const Banners = ({ navigation }) => {
                                     </TouchableOpacity>
                                     {imageUri && (
                                         <TouchableOpacity
-                                            onPress={() => setImageUri(null)}
+                                            onPress={() => {
+                                                setImageUri(null);
+                                                setIsImageRemoved(true);
+                                            }}
                                             style={styles.removeImageBtn}
                                         >
                                             <X size={16} color="#EF4444" />
@@ -506,18 +531,32 @@ const Banners = ({ navigation }) => {
                                         })}
                                     </ScrollView>
                                 </View>
-
-                                <View style={styles.toggleRow}>
-                                    <View>
-                                        <Text style={styles.toggleTitle}>Status Banner</Text>
-                                        <Text style={styles.toggleSubtitle}>Tampilkan ke pelanggan</Text>
+                                <View style={styles.formSection}>
+                                    <View style={styles.toggleRow}>
+                                        <View>
+                                            <Text style={styles.toggleTitle}>Tampilkan Teks & Tombol</Text>
+                                            <Text style={styles.toggleSubtitle}>Sembunyikan jika hanya ingin gambar banner saja</Text>
+                                        </View>
+                                        <Switch
+                                            value={formData.show_text}
+                                            onValueChange={(val) => setFormData({ ...formData, show_text: val })}
+                                            trackColor={{ false: '#CBD5E1', true: '#BFDBFE' }}
+                                            thumbColor={formData.show_text ? '#2563EB' : '#F8FAFC'}
+                                        />
                                     </View>
-                                    <Switch
-                                        value={formData.is_active}
-                                        onValueChange={(val) => setFormData({ ...formData, is_active: val })}
-                                        trackColor={{ false: '#E2E8F0', true: '#BFDBFE' }}
-                                        thumbColor={formData.is_active ? '#2563EB' : '#94A3B8'}
-                                    />
+
+                                    <View style={styles.toggleRow}>
+                                        <View>
+                                            <Text style={styles.toggleTitle}>Status Banner Aktif</Text>
+                                            <Text style={styles.toggleSubtitle}>Munculkan banner di dashboard pelanggan</Text>
+                                        </View>
+                                        <Switch
+                                            value={formData.is_active}
+                                            onValueChange={(val) => setFormData({ ...formData, is_active: val })}
+                                            trackColor={{ false: '#CBD5E1', true: '#BFDBFE' }}
+                                            thumbColor={formData.is_active ? '#2563EB' : '#F8FAFC'}
+                                        />
+                                    </View>
                                 </View>
                             </View>
                         </ScrollView>
@@ -597,11 +636,15 @@ const styles = StyleSheet.create({
     },
     bannerPreview: {
         height: 160,
-        padding: 24,
-        justifyContent: 'space-between',
         position: 'relative',
         overflow: 'hidden',
         borderRadius: 20,
+    },
+    bannerContentWrapper: {
+        ...StyleSheet.absoluteFillObject,
+        padding: 24,
+        justifyContent: 'space-between',
+        zIndex: 10,
     },
     bannerContent: {
         flexDirection: 'row',

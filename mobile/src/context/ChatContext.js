@@ -1,10 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiService from '../api/apiService';
+import { useOrderNotification } from './OrderNotificationContext';
 
 const ChatContext = createContext();
 
 export const ChatProvider = ({ children }) => {
+    // All hooks must be at the top level, in the same order every render
+    const { socket } = useOrderNotification();
+
     const [unreadCount, setUnreadCount] = useState(0);
     const [conversations, setConversations] = useState([]);
     const [activeChat, setActiveChat] = useState(null);
@@ -16,23 +20,55 @@ export const ChatProvider = ({ children }) => {
             if (!token) return;
 
             const response = await apiService.get('/api/messages/conversations');
+
             if (response.data && response.data.data) {
                 setConversations(response.data.data);
-
-                // Calculate total unread
                 const totalUnread = response.data.data.reduce((acc, conv) => acc + (Number(conv.unread_count) || 0), 0);
                 setUnreadCount(totalUnread);
             }
         } catch (error) {
-            console.error('Failed to fetch conversations:', error);
+            console.error('[ChatContext] Failed to fetch conversations:', error);
         }
     }, []);
 
     useEffect(() => {
         fetchConversations();
-        const interval = setInterval(fetchConversations, 5000); // Polling every 5 seconds
+        const interval = setInterval(fetchConversations, 3000); // Polling every 3 seconds for better responsiveness
         return () => clearInterval(interval);
     }, [fetchConversations]);
+
+    // Listen to socket events for real-time unread count updates
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleNewMessage = () => {
+            fetchConversations(); // Refresh unread count when new message arrives
+        };
+
+        const handleMessageEdited = () => {
+            fetchConversations(); // Refresh in case edited message affects unread
+        };
+
+        const handleMessageDeleted = () => {
+            fetchConversations(); // Refresh when message is deleted
+        };
+
+        const handleMessagesRead = () => {
+            fetchConversations(); // Refresh when messages are marked as read
+        };
+
+        socket.on('new_message', handleNewMessage);
+        socket.on('message_edited', handleMessageEdited);
+        socket.on('message_deleted', handleMessageDeleted);
+        socket.on('messages_read', handleMessagesRead);
+
+        return () => {
+            socket.off('new_message', handleNewMessage);
+            socket.off('message_edited', handleMessageEdited);
+            socket.off('message_deleted', handleMessageDeleted);
+            socket.off('messages_read', handleMessagesRead);
+        };
+    }, [socket, fetchConversations]);
 
     const markAsRead = useCallback(async (senderId) => {
         try {
