@@ -6062,9 +6062,9 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
 
         // Process image if it's base64
         const processedImageUrl = await processBase64Image(image_url, 'chat');
-
-        const sql = "INSERT INTO messages (sender_id, receiver_id, message, order_id, image_url) VALUES (?, ?, ?, ?, ?)";
-        const [result] = await db.query(sql, [sender_id, receiver_id, message || '', order_id || null, processedImageUrl || null]);
+        const now = new Date();
+        const sql = "INSERT INTO messages (sender_id, receiver_id, message, order_id, image_url, created_at) VALUES (?, ?, ?, ?, ?, ?)";
+        const [result] = await db.query(sql, [sender_id, receiver_id, message || '', order_id || null, processedImageUrl || null, now]);
 
         // Kirim Notifikasi Push
         // 1. Cek peran penerima
@@ -6097,7 +6097,7 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
             message,
             order_id,
             image_url: processedImageUrl,
-            created_at: new Date(),
+            created_at: now,
             sender_role: req.user.role,
             receiver_role: receiverRole
         };
