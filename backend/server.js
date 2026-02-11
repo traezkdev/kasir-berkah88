@@ -6070,13 +6070,13 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
         // 1. Cek peran penerima
         const [receiverRows] = await db.query("SELECT role FROM users WHERE id = ?", [receiver_id]);
         const receiverRole = receiverRows[0]?.role;
-        const sellerRoles = ['admin', 'owner', 'penjual', 'kasir'];
+        const sellerRoles = ['admin', 'owner', 'penjual', 'kasir', 'seller'];
 
         let targetUserIds = [receiver_id];
 
         // 2. Jika pesan ditujukan ke salah satu tim seller, notifikasi ke SELURUH tim seller
         if (sellerRoles.includes(receiverRole)) {
-            const [allSellers] = await db.query("SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')");
+            const [allSellers] = await db.query("SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')");
             targetUserIds = allSellers.map(s => s.id);
         }
 
@@ -6099,20 +6099,19 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
             image_url: processedImageUrl,
             created_at: now,
             sender_role: req.user.role,
-            receiver_role: receiverRole
+            receiver_role: receiverRole,
+            sender_name: req.user.username || 'User'
         };
 
-        // Emit to specific rooms instead of global broadcast for stability and performance
-        // 1. To the specific receiver
-        // 2. To the sender (for multi-device sync)
-        // 3. To 'sellers' room if receiver is part of the staff
-        let emitTarget = io.to(`user_${receiver_id}`).to(`user_${sender_id}`);
+        // Emit to specific rooms for better reliability
+        io.to(`user_${receiver_id}`).emit('new_message', messageData);
+        io.to(`user_${sender_id}`).emit('new_message', messageData);
 
-        if (sellerRoles.includes(receiverRole)) {
-            emitTarget = emitTarget.to('sellers');
+        // Jika salah satu (pengirim atau penerima) adalah seller, kirim ke room 'sellers'
+        // agar seluruh tim seller bisa melihat update chat tersebut secara realtime (Shared Inbox)
+        if (sellerRoles.includes(receiverRole) || sellerRoles.includes(req.user.role)) {
+            io.to('sellers').emit('new_message', messageData);
         }
-
-        emitTarget.emit('new_message', messageData);
 
         res.status(201).json({
             message: "Pesan terkirim",

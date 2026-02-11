@@ -64,6 +64,13 @@ const MessageItem = memo(({ item, isMine, formatTime, onImagePress }) => {
                 isMine ? styles.myMsgBubble : styles.theirMsgBubble,
                 imageUrl && styles.imageMessageBubble
             ]}>
+                <Text style={[
+                    styles.senderName,
+                    isMine ? styles.mySenderName : styles.theirSenderName,
+                    imageUrl && { paddingHorizontal: 10 }
+                ]}>
+                    {isMine ? 'Saya' : (item.sender_name || 'User')}
+                </Text>
                 {imageUrl && (
                     <TouchableOpacity onPress={() => onImagePress(imageUrl)} activeOpacity={0.9}>
                         <Image
@@ -280,7 +287,8 @@ const ChatScreen = ({ navigation }) => {
             image_url: base64Image,
             created_at: new Date().toISOString(),
             is_read: false,
-            sending: true // Flag for pending state
+            sending: true, // Flag for pending state
+            sender_name: user?.username || 'Saya'
         };
 
         // Add to UI immediately (WhatsApp-style)
@@ -504,20 +512,22 @@ const ChatScreen = ({ navigation }) => {
             const isToMe = msgReceiver === myId;
 
             if (isFromPartner || isToPartner || (isCustomer && isToMe)) {
-                console.log('[ChatScreen] Pesan relevan diterima via socket:', msg.id);
+                console.log('[ChatScreen] Pesan RELEVAN diterima:', msg.id, 'Sender:', msgSender, 'Name:', msg.sender_name);
                 setMessages(prev => {
                     // Avoid duplicates
-                    if (prev.some(m => String(m.id) === String(msg.id))) return prev;
+                    if (prev.some(m => String(m.id) === String(msg.id))) {
+                        console.log('[ChatScreen] Pesan duplikat diabaikan:', msg.id);
+                        return prev;
+                    }
                     return [...prev, msg];
                 });
 
                 // Jika pesan dari partner atau untuk saya (pelanggan), tandai sebagai dibaca
                 if (isFromPartner || (isCustomer && isToMe)) {
-                    // Untuk pelanggan, kita markAsRead sender pesan ini (siapapun staffnya)
                     markAsRead(msg.sender_id);
                 }
             } else {
-                console.log('[ChatScreen] Pesan diabaikan (tidak relevan dengan chat aktif ini)');
+                console.log('[ChatScreen] Pesan diabaikan (tidak relevan). Partner:', partnerId, 'MsgFrom:', msgSender, 'MsgTo:', msgReceiver);
             }
         };
 
@@ -1240,6 +1250,19 @@ const styles = StyleSheet.create({
     },
     theirMsgTime: {
         color: '#94A3B8',
+    },
+    senderName: {
+        fontSize: 9,
+        fontWeight: '900',
+        marginBottom: 3,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    mySenderName: {
+        color: 'rgba(255,255,255,0.7)',
+    },
+    theirSenderName: {
+        color: '#138FEA',
     },
     checkIcon: {
         marginLeft: 2,
