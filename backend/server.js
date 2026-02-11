@@ -4936,6 +4936,9 @@ app.put("/api/settings/:key", authenticateToken, authorizeRoles('admin'), async 
     if (key === 'header_title') dbKey = 'header_title';
     if (key === 'cashier_dashboard_title') dbKey = 'cashier_dashboard_title';
     if (key === 'web_description') dbKey = 'web_description';
+    if (key === 'dashboard_running_text') dbKey = 'dashboard_running_text';
+    if (key === 'dashboard_running_text_enabled') dbKey = 'dashboard_running_text_enabled';
+    if (key === 'dashboard_watermark_enabled') dbKey = 'dashboard_watermark_enabled';
 
     try {
         const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
@@ -4984,6 +4987,45 @@ app.get('/api/settings/logo', async (req, res) => {
         const [rows] = await db.query('SELECT value FROM settings WHERE `key` = ?', ['logo_url']);
         const logoUrl = rows.length > 0 ? rows[0].value : null;
         res.json({ message: 'success', data: { logo_url: logoUrl } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Upload Dashboard Watermark
+app.post('/api/settings/dashboard-watermark', authenticateToken, authorizeRoles('admin'), upload.single('watermark'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No watermark file uploaded.' });
+        }
+        const watermarkUrl = `/public/uploads/${req.file.filename}`;
+
+        const sql = 'INSERT INTO settings (`key`, \`value\`) VALUES (?, ?) ON DUPLICATE KEY UPDATE \`value\` = VALUES(\`value\`)';
+        await db.query(sql, ['dashboard_watermark_url', watermarkUrl]);
+
+        res.json({ message: 'Watermark updated successfully!', data: { dashboard_watermark_url: watermarkUrl } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete Dashboard Watermark
+app.delete('/api/settings/dashboard-watermark', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        const sql = 'UPDATE settings SET `value` = NULL WHERE `key` = ?';
+        await db.query(sql, ['dashboard_watermark_url']);
+        res.json({ message: 'Watermark removed successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get Dashboard Watermark specifically
+app.get('/api/settings/dashboard-watermark', async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT value FROM settings WHERE `key` = ?', ['dashboard_watermark_url']);
+        const watermarkUrl = rows.length > 0 ? rows[0].value : null;
+        res.json({ message: 'success', data: { dashboard_watermark_url: watermarkUrl } });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

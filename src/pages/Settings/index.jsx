@@ -147,6 +147,7 @@ const Settings = () => {
   const [userToDeleteId, setUserToDeleteId] = useState(null);
   const [userToDeleteUsername, setUserToDeleteUsername] = useState('');
   const [showDeleteLogoConfirmation, setShowDeleteLogoConfirmation] = useState(false);
+  const [showDeleteWatermarkConfirmation, setShowDeleteWatermarkConfirmation] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
   const [cashierDashboardTitle, setCashierDashboardTitle] = useState('');
   const [newCashierDashboardTitle, setNewCashierDashboardTitle] = useState('');
@@ -162,6 +163,15 @@ const Settings = () => {
   const [newAuthUiVersion, setNewAuthUiVersion] = useState('1');
   const [dailyWelcomeEnabled, setDailyWelcomeEnabled] = useState(true);
   const [newDailyWelcomeEnabled, setNewDailyWelcomeEnabled] = useState(true);
+  const [dashboardRunningText, setDashboardRunningText] = useState('');
+  const [newDashboardRunningText, setNewDashboardRunningText] = useState('');
+  const [dashboardRunningTextEnabled, setDashboardRunningTextEnabled] = useState(true);
+  const [newDashboardRunningTextEnabled, setNewDashboardRunningTextEnabled] = useState(true);
+  const [dashboardWatermarkEnabled, setDashboardWatermarkEnabled] = useState(true);
+  const [newDashboardWatermarkEnabled, setNewDashboardWatermarkEnabled] = useState(true);
+  const [currentWatermarkUrl, setCurrentWatermarkUrl] = useState('');
+  const [watermarkFile, setWatermarkFile] = useState(null);
+  const [watermarkPreview, setWatermarkPreview] = useState('');
 
   // --- Effects ---
   useEffect(() => {
@@ -253,14 +263,24 @@ const Settings = () => {
         setNewReceiptVersion(data.data.receipt_version || '1');
         setAuthUiVersion(data.data.auth_ui_version || '1');
         setNewAuthUiVersion(data.data.auth_ui_version || '1');
+        setDashboardRunningText(data.data.dashboard_running_text || '');
+        setNewDashboardRunningText(data.data.dashboard_running_text || '');
+        setDashboardRunningTextEnabled(data.data.dashboard_running_text_enabled !== '0');
+        setNewDashboardRunningTextEnabled(data.data.dashboard_running_text_enabled !== '0');
+        setDashboardWatermarkEnabled(data.data.dashboard_watermark_enabled !== '0');
+        setNewDashboardWatermarkEnabled(data.data.dashboard_watermark_enabled !== '0');
 
-        // Fetch current logo URL
-        const logoResponse = await authFetch(`${apiUrl}/api/settings/logo`);
-        const logoData = await logoResponse.json();
-        if (logoResponse.ok && logoData.data.logo_url) {
-          setCurrentLogoUrl(`${apiUrl}${logoData.data.logo_url}`);
+        // Initialize logo and watermark from all settings
+        if (data.data.logo_url) {
+          setCurrentLogoUrl(`${apiUrl}${data.data.logo_url}`);
         } else {
-          setCurrentLogoUrl(''); // No logo or failed to fetch
+          setCurrentLogoUrl('');
+        }
+
+        if (data.data.dashboard_watermark_url) {
+          setCurrentWatermarkUrl(`${apiUrl}${data.data.dashboard_watermark_url}`);
+        } else {
+          setCurrentWatermarkUrl('');
         }
         // Fetch restaurant settings
         const restaurantSettingsResponse = await authFetch(`${apiUrl}/api/restaurant-settings`);
@@ -331,6 +351,64 @@ const Settings = () => {
         setTimeout(() => handleModalClose(), 1500);
       } else {
         showToast(data.error || 'Gagal melakukan pembaruan', 'error');
+      }
+    } catch (err) {
+      showToast('Kesalahan jaringan atau server tidak dapat dijangkau', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleWatermarkFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setWatermarkFile(file);
+      setWatermarkPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleWatermarkUpload = async (e) => {
+    e.preventDefault();
+    if (!watermarkFile) { showToast('Pilih file watermark untuk diunggah.', 'error'); return; }
+    setIsLoading(true);
+    const formData = new FormData();
+    formData.append('watermark', watermarkFile);
+    try {
+      const response = await authFetch(`${apiUrl}/api/settings/dashboard-watermark`, { method: 'POST', body: formData });
+      const data = await response.json();
+      if (response.ok) {
+        showToast('Watermark berhasil diunggah!', 'success');
+        if (data.data && data.data.dashboard_watermark_url) {
+          setCurrentWatermarkUrl(`${apiUrl}${data.data.dashboard_watermark_url}`);
+        }
+        setWatermarkFile(null);
+        setWatermarkPreview('');
+        fetchSettings(); // Secondary refresh
+      } else {
+        showToast(data.error || 'Gagal mengunggah watermark', 'error');
+      }
+    } catch (err) {
+      showToast('Kesalahan jaringan atau server tidak dapat dijangkau', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const confirmDeleteWatermark = () => {
+    setShowDeleteWatermarkConfirmation(true);
+  };
+
+  const handleDeleteWatermark = async () => {
+    setIsLoading(true);
+    setShowDeleteWatermarkConfirmation(false);
+    try {
+      const response = await authFetch(`${apiUrl}/api/settings/dashboard-watermark`, { method: 'DELETE' });
+      if (response.ok) {
+        showToast('Watermark berhasil dihapus!', 'success');
+        fetchSettings();
+      } else {
+        const data = await response.json();
+        showToast(data.error || 'Gagal menghapus watermark', 'error');
       }
     } catch (err) {
       showToast('Kesalahan jaringan atau server tidak dapat dijangkau', 'error');
@@ -761,6 +839,135 @@ const Settings = () => {
                   <Button type="submit" size="sm" className="w-full h-10 text-[10px] font-black uppercase tracking-widest rounded-lg bg-amber-600 hover:bg-amber-700" disabled={isLoading}>Update Judul Kasir</Button>
                 </form>
               </div>
+
+              <div className="p-5 bg-card rounded-2xl border border-border shadow-sm hover:border-blue-500/30 transition-colors">
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  handleUpdateSetting(e, '/api/settings', {
+                    dashboard_running_text: newDashboardRunningText,
+                    dashboard_running_text_enabled: newDashboardRunningTextEnabled ? '1' : '0'
+                  }, 'Pengaturan dashboard berhasil diperbarui!', 'POST');
+                }} className="space-y-4">
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                      <span className="text-[10px] font-black text-text-primary uppercase tracking-widest">Teks Dashboard Toko (Running Text)</span>
+                    </div>
+                    {/* Status Badge */}
+                    <div className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter ${newDashboardRunningTextEnabled ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                      {newDashboardRunningTextEnabled ? 'Aktif' : 'Nonaktif'}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setNewDashboardRunningTextEnabled(true)}
+                      className={`flex items-center justify-center gap-2 p-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all ${newDashboardRunningTextEnabled ? 'bg-blue-600 text-white shadow-md' : 'bg-muted/30 text-text-secondary border border-border'}`}
+                    >
+                      <AppIcon name="CheckCircle" size={14} />
+                      Aktifkan
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewDashboardRunningTextEnabled(false)}
+                      className={`flex items-center justify-center gap-2 p-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all ${!newDashboardRunningTextEnabled ? 'bg-red-600 text-white shadow-md' : 'bg-muted/30 text-text-secondary border border-border'}`}
+                    >
+                      <AppIcon name="XCircle" size={14} />
+                      Nonaktifkan
+                    </button>
+                  </div>
+
+                  <textarea
+                    value={newDashboardRunningText}
+                    onChange={(e) => setNewDashboardRunningText(e.target.value)}
+                    rows="3"
+                    className={`flex w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all ${!newDashboardRunningTextEnabled ? 'opacity-50 grayscale pointer-events-none' : ''}`}
+                    placeholder="Masukkan teks yang akan muncul di dashboard mobile..."
+                    required={newDashboardRunningTextEnabled}
+                  />
+                  <Button type="submit" size="sm" className="w-full h-10 text-[10px] font-black uppercase tracking-widest rounded-lg" disabled={isLoading}>Update Pengaturan Dashboard</Button>
+                </form>
+              </div>
+
+              <div className="p-5 bg-card rounded-2xl border border-border shadow-sm hover:border-purple-500/30 transition-colors">
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  handleUpdateSetting(e, '/api/settings', {
+                    dashboard_watermark_enabled: newDashboardWatermarkEnabled ? '1' : '0'
+                  }, 'Pengaturan watermark berhasil diperbarui!', 'POST');
+                }} className="space-y-4">
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
+                      <span className="text-[10px] font-black text-text-primary uppercase tracking-widest">Watermark Dashboard (Aplikasi Mobile)</span>
+                    </div>
+                    <div className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter ${newDashboardWatermarkEnabled ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                      {newDashboardWatermarkEnabled ? 'Aktif' : 'Nonaktif'}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setNewDashboardWatermarkEnabled(true)}
+                      className={`flex items-center justify-center gap-2 p-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all ${newDashboardWatermarkEnabled ? 'bg-purple-600 text-white shadow-md' : 'bg-muted/30 text-text-secondary border border-border'}`}
+                    >
+                      <AppIcon name="CheckCircle" size={14} />
+                      Aktifkan
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewDashboardWatermarkEnabled(false)}
+                      className={`flex items-center justify-center gap-2 p-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all ${!newDashboardWatermarkEnabled ? 'bg-red-600 text-white shadow-md' : 'bg-muted/30 text-text-secondary border border-border'}`}
+                    >
+                      <AppIcon name="XCircle" size={14} />
+                      Nonaktifkan
+                    </button>
+                  </div>
+
+                  <div className="space-y-4 pt-2 border-t border-border mt-4">
+                    <h4 className="text-[9px] font-black text-text-secondary uppercase tracking-widest">Kelola Foto Watermark</h4>
+
+                    {currentWatermarkUrl ? (
+                      <div className="flex items-center gap-4 p-3 bg-muted/20 rounded-xl border border-dashed border-border group">
+                        <img src={currentWatermarkUrl} alt="Watermark" className="w-12 h-12 rounded-lg object-contain bg-white/50" />
+                        <div className="flex-1">
+                          <p className="text-[9px] font-black text-text-primary uppercase">Watermark Kustom Aktif</p>
+                          <Button type="button" variant="destructive" size="sm" onClick={confirmDeleteWatermark} className="mt-3 h-8 px-4 text-[10px] rounded-full font-black uppercase tracking-tighter">
+                            Hapus Foto Watermark
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                        <p className="text-[10px] text-blue-600 dark:text-blue-400 font-bold italic line-height-tight">
+                          * Saat ini menggunakan Logo Utama sebagai watermark. Upload di bawah untuk mengganti khusus watermark dashboard.
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="space-y-3">
+                      <Input type="file" accept="image/*" onChange={handleWatermarkFileChange} className="text-[10px]" />
+                      {watermarkPreview && (
+                        <div className="flex justify-center p-4 bg-muted/10 rounded-xl border">
+                          <img src={watermarkPreview} alt="Preview" className="w-20 h-20 object-contain" />
+                        </div>
+                      )}
+                      <Button
+                        type="button"
+                        onClick={handleWatermarkUpload}
+                        className="w-full h-9 text-[10px] font-black uppercase bg-purple-100 text-purple-700 hover:bg-purple-200"
+                        disabled={isLoading || !watermarkFile}
+                      >
+                        {isLoading ? 'Mengunggah...' : 'Upload Foto Watermark Baru'}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Button type="submit" size="sm" className="w-full h-10 text-[10px] font-black uppercase tracking-widest rounded-lg" disabled={isLoading}>Simpan Status Watermark</Button>
+                </form>
+              </div>
             </div>
           </div>
         </div>
@@ -1111,6 +1318,7 @@ const Settings = () => {
       <ConfirmationModal isOpen={showDeleteUserConfirmation} onClose={() => setShowDeleteUserConfirmation(false)} onConfirm={handleDeleteUser} title="Hapus Pengguna" message={`Hapus "${userToDeleteUsername}"?`} />
       <ConfirmationModal isOpen={showDeleteEmployeeConfirmation} onClose={() => setShowDeleteEmployeeConfirmation(false)} onConfirm={handleDeleteEmployee} title="Hapus Karyawan" message="Hapus karyawan ini?" />
       <ConfirmationModal isOpen={showDeleteLogoConfirmation} onClose={() => setShowDeleteLogoConfirmation(false)} onConfirm={handleDeleteLogo} title="Hapus Logo" message="Hapus logo header?" />
+      <ConfirmationModal isOpen={showDeleteWatermarkConfirmation} onClose={() => setShowDeleteWatermarkConfirmation(false)} onConfirm={handleDeleteWatermark} title="Hapus Watermark" message="Hapus watermark kustom? Sistem akan kembali menggunakan logo utama." />
     </div>
   );
 };

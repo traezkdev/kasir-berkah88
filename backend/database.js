@@ -401,7 +401,10 @@ const setupDatabase = async () => {
 
     const insertDefaultSettings = `
       INSERT IGNORE INTO settings(\`key\`, \`value\`) VALUES
-      ('cashier_dashboard_title', 'Dasbor Kasir');
+      ('cashier_dashboard_title', 'Dasbor Kasir'),
+      ('dashboard_running_text', 'Selamat datang di POS Berkah 88! Semangat berjualan hari ini!'),
+      ('dashboard_running_text_enabled', '1'),
+      ('dashboard_watermark_enabled', '1');
     `;
     await connection.query(insertDefaultSettings);
 
