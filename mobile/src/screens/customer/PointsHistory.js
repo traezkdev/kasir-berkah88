@@ -143,7 +143,7 @@ const PointsHistory = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#059669" />
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
             {/* Header */}
             <View style={styles.header}>

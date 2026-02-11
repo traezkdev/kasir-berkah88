@@ -167,7 +167,7 @@ const TransactionTrash = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#1E40AF" />
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                     <ChevronLeft size={24} color="#FFFFFF" />
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     },
     header: {
         backgroundColor: '#1E40AF',
-        paddingTop: Platform.OS === 'ios' ? 60 : 40,
+        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 60,
         paddingBottom: 25,
         paddingHorizontal: 20,
         flexDirection: 'row',

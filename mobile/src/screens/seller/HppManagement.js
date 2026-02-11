@@ -205,7 +205,7 @@ const HppManagement = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#1E40AF" />
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
             {/* Header Area */}
             <View style={styles.headerContainer}>

@@ -337,7 +337,7 @@ const CashReconciliation = ({ navigation }) => {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.container}
         >
-            <StatusBar barStyle="light-content" backgroundColor="#1E40AF" />
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
             {/* NEW PREMIUM HEADER */}
             <View style={styles.headerPremium}>

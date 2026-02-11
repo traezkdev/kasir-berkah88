@@ -9,7 +9,8 @@ import {
     ActivityIndicator,
     RefreshControl,
     Dimensions,
-    Platform
+    Platform,
+    StatusBar
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Info, Calendar, ChevronRight, ShoppingBag, Sparkles, Clock, Bell, Tag } from 'lucide-react-native';
@@ -88,7 +89,8 @@ const InformationScreen = ({ navigation }) => {
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
+            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity
@@ -277,7 +279,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 12 : (Platform.OS === 'web' ? 15 : 12),
+        paddingBottom: 12,
         backgroundColor: '#FFFFFF',
         borderBottomWidth: 1,
         borderBottomColor: '#F1F5F9',

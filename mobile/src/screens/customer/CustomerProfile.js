@@ -197,7 +197,7 @@ const CustomerProfile = ({ navigation }) => {
 
     return (
         <SafeAreaView style={styles.container} edges={['left', 'right']}>
-            <StatusBar barStyle="light-content" backgroundColor="#059669" />
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
             {/* Header Premium */}
             <View style={[styles.header, {

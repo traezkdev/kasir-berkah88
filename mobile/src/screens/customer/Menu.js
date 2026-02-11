@@ -328,7 +328,7 @@ const CustomerMenu = ({ navigation, route }) => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
 
             {/* Header / Search */}
             <View style={styles.header}>

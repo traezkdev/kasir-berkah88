@@ -198,7 +198,7 @@ const FinancialReport = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#1E40AF" />
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
             <View style={styles.header}>
                 <View style={styles.headerTop}>

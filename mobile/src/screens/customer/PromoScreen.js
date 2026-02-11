@@ -198,7 +198,7 @@ const PromoScreen = ({ navigation }) => {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
 
             {/* Header */}
             <View style={styles.header}>
