@@ -39,7 +39,9 @@ import {
     Calculator,
     ClipboardCheck,
     Ticket,
-    Bell
+    Bell,
+    Briefcase,
+    TrendingUp
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
@@ -457,7 +459,7 @@ const SellerDashboard = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: '#1E40AF', // Changed from '#F8FAFC' to '#1E40AF'
     },
     loadingContainer: {
         flex: 1,
@@ -497,6 +499,9 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingTop: 240, // Tinggi header + floating card
+        paddingBottom: 20,
+        backgroundColor: '#F8FAFC', // Ensure content area is gray
+        minHeight: '100%', // Ensure it fills screen
     },
     headerTop: {
         flexDirection: 'row',

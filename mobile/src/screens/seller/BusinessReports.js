@@ -32,6 +32,7 @@ import {
     Search,
     ChevronRight,
     FileText,
+    Briefcase
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 import { useToast } from '../../context/ToastContext';
@@ -40,6 +41,7 @@ import ViewShot from 'react-native-view-shot';
 import * as Print from 'expo-print';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 
@@ -260,24 +262,24 @@ const BusinessReports = ({ navigation }) => {
                 transactionCount: filteredTransactions.length,
                 averageOrder: filteredTransactions.length > 0 ? totalRevenue / filteredTransactions.length : 0
             },
+
             sales: {
                 topItems: allTopItems.slice(0, 5),
                 allTransactions: filteredTransactions,
                 displayTransactions: filteredTransactions.slice(0, pageLimits.sales)
             },
             expenses: {
-                total: totalExpensesValue,
+                totalExpenses: totalExpensesValue,
                 items: filteredExpenses,
                 displayItems: filteredExpenses.slice(0, pageLimits.expenses)
             },
             employeeMeals: {
                 count: employeeMealsItems.length,
-                value: totalEmployeeMealsValue,
+                totalValue: totalEmployeeMealsValue,
                 items: employeeMealsItems,
                 displayItems: employeeMealsItems.slice(0, pageLimits.employeeMeals)
             },
             stock: {
-                lowStockCount: lowStockItems.length,
                 items: dataState.menuItems,
                 displayItems: dataState.menuItems.slice(0, pageLimits.stock)
             },
@@ -733,6 +735,44 @@ const BusinessReports = ({ navigation }) => {
                         <StatCard title="Laba Bersih" value={formatCurrency(reports?.summary?.netProfit)} icon={Wallet} color="#3B82F6" subValue="Estimasi Keuntungan" />
                         <StatCard title="Rata-rata Order" value={formatCurrency(reports?.summary?.averageOrder)} icon={ShoppingCart} color="#8B5CF6" subValue="Nilai per Keranjang" />
                     </View>
+
+                    {/* Financial Report Link */}
+                    {/* Financial Report Link - Premium Redesign */}
+                    <TouchableOpacity
+                        activeOpacity={0.9}
+                        onPress={() => navigation.navigate('FinancialReport')}
+                        style={styles.financialCardContainer}
+                    >
+                        <LinearGradient
+                            colors={['#2563EB', '#1E40AF']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.financialGradient}
+                        >
+                            {/* Decorative Elements */}
+                            <View style={styles.decorativeCircle1} />
+                            <View style={styles.decorativeCircle2} />
+
+                            <View style={styles.financialContent}>
+                                <View style={styles.financialIconRow}>
+                                    <View style={styles.financialIconBox}>
+                                        <Briefcase size={24} color="#2563EB" />
+                                    </View>
+                                    <View style={styles.financialTitleBox}>
+                                        <Text style={styles.financialTitleText}>Laporan Keuangan & Aset</Text>
+                                        <Text style={styles.financialSubText}>Analisis Laba Rugi & Valuasi Stok</Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.financialActionRow}>
+                                    <Text style={styles.financialActionText}>Lihat Detail Lengkap</Text>
+                                    <View style={styles.financialActionIcon}>
+                                        <ArrowRight size={16} color="#FFFFFF" />
+                                    </View>
+                                </View>
+                            </View>
+                        </LinearGradient>
+                    </TouchableOpacity>
 
                     {/* Charts Area */}
                     <View style={styles.chartSection}>
@@ -1298,7 +1338,102 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         marginBottom: 10,
         marginTop: 10,
-    }
+    },
+    // Financial Link Styles
+    // Updated Financial Card Styles
+    financialCardContainer: {
+        marginHorizontal: 20,
+        marginBottom: 25,
+        borderRadius: 24,
+        elevation: 8,
+        shadowColor: '#2563EB',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
+    },
+    financialGradient: {
+        borderRadius: 24,
+        padding: 20,
+        position: 'relative',
+        overflow: 'hidden',
+    },
+    decorativeCircle1: {
+        position: 'absolute',
+        top: -20,
+        right: -20,
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+    },
+    decorativeCircle2: {
+        position: 'absolute',
+        bottom: -40,
+        left: -20,
+        width: 140,
+        height: 140,
+        borderRadius: 70,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+    },
+    financialContent: {
+        position: 'relative',
+        zIndex: 1,
+    },
+    financialIconRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    financialIconBox: {
+        width: 50,
+        height: 50,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 16,
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+    },
+    financialTitleBox: {
+        flex: 1,
+    },
+    financialTitleText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
+        marginBottom: 4,
+    },
+    financialSubText: {
+        fontSize: 13,
+        color: '#BFDBFE',
+        fontWeight: '500',
+    },
+    financialActionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 12,
+    },
+    financialActionText: {
+        color: '#FFFFFF',
+        fontWeight: '700',
+        fontSize: 13,
+    },
+    financialActionIcon: {
+        width: 28,
+        height: 28,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
 });
 
 export default BusinessReports;

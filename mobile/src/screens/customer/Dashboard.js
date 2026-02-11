@@ -261,7 +261,7 @@ const CustomerDashboard = ({ navigation }) => {
 
     return (
         <SafeAreaView style={styles.container} edges={['left', 'right']}>
-            <StatusBar barStyle="light-content" backgroundColor="#059669" translucent={false} />
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
             {/* Compact Header on Scroll */}
             <Animated.View style={[styles.compactHeader, { transform: [{ translateY: compactHeaderTranslateY }] }]}>

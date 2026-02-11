@@ -637,26 +637,51 @@ const SellerPromoManagement = () => {
 
                                         {promoMode === 'banner' && (
                                             <div>
-                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Gambar Banner</label>
-                                                <div
-                                                    onClick={() => fileInputRef.current?.click()}
-                                                    className="w-full aspect-video rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition-all overflow-hidden relative"
-                                                >
-                                                    {form.image_url ? (
-                                                        <img src={getImageUrl(form.image_url)} alt="Preview" className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <>
-                                                            <Image className="w-8 h-8 text-gray-400 mb-2" />
-                                                            <span className="text-sm font-medium text-gray-500">Klik untuk upload gambar</span>
-                                                        </>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Gambar Banner (Rasio 16:9)</label>
+                                                <div className="relative">
+                                                    <div
+                                                        onClick={() => fileInputRef.current?.click()}
+                                                        className="w-full aspect-video rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition-all overflow-hidden relative"
+                                                    >
+                                                        {form.image_url ? (
+                                                            <>
+                                                                <img src={getImageUrl(form.image_url)} alt="Preview" className="w-full h-full object-cover" />
+                                                                {/* Edit Icon - Bottom Right */}
+                                                                <div className="absolute bottom-3 right-3 w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors">
+                                                                    <Edit2 size={18} className="text-white" />
+                                                                </div>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Image className="w-8 h-8 text-gray-400 mb-2" />
+                                                                <span className="text-sm font-medium text-gray-500">Klik untuk upload gambar</span>
+                                                            </>
+                                                        )}
+                                                        <input
+                                                            type="file"
+                                                            ref={fileInputRef}
+                                                            className="hidden"
+                                                            accept="image/*"
+                                                            onChange={handleImageUpload}
+                                                        />
+                                                    </div>
+
+                                                    {/* Delete Button - Only show when image exists */}
+                                                    {form.image_url && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (window.confirm('Apakah Anda yakin ingin menghapus gambar banner ini?')) {
+                                                                    setForm(prev => ({ ...prev, image_url: '' }));
+                                                                }
+                                                            }}
+                                                            className="absolute top-3 right-3 w-10 h-10 bg-red-600 rounded-full flex items-center justify-center shadow-lg hover:bg-red-700 transition-colors z-10"
+                                                            title="Hapus Gambar"
+                                                        >
+                                                            <Trash2 size={18} className="text-white" />
+                                                        </button>
                                                     )}
-                                                    <input
-                                                        type="file"
-                                                        ref={fileInputRef}
-                                                        className="hidden"
-                                                        accept="image/*"
-                                                        onChange={handleImageUpload}
-                                                    />
                                                 </div>
                                             </div>
                                         )}
@@ -840,23 +865,76 @@ const SellerPromoManagement = () => {
                                         </div>
                                     ) : (
                                         <div className="space-y-3">
-                                            {usageData.map((usage, idx) => (
-                                                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-gray-100 font-bold text-gray-700">
-                                                            {usage.username?.charAt(0).toUpperCase()}
+                                            {usageData.map((usage, idx) => {
+                                                // Prioritas: customer_name dari order, fallback ke user_account jika ada
+                                                const displayName = usage.customer_name || usage.user_account || 'Pelanggan';
+                                                const discountAmount = usage.promo_discount || 0;
+                                                const totalAmount = usage.total || 0;
+                                                const usedDate = usage.created_at;
+                                                const orderStatus = usage.status || 'pending';
+
+                                                // Status badge configuration
+                                                const statusConfig = {
+                                                    pending: { label: 'Menunggu', bg: 'bg-yellow-100', text: 'text-yellow-700' },
+                                                    accepted: { label: 'Diterima', bg: 'bg-blue-100', text: 'text-blue-700' },
+                                                    preparing: { label: 'Diproses', bg: 'bg-purple-100', text: 'text-purple-700' },
+                                                    ready: { label: 'Siap', bg: 'bg-indigo-100', text: 'text-indigo-700' },
+                                                    completed: { label: 'Selesai', bg: 'bg-green-100', text: 'text-green-700' },
+                                                    cancelled: { label: 'Dibatalkan', bg: 'bg-red-100', text: 'text-red-700' },
+                                                    rejected: { label: 'Ditolak', bg: 'bg-gray-100', text: 'text-gray-700' }
+                                                };
+
+                                                const currentStatus = statusConfig[orderStatus] || statusConfig.pending;
+
+                                                return (
+                                                    <div key={idx} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                                                        {/* Header: User Info & Status */}
+                                                        <div className="flex items-center justify-between mb-3">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-10 h-10 bg-sky-100 rounded-full flex items-center justify-center">
+                                                                    <User size={18} className="text-sky-600" />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-sm font-bold text-gray-800">{displayName}</p>
+                                                                    <p className="text-xs text-gray-500">
+                                                                        {usedDate ? new Date(usedDate).toLocaleDateString('id-ID', {
+                                                                            day: 'numeric',
+                                                                            month: 'long',
+                                                                            year: 'numeric',
+                                                                            hour: '2-digit',
+                                                                            minute: '2-digit'
+                                                                        }).replace(' pukul ', ' pukul ') : '-'}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div className={`px-3 py-1 rounded-lg ${currentStatus.bg}`}>
+                                                                <p className={`text-xs font-bold uppercase ${currentStatus.text}`}>
+                                                                    {currentStatus.label}
+                                                                </p>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <p className="text-sm font-bold text-gray-800">{usage.username}</p>
-                                                            <p className="text-xs text-gray-500">{new Date(usage.used_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+
+                                                        {/* Divider */}
+                                                        <div className="border-t border-gray-100 my-3"></div>
+
+                                                        {/* Details: Total & Discount */}
+                                                        <div className="flex justify-between items-start">
+                                                            <div className="space-y-1">
+                                                                <p className="text-xs text-gray-500">Total Belanja</p>
+                                                                <p className="text-sm font-bold text-gray-900">
+                                                                    Rp {parseInt(totalAmount).toLocaleString('id-ID')}
+                                                                </p>
+                                                            </div>
+                                                            <div className="space-y-1 text-right">
+                                                                <p className="text-xs text-gray-500">Potongan</p>
+                                                                <p className="text-sm font-bold text-red-600">
+                                                                    -Rp {parseInt(discountAmount).toLocaleString('id-ID')}
+                                                                </p>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    <div className="text-right">
-                                                        <p className="text-xs font-bold text-green-600">Hemat</p>
-                                                        <p className="text-sm font-black text-gray-900">Rp {parseInt(usage.discount_amount).toLocaleString('id-ID')}</p>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     )}
 

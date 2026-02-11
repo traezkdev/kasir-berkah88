@@ -46,6 +46,8 @@ import TransactionTrash from '../screens/seller/TransactionTrash';
 import BusinessReports from '../screens/seller/BusinessReports';
 import PromoManagement from '../screens/seller/PromoManagement';
 import ManageInformation from '../screens/seller/ManageInformation';
+import FinancialReport from '../screens/seller/FinancialReport';
+import HppManagement from '../screens/seller/HppManagement';
 
 // Customer Screens
 import InformationScreen from '../screens/customer/InformationScreen';
@@ -162,6 +164,8 @@ const SellerRootStack = () => (
         <Stack.Screen name="BusinessReports" component={BusinessReports} />
         <Stack.Screen name="PromoManagement" component={PromoManagement} />
         <Stack.Screen name="ManageInformation" component={ManageInformation} />
+        <Stack.Screen name="FinancialReport" component={FinancialReport} />
+        <Stack.Screen name="HppManagement" component={HppManagement} />
     </Stack.Navigator>
 );
 

@@ -28,7 +28,9 @@ import {
     Calculator,
     ClipboardCheck,
     Ticket,
-    Bell
+    Bell,
+    Briefcase,
+    TrendingUp
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -49,6 +51,8 @@ const MENU_ITEMS = [
     { label: 'Lapak Deposit', icon: Wallet, color: '#138FEA', bgColor: '#E0F2FE', target: 'LapakDeposit' },
     { label: 'Rekonsiliasi', icon: Calculator, color: '#F59E0B', bgColor: '#FFFBEB', target: 'CashReconciliation' },
     { label: 'Laporan Bisnis', icon: BarChart3, color: '#10B981', bgColor: '#ECFDF5', target: 'BusinessReports' },
+    { label: 'Laporan Keuangan', icon: Briefcase, color: '#059669', bgColor: '#D1FAE5', target: 'FinancialReport' },
+    { label: 'Manajemen HPP', icon: TrendingUp, color: '#2563EB', bgColor: '#EFF6FF', target: 'HppManagement' },
     { label: 'Laporan Harian', icon: ClipboardCheck, color: '#10B981', bgColor: '#ECFDF5', target: 'DailyReport' },
     { label: 'Chat', icon: MessageCircle, color: '#0EA5E9', bgColor: '#F0F9FF', target: 'ChatScreen' },
     { label: 'Profil Saya', icon: UserCircle, color: '#475569', bgColor: '#F1F5F9', target: 'ProfileScreen' },
