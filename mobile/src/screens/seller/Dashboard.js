@@ -12,7 +12,8 @@ import {
     Animated,
     Easing,
     StatusBar,
-    AppState
+    AppState,
+    Image
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -40,7 +41,7 @@ import {
     Ticket,
     Bell
 } from 'lucide-react-native';
-import apiService from '../../api/apiService';
+import apiService, { API_URL } from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import SellerOrderCard from '../../components/SellerOrderCard';
@@ -63,6 +64,11 @@ const SellerDashboard = ({ navigation }) => {
     const [pendingOrders, setPendingOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [dashboardRunningText, setDashboardRunningText] = useState('');
+    const [dashboardRunningTextEnabled, setDashboardRunningTextEnabled] = useState(true);
+    const [dashboardWatermarkEnabled, setDashboardWatermarkEnabled] = useState(true);
+    const [dashboardWatermarkUrl, setDashboardWatermarkUrl] = useState('');
+    const [logoUrl, setLogoUrl] = useState('');
     const { unreadCount } = useChat();
 
     // Modal State
@@ -102,11 +108,12 @@ const SellerDashboard = ({ navigation }) => {
             setIsOpen(settingsRes.data.data.is_open === 1);
 
             // Fetch Stats (We'll combine multiple requests like the web version)
-            const [bannersRes, menuRes, catRes, ordersRes] = await Promise.all([
+            const [bannersRes, menuRes, catRes, ordersRes, allSettingsRes] = await Promise.all([
                 apiService.get('/api/banners/all'),
                 apiService.get('/api/menu-items?limit=1000'),
                 apiService.get('/api/categories'),
-                apiService.get('/api/orders?status=pending')
+                apiService.get('/api/orders?status=pending'),
+                apiService.get('/api/all-settings')
             ]);
 
             setStats({
@@ -117,6 +124,11 @@ const SellerDashboard = ({ navigation }) => {
             });
 
             setPendingOrders(ordersRes.data.data || []);
+            setDashboardRunningText(allSettingsRes.data.data?.dashboard_running_text || '');
+            setDashboardRunningTextEnabled(allSettingsRes.data.data?.dashboard_running_text_enabled !== '0');
+            setDashboardWatermarkEnabled(allSettingsRes.data.data?.dashboard_watermark_enabled !== '0');
+            setDashboardWatermarkUrl(allSettingsRes.data.data?.dashboard_watermark_url || '');
+            setLogoUrl(allSettingsRes.data.data?.logo_url || '');
         } catch (error) {
             console.error('Error fetching seller data:', error);
         } finally {
@@ -197,14 +209,37 @@ const SellerDashboard = ({ navigation }) => {
             <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
             {/* Fixed Gradient Header */}
             <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+                {/* Background Logo Decoration (Wrapped to prevent clipping statusCard) */}
+                {dashboardWatermarkEnabled && (
+                    <View style={styles.headerDecoration}>
+                        <Image
+                            source={
+                                dashboardWatermarkUrl
+                                    ? { uri: `${API_URL}${dashboardWatermarkUrl}` }
+                                    : logoUrl
+                                        ? { uri: `${API_URL}${logoUrl}` }
+                                        : require('../../../assets/logo.png')
+                            }
+                            style={styles.headerBgLogo}
+                            resizeMode="contain"
+                        />
+                    </View>
+                )}
                 <View style={styles.headerTop}>
-                    <View>
+                    <View style={styles.headerLeft}>
                         <View style={styles.roleBadge}>
                             <Store size={14} color="#FFFFFF" />
                             <Text style={styles.roleText}>Kerongkongan berkah 88</Text>
                         </View>
                         <Text style={styles.welcomeText}>Halo, {user?.name}!</Text>
                         <Text style={styles.subtitleText}>Pantau tokomu hari ini</Text>
+                        {dashboardRunningTextEnabled && dashboardRunningText ? (
+                            <View style={styles.runningTextContainer}>
+                                <Text style={styles.runningText} numberOfLines={2}>
+                                    {dashboardRunningText}
+                                </Text>
+                            </View>
+                        ) : null}
                     </View>
                     <View style={styles.headerActions}>
                         <TouchableOpacity
@@ -255,7 +290,10 @@ const SellerDashboard = ({ navigation }) => {
 
             <ScrollView
                 style={styles.container}
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[
+                    styles.scrollContent,
+                    { paddingTop: (dashboardRunningTextEnabled && dashboardRunningText) ? 290 : 240 }
+                ]}
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}
@@ -438,6 +476,25 @@ const styles = StyleSheet.create({
         right: 0,
         zIndex: 100,
     },
+    headerDecoration: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        borderBottomLeftRadius: 32,
+        borderBottomRightRadius: 32,
+        overflow: 'hidden',
+    },
+    headerBgLogo: {
+        position: 'absolute',
+        bottom: -20,
+        right: -20,
+        width: 150,
+        height: 150,
+        opacity: 0.15,
+        transform: [{ rotate: '-15deg' }],
+    },
     scrollContent: {
         paddingTop: 240, // Tinggi header + floating card
     },
@@ -446,6 +503,10 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'flex-start',
         marginTop: 15,
+    },
+    headerLeft: {
+        flex: 1,
+        marginRight: 15,
     },
     roleBadge: {
         flexDirection: 'row',
@@ -473,6 +534,23 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#BFDBFE',
         marginTop: 4,
+    },
+    runningTextContainer: {
+        marginTop: 10,
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 12,
+        borderLeftWidth: 4,
+        borderLeftColor: '#FBBF24',
+        alignSelf: 'flex-start',
+    },
+    runningText: {
+        fontSize: 12,
+        color: '#FFFFFF',
+        fontWeight: '600',
+        fontStyle: 'italic',
+        lineHeight: 18,
     },
     headerActions: {
         flexDirection: 'row',

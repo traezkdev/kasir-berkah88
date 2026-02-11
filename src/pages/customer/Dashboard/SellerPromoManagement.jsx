@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import BreadcrumbNavigation from '../../../components/ui/BreadcrumbNavigation';
+import NavigationHeader from '../../../components/ui/NavigationHeader';
+import { useTheme } from '../../../contexts/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import {
@@ -42,8 +44,10 @@ const getImageUrl = (url) => {
 };
 
 const SellerPromoManagement = () => {
+    const { theme } = useTheme();
     const location = useLocation();
     const isAdmin = location.pathname.startsWith('/admin') || location.pathname === '/promos';
+    const isSellerPath = location.pathname.startsWith('/seller');
     const [promos, setPromos] = useState([]);
     const [heroPromos, setHeroPromos] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -308,12 +312,53 @@ const SellerPromoManagement = () => {
     }, [promos]);
 
     return (
-        <div className="space-y-6 pb-20">
-            {/* Header */}
-            {isAdmin ? (
-                <div className="mb-6">
-                    <BreadcrumbNavigation />
-                    <div className="mt-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className={`min-h-screen ${theme === 'default' ? 'bg-gray-50 dark:bg-slate-950' : 'bg-transparent'}`}>
+            {theme === 'default' && !isSellerPath && (
+                <NavigationHeader headerTitle="Manajemen Promo" />
+            )}
+
+            {/* Mobile Header for Seller Path */}
+            {theme === 'default' && isSellerPath && (
+                <div className="fixed top-0 left-0 right-0 z-50 lg:hidden bg-[#118eea] text-white px-5 py-4 flex items-center gap-3 shadow-md">
+                    <button onClick={() => window.history.back()} className="p-1 hover:bg-white/10 rounded-full">
+                        <ChevronLeft size={24} />
+                    </button>
+                    <h1 className="text-lg font-bold">Manajemen Promo</h1>
+                </div>
+            )}
+
+            <div className={`space-y-6 ${theme === 'default' ? 'p-5 pt-24 lg:pt-8 pb-32' : 'space-y-6 pb-20'}`}>
+                {/* Header */}
+                {isAdmin ? (
+                    <div className="mb-6 lg:block hidden">
+                        <BreadcrumbNavigation />
+                        <div className="mt-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <h1 className="text-2xl font-black text-gray-900 tracking-tight">Manajemen Promo</h1>
+                                <p className="text-sm text-gray-500 font-medium mt-1">Kelola Voucher, Diskon Otomatis & Banner Promosi</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => handleOpenModal()}
+                                    className="px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-2"
+                                >
+                                    <Plus size={18} />
+                                    <span className="hidden md:inline">Buat Promo Baru</span>
+                                    <span className="md:hidden">Baru</span>
+                                </button>
+                                <button
+                                    onClick={() => handleOpenModal(null, true)}
+                                    className="px-4 py-2.5 bg-purple-600 text-white rounded-xl font-bold shadow-lg shadow-purple-200 hover:bg-purple-700 transition-all active:scale-95 flex items-center gap-2"
+                                >
+                                    <Sparkles size={18} />
+                                    <span className="hidden md:inline">Pasang Banner</span>
+                                    <span className="md:hidden">Banner</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
                             <h1 className="text-2xl font-black text-gray-900 tracking-tight">Manajemen Promo</h1>
                             <p className="text-sm text-gray-500 font-medium mt-1">Kelola Voucher, Diskon Otomatis & Banner Promosi</p>
@@ -333,519 +378,502 @@ const SellerPromoManagement = () => {
                             >
                                 <Sparkles size={18} />
                                 <span className="hidden md:inline">Pasang Banner</span>
-                                <span className="md:hidden">Banner</span>
                             </button>
                         </div>
                     </div>
-                </div>
-            ) : (
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-black text-gray-900 tracking-tight">Manajemen Promo</h1>
-                        <p className="text-sm text-gray-500 font-medium mt-1">Kelola Voucher, Diskon Otomatis & Banner Promosi</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => handleOpenModal()}
-                            className="px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-2"
-                        >
-                            <Plus size={18} />
-                            <span className="hidden md:inline">Buat Promo Baru</span>
-                            <span className="md:hidden">Baru</span>
-                        </button>
-                        <button
-                            onClick={() => handleOpenModal(null, true)}
-                            className="px-4 py-2.5 bg-purple-600 text-white rounded-xl font-bold shadow-lg shadow-purple-200 hover:bg-purple-700 transition-all active:scale-95 flex items-center gap-2"
-                        >
-                            <Sparkles size={18} />
-                            <span className="hidden md:inline">Pasang Banner</span>
-                        </button>
-                    </div>
-                </div>
-            )}
+                )}
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
-                    <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-green-600">
-                        <Ticket size={24} />
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+                        <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-green-600">
+                            <Ticket size={24} />
+                        </div>
+                        <div>
+                            <p className="text-2xl font-black text-gray-900 leading-none">{stats.active}</p>
+                            <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1">Total Aktif</p>
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-2xl font-black text-gray-900 leading-none">{stats.active}</p>
-                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1">Total Aktif</p>
+                    <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+                        <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+                            <Hash size={24} />
+                        </div>
+                        <div>
+                            <p className="text-2xl font-black text-gray-900 leading-none">{stats.voucher}</p>
+                            <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1">Voucher</p>
+                        </div>
                     </div>
-                </div>
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
-                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
-                        <Hash size={24} />
-                    </div>
-                    <div>
-                        <p className="text-2xl font-black text-gray-900 leading-none">{stats.voucher}</p>
-                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1">Voucher</p>
-                    </div>
-                </div>
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
-                    <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600">
-                        <Zap size={24} />
-                    </div>
-                    <div>
-                        <p className="text-2xl font-black text-gray-900 leading-none">{stats.auto}</p>
-                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1">Otomatis</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Banner Section */}
-            {heroPromos.length > 0 && (
-                <div className="mb-8">
-                    <h3 className="text-lg font-bold text-gray-800 mb-4">Banner & Highlight</h3>
-                    <div className="flex overflow-x-auto gap-4 py-2 snap-x hide-scrollbar">
-                        {heroPromos.map((promo) => (
-                            <div
-                                key={promo.id}
-                                className="relative flex-none w-[300px] md:w-[400px] aspect-video bg-gray-100 rounded-2xl overflow-hidden shadow-sm group cursor-pointer snap-start"
-                                onClick={() => handleOpenModal(promo)}
-                            >
-                                {promo.image_url ? (
-                                    <img
-                                        src={getImageUrl(promo.image_url)}
-                                        alt={promo.title}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                    />
-                                ) : (
-                                    <div className="w-full h-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
-                                        <Sparkles size={48} className="text-white/20" />
-                                    </div>
-                                )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent p-4 flex flex-col justify-end">
-                                    <h4 className="text-white font-bold truncate">{promo.title}</h4>
-                                    <p className="text-white/80 text-xs line-clamp-1">{promo.description}</p>
-                                </div>
-                                <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button
-                                        className="p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors"
-                                        onClick={(e) => { e.stopPropagation(); handleOpenModal(promo); }}
-                                    >
-                                        <Edit2 size={16} />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                        <div
-                            className="flex-none w-[100px] flex flex-col items-center justify-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-pointer snap-start gap-2"
-                            onClick={() => handleOpenModal(null, true)}
-                        >
-                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                                <Plus size={20} />
-                            </div>
-                            <span className="text-xs font-bold text-gray-400">Tambah</span>
+                    <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+                        <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600">
+                            <Zap size={24} />
+                        </div>
+                        <div>
+                            <p className="text-2xl font-black text-gray-900 leading-none">{stats.auto}</p>
+                            <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1">Otomatis</p>
                         </div>
                     </div>
                 </div>
-            )}
 
-            {/* Active Promos List */}
-            <div>
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold text-gray-800">Daftar Promo</h3>
-
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <input
-                            type="text"
-                            placeholder="Cari promo..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
-                        />
-                    </div>
-                </div>
-
-                {loading ? (
-                    <div className="flex justify-center p-12">
-                        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-                    </div>
-                ) : filteredPromos.length === 0 ? (
-                    <div className="text-center py-12 bg-white rounded-2xl border border-gray-100 border-dashed">
-                        <Ticket className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-                        <h3 className="text-lg font-bold text-gray-900">Belum ada promo</h3>
-                        <p className="text-sm text-gray-500 mb-6">Buat promo pertama Anda untuk menarik pelanggan</p>
-                        <button
-                            onClick={() => handleOpenModal()}
-                            className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
-                        >
-                            Buat Promo Sekarang
-                        </button>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {filteredPromos.map((promo) => (
-                            <div key={promo.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                                <div className="p-4">
-                                    <div className="flex justify-between items-start mb-3">
-                                        <div className={`px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 ${promo.code ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'
-                                            }`}>
-                                            {promo.code ? <Ticket size={12} /> : <Zap size={12} />}
-                                            {promo.code ? 'Voucher' : 'Otomatis'}
-                                        </div>
-                                        <div className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer ${promo.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                            }`} onClick={() => handleToggleStatus(promo)}>
-                                            {promo.is_active ? 'Aktif' : 'Non-Aktif'}
-                                            {promo.is_active ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-start gap-4 mb-4">
-                                        <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${promo.color}15`, color: promo.color }}>
-                                            <Icon name={promo.icon || 'Ticket'} size={24} />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-gray-900 leading-tight mb-1">{promo.title}</h4>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm font-black" style={{ color: promo.color }}>
-                                                    {promo.discount_type === 'percentage'
-                                                        ? `${promo.discount_value}% OFF`
-                                                        : `Rp ${parseFloat(promo.discount_value).toLocaleString('id-ID')}`}
-                                                </span>
-                                                {promo.code && (
-                                                    <span className="px-2 py-0.5 bg-gray-100 rounded text-[10px] font-mono text-gray-500 border border-gray-200">
-                                                        {promo.code}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-2 mb-4">
-                                        {promo.expiry && (
-                                            <div className="flex items-center gap-1 text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-md">
-                                                <Calendar size={12} />
-                                                <span>{new Date(promo.expiry).toLocaleDateString('id-ID')}</span>
-                                            </div>
-                                        )}
-                                        {parseInt(promo.min_purchase) > 0 && (
-                                            <div className="flex items-center gap-1 text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-md">
-                                                <ShoppingBag size={12} />
-                                                <span>Min. Rp {parseInt(promo.min_purchase).toLocaleString('id-ID')}</span>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="flex items-center gap-2 pt-4 border-t border-gray-50">
-                                        <button
-                                            onClick={() => handleOpenModal(promo)}
-                                            className="flex-1 py-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center justify-center gap-2"
-                                        >
-                                            <Edit2 size={14} /> Edit
-                                        </button>
-                                        {promo.code && (
-                                            <button
-                                                onClick={() => fetchPromoUsage(promo)}
-                                                className="flex-1 py-2 text-xs font-bold text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors flex items-center justify-center gap-2"
-                                            >
-                                                <User size={14} /> Pengguna
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={() => handleDelete(promo.id)}
-                                            className="w-8 h-8 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {/* Edit/Create Modal */}
-            <AnimatePresence>
-                {modalVisible && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden my-8"
-                        >
-                            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
-                                <h3 className="text-lg font-black text-gray-900">
-                                    {editingPromo ? 'Edit Promo' : 'Buat Promo Baru'}
-                                </h3>
-                                <button onClick={() => setModalVisible(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                                    <X size={20} className="text-gray-400" />
-                                </button>
-                            </div>
-
-                            <div className="p-6 max-h-[80vh] overflow-y-auto">
-                                {/* Type Selector */}
-                                <div className="flex p-1 bg-gray-100 rounded-xl mb-6">
-                                    {['voucher', 'automatic', 'banner'].map((type) => (
-                                        <button
-                                            key={type}
-                                            onClick={() => setPromoMode(type)}
-                                            className={`flex-1 py-2 rounded-lg text-sm font-bold capitalize transition-all ${promoMode === type
-                                                ? 'bg-white text-gray-900 shadow-sm'
-                                                : 'text-gray-500 hover:text-gray-700'
-                                                }`}
-                                        >
-                                            {type}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                <form onSubmit={handleSubmit} className="space-y-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Judul Promo *</label>
-                                        <input
-                                            type="text"
-                                            value={form.title}
-                                            onChange={e => setForm({ ...form, title: e.target.value })}
-                                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-                                            placeholder="Contoh: Diskon Kemerdekaan"
+                {/* Banner Section */}
+                {heroPromos.length > 0 && (
+                    <div className="mb-8">
+                        <h3 className="text-lg font-bold text-gray-800 mb-4">Banner & Highlight</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 py-2">
+                            {heroPromos.map((promo) => (
+                                <div
+                                    key={promo.id}
+                                    className="relative aspect-video bg-gray-100 rounded-2xl overflow-hidden shadow-sm group cursor-pointer"
+                                    onClick={() => handleOpenModal(promo)}
+                                >
+                                    {promo.image_url ? (
+                                        <img
+                                            src={getImageUrl(promo.image_url)}
+                                            alt={promo.title}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                         />
-                                    </div>
-
-                                    {promoMode === 'banner' && (
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Gambar Banner</label>
-                                            <div
-                                                onClick={() => fileInputRef.current?.click()}
-                                                className="w-full aspect-video rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition-all overflow-hidden relative"
-                                            >
-                                                {form.image_url ? (
-                                                    <img src={getImageUrl(form.image_url)} alt="Preview" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <>
-                                                        <Image className="w-8 h-8 text-gray-400 mb-2" />
-                                                        <span className="text-sm font-medium text-gray-500">Klik untuk upload gambar</span>
-                                                    </>
-                                                )}
-                                                <input
-                                                    type="file"
-                                                    ref={fileInputRef}
-                                                    className="hidden"
-                                                    accept="image/*"
-                                                    onChange={handleImageUpload}
-                                                />
-                                            </div>
+                                    ) : (
+                                        <div className="w-full h-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
+                                            <Sparkles size={48} className="text-white/20" />
                                         </div>
                                     )}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent p-4 flex flex-col justify-end">
+                                        <h4 className="text-white font-bold truncate">{promo.title}</h4>
+                                        <p className="text-white/80 text-xs line-clamp-1">{promo.description}</p>
+                                    </div>
+                                    <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                            className="p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors shadow-sm"
+                                            onClick={(e) => { e.stopPropagation(); handleOpenModal(promo); }}
+                                            title="Edit Banner"
+                                        >
+                                            <Edit2 size={16} />
+                                        </button>
+                                        <button
+                                            className="p-2 bg-red-500/80 backdrop-blur-md rounded-full text-white hover:bg-red-600 transition-colors shadow-lg"
+                                            onClick={(e) => { e.stopPropagation(); handleDelete(promo.id); }}
+                                            title="Hapus Banner"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                            <div
+                                className="aspect-video flex flex-col items-center justify-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-pointer gap-2"
+                                onClick={() => handleOpenModal(null, true)}
+                            >
+                                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                    <Plus size={20} />
+                                </div>
+                                <span className="text-xs font-bold text-gray-400">Tambah</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Deskripsi</label>
-                                        <textarea
-                                            value={form.description}
-                                            onChange={e => setForm({ ...form, description: e.target.value })}
-                                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium min-h-[80px]"
-                                            placeholder="Jelaskan detail promo..."
-                                        />
+                {/* Active Promos List */}
+                <div>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-bold text-gray-800">Daftar Promo</h3>
+
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            <input
+                                type="text"
+                                placeholder="Cari promo..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
+                            />
+                        </div>
+                    </div>
+
+                    {loading ? (
+                        <div className="flex justify-center p-12">
+                            <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                        </div>
+                    ) : filteredPromos.length === 0 ? (
+                        <div className="text-center py-12 bg-white rounded-2xl border border-gray-100 border-dashed">
+                            <Ticket className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                            <h3 className="text-lg font-bold text-gray-900">Belum ada promo</h3>
+                            <p className="text-sm text-gray-500 mb-6">Buat promo pertama Anda untuk menarik pelanggan</p>
+                            <button
+                                onClick={() => handleOpenModal()}
+                                className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
+                            >
+                                Buat Promo Sekarang
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            {filteredPromos.map((promo) => (
+                                <div key={promo.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                                    <div className="p-4">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className={`px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 ${promo.code ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'
+                                                }`}>
+                                                {promo.code ? <Ticket size={12} /> : <Zap size={12} />}
+                                                {promo.code ? 'Voucher' : 'Otomatis'}
+                                            </div>
+                                            <div className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer ${promo.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                                }`} onClick={() => handleToggleStatus(promo)}>
+                                                {promo.is_active ? 'Aktif' : 'Non-Aktif'}
+                                                {promo.is_active ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-start gap-4 mb-4">
+                                            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${promo.color}15`, color: promo.color }}>
+                                                <Icon name={promo.icon || 'Ticket'} size={24} />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-gray-900 leading-tight mb-1">{promo.title}</h4>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-black" style={{ color: promo.color }}>
+                                                        {promo.discount_type === 'percentage'
+                                                            ? `${promo.discount_value}% OFF`
+                                                            : `Rp ${parseFloat(promo.discount_value).toLocaleString('id-ID')}`}
+                                                    </span>
+                                                    {promo.code && (
+                                                        <span className="px-2 py-0.5 bg-gray-100 rounded text-[10px] font-mono text-gray-500 border border-gray-200">
+                                                            {promo.code}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            {promo.expiry && (
+                                                <div className="flex items-center gap-1 text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-md">
+                                                    <Calendar size={12} />
+                                                    <span>{new Date(promo.expiry).toLocaleDateString('id-ID')}</span>
+                                                </div>
+                                            )}
+                                            {parseInt(promo.min_purchase) > 0 && (
+                                                <div className="flex items-center gap-1 text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-md">
+                                                    <ShoppingBag size={12} />
+                                                    <span>Min. Rp {parseInt(promo.min_purchase).toLocaleString('id-ID')}</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center gap-2 pt-4 border-t border-gray-50">
+                                            <button
+                                                onClick={() => handleOpenModal(promo)}
+                                                className="flex-1 py-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                            >
+                                                <Edit2 size={14} /> Edit
+                                            </button>
+                                            {promo.code && (
+                                                <button
+                                                    onClick={() => fetchPromoUsage(promo)}
+                                                    className="flex-1 py-2 text-xs font-bold text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                                >
+                                                    <User size={14} /> Pengguna
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => handleDelete(promo.id)}
+                                                className="w-8 h-8 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Edit/Create Modal */}
+                <AnimatePresence>
+                    {modalVisible && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden my-8"
+                            >
+                                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
+                                    <h3 className="text-lg font-black text-gray-900">
+                                        {editingPromo ? 'Edit Promo' : 'Buat Promo Baru'}
+                                    </h3>
+                                    <button onClick={() => setModalVisible(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                                        <X size={20} className="text-gray-400" />
+                                    </button>
+                                </div>
+
+                                <div className="p-6 max-h-[80vh] overflow-y-auto">
+                                    {/* Type Selector */}
+                                    <div className="flex p-1 bg-gray-100 rounded-xl mb-6">
+                                        {['voucher', 'automatic', 'banner'].map((type) => (
+                                            <button
+                                                key={type}
+                                                onClick={() => setPromoMode(type)}
+                                                className={`flex-1 py-2 rounded-lg text-sm font-bold capitalize transition-all ${promoMode === type
+                                                    ? 'bg-white text-gray-900 shadow-sm'
+                                                    : 'text-gray-500 hover:text-gray-700'
+                                                    }`}
+                                            >
+                                                {type}
+                                            </button>
+                                        ))}
                                     </div>
 
-                                    {promoMode !== 'banner' && (
-                                        <>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nilai Diskon</label>
-                                                    <div className="relative">
-                                                        <input
-                                                            type="number"
-                                                            value={form.discount_value}
-                                                            onChange={e => setForm({ ...form, discount_value: e.target.value })}
-                                                            className="w-full pl-4 pr-12 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold text-lg"
-                                                            placeholder="0"
-                                                        />
-                                                        <div className="absolute right-2 top-2 p-1 bg-gray-100 rounded-lg flex text-xs font-bold">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setForm({ ...form, discount_type: 'percentage' })}
-                                                                className={`px-2 py-1 rounded ${form.discount_type === 'percentage' ? 'bg-white shadow-sm' : 'text-gray-400'}`}
-                                                            >
-                                                                %
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setForm({ ...form, discount_type: 'fixed' })}
-                                                                className={`px-2 py-1 rounded ${form.discount_type === 'fixed' ? 'bg-white shadow-sm' : 'text-gray-400'}`}
-                                                            >
-                                                                Rp
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Min. Belanja</label>
+                                    <form onSubmit={handleSubmit} className="space-y-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Judul Promo *</label>
+                                            <input
+                                                type="text"
+                                                value={form.title}
+                                                onChange={e => setForm({ ...form, title: e.target.value })}
+                                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                                                placeholder="Contoh: Diskon Kemerdekaan"
+                                            />
+                                        </div>
+
+                                        {promoMode === 'banner' && (
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Gambar Banner</label>
+                                                <div
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    className="w-full aspect-video rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition-all overflow-hidden relative"
+                                                >
+                                                    {form.image_url ? (
+                                                        <img src={getImageUrl(form.image_url)} alt="Preview" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <>
+                                                            <Image className="w-8 h-8 text-gray-400 mb-2" />
+                                                            <span className="text-sm font-medium text-gray-500">Klik untuk upload gambar</span>
+                                                        </>
+                                                    )}
                                                     <input
-                                                        type="number"
-                                                        value={form.min_purchase}
-                                                        onChange={e => setForm({ ...form, min_purchase: e.target.value })}
-                                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-                                                        placeholder="0"
+                                                        type="file"
+                                                        ref={fileInputRef}
+                                                        className="hidden"
+                                                        accept="image/*"
+                                                        onChange={handleImageUpload}
                                                     />
                                                 </div>
                                             </div>
+                                        )}
 
-                                            {promoMode === 'voucher' && (
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Kode Voucher *</label>
-                                                    <div className="relative">
-                                                        <Hash className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Deskripsi</label>
+                                            <textarea
+                                                value={form.description}
+                                                onChange={e => setForm({ ...form, description: e.target.value })}
+                                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium min-h-[80px]"
+                                                placeholder="Jelaskan detail promo..."
+                                            />
+                                        </div>
+
+                                        {promoMode !== 'banner' && (
+                                            <>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nilai Diskon</label>
+                                                        <div className="relative">
+                                                            <input
+                                                                type="number"
+                                                                value={form.discount_value}
+                                                                onChange={e => setForm({ ...form, discount_value: e.target.value })}
+                                                                className="w-full pl-4 pr-12 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold text-lg"
+                                                                placeholder="0"
+                                                            />
+                                                            <div className="absolute right-2 top-2 p-1 bg-gray-100 rounded-lg flex text-xs font-bold">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setForm({ ...form, discount_type: 'percentage' })}
+                                                                    className={`px-2 py-1 rounded ${form.discount_type === 'percentage' ? 'bg-white shadow-sm' : 'text-gray-400'}`}
+                                                                >
+                                                                    %
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setForm({ ...form, discount_type: 'fixed' })}
+                                                                    className={`px-2 py-1 rounded ${form.discount_type === 'fixed' ? 'bg-white shadow-sm' : 'text-gray-400'}`}
+                                                                >
+                                                                    Rp
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Min. Belanja</label>
                                                         <input
-                                                            type="text"
-                                                            value={form.code}
-                                                            onChange={e => setForm({ ...form, code: e.target.value.toUpperCase() })}
-                                                            className="w-full pl-9 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-black uppercase tracking-wider"
-                                                            placeholder="DISKON10"
+                                                            type="number"
+                                                            value={form.min_purchase}
+                                                            onChange={e => setForm({ ...form, min_purchase: e.target.value })}
+                                                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                                                            placeholder="0"
                                                         />
                                                     </div>
                                                 </div>
-                                            )}
 
-                                            {/* Icon & Color Selector (Simplified) */}
-                                            <div>
-                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Ikon & Warna</label>
-                                                <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
-                                                    {['Ticket', 'Zap', 'Gift', 'Percent', 'Wallet', 'Tags', 'Truck', 'ShoppingBag'].map(icon => (
-                                                        <button
-                                                            key={icon}
-                                                            type="button"
-                                                            onClick={() => setForm({ ...form, icon })}
-                                                            className={`p-2 rounded-lg border ${form.icon === icon ? 'bg-blue-50 border-blue-500 text-blue-600' : 'border-gray-100 text-gray-400'}`}
-                                                        >
-                                                            <Icon name={icon} size={20} />
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    {['#059669', '#DC2626', '#2563EB', '#D97706', '#7C3AED', '#DB2777'].map(color => (
-                                                        <button
-                                                            key={color}
-                                                            type="button"
-                                                            onClick={() => setForm({ ...form, color })}
-                                                            className={`w-8 h-8 rounded-full border-2 ${form.color === color ? 'border-gray-900 scale-110' : 'border-transparent'}`}
-                                                            style={{ backgroundColor: color }}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </>
-                                    )}
+                                                {promoMode === 'voucher' && (
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Kode Voucher *</label>
+                                                        <div className="relative">
+                                                            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                                            <input
+                                                                type="text"
+                                                                value={form.code}
+                                                                onChange={e => setForm({ ...form, code: e.target.value.toUpperCase() })}
+                                                                className="w-full pl-9 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-black uppercase tracking-wider"
+                                                                placeholder="DISKON10"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
 
-                                    {promoMode !== 'banner' && (
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Kadaluarsa</label>
-                                                <input
-                                                    type="date"
-                                                    value={form.expiry}
-                                                    onChange={e => setForm({ ...form, expiry: e.target.value })}
-                                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-sm"
-                                                />
+                                                {/* Icon & Color Selector (Simplified) */}
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Ikon & Warna</label>
+                                                    <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
+                                                        {['Ticket', 'Zap', 'Gift', 'Percent', 'Wallet', 'Tags', 'Truck', 'ShoppingBag'].map(icon => (
+                                                            <button
+                                                                key={icon}
+                                                                type="button"
+                                                                onClick={() => setForm({ ...form, icon })}
+                                                                className={`p-2 rounded-lg border ${form.icon === icon ? 'bg-blue-50 border-blue-500 text-blue-600' : 'border-gray-100 text-gray-400'}`}
+                                                            >
+                                                                <Icon name={icon} size={20} />
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        {['#059669', '#DC2626', '#2563EB', '#D97706', '#7C3AED', '#DB2777'].map(color => (
+                                                            <button
+                                                                key={color}
+                                                                type="button"
+                                                                onClick={() => setForm({ ...form, color })}
+                                                                className={`w-8 h-8 rounded-full border-2 ${form.color === color ? 'border-gray-900 scale-110' : 'border-transparent'}`}
+                                                                style={{ backgroundColor: color }}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {promoMode !== 'banner' && (
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Kadaluarsa</label>
+                                                    <input
+                                                        type="date"
+                                                        value={form.expiry}
+                                                        onChange={e => setForm({ ...form, expiry: e.target.value })}
+                                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-sm"
+                                                    />
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <input
+                                                        type="checkbox"
+                                                        id="is_one_time"
+                                                        checked={form.is_one_time}
+                                                        onChange={e => setForm({ ...form, is_one_time: e.target.checked })}
+                                                        className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                    />
+                                                    <label htmlFor="is_one_time" className="text-sm font-medium text-gray-700 select-none cursor-pointer">
+                                                        Hanya 1x Pakai
+                                                    </label>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                <input
-                                                    type="checkbox"
-                                                    id="is_one_time"
-                                                    checked={form.is_one_time}
-                                                    onChange={e => setForm({ ...form, is_one_time: e.target.checked })}
-                                                    className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                />
-                                                <label htmlFor="is_one_time" className="text-sm font-medium text-gray-700 select-none cursor-pointer">
-                                                    Hanya 1x Pakai
-                                                </label>
-                                            </div>
+                                        )}
+
+                                        <div className="pt-4 flex gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => setModalVisible(false)}
+                                                className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+                                            >
+                                                Batal
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-colors"
+                                            >
+                                                Simpan
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
+
+                {/* Usage Modal */}
+                <AnimatePresence>
+                    {usageModalVisible && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden my-8"
+                            >
+                                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
+                                    <div>
+                                        <h3 className="text-lg font-black text-gray-900">Riwayat Penggunaan</h3>
+                                        <p className="text-xs text-gray-500 font-bold">{selectedPromoUsage?.title}</p>
+                                    </div>
+                                    <button onClick={() => setUsageModalVisible(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                                        <X size={20} className="text-gray-400" />
+                                    </button>
+                                </div>
+
+                                <div className="p-6 max-h-[60vh] overflow-y-auto">
+                                    {loadingUsage ? (
+                                        <div className="flex justify-center py-8">
+                                            <Loader2 className="animate-spin text-blue-600" />
+                                        </div>
+                                    ) : usageData.length === 0 ? (
+                                        <div className="text-center py-8 text-gray-400">
+                                            <User size={32} className="mx-auto mb-2 opacity-50" />
+                                            <p className="text-sm">Belum ada penggunaan</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {usageData.map((usage, idx) => (
+                                                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-gray-100 font-bold text-gray-700">
+                                                            {usage.username?.charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-bold text-gray-800">{usage.username}</p>
+                                                            <p className="text-xs text-gray-500">{new Date(usage.used_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-xs font-bold text-green-600">Hemat</p>
+                                                        <p className="text-sm font-black text-gray-900">Rp {parseInt(usage.discount_amount).toLocaleString('id-ID')}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     )}
 
-                                    <div className="pt-4 flex gap-3">
+                                    {usageHasMore && !loadingUsage && (
                                         <button
-                                            type="button"
-                                            onClick={() => setModalVisible(false)}
-                                            className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+                                            onClick={() => fetchPromoUsage(selectedPromoUsage, usagePage + 1)}
+                                            className="w-full py-2 mt-4 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                         >
-                                            Batal
+                                            Muat Lebih Banyak
                                         </button>
-                                        <button
-                                            type="submit"
-                                            className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-colors"
-                                        >
-                                            Simpan
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-
-            {/* Usage Modal */}
-            <AnimatePresence>
-                {usageModalVisible && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden my-8"
-                        >
-                            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
-                                <div>
-                                    <h3 className="text-lg font-black text-gray-900">Riwayat Penggunaan</h3>
-                                    <p className="text-xs text-gray-500 font-bold">{selectedPromoUsage?.title}</p>
+                                    )}
                                 </div>
-                                <button onClick={() => setUsageModalVisible(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                                    <X size={20} className="text-gray-400" />
-                                </button>
-                            </div>
-
-                            <div className="p-6 max-h-[60vh] overflow-y-auto">
-                                {loadingUsage ? (
-                                    <div className="flex justify-center py-8">
-                                        <Loader2 className="animate-spin text-blue-600" />
-                                    </div>
-                                ) : usageData.length === 0 ? (
-                                    <div className="text-center py-8 text-gray-400">
-                                        <User size={32} className="mx-auto mb-2 opacity-50" />
-                                        <p className="text-sm">Belum ada penggunaan</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {usageData.map((usage, idx) => (
-                                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-gray-100 font-bold text-gray-700">
-                                                        {usage.username?.charAt(0).toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-gray-800">{usage.username}</p>
-                                                        <p className="text-xs text-gray-500">{new Date(usage.used_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-xs font-bold text-green-600">Hemat</p>
-                                                    <p className="text-sm font-black text-gray-900">Rp {parseInt(usage.discount_amount).toLocaleString('id-ID')}</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {usageHasMore && !loadingUsage && (
-                                    <button
-                                        onClick={() => fetchPromoUsage(selectedPromoUsage, usagePage + 1)}
-                                        className="w-full py-2 mt-4 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                    >
-                                        Muat Lebih Banyak
-                                    </button>
-                                )}
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
+            </div>
         </div>
     );
 };
