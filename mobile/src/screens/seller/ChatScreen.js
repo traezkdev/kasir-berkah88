@@ -43,6 +43,7 @@ import { useAuth } from '../../context/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useOrderNotification } from '../../context/OrderNotificationContext';
+import { useToast } from '../../context/ToastContext';
 
 // --- WHATSAPP-STYLE OPTIMIZATIONS ---
 
@@ -53,8 +54,16 @@ const MessageItem = memo(({ item, isMine, formatTime, onImagePress }) => {
         : null;
 
     return (
-        <View style={[styles.messageWrapper, isMine ? styles.myMsgWrapper : styles.theirMsgWrapper]}>
-            <View style={[styles.messageBubble, isMine ? styles.myMsgBubble : styles.theirMsgBubble]}>
+        <View style={[
+            styles.messageWrapper,
+            isMine ? styles.myMsgWrapper : styles.theirMsgWrapper,
+            imageUrl && { maxWidth: '100%' } // Allow image bubbles to define their own width
+        ]}>
+            <View style={[
+                styles.messageBubble,
+                isMine ? styles.myMsgBubble : styles.theirMsgBubble,
+                imageUrl && styles.imageMessageBubble
+            ]}>
                 {imageUrl && (
                     <TouchableOpacity onPress={() => onImagePress(imageUrl)} activeOpacity={0.9}>
                         <Image
@@ -206,6 +215,7 @@ const ChatInput = memo(({ onSendMessage, onPickImage, themeColor }) => {
 const ChatScreen = ({ navigation }) => {
     const { user } = useAuth();
     const { confirm } = useConfirm();
+    const { showToast } = useToast();
     const {
         conversations,
         unreadCount,
@@ -313,7 +323,7 @@ const ChatScreen = ({ navigation }) => {
         try {
             const { status } = await MediaLibrary.requestPermissionsAsync();
             if (status !== 'granted') {
-                Alert.alert('Izin Ditolak', 'Butuh izin galeri untuk mengunduh gambar.');
+                showToast('Butuh izin galeri untuk mengunduh gambar.', 'error');
                 return;
             }
 
@@ -324,14 +334,14 @@ const ChatScreen = ({ navigation }) => {
             const downloadRes = await FileSystem.downloadAsync(url, fileUri);
 
             await MediaLibrary.saveToLibraryAsync(downloadRes.uri);
-            Alert.alert('Berhasil', 'Gambar berhasil disimpan ke galeri');
+            showToast('Gambar berhasil disimpan ke galeri', 'success');
         } catch (error) {
             console.error('Download error:', error);
-            Alert.alert('Error', 'Gagal mengunduh gambar');
+            showToast('Gagal mengunduh gambar', 'error');
         } finally {
             setIsDownloading(false);
         }
-    }, [isDownloading]);
+    }, [isDownloading, showToast]);
 
     const shareImage = useCallback(async (url) => {
         try {
@@ -344,13 +354,13 @@ const ChatScreen = ({ navigation }) => {
             if (await Sharing.isAvailableAsync()) {
                 await Sharing.shareAsync(downloadRes.uri);
             } else {
-                Alert.alert('Error', 'Berbagi tidak didukung di perangkat ini');
+                showToast('Fitur berbagi tidak didukung', 'info');
             }
         } catch (error) {
             console.error('Share error:', error);
-            Alert.alert('Error', 'Gagal membagikan gambar');
+            showToast('Gagal membagikan gambar', 'error');
         }
-    }, []);
+    }, [showToast]);
 
     const pickImage = useCallback(async () => {
         try {
@@ -1190,6 +1200,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         paddingVertical: 10,
     },
+    imageMessageBubble: {
+        paddingHorizontal: 4,
+        paddingTop: 4,
+        paddingBottom: 6,
+    },
     myMsgBubble: {
         backgroundColor: '#138FEA',
         borderBottomRightRadius: 4,
@@ -1230,10 +1245,10 @@ const styles = StyleSheet.create({
         marginLeft: 2,
     },
     messageImage: {
-        width: 200,
-        height: 200,
+        width: 240,
+        height: 180,
         borderRadius: 12,
-        marginBottom: 8,
+        marginBottom: 2,
     },
     inputArea: {
         flexDirection: 'row',

@@ -6,7 +6,8 @@ import {
     Animated,
     TouchableOpacity,
     Dimensions,
-    Platform
+    Platform,
+    Modal
 } from 'react-native';
 import { CheckCircle2, AlertCircle, XCircle, Info, X } from 'lucide-react-native';
 
@@ -87,7 +88,12 @@ export const ToastProvider = ({ children }) => {
     return (
         <ToastContext.Provider value={{ showToast }}>
             {children}
-            {toast.visible && (
+            <Modal
+                transparent
+                visible={toast.visible}
+                animationType="none"
+                pointerEvents="box-none"
+            >
                 <Animated.View style={[
                     styles.toastContainer,
                     { transform: [{ translateY }], opacity, borderLeftColor: getBorderColor() }
@@ -107,7 +113,7 @@ export const ToastProvider = ({ children }) => {
                         </TouchableOpacity>
                     </View>
                 </Animated.View>
-            )}
+            </Modal>
         </ToastContext.Provider>
     );
 };
