@@ -29,34 +29,50 @@ import {
     Check,
     Clock,
     Image as ImageIcon,
-    Camera
+    Camera,
+    Download,
+    Share2
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as MediaLibrary from 'expo-media-library';
 import { useChat } from '../../context/ChatContext';
 import apiService, { API_URL } from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useOrderNotification } from '../../context/OrderNotificationContext';
+import { useToast } from '../../context/ToastContext';
 
 // --- WHATSAPP-STYLE OPTIMIZATIONS ---
 
 // 1. Optimistic Message Item with minimal re-renders
-const MessageItem = memo(({ item, isMine, formatTime }) => {
+const MessageItem = memo(({ item, isMine, formatTime, onImagePress }) => {
     const imageUrl = item.image_url ?
         (item.image_url.startsWith('http') ? item.image_url : `${API_URL}${item.image_url}`)
         : null;
 
     return (
-        <View style={[styles.messageWrapper, isMine ? styles.myMsgWrapper : styles.theirMsgWrapper]}>
-            <View style={[styles.messageBubble, isMine ? styles.myMsgBubble : styles.theirMsgBubble]}>
+        <View style={[
+            styles.messageWrapper,
+            isMine ? styles.myMsgWrapper : styles.theirMsgWrapper,
+            imageUrl && { maxWidth: '100%' } // Allow image bubbles to define their own width
+        ]}>
+            <View style={[
+                styles.messageBubble,
+                isMine ? styles.myMsgBubble : styles.theirMsgBubble,
+                imageUrl && styles.imageMessageBubble
+            ]}>
                 {imageUrl && (
-                    <Image
-                        source={{ uri: imageUrl, cache: 'force-cache' }}
-                        style={styles.messageImage}
-                        resizeMode="cover"
-                        fadeDuration={0}
-                    />
+                    <TouchableOpacity onPress={() => onImagePress(imageUrl)} activeOpacity={0.9}>
+                        <Image
+                            source={{ uri: imageUrl, cache: 'force-cache' }}
+                            style={styles.messageImage}
+                            resizeMode="cover"
+                            fadeDuration={0}
+                        />
+                    </TouchableOpacity>
                 )}
                 {item.message ? (
                     <Text style={[styles.messageText, isMine ? styles.myMsgText : styles.theirMsgText]}>
@@ -199,6 +215,7 @@ const ChatInput = memo(({ onSendMessage, onPickImage, themeColor }) => {
 const ChatScreen = ({ navigation }) => {
     const { user } = useAuth();
     const { confirm } = useConfirm();
+    const { showToast } = useToast();
     const {
         conversations,
         unreadCount,
@@ -216,6 +233,8 @@ const ChatScreen = ({ navigation }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedConv, setSelectedConv] = useState(null);
     const [isOptionsVisible, setIsOptionsVisible] = useState(false);
+    const [previewImage, setPreviewImage] = useState(null);
+    const [isDownloading, setIsDownloading] = useState(false);
     const listRef = useRef(null);
     const lastFetchTime = useRef(0);
     const autoSelectAttempted = useRef(false);
@@ -297,6 +316,51 @@ const ChatScreen = ({ navigation }) => {
             return false;
         }
     }, [activeChat, activeOrder, fetchConversations, user.id]);
+
+    const downloadImage = useCallback(async (url) => {
+        if (isDownloading) return;
+        setIsDownloading(true);
+        try {
+            const { status } = await MediaLibrary.requestPermissionsAsync();
+            if (status !== 'granted') {
+                showToast('Butuh izin galeri untuk mengunduh gambar.', 'error');
+                return;
+            }
+
+            const fileName = `K-BERKAH88_${Date.now()}.jpg`;
+            const fileUri = FileSystem.documentDirectory + fileName;
+
+            // Menggunakan API legacy sesuai anjuran error di Expo 54
+            const downloadRes = await FileSystem.downloadAsync(url, fileUri);
+
+            await MediaLibrary.saveToLibraryAsync(downloadRes.uri);
+            showToast('Gambar berhasil disimpan ke galeri', 'success');
+        } catch (error) {
+            console.error('Download error:', error);
+            showToast('Gagal mengunduh gambar', 'error');
+        } finally {
+            setIsDownloading(false);
+        }
+    }, [isDownloading, showToast]);
+
+    const shareImage = useCallback(async (url) => {
+        try {
+            const fileName = `K-BERKAH88_SHARE_${Date.now()}.jpg`;
+            const fileUri = FileSystem.cacheDirectory + fileName;
+
+            // Menggunakan API legacy sesuai anjuran error di Expo 54
+            const downloadRes = await FileSystem.downloadAsync(url, fileUri);
+
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(downloadRes.uri);
+            } else {
+                showToast('Fitur berbagi tidak didukung', 'info');
+            }
+        } catch (error) {
+            console.error('Share error:', error);
+            showToast('Gagal membagikan gambar', 'error');
+        }
+    }, [showToast]);
 
     const pickImage = useCallback(async () => {
         try {
@@ -613,6 +677,7 @@ const ChatScreen = ({ navigation }) => {
             item={item}
             isMine={item.sender_id === user.id}
             formatTime={formatTime}
+            onImagePress={setPreviewImage}
         />
     ), [user.id, formatTime]);
 
@@ -744,6 +809,54 @@ const ChatScreen = ({ navigation }) => {
                         </>
                     )}
                 </KeyboardAvoidingView>
+
+                {/* Full Image Preview Modal */}
+                <Modal
+                    visible={!!previewImage}
+                    transparent={true}
+                    animationType="fade"
+                    onRequestClose={() => setPreviewImage(null)}
+                >
+                    <View style={styles.previewModal}>
+                        <View style={styles.previewHeader}>
+                            <TouchableOpacity
+                                onPress={() => setPreviewImage(null)}
+                                style={styles.previewAction}
+                            >
+                                <ArrowLeft size={24} color="#FFFFFF" />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => shareImage(previewImage)}
+                                style={styles.previewAction}
+                            >
+                                <Share2 size={24} color="#FFFFFF" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <Image
+                            source={{ uri: previewImage }}
+                            style={styles.fullImage}
+                            resizeMode="contain"
+                        />
+
+                        <View style={styles.previewFooter}>
+                            <TouchableOpacity
+                                style={styles.previewFooterAction}
+                                onPress={() => downloadImage(previewImage)}
+                                disabled={isDownloading}
+                            >
+                                {isDownloading ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                    <>
+                                        <Download size={20} color="#FFFFFF" />
+                                        <Text style={styles.previewFooterText}>Simpan ke Galeri</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
             </SafeAreaView>
         );
     }
@@ -1087,6 +1200,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         paddingVertical: 10,
     },
+    imageMessageBubble: {
+        paddingHorizontal: 4,
+        paddingTop: 4,
+        paddingBottom: 6,
+    },
     myMsgBubble: {
         backgroundColor: '#138FEA',
         borderBottomRightRadius: 4,
@@ -1127,10 +1245,10 @@ const styles = StyleSheet.create({
         marginLeft: 2,
     },
     messageImage: {
-        width: 200,
-        height: 200,
+        width: 240,
+        height: 180,
         borderRadius: 12,
-        marginBottom: 8,
+        marginBottom: 2,
     },
     inputArea: {
         flexDirection: 'row',
@@ -1257,6 +1375,67 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         color: '#1E293B',
+    },
+    // --- Image Preview Styles ---
+    previewModal: {
+        flex: 1,
+        backgroundColor: '#000000',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    fullImage: {
+        width: '100%',
+        height: '100%',
+    },
+    previewHeader: {
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 60 : 30,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        zIndex: 10,
+    },
+    previewAction: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(0,0,0,0.5)', // Darker background to be visible on white images
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.5,
+        shadowRadius: 4,
+        elevation: 10,
+    },
+    previewFooter: {
+        position: 'absolute',
+        bottom: Platform.OS === 'ios' ? 70 : 40,
+        flexDirection: 'row',
+        gap: 20,
+    },
+    previewFooterAction: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#138FEA', // Use primary blue for maximum contrast
+        paddingHorizontal: 25,
+        paddingVertical: 14,
+        borderRadius: 30,
+        gap: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.5,
+        shadowRadius: 8,
+        elevation: 12,
+    },
+    previewFooterText: {
+        color: '#FFFFFF',
+        fontWeight: '700',
+        fontSize: 15,
     },
 });
 

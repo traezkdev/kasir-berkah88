@@ -134,6 +134,10 @@ const CustomerCart = ({ navigation }) => {
     const [errorModalVisible, setErrorModalVisible] = useState(false);
     const [errorModalContent, setErrorModalContent] = useState({ title: '', message: '' });
 
+    // Delivery Data Type Selection
+    const [deliveryDataType, setDeliveryDataType] = useState('profile'); // 'profile' or 'new'
+    const [profilePhone, setProfilePhone] = useState('');
+
     const showError = (title, message) => {
         setErrorModalContent({ title, message });
         setErrorModalVisible(true);
@@ -164,6 +168,9 @@ const CustomerCart = ({ navigation }) => {
                     if (response.data.message === 'success') {
                         if (response.data.data.address) {
                             setSavedAddress(response.data.data.address);
+                        }
+                        if (response.data.data.phone) {
+                            setProfilePhone(response.data.data.phone);
                         }
                         // Fetch fresh user data (points are in users table, but profile endpoint returns user data)
                         // Actually typically profile returns points too if columns are selected.
@@ -327,8 +334,16 @@ const CustomerCart = ({ navigation }) => {
     const handleCheckout = async () => {
         if (cart.length === 0) return;
 
-        if (!customerAddress || !customerAddress.trim()) {
+        const currentAddress = deliveryDataType === 'profile' ? savedAddress : customerAddress;
+        const currentPhone = deliveryDataType === 'profile' ? profilePhone : customerPhone;
+
+        if (!currentAddress || !currentAddress.trim()) {
             showToast('Alamat pengiriman wajib diisi!', 'error');
+            return;
+        }
+
+        if (!currentPhone || !currentPhone.trim()) {
+            showToast('Nomor telepon wajib diisi!', 'error');
             return;
         }
 
@@ -355,8 +370,8 @@ const CustomerCart = ({ navigation }) => {
                 items: orderItems,
                 payment_method: paymentMethod === 'cash' ? 'Tunai' : (paymentMethod === 'transfer' ? 'Transfer' : paymentMethod),
                 notes: notes,
-                customer_address: customerAddress || null,
-                customer_phone: customerPhone || null,
+                customer_address: deliveryDataType === 'profile' ? savedAddress : customerAddress,
+                customer_phone: deliveryDataType === 'profile' ? profilePhone : customerPhone,
                 customer_name: user?.username || user?.name || 'Pelanggan',
                 pointsUsed: usePoints ? pointsToUse : 0,
                 promoId: appliedPromo ? appliedPromo.id : null
@@ -471,44 +486,83 @@ const CustomerCart = ({ navigation }) => {
                         Data Pengiriman <Text style={{ color: '#EF4444' }}>*</Text>
                     </Text>
 
-                    {/* Phone Input */}
-                    <View style={[styles.notesInputRow, { marginBottom: 10 }]}>
-                        <Phone size={18} color="#94A3B8" />
-                        <TextInput
-                            placeholder="Nomor Telepon / WhatsApp"
-                            style={[styles.notesInput, { height: 48, paddingVertical: 0 }]}
-                            value={customerPhone}
-                            onChangeText={setCustomerPhone}
-                            keyboardType="phone-pad"
-                        />
-                    </View>
-
-                    {savedAddress && (
+                    {/* Delivery Type Selector */}
+                    <View style={styles.deliverySelector}>
                         <TouchableOpacity
-                            style={[styles.savedAddressCard, { marginBottom: 10, padding: 16 }]}
-                            onPress={() => setCustomerAddress(savedAddress)}
+                            style={[styles.deliveryOption, deliveryDataType === 'profile' && styles.deliveryOptionActive]}
+                            onPress={() => setDeliveryDataType('profile')}
                         >
-                            <View style={styles.savedAddressIcon}>
-                                <MapPin size={22} color="#3B82F6" strokeWidth={2} />
+                            <View style={[styles.radioOutline, deliveryDataType === 'profile' && styles.radioActive]}>
+                                {deliveryDataType === 'profile' && <View style={styles.radioInner} />}
                             </View>
-                            <View style={styles.savedAddressInfo}>
-                                <Text style={styles.savedAddressTitle}>Alamat Tersimpan</Text>
-                                <Text style={styles.savedAddressText}>{savedAddress}</Text>
-                            </View>
-                            <ChevronRight size={18} color="#CBD5E1" />
+                            <Text style={[styles.deliveryOptionText, deliveryDataType === 'profile' && styles.deliveryOptionTextActive]}>Gunakan Data Profil</Text>
                         </TouchableOpacity>
-                    )}
-
-                    <View style={[styles.notesInputRow, { alignItems: 'flex-start', paddingVertical: 14 }]}>
-                        <MapPin size={18} color="#94A3B8" style={{ marginTop: 12 }} />
-                        <TextInput
-                            placeholder="Alamat lengkap (Nama jalan, No. Rumah, dll)"
-                            style={[styles.notesInput, { minHeight: 100, textAlignVertical: 'top', paddingTop: 8 }]}
-                            value={customerAddress}
-                            onChangeText={setCustomerAddress}
-                            multiline
-                        />
+                        <TouchableOpacity
+                            style={[styles.deliveryOption, deliveryDataType === 'new' && styles.deliveryOptionActive]}
+                            onPress={() => setDeliveryDataType('new')}
+                        >
+                            <View style={[styles.radioOutline, deliveryDataType === 'new' && styles.radioActive]}>
+                                {deliveryDataType === 'new' && <View style={styles.radioInner} />}
+                            </View>
+                            <Text style={[styles.deliveryOptionText, deliveryDataType === 'new' && styles.deliveryOptionTextActive]}>Gunakan Data Baru</Text>
+                        </TouchableOpacity>
                     </View>
+
+                    {deliveryDataType === 'profile' ? (
+                        <View style={styles.profileDataCard}>
+                            <View style={styles.profileDataItem}>
+                                <View style={styles.profileDataIcon}>
+                                    <Phone size={16} color="#3B82F6" />
+                                </View>
+                                <View>
+                                    <Text style={styles.profileDataLabel}>Nomor Telepon</Text>
+                                    <Text style={styles.profileDataValue}>{profilePhone || 'Belum diatur'}</Text>
+                                </View>
+                            </View>
+                            <View style={[styles.profileDataItem, { marginBottom: 0, borderBottomWidth: 0, paddingBottom: 0 }]}>
+                                <View style={styles.profileDataIcon}>
+                                    <MapPin size={16} color="#3B82F6" />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.profileDataLabel}>Alamat Pengiriman</Text>
+                                    <Text style={styles.profileDataValue}>{savedAddress || 'Belum diatur'}</Text>
+                                </View>
+                            </View>
+                            {(!profilePhone || !savedAddress) && (
+                                <TouchableOpacity
+                                    style={styles.editProfileBtn}
+                                    onPress={() => navigation.navigate('Profile')}
+                                >
+                                    <Text style={styles.editProfileBtnText}>Lengkapi Profil Sekarang</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    ) : (
+                        <>
+                            {/* Phone Input */}
+                            <View style={[styles.notesInputRow, { marginBottom: 10 }]}>
+                                <Phone size={18} color="#94A3B8" />
+                                <TextInput
+                                    placeholder="Nomor Telepon / WhatsApp"
+                                    style={[styles.notesInput, { height: 48, paddingVertical: 0 }]}
+                                    value={customerPhone}
+                                    onChangeText={setCustomerPhone}
+                                    keyboardType="phone-pad"
+                                />
+                            </View>
+
+                            <View style={[styles.notesInputRow, { alignItems: 'flex-start', paddingVertical: 14 }]}>
+                                <MapPin size={18} color="#94A3B8" style={{ marginTop: 12 }} />
+                                <TextInput
+                                    placeholder="Alamat lengkap (Nama jalan, No. Rumah, dll)"
+                                    style={[styles.notesInput, { minHeight: 100, textAlignVertical: 'top', paddingTop: 8 }]}
+                                    value={customerAddress}
+                                    onChangeText={setCustomerAddress}
+                                    multiline
+                                />
+                            </View>
+                        </>
+                    )}
                 </View>
 
                 <View style={styles.divider} />
@@ -1531,7 +1585,103 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         color: '#FFFFFF',
         letterSpacing: 1,
-    }
+    },
+    // Delivery Selector Styles
+    deliverySelector: {
+        flexDirection: 'row',
+        gap: 12,
+        marginBottom: 16,
+    },
+    deliveryOption: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        backgroundColor: '#FFFFFF',
+        gap: 8,
+    },
+    deliveryOptionActive: {
+        borderColor: '#3B82F6',
+        backgroundColor: '#EFF6FF',
+    },
+    radioOutline: {
+        width: 18,
+        height: 18,
+        borderRadius: 9,
+        borderWidth: 2,
+        borderColor: '#CBD5E1',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    radioActive: {
+        borderColor: '#3B82F6',
+    },
+    radioInner: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#3B82F6',
+    },
+    deliveryOptionText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#64748B',
+    },
+    deliveryOptionTextActive: {
+        color: '#1E40AF',
+    },
+    profileDataCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 18,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+    },
+    profileDataItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+        paddingBottom: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F1F5F9',
+        gap: 12,
+    },
+    profileDataIcon: {
+        width: 32,
+        height: 32,
+        borderRadius: 10,
+        backgroundColor: '#EFF6FF',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    profileDataLabel: {
+        fontSize: 10,
+        color: '#94A3B8',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    profileDataValue: {
+        fontSize: 14,
+        color: '#1E293B',
+        fontWeight: '700',
+        marginTop: 2,
+    },
+    editProfileBtn: {
+        marginTop: 12,
+        backgroundColor: '#F1F5F9',
+        paddingVertical: 10,
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    editProfileBtnText: {
+        fontSize: 12,
+        color: '#475569',
+        fontWeight: 'bold',
+    },
 });
 
 export default CustomerCart;
