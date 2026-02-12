@@ -6,7 +6,7 @@ import {
     ScrollView,
     TouchableOpacity,
     ActivityIndicator,
-    Dimensions,
+    useWindowDimensions,
     RefreshControl,
     Platform,
     Animated,
@@ -50,9 +50,8 @@ import SellerOrderCard from '../../components/SellerOrderCard';
 import OrderDetailModal from '../../components/OrderDetailModal';
 import { useChat } from '../../context/ChatContext';
 
-const { width } = Dimensions.get('window');
-
 const SellerDashboard = ({ navigation }) => {
+    const { width } = useWindowDimensions();
     const insets = useSafeAreaInsets();
     const { user } = useAuth();
     const { showToast } = useToast();
@@ -233,11 +232,11 @@ const SellerDashboard = ({ navigation }) => {
                             <Store size={14} color="#FFFFFF" />
                             <Text style={styles.roleText}>Kerongkongan berkah 88</Text>
                         </View>
-                        <Text style={styles.welcomeText}>Halo, {user?.name}!</Text>
-                        <Text style={styles.subtitleText}>Pantau tokomu hari ini</Text>
+                        <Text style={styles.welcomeText} numberOfLines={1} ellipsizeMode="tail">Halo, {user?.name}!</Text>
+                        <Text style={styles.subtitleText} numberOfLines={1} ellipsizeMode="tail">Pantau tokomu hari ini</Text>
                         {dashboardRunningTextEnabled && dashboardRunningText ? (
                             <View style={styles.runningTextContainer}>
-                                <Text style={styles.runningText} numberOfLines={2}>
+                                <Text style={styles.runningText} numberOfLines={2} ellipsizeMode="tail">
                                     {dashboardRunningText}
                                 </Text>
                             </View>
@@ -469,7 +468,7 @@ const styles = StyleSheet.create({
     header: {
         backgroundColor: '#1E40AF',
         paddingBottom: 80,
-        paddingHorizontal: 25,
+        paddingHorizontal: '6%',
         borderBottomLeftRadius: 32,
         borderBottomRightRadius: 32,
         position: 'absolute',
@@ -499,7 +498,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingTop: 240, // Tinggi header + floating card
-        paddingBottom: 20,
+        paddingBottom: 30,
         backgroundColor: '#F8FAFC', // Ensure content area is gray
         minHeight: '100%', // Ensure it fills screen
     },
@@ -517,8 +516,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: 'rgba(255,255,255,0.2)',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
         borderRadius: 8,
         alignSelf: 'flex-start',
         marginBottom: 8,
@@ -559,11 +558,11 @@ const styles = StyleSheet.create({
     },
     headerActions: {
         flexDirection: 'row',
-        gap: 10,
+        gap: 12,
     },
     iconBtn: {
-        width: 45,
-        height: 45,
+        minWidth: 45,
+        minHeight: 45,
         backgroundColor: 'rgba(255,255,255,0.2)',
         borderRadius: 12,
         justifyContent: 'center',
@@ -591,16 +590,18 @@ const styles = StyleSheet.create({
     statusCard: {
         position: 'absolute',
         bottom: -40,
-        left: 20,
-        right: 20,
+        left: '5%',
+        right: '5%',
         backgroundColor: '#FFFFFF',
         borderRadius: 20,
-        padding: 20,
+        paddingHorizontal: '5%',
+        paddingVertical: 18,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         borderWidth: 1,
         borderColor: '#F1F5F9',
+        minHeight: 85,
         ...Platform.select({
             web: { boxShadow: '0px 8px 24px rgba(0,0,0,0.1)' },
             android: { elevation: 8 }
@@ -632,6 +633,10 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         borderRadius: 12,
         borderWidth: 1,
+        minWidth: 110,
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 44,
     },
     toggleBtnText: {
         fontSize: 12,
@@ -644,16 +649,18 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
     },
     statItem: {
-        width: (width - 50) / 2,
+        width: '47%',
+        marginHorizontal: '1.5%',
+        marginVertical: 6,
         backgroundColor: '#FFFFFF',
-        margin: 5,
         borderRadius: 15,
-        padding: 15,
+        padding: 12,
         borderWidth: 1,
         borderColor: '#F1F5F9',
         overflow: 'hidden',
         position: 'relative',
         justifyContent: 'center',
+        minHeight: 80,
     },
     statContent: {
         flexDirection: 'row',
@@ -686,7 +693,7 @@ const styles = StyleSheet.create({
     },
     section: {
         marginTop: 25,
-        paddingHorizontal: 20,
+        paddingHorizontal: '5%',
     },
     sectionHeader: {
         flexDirection: 'row',
@@ -711,12 +718,14 @@ const styles = StyleSheet.create({
     },
     actionItem: {
         alignItems: 'center',
-        width: (width - 40) / 4,
+        flex: 1,
+        minWidth: '22%',
+        maxWidth: '25%',
         marginBottom: 20,
     },
     actionIcon: {
-        width: 60,
-        height: 60,
+        minWidth: 60,
+        minHeight: 60,
         borderRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
@@ -726,6 +735,7 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: 'bold',
         color: '#64748B',
+        textAlign: 'center',
     },
     orderCard: {
         backgroundColor: '#FFFFFF',
