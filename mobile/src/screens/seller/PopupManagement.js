@@ -13,7 +13,8 @@ import {
     Switch,
     TextInput,
     KeyboardAvoidingView,
-    RefreshControl
+    RefreshControl,
+    Modal
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomModalTemplate from '../../components/templates/BottomModalTemplate';
@@ -39,7 +40,9 @@ import {
     MousePointer,
     BarChart3,
     ExternalLink,
-    Link2
+    Link2,
+    AlertTriangle,
+    Info
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import apiService, { API_URL } from '../../api/apiService';
@@ -87,9 +90,57 @@ const PopupManagement = ({ navigation }) => {
         is_active: true,
     });
 
+    const [confirmConfig, setConfirmConfig] = useState({
+        visible: false,
+        title: '',
+        message: '',
+        type: 'primary',
+        confirmText: 'Ya',
+        onConfirm: null,
+        icon: null,
+        isAlert: false,
+    });
+
     const handleCloseModal = () => {
         setShowModal(false);
         setEditingPopup(null);
+    };
+
+    const showConfirm = (config) => {
+        setConfirmConfig({
+            visible: true,
+            title: config.title || 'Konfirmasi',
+            message: config.message || '',
+            type: config.type || 'primary',
+            confirmText: config.confirmText || 'Ya, Lanjutkan',
+            onConfirm: config.onConfirm,
+            icon: config.icon || null,
+            isAlert: false,
+        });
+    };
+
+    const showAlert = (config) => {
+        setConfirmConfig({
+            visible: true,
+            title: config.title || 'Informasi',
+            message: config.message || '',
+            type: config.type || 'primary',
+            confirmText: config.confirmText || 'Dimengerti',
+            onConfirm: config.onConfirm || null,
+            icon: config.icon || null,
+            isAlert: true,
+        });
+    };
+
+    const handleConfirmClose = () => {
+        setConfirmConfig(prev => ({ ...prev, visible: false }));
+    };
+
+    const handleConfirmAction = async () => {
+        if (confirmConfig.onConfirm) {
+            await confirmConfig.onConfirm();
+        }
+        handleConfirmClose();
     };
 
     const handleOpenModal = (popup = null) => {
@@ -134,7 +185,11 @@ const PopupManagement = ({ navigation }) => {
             }
         } catch (error) {
             console.error('Error fetching popups:', error);
-            Alert.alert('Error', 'Gagal memuat data popup');
+            showAlert({
+                title: 'Gagal Memuat',
+                message: 'Tidak dapat mengambil data popup dari server.',
+                type: 'danger'
+            });
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -150,7 +205,12 @@ const PopupManagement = ({ navigation }) => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
         if (!permissionResult.granted) {
-            Alert.alert('Izin Diperlukan', 'Mohon berikan izin akses galeri');
+            showAlert({
+                title: 'Izin Ditolak',
+                message: 'Mohon berikan izin akses galeri untuk mengunggah gambar.',
+                type: 'danger',
+                icon: <AlertTriangle size={28} color="#EF4444" />
+            });
             return;
         }
 
@@ -207,77 +267,95 @@ const PopupManagement = ({ navigation }) => {
             let response;
             if (editingPopup) {
                 response = await apiService.put(`/api/popups/${editingPopup.id}`, formDataToSend);
+                if (response.data.message === 'success') {
+                    showAlert({
+                        title: 'Berhasil',
+                        message: 'Popup berhasil diperbarui.',
+                        type: 'success',
+                        icon: <CheckCircle2 size={28} color="#059669" />
+                    });
+                }
             } else {
                 response = await apiService.post('/api/popups', formDataToSend);
+                if (response.data.message === 'success') {
+                    showAlert({
+                        title: 'Berhasil',
+                        message: 'Popup baru telah berhasil ditambahkan.',
+                        type: 'success',
+                        icon: <CheckCircle2 size={28} color="#059669" />
+                    });
+                }
             }
-
-            if (response.data.message === 'success') {
-                Alert.alert('Berhasil', editingPopup ? 'Popup berhasil diperbarui' : 'Popup berhasil ditambahkan');
-                handleCloseModal();
-                fetchPopups();
-            }
+            handleCloseModal();
+            fetchPopups();
         } catch (error) {
             console.error('Error saving popup:', error);
-            Alert.alert('Error', error.response?.data?.error || 'Gagal menyimpan popup');
+            showAlert({
+                title: 'Gagal Menyimpan',
+                message: error.response?.data?.error || 'Terjadi kesalahan saat menyimpan data.',
+                type: 'danger'
+            });
         } finally {
             setSaving(false);
         }
     };
 
     const handleDelete = (popup) => {
-        const confirmDelete = async () => {
-            try {
-                await apiService.delete(`/api/popups/${popup.id}`);
-                Alert.alert('Berhasil', 'Popup berhasil dihapus');
-                fetchPopups();
-            } catch (error) {
-                console.error('Error deleting popup:', error);
-                Alert.alert('Error', 'Gagal menghapus popup');
+        showConfirm({
+            title: 'Hapus Popup',
+            message: `Apakah Anda yakin ingin menghapus popup "${popup.title}"? Tindakan ini tidak dapat dibatalkan.`,
+            type: 'danger',
+            confirmText: 'Hapus Sekarang',
+            icon: <Trash2 size={28} color="#EF4444" />,
+            onConfirm: async () => {
+                try {
+                    await apiService.delete(`/api/popups/${popup.id}`);
+                    showAlert({
+                        title: 'Terhapus',
+                        message: 'Popup telah berhasil dihapus dari sistem.',
+                        type: 'success',
+                        icon: <CheckCircle2 size={28} color="#059669" />
+                    });
+                    fetchPopups();
+                } catch (error) {
+                    console.error('Error deleting popup:', error);
+                    showAlert({
+                        title: 'Gagal Hapus',
+                        message: 'Tidak dapat menghapus popup saat ini.',
+                        type: 'danger'
+                    });
+                }
             }
-        };
-
-        if (Platform.OS === 'web') {
-            if (window.confirm(`Yakin ingin menghapus popup "${popup.title}"?`)) {
-                confirmDelete();
-            }
-        } else {
-            Alert.alert(
-                'Konfirmasi Hapus',
-                `Yakin ingin menghapus popup "${popup.title}"?`,
-                [
-                    { text: 'Batal', style: 'cancel' },
-                    { text: 'Hapus', style: 'destructive', onPress: confirmDelete }
-                ]
-            );
-        }
+        });
     };
 
     const handlePush = (popup) => {
-        const confirmPush = async () => {
-            try {
-                await apiService.post(`/api/popups/${popup.id}/push`);
-                Alert.alert('Berhasil', 'Popup berhasil di-push ulang');
-                fetchPopups();
-            } catch (error) {
-                console.error('Error pushing popup:', error);
-                Alert.alert('Error', 'Gagal push popup');
+        showConfirm({
+            title: 'Push Ulang Popup',
+            message: `Kirim ulang popup "${popup.title}" ke semua customer? Customer akan melihat popup ini kembali saat membuka dashboard.`,
+            type: 'primary',
+            confirmText: 'Push Sekarang',
+            icon: <Send size={28} color="#059669" />,
+            onConfirm: async () => {
+                try {
+                    await apiService.post(`/api/popups/${popup.id}/push`);
+                    showAlert({
+                        title: 'Berhasil Push',
+                        message: 'Popup telah dikirim ulang ke semua customer.',
+                        type: 'success',
+                        icon: <CheckCircle2 size={28} color="#059669" />
+                    });
+                    fetchPopups();
+                } catch (error) {
+                    console.error('Error pushing popup:', error);
+                    showAlert({
+                        title: 'Gagal Push',
+                        message: 'Tidak dapat mengirim ulang popup saat ini.',
+                        type: 'danger'
+                    });
+                }
             }
-        };
-
-        if (Platform.OS === 'web') {
-            if (window.confirm(`Push ulang popup "${popup.title}"? Semua customer akan melihat popup ini lagi.`)) {
-                confirmPush();
-            }
-        } else {
-            Alert.alert(
-                'Push Ulang Popup',
-                `Push ulang popup "${popup.title}"? Semua customer akan melihat popup ini lagi.`,
-                [
-                    { text: 'Batal', style: 'cancel' },
-                    { text: 'Push', onPress: confirmPush }
-                ]
-            );
-        }
+        });
     };
 
     const togglePage = (page) => {
@@ -618,6 +696,49 @@ const PopupManagement = ({ navigation }) => {
                     <View style={{ height: 20 }} />
                 </View>
             </BottomModalTemplate>
+
+            {/* Premium Confirm Modal */}
+            <Modal
+                visible={confirmConfig.visible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={handleConfirmClose}
+            >
+                <View style={confirmStyles.overlay}>
+                    <View style={confirmStyles.container}>
+                        <View style={confirmStyles.content}>
+                            <View style={[confirmStyles.iconContainer,
+                            { backgroundColor: confirmConfig.type === 'danger' ? '#FEF2F2' : '#F0FDF4' }]}>
+                                {confirmConfig.icon || (confirmConfig.type === 'danger' ?
+                                    <AlertTriangle size={32} color="#EF4444" /> :
+                                    <Info size={32} color="#059669" />)}
+                            </View>
+                            <Text style={confirmStyles.title}>{confirmConfig.title}</Text>
+                            <Text style={confirmStyles.message}>{confirmConfig.message}</Text>
+                        </View>
+                        <View style={confirmStyles.footer}>
+                            {!confirmConfig.isAlert && (
+                                <TouchableOpacity
+                                    style={confirmStyles.cancelBtn}
+                                    onPress={handleConfirmClose}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text style={confirmStyles.cancelBtnText}>Batal</Text>
+                                </TouchableOpacity>
+                            )}
+                            <TouchableOpacity
+                                style={[confirmStyles.confirmBtn,
+                                { backgroundColor: confirmConfig.type === 'danger' ? '#EF4444' : '#059669' },
+                                confirmConfig.isAlert && { flex: 1 }]}
+                                onPress={handleConfirmAction}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={confirmStyles.confirmBtnText}>{confirmConfig.confirmText}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView >
     );
 };
@@ -1065,6 +1186,90 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#475569',
         fontWeight: '500',
+    },
+});
+
+const confirmStyles = StyleSheet.create({
+    overlay: {
+        flex: 1,
+        backgroundColor: 'rgba(15, 23, 42, 0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    container: {
+        width: '100%',
+        maxWidth: 340,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 24,
+        overflow: 'hidden',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.25,
+                shadowRadius: 15,
+            },
+            android: {
+                elevation: 10,
+            },
+        }),
+    },
+    content: {
+        padding: 30,
+        alignItems: 'center',
+    },
+    iconContainer: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    title: {
+        fontSize: 20,
+        fontWeight: '900',
+        color: '#1E293B',
+        textAlign: 'center',
+        marginBottom: 10,
+    },
+    message: {
+        fontSize: 14,
+        color: '#64748B',
+        textAlign: 'center',
+        lineHeight: 20,
+    },
+    footer: {
+        flexDirection: 'row',
+        padding: 20,
+        paddingTop: 0,
+        gap: 12,
+    },
+    cancelBtn: {
+        flex: 1,
+        paddingVertical: 14,
+        borderRadius: 16,
+        backgroundColor: '#F1F5F9',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    cancelBtnText: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#64748B',
+    },
+    confirmBtn: {
+        flex: 1.5,
+        paddingVertical: 14,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    confirmBtnText: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#FFFFFF',
     },
 });
 

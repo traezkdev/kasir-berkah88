@@ -82,6 +82,7 @@ const PopupModal = ({ popups = [], currentPage = 'dashboard', onClose }) => {
     };
 
     const trackView = async (popupId) => {
+        if (!popupId) return;
         try {
             await fetch(`${API_URL}/api/popups/${popupId}/view`, {
                 method: 'POST',
@@ -92,6 +93,7 @@ const PopupModal = ({ popups = [], currentPage = 'dashboard', onClose }) => {
     };
 
     const trackClick = async (popupId) => {
+        if (!popupId) return;
         try {
             await fetch(`${API_URL}/api/popups/${popupId}/click`, {
                 method: 'POST',
@@ -102,48 +104,55 @@ const PopupModal = ({ popups = [], currentPage = 'dashboard', onClose }) => {
     };
 
     const handleClose = async () => {
-        if (displayPopups.length > 0) {
-            const currentPopup = displayPopups[currentIndex];
-
-            try {
-                const closedPopupsJson = await AsyncStorage.getItem('closedPopups');
-                const closedPopups = closedPopupsJson ? JSON.parse(closedPopupsJson) : {};
-                closedPopups[currentPopup.id] = new Date().toISOString();
-                await AsyncStorage.setItem('closedPopups', JSON.stringify(closedPopups));
-            } catch (error) {
-                console.error('Error saving closed popup:', error);
-            }
-
-            // Animate out
-            Animated.parallel([
-                Animated.timing(fadeAnim, {
-                    toValue: 0,
-                    duration: 200,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(scaleAnim, {
-                    toValue: 1.1,
-                    duration: 200,
-                    useNativeDriver: true,
-                }),
-            ]).start(() => {
-                setVisible(false);
-                if (currentIndex < displayPopups.length - 1) {
-                    setTimeout(() => {
-                        const nextIndex = currentIndex + 1;
-                        setCurrentIndex(nextIndex);
-                        setVisible(true);
-                        trackView(displayPopups[nextIndex].id);
-                    }, 300);
-                } else {
-                    if (onClose) onClose();
-                }
-            });
+        const currentPopup = displayPopups[currentIndex];
+        if (!currentPopup) {
+            setVisible(false);
+            if (onClose) onClose();
+            return;
         }
+
+        try {
+            const closedPopupsJson = await AsyncStorage.getItem('closedPopups');
+            const closedPopups = closedPopupsJson ? JSON.parse(closedPopupsJson) : {};
+            closedPopups[currentPopup.id] = new Date().toISOString();
+            await AsyncStorage.setItem('closedPopups', JSON.stringify(closedPopups));
+        } catch (error) {
+            console.error('Error saving closed popup:', error);
+        }
+
+        // Animate out
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleAnim, {
+                toValue: 1.1,
+                duration: 200,
+                useNativeDriver: true,
+            }),
+        ]).start(() => {
+            setVisible(false);
+            if (currentIndex < displayPopups.length - 1) {
+                setTimeout(() => {
+                    const nextIndex = currentIndex + 1;
+                    setCurrentIndex(nextIndex);
+                    setVisible(true);
+                    if (displayPopups[nextIndex]) {
+                        trackView(displayPopups[nextIndex].id);
+                    }
+                }, 300);
+            } else {
+                if (onClose) onClose();
+            }
+        });
     };
 
     const handlePopupPress = async () => {
         const currentPopup = displayPopups[currentIndex];
+        if (!currentPopup) return;
+
         await trackClick(currentPopup.id);
 
         if (currentPopup.link_type === 'url' && currentPopup.link_value) {
@@ -164,9 +173,9 @@ const PopupModal = ({ popups = [], currentPage = 'dashboard', onClose }) => {
     }
 
     const currentPopup = displayPopups[currentIndex];
-    const hasLink = currentPopup && currentPopup.link_type !== 'none';
-
     if (!currentPopup) return null;
+
+    const hasLink = currentPopup.link_type !== 'none';
 
     return (
         <Modal
