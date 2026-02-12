@@ -37,6 +37,8 @@ import {
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
+import usePopups from '../../hooks/usePopups';
+import PopupModal from '../../components/PopupModal';
 
 const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -50,6 +52,7 @@ const OrderHistory = ({ navigation }) => {
     const [selectedOrderForRating, setSelectedOrderForRating] = useState(null);
     const [submittingRating, setSubmittingRating] = useState(false);
     const insets = useSafeAreaInsets();
+    const { popups } = usePopups('orders');
 
     const fetchOrders = useCallback(async (pageNum = 1, isRefresh = false) => {
         if (!isRefresh && pageNum === 1) setIsLoading(true);
@@ -249,6 +252,17 @@ const OrderHistory = ({ navigation }) => {
                 onSubmit={handleSubmitRating}
                 submitting={submittingRating}
                 insets={insets}
+            />
+
+            {/* Popup System */}
+            <PopupModal
+                popups={popups}
+                currentPage="orders"
+                onClose={(screenName) => {
+                    if (screenName) {
+                        navigation.navigate(screenName);
+                    }
+                }}
             />
         </SafeAreaView>
     );

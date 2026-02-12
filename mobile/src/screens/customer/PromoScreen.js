@@ -37,20 +37,26 @@ import {
     Home,
     Search,
     ClipboardList,
-    User
+    User,
+    X
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
 import { getSafeBottomPadding } from '../../utils/safeArea';
+import usePopups from '../../hooks/usePopups';
+import PopupModal from '../../components/PopupModal';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const PromoScreen = ({ navigation }) => {
     const [promos, setPromos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [codeModalVisible, setCodeModalVisible] = useState(false);
     const [selectedPromo, setSelectedPromo] = useState(null);
+    const [detailModalVisible, setDetailModalVisible] = useState(false);
+    const [selectedPromoDetail, setSelectedPromoDetail] = useState(null);
     const [copied, setCopied] = useState(false);
     const insets = useSafeAreaInsets();
+    const { popups } = usePopups('promo');
 
     const getImageUrl = (url) => {
         if (!url) return null;
@@ -76,13 +82,15 @@ const PromoScreen = ({ navigation }) => {
     };
 
     const handleClaimPress = (item) => {
-        if (item.code) {
-            setSelectedPromo(item);
-            setCodeModalVisible(true);
-            setCopied(false);
-        } else {
-            // Logic for "PAKAI" if no code (e.g. go to menu)
-            navigation.navigate('MainTabs', { screen: 'Menu' });
+        setSelectedPromoDetail(item);
+        setDetailModalVisible(true);
+    };
+
+    const handleCopyCode = (promo) => {
+        if (promo?.code) {
+            Clipboard.setString(promo.code);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
         }
     };
 
@@ -154,7 +162,7 @@ const PromoScreen = ({ navigation }) => {
         <TouchableOpacity
             key={item.id}
             style={[styles.campaignCard, { backgroundColor: item.color || '#059669' }]}
-            onPress={() => navigation.navigate('MainTabs', { screen: 'Menu' })}
+            onPress={() => handleClaimPress(item)}
             activeOpacity={0.9}
         >
             <View style={styles.campaignContent}>
@@ -239,13 +247,17 @@ const PromoScreen = ({ navigation }) => {
                                     showsHorizontalScrollIndicator={false}
                                     keyExtractor={(item) => item.id.toString()}
                                     renderItem={({ item }) => (
-                                        <View style={{ width: width - 40, marginHorizontal: 20 }}>
+                                        <TouchableOpacity
+                                            activeOpacity={0.95}
+                                            style={{ width: width - 40, marginHorizontal: 20 }}
+                                            onPress={() => handleClaimPress(item)}
+                                        >
                                             <ImageBackground
                                                 source={{ uri: getImageUrl(item.image_url) || 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1000&auto=format&fit=crop' }}
                                                 style={styles.heroSection}
                                                 imageStyle={{ borderRadius: 30 }}
                                             />
-                                        </View>
+                                        </TouchableOpacity>
                                     )}
                                     // Make the FlatList content width fit the screen properly
                                     snapToInterval={width}
@@ -331,6 +343,109 @@ const PromoScreen = ({ navigation }) => {
                 )}
             </ScrollView>
 
+            {/* Promo Detail Modal with Image */}
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={detailModalVisible}
+                onRequestClose={() => setDetailModalVisible(false)}
+            >
+                <View style={styles.detailModalOverlay}>
+                    <View style={styles.detailModalCard}>
+                        {/* Close Button Header */}
+                        <TouchableOpacity
+                            style={styles.detailCloseCircle}
+                            onPress={() => setDetailModalVisible(false)}
+                        >
+                            <X size={32} color="#FFFFFF" strokeWidth={1.5} />
+                        </TouchableOpacity>
+
+                        <ScrollView showsVerticalScrollIndicator={false} bounceless={true}>
+                            {/* Image Header */}
+                            <ImageBackground
+                                source={{ uri: getImageUrl(selectedPromoDetail?.image_url) || 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1000&auto=format&fit=crop' }}
+                                style={styles.detailHeroImage}
+                                imageStyle={{ borderTopLeftRadius: 30, borderTopRightRadius: 30 }}
+                            >
+                                <View style={styles.detailImageBlur} />
+                                <View style={styles.detailTitleWrapper}>
+                                    <View style={[styles.detailTypeBadge, { backgroundColor: selectedPromoDetail?.color || '#059669' }]}>
+                                        <Text style={styles.detailTypeBadgeText}>PROMO SPESIAL</Text>
+                                    </View>
+                                    <Text style={styles.detailMainTitle}>{selectedPromoDetail?.title}</Text>
+                                </View>
+                            </ImageBackground>
+
+                            {/* Content Body */}
+                            <View style={styles.detailBody}>
+                                <View style={styles.detailInfoGrid}>
+                                    <View style={styles.detailInfoBox}>
+                                        <Text style={styles.detailInfoLabel}>Potongan</Text>
+                                        <Text style={[styles.detailInfoValue, { color: selectedPromoDetail?.color || '#059669' }]}>
+                                            {selectedPromoDetail?.discount_type === 'percentage'
+                                                ? `${selectedPromoDetail.discount_value}% OFF`
+                                                : `Rp ${parseFloat(selectedPromoDetail?.discount_value || 0).toLocaleString('id-ID')}`}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.detailInfoBox}>
+                                        <Text style={styles.detailInfoLabel}>Min. Beli</Text>
+                                        <Text style={styles.detailInfoValue}>
+                                            Rp {parseFloat(selectedPromoDetail?.min_purchase || 0).toLocaleString('id-ID')}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.detailDescSection}>
+                                    <View style={styles.sectionHeadingRow}>
+                                        <Info size={16} color="#64748B" />
+                                        <Text style={styles.sectionHeadingText}>Deskripsi & Syarat</Text>
+                                    </View>
+                                    <Text style={styles.detailFullDesc}>
+                                        {selectedPromoDetail?.description || 'Nikmati penawaran menarik ini khusus untuk pelanggan setia Kasir Berkah 88. Promo berlaku sesuai syarat dan ketentuan yang berlaku.'}
+                                    </Text>
+                                </View>
+
+                                {selectedPromoDetail?.code && (
+                                    <View style={styles.detailCodeSection}>
+                                        <Text style={styles.detailCodeLabel}>Gunakan Kode Promo:</Text>
+                                        <View style={styles.detailCodeBox}>
+                                            <Text style={styles.detailCodeText}>{selectedPromoDetail.code}</Text>
+                                            <TouchableOpacity
+                                                style={[styles.detailCopyBtn, copied && { backgroundColor: '#10B981' }]}
+                                                onPress={() => handleCopyCode(selectedPromoDetail)}
+                                            >
+                                                {copied ? (
+                                                    <CheckCircle2 size={18} color="#FFFFFF" />
+                                                ) : (
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                                        <Copy size={16} color="#059669" />
+                                                        <Text style={styles.detailCopyText}>SALIN</Text>
+                                                    </View>
+                                                )}
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                )}
+                            </View>
+                        </ScrollView>
+
+                        {/* Footer Action Button */}
+                        <View style={styles.detailModalFooter}>
+                            <TouchableOpacity
+                                style={[styles.detailActionBtn, { backgroundColor: selectedPromoDetail?.color || '#059669' }]}
+                                onPress={() => {
+                                    setDetailModalVisible(false);
+                                    navigation.navigate('MainTabs', { screen: 'Menu' });
+                                }}
+                            >
+                                <ShoppingBag size={20} color="#FFFFFF" strokeWidth={2.5} />
+                                <Text style={styles.detailActionText}>PAKAI PROMO SEKARANG</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
             {/* Promo Code Popup Modal */}
             <Modal
                 animationType="fade"
@@ -382,6 +497,16 @@ const PromoScreen = ({ navigation }) => {
                 </View>
             </Modal>
 
+            {/* Popup System */}
+            <PopupModal
+                popups={popups}
+                currentPage="promo"
+                onClose={(screenName) => {
+                    if (screenName) {
+                        navigation.navigate(screenName);
+                    }
+                }}
+            />
         </SafeAreaView>
     );
 };
@@ -797,6 +922,168 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         color: '#1E293B',
         letterSpacing: 2,
+    },
+    // Promo Detail Modal Styles
+    detailModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.85)',
+        justifyContent: 'flex-end',
+    },
+    detailModalCard: {
+        backgroundColor: '#FFFFFF',
+        borderTopLeftRadius: 35,
+        borderTopRightRadius: 35,
+        height: height * 0.88,
+        width: '100%',
+    },
+    detailCloseCircle: {
+        position: 'absolute',
+        top: -60,
+        alignSelf: 'center',
+        zIndex: 100,
+    },
+    detailHeroImage: {
+        width: '100%',
+        height: 300,
+        justifyContent: 'flex-end',
+    },
+    detailImageBlur: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+    },
+    detailTitleWrapper: {
+        padding: 24,
+        gap: 8,
+    },
+    detailTypeBadge: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 10,
+    },
+    detailTypeBadgeText: {
+        color: '#FFFFFF',
+        fontSize: 10,
+        fontWeight: '900',
+        letterSpacing: 1,
+    },
+    detailMainTitle: {
+        fontSize: 28,
+        fontWeight: '900',
+        color: '#FFFFFF',
+        letterSpacing: -1,
+    },
+    detailBody: {
+        padding: 24,
+    },
+    detailInfoGrid: {
+        flexDirection: 'row',
+        gap: 15,
+        marginBottom: 32,
+    },
+    detailInfoBox: {
+        flex: 1,
+        backgroundColor: '#F8FAFC',
+        padding: 16,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+        gap: 4,
+    },
+    detailInfoLabel: {
+        fontSize: 11,
+        fontWeight: '900',
+        color: '#94A3B8',
+        letterSpacing: 0.5,
+    },
+    detailInfoValue: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#1E293B',
+    },
+    detailDescSection: {
+        gap: 12,
+        marginBottom: 32,
+    },
+    sectionHeadingRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    sectionHeadingText: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: '#64748B',
+    },
+    detailFullDesc: {
+        fontSize: 14,
+        lineHeight: 22,
+        color: '#475569',
+        fontWeight: '500',
+    },
+    detailCodeSection: {
+        backgroundColor: '#F0FDFA',
+        padding: 24,
+        borderRadius: 25,
+        borderWidth: 1,
+        borderColor: '#CCFBF1',
+        gap: 16,
+    },
+    detailCodeLabel: {
+        fontSize: 12,
+        fontWeight: '900',
+        color: '#0F766E',
+        textAlign: 'center',
+    },
+    detailCodeBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#FFFFFF',
+        padding: 12,
+        paddingLeft: 20,
+        borderRadius: 15,
+        borderWidth: 2,
+        borderColor: '#5EEAD4',
+        borderStyle: 'dashed',
+    },
+    detailCodeText: {
+        fontSize: 20,
+        fontWeight: '900',
+        color: '#1E293B',
+        letterSpacing: 1.5,
+    },
+    detailCopyBtn: {
+        backgroundColor: '#F0FDFA',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#CCFBF1',
+    },
+    detailCopyText: {
+        fontSize: 11,
+        fontWeight: '900',
+        color: '#059669',
+    },
+    detailModalFooter: {
+        padding: 24,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#F1F5F9',
+    },
+    detailActionBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 60,
+        borderRadius: 20,
+        gap: 12,
+    },
+    detailActionText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '900',
     },
     copyIconBtn: {
         width: 44,

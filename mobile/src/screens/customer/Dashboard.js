@@ -13,7 +13,8 @@ import {
     StatusBar,
     RefreshControl,
     Animated,
-    AppState
+    AppState,
+    Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -33,7 +34,7 @@ import {
     Coffee,
     Star,
     Plus,
-    XCircle,
+    AlertCircle,
     Utensils,
     Fish,
     Tag,
@@ -42,7 +43,8 @@ import {
     Drumstick,
     CupSoda,
     Soup,
-    Cookie
+    Cookie,
+    X
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
@@ -50,8 +52,10 @@ import { useAppSettings } from '../../context/AppSettingsContext';
 import { useCart } from '../../context/CartContext';
 import { useChat } from '../../context/ChatContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import usePopups from '../../hooks/usePopups';
+import PopupModal from '../../components/PopupModal';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const CustomerDashboard = ({ navigation }) => {
     const { user } = useAuth();
@@ -69,6 +73,9 @@ const CustomerDashboard = ({ navigation }) => {
     const [latestOrder, setLatestOrder] = useState(null);
     const [hasNewInfo, setHasNewInfo] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+
+    // New Popup System
+    const { popups, refetch: refetchPopups } = usePopups('dashboard');
 
     const scrollY = useRef(new Animated.Value(0)).current;
 
@@ -135,6 +142,11 @@ const CustomerDashboard = ({ navigation }) => {
             } else {
                 setHasNewInfo(false);
             }
+
+            // Refetch popups to check for new pushed ones
+            if (refetchPopups) refetchPopups();
+
+            // Popup settings removed - now using new popup system
         } catch (error) {
             console.error("Error fetching dashboard data:", error);
         } finally {
@@ -170,6 +182,8 @@ const CustomerDashboard = ({ navigation }) => {
             subscription.remove();
         };
     }, [fetchData]);
+
+    // Popup now handled by PopupModal component
 
     const onRefresh = () => {
         setRefreshing(true);
@@ -266,398 +280,411 @@ const CustomerDashboard = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['left', 'right']}>
-            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+        <>
+            <SafeAreaView style={styles.container} edges={['left', 'right']}>
+                <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
-            {/* Compact Header on Scroll */}
-            <Animated.View style={[
-                styles.compactHeader,
-                {
-                    opacity: compactHeaderOpacity,
-                    transform: [{ translateY: compactHeaderTranslateY }]
-                }
-            ]}>
-                <View style={styles.compactHeaderContent}>
-                    <TouchableOpacity
-                        style={styles.compactSearch}
-                        onPress={() => navigation.navigate('Menu')}
-                    >
-                        <Search size={16} color="#94A3B8" />
-                        <Text style={styles.compactSearchText}>Cari menu favorit...</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => navigation.navigate('ChatScreen')}>
-                        <View>
-                            <MessageCircle size={20} color="#64748B" />
-                            {unreadCount > 0 && (
-                                <View style={[styles.statusBadge, { top: -6, right: -6, width: 14, height: 14, borderRadius: 7, borderWidth: 1.5 }]}>
-                                    <Text style={[styles.statusBadgeText, { fontSize: 7 }]}>{unreadCount}</Text>
-                                </View>
-                            )}
-                        </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => navigation.navigate('Cart')}>
-                        <View>
-                            <ShoppingCart size={20} color="#64748B" />
-                            {cartCount > 0 && (
-                                <View style={[styles.statusBadge, { top: -6, right: -6, width: 14, height: 14, borderRadius: 7, borderWidth: 1.5 }]}>
-                                    <Text style={[styles.statusBadgeText, { fontSize: 7 }]}>{cartCount}</Text>
-                                </View>
-                            )}
-                        </View>
-                    </TouchableOpacity>
-                </View>
-            </Animated.View>
-
-            <Animated.ScrollView
-                onScroll={Animated.event(
-                    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-                    { useNativeDriver: true }
-                )}
-                scrollEventThrottle={16}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFFFFF" />}
-                showsVerticalScrollIndicator={false}
-            >
-                {/* Header Section */}
-                <View style={styles.mainHeader}>
-                    <View style={styles.headerTop}>
-                        <View style={styles.userInfoWrapper}>
-                            <Image
-                                source={require('../../../assets/logo.png')}
-                                style={styles.headerLogo}
-                            />
+                {/* Compact Header on Scroll */}
+                <Animated.View style={[
+                    styles.compactHeader,
+                    {
+                        opacity: compactHeaderOpacity,
+                        transform: [{ translateY: compactHeaderTranslateY }]
+                    }
+                ]}>
+                    <View style={styles.compactHeaderContent}>
+                        <TouchableOpacity
+                            style={styles.compactSearch}
+                            onPress={() => navigation.navigate('Menu')}
+                        >
+                            <Search size={16} color="#94A3B8" />
+                            <Text style={styles.compactSearchText}>Cari menu favorit...</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => navigation.navigate('ChatScreen')}>
                             <View>
-                                <Text style={styles.greetingText}>{getGreeting()},</Text>
-                                <Text style={styles.userName}>{user?.name || 'Pelanggan'}</Text>
+                                <MessageCircle size={20} color="#64748B" />
+                                {unreadCount > 0 && (
+                                    <View style={[styles.statusBadge, { top: -6, right: -6, width: 14, height: 14, borderRadius: 7, borderWidth: 1.5 }]}>
+                                        <Text style={[styles.statusBadgeText, { fontSize: 7 }]}>{unreadCount}</Text>
+                                    </View>
+                                )}
+                            </View>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => navigation.navigate('Cart')}>
+                            <View>
+                                <ShoppingCart size={20} color="#64748B" />
+                                {cartCount > 0 && (
+                                    <View style={[styles.statusBadge, { top: -6, right: -6, width: 14, height: 14, borderRadius: 7, borderWidth: 1.5 }]}>
+                                        <Text style={[styles.statusBadgeText, { fontSize: 7 }]}>{cartCount}</Text>
+                                    </View>
+                                )}
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+                </Animated.View>
+
+                <Animated.ScrollView
+                    onScroll={Animated.event(
+                        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                        { useNativeDriver: true }
+                    )}
+                    scrollEventThrottle={16}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFFFFF" />}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* Header Section */}
+                    <View style={styles.mainHeader}>
+                        <View style={styles.headerTop}>
+                            <View style={styles.userInfoWrapper}>
+                                <Image
+                                    source={require('../../../assets/logo.png')}
+                                    style={styles.headerLogo}
+                                />
+                                <View>
+                                    <Text style={styles.greetingText}>{getGreeting()},</Text>
+                                    <Text style={styles.userName}>{user?.name || 'Pelanggan'}</Text>
+                                </View>
+                            </View>
+                            <View style={styles.headerActions}>
+                                <TouchableOpacity
+                                    style={styles.notificationBtn}
+                                    onPress={() => navigation.navigate('ChatScreen')}
+                                >
+                                    <View>
+                                        <MessageCircle size={22} color="#FFFFFF" />
+                                        {unreadCount > 0 && (
+                                            <View style={[styles.statusBadge, { top: -5, right: -5 }]}>
+                                                <Text style={styles.statusBadgeText}>{unreadCount}</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={styles.notificationBtn}
+                                    onPress={() => navigation.navigate('Cart')}
+                                >
+                                    <View>
+                                        <ShoppingCart size={22} color="#FFFFFF" />
+                                        {cartCount > 0 && (
+                                            <View style={[styles.statusBadge, { top: -5, right: -5 }]}>
+                                                <Text style={styles.statusBadgeText}>{cartCount}</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={styles.notificationBtn}
+                                    onPress={() => {
+                                        setHasNewInfo(false);
+                                        navigation.navigate('InformationScreen');
+                                    }}
+                                >
+                                    <View>
+                                        <Bell size={22} color="#FFFFFF" />
+                                        {hasNewInfo && (
+                                            <View style={[styles.statusBadge, { top: -2, right: -2, backgroundColor: '#EF4444', width: 10, height: 10, borderRadius: 5, borderOuterWidth: 0, borderWidth: 1.5, borderColor: '#059669' }]} />
+                                        )}
+                                    </View>
+                                </TouchableOpacity>
                             </View>
                         </View>
-                        <View style={styles.headerActions}>
-                            <TouchableOpacity
-                                style={styles.notificationBtn}
-                                onPress={() => navigation.navigate('ChatScreen')}
-                            >
-                                <View>
-                                    <MessageCircle size={22} color="#FFFFFF" />
-                                    {unreadCount > 0 && (
-                                        <View style={[styles.statusBadge, { top: -5, right: -5 }]}>
-                                            <Text style={styles.statusBadgeText}>{unreadCount}</Text>
-                                        </View>
-                                    )}
+
+                        {!isOpen && (
+                            <View style={styles.closedBanner}>
+                                <AlertCircle size={18} color="#FFFFFF" />
+                                <View style={styles.closedBannerText}>
+                                    <Text style={styles.closedTitle}>Maaf, Toko Sedang Tutup</Text>
+                                    <Text style={styles.closedSubtitle}>Kamu tetap bisa melihat menu, tapi belum bisa pesan.</Text>
                                 </View>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.notificationBtn}
-                                onPress={() => navigation.navigate('Cart')}
-                            >
-                                <View>
-                                    <ShoppingCart size={22} color="#FFFFFF" />
-                                    {cartCount > 0 && (
-                                        <View style={[styles.statusBadge, { top: -5, right: -5 }]}>
-                                            <Text style={styles.statusBadgeText}>{cartCount}</Text>
-                                        </View>
-                                    )}
-                                </View>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.notificationBtn}
-                                onPress={() => {
-                                    setHasNewInfo(false);
-                                    navigation.navigate('InformationScreen');
-                                }}
-                            >
-                                <View>
-                                    <Bell size={22} color="#FFFFFF" />
-                                    {hasNewInfo && (
-                                        <View style={[styles.statusBadge, { top: -2, right: -2, backgroundColor: '#EF4444', width: 10, height: 10, borderRadius: 5, borderOuterWidth: 0, borderWidth: 1.5, borderColor: '#059669' }]} />
-                                    )}
-                                </View>
-                            </TouchableOpacity>
-                        </View>
+                            </View>
+                        )}
+
+                        {/* Search Bar */}
+                        <TouchableOpacity
+                            style={styles.searchBar}
+                            onPress={() => navigation.navigate('Menu')}
+                        >
+                            <Search size={20} color="#94A3B8" />
+                            <Text style={styles.searchText}>Mau makan apa hari ini?</Text>
+                        </TouchableOpacity>
+
+                        {/* Quick Shortcuts */}
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            style={styles.shortcutsScroll}
+                            contentContainerStyle={{ paddingHorizontal: 20 }}
+                        >
+                            {[
+                                { label: 'Pusat Info', icon: Bell, color: '#10B981', target: 'InformationScreen' },
+                                { label: 'Sedang Promo', icon: Zap, color: '#FBBF24' },
+                                { label: 'Paling Laris', icon: TrendingUp, color: '#F43F5E' },
+                                { label: 'Paket Hemat', icon: Package, color: '#0EA5E9' },
+                                { label: 'Terbaru', icon: Sparkles, color: '#6366F1' }
+                            ].map((chip, idx) => (
+                                <TouchableOpacity
+                                    key={idx}
+                                    style={styles.shortcutChip}
+                                    onPress={() => {
+                                        if (chip.label === 'Pusat Info') setHasNewInfo(false);
+                                        chip.target ? navigation.navigate(chip.target) : navigation.navigate('Menu', { filter: chip.label });
+                                    }}
+                                >
+                                    <View style={[styles.chipIconWrap, { backgroundColor: chip.color }]}>
+                                        <chip.icon size={12} color="#FFFFFF" />
+                                        {chip.label === 'Pusat Info' && hasNewInfo && (
+                                            <View style={{ position: 'absolute', top: -2, right: -2, width: 6, height: 6, borderRadius: 3, backgroundColor: '#EF4444', borderWidth: 1, borderColor: '#FFFFFF' }} />
+                                        )}
+                                    </View>
+                                    <Text style={styles.chipText}>{chip.label}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
                     </View>
 
-                    {!isOpen && (
-                        <View style={styles.closedBanner}>
-                            <XCircle size={18} color="#FFFFFF" />
-                            <View style={styles.closedBannerText}>
-                                <Text style={styles.closedTitle}>Maaf, Toko Sedang Tutup</Text>
-                                <Text style={styles.closedSubtitle}>Kamu tetap bisa melihat menu, tapi belum bisa pesan.</Text>
+                    {/* Floating Action Card */}
+                    <View style={styles.actionCard}>
+                        <View style={styles.saldoRow}>
+                            <View>
+                                <Text style={styles.saldoLabel}>Poin Berkah 88</Text>
+                                <Text style={styles.saldoValue}>{new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(points)} Poin</Text>
+                            </View>
+                            <View style={styles.saldoActions}>
+                                <TouchableOpacity
+                                    style={styles.saldoBtn}
+                                    onPress={() => navigation.navigate('PointsHistory')}
+                                >
+                                    <View style={[styles.saldoIconWrap, { backgroundColor: '#EFF6FF' }]}>
+                                        <History size={20} color="#3B82F6" />
+                                    </View>
+                                    <Text style={styles.saldoBtnText}>RIWAYAT</Text>
+                                </TouchableOpacity>
                             </View>
                         </View>
-                    )}
 
-                    {/* Search Bar */}
-                    <TouchableOpacity
-                        style={styles.searchBar}
-                        onPress={() => navigation.navigate('Menu')}
-                    >
-                        <Search size={20} color="#94A3B8" />
-                        <Text style={styles.searchText}>Mau makan apa hari ini?</Text>
-                    </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.orderStatusBtn}
+                            onPress={() => navigation.navigate('Orders')}
+                        >
+                            <View style={styles.statusIconWrap}>
+                                <ShoppingBag size={24} color="#F97316" />
+                                {orderNotificationCount > 0 && (
+                                    <View style={styles.statusBadge}>
+                                        <Text style={styles.statusBadgeText}>{orderNotificationCount}</Text>
+                                    </View>
+                                )}
+                            </View>
+                            <View style={styles.statusContent}>
+                                <Text style={styles.statusTitle}>Status Pesanan</Text>
+                                <Text style={styles.statusSubtitle}>LACAK PESANAN AKTIF ANDA</Text>
+                            </View>
+                            {latestOrder ? (
+                                <TouchableOpacity
+                                    style={styles.detailBtn}
+                                    onPress={(e) => {
+                                        e.stopPropagation();
+                                        navigation.navigate('OrderDetails', { orderId: latestOrder.id });
+                                    }}
+                                >
+                                    <Text style={styles.detailBtnText}>Lihat Detail</Text>
+                                    <ChevronRight size={14} color="#059669" />
+                                </TouchableOpacity>
+                            ) : (
+                                <ChevronRight size={18} color="#CBD5E1" />
+                            )}
+                        </TouchableOpacity>
+                    </View>
 
-                    {/* Quick Shortcuts */}
+                    {/* Banners */}
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTag}>PROMO SPESIAL</Text>
+                        <View style={styles.scrolledHint}>
+                            <Text style={styles.hintText}>Geser</Text>
+                            <ChevronRight size={12} color="#94A3B8" />
+                        </View>
+                    </View>
                     <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
-                        style={styles.shortcutsScroll}
-                        contentContainerStyle={{ paddingHorizontal: 20 }}
+                        pagingEnabled
+                        snapToInterval={width * 0.9 + 16}
+                        decelerationRate="fast"
+                        contentContainerStyle={{ paddingRight: width * 0.05 + 4 }}
                     >
-                        {[
-                            { label: 'Pusat Info', icon: Bell, color: '#10B981', target: 'InformationScreen' },
-                            { label: 'Sedang Promo', icon: Zap, color: '#FBBF24' },
-                            { label: 'Paling Laris', icon: TrendingUp, color: '#F43F5E' },
-                            { label: 'Paket Hemat', icon: Package, color: '#0EA5E9' },
-                            { label: 'Terbaru', icon: Sparkles, color: '#6366F1' }
-                        ].map((chip, idx) => (
+                        {banners.map((banner) => (
                             <TouchableOpacity
-                                key={idx}
-                                style={styles.shortcutChip}
-                                onPress={() => {
-                                    if (chip.label === 'Pusat Info') setHasNewInfo(false);
-                                    chip.target ? navigation.navigate(chip.target) : navigation.navigate('Menu', { filter: chip.label });
-                                }}
+                                key={banner.id}
+                                style={[
+                                    styles.bannerCard,
+                                    { backgroundColor: getBannerColor(banner.color_class) }
+                                ]}
+                                onPress={() => navigation.navigate('Promo')}
                             >
-                                <View style={[styles.chipIconWrap, { backgroundColor: chip.color }]}>
-                                    <chip.icon size={12} color="#FFFFFF" />
-                                    {chip.label === 'Pusat Info' && hasNewInfo && (
-                                        <View style={{ position: 'absolute', top: -2, right: -2, width: 6, height: 6, borderRadius: 3, backgroundColor: '#EF4444', borderWidth: 1, borderColor: '#FFFFFF' }} />
-                                    )}
-                                </View>
-                                <Text style={styles.chipText}>{chip.label}</Text>
+                                {banner.image_url && (
+                                    <Image
+                                        source={{ uri: `${API_URL}${banner.image_url}` }}
+                                        style={styles.bannerBackgroundImage}
+                                        resizeMode="cover"
+                                    />
+                                )}
+                                {banner.image_url && (banner.show_text === 1 || banner.show_text === true) && <View style={styles.bannerOverlay} />}
+
+                                {/* Decorative Icon Background */}
+                                {(banner.show_text === 1 || banner.show_text === true) && (
+                                    <Sparkles size={120} color="rgba(255,255,255,0.1)" style={styles.bannerDecor} />
+                                )}
+
+                                {(banner.show_text === 1 || banner.show_text === true) && (
+                                    <View style={styles.bannerContentWrapper}>
+                                        <View style={styles.bannerInfo}>
+                                            <Text style={styles.bannerTitle}>{banner.title}</Text>
+                                            <Text style={styles.bannerSubTitle}>{banner.subtitle}</Text>
+                                            <View style={styles.promoBadge}>
+                                                <Text style={styles.promoBadgeText}>AMBIL PROMO</Text>
+                                            </View>
+                                        </View>
+                                    </View>
+                                )}
                             </TouchableOpacity>
                         ))}
                     </ScrollView>
-                </View>
 
-                {/* Floating Action Card */}
-                <View style={styles.actionCard}>
-                    <View style={styles.saldoRow}>
-                        <View>
-                            <Text style={styles.saldoLabel}>Poin Berkah 88</Text>
-                            <Text style={styles.saldoValue}>{new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(points)} Poin</Text>
-                        </View>
-                        <View style={styles.saldoActions}>
-                            <TouchableOpacity
-                                style={styles.saldoBtn}
-                                onPress={() => navigation.navigate('PointsHistory')}
-                            >
-                                <View style={[styles.saldoIconWrap, { backgroundColor: '#EFF6FF' }]}>
-                                    <History size={20} color="#3B82F6" />
-                                </View>
-                                <Text style={styles.saldoBtnText}>RIWAYAT</Text>
-                            </TouchableOpacity>
-                        </View>
+                    {/* Categories */}
+                    <View style={[styles.sectionHeader, { marginTop: 24 }]}>
+                        <Text style={styles.sectionTag}>KATEGORI</Text>
                     </View>
-
-                    <TouchableOpacity
-                        style={styles.orderStatusBtn}
-                        onPress={() => navigation.navigate('Orders')}
-                    >
-                        <View style={styles.statusIconWrap}>
-                            <ShoppingBag size={24} color="#F97316" />
-                            {orderNotificationCount > 0 && (
-                                <View style={styles.statusBadge}>
-                                    <Text style={styles.statusBadgeText}>{orderNotificationCount}</Text>
-                                </View>
-                            )}
-                        </View>
-                        <View style={styles.statusContent}>
-                            <Text style={styles.statusTitle}>Status Pesanan</Text>
-                            <Text style={styles.statusSubtitle}>LACAK PESANAN AKTIF ANDA</Text>
-                        </View>
-                        {latestOrder ? (
-                            <TouchableOpacity
-                                style={styles.detailBtn}
-                                onPress={(e) => {
-                                    e.stopPropagation();
-                                    navigation.navigate('OrderDetails', { orderId: latestOrder.id });
-                                }}
-                            >
-                                <Text style={styles.detailBtnText}>Lihat Detail</Text>
-                                <ChevronRight size={14} color="#059669" />
-                            </TouchableOpacity>
-                        ) : (
-                            <ChevronRight size={18} color="#CBD5E1" />
-                        )}
-                    </TouchableOpacity>
-                </View>
-
-                {/* Banners */}
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTag}>PROMO SPESIAL</Text>
-                    <View style={styles.scrolledHint}>
-                        <Text style={styles.hintText}>Geser</Text>
-                        <ChevronRight size={12} color="#94A3B8" />
-                    </View>
-                </View>
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    pagingEnabled
-                    snapToInterval={width * 0.9 + 16}
-                    decelerationRate="fast"
-                    contentContainerStyle={{ paddingRight: width * 0.05 + 4 }}
-                >
-                    {banners.map((banner) => (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScroll}>
                         <TouchableOpacity
-                            key={banner.id}
-                            style={[
-                                styles.bannerCard,
-                                { backgroundColor: getBannerColor(banner.color_class) }
-                            ]}
-                            onPress={() => navigation.navigate('Promo')}
+                            style={styles.categoryItem}
+                            onPress={() => navigation.navigate('Menu')}
                         >
-                            {banner.image_url && (
-                                <Image
-                                    source={{ uri: `${API_URL}${banner.image_url}` }}
-                                    style={styles.bannerBackgroundImage}
-                                    resizeMode="cover"
-                                />
-                            )}
-                            {banner.image_url && (banner.show_text === 1 || banner.show_text === true) && <View style={styles.bannerOverlay} />}
-
-                            {/* Decorative Icon Background */}
-                            {(banner.show_text === 1 || banner.show_text === true) && (
-                                <Sparkles size={120} color="rgba(255,255,255,0.1)" style={styles.bannerDecor} />
-                            )}
-
-                            {(banner.show_text === 1 || banner.show_text === true) && (
-                                <View style={styles.bannerContentWrapper}>
-                                    <View style={styles.bannerInfo}>
-                                        <Text style={styles.bannerTitle}>{banner.title}</Text>
-                                        <Text style={styles.bannerSubTitle}>{banner.subtitle}</Text>
-                                        <View style={styles.promoBadge}>
-                                            <Text style={styles.promoBadgeText}>AMBIL PROMO</Text>
-                                        </View>
-                                    </View>
-                                </View>
-                            )}
+                            <View style={styles.categoryIconWrap}>
+                                <LayoutGrid size={28} color="#059669" />
+                            </View>
+                            <Text style={styles.categoryLabel}>SEMUA</Text>
                         </TouchableOpacity>
-                    ))}
-                </ScrollView>
+                        {categories.map((cat) => {
+                            let IconComponent = getCategoryIcon(cat.name);
+                            if (!IconComponent) IconComponent = Utensils;
 
-                {/* Categories */}
-                <View style={[styles.sectionHeader, { marginTop: 24 }]}>
-                    <Text style={styles.sectionTag}>KATEGORI</Text>
-                </View>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScroll}>
-                    <TouchableOpacity
-                        style={styles.categoryItem}
-                        onPress={() => navigation.navigate('Menu')}
-                    >
-                        <View style={styles.categoryIconWrap}>
-                            <LayoutGrid size={28} color="#059669" />
-                        </View>
-                        <Text style={styles.categoryLabel}>SEMUA</Text>
-                    </TouchableOpacity>
-                    {categories.map((cat) => {
-                        let IconComponent = getCategoryIcon(cat.name);
-                        if (!IconComponent) IconComponent = Utensils;
+                            return (
+                                <TouchableOpacity
+                                    key={cat.id}
+                                    style={styles.categoryItem}
+                                    onPress={() => navigation.navigate('Menu', { categoryId: cat.id })}
+                                >
+                                    <View style={[styles.categoryIconWrap, { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0', borderWidth: 1, overflow: 'hidden' }]}>
+                                        {cat.icon ? (
+                                            <Image
+                                                source={{ uri: `${API_URL}${cat.icon}` }}
+                                                style={{ width: 28, height: 28, resizeMode: 'contain' }}
+                                            />
+                                        ) : (
+                                            <IconComponent size={28} color="#059669" />
+                                        )}
+                                    </View>
+                                    <Text style={styles.categoryLabel}>{cat.name.toUpperCase()}</Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
 
-                        return (
-                            <TouchableOpacity
-                                key={cat.id}
-                                style={styles.categoryItem}
-                                onPress={() => navigation.navigate('Menu', { categoryId: cat.id })}
-                            >
-                                <View style={[styles.categoryIconWrap, { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0', borderWidth: 1, overflow: 'hidden' }]}>
-                                    {cat.icon ? (
-                                        <Image
-                                            source={{ uri: `${API_URL}${cat.icon}` }}
-                                            style={{ width: 28, height: 28, resizeMode: 'contain' }}
-                                        />
-                                    ) : (
-                                        <IconComponent size={28} color="#059669" />
-                                    )}
-                                </View>
-                                <Text style={styles.categoryLabel}>{cat.name.toUpperCase()}</Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </ScrollView>
-
-                {/* Recommendations */}
-                <View style={styles.recommendationHeader}>
-                    <Text style={styles.recommendationTitle}>Rekomendasi Pilihan</Text>
-                </View>
-                <View style={styles.menuGrid}>
-                    {menus.map((menu) => {
-                        const isOutOfStock = !ignoreStock && menu.stock <= 0;
-                        return (
-                            <TouchableOpacity
-                                key={menu.id}
-                                style={[
-                                    styles.menuCard,
-                                    (!isOpen || isOutOfStock) && styles.menuCardClosed,
-                                    isOutOfStock && styles.menuCardOutOfStock
-                                ]}
-                                onPress={() => isOpen && !isOutOfStock && navigation.navigate('Menu', { itemId: menu.id })}
-                                disabled={!isOpen || (isOutOfStock && !isOpen)}
-                            >
-                                <View style={styles.menuImageContainer}>
-                                    {menu.image_url ? (
-                                        <Image
-                                            source={{ uri: `${API_URL}${menu.image_url}` }}
-                                            style={styles.menuImage}
-                                            onError={(e) => {
-                                                console.log(`Image 404 for ${menu.name}`);
+                    {/* Recommendations */}
+                    <View style={styles.recommendationHeader}>
+                        <Text style={styles.recommendationTitle}>Rekomendasi Pilihan</Text>
+                    </View>
+                    <View style={styles.menuGrid}>
+                        {menus.map((menu) => {
+                            const isOutOfStock = !ignoreStock && menu.stock <= 0;
+                            return (
+                                <TouchableOpacity
+                                    key={menu.id}
+                                    style={[
+                                        styles.menuCard,
+                                        (!isOpen || isOutOfStock) && styles.menuCardClosed,
+                                        isOutOfStock && styles.menuCardOutOfStock
+                                    ]}
+                                    onPress={() => isOpen && !isOutOfStock && navigation.navigate('Menu', { itemId: menu.id })}
+                                    disabled={!isOpen || (isOutOfStock && !isOpen)}
+                                >
+                                    <View style={styles.menuImageContainer}>
+                                        {menu.image_url ? (
+                                            <Image
+                                                source={{ uri: `${API_URL}${menu.image_url}` }}
+                                                style={styles.menuImage}
+                                                onError={(e) => {
+                                                    console.log(`Image 404 for ${menu.name}`);
+                                                }}
+                                            />
+                                        ) : (
+                                            <View style={styles.menuImagePlaceholder}>
+                                                <Package size={30} color="#CBD5E1" />
+                                            </View>
+                                        )}
+                                        {menu.discount > 0 && (
+                                            <View style={styles.discountBadge}>
+                                                <Zap size={10} color="#FFFFFF" fill="#FFFFFF" />
+                                                <Text style={styles.discountText}>PROMO {parseFloat(menu.discount).toFixed(0)}%</Text>
+                                            </View>
+                                        )}
+                                        {isOutOfStock && (
+                                            <View style={styles.outOfStockBadge}>
+                                                <Text style={styles.outOfStockText}>HABIS</Text>
+                                            </View>
+                                        )}
+                                        <TouchableOpacity
+                                            style={[styles.quickAddBtn, isOutOfStock && { opacity: 0.5 }]}
+                                            onPress={(e) => {
+                                                e.stopPropagation();
+                                                if (isOpen && !isOutOfStock) {
+                                                    navigation.navigate('Menu', { itemId: menu.id });
+                                                }
                                             }}
-                                        />
-                                    ) : (
-                                        <View style={styles.menuImagePlaceholder}>
-                                            <Package size={30} color="#CBD5E1" />
-                                        </View>
-                                    )}
-                                    {menu.discount > 0 && (
-                                        <View style={styles.discountBadge}>
-                                            <Zap size={10} color="#FFFFFF" fill="#FFFFFF" />
-                                            <Text style={styles.discountText}>PROMO {parseFloat(menu.discount).toFixed(0)}%</Text>
-                                        </View>
-                                    )}
-                                    {isOutOfStock && (
-                                        <View style={styles.outOfStockBadge}>
-                                            <Text style={styles.outOfStockText}>HABIS</Text>
-                                        </View>
-                                    )}
-                                    <TouchableOpacity
-                                        style={[styles.quickAddBtn, isOutOfStock && { opacity: 0.5 }]}
-                                        onPress={(e) => {
-                                            e.stopPropagation();
-                                            if (isOpen && !isOutOfStock) {
-                                                navigation.navigate('Menu', { itemId: menu.id });
-                                            }
-                                        }}
-                                        disabled={!isOpen || isOutOfStock}
-                                    >
-                                        <Plus size={16} color={isOutOfStock ? "#94A3B8" : "#059669"} />
-                                    </TouchableOpacity>
-                                </View>
-                                <View style={styles.menuInfo}>
-                                    <Text style={[styles.menuName, isOutOfStock && styles.textMuted]} numberOfLines={2}>{menu.name}</Text>
-                                    <View style={styles.menuFooter}>
-                                        <View>
-                                            {menu.discount > 0 ? (
-                                                <>
-                                                    <Text style={styles.oldPrice}>{formatCurrency(menu.price)}</Text>
-                                                    <Text style={styles.newPrice}>{formatCurrency(Math.round(menu.price * (1 - menu.discount / 100)))}</Text>
-                                                </>
-                                            ) : (
-                                                <Text style={styles.newPrice}>{formatCurrency(menu.price)}</Text>
-                                            )}
-                                        </View>
-                                        <View style={styles.ratingWrap}>
-                                            <Star size={10} color="#FBBF24" fill="#FBBF24" />
-                                            <Text style={styles.ratingVal}>{menu.average_rating ? parseFloat(menu.average_rating).toFixed(1) : '0.0'}</Text>
+                                            disabled={!isOpen || isOutOfStock}
+                                        >
+                                            <Plus size={16} color={isOutOfStock ? "#94A3B8" : "#059669"} />
+                                        </TouchableOpacity>
+                                    </View>
+                                    <View style={styles.menuInfo}>
+                                        <Text style={[styles.menuName, isOutOfStock && styles.textMuted]} numberOfLines={2}>{menu.name}</Text>
+                                        <View style={styles.menuFooter}>
+                                            <View>
+                                                {menu.discount > 0 ? (
+                                                    <>
+                                                        <Text style={styles.oldPrice}>{formatCurrency(menu.price)}</Text>
+                                                        <Text style={styles.newPrice}>{formatCurrency(Math.round(menu.price * (1 - menu.discount / 100)))}</Text>
+                                                    </>
+                                                ) : (
+                                                    <Text style={styles.newPrice}>{formatCurrency(menu.price)}</Text>
+                                                )}
+                                            </View>
+                                            <View style={styles.ratingWrap}>
+                                                <Star size={10} color="#FBBF24" fill="#FBBF24" />
+                                                <Text style={styles.ratingVal}>{menu.average_rating ? parseFloat(menu.average_rating).toFixed(1) : '0.0'}</Text>
+                                            </View>
                                         </View>
                                     </View>
-                                </View>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
 
-                {/* Footer Padding */}
-                <View style={{ height: 30 }} />
-            </Animated.ScrollView>
-        </SafeAreaView>
+                    {/* Footer Padding */}
+                    <View style={{ height: 30 }} />
+                </Animated.ScrollView>
+            </SafeAreaView>
+
+            {/* New Popup System */}
+            <PopupModal
+                popups={popups}
+                currentPage="dashboard"
+                onClose={(screenName) => {
+                    if (screenName) {
+                        navigation.navigate(screenName);
+                    }
+                }}
+            />
+        </>
     );
 };
 
@@ -1203,7 +1230,82 @@ const styles = StyleSheet.create({
     },
     textMuted: {
         color: '#94A3B8',
-    }
-});
+    },
+    // Popup Modal Styles
+    popupOverlay: {
+        flex: 1,
+        width: width,
+        height: height,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.7)',
+    },
+    popupContent: {
+        width: width * 0.85,
+        alignItems: 'center',
+    },
+    popupCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 30,
+        overflow: 'hidden',
+        width: '100%',
+        ...Platform.select({
+            web: { boxShadow: '0px 20px 50px rgba(0,0,0,0.3)' },
+            android: { elevation: 20 }
+        })
+    },
+    popupImageWrap: {
+        width: '100%',
+        height: width * 0.85,
+        backgroundColor: '#F1F5F9',
+    },
+    popupImage: {
+        width: '100%',
+        height: '100%',
+    },
+    popupCloseBtn: {
+        position: 'absolute',
+        top: 15,
+        right: 15,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
+    },
+    popupDetails: {
+        padding: 24,
+        alignItems: 'center',
+        gap: 20,
+    },
+    popupTitleText: {
+        fontSize: 20,
+        fontWeight: '900',
+        color: '#1E293B',
+        textAlign: 'center',
+        lineHeight: 28,
+    },
+    popupActionBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#10B981',
+        paddingHorizontal: 24,
+        paddingVertical: 14,
+        borderRadius: 20,
+        width: '100%',
+        gap: 8,
+    },
+    popupActionText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '900',
+        letterSpacing: 0.5,
+    },
+}
+);
 
 export default CustomerDashboard;

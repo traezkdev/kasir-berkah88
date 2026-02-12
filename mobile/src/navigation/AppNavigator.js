@@ -48,6 +48,7 @@ import PromoManagement from '../screens/seller/PromoManagement';
 import ManageInformation from '../screens/seller/ManageInformation';
 import FinancialReport from '../screens/seller/FinancialReport';
 import HppManagement from '../screens/seller/HppManagement';
+import PopupManagement from '../screens/seller/PopupManagement';
 
 // Customer Screens
 import InformationScreen from '../screens/customer/InformationScreen';
@@ -166,6 +167,7 @@ const SellerRootStack = () => (
         <Stack.Screen name="ManageInformation" component={ManageInformation} />
         <Stack.Screen name="FinancialReport" component={FinancialReport} />
         <Stack.Screen name="HppManagement" component={HppManagement} />
+        <Stack.Screen name="PopupManagement" component={PopupManagement} />
     </Stack.Navigator>
 );
 

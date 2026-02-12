@@ -172,6 +172,27 @@ const setupDatabase = async () => {
     await connection.query(createInformationTable);
     console.log('information table is ready.');
 
+    // Create popups table for multiple popup management
+    const createPopupsTable = `
+      CREATE TABLE IF NOT EXISTS popups (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        image_url VARCHAR(255),
+        link_type VARCHAR(50) DEFAULT 'none',
+        link_value VARCHAR(255) DEFAULT NULL,
+        show_on_pages JSON DEFAULT NULL,
+        priority INT DEFAULT 0,
+        is_active BOOLEAN DEFAULT TRUE,
+        view_count INT DEFAULT 0,
+        click_count INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        last_pushed_at TIMESTAMP NULL DEFAULT NULL
+      );
+    `;
+    await connection.query(createPopupsTable);
+    console.log('popups table is ready.');
+
     // Migration for promos table
     const [isHeroCol] = await connection.query("SHOW COLUMNS FROM promos LIKE 'is_hero'");
     if (isHeroCol.length === 0) {

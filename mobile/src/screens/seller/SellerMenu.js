@@ -30,7 +30,8 @@ import {
     Ticket,
     Bell,
     Briefcase,
-    TrendingUp
+    TrendingUp,
+    Megaphone
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -45,6 +46,7 @@ const MENU_ITEMS = [
     { label: 'Banner', icon: ImageIcon, color: '#EC4899', bgColor: '#FDF2F8', target: 'Banners' },
     { label: 'Promo', icon: Ticket, color: '#059669', bgColor: '#ECFDF5', target: 'PromoManagement' },
     { label: 'Informasi', icon: Bell, color: '#F59E0B', bgColor: '#FFFBEB', target: 'ManageInformation' },
+    { label: 'Popup', icon: Megaphone, color: '#8B5CF6', bgColor: '#F5F3FF', target: 'PopupManagement' },
     { label: 'Pelanggan', icon: User, color: '#14B8A6', bgColor: '#F0FDFA', target: 'CustomerManagement' },
     { label: 'Poin & Loyalty', icon: Gift, color: '#F97316', bgColor: '#FFF7ED', target: 'PointManagement' },
     { label: 'Pengeluaran', icon: TrendingDown, color: '#EF4444', bgColor: '#FEF2F2', target: 'ExpenseManagement' },

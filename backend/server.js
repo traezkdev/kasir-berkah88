@@ -1991,12 +1991,21 @@ app.put('/api/settings/:key', authenticateToken, authorizeRoles('admin', 'user',
     try {
         const { key } = req.params;
         const { value } = req.body;
-        if (value === undefined || value === null || value.toString().trim() === '') {
+        if (value === undefined || value === null || (typeof value === 'string' && value.trim() === '')) {
             return res.status(400).json({ "error": "Value is required" });
+        }
+        let finalValue = value.toString();
+
+        // Process image if it's popup_promo_image and is base64
+        if (key === 'popup_promo_image' && value && value.toString().startsWith('data:image')) {
+            const processedPath = await processBase64Image(value.toString(), 'marketing_popup');
+            if (processedPath) {
+                finalValue = processedPath;
+            }
         }
 
         const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
-        const [result] = await db.query(sql, [key, value.toString()]);
+        const [result] = await db.query(sql, [key, finalValue]);
 
         // If initial_capital is updated, also update initial_capital_date
         if (key === 'initial_capital') {
@@ -2005,7 +2014,7 @@ app.put('/api/settings/:key', authenticateToken, authorizeRoles('admin', 'user',
             await db.query(dateSql, ['initial_capital_date', now]);
         }
 
-        res.json({ message: "Setting updated successfully", data: { key, value } });
+        res.json({ message: "Setting updated successfully", data: { key, value: finalValue } });
 
     } catch (err) {
         res.status(400).json({ "error": err.message });
@@ -6491,7 +6500,7 @@ app.put("/api/user/notification-settings", authenticateToken, async (req, res) =
 // --- Promo Management Endpoints ---
 
 // Get all promos (Seller/Admin view - including inactive)
-app.get("/api/promos", authenticateToken, authorizeRoles('admin', 'owner', 'penjual'), async (req, res) => {
+app.get("/api/promos", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
     try {
         const sql = "SELECT * FROM promos ORDER BY created_at DESC";
         const [rows] = await db.query(sql);
@@ -6513,7 +6522,7 @@ app.get("/api/customer/promos", async (req, res) => {
 });
 
 // Add new promo
-app.post("/api/promos", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+app.post("/api/promos", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
     try {
         const { title, description, code, icon, color, expiry, is_active, discount_value, discount_type, min_purchase, is_hero, image_url, badge_text, is_one_time } = req.body;
         if (!title && !is_hero) { // Title mandatory unless it's a banner (sometimes banners have no title)
@@ -6565,7 +6574,7 @@ app.post("/api/promos", authenticateToken, authorizeRoles('admin', 'owner'), asy
 });
 
 // Update promo
-app.put("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+app.put("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
     try {
         const { id } = req.params;
         const { title, description, code, icon, color, expiry, is_active, discount_value, discount_type, min_purchase, is_hero, image_url, badge_text, is_one_time } = req.body;
@@ -6620,7 +6629,7 @@ app.put("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner'), 
 });
 
 // Delete promo
-app.delete("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+app.delete("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
     try {
         const { id } = req.params;
         const [promo] = await db.query("SELECT title FROM promos WHERE id = ?", [id]);
@@ -6875,6 +6884,349 @@ app.get("/api/reports/financial-summary", authenticateToken, authorizeRoles('adm
 
     } catch (err) {
         console.error("Error financial summary:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- Popup Management Endpoints ---
+
+// Get all popups (for seller/admin management)
+app.get("/api/popups", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
+    try {
+        const sql = `
+            SELECT * FROM popups 
+            ORDER BY priority DESC, created_at DESC
+        `;
+        const [rows] = await db.query(sql);
+
+        res.json({
+            message: "success",
+            data: rows.map(row => {
+                let show_on_pages = [];
+                if (row.show_on_pages && typeof row.show_on_pages === 'string' && row.show_on_pages.trim() !== '') {
+                    try {
+                        show_on_pages = JSON.parse(row.show_on_pages);
+                    } catch (e) {
+                        console.error(`Error parsing show_on_pages for popup ${row.id}:`, e);
+                        show_on_pages = [];
+                    }
+                } else if (Array.isArray(row.show_on_pages)) {
+                    show_on_pages = row.show_on_pages;
+                }
+                return {
+                    ...row,
+                    show_on_pages: Array.isArray(show_on_pages) ? show_on_pages : [],
+                    is_active: row.is_active === 1
+                };
+            })
+        });
+    } catch (err) {
+        console.error("Error fetching popups:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get active popups for customer (filtered by page)
+app.get("/api/popups/active", async (req, res) => {
+    try {
+        const { page } = req.query; // e.g., 'dashboard', 'menu', 'cart', 'profile'
+
+        let sql = `
+            SELECT id, title, image_url, link_type, link_value, show_on_pages, priority, last_pushed_at
+            FROM popups 
+            WHERE is_active = 1
+        `;
+
+        const [rows] = await db.query(sql);
+
+        // Filter by page if specified
+        let filteredPopups = rows;
+        if (page) {
+            filteredPopups = rows.filter(popup => {
+                if (!popup.show_on_pages) return true; // Show on all pages if not specified
+                try {
+                    const pages = typeof popup.show_on_pages === 'string'
+                        ? JSON.parse(popup.show_on_pages)
+                        : popup.show_on_pages;
+                    return !pages || pages.length === 0 || pages.includes(page);
+                } catch (e) {
+                    console.error(`Error parsing show_on_pages in filter for popup ${popup.id}:`, e);
+                    return true; // Fallback to showing it
+                }
+            });
+        }
+
+        // Sort by priority
+        filteredPopups.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+
+        res.json({
+            message: "success",
+            data: filteredPopups.map(row => {
+                let show_on_pages = [];
+                if (row.show_on_pages && typeof row.show_on_pages === 'string' && row.show_on_pages.trim() !== '') {
+                    try {
+                        show_on_pages = JSON.parse(row.show_on_pages);
+                    } catch (e) {
+                        show_on_pages = [];
+                    }
+                } else if (Array.isArray(row.show_on_pages)) {
+                    show_on_pages = row.show_on_pages;
+                }
+                return {
+                    ...row,
+                    show_on_pages: Array.isArray(show_on_pages) ? show_on_pages : []
+                };
+            })
+        });
+    } catch (err) {
+        console.error("Error fetching active popups:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Create new popup
+app.post("/api/popups", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), upload.single('image'), async (req, res) => {
+    try {
+        let popupData;
+
+        if (req.body.data) {
+            try {
+                popupData = typeof req.body.data === 'string' ? JSON.parse(req.body.data) : req.body.data;
+            } catch (err) {
+                console.error("Failed to parse req.body.data:", err);
+                popupData = req.body;
+            }
+        } else {
+            popupData = req.body;
+        }
+
+        const { title, link_type, link_value, show_on_pages, priority, is_active } = popupData;
+
+        if (!title) {
+            return res.status(400).json({ error: "Title is required" });
+        }
+
+        const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
+        const pages_json = show_on_pages ? JSON.stringify(show_on_pages) : JSON.stringify([]);
+        const final_is_active = is_active !== undefined ? (is_active ? 1 : 0) : 1;
+        const final_priority = priority !== undefined ? parseInt(priority) : 0;
+
+        const sql = `
+            INSERT INTO popups (title, image_url, link_type, link_value, show_on_pages, priority, is_active)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        const [result] = await db.query(sql, [
+            title,
+            image_url,
+            link_type || 'none',
+            link_value || null,
+            pages_json,
+            final_priority,
+            final_is_active
+        ]);
+
+        await logActivity(req.user.userId, 'Tambah Popup', 'popup', result.insertId, `Popup baru: ${title}`);
+
+        res.status(201).json({
+            message: "success",
+            data: {
+                id: result.insertId,
+                title,
+                image_url,
+                link_type: link_type || 'none',
+                link_value: link_value || null,
+                show_on_pages: show_on_pages || [],
+                priority: final_priority,
+                is_active: final_is_active
+            }
+        });
+    } catch (err) {
+        console.error("Error creating popup:", err);
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Update popup
+app.put("/api/popups/:id", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), upload.single('image'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        let popupData;
+
+        if (req.body.data) {
+            try {
+                popupData = typeof req.body.data === 'string' ? JSON.parse(req.body.data) : req.body.data;
+            } catch (err) {
+                console.error("Failed to parse req.body.data:", err);
+                popupData = req.body;
+            }
+        } else {
+            popupData = req.body;
+        }
+
+        const { title, link_type, link_value, show_on_pages, priority, is_active, remove_image } = popupData;
+
+        // Fetch current popup for image cleanup
+        const [currentPopup] = await db.query('SELECT image_url FROM popups WHERE id = ?', [id]);
+
+        if (currentPopup.length === 0) {
+            return res.status(404).json({ error: "Popup not found" });
+        }
+
+        let sql = 'UPDATE popups SET title = ?, link_type = ?, link_value = ?, show_on_pages = ?, priority = ?, is_active = ?';
+        const pages_json = show_on_pages ? JSON.stringify(show_on_pages) : JSON.stringify([]);
+        const final_is_active = is_active !== undefined ? (is_active ? 1 : 0) : 1;
+        const final_priority = priority !== undefined ? parseInt(priority) : 0;
+
+        let params = [
+            title,
+            link_type || 'none',
+            link_value || null,
+            pages_json,
+            final_priority,
+            final_is_active
+        ];
+
+        if (req.file) {
+            const image_url = `/public/uploads/${req.file.filename}`;
+            sql += ', image_url = ?';
+            params.push(image_url);
+
+            // Delete old image
+            if (currentPopup[0].image_url) {
+                const oldPath = path.join(__dirname, currentPopup[0].image_url);
+                if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+            }
+        } else if (remove_image === true || remove_image === 'true') {
+            sql += ', image_url = NULL';
+            // Delete old image
+            if (currentPopup[0].image_url) {
+                const oldPath = path.join(__dirname, currentPopup[0].image_url);
+                if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+            }
+        }
+
+        sql += ' WHERE id = ?';
+        params.push(id);
+
+        await db.query(sql, params);
+        await logActivity(req.user.userId, 'Update Popup', 'popup', id, `Popup ID ${id} diperbarui`);
+
+        res.json({
+            message: "success",
+            data: { id, ...popupData, is_active: final_is_active, priority: final_priority }
+        });
+    } catch (err) {
+        console.error("Error updating popup:", err);
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Delete popup
+app.delete("/api/popups/:id", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Fetch image_url for cleanup
+        const [rows] = await db.query('SELECT image_url FROM popups WHERE id = ?', [id]);
+        if (rows.length > 0 && rows[0].image_url) {
+            const imagePath = path.join(__dirname, rows[0].image_url);
+            if (fs.existsSync(imagePath)) {
+                fs.unlinkSync(imagePath);
+            }
+        }
+
+        const sql = 'DELETE FROM popups WHERE id = ?';
+        await db.query(sql, [id]);
+        await logActivity(req.user.userId, 'Hapus Popup', 'popup', id, `Popup ID ${id} dihapus`);
+
+        res.json({ message: "success" });
+    } catch (err) {
+        console.error("Error deleting popup:", err);
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Push popup (update last_pushed_at to make it appear again for users)
+app.post("/api/popups/:id/push", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const sql = 'UPDATE popups SET last_pushed_at = NOW() WHERE id = ?';
+        const [result] = await db.query(sql, [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Popup not found" });
+        }
+
+        await logActivity(req.user.userId, 'Push Popup', 'popup', id, `Popup ID ${id} di-push ulang`);
+
+        res.json({
+            message: "Popup berhasil di-push ulang",
+            data: { id, last_pushed_at: new Date() }
+        });
+    } catch (err) {
+        console.error("Error pushing popup:", err);
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Track popup view
+app.post("/api/popups/:id/view", async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const sql = 'UPDATE popups SET view_count = view_count + 1 WHERE id = ?';
+        await db.query(sql, [id]);
+
+        res.json({ message: "success" });
+    } catch (err) {
+        console.error("Error tracking popup view:", err);
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Track popup click
+app.post("/api/popups/:id/click", async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const sql = 'UPDATE popups SET click_count = click_count + 1 WHERE id = ?';
+        await db.query(sql, [id]);
+
+        res.json({ message: "success" });
+    } catch (err) {
+        console.error("Error tracking popup click:", err);
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Get popup statistics
+app.get("/api/popups/:id/stats", authenticateToken, authorizeRoles('admin', 'penjual'), async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const sql = 'SELECT view_count, click_count, last_pushed_at FROM popups WHERE id = ?';
+        const [rows] = await db.query(sql, [id]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Popup not found" });
+        }
+
+        const stats = rows[0];
+        const ctr = stats.view_count > 0 ? (stats.click_count / stats.view_count * 100).toFixed(2) : 0;
+
+        res.json({
+            message: "success",
+            data: {
+                view_count: stats.view_count,
+                click_count: stats.click_count,
+                ctr: parseFloat(ctr),
+                last_pushed_at: stats.last_pushed_at
+            }
+        });
+    } catch (err) {
+        console.error("Error fetching popup stats:", err);
         res.status(500).json({ error: err.message });
     }
 });

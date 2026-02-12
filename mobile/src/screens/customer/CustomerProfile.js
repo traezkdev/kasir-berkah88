@@ -47,6 +47,8 @@ import { useConfirm } from '../../context/ConfirmContext';
 import { useOrderNotification, NOTIFICATION_SOUNDS } from '../../context/OrderNotificationContext';
 import { useChat } from '../../context/ChatContext';
 import useSwipeToClose from '../../hooks/useSwipeToClose';
+import usePopups from '../../hooks/usePopups';
+import PopupModal from '../../components/PopupModal';
 
 const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -57,6 +59,7 @@ const CustomerProfile = ({ navigation }) => {
     const { confirm } = useConfirm();
     const { selectedSoundId, changeNotificationSound } = useOrderNotification();
     const { unreadCount } = useChat();
+    const { popups } = usePopups('profile');
 
     const [userData, setUserData] = useState({
         username: 'Pelanggan',
@@ -660,6 +663,16 @@ const CustomerProfile = ({ navigation }) => {
                     </Animated.View>
                 </View>
             </Modal>
+            {/* Popup System */}
+            <PopupModal
+                popups={popups}
+                currentPage="profile"
+                onClose={(screenName) => {
+                    if (screenName) {
+                        navigation.navigate(screenName);
+                    }
+                }}
+            />
         </SafeAreaView>
     );
 };

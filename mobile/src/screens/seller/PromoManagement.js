@@ -46,7 +46,8 @@ import {
     Info,
     Sparkles,
     User,
-    Image as ImageIcon
+    Image as ImageIcon,
+    RefreshCw
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
 import * as ImagePicker from 'expo-image-picker';
@@ -563,21 +564,20 @@ const PromoManagement = ({ navigation }) => {
         setDeleteModalVisible(true);
     }, []);
 
-    const pickImage = async () => {
+    const pickImage = async (mode = 'promo') => {
         try {
-            // Request permission specifically for Android 13+ and older
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
             if (status !== 'granted') {
-                Alert.alert('Izin Pembatasan', 'Mohon izinkan akses galeri untuk memilih gambar banner.');
+                Alert.alert('Izin Pembatasan', 'Mohon izinkan akses galeri untuk memilih gambar.');
                 return;
             }
 
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images, // Reverting to MediaTypeOptions to fix crash
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
                 allowsEditing: true,
-                aspect: [16, 9],
-                quality: 0.7, // Reduce quality slightly for faster processing
+                aspect: mode === 'banner' ? [16, 9] : [1, 1],
+                quality: 0.7,
                 base64: true,
             });
 
@@ -893,6 +893,30 @@ const PromoManagement = ({ navigation }) => {
                                                         value={form.title}
                                                         onChangeText={(text) => setForm({ ...form, title: text })}
                                                     />
+                                                </View>
+
+                                                <View style={styles.inputGroup}>
+                                                    <Text style={[styles.inputLabel, { marginBottom: 12 }]}>Gambar Detail (Opsional)</Text>
+                                                    <TouchableOpacity
+                                                        style={[styles.imageUploadBtn, { height: 120 }]}
+                                                        onPress={() => pickImage('promo')}
+                                                    >
+                                                        {form.image_url ? (
+                                                            <View style={styles.uploadedImageContainer}>
+                                                                <Image source={{ uri: form.image_url.startsWith('data:') ? form.image_url : `${API_URL}${form.image_url}` }} style={styles.uploadedImage} />
+                                                                <View style={styles.imageOverlay}>
+                                                                    <RefreshCw size={20} color="#FFFFFF" />
+                                                                    <Text style={styles.imageOverlayText}>Ganti Gambar</Text>
+                                                                </View>
+                                                            </View>
+                                                        ) : (
+                                                            <View style={styles.uploadPlaceholder}>
+                                                                <ImageIcon size={28} color="#9CA3AF" />
+                                                                <Text style={styles.uploadText}>Tambah Gambar Detail</Text>
+                                                                <Text style={styles.uploadSubText}>Tampil di popup detail customer</Text>
+                                                            </View>
+                                                        )}
+                                                    </TouchableOpacity>
                                                 </View>
 
                                                 {/* VOUCHER SPECIFIC: CODE */}
@@ -2204,7 +2228,21 @@ const styles = StyleSheet.create({
         marginTop: 12,
         fontSize: 14,
         color: '#64748B',
-    }
+    },
+    // List Header Styles
+    listHeaderContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        marginBottom: 16,
+        marginTop: 10,
+    },
+    listTitle: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#1E293B',
+    },
 });
 
 export default React.memo(PromoManagement);

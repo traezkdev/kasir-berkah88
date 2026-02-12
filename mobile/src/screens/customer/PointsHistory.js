@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { ArrowLeft, TrendingUp, TrendingDown, Calendar } from 'lucide-react-native';
 import apiService from '../../api/apiService';
+import usePopups from '../../hooks/usePopups';
+import PopupModal from '../../components/PopupModal';
 
 const PointsHistory = ({ navigation }) => {
     const [history, setHistory] = useState([]);
@@ -21,6 +23,7 @@ const PointsHistory = ({ navigation }) => {
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const { popups } = usePopups('points');
 
     const fetchData = useCallback(async (targetPage = 1, isRefresh = false) => {
         if (isRefresh) {
@@ -181,6 +184,17 @@ const PointsHistory = ({ navigation }) => {
                     contentContainerStyle={styles.listContent}
                 />
             </View>
+
+            {/* Popup System */}
+            <PopupModal
+                popups={popups}
+                currentPage="points"
+                onClose={(screenName) => {
+                    if (screenName) {
+                        navigation.navigate(screenName);
+                    }
+                }}
+            />
         </View>
     );
 };

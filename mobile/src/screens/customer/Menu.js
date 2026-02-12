@@ -49,6 +49,8 @@ import { useCart } from '../../context/CartContext';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { useOrderNotification } from '../../context/OrderNotificationContext';
 import useSwipeToClose from '../../hooks/useSwipeToClose';
+import usePopups from '../../hooks/usePopups';
+import PopupModal from '../../components/PopupModal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -182,6 +184,7 @@ const CustomerMenu = ({ navigation, route }) => {
     const insets = useSafeAreaInsets();
     const { isOpen, ignoreStock } = useAppSettings();
     const { refreshTrigger } = useOrderNotification();
+    const { popups } = usePopups('menu');
 
     const [menus, setMenus] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -645,6 +648,17 @@ const CustomerMenu = ({ navigation, route }) => {
                     </Animated.View>
                 </View>
             </Modal>
+
+            {/* Popup System */}
+            <PopupModal
+                popups={popups}
+                currentPage="menu"
+                onClose={(screenName) => {
+                    if (screenName) {
+                        navigation.navigate(screenName);
+                    }
+                }}
+            />
         </SafeAreaView>
     );
 };
