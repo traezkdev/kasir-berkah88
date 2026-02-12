@@ -424,6 +424,12 @@ const ManageInformation = ({ navigation }) => {
                                                     <Text style={[styles.cardLinkText, { color: '#F59E0B' }]}>Tautan: Promo</Text>
                                                 </View>
                                             )}
+                                            {info.link_type === 'custom' && (
+                                                <View style={[styles.cardLinkTag, { backgroundColor: '#F0F9FF' }]}>
+                                                    <Link2 size={10} color="#0EA5E9" />
+                                                    <Text style={[styles.cardLinkText, { color: '#0EA5E9' }]}>Tautan: Link Luar</Text>
+                                                </View>
+                                            )}
                                             {(!info.is_active) && (
                                                 <View style={styles.hiddenBadge}>
                                                     <EyeOff size={10} color="#64748B" />
@@ -719,6 +725,16 @@ const ManageInformation = ({ navigation }) => {
                                 >
                                     <Text style={[styles.linkTypeBtnText, linkType === 'promo' && styles.linkTypeBtnTextActive]}>Promo</Text>
                                 </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.linkTypeBtn, linkType === 'custom' && styles.linkTypeBtnActive]}
+                                    onPress={() => {
+                                        setLinkType('custom');
+                                        setLinkValue('');
+                                        setSelectedProductName('');
+                                    }}
+                                >
+                                    <Text style={[styles.linkTypeBtnText, linkType === 'custom' && styles.linkTypeBtnTextActive]}>Link Custom</Text>
+                                </TouchableOpacity>
                             </View>
 
                             {linkType === 'product' && (
@@ -734,6 +750,23 @@ const ManageInformation = ({ navigation }) => {
                                     </View>
                                     <ChevronLeft size={20} color="#94A3B8" style={{ transform: [{ rotate: '270deg' }] }} />
                                 </TouchableOpacity>
+                            )}
+
+                            {linkType === 'custom' && (
+                                <View style={styles.customLinkInputWrap}>
+                                    <View style={styles.customLinkIcon}>
+                                        <ExternalLink size={18} color="#6366F1" />
+                                    </View>
+                                    <TextInput
+                                        style={styles.customLinkInput}
+                                        placeholder="Tempel atau ketik URL (mis: https://...)"
+                                        value={linkType === 'custom' ? linkValue : ''}
+                                        onChangeText={setLinkValue}
+                                        placeholderTextColor="#94A3B8"
+                                        autoCapitalize="none"
+                                        keyboardType="url"
+                                    />
+                                </View>
                             )}
                         </View>
 
@@ -1269,11 +1302,12 @@ const styles = StyleSheet.create({
     },
     linkSelector: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         gap: 10,
         marginBottom: 12,
     },
     linkTypeBtn: {
-        flex: 1,
+        width: '48%', // Flexible width to allow wrapping nicely
         paddingVertical: 12,
         borderRadius: 15,
         borderWidth: 1,
@@ -1456,6 +1490,32 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#94A3B8',
         marginTop: 2
+    },
+    customLinkInputWrap: {
+        flexDirection: 'row',
+        alignItems: 'stretch', // Changed from center to ensure icon border fills height
+        backgroundColor: '#FFFFFF',
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        overflow: 'hidden',
+        height: 48, // Set explicit height to the wrapper
+    },
+    customLinkIcon: {
+        paddingHorizontal: 16,
+        borderRightWidth: 1,
+        borderRightColor: '#F1F5F9',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    customLinkInput: {
+        flex: 1,
+        height: '100%', // Stretch to parent height
+        paddingHorizontal: 16,
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#1E293B',
     }
 });
 

@@ -10,10 +10,11 @@ import {
     RefreshControl,
     Dimensions,
     Platform,
-    StatusBar
+    StatusBar,
+    Linking
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Info, Calendar, ChevronRight, ShoppingBag, Sparkles, Clock, Bell, Tag } from 'lucide-react-native';
+import { ChevronLeft, Info, Calendar, ChevronRight, ShoppingBag, Sparkles, Clock, Bell, Tag, Link2 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiService, { API_URL } from '../../api/apiService';
 import BottomModalTemplate from '../../components/templates/BottomModalTemplate';
@@ -77,6 +78,11 @@ const InformationScreen = ({ navigation }) => {
             setShowDetail(false);
             // Navigate to Promo tab in MainTabs to show navbar
             navigation.navigate('MainTabs', { screen: 'Promo' });
+        } else if (info.link_type === 'custom' && info.link_value) {
+            setShowDetail(false);
+            Linking.openURL(info.link_value).catch(err => {
+                console.error("Failed to open URL:", err);
+            });
         }
     };
 
@@ -188,10 +194,15 @@ const InformationScreen = ({ navigation }) => {
                                                 <Tag size={12} color="#D97706" />
                                                 <Text style={[styles.actionText, { color: '#D97706' }]}>Lihat Promo</Text>
                                             </View>
-                                        ) : (
+                                        ) : info.link_type === 'product' ? (
                                             <View style={[styles.actionBadge, { backgroundColor: '#DCFCE7' }]}>
                                                 <ShoppingBag size={12} color="#15803D" />
                                                 <Text style={[styles.actionText, { color: '#15803D' }]}>Lihat Produk</Text>
+                                            </View>
+                                        ) : (
+                                            <View style={[styles.actionBadge, { backgroundColor: '#E0F2FE' }]}>
+                                                <Link2 size={12} color="#0369A1" />
+                                                <Text style={[styles.actionText, { color: '#0369A1' }]}>Buka Link</Text>
                                             </View>
                                         )}
                                         <View style={styles.actionArrow}>
@@ -212,9 +223,13 @@ const InformationScreen = ({ navigation }) => {
                 title="Detail Informasi"
                 height="100%"
                 disableSwipe={true}
-                footer={(selectedInfo?.link_type === 'product' || selectedInfo?.link_type === 'promo') && (
+                footer={(selectedInfo?.link_type === 'product' || selectedInfo?.link_type === 'promo' || selectedInfo?.link_type === 'custom') && (
                     <TouchableOpacity
-                        style={[styles.modalActionBtn, selectedInfo?.link_type === 'promo' && { backgroundColor: '#F59E0B' }]}
+                        style={[
+                            styles.modalActionBtn,
+                            selectedInfo?.link_type === 'promo' && { backgroundColor: '#F59E0B' },
+                            selectedInfo?.link_type === 'custom' && { backgroundColor: '#0EA5E9' }
+                        ]}
                         onPress={() => handleAction(selectedInfo)}
                         activeOpacity={0.8}
                     >
@@ -223,10 +238,15 @@ const InformationScreen = ({ navigation }) => {
                                 <ShoppingBag size={18} color="#FFFFFF" strokeWidth={2.5} />
                                 <Text style={styles.modalActionBtnText}>Pesan Sekarang</Text>
                             </>
-                        ) : (
+                        ) : selectedInfo?.link_type === 'promo' ? (
                             <>
                                 <Tag size={18} color="#FFFFFF" strokeWidth={2.5} />
                                 <Text style={styles.modalActionBtnText}>Lihat Promo</Text>
+                            </>
+                        ) : (
+                            <>
+                                <Link2 size={18} color="#FFFFFF" strokeWidth={2.5} />
+                                <Text style={styles.modalActionBtnText}>Buka Tautan</Text>
                             </>
                         )}
                         <ChevronRight size={18} color="#FFFFFF" strokeWidth={3} />
