@@ -14,7 +14,8 @@ import {
     TextInput,
     KeyboardAvoidingView,
     RefreshControl,
-    Modal
+    Modal,
+    ImageBackground
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomModalTemplate from '../../components/templates/BottomModalTemplate';
@@ -581,159 +582,186 @@ const PopupManagement = ({ navigation }) => {
                 }
             >
                 <View style={styles.modalContent}>
-                    {/* Form Inputs */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Judul Popup</Text>
+                    {/* Image Selection - moved to top for better flow */}
+                    <View style={[styles.sectionHeader, { marginTop: 0 }]}>
+                        <ImageIcon size={14} color="#64748B" />
+                        <Text style={styles.sectionTitle}>MEDIA POPUP</Text>
+                    </View>
+
+                    <TouchableOpacity style={styles.uploadArea} onPress={pickImage} activeOpacity={0.8}>
+                        {formData.imageUri ? (
+                            <ImageBackground
+                                source={{ uri: formData.imageUri }}
+                                style={styles.uploadPreview}
+                                imageStyle={{ borderRadius: 16 }}
+                            >
+                                <View style={styles.uploadOverlay}>
+                                    <View style={styles.uploadActionBtn}>
+                                        <Camera size={20} color="#FFFFFF" strokeWidth={2.5} />
+                                    </View>
+                                </View>
+                            </ImageBackground>
+                        ) : (
+                            <View style={styles.uploadPlaceholder}>
+                                <View style={styles.uploadIconCircle}>
+                                    <ImageIcon size={28} color="#059669" />
+                                </View>
+                                <View style={styles.uploadTexts}>
+                                    <Text style={styles.uploadTitle}>Upload Gambar</Text>
+                                    <Text style={styles.uploadSubtitle}>Format PNG/JPG, Rasio 4:3</Text>
+                                </View>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+
+                    {/* Basic Info */}
+                    <View style={styles.sectionHeader}>
+                        <Edit2 size={14} color="#64748B" />
+                        <Text style={styles.sectionTitle}>INFORMASI DASAR</Text>
+                    </View>
+
+                    <View style={styles.formGroup}>
+                        <Text style={styles.inputLabel}>Judul Popup</Text>
                         <TextInput
-                            style={styles.input}
+                            style={styles.textInput}
                             value={formData.title}
                             onChangeText={(text) => setFormData(prev => ({ ...prev, title: text }))}
-                            placeholder="Contoh: Promo Flash Sale!"
-                            placeholderTextColor="#94A3B8"
+                            placeholder="Contoh: Promo Spesial Ramadhan"
+                            placeholderTextColor="#CBD5E1"
                         />
                     </View>
 
-                    {/* Link Type Selector */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Tipe Link</Text>
-                        <View style={styles.typeSelector}>
-                            {LINK_TYPES.map((type) => (
-                                <TouchableOpacity
-                                    key={type.value}
-                                    style={[
-                                        styles.typeBtn,
-                                        formData.link_type === type.value && styles.typeBtnActive
-                                    ]}
-                                    onPress={() => setFormData(prev => ({ ...prev, link_type: type.value, link_value: '' }))}
-                                >
-                                    <Text style={[
-                                        styles.typeBtnText,
-                                        formData.link_type === type.value && styles.typeBtnTextActive
-                                    ]}>
-                                        {type.label}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
+                    <View style={styles.formGroup}>
+                        <View style={styles.rowBetween}>
+                            <Text style={styles.inputLabel}>Prioritas Tampil</Text>
+                            <View style={styles.priorityHelp}>
+                                <Info size={12} color="#059669" />
+                                <Text style={styles.priorityHelpText}>Angka tinggi = Tampil duluan</Text>
+                            </View>
+                        </View>
+                        <View style={styles.priorityInputContainer}>
+                            <TrendingUp size={18} color="#64748B" style={{ marginRight: 10 }} />
+                            <TextInput
+                                style={[styles.textInput, { flex: 1, borderWidth: 0, paddingHorizontal: 0, marginTop: 0 }]}
+                                value={formData.priority.toString()}
+                                onChangeText={(text) => setFormData(prev => ({ ...prev, priority: text.replace(/[^0-9]/g, '') }))}
+                                placeholder="0"
+                                keyboardType="numeric"
+                                placeholderTextColor="#CBD5E1"
+                            />
                         </View>
                     </View>
 
-                    {/* Link Value Input based on Link Type */}
+                    {/* Action Link */}
+                    <View style={styles.sectionHeader}>
+                        <Link2 size={14} color="#64748B" />
+                        <Text style={styles.sectionTitle}>AKSI & NAVIGASI</Text>
+                    </View>
+
+                    <View style={styles.linkTypeContainer}>
+                        {LINK_TYPES.map((type) => (
+                            <TouchableOpacity
+                                key={type.value}
+                                style={[
+                                    styles.linkTypeOption,
+                                    formData.link_type === type.value && styles.linkTypeActive
+                                ]}
+                                onPress={() => setFormData(prev => ({ ...prev, link_type: type.value, link_value: '' }))}
+                            >
+                                <Text style={[
+                                    styles.linkTypeText,
+                                    formData.link_type === type.value && styles.linkTypeTextActive
+                                ]}>{type.label}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+
                     {formData.link_type === 'screen' && (
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Pilih Halaman</Text>
-                            <View style={styles.screenGrid}>
-                                {SCREEN_OPTIONS.map((opt) => (
-                                    <TouchableOpacity
-                                        key={opt.value}
-                                        style={[
-                                            styles.screenItem,
-                                            formData.link_value === opt.value && styles.screenItemActive
-                                        ]}
-                                        onPress={() => setFormData(prev => ({ ...prev, link_value: opt.value }))}
-                                    >
-                                        <View style={[
-                                            styles.screenRadio,
-                                            formData.link_value === opt.value && styles.screenRadioActive
-                                        ]}>
-                                            {formData.link_value === opt.value && <View style={styles.radioInner} />}
-                                        </View>
-                                        <Text style={styles.screenLabel}>{opt.label}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
+                        <View style={styles.screenSelectorContainer}>
+                            {SCREEN_OPTIONS.map((opt) => (
+                                <TouchableOpacity
+                                    key={opt.value}
+                                    style={[
+                                        styles.screenOption,
+                                        formData.link_value === opt.value && styles.screenOptionActive
+                                    ]}
+                                    onPress={() => setFormData(prev => ({ ...prev, link_value: opt.value }))}
+                                >
+                                    <View style={[
+                                        styles.radioButton,
+                                        formData.link_value === opt.value && styles.radioButtonActive
+                                    ]}>
+                                        {formData.link_value === opt.value && <View style={styles.radioInnerCircle} />}
+                                    </View>
+                                    <Text style={[
+                                        styles.screenOptionText,
+                                        formData.link_value === opt.value && styles.screenOptionTextActive
+                                    ]}>{opt.label}</Text>
+                                </TouchableOpacity>
+                            ))}
                         </View>
                     )}
 
                     {formData.link_type === 'url' && (
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Link URL (Alamat Web)</Text>
+                        <View style={styles.urlInputContainer}>
+                            <Link2 size={18} color="#64748B" />
                             <TextInput
-                                style={styles.input}
+                                style={styles.urlInput}
                                 value={formData.link_value}
                                 onChangeText={(text) => setFormData(prev => ({ ...prev, link_value: text }))}
-                                placeholder="https://youtube.com/..."
-                                placeholderTextColor="#94A3B8"
+                                placeholder="https://..."
                                 keyboardType="url"
                                 autoCapitalize="none"
+                                placeholderTextColor="#CBD5E1"
                             />
                         </View>
                     )}
 
-                    {/* Display Pages */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Tampilkan di Halaman</Text>
-                        <View style={styles.checkboxGroup}>
-                            {AVAILABLE_PAGES.map((page) => (
+                    {/* Target Pages */}
+                    <View style={styles.sectionHeader}>
+                        <Eye size={14} color="#64748B" />
+                        <Text style={styles.sectionTitle}>TARGET HALAMAN</Text>
+                    </View>
+
+                    <View style={styles.targetPagesGrid}>
+                        {AVAILABLE_PAGES.map((page) => {
+                            const isSelected = formData.show_on_pages.includes(page.value);
+                            return (
                                 <TouchableOpacity
                                     key={page.value}
-                                    style={styles.checkboxItem}
+                                    style={[styles.pageChip, isSelected && styles.pageChipActive]}
                                     onPress={() => togglePage(page.value)}
                                 >
-                                    <View style={[
-                                        styles.checkbox,
-                                        formData.show_on_pages.includes(page.value) && styles.checkboxActive
-                                    ]}>
-                                        {formData.show_on_pages.includes(page.value) && <Check size={12} color="#FFFFFF" strokeWidth={4} />}
-                                    </View>
-                                    <Text style={styles.checkboxLabel}>{page.label}</Text>
+                                    <Text style={[styles.pageChipText, isSelected && styles.pageChipTextActive]}>
+                                        {page.label}
+                                    </Text>
+                                    {isSelected && <CheckCircle2 size={14} color="#FFFFFF" style={{ marginLeft: 4 }} />}
                                 </TouchableOpacity>
-                            ))}
-                        </View>
-                        <Text style={styles.helperText}>Jika kosong, popup akan muncul di semua halaman.</Text>
+                            );
+                        })}
                     </View>
+                    <Text style={styles.helperTextSimple}>*Biarkan kosong untuk tampil di semua halaman</Text>
 
-                    {/* Priority & Status */}
-                    <View style={styles.row}>
-                        <View style={[styles.inputGroup, { flex: 1 }]}>
-                            <Text style={styles.label}>Prioritas</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={formData.priority.toString()}
-                                onChangeText={(text) => setFormData(prev => ({ ...prev, priority: text.replace(/[^0-9]/g, '') }))}
-                                placeholder="0"
-                                placeholderTextColor="#94A3B8"
-                                keyboardType="numeric"
-                            />
-                            <Text style={styles.helperText}>Makin besar makin didahulukan</Text>
-                        </View>
-                    </View>
-
-                    {/* Image Selection */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Gambar Popup</Text>
-                        <TouchableOpacity style={styles.imageSelector} onPress={pickImage}>
-                            {formData.imageUri ? (
-                                <View style={styles.imagePreviewContainer}>
-                                    <Image source={{ uri: formData.imageUri }} style={styles.imagePreview} />
-                                    <View style={styles.imageOverlay}>
-                                        <Camera size={24} color="#FFFFFF" />
-                                        <Text style={styles.changeImageText}>Ubah Gambar</Text>
-                                    </View>
-                                </View>
-                            ) : (
-                                <View style={styles.imagePlaceholder}>
-                                    <ImageIcon size={40} color="#94A3B8" />
-                                    <Text style={styles.placeholderText}>Klik untuk memilih gambar</Text>
-                                    <Text style={styles.placeholderSub}>Disarankan rasio 4:3</Text>
-                                </View>
-                            )}
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Active Status */}
-                    <View style={styles.switchRow}>
-                        <View>
-                            <Text style={styles.label}>Status Aktif</Text>
-                            <Text style={styles.helperText}>Popup hanya muncul jika aktif</Text>
+                    {/* Active Switch */}
+                    <View style={styles.statusSwitchContainer}>
+                        <View style={styles.switchLabelArea}>
+                            <View style={[styles.switchIcon, { backgroundColor: formData.is_active ? '#DCFCE7' : '#F1F5F9' }]}>
+                                <Megaphone size={18} color={formData.is_active ? '#059669' : '#94A3B8'} />
+                            </View>
+                            <View>
+                                <Text style={styles.switchTitle}>Status Publikasi</Text>
+                                <Text style={styles.switchSub}>{formData.is_active ? 'Popup akan ditampilkan' : 'Disimpan sebagai draft'}</Text>
+                            </View>
                         </View>
                         <Switch
                             value={formData.is_active}
                             onValueChange={(value) => setFormData(prev => ({ ...prev, is_active: value }))}
                             trackColor={{ false: '#E2E8F0', true: '#86EFAC' }}
-                            thumbColor={formData.is_active ? '#059669' : '#CBD5E1'}
+                            thumbColor={formData.is_active ? '#059669' : '#FFFFFF'}
                         />
                     </View>
-                    <View style={{ height: 20 }} />
+
+                    <View style={{ height: 40 }} />
                 </View>
             </BottomModalTemplate>
 
@@ -1103,185 +1131,301 @@ const styles = StyleSheet.create({
     saveBtnDisabled: {
         backgroundColor: '#94A3B8',
     },
-    inputGroup: {
-        marginBottom: 20,
+    // Modal Styles
+    modalContent: {
+        paddingTop: 10,
     },
-    saveBtnText: {
-        color: '#FFFFFF',
-        fontSize: 16,
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginTop: 24,
+        marginBottom: 12,
+    },
+    sectionTitle: {
+        fontSize: 11,
         fontWeight: '900',
-        letterSpacing: 0.5,
+        color: '#64748B',
+        letterSpacing: 1,
+        textTransform: 'uppercase',
     },
-    label: {
+
+    // Image Upload
+    uploadArea: {
+        width: '100%',
+        aspectRatio: 16 / 9,
+        backgroundColor: '#F1F5F9',
+        borderRadius: 16,
+        borderWidth: 2,
+        borderColor: '#E2E8F0',
+        borderStyle: 'dashed',
+        marginBottom: 10,
+        overflow: 'hidden',
+    },
+    uploadPlaceholder: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 12,
+    },
+    uploadIconCircle: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: '#DCFCE7',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    uploadTexts: {
+        alignItems: 'center',
+        gap: 4,
+    },
+    uploadTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#0F172A',
+    },
+    uploadSubtitle: {
+        fontSize: 11,
+        color: '#94A3B8',
+    },
+    uploadPreview: {
+        flex: 1,
+        width: '100%',
+        height: '100%',
+    },
+    uploadOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    uploadActionBtn: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        backdropFilter: 'blur(10px)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+
+    // Form Inputs
+    formGroup: {
+        marginBottom: 16,
+    },
+    inputLabel: {
         fontSize: 14,
         fontWeight: '700',
         color: '#1E293B',
         marginBottom: 8,
     },
-    helperText: {
-        fontSize: 11,
-        color: '#94A3B8',
-        marginTop: 4,
-    },
-    input: {
+    textInput: {
         backgroundColor: '#F8FAFC',
         borderWidth: 1,
         borderColor: '#E2E8F0',
         borderRadius: 12,
         paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingVertical: 14,
         fontSize: 14,
-        color: '#1E293B',
+        color: '#0F172A',
+        fontWeight: '500',
     },
-    typeSelector: {
+    rowBetween: {
         flexDirection: 'row',
-        gap: 8,
-        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
     },
-    typeBtn: {
-        paddingHorizontal: 14,
-        paddingVertical: 8,
-        borderRadius: 10,
-        backgroundColor: '#F1F5F9',
+    priorityHelp: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: '#F0FDF4',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 100,
+    },
+    priorityHelpText: {
+        fontSize: 10,
+        color: '#059669',
+        fontWeight: '600',
+    },
+    priorityInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
         borderWidth: 1,
         borderColor: '#E2E8F0',
+        borderRadius: 12,
+        paddingHorizontal: 16,
     },
-    typeBtnActive: {
-        backgroundColor: '#EFF6FF',
-        borderColor: '#3B82F6',
+
+    // Link Types
+    linkTypeContainer: {
+        flexDirection: 'row',
+        backgroundColor: '#F1F5F9',
+        padding: 4,
+        borderRadius: 12,
+        marginBottom: 16,
     },
-    typeBtnText: {
+    linkTypeOption: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 10,
+        borderRadius: 10,
+    },
+    linkTypeActive: {
+        backgroundColor: '#FFFFFF',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    linkTypeText: {
         fontSize: 12,
         fontWeight: '600',
         color: '#64748B',
     },
-    typeBtnTextActive: {
-        color: '#3B82F6',
+    linkTypeTextActive: {
+        color: '#0F172A',
+        fontWeight: '800',
     },
-    screenGrid: {
-        gap: 10,
+
+    // Screen Selector
+    screenSelectorContainer: {
+        gap: 8,
     },
-    screenItem: {
+    screenOption: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 12,
+        padding: 14,
         backgroundColor: '#F8FAFC',
         borderRadius: 12,
         borderWidth: 1,
         borderColor: '#E2E8F0',
         gap: 12,
     },
-    screenItemActive: {
-        borderColor: '#3B82F6',
-        backgroundColor: '#EFF6FF',
+    screenOptionActive: {
+        borderColor: '#059669',
+        backgroundColor: '#ECFDF5',
     },
-    screenRadio: {
-        width: 18,
-        height: 18,
-        borderRadius: 9,
-        borderWidth: 2,
-        borderColor: '#CBD5E1',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    screenRadioActive: {
-        borderColor: '#3B82F6',
-    },
-    radioInner: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: '#3B82F6',
-    },
-    screenLabel: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#1E293B',
-    },
-    row: {
-        flexDirection: 'row',
-    },
-    imageSelector: {
-        width: '100%',
-        aspectRatio: 4 / 3,
-        borderRadius: 16,
-        borderWidth: 2,
-        borderColor: '#E2E8F0',
-        borderStyle: 'dashed',
-        overflow: 'hidden',
-        backgroundColor: '#F8FAFC',
-    },
-    imagePlaceholder: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 10,
-    },
-    placeholderText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#64748B',
-    },
-    placeholderSub: {
-        fontSize: 12,
-        color: '#94A3B8',
-    },
-    imagePreviewContainer: {
-        width: '100%',
-        height: '100%',
-    },
-    imagePreview: {
-        width: '100%',
-        height: '100%',
-    },
-    imageOverlay: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 8,
-    },
-    changeImageText: {
-        color: '#FFFFFF',
-        fontSize: 12,
-        fontWeight: '700',
-    },
-    switchRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: 12,
-        marginTop: 10,
-    },
-    checkboxGroup: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 10,
-    },
-    checkboxItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        paddingVertical: 6,
-        width: '48%',
-    },
-    checkbox: {
+    radioButton: {
         width: 20,
         height: 20,
-        borderRadius: 6,
+        borderRadius: 10,
         borderWidth: 2,
         borderColor: '#CBD5E1',
         justifyContent: 'center',
         alignItems: 'center',
     },
-    checkboxActive: {
-        backgroundColor: '#059669',
+    radioButtonActive: {
         borderColor: '#059669',
     },
-    checkboxLabel: {
+    radioInnerCircle: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#059669',
+    },
+    screenOptionText: {
         fontSize: 14,
         color: '#475569',
         fontWeight: '500',
+    },
+    screenOptionTextActive: {
+        color: '#059669',
+        fontWeight: '700',
+    },
+
+    // URL Input
+    urlInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        gap: 12,
+    },
+    urlInput: {
+        flex: 1,
+        paddingVertical: 14,
+        fontSize: 14,
+        color: '#1E293B',
+    },
+
+    // Target Pages Grid
+    targetPagesGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    pageChip: {
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 100,
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    pageChipActive: {
+        backgroundColor: '#059669',
+        borderColor: '#059669',
+    },
+    pageChipText: {
+        fontSize: 12,
+        color: '#64748B',
+        fontWeight: '600',
+    },
+    pageChipTextActive: {
+        color: '#FFFFFF',
+    },
+    helperTextSimple: {
+        fontSize: 11,
+        color: '#94A3B8',
+        marginTop: 8,
+        fontStyle: 'italic',
+    },
+
+    // Status Switch
+    statusSwitchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#F8FAFC',
+        padding: 16,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        marginTop: 24,
+    },
+    switchLabelArea: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    switchIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    switchTitle: {
+        fontSize: 14,
+        fontWeight: '800',
+        color: '#0F172A',
+    },
+    switchSub: {
+        fontSize: 11,
+        color: '#64748B',
     },
 });
 
