@@ -36,7 +36,9 @@ import {
     QrCode,
     Banknote,
     PackageX,
-    ArrowRight
+    ArrowRight,
+    LayoutGrid,
+    List
 } from 'lucide-react-native';
 // LinearGradient removed to avoid native module errors
 import apiService, { API_URL } from '../../api/apiService';
@@ -52,11 +54,13 @@ const { width, height } = Dimensions.get('window');
 const COLUMN_WIDTH = (width - 48) / 2;
 
 // Komponen Item yang dimemoize untuk performa (Anti-Delay)
-const ProductCardItem = React.memo(({ item, qty, addToCart, ignoreStock, formatCurrency, isOutOfStock }) => {
+const ProductCardItem = React.memo(({ item, qty, addToCart, ignoreStock, formatCurrency, isOutOfStock, viewMode }) => {
+    const isList = viewMode === 'list';
+
     return (
         <Pressable
             style={({ pressed }) => [
-                styles.productCard,
+                isList ? styles.productCardList : styles.productCard,
                 isOutOfStock && !ignoreStock && styles.outOfStockCard,
                 qty > 0 && styles.selectedProductCard,
                 pressed && { transform: [{ scale: 0.98 }] }
@@ -64,7 +68,7 @@ const ProductCardItem = React.memo(({ item, qty, addToCart, ignoreStock, formatC
             onPress={() => (ignoreStock || !isOutOfStock) && addToCart(item)}
             disabled={isOutOfStock && !ignoreStock}
         >
-            <View style={styles.imageWrapper}>
+            <View style={isList ? styles.imageWrapperList : styles.imageWrapper}>
                 {item.image_url ? (
                     <Image
                         source={{ uri: `${API_URL}${item.image_url}` }}
@@ -72,29 +76,36 @@ const ProductCardItem = React.memo(({ item, qty, addToCart, ignoreStock, formatC
                     />
                 ) : (
                     <View style={styles.placeholderImg}>
-                        <ShoppingCart size={30} color="#CBD5E1" />
-                    </View>
-                )}
-                {qty > 0 && (
-                    <View style={styles.qtyBadge}>
-                        <Text style={qtyBadgeTextStyles}>{qty}</Text>
+                        <ShoppingCart size={isList ? 24 : 30} color="#CBD5E1" />
                     </View>
                 )}
                 {item.discount > 0 && (
-                    <View style={styles.discountBadge}>
+                    <View style={isList ? styles.discountBadgeList : styles.discountBadge}>
                         <Text style={styles.discountText}>{Math.round(item.discount)}%</Text>
                     </View>
                 )}
             </View>
-            <View style={styles.productInfo}>
-                <Text style={styles.productCat}>{item.category}</Text>
-                <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
-                <Text style={styles.productPrice}>{formatCurrency(item.price)}</Text>
-                <View style={styles.stockInfo}>
-                    <View style={[styles.stockDot, { backgroundColor: isOutOfStock ? '#EF4444' : '#22C55E' }]} />
-                    <Text style={styles.stockText}>Stok: {item.stock ?? '∞'}</Text>
+
+            <View style={isList ? styles.productInfoList : styles.productInfo}>
+                <View>
+                    <Text style={styles.productCat}>{item.category}</Text>
+                    <Text style={isList ? styles.productNameList : styles.productName} numberOfLines={2}>{item.name}</Text>
+                </View>
+
+                <View style={isList ? { alignItems: 'flex-end' } : {}}>
+                    <Text style={isList ? styles.productPriceList : styles.productPrice}>{formatCurrency(item.price)}</Text>
+                    <View style={styles.stockInfo}>
+                        <View style={[styles.stockDot, { backgroundColor: isOutOfStock ? '#EF4444' : '#22C55E' }]} />
+                        <Text style={styles.stockText}>Stok: {item.stock ?? '∞'}</Text>
+                    </View>
                 </View>
             </View>
+
+            {qty > 0 && (
+                <View style={isList ? styles.qtyBadgeList : styles.qtyBadge}>
+                    <Text style={qtyBadgeTextStyles}>{qty}</Text>
+                </View>
+            )}
         </Pressable>
     );
 });
@@ -102,7 +113,7 @@ const ProductCardItem = React.memo(({ item, qty, addToCart, ignoreStock, formatC
 // Styles khusus untuk didalam memo agar tidak error
 const qtyBadgeTextStyles = {
     color: '#FFFFFF',
-    fontSize: 10,
+    fontSize: 14, // Increased font size
     fontWeight: 'bold',
 };
 
@@ -115,6 +126,32 @@ const SalesPOS = () => {
     const [hasError, setHasError] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeCategory, setActiveCategory] = useState('Semua');
+    const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+
+    // Load viewMode from storage
+    useEffect(() => {
+        const loadViewMode = async () => {
+            try {
+                const savedMode = await AsyncStorage.getItem('salesPOS_viewMode');
+                if (savedMode) {
+                    setViewMode(savedMode);
+                }
+            } catch (error) {
+                console.error('Failed to load view mode', error);
+            }
+        };
+        loadViewMode();
+    }, []);
+
+    const toggleViewMode = async () => {
+        const newMode = viewMode === 'grid' ? 'list' : 'grid';
+        setViewMode(newMode);
+        try {
+            await AsyncStorage.setItem('salesPOS_viewMode', newMode);
+        } catch (error) {
+            console.error('Failed to save view mode', error);
+        }
+    };
 
     // Cart State
     const [cart, setCart] = useState([]);
@@ -463,9 +500,10 @@ const SalesPOS = () => {
                 ignoreStock={ignoreStock}
                 formatCurrency={formatCurrency}
                 isOutOfStock={isOutOfStock}
+                viewMode={viewMode}
             />
         );
-    }, [cart, addToCart, ignoreStock, formatCurrency]);
+    }, [cart, addToCart, ignoreStock, formatCurrency, viewMode]);
 
     return (
         <View style={styles.container}>
@@ -486,14 +524,27 @@ const SalesPOS = () => {
                         />
                     </View>
                 </View>
-                <View style={styles.searchBar}>
-                    <Search size={20} color="#94A3B8" />
-                    <TextInput
-                        placeholder="Cari menu..."
-                        style={styles.searchInput}
-                        value={searchTerm}
-                        onChangeText={setSearchTerm}
-                    />
+
+                <View style={styles.searchRow}>
+                    <View style={styles.searchBar}>
+                        <Search size={20} color="#94A3B8" />
+                        <TextInput
+                            placeholder="Cari menu..."
+                            style={styles.searchInput}
+                            value={searchTerm}
+                            onChangeText={setSearchTerm}
+                        />
+                    </View>
+                    <TouchableOpacity
+                        style={styles.viewToggleBtn}
+                        onPress={toggleViewMode}
+                    >
+                        {viewMode === 'grid' ? (
+                            <List size={24} color="#64748B" />
+                        ) : (
+                            <LayoutGrid size={24} color="#64748B" />
+                        )}
+                    </TouchableOpacity>
                 </View>
             </View>
 
@@ -531,9 +582,10 @@ const SalesPOS = () => {
                 <ModernLoader type="grid" />
             ) : (
                 <FlatList
+                    key={viewMode} // Force re-render when switching modes
                     data={filteredItems}
                     keyExtractor={item => item.id.toString()}
-                    numColumns={2}
+                    numColumns={viewMode === 'grid' ? 2 : 1}
                     renderItem={renderMenuItem}
                     contentContainerStyle={styles.listContent}
                     refreshControl={
@@ -1044,6 +1096,7 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     searchBar: {
+        flex: 1, // Make search bar take available space
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F1F5F9',
@@ -1090,38 +1143,123 @@ const styles = StyleSheet.create({
         padding: 15,
         paddingBottom: 100,
     },
+    // List View Styles
+    productCardList: {
+        backgroundColor: '#FFFFFF',
+        width: '100%',
+        marginBottom: 12,
+        borderRadius: 16,
+        padding: 10,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+        flexDirection: 'row',
+        alignItems: 'center',
+        ...Platform.select({
+            web: { boxShadow: '0px 2px 8px rgba(0,0,0,0.04)' },
+            android: { elevation: 2 }
+        })
+    },
+    imageWrapperList: {
+        width: 80,
+        height: 80,
+        borderRadius: 12,
+        overflow: 'hidden',
+        backgroundColor: '#F8FAFC',
+        marginRight: 12,
+        position: 'relative'
+    },
+    productInfoList: {
+        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    productNameList: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#1E293B',
+        marginBottom: 4,
+    },
+    productPriceList: {
+        fontSize: 16,
+        fontWeight: '900',
+        color: '#0F172A',
+        marginBottom: 4,
+    },
+    discountBadgeList: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        backgroundColor: '#EF4444',
+        paddingHorizontal: 6,
+        paddingVertical: 3,
+        borderBottomRightRadius: 8,
+    },
+    qtyBadgeList: {
+        position: 'absolute',
+        top: -8,
+        right: -8,
+        backgroundColor: '#2563EB',
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
+        zIndex: 10,
+    },
+    searchRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    viewToggleBtn: {
+        width: 50,
+        height: 50,
+        backgroundColor: '#F1F5F9',
+        borderRadius: 15,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    // End List Styles
+
     productCard: {
         backgroundColor: '#FFFFFF',
         width: COLUMN_WIDTH,
-        margin: 7,
+        margin: 6,
         borderRadius: 20,
-        padding: 12,
+        padding: 10, // Restore padding
         borderWidth: 1,
         borderColor: '#F1F5F9',
         ...Platform.select({
-            web: { boxShadow: '0px 2px 8px rgba(0,0,0,0.05)' },
-            android: { elevation: 2 }
+            web: { boxShadow: '0px 2px 8px rgba(0,0,0,0.04)' },
+            android: { elevation: 3 }
         })
     },
     selectedProductCard: {
         borderColor: '#2563EB',
         borderWidth: 2,
-        backgroundColor: '#F0F7FF',
+        backgroundColor: '#F8FAFC',
+        transform: [{ scale: 0.98 }]
     },
     outOfStockCard: {
         opacity: 0.6,
+        backgroundColor: '#F1F5F9'
     },
     imageWrapper: {
         width: '100%',
-        height: 110,
-        borderRadius: 15,
+        height: 125,
+        borderRadius: 14, // Rounded corners for image
         overflow: 'hidden',
         backgroundColor: '#F8FAFC',
         position: 'relative',
+        marginBottom: 8, // Space between image and text
     },
     productImage: {
         width: '100%',
         height: '100%',
+        resizeMode: 'cover',
     },
     placeholderImg: {
         flex: 1,
@@ -1130,74 +1268,82 @@ const styles = StyleSheet.create({
     },
     qtyBadge: {
         position: 'absolute',
-        top: 5,
-        right: 5,
-        backgroundColor: '#2563EB',
-        width: 24,
-        height: 24,
-        borderRadius: 12,
+        bottom: 10,
+        right: 10,
+        backgroundColor: '#2563EB', // Changed to Blue
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 2,
         borderColor: '#FFFFFF',
+        zIndex: 10,
+        // Removed shadows/elevation
     },
     qtyBadgeText: {
         color: '#FFFFFF',
-        fontSize: 10,
+        fontSize: 14,
         fontWeight: 'bold',
     },
     discountBadge: {
         position: 'absolute',
-        bottom: 0,
-        left: 0,
+        bottom: 6,
+        left: 6,
         backgroundColor: '#EF4444',
         paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderTopRightRadius: 10,
+        paddingVertical: 3,
+        borderRadius: 6,
     },
     discountText: {
         color: '#FFFFFF',
-        fontSize: 10,
-        fontWeight: '900',
+        fontSize: 9,
+        fontWeight: 'bold',
     },
     productInfo: {
-        marginTop: 10,
+        padding: 2, // Minimal padding inside content area
     },
     productCat: {
-        fontSize: 9,
-        fontWeight: '900',
+        fontSize: 10,
+        fontWeight: 'bold',
         color: '#2563EB',
+        backgroundColor: '#EFF6FF',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+        alignSelf: 'flex-start',
+        marginBottom: 8,
+        overflow: 'hidden',
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     },
     productName: {
-        fontSize: 14,
+        fontSize: 15, // Increased from 13
         fontWeight: 'bold',
         color: '#1E293B',
-        marginTop: 2,
-        height: 36,
+        lineHeight: 20, // Increased line height
+        marginBottom: 2,
     },
     productPrice: {
-        fontSize: 16,
+        fontSize: 16, // Increased from 15
         fontWeight: '900',
-        color: '#1E293B',
-        marginTop: 4,
+        color: '#0F172A',
+        marginBottom: 4,
     },
     stockInfo: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 6,
     },
     stockDot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
+        width: 8, // Slightly larger dot
+        height: 8,
+        borderRadius: 4, // Circle
         marginRight: 6,
     },
     stockText: {
-        fontSize: 10,
+        fontSize: 11,
         color: '#64748B',
-        fontWeight: 'bold',
+        fontWeight: '600',
     },
     fabWrapper: {
         position: 'absolute',
