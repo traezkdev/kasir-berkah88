@@ -207,7 +207,7 @@ const CustomCustomerTabBar = ({ state, descriptors, navigation }) => {
                     if (route.name === 'Promo') {
                         return (
                             <View style={[navStyles.promoIconContainer, isFocused && navStyles.activePromoIcon]}>
-                                <Ticket size={24} color={isFocused ? '#FFFFFF' : '#059669'} fill={isFocused ? '#FFFFFF' : 'none'} strokeWidth={2.5} />
+                                <Ticket size={24} color={isFocused ? '#FFFFFF' : '#059669'} fill="none" strokeWidth={2.5} />
                             </View>
                         );
                     }

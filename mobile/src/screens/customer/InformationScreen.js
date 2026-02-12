@@ -210,7 +210,8 @@ const InformationScreen = ({ navigation }) => {
                 visible={showDetail}
                 onClose={() => setShowDetail(false)}
                 title="Detail Informasi"
-                height="85%"
+                height="100%"
+                disableSwipe={true}
                 footer={(selectedInfo?.link_type === 'product' || selectedInfo?.link_type === 'promo') && (
                     <TouchableOpacity
                         style={[styles.modalActionBtn, selectedInfo?.link_type === 'promo' && { backgroundColor: '#F59E0B' }]}

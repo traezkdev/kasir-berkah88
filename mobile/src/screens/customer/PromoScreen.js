@@ -95,7 +95,7 @@ const PromoScreen = ({ navigation }) => {
     };
 
     const getIcon = (iconName, color) => {
-        const props = { size: 24, color: '#FFFFFF' };
+        const props = { size: 24, color: '#FFFFFF', strokeWidth: 2.5 };
         switch (iconName) {
             case 'Truck': return <Truck {...props} />;
             case 'Zap': return <Zap {...props} />;
@@ -311,7 +311,7 @@ const PromoScreen = ({ navigation }) => {
                         {/* Promo Tips Card */}
                         <View style={styles.tipsCard}>
                             <View style={styles.tipsIconWrap}>
-                                <Star size={30} color="#FFFFFF" fill="#FFFFFF" />
+                                <Ticket size={30} color="#FFFFFF" strokeWidth={2.5} />
                             </View>
                             <View style={styles.tipsContent}>
                                 <Text style={styles.tipsTitle}>Tips Hemat Berkah!</Text>
