@@ -48,6 +48,7 @@ import PromoManagement from '../screens/seller/PromoManagement';
 import ManageInformation from '../screens/seller/ManageInformation';
 import FinancialReport from '../screens/seller/FinancialReport';
 import HppManagement from '../screens/seller/HppManagement';
+// Popup Management Scale
 import PopupManagement from '../screens/seller/PopupManagement';
 
 // Customer Screens

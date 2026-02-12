@@ -172,16 +172,13 @@ const PopupManagement = ({ navigation }) => {
         setShowModal(true);
     };
 
-    useEffect(() => {
-        fetchPopups();
-    }, []);
-
-    const fetchPopups = async (isRefresh = false) => {
-        if (!isRefresh) setLoading(true);
+    const fetchPopups = async () => {
         try {
             const response = await apiService.get('/api/popups');
-            if (response.data.message === 'success') {
-                setPopups(response.data.data || []);
+            if (response.data && response.data.message === 'success') {
+                setPopups(Array.isArray(response.data.data) ? response.data.data : []);
+            } else if (Array.isArray(response.data)) {
+                setPopups(response.data);
             }
         } catch (error) {
             console.error('Error fetching popups:', error);
@@ -196,9 +193,13 @@ const PopupManagement = ({ navigation }) => {
         }
     };
 
+    useEffect(() => {
+        fetchPopups();
+    }, []);
+
     const handleRefresh = () => {
         setRefreshing(true);
-        fetchPopups(true);
+        fetchPopups();
     };
 
     const pickImage = async () => {
@@ -218,50 +219,46 @@ const PopupManagement = ({ navigation }) => {
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: false,
             quality: 0.8,
-            base64: true,
         });
 
         if (!result.canceled) {
             setFormData(prev => ({
                 ...prev,
-                imageUri: result.assets[0].uri,
-                image: {
-                    uri: result.assets[0].uri,
-                    type: 'image/jpeg',
-                    name: 'popup.jpg',
-                },
+                image: result.assets[0],
+                imageUri: result.assets[0].uri
             }));
         }
     };
 
     const handleSave = async () => {
-        if (!formData.title.trim()) {
-            Alert.alert('Validasi', 'Judul popup harus diisi');
+        if (!formData.title) {
+            showAlert({ title: 'Peringatan', message: 'Tolong isi judul popup.' });
             return;
         }
 
         if (!editingPopup && !formData.image) {
-            Alert.alert('Validasi', 'Gambar popup harus dipilih');
+            showAlert({ title: 'Peringatan', message: 'Tolong pilih gambar untuk popup baru.' });
             return;
         }
 
         setSaving(true);
         try {
             const formDataToSend = new FormData();
+            formDataToSend.append('title', formData.title);
+            formDataToSend.append('link_type', formData.link_type);
+            formDataToSend.append('link_value', formData.link_value);
+            formDataToSend.append('show_on_pages', JSON.stringify(formData.show_on_pages));
+            formDataToSend.append('priority', formData.priority);
+            formDataToSend.append('is_active', formData.is_active);
 
-            const dataObj = {
-                title: formData.title,
-                link_type: formData.link_type,
-                link_value: formData.link_value,
-                show_on_pages: formData.show_on_pages,
-                priority: parseInt(formData.priority) || 0,
-                is_active: formData.is_active,
-            };
-
-            formDataToSend.append('data', JSON.stringify(dataObj));
-
-            if (formData.image && formData.image.uri) {
-                formDataToSend.append('image', formData.image);
+            if (formData.image) {
+                const uriParts = formData.image.uri.split('.');
+                const fileType = uriParts[uriParts.length - 1];
+                formDataToSend.append('image', {
+                    uri: formData.image.uri,
+                    name: `popup_${Date.now()}.${fileType}`,
+                    type: `image/${fileType}`,
+                });
             }
 
             let response;
@@ -303,7 +300,7 @@ const PopupManagement = ({ navigation }) => {
     const handleDelete = (popup) => {
         showConfirm({
             title: 'Hapus Popup',
-            message: `Apakah Anda yakin ingin menghapus popup "${popup.title}"? Tindakan ini tidak dapat dibatalkan.`,
+            message: `Apakah Anda yakin ingin menghapus popup \"${popup.title}\"? Tindakan ini tidak dapat dibatalkan.`,
             type: 'danger',
             confirmText: 'Hapus Sekarang',
             icon: <Trash2 size={28} color="#EF4444" />,
@@ -332,7 +329,7 @@ const PopupManagement = ({ navigation }) => {
     const handlePush = (popup) => {
         showConfirm({
             title: 'Push Ulang Popup',
-            message: `Kirim ulang popup "${popup.title}" ke semua customer? Customer akan melihat popup ini kembali saat membuka dashboard.`,
+            message: `Kirim ulang popup \"${popup.title}\" ke semua customer? Customer akan melihat popup ini kembali saat membuka dashboard.`,
             type: 'primary',
             confirmText: 'Push Sekarang',
             icon: <Send size={28} color="#059669" />,
@@ -394,11 +391,12 @@ const PopupManagement = ({ navigation }) => {
                     <TouchableOpacity
                         style={styles.backBtn}
                         onPress={() => navigation.goBack()}
+                        activeOpacity={0.7}
                     >
-                        <ChevronLeft size={24} color="#1E293B" />
+                        <ChevronLeft size={24} color="#0F172A" />
                     </TouchableOpacity>
                     <View style={styles.headerTitleContainer}>
-                        <Text style={styles.headerLabel}>Manajemen</Text>
+                        <Text style={styles.headerLabel}>Seller Center</Text>
                         <Text style={styles.headerMainTitle}>Popup Promo</Text>
                     </View>
                 </View>
@@ -406,107 +404,148 @@ const PopupManagement = ({ navigation }) => {
                 <TouchableOpacity
                     style={styles.addBtn}
                     onPress={() => handleOpenModal()}
+                    activeOpacity={0.8}
                 >
-                    <Plus size={24} color="#FFFFFF" />
+                    <Plus size={24} color="#FFFFFF" strokeWidth={3} />
                 </TouchableOpacity>
             </View>
 
             <ScrollView
                 style={styles.content}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+                    <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#059669" />
                 }
+                showsVerticalScrollIndicator={false}
             >
-                {popups.length === 0 ? (
+                {/* Stats Summary */}
+                {Array.isArray(popups) && popups.length > 0 && (
+                    <View style={styles.statsSummary}>
+                        <View style={styles.summaryCard}>
+                            <View style={[styles.summaryIcon, { backgroundColor: '#ECFDF5' }]}>
+                                <CheckCircle2 size={20} color="#059669" />
+                            </View>
+                            <View>
+                                <Text style={styles.summaryValue}>{popups.filter(p => p.is_active).length}</Text>
+                                <Text style={styles.summaryLabel}>Aktif</Text>
+                            </View>
+                        </View>
+                        <View style={styles.summaryCard}>
+                            <View style={[styles.summaryIcon, { backgroundColor: '#F0F9FF' }]}>
+                                <TrendingUp size={20} color="#0284C7" />
+                            </View>
+                            <View>
+                                <Text style={styles.summaryValue}>
+                                    {popups.reduce((acc, p) => acc + (p.click_count || 0), 0)}
+                                </Text>
+                                <Text style={styles.summaryLabel}>Klik</Text>
+                            </View>
+                        </View>
+                    </View>
+                )}
+                {!Array.isArray(popups) || popups.length === 0 ? (
                     <View style={styles.emptyState}>
-                        <ImageIcon size={64} color="#CBD5E1" />
-                        <Text style={styles.emptyText}>Belum ada popup</Text>
-                        <Text style={styles.emptySubtext}>Tap tombol + untuk menambah popup baru</Text>
+                        <View style={styles.emptyIconContainer}>
+                            <Megaphone size={64} color="#94A3B8" strokeWidth={1.5} />
+                        </View>
+                        <Text style={styles.emptyText}>Belum Ada Popup</Text>
+                        <Text style={styles.emptySubtext}>Promo Anda akan muncul di hadapan customer dalam bentuk popup yang menarik.</Text>
+                        <TouchableOpacity
+                            style={styles.emptyAddBtn}
+                            onPress={() => handleOpenModal()}
+                        >
+                            <Text style={styles.emptyAddBtnText}>Buat Popup Sekarang</Text>
+                        </TouchableOpacity>
                     </View>
                 ) : (
                     popups.map((popup) => (
                         <View key={popup.id} style={styles.popupCard}>
-                            {/* Image */}
-                            <View style={styles.popupImageContainer}>
-                                {popup.image_url ? (
-                                    <Image
-                                        source={{ uri: `${API_URL}${popup.image_url.startsWith('/') ? '' : '/'}${popup.image_url}` }}
-                                        style={styles.popupImage}
-                                        resizeMode="cover"
-                                    />
-                                ) : (
-                                    <View style={styles.popupImagePlaceholder}>
-                                        <ImageIcon size={40} color="#CBD5E1" />
-                                    </View>
-                                )}
-                                {!popup.is_active && (
-                                    <View style={styles.inactiveBadge}>
-                                        <Text style={styles.inactiveBadgeText}>NONAKTIF</Text>
-                                    </View>
-                                )}
-                            </View>
-
-                            {/* Info */}
-                            <View style={styles.popupInfo}>
-                                <Text style={styles.popupTitle} numberOfLines={2}>{popup.title}</Text>
-
-                                {/* Pages */}
-                                <View style={styles.pagesContainer}>
-                                    {popup.show_on_pages && popup.show_on_pages.length > 0 ? (
-                                        popup.show_on_pages.map((page, idx) => (
-                                            <View key={idx} style={styles.pageBadge}>
-                                                <Text style={styles.pageBadgeText}>
-                                                    {AVAILABLE_PAGES.find(p => p.value === page)?.label || page}
-                                                </Text>
-                                            </View>
-                                        ))
+                            {/* Horizontal Card Layout */}
+                            <View style={styles.cardMainRow}>
+                                {/* Left: Image Thumbnail */}
+                                <View style={styles.cardImageContainer}>
+                                    {popup.image_url ? (
+                                        <Image
+                                            source={{ uri: `${API_URL}${popup.image_url.startsWith('/') ? '' : '/'}${popup.image_url}` }}
+                                            style={styles.popupThumbImage}
+                                            resizeMode="cover"
+                                        />
                                     ) : (
-                                        <View style={styles.pageBadge}>
-                                            <Text style={styles.pageBadgeText}>Semua Halaman</Text>
+                                        <View style={styles.popupImagePlaceholder}>
+                                            <ImageIcon size={24} color="#CBD5E1" />
                                         </View>
+                                    )}
+                                    {/* Mini Status Overlay */}
+                                    <View style={[styles.miniStatusBadge, { backgroundColor: popup.is_active ? '#059669' : '#EF4444' }]}>
+                                    </View>
+                                </View>
+
+                                {/* Right: Content */}
+                                <View style={styles.cardDetails}>
+                                    <View style={styles.titleRowCompact}>
+                                        <Text style={styles.popupTitleCompact} numberOfLines={1}>{popup.title}</Text>
+                                        <View style={styles.priorityBadgeCompact}>
+                                            <TrendingUp size={10} color="#F59E0B" />
+                                            <Text style={styles.priorityTextCompact}>{popup.priority || 0}</Text>
+                                        </View>
+                                    </View>
+
+                                    <View style={styles.tagsRowCompact}>
+                                        <Text style={styles.tagTextCompact} numberOfLines={1}>
+                                            {popup.show_on_pages && popup.show_on_pages.length > 0
+                                                ? popup.show_on_pages.map(p => AVAILABLE_PAGES.find(ap => ap.value === p)?.label || p).join(', ')
+                                                : 'Semua Halaman'}
+                                        </Text>
+                                    </View>
+
+                                    {popup.last_pushed_at && (
+                                        <Text style={styles.lastPushedTextCompact}>
+                                            Push: {new Date(popup.last_pushed_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} • {new Date(popup.last_pushed_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                        </Text>
                                     )}
                                 </View>
 
-                                {/* Stats */}
+                                {/* Edit Button (Top Right) */}
+                                <TouchableOpacity
+                                    style={styles.editBtnCompact}
+                                    onPress={() => handleOpenModal(popup)}
+                                >
+                                    <Edit2 size={16} color="#64748B" />
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* Bottom: Stats & Actions */}
+                            <View style={styles.cardFooter}>
                                 <View style={styles.statsRow}>
                                     <View style={styles.statItem}>
-                                        <Eye size={14} color="#64748B" />
-                                        <Text style={styles.statText}>{popup.view_count || 0}</Text>
+                                        <Eye size={12} color="#64748B" />
+                                        <Text style={styles.statVal}>{popup.view_count || 0}</Text>
                                     </View>
                                     <View style={styles.statItem}>
-                                        <MousePointer size={14} color="#64748B" />
-                                        <Text style={styles.statText}>{popup.click_count || 0}</Text>
+                                        <MousePointer2 size={12} color="#64748B" />
+                                        <Text style={styles.statVal}>{popup.click_count || 0}</Text>
                                     </View>
-                                    <Text style={styles.ctrText}>
-                                        CTR: {formatCTR(popup.view_count, popup.click_count)}
-                                    </Text>
-                                    <Text style={styles.priorityText}>P: {popup.priority || 0}</Text>
+                                    <View style={styles.statItem}>
+                                        <BarChart3 size={12} color="#059669" />
+                                        <Text style={[styles.statVal, { color: '#059669' }]}>
+                                            {formatCTR(popup.view_count, popup.click_count)}
+                                        </Text>
+                                    </View>
                                 </View>
 
-                                {/* Actions */}
                                 <View style={styles.actionsRow}>
                                     <TouchableOpacity
-                                        style={styles.actionButton}
-                                        onPress={() => handleOpenModal(popup)}
-                                    >
-                                        <Edit2 size={16} color="#3B82F6" />
-                                        <Text style={[styles.actionButtonText, { color: '#3B82F6' }]}>Edit</Text>
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity
-                                        style={styles.actionButton}
+                                        style={styles.pushBtnSmall}
                                         onPress={() => handlePush(popup)}
                                     >
-                                        <Send size={16} color="#059669" />
-                                        <Text style={[styles.actionButtonText, { color: '#059669' }]}>Push</Text>
+                                        <Send size={12} color="#FFFFFF" />
+                                        <Text style={styles.pushBtnTextSmall}>Push</Text>
                                     </TouchableOpacity>
 
                                     <TouchableOpacity
-                                        style={styles.actionButton}
+                                        style={styles.deleteBtnSmall}
                                         onPress={() => handleDelete(popup)}
                                     >
-                                        <Trash2 size={16} color="#EF4444" />
-                                        <Text style={[styles.actionButtonText, { color: '#EF4444' }]}>Hapus</Text>
+                                        <Trash2 size={14} color="#EF4444" />
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -607,23 +646,22 @@ const PopupManagement = ({ navigation }) => {
 
                     {formData.link_type === 'url' && (
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Link URL</Text>
+                            <Text style={styles.label}>Link URL (Alamat Web)</Text>
                             <TextInput
                                 style={styles.input}
                                 value={formData.link_value}
                                 onChangeText={(text) => setFormData(prev => ({ ...prev, link_value: text }))}
-                                placeholder="https://example.com"
+                                placeholder="https://youtube.com/..."
                                 placeholderTextColor="#94A3B8"
-                                autoCapitalize="none"
                                 keyboardType="url"
+                                autoCapitalize="none"
                             />
                         </View>
                     )}
 
-                    {/* Show on Pages */}
+                    {/* Display Pages */}
                     <View style={styles.inputGroup}>
                         <Text style={styles.label}>Tampilkan di Halaman</Text>
-                        <Text style={styles.helperText}>Kosongkan untuk tampil di semua halaman</Text>
                         <View style={styles.checkboxGroup}>
                             {AVAILABLE_PAGES.map((page) => (
                                 <TouchableOpacity
@@ -631,20 +669,22 @@ const PopupManagement = ({ navigation }) => {
                                     style={styles.checkboxItem}
                                     onPress={() => togglePage(page.value)}
                                 >
-                                    <View style={[styles.checkbox, formData.show_on_pages.includes(page.value) && styles.checkboxActive]}>
-                                        {formData.show_on_pages.includes(page.value) && (
-                                            <Check size={14} color="#FFFFFF" />
-                                        )}
+                                    <View style={[
+                                        styles.checkbox,
+                                        formData.show_on_pages.includes(page.value) && styles.checkboxActive
+                                    ]}>
+                                        {formData.show_on_pages.includes(page.value) && <Check size={12} color="#FFFFFF" strokeWidth={4} />}
                                     </View>
                                     <Text style={styles.checkboxLabel}>{page.label}</Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
+                        <Text style={styles.helperText}>Jika kosong, popup akan muncul di semua halaman.</Text>
                     </View>
 
-                    {/* Priority & Status Row */}
+                    {/* Priority & Status */}
                     <View style={styles.row}>
-                        <View style={[styles.inputGroup, { flex: 1, marginRight: 15 }]}>
+                        <View style={[styles.inputGroup, { flex: 1 }]}>
                             <Text style={styles.label}>Prioritas</Text>
                             <TextInput
                                 style={styles.input}
@@ -809,18 +849,218 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 4,
     },
-    addBtnActive: {
-        backgroundColor: '#1E293B',
-        shadowColor: '#1E293B',
-    },
     content: {
         flex: 1,
         padding: 16,
+    },
+    // Beautified Management Styles
+    statsSummary: {
+        flexDirection: 'row',
+        gap: 12,
+        marginBottom: 20,
+    },
+    summaryCard: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 20,
+        padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#0F172A',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.05,
+                shadowRadius: 10,
+            },
+            android: {
+                elevation: 2,
+            },
+        }),
+    },
+    summaryIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    summaryValue: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#0F172A',
+        lineHeight: 22,
+    },
+    summaryLabel: {
+        fontSize: 12,
+        color: '#64748B',
+        fontWeight: '600',
+    },
+    popupCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        marginBottom: 14,
+        padding: 14,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    cardMainRow: {
+        flexDirection: 'row',
+        gap: 14, // Increased gap between image and text
+        marginBottom: 14, // Increased bottom margin
+    },
+    cardImageContainer: {
+        width: 85, // Increased from 70
+        height: 85, // Increased from 70
+        borderRadius: 12,
+        backgroundColor: '#F1F5F9',
+        overflow: 'hidden',
+        position: 'relative',
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+    },
+    popupThumbImage: {
+        width: '100%',
+        height: '100%',
+    },
+    popupImagePlaceholder: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    miniStatusBadge: {
+        position: 'absolute',
+        top: 6,
+        left: 6,
+        width: 10, // Slightly larger dot
+        height: 10,
+        borderRadius: 5,
+        borderWidth: 1.5,
+        borderColor: '#FFFFFF',
+    },
+    cardDetails: {
+        flex: 1,
+        justifyContent: 'center',
+        gap: 6, // Increased vertical gap
+    },
+    titleRowCompact: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    popupTitleCompact: {
+        fontSize: 16, // Increased from 14
+        fontWeight: '800',
+        color: '#0F172A',
+        flex: 1,
+        lineHeight: 22, // Better line height
+    },
+    priorityBadgeCompact: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        backgroundColor: '#FFFBEB',
+        paddingHorizontal: 8, // More horizontal padding
+        paddingVertical: 3,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: '#FEF3C7',
+    },
+    priorityTextCompact: {
+        fontSize: 10, // Increased from 9
+        fontWeight: '800',
+        color: '#F59E0B',
+    },
+    tagsRowCompact: {
+        flexDirection: 'row',
+    },
+    tagTextCompact: {
+        fontSize: 12, // Increased from 11
+        color: '#64748B',
+        fontWeight: '600', // Increased weight
+    },
+    lastPushedTextCompact: {
+        fontSize: 11, // Increased from 10
+        color: '#94A3B8',
+        fontWeight: '500',
+    },
+    editBtnCompact: {
+        padding: 6, // Larger touch target
+        backgroundColor: '#F8FAFC',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+        height: 32,
+        width: 32,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    cardFooter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingTop: 12, // Increased top padding
+        borderTopWidth: 1,
+        borderTopColor: '#F1F5F9',
+    },
+    statsRow: {
+        flexDirection: 'row',
+        gap: 16, // Increased gap between stats
+    },
+    statItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6, // Increased gap icon-text
+    },
+    statVal: {
+        fontSize: 13, // Increased from 11
+        fontWeight: '700',
+        color: '#475569',
+    },
+    actionsRow: {
+        flexDirection: 'row',
+        gap: 10, // Increased gap between buttons
+    },
+    pushBtnSmall: {
+        backgroundColor: '#059669',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 14, // Larger padding
+        paddingVertical: 8, // Larger height
+        borderRadius: 8,
+        gap: 6,
+        elevation: 1,
+    },
+    pushBtnTextSmall: {
+        color: '#FFFFFF',
+        fontSize: 11, // Increased from 10
+        fontWeight: '800',
+    },
+    deleteBtnSmall: {
+        padding: 8, // Larger padding
+        backgroundColor: '#FEF2F2',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#FEE2E2',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     emptyState: {
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 60,
+    },
+    emptyIconContainer: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        backgroundColor: '#F8FAFC',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 24,
     },
     emptyText: {
         fontSize: 16,
@@ -832,119 +1072,20 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#94A3B8',
         marginTop: 8,
+        textAlign: 'center',
+        paddingHorizontal: 20,
     },
-    popupCard: {
-        backgroundColor: '#FFFFFF',
+    emptyAddBtn: {
+        marginTop: 24,
+        backgroundColor: '#059669',
+        paddingHorizontal: 24,
+        paddingVertical: 14,
         borderRadius: 16,
-        marginBottom: 16,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
     },
-    popupImageContainer: {
-        width: '100%',
-        height: 200,
-        backgroundColor: '#F1F5F9',
-        position: 'relative',
-    },
-    popupImage: {
-        width: '100%',
-        height: '100%',
-    },
-    popupImagePlaceholder: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    inactiveBadge: {
-        position: 'absolute',
-        top: 12,
-        right: 12,
-        backgroundColor: 'rgba(239, 68, 68, 0.9)',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 8,
-    },
-    inactiveBadgeText: {
+    emptyAddBtnText: {
         color: '#FFFFFF',
-        fontSize: 10,
-        fontWeight: 'bold',
-    },
-    popupInfo: {
-        padding: 16,
-    },
-    popupTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#1E293B',
-        marginBottom: 12,
-    },
-    pagesContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 6,
-        marginBottom: 12,
-    },
-    pageBadge: {
-        backgroundColor: '#EFF6FF',
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 6,
-    },
-    pageBadgeText: {
-        fontSize: 11,
-        color: '#3B82F6',
-        fontWeight: '600',
-    },
-    statsRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 16,
-        marginBottom: 12,
-        paddingVertical: 8,
-        borderTopWidth: 1,
-        borderTopColor: '#F1F5F9',
-    },
-    statItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-    },
-    statText: {
-        fontSize: 13,
-        color: '#64748B',
-        fontWeight: '600',
-    },
-    ctrText: {
-        fontSize: 12,
-        color: '#059669',
-        fontWeight: '600',
-    },
-    priorityText: {
-        fontSize: 12,
-        color: '#F59E0B',
-        fontWeight: '600',
-        marginLeft: 'auto',
-    },
-    actionsRow: {
-        flexDirection: 'row',
-        gap: 8,
-    },
-    actionButton: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 6,
-        paddingVertical: 10,
-        borderRadius: 10,
-        backgroundColor: '#F8FAFC',
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-    },
-    actionButtonText: {
-        fontSize: 13,
-        fontWeight: '600',
+        fontSize: 15,
+        fontWeight: '800',
     },
     modalContent: {
         padding: 20,
@@ -1070,30 +1211,6 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         backgroundColor: '#F8FAFC',
     },
-    imagePicker: {
-        width: '100%',
-        height: 200,
-        borderRadius: 12,
-        borderWidth: 2,
-        borderColor: '#E2E8F0',
-        borderStyle: 'dashed',
-        overflow: 'hidden',
-    },
-    imagePickerPlaceholder: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#F8FAFC',
-    },
-    imagePickerText: {
-        fontSize: 14,
-        color: '#94A3B8',
-        marginTop: 8,
-    },
-    previewImage: {
-        width: '100%',
-        height: '100%',
-    },
     imagePlaceholder: {
         flex: 1,
         justifyContent: 'center',
@@ -1128,27 +1245,6 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 12,
         fontWeight: '700',
-    },
-    radioGroup: {
-        gap: 12,
-    },
-    radioItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-        paddingVertical: 8,
-    },
-    radio: {
-        width: 20,
-        height: 20,
-        borderRadius: 10,
-        borderWidth: 2,
-        borderColor: '#CBD5E1',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    radioActive: {
-        borderColor: '#059669',
     },
     switchRow: {
         flexDirection: 'row',
