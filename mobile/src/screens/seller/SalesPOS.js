@@ -9,7 +9,7 @@ import {
     TextInput,
     ActivityIndicator,
     Alert,
-    Dimensions,
+    useWindowDimensions,
     Platform,
     Modal,
     ScrollView,
@@ -48,11 +48,6 @@ import { useConfirm } from '../../context/ConfirmContext';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { useOrderNotification } from '../../context/OrderNotificationContext';
 
-// LinearGradient wrapper removed
-
-const { width, height } = Dimensions.get('window');
-const COLUMN_WIDTH = (width - 48) / 2;
-
 // Komponen Item yang dimemoize untuk performa (Anti-Delay)
 const ProductCardItem = React.memo(({ item, qty, addToCart, ignoreStock, formatCurrency, isOutOfStock, viewMode }) => {
     const isList = viewMode === 'list';
@@ -89,7 +84,7 @@ const ProductCardItem = React.memo(({ item, qty, addToCart, ignoreStock, formatC
             <View style={isList ? styles.productInfoList : styles.productInfo}>
                 <View style={{ flex: 1 }}>
                     <Text style={styles.productCat}>{item.category}</Text>
-                    <Text style={isList ? styles.productNameList : styles.productName} numberOfLines={2}>{item.name}</Text>
+                    <Text style={isList ? styles.productNameList : styles.productName} numberOfLines={2} ellipsizeMode="tail">{item.name}</Text>
                 </View>
 
                 {isList && (
@@ -122,6 +117,7 @@ const qtyBadgeTextStyles = {
 };
 
 const SalesPOS = () => {
+    const { width: windowWidth } = useWindowDimensions();
     const insets = useSafeAreaInsets();
     const { refreshTrigger } = useOrderNotification();
     const [menuItems, setMenuItems] = useState([]);
@@ -727,7 +723,7 @@ const SalesPOS = () => {
                                         {cart.map(item => (
                                             <View key={item.id} style={styles.cartItem}>
                                                 <View style={styles.cartItemLeft}>
-                                                    <Text style={styles.cartItemName}>{item.name}</Text>
+                                                    <Text style={styles.cartItemName} numberOfLines={2} ellipsizeMode="tail">{item.name}</Text>
                                                     <Text style={styles.cartItemPrice}>{formatCurrency(item.price)}</Text>
                                                 </View>
                                                 <View style={styles.cartItemRight}>
@@ -846,7 +842,7 @@ const SalesPOS = () => {
                                         )}
 
                                         <Text style={styles.sectionLabel}>DISKON MANUAL</Text>
-                                        <View style={[styles.cashInputWrapper, { paddingHorizontal: 0, marginBottom: 20 }]}>
+                                        <View style={[styles.cashInputWrapper, { paddingHorizontal: 0, marginBottom: 20, height: 50, minHeight: 'auto' }]}>
                                             <View style={styles.manualDiscountIconArea}>
                                                 <Text style={styles.discountIconText}>%</Text>
                                             </View>
@@ -925,11 +921,11 @@ const SalesPOS = () => {
 
                     {/* Modal Footer */}
                     <View style={[styles.modalFooter, { paddingBottom: getSafeBottomPadding(insets) }]}>
-                        <View style={{ gap: 8, marginBottom: 15 }}>
+                        <View style={{ gap: 4, marginBottom: 12 }}>
                             {parseFloat(manualDiscount || 0) > 0 && (
                                 <View style={styles.totalRow}>
-                                    <Text style={[styles.totalLabel, { color: '#64748B' }]}>Subtotal</Text>
-                                    <Text style={[styles.totalLabel, { color: '#64748B' }]}>{formatCurrency(subtotal)}</Text>
+                                    <Text style={{ color: '#64748B', fontSize: 14, fontWeight: 'bold' }}>Subtotal</Text>
+                                    <Text style={{ color: '#64748B', fontSize: 14, fontWeight: 'bold' }}>{formatCurrency(subtotal)}</Text>
                                 </View>
                             )}
                             {parseFloat(manualDiscount || 0) > 0 && (
@@ -939,7 +935,7 @@ const SalesPOS = () => {
                                             <Text style={{ color: '#EF4444', fontSize: 10, fontWeight: 'bold' }}>DISKON</Text>
                                         </View>
                                     </View>
-                                    <Text style={{ color: '#EF4444', fontWeight: 'bold' }}>-{formatCurrency(parseFloat(manualDiscount))}</Text>
+                                    <Text style={{ color: '#EF4444', fontSize: 14, fontWeight: 'bold' }}>-{formatCurrency(parseFloat(manualDiscount))}</Text>
                                 </View>
                             )}
                             {usePoints && pointsToUse > 0 && (
@@ -949,7 +945,7 @@ const SalesPOS = () => {
                                             <Text style={{ color: '#2563EB', fontSize: 10, fontWeight: 'bold' }}>POIN</Text>
                                         </View>
                                     </View>
-                                    <Text style={{ color: '#2563EB', fontWeight: 'bold' }}>-{formatCurrency(pointsToUse)}</Text>
+                                    <Text style={{ color: '#2563EB', fontSize: 14, fontWeight: 'bold' }}>-{formatCurrency(pointsToUse)}</Text>
                                 </View>
                             )}
                         </View>
@@ -1008,67 +1004,66 @@ const SalesPOS = () => {
             <Modal
                 visible={showCustomerSearch}
                 animationType="slide"
-                transparent={true}
+                transparent={false}
                 onRequestClose={() => setShowCustomerSearch(false)}
             >
-                <View style={styles.customerSearchOverlay}>
-                    <View style={styles.customerSearchContainer}>
-                        <View style={[styles.customerSearchHeader, { paddingTop: Math.max(insets.top, 20) }]}>
-                            <Text style={styles.customerSearchTitle}>Cari Pelanggan</Text>
-                            <TouchableOpacity onPress={() => {
-                                setShowCustomerSearch(false);
-                                setIsCustomerSearchReady(false);
-                            }}>
-                                <X size={24} color="#64748B" />
-                            </TouchableOpacity>
-                        </View>
-
-                        <View style={styles.customerSearchBar}>
-                            <Search size={20} color="#94A3B8" />
-                            <TextInput
-                                style={styles.customerSearchInput}
-                                placeholder="Nama atau No. HP"
-                                value={customerSearchQuery}
-                                onChangeText={(text) => {
-                                    setCustomerSearchQuery(text);
-                                }}
-                                autoFocus
-                            />
-                        </View>
-
-                        {!isCustomerSearchReady ? (
-                            <ActivityIndicator style={{ marginTop: 40 }} color="#2563EB" />
-                        ) : (
-                            <FlatList
-                                data={customerSearchResults}
-                                keyExtractor={item => item.id.toString()}
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity
-                                        style={styles.customerSearchResultItem}
-                                        onPress={() => handleSelectCustomer(item)}
-                                    >
-                                        <View>
-                                            <Text style={styles.resultName}>{item.name || item.username}</Text>
-                                            <Text style={styles.resultPhone}>{item.phone}</Text>
-                                        </View>
-                                        <View style={{ alignItems: 'flex-end' }}>
-                                            <Text style={styles.resultPoints}>{formatCurrency(item.points)}</Text>
-                                            <Text style={{ fontSize: 10, color: '#94A3B8' }}>Poin</Text>
-                                        </View>
-                                    </TouchableOpacity>
-                                )}
-                                ListEmptyComponent={() => (
-                                    isSearchingCustomer ? (
-                                        <ActivityIndicator style={{ marginTop: 20 }} color="#2563EB" />
-                                    ) : (
-                                        <View style={{ padding: 20, alignItems: 'center' }}>
-                                            <Text style={{ color: '#94A3B8' }}>Tidak ada hasil</Text>
-                                        </View>
-                                    )
-                                )}
-                            />
-                        )}
+                <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+                <View style={styles.customerSearchContainer}>
+                    <View style={[styles.customerSearchHeader, { paddingTop: Math.max(insets.top + 15, 35) }]}>
+                        <Text style={styles.customerSearchTitle}>Cari Pelanggan</Text>
+                        <TouchableOpacity onPress={() => {
+                            setShowCustomerSearch(false);
+                            setIsCustomerSearchReady(false);
+                        }}>
+                            <X size={24} color="#64748B" />
+                        </TouchableOpacity>
                     </View>
+
+                    <View style={styles.customerSearchBar}>
+                        <Search size={20} color="#94A3B8" />
+                        <TextInput
+                            style={styles.customerSearchInput}
+                            placeholder="Nama atau No. HP"
+                            value={customerSearchQuery}
+                            onChangeText={(text) => {
+                                setCustomerSearchQuery(text);
+                            }}
+                            autoFocus
+                        />
+                    </View>
+
+                    {!isCustomerSearchReady ? (
+                        <ActivityIndicator style={{ marginTop: 40 }} color="#2563EB" />
+                    ) : (
+                        <FlatList
+                            data={customerSearchResults}
+                            keyExtractor={item => item.id.toString()}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={styles.customerSearchResultItem}
+                                    onPress={() => handleSelectCustomer(item)}
+                                >
+                                    <View>
+                                        <Text style={styles.resultName} numberOfLines={1} ellipsizeMode="tail">{item.name || item.username}</Text>
+                                        <Text style={styles.resultPhone}>{item.phone}</Text>
+                                    </View>
+                                    <View style={{ alignItems: 'flex-end' }}>
+                                        <Text style={styles.resultPoints}>{formatCurrency(item.points)}</Text>
+                                        <Text style={{ fontSize: 10, color: '#94A3B8' }}>Poin</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            )}
+                            ListEmptyComponent={() => (
+                                isSearchingCustomer ? (
+                                    <ActivityIndicator style={{ marginTop: 20 }} color="#2563EB" />
+                                ) : (
+                                    <View style={{ padding: 20, alignItems: 'center' }}>
+                                        <Text style={{ color: '#94A3B8' }}>Tidak ada hasil</Text>
+                                    </View>
+                                )
+                            )}
+                        />
+                    )}
                 </View>
             </Modal>
         </View>
@@ -1088,10 +1083,11 @@ const styles = StyleSheet.create({
     header: {
         backgroundColor: '#FFFFFF',
         paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : (Platform.OS === 'web' ? 15 : 20),
-        paddingHorizontal: 20,
+        paddingHorizontal: '5%',
         paddingBottom: 15,
         borderBottomWidth: 1,
         borderBottomColor: '#F1F5F9',
+        minHeight: 140,
     },
     title: {
         fontSize: 24,
@@ -1100,7 +1096,7 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     searchBar: {
-        flex: 1, // Make search bar take available space
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F1F5F9',
@@ -1120,7 +1116,7 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
     },
     catScroll: {
-        paddingHorizontal: 20,
+        paddingHorizontal: '5%',
         gap: 10,
     },
     catBtn: {
@@ -1144,7 +1140,7 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
     },
     listContent: {
-        padding: 15,
+        padding: '3%',
         paddingBottom: 100,
     },
     // List View Styles
@@ -1164,9 +1160,9 @@ const styles = StyleSheet.create({
         })
     },
     imageWrapperList: {
-        width: 80,
-        height: 80,
-        borderRadius: 16, // Matching outer radius curve
+        width: '22%',
+        aspectRatio: 1,
+        borderRadius: 16,
         overflow: 'hidden',
         backgroundColor: '#F1F5F9',
         marginRight: 16,
@@ -1238,12 +1234,14 @@ const styles = StyleSheet.create({
 
     productCard: {
         backgroundColor: '#FFFFFF',
-        width: COLUMN_WIDTH,
-        margin: 6,
+        flex: 1,
+        maxWidth: '48%',
+        marginHorizontal: '1%',
+        marginVertical: 6,
         borderRadius: 20,
         padding: 10,
         borderWidth: 1,
-        borderColor: '#F1F5F9', // Revert to F1F5F9
+        borderColor: '#F1F5F9',
         ...Platform.select({
             web: { boxShadow: '0px 2px 8px rgba(0,0,0,0.04)' },
             android: { elevation: 3 }
@@ -1261,7 +1259,7 @@ const styles = StyleSheet.create({
     },
     imageWrapper: {
         width: '100%',
-        height: 125,
+        aspectRatio: 1.2,
         borderRadius: 14,
         overflow: 'hidden',
         backgroundColor: '#F8FAFC',
@@ -1334,6 +1332,8 @@ const styles = StyleSheet.create({
         color: '#1E293B',
         lineHeight: 20,
         marginBottom: 2,
+        flexWrap: 'wrap',
+        flexShrink: 1,
     },
     productPrice: {
         fontSize: 16,
@@ -1359,19 +1359,20 @@ const styles = StyleSheet.create({
     fabWrapper: {
         position: 'absolute',
         bottom: 25,
-        left: 20,
-        right: 20,
+        left: '5%',
+        right: '5%',
         zIndex: 1000,
     },
     fabCard: {
         backgroundColor: '#FFFFFF',
-        height: 72,
+        minHeight: 72,
         borderRadius: 24,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingLeft: 16,
         paddingRight: 8,
+        paddingVertical: 12,
         borderWidth: 1,
         borderColor: '#F1F5F9',
         ...Platform.select({
@@ -1440,8 +1441,9 @@ const styles = StyleSheet.create({
     },
     payButtonPill: {
         backgroundColor: '#2563EB',
-        height: 56,
+        minHeight: 56,
         paddingHorizontal: 20,
+        paddingVertical: 12,
         borderRadius: 18,
         flexDirection: 'row',
         alignItems: 'center',
@@ -1527,7 +1529,7 @@ const styles = StyleSheet.create({
     },
     modalBodyContent: {
         padding: 24,
-        paddingBottom: 180, // Tambahkan padding besar agar konten tidak tertutup footer absolute
+        paddingBottom: 40,
         flexGrow: 1,
     },
     cartList: {
@@ -1625,7 +1627,8 @@ const styles = StyleSheet.create({
     methodBtn: {
         flex: 1,
         backgroundColor: '#F8FAFC',
-        paddingVertical: 12,
+        paddingVertical: 10,
+        minHeight: 48,
         borderRadius: 15,
         flexDirection: 'row',
         alignItems: 'center',
@@ -1655,7 +1658,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#F8FAFC',
         borderRadius: 15,
         paddingHorizontal: 16,
-        height: 56,
+        height: 50,
         borderWidth: 1,
         borderColor: '#E2E8F0',
     },
@@ -1748,7 +1751,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: 8,
     },
     totalLabel: {
         fontSize: 10,
@@ -1776,12 +1779,14 @@ const styles = StyleSheet.create({
         fontWeight: '900',
     },
     payBtn: {
-        height: 60,
+        minHeight: 60,
         borderRadius: 20,
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
         gap: 12,
+        paddingVertical: 16,
+        paddingHorizontal: 20,
         ...Platform.select({
             ios: {
                 shadowColor: '#1E40AF',
@@ -1810,12 +1815,13 @@ const styles = StyleSheet.create({
         backgroundColor: '#F1F5F9',
         borderRadius: 12,
         paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingVertical: 10,
         fontSize: 14,
         fontWeight: 'bold',
         color: '#1E293B',
         borderWidth: 1,
         borderColor: '#E2E8F0',
+        minHeight: 44,
     },
     customerName: {
         fontSize: 16,
@@ -1832,23 +1838,17 @@ const styles = StyleSheet.create({
         color: '#2563EB',
         marginTop: 2,
     },
-    customerSearchOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'flex-end',
-    },
     customerSearchContainer: {
+        flex: 1,
         backgroundColor: '#FFFFFF',
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        height: '70%',
-        padding: 20,
+        padding: 16,
     },
     customerSearchHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 16,
+        minHeight: 40,
     },
     customerSearchTitle: {
         fontSize: 18,
@@ -1874,9 +1874,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 15,
+        paddingVertical: 12,
         borderBottomWidth: 1,
         borderBottomColor: '#F1F5F9',
+        minHeight: 60,
     },
     resultName: {
         fontSize: 15,
