@@ -34,7 +34,9 @@ const io = new Server(server, {
     cors: {
         origin: "*",
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
-    }
+    },
+    pingTimeout: 30000,
+    pingInterval: 10000
 });
 app.set('io', io);
 

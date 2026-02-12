@@ -44,6 +44,7 @@ import ReceiptModal from '../../components/ReceiptModal';
 import ModernLoader from '../../components/ModernLoader';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { useOrderNotification } from '../../context/OrderNotificationContext';
 
 // LinearGradient wrapper removed
 
@@ -107,9 +108,11 @@ const qtyBadgeTextStyles = {
 
 const SalesPOS = () => {
     const insets = useSafeAreaInsets();
+    const { refreshTrigger } = useOrderNotification();
     const [menuItems, setMenuItems] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [hasError, setHasError] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeCategory, setActiveCategory] = useState('Semua');
 
@@ -187,11 +190,16 @@ const SalesPOS = () => {
 
             setMenuItems(fetchedMenuItems);
             setCategories(sortedCategories);
+            setHasError(false);
         } catch (error) {
             console.error('Error fetching POS data:', error);
+            setHasError(true);
             // Hanya tampilkan alert jika ini adalah percobaan pertama dan gagal
             if (menuItems.length === 0) {
-                Alert.alert('Error', 'Gagal memuat data menu');
+                Alert.alert('Gagal Memuat Data', 'Pastikan koneksi internet Anda stabil dan coba lagi.');
+            } else {
+                // Optional: silent toast instead? but let's be clear for now
+                console.log('Update failed silently');
             }
         } finally {
             setLoading(false);
@@ -201,7 +209,7 @@ const SalesPOS = () => {
     useFocusEffect(
         useCallback(() => {
             fetchData();
-        }, [])
+        }, [refreshTrigger])
     );
 
 
@@ -538,8 +546,24 @@ const SalesPOS = () => {
                     }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <ShoppingCart size={60} color="#E2E8F0" />
-                            <Text style={styles.emptyText}>Menu tidak ditemukan</Text>
+                            <ShoppingCart size={60} color={hasError ? "#EF4444" : "#E2E8F0"} />
+                            <Text style={styles.emptyText}>
+                                {hasError ? 'Gagal Memuat Menu' : 'Menu tidak ditemukan'}
+                            </Text>
+                            {hasError && (
+                                <TouchableOpacity
+                                    style={{
+                                        marginTop: 15,
+                                        backgroundColor: '#138FEA',
+                                        paddingHorizontal: 20,
+                                        paddingVertical: 10,
+                                        borderRadius: 10
+                                    }}
+                                    onPress={() => fetchData()}
+                                >
+                                    <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Coba Lagi</Text>
+                                </TouchableOpacity>
+                            )}
                         </View>
                     }
                 />

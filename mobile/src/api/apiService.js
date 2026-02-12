@@ -11,10 +11,17 @@ export const API_URL = __DEV__ ? localUrl : prodUrl;
 
 const apiService = axios.create({
     baseURL: API_URL,
+    timeout: 15000, // 15 seconds timeout
     headers: {
         'Content-Type': 'application/json',
     },
 });
+
+// Listener registry for 401 errors
+let onUnauthorized = () => { };
+export const setOnUnauthorized = (callback) => {
+    onUnauthorized = callback;
+};
 
 // Interceptor untuk menambahkan token ke setiap request
 apiService.interceptors.request.use(
@@ -35,12 +42,11 @@ apiService.interceptors.response.use(
     (response) => response,
     async (error) => {
         if (error.response && error.response.status === 401) {
-            console.log('Session expired (401). Clearing token...');
-            // Token kedaluwarsa atau tidak valid
+            console.log('Session expired (401). clearing credentials...');
             await AsyncStorage.multiRemove(['userToken', 'userRole', 'userData']);
-
-            // Opsional: Anda bisa menambahkan event emitter di sini untuk memberitahu AuthContext agar logout
-            // Tapi menghapus token biasanya cukup untuk request berikutnya gagal dan diredirect di splash/login check
+            onUnauthorized(); // Notify the app to logout
+        } else if (error.code === 'ECONNABORTED') {
+            console.log('Request timeout');
         }
         return Promise.reject(error);
     }

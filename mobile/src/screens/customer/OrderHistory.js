@@ -38,7 +38,7 @@ import {
 import apiService, { API_URL } from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
 
-const { width } = Dimensions.get('window');
+const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const OrderHistory = ({ navigation }) => {
     const [orders, setOrders] = useState([]);
@@ -329,7 +329,8 @@ const RatingModal = ({ visible, order, onClose, onSubmit, submitting, insets }) 
         >
             <View style={styles.modalOverlay}>
                 <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
                     style={[styles.modalContent, { paddingBottom: getSafeBottomPadding(insets) }]}
                 >
                     <View style={styles.modalHeader}>
@@ -342,7 +343,7 @@ const RatingModal = ({ visible, order, onClose, onSubmit, submitting, insets }) 
                         </TouchableOpacity>
                     </View>
 
-                    <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+                    <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                         {loadingExisting ? (
                             <View style={{ padding: 40, alignItems: 'center' }}>
                                 <ActivityIndicator size="large" color="#F59E0B" />
@@ -644,7 +645,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
-        height: '85%',
+        height: SCREEN_HEIGHT * 0.85,
         paddingHorizontal: 24,
         paddingTop: 24,
     },

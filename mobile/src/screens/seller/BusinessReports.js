@@ -35,7 +35,9 @@ import {
     Briefcase
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
+import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useOrderNotification } from '../../context/OrderNotificationContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import ViewShot from 'react-native-view-shot';
 import * as Print from 'expo-print';
@@ -109,6 +111,7 @@ const SimpleProgressBar = memo(({ label, value, maxValue, color }) => {
 
 const BusinessReports = ({ navigation }) => {
     const { showToast } = useToast();
+    const { refreshTrigger } = useOrderNotification();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [isSharing, setIsSharing] = useState(false);
@@ -296,7 +299,7 @@ const BusinessReports = ({ navigation }) => {
 
     useEffect(() => {
         fetchData();
-    }, [fetchData]);
+    }, [fetchData, refreshTrigger]);
 
     const handleRefresh = useCallback(() => {
         setRefreshing(true);

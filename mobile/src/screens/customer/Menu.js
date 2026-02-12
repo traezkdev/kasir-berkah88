@@ -46,6 +46,7 @@ import {
 import apiService, { API_URL } from '../../api/apiService';
 import { useCart } from '../../context/CartContext';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { useOrderNotification } from '../../context/OrderNotificationContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -178,6 +179,7 @@ const CustomerMenu = ({ navigation, route }) => {
     } = useCart();
     const insets = useSafeAreaInsets();
     const { isOpen, ignoreStock } = useAppSettings();
+    const { refreshTrigger } = useOrderNotification();
 
     const [menus, setMenus] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -207,7 +209,7 @@ const CustomerMenu = ({ navigation, route }) => {
 
     useEffect(() => {
         fetchMenus();
-    }, [searchTerm, selectedCategory, categories, filter]);
+    }, [searchTerm, selectedCategory, categories, filter, refreshTrigger]);
 
     useEffect(() => {
         if (itemId && menus.length > 0) {

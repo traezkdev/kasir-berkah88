@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { Platform } from 'react-native';
+import { Platform, AppState } from 'react-native';
 import apiService, { API_URL } from '../api/apiService';
 import { useAuth } from './AuthContext';
 
@@ -341,6 +341,35 @@ export const OrderNotificationProvider = ({ children }) => {
         };
     }, [user, fetchPendingCount, checkCustomerNotifications]);
 
+    // Handle AppState changes to reconnect socket when app returns to foreground
+    useEffect(() => {
+        const handleAppStateChange = (nextAppState) => {
+            if (nextAppState === 'active') {
+                console.log('[App] App kembali aktif, mengecek koneksi socket...');
+                if (socket && !socket.connected) {
+                    socket.connect();
+                }
+
+                // Beri jeda sedikit agar sistem internet HP siap sebelum menembak API
+                setTimeout(() => {
+                    if (user) {
+                        setRefreshTrigger(prev => prev + 1);
+                        if (['admin', 'penjual', 'owner', 'kasir', 'seller'].includes(user.role)) {
+                            fetchPendingCount();
+                        } else {
+                            checkCustomerNotifications();
+                        }
+                    }
+                }, 800);
+            }
+        };
+
+        const subscription = AppState.addEventListener('change', handleAppStateChange);
+        return () => {
+            subscription.remove();
+        };
+    }, [socket, user, fetchPendingCount, checkCustomerNotifications]);
+
     // Socket.io initialization - Stabilized for Production
     useEffect(() => {
         if (!user || !io) return;
@@ -366,13 +395,23 @@ export const OrderNotificationProvider = ({ children }) => {
             newSocket.emit('user_connected', { userId: activeUserId, role: user.role });
         });
 
+        newSocket.on('reconnect', (attemptNumber) => {
+            console.log('[Socket] Terhubung kembali setelah', attemptNumber, 'percobaan');
+            setRefreshTrigger(prev => prev + 1);
+            if (user && ['admin', 'penjual', 'owner', 'kasir', 'seller'].includes(user.role)) {
+                fetchPendingCount();
+            } else if (user) {
+                checkCustomerNotifications();
+            }
+        });
+
         newSocket.on('connect_error', (error) => {
             console.error('[Socket] Koneksi Error:', error.message);
         });
 
         newSocket.on('disconnect', (reason) => {
             console.log('[Socket] Terputus:', reason);
-            if (reason === 'io server disconnect' || reason === 'transport close') {
+            if (reason === 'io server disconnect' || reason === 'transport close' || reason === 'ping timeout') {
                 newSocket.connect();
             }
         });

@@ -42,6 +42,7 @@ import {
 import apiService from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useOrderNotification } from '../../context/OrderNotificationContext';
 
 const { width } = Dimensions.get('window');
 
@@ -128,6 +129,7 @@ const ComparisonCard = React.memo(({ title, expectedVal, actualState, setActualS
 
 const CashReconciliation = ({ navigation }) => {
     const { showToast } = useToast();
+    const { refreshTrigger } = useOrderNotification();
 
     // Helper for local date string YYYY-MM-DD to avoid timezone issues
     const getLocalDateString = () => {
@@ -248,7 +250,7 @@ const CashReconciliation = ({ navigation }) => {
     useEffect(() => {
         fetchSummary();
         fetchHistory(1);
-    }, [selectedDate]);
+    }, [selectedDate, refreshTrigger]);
 
     const handleRefresh = useCallback(async () => {
         setIsRefreshing(true);

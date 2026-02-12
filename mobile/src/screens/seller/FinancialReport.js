@@ -29,6 +29,7 @@ import {
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 import { useToast } from '../../context/ToastContext';
+import { useOrderNotification } from '../../context/OrderNotificationContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import ViewShot from 'react-native-view-shot';
 import * as Print from 'expo-print';
@@ -38,6 +39,7 @@ const { width } = Dimensions.get('window');
 
 const FinancialReport = ({ navigation }) => {
     const { showToast } = useToast();
+    const { refreshTrigger } = useOrderNotification();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const reportRef = useRef();
@@ -90,7 +92,7 @@ const FinancialReport = ({ navigation }) => {
 
     useEffect(() => {
         fetchData();
-    }, [fetchData]);
+    }, [fetchData, refreshTrigger]);
 
     const handleRefresh = () => {
         setRefreshing(true);

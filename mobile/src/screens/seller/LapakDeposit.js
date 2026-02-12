@@ -36,6 +36,7 @@ import {
 import apiService from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useOrderNotification } from '../../context/OrderNotificationContext';
 import BottomModalTemplate from '../../components/templates/BottomModalTemplate';
 
 const { width } = Dimensions.get('window');
@@ -90,6 +91,7 @@ const TransactionCard = React.memo(({ item, handleEdit, handleDelete, formatCurr
 const LapakDeposit = ({ navigation }) => {
     const { user } = useAuth();
     const { showToast } = useToast();
+    const { refreshTrigger } = useOrderNotification();
     const abortControllerRef = useRef(null);
 
     // Helper for local date string YYYY-MM-DD to avoid timezone issues
@@ -110,6 +112,7 @@ const LapakDeposit = ({ navigation }) => {
     const [lapakAccount, setLapakAccount] = useState(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [hasError, setHasError] = useState(false);
     const [isFilteringLoading, setIsFilteringLoading] = useState(false);
 
     // UI States
@@ -181,10 +184,12 @@ const LapakDeposit = ({ navigation }) => {
             const response = await apiService.get(`/api/accounts/lapak_deposit?${params.toString()}`, { signal });
             if (response.data && response.data.message === 'success') {
                 setLapakAccount(response.data.data);
+                setHasError(false);
             }
         } catch (error) {
             if (error.name === 'CanceledError' || error.name === 'AbortError') return;
             console.error("Error fetching lapak account data:", error);
+            setHasError(true);
             showToast('Gagal mengambil data lapak', 'error');
         } finally {
             setLoading(false);
@@ -193,7 +198,7 @@ const LapakDeposit = ({ navigation }) => {
         }
     }, [filters, debouncedSearch, showToast]);
 
-    // Initial load and filter change
+    // Initial load, filter change, or socket refresh trigger
     useEffect(() => {
         if (abortControllerRef.current) abortControllerRef.current.abort();
         const controller = new AbortController();
@@ -207,7 +212,7 @@ const LapakDeposit = ({ navigation }) => {
             clearTimeout(timer);
             controller.abort();
         };
-    }, [filters, debouncedSearch, fetchLapakAccountData]);
+    }, [filters, debouncedSearch, fetchLapakAccountData, refreshTrigger]);
 
     // Search Debounce
     useEffect(() => {
@@ -548,10 +553,22 @@ const LapakDeposit = ({ navigation }) => {
                         ListEmptyComponent={
                             <View style={styles.emptyContainer}>
                                 <View style={styles.emptyIconBg}>
-                                    <Inbox size={48} color="#CBD5E1" />
+                                    <Inbox size={48} color={hasError ? "#EF4444" : "#CBD5E1"} />
                                 </View>
-                                <Text style={styles.emptyTitle}>Belum Ada Transaksi</Text>
-                                <Text style={styles.emptySubtitle}>Data tidak ditemukan untuk kriteria ini</Text>
+                                <Text style={styles.emptyTitle}>
+                                    {hasError ? 'Gagal Memuat Data' : 'Belum Ada Transaksi'}
+                                </Text>
+                                <Text style={styles.emptySubtitle}>
+                                    {hasError ? 'Pastikan koneksi internet aktif' : 'Data tidak ditemukan untuk kriteria ini'}
+                                </Text>
+                                {hasError && (
+                                    <TouchableOpacity
+                                        style={[styles.submitBtn, { paddingHorizontal: 30, height: 45, marginTop: 15 }]}
+                                        onPress={() => fetchLapakAccountData(true)}
+                                    >
+                                        <Text style={styles.submitBtnText}>Coba Lagi</Text>
+                                    </TouchableOpacity>
+                                )}
                             </View>
                         }
                     />

@@ -232,8 +232,14 @@ const CustomerDashboard = ({ navigation }) => {
     });
 
     const compactHeaderTranslateY = scrollY.interpolate({
-        inputRange: [100, 150],
-        outputRange: [-100, 0],
+        inputRange: [120, 180],
+        outputRange: [-150, 0],
+        extrapolate: 'clamp'
+    });
+
+    const compactHeaderOpacity = scrollY.interpolate({
+        inputRange: [120, 150],
+        outputRange: [0, 1],
         extrapolate: 'clamp'
     });
 
@@ -264,7 +270,13 @@ const CustomerDashboard = ({ navigation }) => {
             <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
             {/* Compact Header on Scroll */}
-            <Animated.View style={[styles.compactHeader, { transform: [{ translateY: compactHeaderTranslateY }] }]}>
+            <Animated.View style={[
+                styles.compactHeader,
+                {
+                    opacity: compactHeaderOpacity,
+                    transform: [{ translateY: compactHeaderTranslateY }]
+                }
+            ]}>
                 <View style={styles.compactHeaderContent}>
                     <TouchableOpacity
                         style={styles.compactSearch}
@@ -822,7 +834,7 @@ const styles = StyleSheet.create({
         }),
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: '#F1F5F9',
+        borderColor: '#E2E8F0',
     },
     saldoRow: {
         flexDirection: 'row',
@@ -830,7 +842,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 20,
         borderBottomWidth: 1,
-        borderBottomColor: '#F8FAFC',
+        borderBottomColor: '#E2E8F0',
     },
     saldoLabel: {
         fontSize: 9,
