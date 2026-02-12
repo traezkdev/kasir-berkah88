@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Modal,
     View,
@@ -8,8 +8,10 @@ import {
     Dimensions,
     Platform,
     Linking,
+    Animated,
+    Text,
 } from 'react-native';
-import { X } from 'lucide-react-native';
+import { X, ExternalLink, ArrowRight } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../api/apiService';
 
@@ -20,22 +22,42 @@ const PopupModal = ({ popups = [], currentPage = 'dashboard', onClose }) => {
     const [visible, setVisible] = useState(false);
     const [displayPopups, setDisplayPopups] = useState([]);
 
+    // Animations
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const scaleAnim = useRef(new Animated.Value(0.9)).current;
+
     useEffect(() => {
         loadAndFilterPopups();
     }, [popups, currentPage]);
 
+    useEffect(() => {
+        if (visible) {
+            Animated.parallel([
+                Animated.timing(fadeAnim, {
+                    toValue: 1,
+                    duration: 300,
+                    useNativeDriver: true,
+                }),
+                Animated.spring(scaleAnim, {
+                    toValue: 1,
+                    friction: 8,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        } else {
+            fadeAnim.setValue(0);
+            scaleAnim.setValue(0.9);
+        }
+    }, [visible, currentIndex]);
+
     const loadAndFilterPopups = async () => {
         try {
-            // Get closed popups from AsyncStorage
             const closedPopupsJson = await AsyncStorage.getItem('closedPopups');
             const closedPopups = closedPopupsJson ? JSON.parse(closedPopupsJson) : {};
 
-            // Filter popups that should be shown
             const filtered = popups.filter(popup => {
-                // Check if popup was closed
                 const closedAt = closedPopups[popup.id];
                 if (closedAt) {
-                    // If popup was pushed again after being closed, show it
                     if (popup.last_pushed_at && new Date(popup.last_pushed_at) > new Date(closedAt)) {
                         return true;
                     }
@@ -47,7 +69,6 @@ const PopupModal = ({ popups = [], currentPage = 'dashboard', onClose }) => {
             setDisplayPopups(filtered);
             if (filtered.length > 0) {
                 setVisible(true);
-                // Track view for first popup
                 trackView(filtered[0].id);
             }
         } catch (error) {
@@ -84,7 +105,6 @@ const PopupModal = ({ popups = [], currentPage = 'dashboard', onClose }) => {
         if (displayPopups.length > 0) {
             const currentPopup = displayPopups[currentIndex];
 
-            // Save closed popup to AsyncStorage
             try {
                 const closedPopupsJson = await AsyncStorage.getItem('closedPopups');
                 const closedPopups = closedPopupsJson ? JSON.parse(closedPopupsJson) : {};
@@ -94,30 +114,38 @@ const PopupModal = ({ popups = [], currentPage = 'dashboard', onClose }) => {
                 console.error('Error saving closed popup:', error);
             }
 
-            // Close current modal first to create a "separated" feel
-            setVisible(false);
-
-            // Show next popup if available after a short delay
-            if (currentIndex < displayPopups.length - 1) {
-                setTimeout(() => {
-                    const nextIndex = currentIndex + 1;
-                    setCurrentIndex(nextIndex);
-                    setVisible(true);
-                    trackView(displayPopups[nextIndex].id);
-                }, 400); // Wait for close animation to finish
-            } else {
-                if (onClose) onClose();
-            }
+            // Animate out
+            Animated.parallel([
+                Animated.timing(fadeAnim, {
+                    toValue: 0,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(scaleAnim, {
+                    toValue: 1.1,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+            ]).start(() => {
+                setVisible(false);
+                if (currentIndex < displayPopups.length - 1) {
+                    setTimeout(() => {
+                        const nextIndex = currentIndex + 1;
+                        setCurrentIndex(nextIndex);
+                        setVisible(true);
+                        trackView(displayPopups[nextIndex].id);
+                    }, 300);
+                } else {
+                    if (onClose) onClose();
+                }
+            });
         }
     };
 
     const handlePopupPress = async () => {
         const currentPopup = displayPopups[currentIndex];
-
-        // Track click
         await trackClick(currentPopup.id);
 
-        // Handle link
         if (currentPopup.link_type === 'url' && currentPopup.link_value) {
             try {
                 await Linking.openURL(currentPopup.link_value);
@@ -125,11 +153,9 @@ const PopupModal = ({ popups = [], currentPage = 'dashboard', onClose }) => {
                 console.error('Error opening URL:', error);
             }
         } else if (currentPopup.link_type === 'screen' && currentPopup.link_value) {
-            // Navigation will be handled by parent component
             if (onClose) onClose(currentPopup.link_value);
         }
 
-        // Close current popup and show next
         handleClose();
     };
 
@@ -138,41 +164,80 @@ const PopupModal = ({ popups = [], currentPage = 'dashboard', onClose }) => {
     }
 
     const currentPopup = displayPopups[currentIndex];
+    const hasLink = currentPopup && currentPopup.link_type !== 'none';
+
+    if (!currentPopup) return null;
 
     return (
         <Modal
             visible={visible}
             transparent={true}
-            animationType="fade"
+            animationType="none"
             onRequestClose={handleClose}
         >
             <View style={styles.overlay}>
-                <View style={styles.container}>
-                    {/* Close Button */}
-                    <TouchableOpacity
-                        style={styles.closeButton}
-                        onPress={handleClose}
-                        activeOpacity={0.7}
-                    >
-                        <View style={styles.closeButtonInner}>
-                            <X size={24} color="#fff" />
-                        </View>
-                    </TouchableOpacity>
+                <Animated.View
+                    style={[
+                        styles.container,
+                        {
+                            opacity: fadeAnim,
+                            transform: [{ scale: scaleAnim }]
+                        }
+                    ]}
+                >
+                    {/* Glassmorphism Background Card */}
+                    <View style={styles.contentCard}>
+                        {/* Close Button - More Premium */}
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={handleClose}
+                            activeOpacity={0.8}
+                        >
+                            <View style={styles.closeButtonInner}>
+                                <X size={20} color="#64748B" />
+                            </View>
+                        </TouchableOpacity>
 
-                    {/* Popup Image */}
-                    <TouchableOpacity
-                        activeOpacity={currentPopup.link_type !== 'none' ? 0.9 : 1}
-                        onPress={currentPopup.link_type !== 'none' ? handlePopupPress : undefined}
-                    >
-                        <Image
-                            source={{ uri: `${API_URL}${currentPopup.image_url}` }}
-                            style={styles.image}
-                            resizeMode="contain"
-                        />
-                    </TouchableOpacity>
+                        {/* Popup Image with Inner Shadow/Border */}
+                        <TouchableOpacity
+                            activeOpacity={hasLink ? 0.9 : 1}
+                            onPress={hasLink ? handlePopupPress : undefined}
+                            style={styles.imageWrapper}
+                        >
+                            <Image
+                                source={{ uri: `${API_URL}${currentPopup.image_url}` }}
+                                style={styles.image}
+                                resizeMode="cover"
+                            />
+                            {hasLink && (
+                                <View style={styles.imageOverlay}>
+                                    <View style={styles.linkIndicator}>
+                                        <ExternalLink size={16} color="#fff" />
+                                    </View>
+                                </View>
+                            )}
+                        </TouchableOpacity>
 
+                        {/* Call to Action Section if has link */}
+                        {hasLink && (
+                            <TouchableOpacity
+                                style={styles.ctaButton}
+                                onPress={handlePopupPress}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.ctaText}>Lihat Selengkapnya</Text>
+                                <ArrowRight size={18} color="#fff" strokeWidth={3} />
+                            </TouchableOpacity>
+                        )}
+                    </View>
 
-                </View>
+                    {/* Badge/Priority Info (Subtle) */}
+                    <View style={styles.footerInfo}>
+                        <Text style={styles.footerText}>
+                            Popup {currentIndex + 1} dari {displayPopups.length}
+                        </Text>
+                    </View>
+                </Animated.View>
             </View>
         </Modal>
     );
@@ -181,50 +246,113 @@ const PopupModal = ({ popups = [], currentPage = 'dashboard', onClose }) => {
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        backgroundColor: 'rgba(15, 23, 42, 0.85)', // Slate 900 with high opacity
         justifyContent: 'center',
         alignItems: 'center',
     },
     container: {
-        width: SCREEN_WIDTH * 0.9,
-        maxWidth: 500,
-        backgroundColor: 'transparent',
-        borderRadius: 16,
+        width: SCREEN_WIDTH * 0.88,
+        maxWidth: 420,
+        alignItems: 'center',
+    },
+    contentCard: {
+        width: '100%',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 24,
+        padding: 8, // Outer spacing
         position: 'relative',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.3,
+                shadowRadius: 20,
+            },
+            android: {
+                elevation: 15,
+            },
+        }),
     },
     closeButton: {
         position: 'absolute',
-        top: -20,
-        right: -10,
+        top: -12,
+        right: -12,
         zIndex: 100,
+    },
+    closeButtonInner: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#FFFFFF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
         ...Platform.select({
             ios: {
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.3,
+                shadowOpacity: 0.1,
                 shadowRadius: 4,
             },
             android: {
-                elevation: 5,
+                elevation: 4,
             },
         }),
     },
-    closeButtonInner: {
-        width: 40,
-        height: 40,
+    imageWrapper: {
+        width: '100%',
         borderRadius: 20,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 2,
-        borderColor: '#fff',
+        overflow: 'hidden',
+        backgroundColor: '#F8FAFC',
     },
     image: {
         width: '100%',
-        aspectRatio: 1, // Will be overridden by contain if needed, or we can use auto height logic
-        minHeight: 300,
-        maxHeight: SCREEN_HEIGHT * 0.7,
+        aspectRatio: 0.85, // Premium portrait feel
+        maxHeight: SCREEN_HEIGHT * 0.6,
+    },
+    imageOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.02)',
+    },
+    linkIndicator: {
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        padding: 8,
+        borderRadius: 10,
+    },
+    ctaButton: {
+        marginTop: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#059669', // Brand green
+        paddingVertical: 14,
         borderRadius: 16,
+        gap: 8,
+        marginBottom: 8,
+        marginHorizontal: 4,
+    },
+    ctaText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '900',
+        letterSpacing: 0.5,
+    },
+    footerInfo: {
+        marginTop: 20,
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        paddingHorizontal: 16,
+        paddingVertical: 6,
+        borderRadius: 20,
+    },
+    footerText: {
+        color: '#FFFFFF',
+        fontSize: 11,
+        fontWeight: '600',
+        opacity: 0.8,
     },
 });
 
