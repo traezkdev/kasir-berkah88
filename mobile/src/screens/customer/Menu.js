@@ -48,6 +48,7 @@ import apiService, { API_URL } from '../../api/apiService';
 import { useCart } from '../../context/CartContext';
 import { useAppSettings } from '../../context/AppSettingsContext';
 import { useOrderNotification } from '../../context/OrderNotificationContext';
+import useSwipeToClose from '../../hooks/useSwipeToClose';
 
 const { width, height } = Dimensions.get('window');
 
@@ -194,46 +195,13 @@ const CustomerMenu = ({ navigation, route }) => {
     const [reviews, setReviews] = useState([]);
     const [reviewsLoading, setReviewsLoading] = useState(false);
 
-    // Gestures for closing modal
-    const panY = useRef(new Animated.Value(0)).current;
+    // Reusable Gesture for closing modal
+    const { panY, panResponder, resetPan } = useSwipeToClose(() => setSelectedItem(null));
 
-    const panResponder = useRef(
-        PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: (_, gestureState) => {
-                return gestureState.dy > 5; // Hanya tangkap jika swipe ke bawah
-            },
-            onPanResponderMove: (e, gestureState) => {
-                if (gestureState.dy > 0) {
-                    panY.setValue(gestureState.dy);
-                }
-            },
-            onPanResponderRelease: (_, gestureState) => {
-                if (gestureState.dy > 100) {
-                    Animated.timing(panY, {
-                        toValue: height,
-                        duration: 200,
-                        useNativeDriver: true,
-                    }).start(() => {
-                        setSelectedItem(null);
-                        panY.setValue(0);
-                    });
-                } else {
-                    Animated.spring(panY, {
-                        toValue: 0,
-                        friction: 8,
-                        tension: 40,
-                        useNativeDriver: true,
-                    }).start();
-                }
-            },
-        })
-    ).current;
-
-    // Reset panY when modal opens
+    // Reset panY when modal opens/closes
     useEffect(() => {
         if (selectedItem === null) {
-            panY.setValue(0);
+            resetPan();
         }
     }, [selectedItem]);
 
