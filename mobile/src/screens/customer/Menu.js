@@ -14,7 +14,8 @@ import {
     StatusBar,
     FlatList,
     Modal,
-    Animated
+    Animated,
+    PanResponder
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getSafeBottomPadding } from '../../utils/safeArea';
@@ -192,6 +193,49 @@ const CustomerMenu = ({ navigation, route }) => {
     const [selectedOptions, setSelectedOptions] = useState([]);
     const [reviews, setReviews] = useState([]);
     const [reviewsLoading, setReviewsLoading] = useState(false);
+
+    // Gestures for closing modal
+    const panY = useRef(new Animated.Value(0)).current;
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (_, gestureState) => {
+                return gestureState.dy > 5; // Hanya tangkap jika swipe ke bawah
+            },
+            onPanResponderMove: (e, gestureState) => {
+                if (gestureState.dy > 0) {
+                    panY.setValue(gestureState.dy);
+                }
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                if (gestureState.dy > 100) {
+                    Animated.timing(panY, {
+                        toValue: height,
+                        duration: 200,
+                        useNativeDriver: true,
+                    }).start(() => {
+                        setSelectedItem(null);
+                        panY.setValue(0);
+                    });
+                } else {
+                    Animated.spring(panY, {
+                        toValue: 0,
+                        friction: 8,
+                        tension: 40,
+                        useNativeDriver: true,
+                    }).start();
+                }
+            },
+        })
+    ).current;
+
+    // Reset panY when modal opens
+    useEffect(() => {
+        if (selectedItem === null) {
+            panY.setValue(0);
+        }
+    }, [selectedItem]);
 
     useEffect(() => {
         fetchInitialData();
@@ -451,9 +495,24 @@ const CustomerMenu = ({ navigation, route }) => {
                 onRequestClose={() => setSelectedItem(null)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+                    <Animated.View
+                        style={[
+                            styles.modalContent,
+                            {
+                                transform: [{
+                                    translateY: panY.interpolate({
+                                        inputRange: [-1, 0, height],
+                                        outputRange: [0, 0, height],
+                                    })
+                                }]
+                            }
+                        ]}
+                    >
+                        {/* Invisible Drag Handle for Gesture */}
+                        <View style={styles.modalDragHandle} {...panResponder.panHandlers} />
+
                         {/* Image Header */}
-                        <View style={styles.modalImageWrap}>
+                        <View style={styles.modalImageWrap} {...panResponder.panHandlers}>
                             {selectedItem?.image_url ? (
                                 <Image source={{ uri: `${API_URL}${selectedItem.image_url}` }} style={styles.modalImage} />
                             ) : (
@@ -615,7 +674,7 @@ const CustomerMenu = ({ navigation, route }) => {
                                 }
                             })()}
                         </View>
-                    </View>
+                    </Animated.View>
                 </View>
             </Modal>
         </SafeAreaView>
@@ -946,6 +1005,24 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    modalDragHandle: {
+        width: '100%',
+        height: 30,
+        backgroundColor: 'transparent',
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'absolute',
+        top: 0,
+        zIndex: 50,
+        borderTopLeftRadius: 35,
+        borderTopRightRadius: 35,
+    },
+    modalDragIndicator: {
+        width: 40,
+        height: 5,
+        backgroundColor: '#E2E8F0',
+        borderRadius: 3,
     },
     modalCloseBtn: {
         position: 'absolute',
