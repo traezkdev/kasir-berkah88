@@ -420,7 +420,7 @@ const CustomerMenu = ({ navigation, route }) => {
 
             {/* Float Cart */}
             {cartCount > 0 && (
-                <View style={[styles.cartFloatContainer, { bottom: getSafeBottomPadding(insets, -20, 20) }]}>
+                <View style={[styles.cartFloatContainer, { bottom: getSafeBottomPadding(insets, 20, 20) }]}>
                     <TouchableOpacity
                         style={styles.cartFloatBtn}
                         activeOpacity={0.9}
