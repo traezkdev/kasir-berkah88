@@ -8,13 +8,13 @@ import {
     Image,
     TextInput,
     ActivityIndicator,
-    Dimensions,
     Platform,
     StatusBar,
     RefreshControl,
     Animated,
     AppState,
-    Modal
+    Modal,
+    useWindowDimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -55,9 +55,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import usePopups from '../../hooks/usePopups';
 import PopupModal from '../../components/PopupModal';
 
-const { width, height } = Dimensions.get('window');
-
 const CustomerDashboard = ({ navigation }) => {
+    const { width, height } = useWindowDimensions();
     const { user } = useAuth();
     const { isOpen, ignoreStock } = useAppSettings();
     const { cartCount } = useCart();
@@ -340,9 +339,9 @@ const CustomerDashboard = ({ navigation }) => {
                                     source={require('../../../assets/logo.png')}
                                     style={styles.headerLogo}
                                 />
-                                <View>
-                                    <Text style={styles.greetingText}>{getGreeting()},</Text>
-                                    <Text style={styles.userName}>{user?.name || 'Pelanggan'}</Text>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.greetingText} numberOfLines={1}>{getGreeting()},</Text>
+                                    <Text style={styles.userName} numberOfLines={1} ellipsizeMode="tail">{user?.name || 'Pelanggan'}</Text>
                                 </View>
                             </View>
                             <View style={styles.headerActions}>
@@ -506,17 +505,23 @@ const CustomerDashboard = ({ navigation }) => {
                     <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
-                        pagingEnabled
-                        snapToInterval={width * 0.9 + 16}
+                        snapToInterval={width - 20}
+                        snapToAlignment="start"
                         decelerationRate="fast"
-                        contentContainerStyle={{ paddingRight: width * 0.05 + 4 }}
+                        contentContainerStyle={{
+                            paddingHorizontal: 20,
+                        }}
                     >
-                        {banners.map((banner) => (
+                        {banners.map((banner, index) => (
                             <TouchableOpacity
                                 key={banner.id}
                                 style={[
                                     styles.bannerCard,
-                                    { backgroundColor: getBannerColor(banner.color_class) }
+                                    {
+                                        backgroundColor: getBannerColor(banner.color_class),
+                                        width: width - 40,
+                                        marginRight: index === banners.length - 1 ? 0 : 20
+                                    }
                                 ]}
                                 onPress={() => navigation.navigate('Promo')}
                             >
@@ -736,7 +741,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#059669',
         paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : (Platform.OS === 'web' ? 15 : 20),
         paddingBottom: 80,
-        paddingHorizontal: 20,
+        paddingHorizontal: '6%',
         borderBottomLeftRadius: 35,
         borderBottomRightRadius: 35,
     },
@@ -750,6 +755,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
+        flex: 1,
     },
     greetingText: {
         fontSize: 14,
@@ -764,7 +770,7 @@ const styles = StyleSheet.create({
     headerActions: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
+        gap: 10,
     },
     headerLogo: {
         width: 44,
@@ -811,6 +817,9 @@ const styles = StyleSheet.create({
         borderRadius: 27,
         paddingHorizontal: 20,
         marginBottom: 16,
+        maxWidth: 600,
+        alignSelf: 'center',
+        width: '100%',
         ...Platform.select({
             web: { boxShadow: '0px 4px 10px rgba(0,0,0,0.1)' },
             android: { elevation: 5 }
@@ -823,7 +832,7 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     shortcutsScroll: {
-        marginHorizontal: -20,
+        marginHorizontal: '-6%',
     },
     shortcutChip: {
         flexDirection: 'row',
@@ -852,8 +861,8 @@ const styles = StyleSheet.create({
     },
     actionCard: {
         backgroundColor: '#FFFFFF',
-        marginHorizontal: 20,
-        marginTop: -50,
+        marginHorizontal: '5%',
+        marginTop: -65,
         borderRadius: 30,
         ...Platform.select({
             web: { boxShadow: '0px 10px 30px rgba(0,0,0,0.08)' },
@@ -862,14 +871,15 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: '#E2E8F0',
+        minHeight: 150,
     },
     saldoRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 20,
+        padding: 18,
         borderBottomWidth: 1,
-        borderBottomColor: '#E2E8F0',
+        borderBottomColor: '#F1F5F9',
     },
     saldoLabel: {
         fontSize: 9,
@@ -910,7 +920,7 @@ const styles = StyleSheet.create({
     orderStatusBtn: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 20,
+        padding: 18,
         gap: 16,
         backgroundColor: '#FFFFFF',
     },
@@ -977,7 +987,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 20,
+        paddingHorizontal: '6%',
         marginTop: 32,
         marginBottom: 16,
     },
@@ -998,14 +1008,17 @@ const styles = StyleSheet.create({
         color: '#94A3B8',
     },
     bannerCard: {
-        width: width * 0.9,
         height: 160,
         borderRadius: 30,
-        marginLeft: 20,
         overflow: 'hidden',
+        position: 'relative',
     },
     bannerContentWrapper: {
-        ...StyleSheet.absoluteFillObject,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         padding: 24,
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -1051,24 +1064,32 @@ const styles = StyleSheet.create({
         transform: [{ rotate: '15deg' }],
     },
     bannerBackgroundImage: {
-        ...StyleSheet.absoluteFillObject,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         width: '100%',
         height: '100%',
         borderRadius: 30,
     },
     bannerOverlay: {
-        ...StyleSheet.absoluteFillObject,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         backgroundColor: 'rgba(0,0,0,0.4)',
         borderRadius: 30,
     },
     categoriesScroll: {
-        paddingHorizontal: 12,
+        paddingHorizontal: '2%',
         paddingBottom: 4,
     },
     categoryItem: {
         alignItems: 'center',
-        marginHorizontal: 8,
-        width: 80,
+        marginHorizontal: 5,
+        width: 72,
     },
     categoryIconWrap: {
         width: 64,
@@ -1080,6 +1101,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         borderWidth: 1,
         borderColor: '#D1FAE5',
+        position: 'relative',
     },
     categoryLabel: {
         fontSize: 9,
@@ -1088,7 +1110,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     recommendationHeader: {
-        paddingHorizontal: 20,
+        paddingHorizontal: '6%',
         marginTop: 32,
         marginBottom: 16,
     },
@@ -1100,18 +1122,20 @@ const styles = StyleSheet.create({
     menuGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        paddingHorizontal: 12,
+        paddingHorizontal: '3%',
         justifyContent: 'center',
     },
     menuCard: {
-        width: (width - 40) / 2,
+        width: '46%',
         backgroundColor: '#FFFFFF',
-        margin: 4,
+        margin: '1.5%',
         marginBottom: 16,
         borderRadius: 25,
         borderWidth: 1,
         borderColor: '#F1F5F9',
         overflow: 'hidden',
+        minHeight: 220,
+        position: 'relative',
         ...Platform.select({
             web: { boxShadow: '0px 4px 12px rgba(0,0,0,0.05)' },
             android: { elevation: 3 }
@@ -1122,8 +1146,9 @@ const styles = StyleSheet.create({
     },
     menuImageContainer: {
         width: '100%',
-        height: width / 2 - 40,
+        height: 140,
         backgroundColor: '#F8FAFC',
+        position: 'relative',
     },
     menuImage: {
         width: '100%',
@@ -1230,80 +1255,6 @@ const styles = StyleSheet.create({
     },
     textMuted: {
         color: '#94A3B8',
-    },
-    // Popup Modal Styles
-    popupOverlay: {
-        flex: 1,
-        width: width,
-        height: height,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.7)',
-    },
-    popupContent: {
-        width: width * 0.85,
-        alignItems: 'center',
-    },
-    popupCard: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 30,
-        overflow: 'hidden',
-        width: '100%',
-        ...Platform.select({
-            web: { boxShadow: '0px 20px 50px rgba(0,0,0,0.3)' },
-            android: { elevation: 20 }
-        })
-    },
-    popupImageWrap: {
-        width: '100%',
-        height: width * 0.85,
-        backgroundColor: '#F1F5F9',
-    },
-    popupImage: {
-        width: '100%',
-        height: '100%',
-    },
-    popupCloseBtn: {
-        position: 'absolute',
-        top: 15,
-        right: 15,
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.2)',
-    },
-    popupDetails: {
-        padding: 24,
-        alignItems: 'center',
-        gap: 20,
-    },
-    popupTitleText: {
-        fontSize: 20,
-        fontWeight: '900',
-        color: '#1E293B',
-        textAlign: 'center',
-        lineHeight: 28,
-    },
-    popupActionBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#10B981',
-        paddingHorizontal: 24,
-        paddingVertical: 14,
-        borderRadius: 20,
-        width: '100%',
-        gap: 8,
-    },
-    popupActionText: {
-        color: '#FFFFFF',
-        fontSize: 14,
-        fontWeight: '900',
-        letterSpacing: 0.5,
     },
 }
 );

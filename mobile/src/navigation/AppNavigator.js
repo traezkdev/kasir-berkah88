@@ -343,7 +343,6 @@ const navStyles = {
         backgroundColor: '#FFFFFF',
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',
-        paddingTop: 12,
         paddingHorizontal: 16,
         justifyContent: 'space-between',
         alignItems: 'center',

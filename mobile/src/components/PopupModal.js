@@ -314,6 +314,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         overflow: 'hidden',
         backgroundColor: '#F8FAFC',
+        position: 'relative',
     },
     image: {
         width: '100%',
