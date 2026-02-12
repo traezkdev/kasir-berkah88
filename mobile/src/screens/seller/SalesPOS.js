@@ -87,12 +87,16 @@ const ProductCardItem = React.memo(({ item, qty, addToCart, ignoreStock, formatC
             </View>
 
             <View style={isList ? styles.productInfoList : styles.productInfo}>
-                <View>
+                <View style={{ flex: 1 }}>
                     <Text style={styles.productCat}>{item.category}</Text>
                     <Text style={isList ? styles.productNameList : styles.productName} numberOfLines={2}>{item.name}</Text>
                 </View>
 
-                <View style={isList ? { alignItems: 'flex-end' } : {}}>
+                {isList && (
+                    <View style={styles.verticalDividerList} />
+                )}
+
+                <View style={isList ? { alignItems: 'center' } : {}}>
                     <Text style={isList ? styles.productPriceList : styles.productPrice}>{formatCurrency(item.price)}</Text>
                     <View style={styles.stockInfo}>
                         <View style={[styles.stockDot, { backgroundColor: isOutOfStock ? '#EF4444' : '#22C55E' }]} />
@@ -1148,31 +1152,39 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         width: '100%',
         marginBottom: 12,
-        borderRadius: 16,
-        padding: 10,
+        borderRadius: 20, // Slightly more rounded
+        padding: 12, // Increased padding for breathability
         borderWidth: 1,
-        borderColor: '#F1F5F9',
+        borderColor: '#E2E8F0', // Softer border color
         flexDirection: 'row',
         alignItems: 'center',
         ...Platform.select({
-            web: { boxShadow: '0px 2px 8px rgba(0,0,0,0.04)' },
+            web: { boxShadow: '0px 4px 6px -1px rgba(0,0,0,0.05), 0px 2px 4px -1px rgba(0,0,0,0.03)' }, // Modern soft shadow
             android: { elevation: 2 }
         })
     },
     imageWrapperList: {
         width: 80,
         height: 80,
-        borderRadius: 12,
+        borderRadius: 16, // Matching outer radius curve
         overflow: 'hidden',
-        backgroundColor: '#F8FAFC',
-        marginRight: 12,
-        position: 'relative'
+        backgroundColor: '#F1F5F9',
+        marginRight: 16,
+        position: 'relative',
+        borderWidth: 1,
+        borderColor: '#F8FAFC',
     },
     productInfoList: {
         flex: 1,
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        gap: 16,
+    },
+    verticalDividerList: {
+        width: 2,
+        alignSelf: 'stretch',
+        backgroundColor: '#CBD5E1',
+        marginHorizontal: 8,
     },
     productNameList: {
         fontSize: 16,
@@ -1229,9 +1241,9 @@ const styles = StyleSheet.create({
         width: COLUMN_WIDTH,
         margin: 6,
         borderRadius: 20,
-        padding: 10, // Restore padding
+        padding: 10,
         borderWidth: 1,
-        borderColor: '#F1F5F9',
+        borderColor: '#F1F5F9', // Revert to F1F5F9
         ...Platform.select({
             web: { boxShadow: '0px 2px 8px rgba(0,0,0,0.04)' },
             android: { elevation: 3 }
@@ -1250,11 +1262,11 @@ const styles = StyleSheet.create({
     imageWrapper: {
         width: '100%',
         height: 125,
-        borderRadius: 14, // Rounded corners for image
+        borderRadius: 14,
         overflow: 'hidden',
         backgroundColor: '#F8FAFC',
         position: 'relative',
-        marginBottom: 8, // Space between image and text
+        marginBottom: 8,
     },
     productImage: {
         width: '100%',
@@ -1270,7 +1282,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 10,
         right: 10,
-        backgroundColor: '#2563EB', // Changed to Blue
+        backgroundColor: '#2563EB',
         width: 36,
         height: 36,
         borderRadius: 18,
@@ -1279,7 +1291,6 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: '#FFFFFF',
         zIndex: 10,
-        // Removed shadows/elevation
     },
     qtyBadgeText: {
         color: '#FFFFFF',
@@ -1301,7 +1312,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     productInfo: {
-        padding: 2, // Minimal padding inside content area
+        padding: 2,
     },
     productCat: {
         fontSize: 10,
@@ -1318,14 +1329,14 @@ const styles = StyleSheet.create({
         letterSpacing: 0.5,
     },
     productName: {
-        fontSize: 15, // Increased from 13
+        fontSize: 15,
         fontWeight: 'bold',
         color: '#1E293B',
-        lineHeight: 20, // Increased line height
+        lineHeight: 20,
         marginBottom: 2,
     },
     productPrice: {
-        fontSize: 16, // Increased from 15
+        fontSize: 16,
         fontWeight: '900',
         color: '#0F172A',
         marginBottom: 4,
@@ -1335,9 +1346,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     stockDot: {
-        width: 8, // Slightly larger dot
+        width: 8,
         height: 8,
-        borderRadius: 4, // Circle
+        borderRadius: 4,
         marginRight: 6,
     },
     stockText: {
