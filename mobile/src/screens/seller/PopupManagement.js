@@ -1131,6 +1131,12 @@ const styles = StyleSheet.create({
     saveBtnDisabled: {
         backgroundColor: '#94A3B8',
     },
+    saveBtnText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
+        letterSpacing: 0.5,
+    },
     // Modal Styles
     modalContent: {
         paddingTop: 10,
