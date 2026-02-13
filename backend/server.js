@@ -6891,7 +6891,7 @@ app.get("/api/reports/financial-summary", authenticateToken, authorizeRoles('adm
 // --- Popup Management Endpoints ---
 
 // Get all popups (for seller/admin management)
-app.get("/api/popups", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
+app.get("/api/popups", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir', 'seller'), async (req, res) => {
     try {
         const sql = `
             SELECT * FROM popups 
@@ -6903,15 +6903,17 @@ app.get("/api/popups", authenticateToken, authorizeRoles('admin', 'owner', 'penj
             message: "success",
             data: rows.map(row => {
                 let show_on_pages = [];
-                if (row.show_on_pages && typeof row.show_on_pages === 'string' && row.show_on_pages.trim() !== '') {
+                if (row.show_on_pages) {
                     try {
-                        show_on_pages = JSON.parse(row.show_on_pages);
+                        show_on_pages = typeof row.show_on_pages === 'string' ? JSON.parse(row.show_on_pages) : row.show_on_pages;
+                        // Handle potential double stringify
+                        if (typeof show_on_pages === 'string') {
+                            show_on_pages = JSON.parse(show_on_pages);
+                        }
                     } catch (e) {
                         console.error(`Error parsing show_on_pages for popup ${row.id}:`, e);
                         show_on_pages = [];
                     }
-                } else if (Array.isArray(row.show_on_pages)) {
-                    show_on_pages = row.show_on_pages;
                 }
                 return {
                     ...row,
@@ -6945,10 +6947,16 @@ app.get("/api/popups/active", async (req, res) => {
             filteredPopups = rows.filter(popup => {
                 if (!popup.show_on_pages) return true; // Show on all pages if not specified
                 try {
-                    const pages = typeof popup.show_on_pages === 'string'
+                    let pages = typeof popup.show_on_pages === 'string'
                         ? JSON.parse(popup.show_on_pages)
                         : popup.show_on_pages;
-                    return !pages || pages.length === 0 || pages.includes(page);
+
+                    // Handle potential double stringify
+                    if (typeof pages === 'string') {
+                        pages = JSON.parse(pages);
+                    }
+
+                    return !pages || (Array.isArray(pages) && pages.length === 0) || (Array.isArray(pages) && pages.includes(page));
                 } catch (e) {
                     console.error(`Error parsing show_on_pages in filter for popup ${popup.id}:`, e);
                     return true; // Fallback to showing it
@@ -6963,14 +6971,16 @@ app.get("/api/popups/active", async (req, res) => {
             message: "success",
             data: filteredPopups.map(row => {
                 let show_on_pages = [];
-                if (row.show_on_pages && typeof row.show_on_pages === 'string' && row.show_on_pages.trim() !== '') {
+                if (row.show_on_pages) {
                     try {
-                        show_on_pages = JSON.parse(row.show_on_pages);
+                        show_on_pages = typeof row.show_on_pages === 'string' ? JSON.parse(row.show_on_pages) : row.show_on_pages;
+                        // Handle potential double stringify
+                        if (typeof show_on_pages === 'string') {
+                            show_on_pages = JSON.parse(show_on_pages);
+                        }
                     } catch (e) {
                         show_on_pages = [];
                     }
-                } else if (Array.isArray(row.show_on_pages)) {
-                    show_on_pages = row.show_on_pages;
                 }
                 return {
                     ...row,
@@ -6985,7 +6995,7 @@ app.get("/api/popups/active", async (req, res) => {
 });
 
 // Create new popup
-app.post("/api/popups", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), upload.single('image'), async (req, res) => {
+app.post("/api/popups", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir', 'seller'), upload.single('image'), async (req, res) => {
     try {
         let popupData;
 
@@ -7007,8 +7017,16 @@ app.post("/api/popups", authenticateToken, authorizeRoles('admin', 'owner', 'pen
         }
 
         const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
-        const pages_json = show_on_pages ? JSON.stringify(show_on_pages) : JSON.stringify([]);
-        const final_is_active = is_active !== undefined ? (is_active ? 1 : 0) : 1;
+
+        // Fix double stringify bug
+        let pages_json;
+        if (typeof show_on_pages === 'string') {
+            pages_json = show_on_pages; // Already a string from client
+        } else {
+            pages_json = JSON.stringify(show_on_pages || []);
+        }
+
+        const final_is_active = is_active !== undefined ? (is_active == 'true' || is_active === true || is_active == 1 ? 1 : 0) : 1;
         const final_priority = priority !== undefined ? parseInt(priority) : 0;
 
         const sql = `
@@ -7048,7 +7066,7 @@ app.post("/api/popups", authenticateToken, authorizeRoles('admin', 'owner', 'pen
 });
 
 // Update popup
-app.put("/api/popups/:id", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), upload.single('image'), async (req, res) => {
+app.put("/api/popups/:id", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir', 'seller'), upload.single('image'), async (req, res) => {
     try {
         const { id } = req.params;
         let popupData;
@@ -7074,8 +7092,16 @@ app.put("/api/popups/:id", authenticateToken, authorizeRoles('admin', 'owner', '
         }
 
         let sql = 'UPDATE popups SET title = ?, link_type = ?, link_value = ?, show_on_pages = ?, priority = ?, is_active = ?';
-        const pages_json = show_on_pages ? JSON.stringify(show_on_pages) : JSON.stringify([]);
-        const final_is_active = is_active !== undefined ? (is_active ? 1 : 0) : 1;
+
+        // Fix double stringify bug
+        let pages_json;
+        if (typeof show_on_pages === 'string') {
+            pages_json = show_on_pages; // Already a string from client
+        } else {
+            pages_json = JSON.stringify(show_on_pages || []);
+        }
+
+        const final_is_active = is_active !== undefined ? (is_active == 'true' || is_active === true || is_active == 1 ? 1 : 0) : 1;
         const final_priority = priority !== undefined ? parseInt(priority) : 0;
 
         let params = [
@@ -7123,7 +7149,7 @@ app.put("/api/popups/:id", authenticateToken, authorizeRoles('admin', 'owner', '
 });
 
 // Delete popup
-app.delete("/api/popups/:id", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
+app.delete("/api/popups/:id", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir', 'seller'), async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -7148,7 +7174,7 @@ app.delete("/api/popups/:id", authenticateToken, authorizeRoles('admin', 'owner'
 });
 
 // Push popup (update last_pushed_at to make it appear again for users)
-app.post("/api/popups/:id/push", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
+app.post("/api/popups/:id/push", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir', 'seller'), async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -7202,7 +7228,7 @@ app.post("/api/popups/:id/click", async (req, res) => {
 });
 
 // Get popup statistics
-app.get("/api/popups/:id/stats", authenticateToken, authorizeRoles('admin', 'penjual'), async (req, res) => {
+app.get("/api/popups/:id/stats", authenticateToken, authorizeRoles('admin', 'penjual', 'seller'), async (req, res) => {
     try {
         const { id } = req.params;
 
