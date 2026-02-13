@@ -64,17 +64,19 @@ const PopupModal = ({ popups = [], currentPage = 'dashboard', onClose }) => {
 
     const loadAndFilterPopups = async () => {
         try {
-            const closedPopupsJson = await AsyncStorage.getItem('closedPopups');
-            const closedPopups = closedPopupsJson ? JSON.parse(closedPopupsJson) : {};
+            const closedPopupVersionsJson = await AsyncStorage.getItem('closedPopupVersions');
+            const closedPopupVersions = closedPopupVersionsJson ? JSON.parse(closedPopupVersionsJson) : {};
 
             const filtered = popups.filter(popup => {
-                const closedAt = closedPopups[popup.id];
-                if (closedAt) {
-                    if (popup.last_pushed_at && new Date(popup.last_pushed_at) > new Date(closedAt)) {
-                        return true;
-                    }
+                const closedVersion = closedPopupVersions[popup.id];
+                const currentVersion = popup.last_pushed_at || 'initial';
+
+                // If version matches stored closed version, don't show
+                if (closedVersion && closedVersion === currentVersion) {
                     return false;
                 }
+
+                // Show if never closed OR if version is different (new push)
                 return true;
             });
 
@@ -84,7 +86,8 @@ const PopupModal = ({ popups = [], currentPage = 'dashboard', onClose }) => {
                 trackView(filtered[0].id);
             }
         } catch (error) {
-            console.error('Error loading closed popups:', error);
+            console.error('Error loading closed popup versions:', error);
+            // On error, try to show popups anyway (better slightly annoying than missing critical info)
             setDisplayPopups(popups);
             if (popups.length > 0) {
                 setVisible(true);
@@ -124,10 +127,13 @@ const PopupModal = ({ popups = [], currentPage = 'dashboard', onClose }) => {
         }
 
         try {
-            const closedPopupsJson = await AsyncStorage.getItem('closedPopups');
-            const closedPopups = closedPopupsJson ? JSON.parse(closedPopupsJson) : {};
-            closedPopups[currentPopup.id] = new Date().toISOString();
-            await AsyncStorage.setItem('closedPopups', JSON.stringify(closedPopups));
+            const closedPopupVersionsJson = await AsyncStorage.getItem('closedPopupVersions');
+            const closedPopupVersions = closedPopupVersionsJson ? JSON.parse(closedPopupVersionsJson) : {};
+
+            // Store the current version as closed
+            closedPopupVersions[currentPopup.id] = currentPopup.last_pushed_at || 'initial';
+
+            await AsyncStorage.setItem('closedPopupVersions', JSON.stringify(closedPopupVersions));
         } catch (error) {
             console.error('Error saving closed popup:', error);
         }
