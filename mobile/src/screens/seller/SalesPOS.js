@@ -82,7 +82,7 @@ const ProductCardItem = React.memo(({ item, qty, addToCart, ignoreStock, formatC
             </View>
 
             <View style={isList ? styles.productInfoList : styles.productInfo}>
-                <View style={{ flex: 1 }}>
+                <View style={isList ? { flex: 1 } : null}>
                     <Text style={styles.productCat}>{item.category}</Text>
                     <Text style={isList ? styles.productNameList : styles.productName} numberOfLines={2} ellipsizeMode="tail">{item.name}</Text>
                 </View>
@@ -1234,8 +1234,7 @@ const styles = StyleSheet.create({
 
     productCard: {
         backgroundColor: '#FFFFFF',
-        flex: 1,
-        maxWidth: '48%',
+        width: '48%',
         marginHorizontal: '1%',
         marginVertical: 6,
         borderRadius: 20,
@@ -1251,7 +1250,6 @@ const styles = StyleSheet.create({
         borderColor: '#2563EB',
         borderWidth: 2,
         backgroundColor: '#F8FAFC',
-        transform: [{ scale: 0.98 }]
     },
     outOfStockCard: {
         opacity: 0.6,
