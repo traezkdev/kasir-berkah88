@@ -586,6 +586,7 @@ const SalesPOS = () => {
                     data={filteredItems}
                     keyExtractor={item => item.id.toString()}
                     numColumns={viewMode === 'grid' ? 2 : 1}
+                    columnWrapperStyle={viewMode === 'grid' ? styles.columnWrapper : undefined}
                     renderItem={renderMenuItem}
                     contentContainerStyle={styles.listContent}
                     refreshControl={
@@ -1143,6 +1144,9 @@ const styles = StyleSheet.create({
         padding: '3%',
         paddingBottom: 100,
     },
+    columnWrapper: {
+        justifyContent: 'space-between',
+    },
     // List View Styles
     productCardList: {
         backgroundColor: '#FFFFFF',
@@ -1235,8 +1239,7 @@ const styles = StyleSheet.create({
     productCard: {
         backgroundColor: '#FFFFFF',
         width: '48%',
-        marginHorizontal: '1%',
-        marginVertical: 6,
+        marginBottom: 12,
         borderRadius: 20,
         padding: 10,
         borderWidth: 1,
