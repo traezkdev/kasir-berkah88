@@ -2052,6 +2052,11 @@ const setupDatabase = async () => {
         }
         console.log("Added user_id column to expenses table.");
       }
+
+      if (!expenseColNames.includes('notes')) {
+        await connection.query("ALTER TABLE expenses ADD COLUMN notes TEXT DEFAULT NULL");
+        console.log("Added notes column to expenses table.");
+      }
     } catch (err) {
       console.error('Error migrating expenses table:', err);
     }
@@ -2073,11 +2078,6 @@ const setupDatabase = async () => {
     }
 
     connection.release();
-
-
-
-
-
 
   } catch (error) {
     console.error('Error setting up the database:', error);

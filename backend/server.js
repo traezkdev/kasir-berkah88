@@ -3317,7 +3317,7 @@ app.post("/api/v2/transactions", authenticateToken, authorizeRoles('user', 'admi
 // --- Expense Endpoints ---
 
 // Get all expenses without pagination
-app.get("/api/expenses/all", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'user'), async (req, res) => {
+app.get("/api/expenses/all", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'seller', 'user', 'guest'), async (req, res) => {
     try {
         const [closingRow] = await db.query("SELECT value FROM settings WHERE `key` = 'last_closing_date'");
         const lastClosingDate = closingRow.length > 0 ? closingRow[0].value : null;
@@ -3349,7 +3349,7 @@ app.get("/api/expenses/all", authenticateToken, authorizeRoles('admin', 'owner',
 });
 
 // Get all expenses with pagination and date range filtering
-app.get("/api/expenses", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'user'), async (req, res, next) => {
+app.get("/api/expenses", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'seller', 'user', 'guest'), async (req, res, next) => {
     try {
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 20;
@@ -3429,14 +3429,15 @@ app.get("/api/expenses", authenticateToken, authorizeRoles('admin', 'owner', 'ka
 });
 
 // Add a new expense
-app.post("/api/expenses", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'user'), async (req, res, next) => {
+app.post("/api/expenses", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'seller', 'user'), async (req, res, next) => {
     try {
         const { name, amount, category, date, notes } = req.body;
         if (!name || !amount || !date) {
             return res.status(400).json({ "error": "Missing required fields: name, amount, date" });
         }
         const sql = 'INSERT INTO expenses (name, amount, category, date, notes, user_id) VALUES (?,?,?,?,?,?)';
-        const params = [name, amount, category, date, notes, req.user.userId];
+        const cleanDate = date ? date.split('+')[0].split('Z')[0].replace('T', ' ') : null;
+        const params = [name, parseFloat(amount) || 0, category, cleanDate, notes, req.user.userId];
         const [result] = await db.query(sql, params);
 
         await logActivity(req.user.userId, 'Tambah Pengeluaran', 'expense', result.insertId, `Pengeluaran baru: ${name} sebesar Rp ${parseFloat(amount).toLocaleString('id-ID')}`);
@@ -3451,7 +3452,7 @@ app.post("/api/expenses", authenticateToken, authorizeRoles('admin', 'owner', 'k
 });
 
 // Update an expense
-app.put("/api/expenses/:id", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'user'), async (req, res, next) => {
+app.put("/api/expenses/:id", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'seller', 'user'), async (req, res, next) => {
     try {
         const { name, amount, category, date, notes } = req.body;
         const sql = `UPDATE expenses set 
@@ -3461,7 +3462,11 @@ app.put("/api/expenses/:id", authenticateToken, authorizeRoles('admin', 'owner',
            date = COALESCE(?, date), 
            notes = COALESCE(?, notes) 
            WHERE id = ?`;
-        const params = [name, amount, category, date ? date.replace('T', ' ') : null, notes, req.params.id];
+
+        // Clean date for MySQL (e.g. 2024-02-14T10:00:00.000Z or 2024-02-14 10:00:00+07:00 -> 2024-02-14 10:00:00)
+        const cleanDate = date ? date.split('+')[0].split('Z')[0].replace('T', ' ') : null;
+
+        const params = [name, amount ? parseFloat(amount) : null, category, cleanDate, notes, req.params.id];
         const [result] = await db.query(sql, params);
 
         if (result.affectedRows === 0) {
@@ -3507,7 +3512,7 @@ app.delete("/api/expenses/all", authenticateToken, authorizeRoles('admin'), asyn
 });
 
 // Delete an expense
-app.delete("/api/expenses/:id", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'user'), async (req, res, next) => {
+app.delete("/api/expenses/:id", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'seller', 'user'), async (req, res, next) => {
     try {
         const sql = 'DELETE FROM expenses WHERE id = ?';
         const [result] = await db.query(sql, [req.params.id]);
