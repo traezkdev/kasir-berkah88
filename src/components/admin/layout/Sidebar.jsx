@@ -5,7 +5,7 @@ import {
   FaUsers, FaCog, FaFileInvoiceDollar, FaCalculator, FaBook, FaSignOutAlt, FaRobot,
   FaCashRegister, FaExclamationTriangle, FaTrashAlt, FaWallet, FaBalanceScale,
   FaFileAlt, FaHandHoldingUsd, FaUserCircle, FaHistory, FaCheckCircle, FaBars, FaAngleDoubleLeft, FaAngleDoubleRight,
-  FaGift, FaInfoCircle
+  FaGift, FaInfoCircle, FaBullhorn
 } from 'react-icons/fa';
 
 import { useAppSettings } from '../../../contexts/AppSettingsContext';
@@ -321,7 +321,6 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
                 Stok Bahan Mentah
               </MenuItem>
               <MenuItem
-
                 to="/promos"
                 icon={FaGift}
                 onClick={() => window.innerWidth < 1024 && toggleSidebar()}
@@ -332,6 +331,18 @@ const Sidebar = ({ isOpen, toggleSidebar, headerTitle }) => {
                 activeLinkClasses={activeLinkClasses}
               >
                 Manajemen Promo
+              </MenuItem>
+              <MenuItem
+                to="/popups"
+                icon={FaBullhorn}
+                onClick={() => window.innerWidth < 1024 && toggleSidebar()}
+                isCollapsed={isCollapsed}
+                handleMouseEnter={handleMouseEnter}
+                handleMouseLeave={handleMouseLeave}
+                navLinkClasses={navLinkClasses}
+                activeLinkClasses={activeLinkClasses}
+              >
+                Manajemen Popup
               </MenuItem>
               <MenuItem
                 to="/information"

@@ -193,6 +193,39 @@ const setupDatabase = async () => {
     await connection.query(createPopupsTable);
     console.log('popups table is ready.');
 
+    // Migration for popups table to ensure all columns exist (important for production)
+    const [popupCols] = await connection.query("SHOW COLUMNS FROM popups");
+    const popupColNames = popupCols.map(c => c.Field);
+
+    if (!popupColNames.includes('priority')) {
+      await connection.query("ALTER TABLE popups ADD COLUMN priority INT DEFAULT 0");
+      console.log("Added priority column to popups table.");
+    }
+    if (!popupColNames.includes('view_count')) {
+      await connection.query("ALTER TABLE popups ADD COLUMN view_count INT DEFAULT 0");
+      console.log("Added view_count column to popups table.");
+    }
+    if (!popupColNames.includes('click_count')) {
+      await connection.query("ALTER TABLE popups ADD COLUMN click_count INT DEFAULT 0");
+      console.log("Added click_count column to popups table.");
+    }
+    if (!popupColNames.includes('last_pushed_at')) {
+      await connection.query("ALTER TABLE popups ADD COLUMN last_pushed_at TIMESTAMP NULL DEFAULT NULL");
+      console.log("Added last_pushed_at column to popups table.");
+    }
+    if (!popupColNames.includes('show_on_pages')) {
+      await connection.query("ALTER TABLE popups ADD COLUMN show_on_pages JSON DEFAULT NULL");
+      console.log("Added show_on_pages column to popups table.");
+    }
+    if (!popupColNames.includes('link_type')) {
+      await connection.query("ALTER TABLE popups ADD COLUMN link_type VARCHAR(50) DEFAULT 'none'");
+      console.log("Added link_type column to popups table.");
+    }
+    if (!popupColNames.includes('link_value')) {
+      await connection.query("ALTER TABLE popups ADD COLUMN link_value VARCHAR(255) DEFAULT NULL");
+      console.log("Added link_value column to popups table.");
+    }
+
     // Migration for promos table
     const [isHeroCol] = await connection.query("SHOW COLUMNS FROM promos LIKE 'is_hero'");
     if (isHeroCol.length === 0) {
@@ -1700,9 +1733,29 @@ const setupDatabase = async () => {
             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'menu_reviews' AND INDEX_NAME = 'unique_user_item_order'
         `);
       if (existingConstraints.length > 0) {
-        await connection.query("ALTER TABLE menu_reviews DROP INDEX unique_user_item_order");
-        await connection.query("ALTER TABLE menu_reviews ADD UNIQUE KEY unique_user_item (user_id, menu_item_id(191))");
-        console.log('Successfully updated menu_reviews unique constraint.');
+        // Drop the index safely - if it fails because of FK, we might need to drop FK first, 
+        // but for now let's just avoid the error by checking more deeply or just skipping if it fails.
+        // Usually, unique_user_item_order was (user_id, menu_item_id, order_id)
+        try {
+          await connection.query("ALTER TABLE menu_reviews DROP INDEX unique_user_item_order");
+          console.log('Successfully dropped old unique_user_item_order index.');
+        } catch (dropErr) {
+          // If it fails, it's likely a FK issue. We can log but not crash.
+          if (!dropErr.message.includes('foreign key constraint')) {
+            throw dropErr;
+          }
+          console.log('Skipping drop of unique_user_item_order as it is needed by a FK.');
+        }
+
+        // Add the new constraint if it doesn't exist
+        const [newConstr] = await connection.query(`
+            SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS 
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'menu_reviews' AND INDEX_NAME = 'unique_user_item'
+        `);
+        if (newConstr.length === 0) {
+          await connection.query("ALTER TABLE menu_reviews ADD UNIQUE KEY unique_user_item (user_id, menu_item_id(191))");
+          console.log('Successfully added menu_reviews unique_user_item constraint.');
+        }
       }
     } catch (err) {
       console.error('Error migrating menu_reviews constraints:', err.message);
@@ -1949,27 +2002,7 @@ const setupDatabase = async () => {
     }
 
 
-    // --- Menu Reviews Table Setup ---
-    try {
-      const createMenuReviewsTable = `
-        CREATE TABLE IF NOT EXISTS menu_reviews (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          menu_item_id VARCHAR(255) NOT NULL,
-          user_id INT NOT NULL,
-          order_id INT,
-          rating DECIMAL(2, 1) NOT NULL,
-          comment TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE,
-          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-          UNIQUE KEY unique_user_item_review (user_id, menu_item_id)
-        );
-      `;
-      await connection.query(createMenuReviewsTable);
-      console.log('menu_reviews table checked/created.');
-    } catch (err) {
-      console.error('Error setting up menu_reviews table:', err);
-    }
+    // --- Menu Reviews Table Setup moved to earlier section ---
 
 
     // --- Expense Categories Table Setup ---
