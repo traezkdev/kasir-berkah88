@@ -318,7 +318,7 @@ const sendUniversalNotification = async (userIds, message, heading, data = {}, e
         // 2. Filter users based on their notification_settings
         const filteredUsers = users.filter(user => {
             // Default settings
-            let settings = { orders: true, chat: true, promo: false };
+            let settings = { orders: true, chat: true, promo: true };
 
             if (user.notification_settings) {
                 try {
@@ -7173,23 +7173,54 @@ app.delete("/api/popups/:id", authenticateToken, authorizeRoles('admin', 'owner'
     }
 });
 
-// Push popup (update last_pushed_at to make it appear again for users)
+// Push popup (update last_pushed_at and send real push notification)
 app.post("/api/popups/:id/push", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir', 'seller'), async (req, res) => {
     try {
         const { id } = req.params;
 
+        // 1. Fetch popup details first to get the title for notification
+        const [popupRows] = await db.query('SELECT title, image_url FROM popups WHERE id = ?', [id]);
+
+        if (popupRows.length === 0) {
+            return res.status(404).json({ error: "Popup tidak ditemukan" });
+        }
+
+        const popup = popupRows[0];
+
+        // 2. Update last_pushed_at in DB
         const sql = 'UPDATE popups SET last_pushed_at = NOW() WHERE id = ?';
         const [result] = await db.query(sql, [id]);
 
         if (result.affectedRows === 0) {
-            return res.status(404).json({ error: "Popup not found" });
+            return res.status(404).json({ error: "Gagal memperbarui popup" });
         }
 
-        await logActivity(req.user.userId, 'Push Popup', 'popup', id, `Popup ID ${id} di-push ulang`);
+        await logActivity(req.user.userId, 'Push Popup', 'popup', id, `Popup ID ${id} (${popup.title}) di-push ulang`);
+
+        // 3. Send real push notification to all customers
+        // null means broadcast to all users
+        const io = req.app.get('io');
+        setImmediate(() => {
+            sendUniversalNotification(
+                null,
+                `Ada promo/informasi menarik: ${popup.title}`,
+                'Info Baru untuk Anda! 📢',
+                {
+                    popupId: id,
+                    type: 'promo',
+                    image: popup.image_url
+                }
+            ).catch(err => console.error('Push notification error:', err));
+
+            // Realtime Update via Socket.io
+            if (io) {
+                io.emit('popup_push', { id, title: popup.title, last_pushed_at: new Date() });
+            }
+        });
 
         res.json({
-            message: "Popup berhasil di-push ulang",
-            data: { id, last_pushed_at: new Date() }
+            message: "Popup berhasil di-push ke semua customer",
+            data: { id, last_pushed_at: new Date(), title: popup.title }
         });
     } catch (err) {
         console.error("Error pushing popup:", err);
