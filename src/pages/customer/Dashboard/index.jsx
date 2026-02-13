@@ -135,7 +135,6 @@ const CustomerDashboard = () => {
         });
 
         socket.on('order_update', (data) => {
-            console.log('Realtime Order Update (Customer Dash):', data);
             fetchData();
         });
 

@@ -23,7 +23,6 @@ const PopupDisplay = () => {
         });
 
         socket.on('popup_push', (data) => {
-            console.log('Realtime Popup Push Received:', data);
             fetchActivePopups(); // Refresh the list of active popups
         });
 
