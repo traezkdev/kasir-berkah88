@@ -418,6 +418,7 @@ const PopupManagement = ({ navigation }) => {
 
             <ScrollView
                 style={styles.content}
+                contentContainerStyle={{ paddingBottom: 120 }} // Tambah ruang di bawah kartu terakhir
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#059669" />
                 }
@@ -935,7 +936,7 @@ const styles = StyleSheet.create({
     popupCard: {
         backgroundColor: '#FFFFFF',
         borderRadius: 12,
-        marginBottom: 14,
+        marginBottom: 20, // Ditingkatkan dari 14 agar lebih berjarak
         padding: 14,
         borderWidth: 1,
         borderColor: '#E2E8F0',
