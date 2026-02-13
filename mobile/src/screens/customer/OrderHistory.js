@@ -39,6 +39,7 @@ import apiService, { API_URL } from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
 import usePopups from '../../hooks/usePopups';
 import PopupModal from '../../components/PopupModal';
+import BottomModalTemplate from '../../components/templates/BottomModalTemplate';
 
 const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -335,116 +336,106 @@ const RatingModal = ({ visible, order, onClose, onSubmit, submitting, insets }) 
     };
 
     return (
-        <Modal
+        <BottomModalTemplate
             visible={visible}
-            animationType="slide"
-            transparent={true}
-            onRequestClose={onClose}
+            onClose={onClose}
+            title={`Beri Ulasan #${order?.id || ''}`}
+            heightPercentage={0.88}
+            footer={
+                <TouchableOpacity style={styles.modalFinalBtn} onPress={onClose}>
+                    <Text style={styles.modalFinalBtnText}>Selesai</Text>
+                </TouchableOpacity>
+            }
         >
-            <View style={styles.modalOverlay}>
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
-                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-                    style={[styles.modalContent, { paddingBottom: getSafeBottomPadding(insets) }]}
-                >
-                    <View style={styles.modalHeader}>
-                        <View>
-                            <Text style={styles.modalTitle}>Beri Ulasan</Text>
-                            <Text style={styles.modalSubtitle}>Pesanan #{order?.id}</Text>
-                        </View>
-                        <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-                            <XIcon size={24} color="#64748B" />
-                        </TouchableOpacity>
+            <View style={{ paddingBottom: 24 }}>
+                {/* Header Subtitle or Info */}
+                <View style={{ marginBottom: 20 }}>
+                    <Text style={{ fontSize: 13, color: '#64748B', textAlign: 'center' }}>
+                        Bagaimana makananmu? Ceritakan pengalamanmu untuk membantu pelanggan lain.
+                    </Text>
+                </View>
+
+                {loadingExisting ? (
+                    <View style={{ padding: 40, alignItems: 'center' }}>
+                        <ActivityIndicator size="large" color="#F59E0B" />
+                        <Text style={{ marginTop: 12, color: '#94A3B8', fontWeight: 'bold', fontSize: 12 }}>Memuat Ulasan...</Text>
                     </View>
-
-                    <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                        {loadingExisting ? (
-                            <View style={{ padding: 40, alignItems: 'center' }}>
-                                <ActivityIndicator size="large" color="#F59E0B" />
-                                <Text style={{ marginTop: 12, color: '#94A3B8', fontWeight: 'bold', fontSize: 12 }}>Memuat Ulasan...</Text>
-                            </View>
-                        ) : (
-                            items.map((item, idx) => {
-                                const state = ratedItems[item.id] || { rating: 0, comment: '', submitted: false };
-                                return (
-                                    <View key={idx} style={[styles.reviewItem, state.submitted && styles.submittedItem]}>
-                                        <View style={styles.itemInfoHeader}>
-                                            <View style={styles.itemIconWrap}>
-                                                <Utensils size={20} color="#CBD5E1" />
-                                            </View>
-                                            <View style={{ flex: 1 }}>
-                                                <Text style={styles.reviewItemName}>{item.name}</Text>
-                                                <Text style={styles.reviewItemSub}>
-                                                    {state.submitted ? 'Ulasan Anda Telah Terkirim' : 'Pilih Bintang & Komentar'}
-                                                </Text>
-                                            </View>
-                                            {state.submitted && (
-                                                <View style={styles.submittedBadge}>
-                                                    <Check size={12} color="#059669" />
-                                                    <Text style={styles.submittedText}>Terkirim</Text>
-                                                </View>
-                                            )}
-                                        </View>
-
-                                        {!state.submitted ? (
-                                            <>
-                                                <View style={styles.starContainer}>
-                                                    {[1, 2, 3, 4, 5].map(star => (
-                                                        <TouchableOpacity
-                                                            key={star}
-                                                            onPress={() => handleRate(item.id, star)}
-                                                            style={styles.starBtn}
-                                                        >
-                                                            <Star
-                                                                size={32}
-                                                                color={state.rating >= star ? '#F59E0B' : '#E2E8F0'}
-                                                                fill={state.rating >= star ? '#F59E0B' : 'transparent'}
-                                                            />
-                                                        </TouchableOpacity>
-                                                    ))}
-                                                </View>
-                                                <TextInput
-                                                    style={styles.commentInput}
-                                                    placeholder="Tulis ulasan Anda (Opsional)..."
-                                                    multiline
-                                                    placeholderTextColor="#94A3B8"
-                                                    value={state.comment}
-                                                    onChangeText={(text) => handleComment(item.id, text)}
-                                                />
-                                                <TouchableOpacity
-                                                    style={[styles.submitItemBtn, !state.rating && styles.disabledBtn]}
-                                                    onPress={() => submitItem(item)}
-                                                    disabled={!state.rating || submitting}
-                                                >
-                                                    {submitting ? (
-                                                        <ActivityIndicator size="small" color="#FFFFFF" />
-                                                    ) : (
-                                                        <Text style={styles.submitItemBtnText}>
-                                                            {state.isEdit ? 'Simpan Perubahan' : 'Kirim Ulasan'}
-                                                        </Text>
-                                                    )}
-                                                </TouchableOpacity>
-                                            </>
-                                        ) : (
-                                            <TouchableOpacity
-                                                style={styles.editUlasanBtn}
-                                                onPress={() => setRatedItems(prev => ({ ...prev, [item.id]: { ...prev[item.id], submitted: false } }))}
-                                            >
-                                                <Text style={styles.editUlasanBtnText}>EDIT ULASAN</Text>
-                                            </TouchableOpacity>
-                                        )}
+                ) : (
+                    items.map((item, idx) => {
+                        const state = ratedItems[item.id] || { rating: 0, comment: '', submitted: false };
+                        return (
+                            <View key={idx} style={[styles.reviewItem, state.submitted && styles.submittedItem]}>
+                                <View style={styles.itemInfoHeader}>
+                                    <View style={styles.itemIconWrap}>
+                                        <Utensils size={20} color="#CBD5E1" />
                                     </View>
-                                );
-                            })
-                        )}
-                    </ScrollView>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.reviewItemName}>{item.name}</Text>
+                                        <Text style={styles.reviewItemSub}>
+                                            {state.submitted ? 'Ulasan Anda Telah Terkirim' : 'Pilih Bintang & Komentar'}
+                                        </Text>
+                                    </View>
+                                    {state.submitted && (
+                                        <View style={styles.submittedBadge}>
+                                            <Check size={12} color="#059669" />
+                                            <Text style={styles.submittedText}>Terkirim</Text>
+                                        </View>
+                                    )}
+                                </View>
 
-                    <TouchableOpacity style={styles.modalFinalBtn} onPress={onClose}>
-                        <Text style={styles.modalFinalBtnText}>Selesai</Text>
-                    </TouchableOpacity>
-                </KeyboardAvoidingView>
+                                {!state.submitted ? (
+                                    <>
+                                        <View style={styles.starContainer}>
+                                            {[1, 2, 3, 4, 5].map(star => (
+                                                <TouchableOpacity
+                                                    key={star}
+                                                    onPress={() => handleRate(item.id, star)}
+                                                    style={styles.starBtn}
+                                                >
+                                                    <Star
+                                                        size={32}
+                                                        color={state.rating >= star ? '#F59E0B' : '#E2E8F0'}
+                                                        fill={state.rating >= star ? '#F59E0B' : 'transparent'}
+                                                    />
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+                                        <TextInput
+                                            style={styles.commentInput}
+                                            placeholder="Tulis ulasan Anda (Opsional)..."
+                                            multiline
+                                            placeholderTextColor="#94A3B8"
+                                            value={state.comment}
+                                            onChangeText={(text) => handleComment(item.id, text)}
+                                        />
+                                        <TouchableOpacity
+                                            style={[styles.submitItemBtn, !state.rating && styles.disabledBtn]}
+                                            onPress={() => submitItem(item)}
+                                            disabled={!state.rating || submitting}
+                                        >
+                                            {submitting ? (
+                                                <ActivityIndicator size="small" color="#FFFFFF" />
+                                            ) : (
+                                                <Text style={styles.submitItemBtnText}>
+                                                    {state.isEdit ? 'Simpan Perubahan' : 'Kirim Ulasan'}
+                                                </Text>
+                                            )}
+                                        </TouchableOpacity>
+                                    </>
+                                ) : (
+                                    <TouchableOpacity
+                                        style={styles.editUlasanBtn}
+                                        onPress={() => setRatedItems(prev => ({ ...prev, [item.id]: { ...prev[item.id], submitted: false, isEdit: true } }))}
+                                    >
+                                        <Text style={styles.editUlasanBtnText}>EDIT ULASAN</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        );
+                    })
+                )}
             </View>
-        </Modal>
+        </BottomModalTemplate>
     );
 };
 

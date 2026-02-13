@@ -155,7 +155,7 @@ export const OrderNotificationProvider = ({ children }) => {
                             sendLocalNotification(
                                 "Pesanan Baru Masuk! 🛍️",
                                 `Ada pesanan baru #${latestOrder.id} senilai Rp ${new Intl.NumberFormat('id-ID').format(latestOrder.total)}`,
-                                { orderId: latestOrder.id }
+                                { type: 'new_order', orderId: latestOrder.id }
                             );
                             setNewOrder(latestOrder);
                             setShowPopup(true);
@@ -200,9 +200,9 @@ export const OrderNotificationProvider = ({ children }) => {
                                 body = "Maaf, pesanan Anda tidak dapat diproses saat ini.";
                             } else if (order.status === 'completed') {
                                 title = "Pesanan Selesai ✅";
-                                body = "Pesanan Anda telah selesai. Terima kasih telah berbelanja!";
+                                body = "Pesanan Anda telah selesai dan akan segera diantar.";
                             }
-                            sendLocalNotification(title, body, { orderId: order.id });
+                            sendLocalNotification(title, body, { type: 'order_status', orderId: order.id });
                         }
                     });
                 }
@@ -295,7 +295,10 @@ export const OrderNotificationProvider = ({ children }) => {
                                 senderId: data.senderId,
                                 orderId: data.orderId
                             });
-                        } else if (data.orderId) {
+                        } else if ((data.type === 'order_status' || data.type === 'new_order') && data.orderId) {
+                            navigationRef.navigate('OrderDetails', { orderId: data.orderId });
+                        } else if (data.orderId && !data.type) {
+                            // Fallback for legacy or other notifications
                             navigationRef.navigate('OrderDetails', { orderId: data.orderId });
                         }
                     }
@@ -441,9 +444,9 @@ export const OrderNotificationProvider = ({ children }) => {
                 fetchPendingCount();
 
                 // Jangan tampilkan popup jika ini adalah transaksi langsung dari POS (kasir jual)
-                // karena kasir sudah tahu transaksi itu sedang berlangsung.
-                if (order.is_transaction) {
-                    console.log('[Socket] Transaksi langsung diterima, melewati popup.');
+                // ATAU jika pesanan ini dibuat oleh user yang sama (misal Owner tes order sendiri)
+                if (order.is_transaction || String(order.user_id) === String(activeUserId)) {
+                    console.log('[Socket] Transaksi POS atau Pesanan Sendiri, melewati popup.');
                     return;
                 }
 
@@ -465,19 +468,33 @@ export const OrderNotificationProvider = ({ children }) => {
         });
 
         newSocket.on('new_message', (message) => {
-            if (!isMounted.current) return;
+            if (!isMounted.current || !activeUserId) return;
+
             const myId = String(activeUserId);
-            if (String(message.sender_id) === myId) return;
+            const senderId = String(message.sender_id);
+
+            console.log(`[Socket] New Message Packet: From ${senderId} to ${message.receiver_id}. My ID: ${myId}`);
+
+            // Validasi ketat: Jangan notif jika pengirim adalah saya sendiri
+            if (senderId === myId) {
+                console.log('[Socket] Pesan dari diri sendiri, abaikan notifikasi.');
+                return;
+            }
 
             const amISeller = ['admin', 'owner', 'penjual', 'kasir', 'seller'].includes(user.role);
             const isToMe = String(message.receiver_id) === myId;
             const isFromCustomer = message.sender_role === 'pelanggan' || message.sender_role === 'user';
 
             let shouldNotify = false;
+
+            // Logika notifikasi:
+            // 1. Jika pesan ditujukan langsung ke saya (Receiver ID match)
+            // 2. ATAU saya seller, dan pesan dari customer (Broadcast style chat)
             if (isToMe) {
                 shouldNotify = true;
             } else if (amISeller && isFromCustomer) {
-                shouldNotify = true;
+                // Pastikan tidak ganda jika receiver_id sudah cocok
+                if (!isToMe) shouldNotify = true;
             }
 
             if (shouldNotify) {

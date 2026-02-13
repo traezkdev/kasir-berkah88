@@ -152,6 +152,8 @@ const apiLimiter = rateLimit({
 // Apply rate limiter to auth routes AFTER cors
 app.use('/api/login', apiLimiter);
 app.use('/api/register', apiLimiter);
+
+
 // Error handling for JSON parsing
 app.use((err, req, res, next) => {
     if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
@@ -387,6 +389,122 @@ const processBase64Image = async (base64String, prefix = 'promo') => {
         return null;
     }
 };
+
+// API Endpoints
+
+// --- Review Management Endpoints ---
+
+// Get all reviews (for management)
+// Get all reviews (for management)
+app.get("/api/reviews", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual'), async (req, res) => {
+    try {
+        const sql = `
+            SELECT r.*, u.username as customer_name, m.name as menu_name 
+            FROM menu_reviews r
+            LEFT JOIN users u ON r.user_id = u.id
+            LEFT JOIN menu_items m ON r.menu_item_id = m.id
+            ORDER BY r.created_at DESC
+        `;
+        const [reviews] = await db.query(sql);
+        console.log(`[Review] Found ${reviews.length} reviews.`);
+        res.json({ message: "success", data: reviews });
+    } catch (err) {
+        console.error("Error fetching reviews:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete a review
+app.delete("/api/reviews/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const sql = "DELETE FROM menu_reviews WHERE id = ?";
+        const [result] = await db.query(sql, [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Review not found" });
+        }
+
+        await logActivity(req.user.userId, 'Hapus Review', 'review', id, `Review ID ${id} dihapus`);
+        res.json({ message: "Review deleted successfully" });
+    } catch (err) {
+        console.error("Error deleting review:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update a review
+app.put("/api/reviews/:id", authenticateToken, authorizeRoles('admin', 'owner', 'kasir'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rating, comment } = req.body;
+
+        const sql = "UPDATE menu_reviews SET rating = ?, comment = ? WHERE id = ?";
+        const [result] = await db.query(sql, [rating, comment, id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Review not found" });
+        }
+
+        await logActivity(req.user.userId, 'Edit Review', 'review', id, `Review ID ${id} diedit`);
+        res.json({ message: "Review updated successfully" });
+    } catch (err) {
+        console.error("Error updating review:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get reviews for a specific menu item (public/customer)
+app.get("/api/menu-items/:id/reviews", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const sql = `
+            SELECT r.*, u.username 
+            FROM menu_reviews r
+            JOIN users u ON r.user_id = u.id
+            WHERE r.menu_item_id = ?
+            ORDER BY r.created_at DESC
+        `;
+        const [reviews] = await db.query(sql, [id]);
+        res.json({ message: "success", data: reviews });
+    } catch (err) {
+        console.error("Error fetching menu reviews:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Add a review (for customers)
+app.post("/api/reviews", authenticateToken, async (req, res) => {
+    try {
+        const { menu_item_id, rating, comment, order_id } = req.body;
+        const user_id = req.user.userId;
+
+        if (!menu_item_id || !rating) {
+            return res.status(400).json({ error: "Menu item and rating are required" });
+        }
+
+        // Check if user has already reviewed this item
+        const checkSql = "SELECT id FROM menu_reviews WHERE user_id = ? AND menu_item_id = ?";
+        const [existing] = await db.query(checkSql, [user_id, menu_item_id]);
+
+        if (existing.length > 0) {
+            // Update existing review
+            const updateSql = "UPDATE menu_reviews SET rating = ?, comment = ?, created_at = NOW() WHERE id = ?";
+            await db.query(updateSql, [rating, comment, existing[0].id]);
+            await logActivity(user_id, 'Update Review', 'review', existing[0].id, `Update review untuk menu ${menu_item_id}`);
+            return res.json({ message: "Review updated successfully", data: { id: existing[0].id } });
+        }
+
+        const sql = "INSERT INTO menu_reviews (user_id, menu_item_id, rating, comment, order_id) VALUES (?, ?, ?, ?, ?)";
+        const [result] = await db.query(sql, [user_id, menu_item_id, rating, comment, order_id || null]);
+
+        await logActivity(user_id, 'Tambah Review', 'review', result.insertId, `Review untuk menu ${menu_item_id}`);
+        res.status(201).json({ message: "Review added successfully", data: { id: result.insertId } });
+    } catch (err) {
+        console.error("Error adding review:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
 
 // API Endpoints
 

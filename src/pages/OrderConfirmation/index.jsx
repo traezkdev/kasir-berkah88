@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
 import { useTheme } from '../../contexts/ThemeContext';
 import NavigationHeader from '../../components/ui/NavigationHeader';
 import Icon from '../../components/AppIcon';
@@ -22,6 +23,14 @@ const OrderConfirmationPage = ({ headerTitle }) => {
     const [activeTab, setActiveTab] = useState('pending');
     const [modalState, setModalState] = useState({ isOpen: false, orderId: null, action: null, title: '', message: '', type: null, isBulk: false });
     const [notification, setNotification] = useState(null);
+
+    const statusLabelMap = {
+        pending: 'Baru',
+        accepted: 'Diproses',
+        completed: 'Selesai',
+        rejected: 'Ditolak',
+        cancelled: 'Batal'
+    };
 
     const showNotification = (message, type) => {
         setNotification({ message, type });
@@ -47,10 +56,41 @@ const OrderConfirmationPage = ({ headerTitle }) => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [fetchPendingCount]);
 
     useEffect(() => {
         fetchOrders();
+
+        // Socket setup for real-time refresh
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+        const socket = io(API_BASE_URL, {
+            auth: { token },
+            transports: ['polling', 'websocket']
+        });
+
+        socket.on('order_update', () => {
+            console.log('Real-time update: refreshing order list...');
+            fetchOrders();
+        });
+
+        socket.on('new_order', () => {
+            console.log('Real-time new order: refreshing order list...');
+            fetchOrders();
+        });
+
+        // Polling fallback every 30 seconds
+        const pollInterval = setInterval(() => {
+            console.log('Polling refresh: updating order list...');
+            fetchOrders();
+        }, 30000);
+
+        return () => {
+            socket.disconnect();
+            clearInterval(pollInterval);
+        };
     }, [fetchOrders]);
 
     const handleUpdateStatus = async (orderId, newStatus, ignoreStock = false) => {
@@ -165,13 +205,18 @@ const OrderConfirmationPage = ({ headerTitle }) => {
             isDestructive = true;
         } else if (action === 'delete' && isBulk) {
             const statusMap = {
-                pending: 'Menunggu Konfirmasi',
+                pending: 'Baru',
                 rejected: 'Ditolak',
-                accepted: 'Diterima'
+                accepted: 'Diproses',
+                completed: 'Selesai',
+                cancelled: 'Batal'
             };
             title = `Konfirmasi Hapus Semua Pesanan ${statusMap[orderId] || ''}`;
             message = `Apakah Anda yakin ingin MENGHAPUS SEMUA pesanan dengan status '${statusMap[orderId]}'? Aksi ini tidak dapat dibatalkan.`;
             isDestructive = true;
+        } else if (action === 'completed') {
+            title = 'Selesaikan Pesanan';
+            message = 'Apakah pesanan ini sudah benar-benar selesai?';
         }
 
         setModalState({ isOpen: true, orderId, action, title, message, type: 'confirm', isDestructive, isBulk });
@@ -182,7 +227,7 @@ const OrderConfirmationPage = ({ headerTitle }) => {
     };
 
     const handleConfirmAction = () => {
-        if (modalState.action === 'accepted' || modalState.action === 'rejected') {
+        if (modalState.action === 'accepted' || modalState.action === 'rejected' || modalState.action === 'completed') {
             handleUpdateStatus(modalState.orderId, modalState.action);
         } else if (modalState.action === 'accepted_ignore_stock') {
             handleUpdateStatus(modalState.orderId, 'accepted', true);
@@ -198,7 +243,9 @@ const OrderConfirmationPage = ({ headerTitle }) => {
     // Count orders by status
     const pendingCount = orders.filter(o => o.status === 'pending').length;
     const acceptedCount = orders.filter(o => o.status === 'accepted').length;
+    const completedCount = orders.filter(o => o.status === 'completed').length;
     const rejectedCount = orders.filter(o => o.status === 'rejected').length;
+    const cancelledCount = orders.filter(o => o.status === 'cancelled').length;
 
     const renderContent = () => {
         if (loading) {
@@ -229,16 +276,28 @@ const OrderConfirmationPage = ({ headerTitle }) => {
                     color: 'text-yellow-500'
                 },
                 accepted: {
-                    icon: 'CheckCircle',
-                    title: 'Belum Ada Pesanan Diterima',
-                    description: 'Pesanan yang Anda terima akan muncul di sini',
-                    color: 'text-success'
+                    icon: 'ShoppingBag',
+                    title: 'Belum Ada Pesanan Diproses',
+                    description: 'Pesanan yang sedang Anda siapkan akan muncul di sini',
+                    color: 'text-blue-500'
+                },
+                completed: {
+                    icon: 'CheckCircle2',
+                    title: 'Belum Ada Pesanan Selesai',
+                    description: 'Riwayat pesanan yang sudah selesai akan muncul di sini',
+                    color: 'text-emerald-500'
                 },
                 rejected: {
                     icon: 'XCircle',
                     title: 'Belum Ada Pesanan Ditolak',
                     description: 'Pesanan yang Anda tolak akan muncul di sini',
-                    color: 'text-destructive'
+                    color: 'text-red-500'
+                },
+                cancelled: {
+                    icon: 'Slash',
+                    title: 'Belum Ada Pesanan Batal',
+                    description: 'Pesanan yang dibatalkan akan muncul di sini',
+                    color: 'text-gray-400'
                 }
             };
             const state = emptyStates[activeTab] || emptyStates.pending;
@@ -262,6 +321,7 @@ const OrderConfirmationPage = ({ headerTitle }) => {
                                 order={order}
                                 onAccept={() => openConfirmationModal(order.id, 'accepted')}
                                 onReject={() => openConfirmationModal(order.id, 'rejected')}
+                                onComplete={() => openConfirmationModal(order.id, 'completed')}
                                 onDelete={() => openConfirmationModal(order.id, 'delete')}
                             />
                         </div>
@@ -270,6 +330,7 @@ const OrderConfirmationPage = ({ headerTitle }) => {
                                 order={order}
                                 onAccept={() => openConfirmationModal(order.id, 'accepted')}
                                 onReject={() => openConfirmationModal(order.id, 'rejected')}
+                                onComplete={() => openConfirmationModal(order.id, 'completed')}
                                 onDelete={() => openConfirmationModal(order.id, 'delete')}
                             />
                         </div>
@@ -322,20 +383,27 @@ const OrderConfirmationPage = ({ headerTitle }) => {
                     </div>
 
                     {/* Stats Summary - Mobile Only (Floating Cards) */}
-                    <div className="lg:hidden grid grid-cols-3 gap-3 !-mt-16 relative z-20 mb-2">
+                    <div className="lg:hidden grid grid-cols-2 sm:grid-cols-4 gap-3 !-mt-16 relative z-20 mb-2">
                         <div className="bg-white dark:bg-slate-800 rounded-[1.5rem] p-4 shadow-sm border border-yellow-100/50 dark:border-yellow-900/20 flex flex-col items-center text-center">
                             <div className="w-10 h-10 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl flex items-center justify-center text-yellow-500 mb-2">
                                 <Icon name="Clock" size={20} />
                             </div>
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.1em] mb-1">Menunggu</span>
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.1em] mb-1">Baru</span>
                             <p className="text-xl font-black text-slate-800 dark:text-white leading-none">{pendingCount}</p>
+                        </div>
+                        <div className="bg-white dark:bg-slate-800 rounded-[1.5rem] p-4 shadow-sm border border-blue-100/50 dark:border-blue-900/20 flex flex-col items-center text-center">
+                            <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center text-blue-500 mb-2">
+                                <Icon name="ShoppingBag" size={20} />
+                            </div>
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.1em] mb-1">Diproses</span>
+                            <p className="text-xl font-black text-slate-800 dark:text-white leading-none">{acceptedCount}</p>
                         </div>
                         <div className="bg-white dark:bg-slate-800 rounded-[1.5rem] p-4 shadow-sm border border-green-100/50 dark:border-green-900/20 flex flex-col items-center text-center">
                             <div className="w-10 h-10 bg-green-50 dark:bg-green-900/20 rounded-xl flex items-center justify-center text-green-500 mb-2">
-                                <Icon name="CheckCircle" size={20} />
+                                <Icon name="CheckCircle2" size={20} />
                             </div>
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.1em] mb-1">Diterima</span>
-                            <p className="text-xl font-black text-slate-800 dark:text-white leading-none">{acceptedCount}</p>
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.1em] mb-1">Selesai</span>
+                            <p className="text-xl font-black text-slate-800 dark:text-white leading-none">{completedCount}</p>
                         </div>
                         <div className="bg-white dark:bg-slate-800 rounded-[1.5rem] p-4 shadow-sm border border-red-100/50 dark:border-red-900/20 flex flex-col items-center text-center">
                             <div className="w-10 h-10 bg-red-50 dark:bg-red-900/20 rounded-xl flex items-center justify-center text-red-500 mb-2">
@@ -347,7 +415,7 @@ const OrderConfirmationPage = ({ headerTitle }) => {
                     </div>
 
                     {/* Header Section - Desktop Only */}
-                    <div className="hidden lg:block bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl p-6 mb-6 border border-primary/20">
+                    <div className="hidden lg:block bg-white dark:bg-card rounded-xl p-6 mb-6 border border-border shadow-sm">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center">
                                 <Icon name="ShoppingBag" size={24} className="text-primary" />
@@ -359,27 +427,41 @@ const OrderConfirmationPage = ({ headerTitle }) => {
                         </div>
 
                         {/* Stats Summary */}
-                        <div className="grid grid-cols-3 gap-4 mt-4">
-                            <div className="bg-card/50 backdrop-blur-sm rounded-lg p-3 border border-border">
+                        <div className="grid grid-cols-5 gap-4 mt-4">
+                            <div className="bg-gray-50 dark:bg-slate-800/50 rounded-lg p-3 border border-border">
                                 <div className="flex items-center gap-2 mb-1">
                                     <Icon name="Clock" size={16} className="text-yellow-500" />
-                                    <span className="text-xs text-text-secondary">Menunggu</span>
+                                    <span className="text-xs text-text-secondary">Baru</span>
                                 </div>
                                 <p className="text-2xl font-bold text-text-primary">{pendingCount}</p>
                             </div>
-                            <div className="bg-card/50 backdrop-blur-sm rounded-lg p-3 border border-border">
+                            <div className="bg-gray-50 dark:bg-slate-800/50 rounded-lg p-3 border border-border">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <Icon name="CheckCircle" size={16} className="text-success" />
-                                    <span className="text-xs text-text-secondary">Diterima</span>
+                                    <Icon name="ShoppingBag" size={16} className="text-blue-500" />
+                                    <span className="text-xs text-text-secondary">Diproses</span>
                                 </div>
                                 <p className="text-2xl font-bold text-text-primary">{acceptedCount}</p>
                             </div>
-                            <div className="bg-card/50 backdrop-blur-sm rounded-lg p-3 border border-border">
+                            <div className="bg-gray-50 dark:bg-slate-800/50 rounded-lg p-3 border border-border">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <Icon name="XCircle" size={16} className="text-destructive" />
+                                    <Icon name="CheckCircle2" size={16} className="text-emerald-500" />
+                                    <span className="text-xs text-text-secondary">Selesai</span>
+                                </div>
+                                <p className="text-2xl font-bold text-text-primary">{completedCount}</p>
+                            </div>
+                            <div className="bg-gray-50 dark:bg-slate-800/50 rounded-lg p-3 border border-border">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Icon name="XCircle" size={16} className="text-red-500" />
                                     <span className="text-xs text-text-secondary">Ditolak</span>
                                 </div>
                                 <p className="text-2xl font-bold text-text-primary">{rejectedCount}</p>
+                            </div>
+                            <div className="bg-gray-50 dark:bg-slate-800/50 rounded-lg p-3 border border-border">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Icon name="Slash" size={16} className="text-gray-400" />
+                                    <span className="text-xs text-text-secondary">Batal</span>
+                                </div>
+                                <p className="text-2xl font-bold text-text-primary">{cancelledCount}</p>
                             </div>
                         </div>
                     </div>
@@ -389,15 +471,17 @@ const OrderConfirmationPage = ({ headerTitle }) => {
                         <div className="bg-white dark:bg-slate-800 p-2 rounded-[2rem] border border-gray-100 dark:border-slate-700 shadow-sm flex gap-2 mb-6 overflow-x-auto hide-scrollbar sticky top-4 z-30">
                             {[
                                 { id: 'pending', label: 'Baru', icon: 'Clock', color: 'blue', count: pendingCount },
-                                { id: 'accepted', label: 'Diterima', icon: 'CheckCircle', color: 'green', count: acceptedCount },
-                                { id: 'rejected', label: 'Ditolak', icon: 'XCircle', color: 'red', count: rejectedCount }
+                                { id: 'accepted', label: 'Diproses', icon: 'ShoppingBag', color: 'indigo', count: acceptedCount },
+                                { id: 'completed', label: 'Selesai', icon: 'CheckCircle2', color: 'green', count: completedCount },
+                                { id: 'rejected', label: 'Ditolak', icon: 'XCircle', color: 'red', count: rejectedCount },
+                                { id: 'cancelled', label: 'Batal', icon: 'Slash', color: 'gray', count: cancelledCount }
                             ].map((tab) => (
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`flex items-center gap-3 px-6 py-3.5 rounded-[1.5rem] font-black transition-all whitespace-nowrap active:scale-95 ${activeTab === tab.id
-                                            ? 'bg-blue-600 text-white shadow-xl shadow-blue-100 dark:shadow-none'
-                                            : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700/50'
+                                        ? 'bg-blue-600 text-white shadow-xl shadow-blue-100 dark:shadow-none'
+                                        : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700/50'
                                         }`}
                                 >
                                     <Icon
@@ -429,8 +513,7 @@ const OrderConfirmationPage = ({ headerTitle }) => {
                                         }`}>
                                     <div className="flex items-center justify-center gap-2 whitespace-nowrap">
                                         <Icon name="Clock" size={18} />
-                                        <span className="hidden sm:inline">Menunggu Konfirmasi</span>
-                                        <span className="sm:hidden">Menunggu</span>
+                                        <span>Baru</span>
                                         {pendingCount > 0 && (
                                             <span className="bg-yellow-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
                                                 {pendingCount}
@@ -448,15 +531,34 @@ const OrderConfirmationPage = ({ headerTitle }) => {
                                         : 'text-text-secondary hover:text-text-primary hover:bg-muted/50'
                                         }`}>
                                     <div className="flex items-center justify-center gap-2 whitespace-nowrap">
-                                        <Icon name="CheckCircle" size={18} />
-                                        <span>Diterima</span>
+                                        <Icon name="ShoppingBag" size={18} />
+                                        <span>Diproses</span>
                                         {acceptedCount > 0 && (
-                                            <span className="bg-success text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
+                                            <span className="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
                                                 {acceptedCount}
                                             </span>
                                         )}
                                     </div>
                                     {activeTab === 'accepted' && (
+                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('completed')}
+                                    className={`flex-1 min-w-[120px] sm:min-w-0 py-4 px-4 text-sm font-medium transition-all relative ${activeTab === 'completed'
+                                        ? 'text-primary bg-card'
+                                        : 'text-text-secondary hover:text-text-primary hover:bg-muted/50'
+                                        }`}>
+                                    <div className="flex items-center justify-center gap-2 whitespace-nowrap">
+                                        <Icon name="CheckCircle2" size={18} />
+                                        <span>Selesai</span>
+                                        {completedCount > 0 && (
+                                            <span className="bg-green-600 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
+                                                {completedCount}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {activeTab === 'completed' && (
                                         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>
                                     )}
                                 </button>
@@ -476,6 +578,25 @@ const OrderConfirmationPage = ({ headerTitle }) => {
                                         )}
                                     </div>
                                     {activeTab === 'rejected' && (
+                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('cancelled')}
+                                    className={`flex-1 min-w-[120px] sm:min-w-0 py-4 px-4 text-sm font-medium transition-all relative ${activeTab === 'cancelled'
+                                        ? 'text-primary bg-card'
+                                        : 'text-text-secondary hover:text-text-primary hover:bg-muted/50'
+                                        }`}>
+                                    <div className="flex items-center justify-center gap-2 whitespace-nowrap">
+                                        <Icon name="Slash" size={18} />
+                                        <span>Batal</span>
+                                        {cancelledCount > 0 && (
+                                            <span className="bg-gray-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
+                                                {cancelledCount}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {activeTab === 'cancelled' && (
                                         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>
                                     )}
                                 </button>
@@ -515,7 +636,7 @@ const OrderConfirmationPage = ({ headerTitle }) => {
                                     className="w-full py-3 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 border border-red-100 dark:border-red-900/20 active:scale-95 transition-all"
                                 >
                                     <Icon name="Trash2" size={14} />
-                                    Hapus Semua Riwayat {activeTab === 'accepted' ? 'Diterima' : 'Ditolak'}
+                                    Hapus Semua {statusLabelMap[activeTab] || 'Pesanan'}
                                 </button>
                             </div>
                         )}

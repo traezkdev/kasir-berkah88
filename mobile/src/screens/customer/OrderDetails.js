@@ -137,7 +137,7 @@ const OrderDetails = ({ navigation, route }) => {
                     color: '#059669',
                     bg: '#ECFDF5',
                     icon: CheckCircle2,
-                    desc: 'Terima kasih! Pesanan Anda telah selesai. Sampai jumpa lagi!'
+                    desc: 'Pesanan Anda telah selesai dan akan segera diantar.'
                 };
             default:
                 return {

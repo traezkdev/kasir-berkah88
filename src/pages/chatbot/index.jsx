@@ -6,7 +6,7 @@ import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
 import useNotification from '../../hooks/useNotification';
 
-const chatbotApiUrl = import.meta.env.VITE_CHATBOT_API_URL || 'https://chat.inviteshare.my.id';
+const chatbotApiUrl = import.meta.env.VITE_CHATBOT_API_URL;
 
 const ChatbotPage = ({ headerTitle, isModal = false }) => {
     const { theme } = useTheme();
@@ -91,7 +91,7 @@ const ChatbotPage = ({ headerTitle, isModal = false }) => {
 
             const errorMessage = {
                 id: Date.now() + 1,
-                text: 'Maaf, terjadi kesalahan. Pastikan server chatbot sedang berjalan di http://localhost:4001',
+                text: `Maaf, terjadi kesalahan. Pastikan server chatbot sedang berjalan di ${chatbotApiUrl || ''}`,
                 sender: 'bot',
                 timestamp: new Date().toISOString()
             };

@@ -16,14 +16,13 @@ const PopupDisplay = () => {
         fetchActivePopups();
 
         // Socket.io Realtime Implementation
-        const API_URL = import.meta.env.VITE_API_URL || '';
+        const API_URL = import.meta.env.VITE_API_URL;
         const socket = io(API_URL, {
-            transports: ['websocket'],
+            transports: ['polling', 'websocket'],
             forceNew: true
         });
 
         socket.on('popup_push', (data) => {
-            console.log('Realtime Popup Push Received:', data);
             fetchActivePopups(); // Refresh the list of active popups
         });
 
@@ -165,7 +164,7 @@ const PopupDisplay = () => {
 
     if (!isVisible || !currentPopup) return null;
 
-    const API_URL = import.meta.env.VITE_API_URL || '';
+    const API_URL = import.meta.env.VITE_API_URL;
     // Handle image URL correctly regardless of leading slash
     const imageUrl = currentPopup.image_url
         ? `${API_URL}${currentPopup.image_url.startsWith('/') ? '' : '/'}${currentPopup.image_url}`

@@ -1,19 +1,33 @@
 import { useState, useEffect } from 'react';
 import { API_URL } from '../api/apiService';
+import { useOrderNotification } from '../context/OrderNotificationContext';
 
 const usePopups = (currentPage) => {
     const [popups, setPopups] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const { socket } = useOrderNotification();
 
     useEffect(() => {
         fetchPopups();
-    }, [currentPage]);
+
+        if (socket) {
+            const handlePush = () => {
+                console.log("Popup pushed! Refetching...");
+                fetchPopups();
+            };
+            socket.on('popup_push', handlePush);
+            return () => {
+                socket.off('popup_push', handlePush);
+            };
+        }
+    }, [currentPage, socket]);
 
     const fetchPopups = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${API_URL}/api/popups/active?page=${currentPage}`);
+            // Add timestamp to prevent caching
+            const response = await fetch(`${API_URL}/api/popups/active?page=${currentPage}&t=${Date.now()}`);
             const data = await response.json();
 
             if (data.message === 'success') {

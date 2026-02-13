@@ -11,7 +11,7 @@ const CustomerLayout = () => {
         { path: '/customer/dashboard', icon: 'Home', label: 'Beranda' },
         { path: '/customer/menu', icon: 'Search', label: 'Cari' },
         { path: '/customer/promo', icon: 'Ticket', label: 'Promo', isSpecial: true },
-        { path: '/customer/cart', icon: 'ClipboardList', label: 'Pesanan' },
+        { path: '/customer/order-confirmation', icon: 'ClipboardList', label: 'Pesanan' },
         { path: '/customer/profile', icon: 'User', label: 'Profil' }
     ];
 

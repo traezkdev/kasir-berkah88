@@ -7,7 +7,7 @@ const UnitSettingsModal = ({ isOpen, onClose, showMessage, showError }) => {
     const [newUnitName, setNewUnitName] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+    const API_BASE_URL = import.meta.env.VITE_API_URL;
 
     useEffect(() => {
         if (isOpen) {

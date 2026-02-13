@@ -50,6 +50,7 @@ import FinancialReport from '../screens/seller/FinancialReport';
 import HppManagement from '../screens/seller/HppManagement';
 // Popup Management Scale
 import PopupManagement from '../screens/seller/PopupManagement';
+import ReviewManagement from '../screens/seller/ReviewManagement';
 
 // Customer Screens
 import InformationScreen from '../screens/customer/InformationScreen';
@@ -267,6 +268,7 @@ const SellerRootStack = () => (
         <Stack.Screen name="FinancialReport" component={FinancialReport} />
         <Stack.Screen name="HppManagement" component={HppManagement} />
         <Stack.Screen name="PopupManagement" component={PopupManagement} />
+        <Stack.Screen name="ReviewManagement" component={ReviewManagement} />
     </Stack.Navigator>
 );
 
