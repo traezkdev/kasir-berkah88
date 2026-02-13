@@ -167,11 +167,11 @@ const PopupDisplay = () => {
 
                 {/* Image */}
                 {imageUrl && (
-                    <div className="w-full aspect-[4/3] relative bg-gray-100">
+                    <div className="w-full relative bg-gray-100">
                         <img
                             src={imageUrl}
                             alt={currentPopup.title}
-                            className="w-full h-full object-cover"
+                            className="w-full h-auto block"
                         />
                     </div>
                 )}

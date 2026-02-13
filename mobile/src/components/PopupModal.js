@@ -21,6 +21,7 @@ const PopupModal = ({ popups = [], currentPage = 'dashboard', onClose }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [visible, setVisible] = useState(false);
     const [displayPopups, setDisplayPopups] = useState([]);
+    const [imageRatio, setImageRatio] = useState(1);
 
     // Animations
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -31,7 +32,18 @@ const PopupModal = ({ popups = [], currentPage = 'dashboard', onClose }) => {
     }, [popups, currentPage]);
 
     useEffect(() => {
-        if (visible) {
+        if (visible && currentPopup && currentPopup.image_url) {
+            Image.getSize(
+                `${API_URL}${currentPopup.image_url}`,
+                (width, height) => {
+                    setImageRatio(width / height);
+                },
+                (error) => {
+                    console.error('Error getting image size:', error);
+                    setImageRatio(1);
+                }
+            );
+
             Animated.parallel([
                 Animated.timing(fadeAnim, {
                     toValue: 1,
@@ -215,8 +227,8 @@ const PopupModal = ({ popups = [], currentPage = 'dashboard', onClose }) => {
                         >
                             <Image
                                 source={{ uri: `${API_URL}${currentPopup.image_url}` }}
-                                style={styles.image}
-                                resizeMode="cover"
+                                style={[styles.image, { aspectRatio: imageRatio }]}
+                                resizeMode="contain"
                             />
                             {hasLink && (
                                 <View style={styles.imageOverlay}>
@@ -318,8 +330,8 @@ const styles = StyleSheet.create({
     },
     image: {
         width: '100%',
-        aspectRatio: 0.85, // Premium portrait feel
-        maxHeight: SCREEN_HEIGHT * 0.6,
+        maxHeight: SCREEN_HEIGHT * 0.7,
+        backgroundColor: '#F8FAFC',
     },
     imageOverlay: {
         ...StyleSheet.absoluteFillObject,
