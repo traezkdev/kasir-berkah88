@@ -240,24 +240,36 @@ const PopupManagement = ({ navigation }) => {
             const formDataToSend = new FormData();
             formDataToSend.append('title', formData.title);
             formDataToSend.append('link_type', formData.link_type);
-            formDataToSend.append('link_value', formData.link_value);
+            formDataToSend.append('link_value', formData.link_value || '');
             formDataToSend.append('show_on_pages', JSON.stringify(formData.show_on_pages));
-            formDataToSend.append('priority', formData.priority);
-            formDataToSend.append('is_active', formData.is_active);
+            formDataToSend.append('priority', String(formData.priority || 0));
+            formDataToSend.append('is_active', formData.is_active ? '1' : '0');
+
+            // Explicitly handle image removal
+            if (!formData.image && (!formData.imageUri || formData.imageUri === null)) {
+                formDataToSend.append('remove_image', 'true');
+            }
 
             if (formData.image) {
-                const uriParts = formData.image.uri.split('.');
+                const uri = formData.image.uri;
+                const uriParts = uri.split('.');
                 const fileType = uriParts[uriParts.length - 1];
                 formDataToSend.append('image', {
-                    uri: formData.image.uri,
+                    uri: Platform.OS === 'android' ? uri : uri.replace('file://', ''),
                     name: `popup_${Date.now()}.${fileType}`,
                     type: `image/${fileType}`,
                 });
             }
 
             let response;
+            const config = {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            };
+
             if (editingPopup) {
-                response = await apiService.put(`/api/popups/${editingPopup.id}`, formDataToSend);
+                response = await apiService.put(`/api/popups/${editingPopup.id}`, formDataToSend, config);
                 if (response.data.message === 'success') {
                     showAlert({
                         title: 'Berhasil',
@@ -267,7 +279,7 @@ const PopupManagement = ({ navigation }) => {
                     });
                 }
             } else {
-                response = await apiService.post('/api/popups', formDataToSend);
+                response = await apiService.post('/api/popups', formDataToSend, config);
                 if (response.data.message === 'success') {
                     showAlert({
                         title: 'Berhasil',
