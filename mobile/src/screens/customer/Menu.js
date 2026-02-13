@@ -14,7 +14,8 @@ import {
     StatusBar,
     FlatList,
     Modal,
-    Animated
+    Animated,
+    PanResponder
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getSafeBottomPadding } from '../../utils/safeArea';
@@ -46,6 +47,10 @@ import {
 import apiService, { API_URL } from '../../api/apiService';
 import { useCart } from '../../context/CartContext';
 import { useAppSettings } from '../../context/AppSettingsContext';
+import { useOrderNotification } from '../../context/OrderNotificationContext';
+import useSwipeToClose from '../../hooks/useSwipeToClose';
+import usePopups from '../../hooks/usePopups';
+import PopupModal from '../../components/PopupModal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -178,6 +183,8 @@ const CustomerMenu = ({ navigation, route }) => {
     } = useCart();
     const insets = useSafeAreaInsets();
     const { isOpen, ignoreStock } = useAppSettings();
+    const { refreshTrigger } = useOrderNotification();
+    const { popups } = usePopups('menu');
 
     const [menus, setMenus] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -190,6 +197,16 @@ const CustomerMenu = ({ navigation, route }) => {
     const [selectedOptions, setSelectedOptions] = useState([]);
     const [reviews, setReviews] = useState([]);
     const [reviewsLoading, setReviewsLoading] = useState(false);
+
+    // Reusable Gesture for closing modal
+    const { panY, panResponder, resetPan } = useSwipeToClose(() => setSelectedItem(null));
+
+    // Reset panY when modal opens/closes
+    useEffect(() => {
+        if (selectedItem === null) {
+            resetPan();
+        }
+    }, [selectedItem]);
 
     useEffect(() => {
         fetchInitialData();
@@ -207,7 +224,7 @@ const CustomerMenu = ({ navigation, route }) => {
 
     useEffect(() => {
         fetchMenus();
-    }, [searchTerm, selectedCategory, categories, filter]);
+    }, [searchTerm, selectedCategory, categories, filter, refreshTrigger]);
 
     useEffect(() => {
         if (itemId && menus.length > 0) {
@@ -328,7 +345,7 @@ const CustomerMenu = ({ navigation, route }) => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
 
             {/* Header / Search */}
             <View style={styles.header}>
@@ -418,7 +435,7 @@ const CustomerMenu = ({ navigation, route }) => {
 
             {/* Float Cart */}
             {cartCount > 0 && (
-                <View style={[styles.cartFloatContainer, { bottom: getSafeBottomPadding(insets, -20, 20) }]}>
+                <View style={[styles.cartFloatContainer, { bottom: getSafeBottomPadding(insets, 20, 20) }]}>
                     <TouchableOpacity
                         style={styles.cartFloatBtn}
                         activeOpacity={0.9}
@@ -449,9 +466,24 @@ const CustomerMenu = ({ navigation, route }) => {
                 onRequestClose={() => setSelectedItem(null)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+                    <Animated.View
+                        style={[
+                            styles.modalContent,
+                            {
+                                transform: [{
+                                    translateY: panY.interpolate({
+                                        inputRange: [-1, 0, height],
+                                        outputRange: [0, 0, height],
+                                    })
+                                }]
+                            }
+                        ]}
+                    >
+                        {/* Invisible Drag Handle for Gesture */}
+                        <View style={styles.modalDragHandle} {...panResponder.panHandlers} />
+
                         {/* Image Header */}
-                        <View style={styles.modalImageWrap}>
+                        <View style={styles.modalImageWrap} {...panResponder.panHandlers}>
                             {selectedItem?.image_url ? (
                                 <Image source={{ uri: `${API_URL}${selectedItem.image_url}` }} style={styles.modalImage} />
                             ) : (
@@ -613,9 +645,20 @@ const CustomerMenu = ({ navigation, route }) => {
                                 }
                             })()}
                         </View>
-                    </View>
+                    </Animated.View>
                 </View>
             </Modal>
+
+            {/* Popup System */}
+            <PopupModal
+                popups={popups}
+                currentPage="menu"
+                onClose={(screenName) => {
+                    if (screenName) {
+                        navigation.navigate(screenName);
+                    }
+                }}
+            />
         </SafeAreaView>
     );
 };
@@ -944,6 +987,24 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    modalDragHandle: {
+        width: '100%',
+        height: 30,
+        backgroundColor: 'transparent',
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'absolute',
+        top: 0,
+        zIndex: 50,
+        borderTopLeftRadius: 35,
+        borderTopRightRadius: 35,
+    },
+    modalDragIndicator: {
+        width: 40,
+        height: 5,
+        backgroundColor: '#E2E8F0',
+        borderRadius: 3,
     },
     modalCloseBtn: {
         position: 'absolute',

@@ -31,7 +31,8 @@ import {
     Image as ImageIcon,
     Camera,
     Download,
-    Share2
+    Share2,
+    Pencil
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Sharing from 'expo-sharing';
@@ -44,26 +45,39 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useOrderNotification } from '../../context/OrderNotificationContext';
 import { useToast } from '../../context/ToastContext';
+import { useIsFocused } from '@react-navigation/native';
 
 // --- WHATSAPP-STYLE OPTIMIZATIONS ---
 
 // 1. Optimistic Message Item with minimal re-renders
-const MessageItem = memo(({ item, isMine, formatTime, onImagePress }) => {
+const MessageItem = memo(({ item, isMine, formatTime, onImagePress, onLongPress }) => {
     const imageUrl = item.image_url ?
         (item.image_url.startsWith('http') ? item.image_url : `${API_URL}${item.image_url}`)
         : null;
 
     return (
-        <View style={[
-            styles.messageWrapper,
-            isMine ? styles.myMsgWrapper : styles.theirMsgWrapper,
-            imageUrl && { maxWidth: '100%' } // Allow image bubbles to define their own width
-        ]}>
+        <TouchableOpacity
+            style={[
+                styles.messageWrapper,
+                isMine ? styles.myMsgWrapper : styles.theirMsgWrapper,
+                imageUrl && { maxWidth: '100%' }
+            ]}
+            onLongPress={() => isMine && !item.sending && onLongPress(item)}
+            activeOpacity={0.9}
+            delayLongPress={300}
+        >
             <View style={[
                 styles.messageBubble,
                 isMine ? styles.myMsgBubble : styles.theirMsgBubble,
                 imageUrl && styles.imageMessageBubble
             ]}>
+                <Text style={[
+                    styles.senderName,
+                    isMine ? styles.mySenderName : styles.theirSenderName,
+                    imageUrl && { paddingHorizontal: 10 }
+                ]}>
+                    {isMine ? 'Saya' : (item.sender_name || 'User')}
+                </Text>
                 {imageUrl && (
                     <TouchableOpacity onPress={() => onImagePress(imageUrl)} activeOpacity={0.9}>
                         <Image
@@ -80,6 +94,11 @@ const MessageItem = memo(({ item, isMine, formatTime, onImagePress }) => {
                     </Text>
                 ) : null}
                 <View style={styles.messageFooter}>
+                    {item.is_edited === 1 && (
+                        <Text style={[styles.editedLabel, isMine ? styles.myMsgTime : styles.theirMsgTime]}>
+                            (diedit)
+                        </Text>
+                    )}
                     <Text style={[styles.msgTime, isMine ? styles.myMsgTime : styles.theirMsgTime]}>
                         {formatTime(item.created_at)}
                     </Text>
@@ -99,13 +118,15 @@ const MessageItem = memo(({ item, isMine, formatTime, onImagePress }) => {
                     )}
                 </View>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 }, (prevProps, nextProps) => {
     // WhatsApp-style: Only re-render if message content or status changes
     return prevProps.item.id === nextProps.item.id &&
         prevProps.item.is_read === nextProps.item.is_read &&
-        prevProps.item.sending === nextProps.item.sending;
+        prevProps.item.sending === nextProps.item.sending &&
+        prevProps.item.message === nextProps.item.message &&
+        prevProps.item.is_edited === nextProps.item.is_edited;
 });
 
 const ConversationItem = memo(({ item, isActive, onPress, onLongPress, getDisplayName, formatTime, isOnline }) => (
@@ -149,70 +170,93 @@ const ConversationItem = memo(({ item, isActive, onPress, onLongPress, getDispla
 ));
 
 // 2. Isolated Input Component (WhatsApp-style)
-const ChatInput = memo(({ onSendMessage, onPickImage, themeColor }) => {
+const ChatInput = memo(({ onSendMessage, onPickImage, themeColor, editMode, initialValue, onCancelEdit }) => {
     const [localMessage, setLocalMessage] = useState('');
     const [isSendingLocal, setIsSendingLocal] = useState(false);
+
+    // Sync local state when entering edit mode
+    useEffect(() => {
+        if (editMode && initialValue) {
+            setLocalMessage(initialValue);
+        } else if (!editMode) {
+            setLocalMessage('');
+        }
+    }, [editMode, initialValue]);
 
     const handleSend = async () => {
         if (!localMessage.trim() || isSendingLocal) return;
 
         const messageText = localMessage.trim();
-        setLocalMessage(''); // Clear immediately (optimistic UI)
         setIsSendingLocal(true);
 
         const success = await onSendMessage(messageText);
-        if (!success) {
-            // Restore message if failed
-            setLocalMessage(messageText);
+        if (success) {
+            setLocalMessage(''); // Clear only on success for manual sends
         }
         setIsSendingLocal(false);
     };
 
     const handlePick = async () => {
-        if (isSendingLocal) return;
+        if (isSendingLocal || editMode) return;
         setIsSendingLocal(true);
         await onPickImage();
         setIsSendingLocal(false);
     };
 
     return (
-        <View style={styles.inputArea}>
-            <TouchableOpacity
-                style={styles.attachBtn}
-                onPress={handlePick}
-                disabled={isSendingLocal}
-            >
-                <ImageIcon size={24} color="#64748B" />
-            </TouchableOpacity>
-            <TextInput
-                style={styles.chatInput}
-                placeholder="Ketik pesan..."
-                value={localMessage}
-                onChangeText={setLocalMessage}
-                multiline
-                maxLength={1000}
-                editable={!isSendingLocal}
-            />
-            <TouchableOpacity
-                style={[
-                    styles.sendBtn,
-                    (!localMessage.trim() && !isSendingLocal) && styles.sendBtnDisabled,
-                    isSendingLocal && { opacity: 0.8 }
-                ]}
-                onPress={handleSend}
-                disabled={!localMessage.trim() || isSendingLocal}
-            >
-                {isSendingLocal ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                    <Send size={20} color="#FFFFFF" />
-                )}
-            </TouchableOpacity>
+        <View>
+            {editMode && (
+                <View style={styles.editBar}>
+                    <View style={styles.editInfo}>
+                        <Pencil size={14} color="#138FEA" />
+                        <Text style={styles.editText} numberOfLines={1}>Edit Pesan: {initialValue}</Text>
+                    </View>
+                    <TouchableOpacity onPress={onCancelEdit}>
+                        <X size={20} color="#64748B" />
+                    </TouchableOpacity>
+                </View>
+            )}
+            <View style={styles.inputArea}>
+                <TouchableOpacity
+                    style={[styles.attachBtn, editMode && { opacity: 0.3 }]}
+                    onPress={handlePick}
+                    disabled={isSendingLocal || editMode}
+                >
+                    <ImageIcon size={24} color="#64748B" />
+                </TouchableOpacity>
+                <TextInput
+                    style={styles.chatInput}
+                    placeholder="Ketik pesan..."
+                    value={localMessage}
+                    onChangeText={setLocalMessage}
+                    multiline
+                    maxLength={1000}
+                    editable={!isSendingLocal}
+                    autoFocus={editMode}
+                />
+                <TouchableOpacity
+                    style={[
+                        styles.sendBtn,
+                        (!localMessage.trim() && !isSendingLocal) && styles.sendBtnDisabled,
+                        isSendingLocal && { opacity: 0.8 },
+                        editMode && { backgroundColor: '#10B981' }
+                    ]}
+                    onPress={handleSend}
+                    disabled={!localMessage.trim() || isSendingLocal}
+                >
+                    {isSendingLocal ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                        editMode ? <Check size={20} color="#FFFFFF" /> : <Send size={20} color="#FFFFFF" />
+                    )}
+                </TouchableOpacity>
+            </View>
         </View>
     );
 });
 
 const ChatScreen = ({ navigation }) => {
+    const isFocused = useIsFocused();
     const { user } = useAuth();
     const { confirm } = useConfirm();
     const { showToast } = useToast();
@@ -233,6 +277,10 @@ const ChatScreen = ({ navigation }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedConv, setSelectedConv] = useState(null);
     const [isOptionsVisible, setIsOptionsVisible] = useState(false);
+    const [isMsgMenuVisible, setIsMsgMenuVisible] = useState(false);
+    const [selectedMsgForMenu, setSelectedMsgForMenu] = useState(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editingMsgData, setEditingMsgData] = useState(null);
     const [previewImage, setPreviewImage] = useState(null);
     const [isDownloading, setIsDownloading] = useState(false);
     const listRef = useRef(null);
@@ -267,9 +315,32 @@ const ChatScreen = ({ navigation }) => {
 
     const themeColor = '#138FEA';
 
+    // Define performUpdateMessage first (before handleSendMessage uses it)
+    const performUpdateMessage = useCallback(async (newText) => {
+        if (!editingMsgData) return false;
+        try {
+            await apiService.put(`/api/messages/${editingMsgData.id}`, {
+                message: newText
+            });
+            setIsEditing(false);
+            setEditingMsgData(null);
+            showToast('Pesan berhasil diperbarui', 'success');
+            return true;
+        } catch (error) {
+            console.error('Update message error:', error);
+            showToast('Gagal memperbarui pesan', 'error');
+            return false;
+        }
+    }, [editingMsgData, showToast]);
+
     // WhatsApp-style: Optimistic message sending
     const handleSendMessage = useCallback(async (text = '', base64Image = null) => {
         if ((!text.trim() && !base64Image) || !activeChat) return false;
+
+        // Jika sedang mode edit, panggil fungsi update
+        if (isEditing && editingMsgData) {
+            return performUpdateMessage(text.trim());
+        }
 
         // Create optimistic message
         const optimisticMessage = {
@@ -280,7 +351,8 @@ const ChatScreen = ({ navigation }) => {
             image_url: base64Image,
             created_at: new Date().toISOString(),
             is_read: false,
-            sending: true // Flag for pending state
+            sending: true, // Flag for pending state
+            sender_name: user?.username || 'Saya'
         };
 
         // Add to UI immediately (WhatsApp-style)
@@ -315,7 +387,51 @@ const ChatScreen = ({ navigation }) => {
             Alert.alert('Gagal', 'Pesan gagal dikirim. Silakan coba lagi.');
             return false;
         }
-    }, [activeChat, activeOrder, fetchConversations, user.id]);
+    }, [activeChat, activeOrder, fetchConversations, user.id, isEditing, editingMsgData, performUpdateMessage]);
+
+    const handleDeleteMessage = useCallback(async () => {
+        if (!selectedMsgForMenu) return;
+        const messageToDelete = selectedMsgForMenu;
+        setIsMsgMenuVisible(false);
+
+        confirm({
+            title: 'Hapus Pesan',
+            message: 'Apakah Anda yakin ingin menghapus pesan ini?',
+            confirmLabel: 'Hapus',
+            onConfirm: async () => {
+                // Optimistic UI update: Remove message immediately
+                setMessages(prev => prev.filter(m => String(m.id) !== String(messageToDelete.id)));
+
+                try {
+                    await apiService.delete(`/api/messages/${messageToDelete.id}`);
+                    showToast('Pesan berhasil dihapus', 'success');
+                    // Socket event will sync to other devices
+                } catch (error) {
+                    console.error('Delete message error:', error);
+                    showToast('Gagal menghapus pesan', 'error');
+
+                    // Rollback: Re-add the message if deletion failed
+                    setMessages(prev => {
+                        // Check if message already exists (from socket event)
+                        const exists = prev.some(m => String(m.id) === String(messageToDelete.id));
+                        if (!exists) {
+                            return [...prev, messageToDelete].sort((a, b) =>
+                                new Date(a.created_at) - new Date(b.created_at)
+                            );
+                        }
+                        return prev;
+                    });
+                }
+            }
+        });
+    }, [selectedMsgForMenu, confirm, showToast]);
+
+    const startEditMessage = useCallback(() => {
+        if (!selectedMsgForMenu) return;
+        setIsMsgMenuVisible(false);
+        setIsEditing(true);
+        setEditingMsgData(selectedMsgForMenu);
+    }, [selectedMsgForMenu]);
 
     const downloadImage = useCallback(async (url) => {
         if (isDownloading) return;
@@ -423,9 +539,20 @@ const ChatScreen = ({ navigation }) => {
             if (res.data && res.data.data) {
                 setMessages(prev => {
                     const newData = res.data.data;
-                    // Only update state if message count is different to save resources
-                    if (prev.length === newData.length) return prev;
-                    return newData;
+                    const sendingMessages = prev.filter(m => m.sending);
+
+                    // Optimized update logic:
+                    // Only update if count has changed (server data + our local pending messages)
+                    if (prev.length === (newData.length + sendingMessages.length)) {
+                        // Check if metadata like is_read changed for existing messages
+                        const hasChanges = newData.some((msg, idx) =>
+                            prev[idx] && (msg.is_read !== prev[idx].is_read || msg.message !== prev[idx].message)
+                        );
+                        if (!hasChanges) return prev;
+                    }
+
+                    // Always combine server data with messages that are still being sent locally
+                    return [...newData, ...sendingMessages];
                 });
             }
         } catch (e) {
@@ -459,7 +586,9 @@ const ChatScreen = ({ navigation }) => {
             // Execute fetching directly without InteractionManager to prevent deadlock
             fetchMessages();
             fetchActiveOrder();
-            markAsRead(activeChat.user_id);
+            if (isFocused) {
+                markAsRead(activeChat.user_id);
+            }
 
             // Safety timeout: Ensure loading stops after 5s if fetch hangs
             const timer = setTimeout(() => {
@@ -504,22 +633,43 @@ const ChatScreen = ({ navigation }) => {
             const isToMe = msgReceiver === myId;
 
             if (isFromPartner || isToPartner || (isCustomer && isToMe)) {
-                console.log('[ChatScreen] Pesan relevan diterima via socket:', msg.id);
+                console.log('[ChatScreen] Pesan RELEVAN diterima:', msg.id, 'Sender:', msgSender, 'Name:', msg.sender_name);
                 setMessages(prev => {
                     // Avoid duplicates
-                    if (prev.some(m => String(m.id) === String(msg.id))) return prev;
+                    if (prev.some(m => String(m.id) === String(msg.id))) {
+                        console.log('[ChatScreen] Pesan duplikat diabaikan:', msg.id);
+                        return prev;
+                    }
                     return [...prev, msg];
                 });
 
                 // Jika pesan dari partner atau untuk saya (pelanggan), tandai sebagai dibaca
-                if (isFromPartner || (isCustomer && isToMe)) {
-                    // Untuk pelanggan, kita markAsRead sender pesan ini (siapapun staffnya)
+                if (isFocused && (isFromPartner || (isCustomer && isToMe))) {
+                    console.log('[ChatScreen] Di layar Chat, menandai sebagai dibaca...');
                     markAsRead(msg.sender_id);
+                } else {
+                    console.log(`[ChatScreen] Tidak menandai dibaca karena: isFocused=${isFocused}`);
                 }
             } else {
-                console.log('[ChatScreen] Pesan diabaikan (tidak relevan dengan chat aktif ini)');
+                console.log('[ChatScreen] Pesan diabaikan (tidak relevan). Partner:', partnerId, 'MsgFrom:', msgSender, 'MsgTo:', msgReceiver);
             }
         };
+
+        const handleMessageEdited = ({ id, message }) => {
+            console.log('[ChatScreen] Pesan diedit via socket:', id);
+            setMessages(prev => prev.map(m =>
+                String(m.id) === String(id) ? { ...m, message, is_edited: 1 } : m
+            ));
+        };
+
+        const handleMessageDeleted = ({ id }) => {
+            console.log('[ChatScreen] Pesan dihapus via socket:', id);
+            setMessages(prev => prev.filter(m => String(m.id) !== String(id)));
+        };
+
+        socket.on('new_message', handleNewMessage);
+        socket.on('message_edited', handleMessageEdited);
+        socket.on('message_deleted', handleMessageDeleted);
 
         const handleMessagesRead = ({ readerId, senderId }) => {
             const currentActiveChat = activeChatRef.current;
@@ -544,32 +694,40 @@ const ChatScreen = ({ navigation }) => {
         };
 
         socket.on('new_message', handleNewMessage);
+        socket.on('message_edited', handleMessageEdited);
+        socket.on('message_deleted', handleMessageDeleted);
         socket.on('messages_read', handleMessagesRead);
 
         return () => {
             socket.off('new_message', handleNewMessage);
+            socket.off('message_edited', handleMessageEdited);
+            socket.off('message_deleted', handleMessageDeleted);
             socket.off('messages_read', handleMessagesRead);
         };
-    }, [socket, markAsRead]); // Keep stable dependencies
+    }, [socket, markAsRead, isFocused]); // Ditambah isFocused agar peka terhadap perubahan layar
 
-    // Fallback polling jika socket tidak terhubung atau sebagai pengaman tambahan di production
+    // Fallback polling: Selalu poll sebagai backup, tapi lebih cepat jika socket disconnect
     useEffect(() => {
         let interval;
-        if (activeChat) {
-            interval = setInterval(() => {
-                const isConnected = socket && socket.connected;
+        const POLL_INTERVAL = (socket && socket.connected) ? 5000 : 3000; // 3s jika disconnect, 5s jika connect (backup)
 
-                // Jika socket tidak terhubung, lakukan fetch manual (polling)
-                if (!isConnected) {
-                    console.log('[ChatScreen] Socket tidak terhubung, melakukan fallback fetch...');
-                    fetchMessages(true);
-                }
-            }, 8000); // Poll setiap 8 detik jika socket mati
+        if (activeChat) {
+            console.log(`[ChatScreen] Polling started with interval: ${POLL_INTERVAL}ms. Socket Status: ${socket && socket.connected ? 'Connected' : 'Disconnected'}`);
+
+            // Initial Check
+            if (!socket || !socket.connected) {
+                console.log('[ChatScreen] Socket not connected, fetching messages immediately...');
+                fetchMessages(true);
+            }
+
+            interval = setInterval(() => {
+                fetchMessages(true);
+            }, POLL_INTERVAL);
         }
         return () => {
             if (interval) clearInterval(interval);
         };
-    }, [activeChat, socket, fetchMessages]);
+    }, [activeChat, socket?.connected, fetchMessages]); // Depend on socket.connected state
 
     // For customers, auto-select the first contact (admin/seller)
     useEffect(() => {
@@ -633,7 +791,7 @@ const ChatScreen = ({ navigation }) => {
 
     const getDisplayName = useCallback((contact) => {
         if (!contact) return '';
-        if (['admin', 'owner', 'kasir', 'penjual'].includes(contact.role)) {
+        if (['admin', 'owner', 'kasir', 'penjual', 'seller'].includes(contact.role)) {
             return 'Staf Berkah 88';
         }
         return contact.username;
@@ -644,8 +802,8 @@ const ChatScreen = ({ navigation }) => {
         const partnerRole = partner.role;
         const partnerId = partner.user_id || partner.id;
 
-        if (['admin', 'owner', 'kasir', 'penjual'].includes(partnerRole)) {
-            return onlineUsers.some(u => ['admin', 'owner', 'kasir', 'penjual'].includes(u.role));
+        if (['admin', 'owner', 'kasir', 'penjual', 'seller'].includes(partnerRole)) {
+            return onlineUsers.some(u => ['admin', 'owner', 'kasir', 'penjual', 'seller'].includes(u.role));
         }
 
         return onlineUsers.some(u => String(u.userId) === String(partnerId));
@@ -675,9 +833,13 @@ const ChatScreen = ({ navigation }) => {
     const renderMessageItem = useCallback(({ item }) => (
         <MessageItem
             item={item}
-            isMine={item.sender_id === user.id}
+            isMine={String(item.sender_id) === String(user.id)}
             formatTime={formatTime}
             onImagePress={setPreviewImage}
+            onLongPress={(msg) => {
+                setSelectedMsgForMenu(msg);
+                setIsMsgMenuVisible(true);
+            }}
         />
     ), [user.id, formatTime]);
 
@@ -804,6 +966,12 @@ const ChatScreen = ({ navigation }) => {
                                 onSendMessage={handleSendMessage}
                                 onPickImage={pickImage}
                                 themeColor={themeColor}
+                                editMode={isEditing}
+                                initialValue={editingMsgData?.message}
+                                onCancelEdit={() => {
+                                    setIsEditing(false);
+                                    setEditingMsgData(null);
+                                }}
                             />
                             {Platform.OS === 'android' && <View style={{ height: keyboardPadding }} />}
                         </>
@@ -856,6 +1024,54 @@ const ChatScreen = ({ navigation }) => {
                             </TouchableOpacity>
                         </View>
                     </View>
+                </Modal>
+
+                {/* Message Options Modal */}
+                <Modal
+                    visible={isMsgMenuVisible}
+                    transparent={true}
+                    animationType="fade"
+                    onRequestClose={() => setIsMsgMenuVisible(false)}
+                >
+                    <TouchableOpacity
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setIsMsgMenuVisible(false)}
+                    >
+                        <View style={styles.optionContainer}>
+                            <View style={styles.optionHeader}>
+                                <View style={styles.optionHandle} />
+                                <Text style={styles.optionTitle}>Opsi Pesan</Text>
+                                <Text style={styles.optionSubtitle}>Pilih tindakan untuk pesan ini</Text>
+                            </View>
+
+                            {selectedMsgForMenu?.message && (
+                                <TouchableOpacity style={styles.optionItem} onPress={startEditMessage}>
+                                    <View style={[styles.optionIcon, { backgroundColor: '#E0F2FE' }]}>
+                                        <Pencil size={20} color="#0EA5E9" />
+                                    </View>
+                                    <Text style={styles.optionText}>Edit Pesan</Text>
+                                </TouchableOpacity>
+                            )}
+
+                            <TouchableOpacity style={styles.optionItem} onPress={handleDeleteMessage}>
+                                <View style={[styles.optionIcon, { backgroundColor: '#FEE2E2' }]}>
+                                    <Trash2 size={20} color="#EF4444" />
+                                </View>
+                                <Text style={[styles.optionText, { color: '#EF4444' }]}>Hapus Pesan</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.optionItem, { borderBottomWidth: 0 }]}
+                                onPress={() => setIsMsgMenuVisible(false)}
+                            >
+                                <View style={[styles.optionIcon, { backgroundColor: '#F1F5F9' }]}>
+                                    <X size={20} color="#64748B" />
+                                </View>
+                                <Text style={styles.optionText}>Batal</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </TouchableOpacity>
                 </Modal>
             </SafeAreaView>
         );
@@ -928,6 +1144,7 @@ const ChatScreen = ({ navigation }) => {
                     }
                 />
             )}
+
             {/* Modal Opsi Percakapan */}
             <Modal
                 visible={isOptionsVisible}
@@ -954,8 +1171,7 @@ const ChatScreen = ({ navigation }) => {
                                 const accepted = await confirm({
                                     title: 'Hapus Obrolan',
                                     message: `Hapus seluruh riwayat pesan dengan ${selectedConv?.username}?`,
-                                    confirmText: 'Ya, Hapus',
-                                    type: 'danger'
+                                    confirmLabel: 'Ya, Hapus',
                                 });
                                 if (accepted) {
                                     try {
@@ -964,8 +1180,10 @@ const ChatScreen = ({ navigation }) => {
                                             setMessages([]);
                                         }
                                         fetchConversations();
+                                        showToast('Riwayat chat berhasil dihapus', 'success');
                                     } catch (e) {
                                         console.error("Error deleting history:", e);
+                                        showToast('Gagal menghapus riwayat chat', 'error');
                                     }
                                 }
                             }}
@@ -1241,6 +1459,19 @@ const styles = StyleSheet.create({
     theirMsgTime: {
         color: '#94A3B8',
     },
+    senderName: {
+        fontSize: 9,
+        fontWeight: '900',
+        marginBottom: 3,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    mySenderName: {
+        color: 'rgba(255,255,255,0.7)',
+    },
+    theirSenderName: {
+        color: '#138FEA',
+    },
     checkIcon: {
         marginLeft: 2,
     },
@@ -1436,6 +1667,33 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontWeight: '700',
         fontSize: 15,
+    },
+    // --- New Styles for Edit/Delete ---
+    editedLabel: {
+        fontSize: 10,
+        fontStyle: 'italic',
+        marginRight: 4,
+    },
+    editBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        backgroundColor: '#F8FAFC',
+        borderTopWidth: 1,
+        borderTopColor: '#E2E8F0',
+        justifyContent: 'space-between',
+    },
+    editInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        flex: 1,
+    },
+    editText: {
+        fontSize: 13,
+        color: '#64748B',
+        fontStyle: 'italic',
     },
 });
 

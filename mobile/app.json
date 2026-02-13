@@ -73,9 +73,15 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "d8b99316-f80a-445e-a6b6-9f9a75f8f7af"
+        "projectId": "a01fe84c-a553-41b5-9a15-d9f3aaa1d627"
       }
     },
-    "owner": "k2berkah88"
+    "owner": "k3berkah88",
+    "updates": {
+      "url": "https://u.expo.dev/a01fe84c-a553-41b5-9a15-d9f3aaa1d627"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
   }
 }

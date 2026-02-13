@@ -76,6 +76,8 @@ import CustomerPromo from './pages/customer/Promo';
 import InformationCenter from './pages/customer/InformationCenter';
 import SellerPromoManagement from './pages/customer/Dashboard/SellerPromoManagement';
 import SellerInformationManagement from './pages/customer/Dashboard/SellerInformationManagement';
+import AdminPromoManagement from './pages/admin/PromoManagement';
+import AdminPopupManagement from './pages/admin/PopupManagement';
 
 // ... (existing imports)
 
@@ -210,7 +212,8 @@ const AppRoutes = () => {
         <Route path="/chatbot" element={<ChatbotPage />} />
         <Route path="/all-features" element={<AllFeatures />} />
         <Route path="/admin/chat" element={<AdminChatPage />} />
-        <Route path="/promos" element={<SellerPromoManagement />} />
+        <Route path="/promos" element={<AdminPromoManagement />} />
+        <Route path="/popups" element={<AdminPopupManagement />} />
         <Route path="/information" element={<SellerInformationManagement />} />
       </Route>
 

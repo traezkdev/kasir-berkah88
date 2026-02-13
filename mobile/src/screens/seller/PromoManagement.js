@@ -46,7 +46,8 @@ import {
     Info,
     Sparkles,
     User,
-    Image as ImageIcon
+    Image as ImageIcon,
+    RefreshCw
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
 import * as ImagePicker from 'expo-image-picker';
@@ -191,35 +192,50 @@ const PromoItem = React.memo(({ promo, onEdit, onDelete, onToggle, onViewUsage }
     );
 });
 
-const BannerItem = React.memo(({ item, onEdit }) => (
-    <TouchableOpacity
-        style={styles.bannerItem}
-        activeOpacity={0.9}
-        onPress={() => onEdit(item)}
-    >
-        <View style={[styles.bannerCard, { backgroundColor: 'transparent' }]}>
-            {/* Background Pattern/Image */}
-            <View style={styles.bannerBackground}>
-                {item.image_url ? (
-                    <Animated.Image
-                        source={{ uri: getImageUrl(item.image_url) }}
-                        style={styles.bannerImage}
-                        resizeMode="cover"
-                    />
-                ) : (
-                    <View style={styles.patternOverlay} />
-                )}
-            </View>
+const BannerItem = React.memo(({ item, onEdit, onDelete }) => (
+    <View style={styles.bannerItem}>
+        <TouchableOpacity
+            style={{ flex: 1 }}
+            activeOpacity={0.9}
+            onPress={() => onEdit(item)}
+        >
+            <View style={[styles.bannerCard, { backgroundColor: 'transparent' }]}>
+                {/* Background Pattern/Image */}
+                <View style={styles.bannerBackground}>
+                    {item.image_url ? (
+                        <Animated.Image
+                            source={{ uri: getImageUrl(item.image_url) }}
+                            style={styles.bannerImage}
+                            resizeMode="cover"
+                        />
+                    ) : (
+                        <View style={styles.patternOverlay} />
+                    )}
+                </View>
 
-            {/* Edit Indicator */}
-            <View style={styles.bannerEditBtn}>
-                <Edit2 size={16} color="#FFFFFF" />
+                {/* Edit Indicator */}
+                <View style={styles.bannerEditBtn}>
+                    <Edit2 size={16} color="#FFFFFF" />
+                </View>
             </View>
-        </View>
-    </TouchableOpacity>
+        </TouchableOpacity>
+
+        {/* Delete Button */}
+        <TouchableOpacity
+            style={styles.bannerDeleteBtn}
+            activeOpacity={0.8}
+            onPress={(e) => {
+                e.stopPropagation();
+                onDelete(item.id);
+            }}
+        >
+            <Trash2 size={16} color="#FFFFFF" />
+        </TouchableOpacity>
+    </View>
 ));
 
-const BannerCarousel = React.memo(({ promos, totalPromos, onEdit }) => {
+// Stats Section Component - Always visible
+const StatsSection = React.memo(({ totalPromos }) => {
     const stats = useMemo(() => {
         if (!totalPromos) return { active: 0, voucher: 0, auto: 0 };
         return {
@@ -229,53 +245,56 @@ const BannerCarousel = React.memo(({ promos, totalPromos, onEdit }) => {
         };
     }, [totalPromos]);
 
+    return (
+        <View style={styles.statsCardWrapper}>
+            <View style={styles.statsHeader}>
+                <Text style={styles.statsTitle}>Statistik Promo</Text>
+                <View style={styles.statsBadge}>
+                    <Text style={styles.statsBadgeText}>Update Real-time</Text>
+                </View>
+            </View>
+
+            <View style={styles.statsGrid}>
+                <View style={styles.statBox}>
+                    <View style={[styles.statIcon, { backgroundColor: '#DCFCE7' }]}>
+                        <Ticket size={20} color="#15803D" />
+                    </View>
+                    <Text style={styles.statNumber}>{stats.active}</Text>
+                    <Text style={styles.statLabel}>Aktif</Text>
+                </View>
+
+                <View style={styles.verticalDivider} />
+
+                <View style={styles.statBox}>
+                    <View style={[styles.statIcon, { backgroundColor: '#DBEAFE' }]}>
+                        <Hash size={20} color="#1D4ED8" />
+                    </View>
+                    <Text style={styles.statNumber}>{stats.voucher}</Text>
+                    <Text style={styles.statLabel}>Voucher</Text>
+                </View>
+
+                <View style={styles.verticalDivider} />
+
+                <View style={styles.statBox}>
+                    <View style={[styles.statIcon, { backgroundColor: '#FFEDD5' }]}>
+                        <Zap size={20} color="#C2410C" />
+                    </View>
+                    <Text style={styles.statNumber}>{stats.auto}</Text>
+                    <Text style={styles.statLabel}>Otomatis</Text>
+                </View>
+            </View>
+        </View>
+    );
+});
+
+const BannerCarousel = React.memo(({ promos, onEdit, onDelete }) => {
     const renderBanner = useCallback(({ item }) => (
-        <BannerItem item={item} onEdit={onEdit} />
-    ), [onEdit]);
+        <BannerItem item={item} onEdit={onEdit} onDelete={onDelete} />
+    ), [onEdit, onDelete]);
 
     if (!promos || promos.length === 0) {
         return (
             <View style={styles.dashboardContainer}>
-                {/* Stats Section */}
-                <View style={styles.statsCardWrapper}>
-                    <View style={styles.statsHeader}>
-                        <Text style={styles.statsTitle}>Statistik Promo</Text>
-                        <View style={styles.statsBadge}>
-                            <Text style={styles.statsBadgeText}>Update Real-time</Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.statsGrid}>
-                        <View style={styles.statBox}>
-                            <View style={[styles.statIcon, { backgroundColor: '#DCFCE7' }]}>
-                                <Ticket size={20} color="#15803D" />
-                            </View>
-                            <Text style={styles.statNumber}>{stats.active}</Text>
-                            <Text style={styles.statLabel}>Aktif</Text>
-                        </View>
-
-                        <View style={styles.verticalDivider} />
-
-                        <View style={styles.statBox}>
-                            <View style={[styles.statIcon, { backgroundColor: '#DBEAFE' }]}>
-                                <Hash size={20} color="#1D4ED8" />
-                            </View>
-                            <Text style={styles.statNumber}>{stats.voucher}</Text>
-                            <Text style={styles.statLabel}>Voucher</Text>
-                        </View>
-
-                        <View style={styles.verticalDivider} />
-
-                        <View style={styles.statBox}>
-                            <View style={[styles.statIcon, { backgroundColor: '#FFEDD5' }]}>
-                                <Zap size={20} color="#C2410C" />
-                            </View>
-                            <Text style={styles.statNumber}>{stats.auto}</Text>
-                            <Text style={styles.statLabel}>Otomatis</Text>
-                        </View>
-                    </View>
-                </View>
-
                 {/* CTA Banner */}
                 <TouchableOpacity
                     style={styles.ctaBanner}
@@ -312,7 +331,7 @@ const BannerCarousel = React.memo(({ promos, totalPromos, onEdit }) => {
                 snapToInterval={width - 40}
                 decelerationRate="fast"
                 contentContainerStyle={styles.carouselContent}
-                initialNumToRender={3} // Optimize initial render
+                initialNumToRender={3}
                 maxToRenderPerBatch={3}
                 windowSize={3}
                 removeClippedSubviews={true}
@@ -545,21 +564,20 @@ const PromoManagement = ({ navigation }) => {
         setDeleteModalVisible(true);
     }, []);
 
-    const pickImage = async () => {
+    const pickImage = async (mode = 'promo') => {
         try {
-            // Request permission specifically for Android 13+ and older
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
             if (status !== 'granted') {
-                Alert.alert('Izin Pembatasan', 'Mohon izinkan akses galeri untuk memilih gambar banner.');
+                Alert.alert('Izin Pembatasan', 'Mohon izinkan akses galeri untuk memilih gambar.');
                 return;
             }
 
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images, // Reverting to MediaTypeOptions to fix crash
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
                 allowsEditing: true,
-                aspect: [16, 9],
-                quality: 0.7, // Reduce quality slightly for faster processing
+                aspect: mode === 'banner' ? [16, 9] : [1, 1],
+                quality: 0.7,
                 base64: true,
             });
 
@@ -687,12 +705,17 @@ const PromoManagement = ({ navigation }) => {
 
     const mainListHeader = useMemo(() => (
         <View>
-            <BannerCarousel promos={heroPromos} totalPromos={promos} onEdit={handleOpenModal} />
+            {/* Stats Section - Always visible */}
+            <StatsSection totalPromos={promos} />
+
+            {/* Banner Carousel */}
+            <BannerCarousel promos={heroPromos} onEdit={handleOpenModal} onDelete={handleDelete} />
+
             <View style={styles.listHeaderContainer}>
                 <Text style={styles.listTitle}>Daftar Promo Aktif</Text>
             </View>
         </View>
-    ), [heroPromos, handleOpenModal]);
+    ), [heroPromos, promos, handleOpenModal, handleDelete]);
 
     // Optimized loading: Don't block UI on initial load if we want faster perceived performance
     // or use a Skeleton loader. For now, we allow rendering with empty list/spinner inside list.
@@ -872,6 +895,30 @@ const PromoManagement = ({ navigation }) => {
                                                     />
                                                 </View>
 
+                                                <View style={styles.inputGroup}>
+                                                    <Text style={[styles.inputLabel, { marginBottom: 12 }]}>Gambar Detail (Opsional)</Text>
+                                                    <TouchableOpacity
+                                                        style={[styles.imageUploadBtn, { height: 120 }]}
+                                                        onPress={() => pickImage('promo')}
+                                                    >
+                                                        {form.image_url ? (
+                                                            <View style={styles.uploadedImageContainer}>
+                                                                <Image source={{ uri: form.image_url.startsWith('data:') ? form.image_url : `${API_URL}${form.image_url}` }} style={styles.uploadedImage} />
+                                                                <View style={styles.imageOverlay}>
+                                                                    <RefreshCw size={20} color="#FFFFFF" />
+                                                                    <Text style={styles.imageOverlayText}>Ganti Gambar</Text>
+                                                                </View>
+                                                            </View>
+                                                        ) : (
+                                                            <View style={styles.uploadPlaceholder}>
+                                                                <ImageIcon size={28} color="#9CA3AF" />
+                                                                <Text style={styles.uploadText}>Tambah Gambar Detail</Text>
+                                                                <Text style={styles.uploadSubText}>Tampil di popup detail customer</Text>
+                                                            </View>
+                                                        )}
+                                                    </TouchableOpacity>
+                                                </View>
+
                                                 {/* VOUCHER SPECIFIC: CODE */}
                                                 {promoMode === 'voucher' && (
                                                     <View style={styles.inputGroup}>
@@ -1004,7 +1051,7 @@ const PromoManagement = ({ navigation }) => {
                                         )}
 
                                         <View style={styles.inputGroup}>
-                                            <Text style={styles.inputLabel}>{promoMode === 'banner' ? 'Deskripsi (Pengingat Seller)' : 'Keterangan Tambahan'}</Text>
+                                            <Text style={[styles.inputLabel, { marginBottom: 10 }]}>{promoMode === 'banner' ? 'Deskripsi (Pengingat Seller)' : 'Keterangan Tambahan'}</Text>
                                             <TextInput
                                                 style={[styles.input, styles.textArea]}
                                                 placeholder={promoMode === 'banner' ? 'Contoh: Banner promo akhir bulan...' : 'Syarat & Ketentuan...'}
@@ -1443,6 +1490,7 @@ const styles = StyleSheet.create({
     },
     carouselContainer: {
         marginBottom: 20,
+        marginTop: 20,
     },
     carouselContent: {
         paddingRight: 20,
@@ -1560,6 +1608,18 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 5,
+    },
+    bannerDeleteBtn: {
+        position: 'absolute',
+        top: 15,
+        right: 15,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: 'rgba(239, 68, 68, 0.9)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10,
     },
     emptyBannerContainer: {
         height: 120,
@@ -1909,17 +1969,13 @@ const styles = StyleSheet.create({
     // Dashboard Styles
     dashboardContainer: {
         marginBottom: 24,
+        marginTop: 20,
         gap: 16,
     },
     statsCardWrapper: {
         backgroundColor: '#FFFFFF',
         borderRadius: 20,
         padding: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        elevation: 4,
         borderWidth: 1,
         borderColor: '#F3F4F6',
     },
@@ -2172,7 +2228,21 @@ const styles = StyleSheet.create({
         marginTop: 12,
         fontSize: 14,
         color: '#64748B',
-    }
+    },
+    // List Header Styles
+    listHeaderContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        marginBottom: 16,
+        marginTop: 10,
+    },
+    listTitle: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#1E293B',
+    },
 });
 
 export default React.memo(PromoManagement);

@@ -11,7 +11,8 @@ import {
     StatusBar,
     Image,
     TextInput,
-    Modal
+    Modal,
+    Animated
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getSafeBottomPadding } from '../../utils/safeArea';
@@ -44,8 +45,12 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useOrderNotification, NOTIFICATION_SOUNDS } from '../../context/OrderNotificationContext';
+import { useChat } from '../../context/ChatContext';
+import useSwipeToClose from '../../hooks/useSwipeToClose';
+import usePopups from '../../hooks/usePopups';
+import PopupModal from '../../components/PopupModal';
 
-const { width } = Dimensions.get('window');
+const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const CustomerProfile = ({ navigation }) => {
     const insets = useSafeAreaInsets();
@@ -53,6 +58,8 @@ const CustomerProfile = ({ navigation }) => {
     const { showToast } = useToast();
     const { confirm } = useConfirm();
     const { selectedSoundId, changeNotificationSound } = useOrderNotification();
+    const { unreadCount } = useChat();
+    const { popups } = usePopups('profile');
 
     const [userData, setUserData] = useState({
         username: 'Pelanggan',
@@ -85,6 +92,16 @@ const CustomerProfile = ({ navigation }) => {
         chat: true,
         promo: false
     });
+
+    // Reusable Gesture for modals
+    const profileSwipe = useSwipeToClose(() => setIsProfileModalOpen(false));
+    const accountSwipe = useSwipeToClose(() => setIsAccountModalOpen(false));
+    const notifSwipe = useSwipeToClose(() => setIsNotifModalOpen(false));
+
+    // Reset pan positions when modals open/close
+    useEffect(() => { if (!isProfileModalOpen) profileSwipe.resetPan(); }, [isProfileModalOpen]);
+    useEffect(() => { if (!isAccountModalOpen) accountSwipe.resetPan(); }, [isAccountModalOpen]);
+    useEffect(() => { if (!isNotifModalOpen) notifSwipe.resetPan(); }, [isNotifModalOpen]);
 
     const fetchNotificationSettings = async () => {
         try {
@@ -195,7 +212,7 @@ const CustomerProfile = ({ navigation }) => {
 
     return (
         <SafeAreaView style={styles.container} edges={['left', 'right']}>
-            <StatusBar barStyle="light-content" backgroundColor="#059669" />
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
             {/* Header Premium */}
             <View style={[styles.header, {
@@ -299,6 +316,11 @@ const CustomerProfile = ({ navigation }) => {
                         >
                             <View style={[styles.menuIconWrap, { backgroundColor: item.bg }]}>
                                 <item.icon size={22} color={item.color} />
+                                {item.label === 'Bantuan & Dukungan' && unreadCount > 0 && (
+                                    <View style={styles.unreadBadge}>
+                                        <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
+                                    </View>
+                                )}
                             </View>
                             <View style={styles.menuLabelWrap}>
                                 <Text style={styles.menuLabel}>{item.label}</Text>
@@ -333,12 +355,25 @@ const CustomerProfile = ({ navigation }) => {
             {/* Profile Modal */}
             <Modal
                 visible={isProfileModalOpen}
-                animationType="fade"
+                animationType="slide"
                 transparent={true}
                 onRequestClose={() => setIsProfileModalOpen(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { paddingBottom: getSafeBottomPadding(insets) }]}>
+                    <Animated.View
+                        style={[
+                            styles.modalContent,
+                            {
+                                paddingBottom: getSafeBottomPadding(insets),
+                                transform: [{ translateY: profileSwipe.panY }]
+                            }
+                        ]}
+                    >
+                        {/* Drag Handle with Line */}
+                        <View style={styles.modalDragHandle} {...profileSwipe.panResponder.panHandlers}>
+                            <View style={styles.modalDragIndicator} />
+                        </View>
+
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>Atur Profil</Text>
                             <TouchableOpacity onPress={() => setIsProfileModalOpen(false)} style={styles.modalClose}>
@@ -395,7 +430,7 @@ const CustomerProfile = ({ navigation }) => {
                                 </TouchableOpacity>
                             </View>
                         </KeyboardAwareScrollView>
-                    </View>
+                    </Animated.View>
                 </View>
             </Modal>
 
@@ -407,7 +442,21 @@ const CustomerProfile = ({ navigation }) => {
                 onRequestClose={() => setIsAccountModalOpen(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { maxHeight: '90%', paddingBottom: getSafeBottomPadding(insets) }]}>
+                    <Animated.View
+                        style={[
+                            styles.modalContent,
+                            {
+                                maxHeight: '90%',
+                                paddingBottom: getSafeBottomPadding(insets),
+                                transform: [{ translateY: accountSwipe.panY }]
+                            }
+                        ]}
+                    >
+                        {/* Drag Handle with Line */}
+                        <View style={styles.modalDragHandle} {...accountSwipe.panResponder.panHandlers}>
+                            <View style={styles.modalDragIndicator} />
+                        </View>
+
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>Keamanan Akun</Text>
                             <TouchableOpacity onPress={() => setIsAccountModalOpen(false)} style={styles.modalClose}>
@@ -486,7 +535,7 @@ const CustomerProfile = ({ navigation }) => {
                                 </TouchableOpacity>
                             </View>
                         </KeyboardAwareScrollView>
-                    </View>
+                    </Animated.View>
                 </View>
             </Modal>
 
@@ -498,7 +547,21 @@ const CustomerProfile = ({ navigation }) => {
                 onRequestClose={() => setIsNotifModalOpen(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { maxHeight: '90%', paddingBottom: getSafeBottomPadding(insets) }]}>
+                    <Animated.View
+                        style={[
+                            styles.modalContent,
+                            {
+                                maxHeight: '90%',
+                                paddingBottom: getSafeBottomPadding(insets),
+                                transform: [{ translateY: notifSwipe.panY }]
+                            }
+                        ]}
+                    >
+                        {/* Drag Handle with Line */}
+                        <View style={styles.modalDragHandle} {...notifSwipe.panResponder.panHandlers}>
+                            <View style={styles.modalDragIndicator} />
+                        </View>
+
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>Pengaturan Notifikasi</Text>
                             <TouchableOpacity onPress={() => setIsNotifModalOpen(false)} style={styles.modalClose}>
@@ -597,9 +660,19 @@ const CustomerProfile = ({ navigation }) => {
                                 </View>
                             </View>
                         </KeyboardAwareScrollView>
-                    </View>
+                    </Animated.View>
                 </View>
             </Modal>
+            {/* Popup System */}
+            <PopupModal
+                popups={popups}
+                currentPage="profile"
+                onClose={(screenName) => {
+                    if (screenName) {
+                        navigation.navigate(screenName);
+                    }
+                }}
+            />
         </SafeAreaView>
     );
 };
@@ -736,6 +809,27 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
+        position: 'relative',
+    },
+    unreadBadge: {
+        position: 'absolute',
+        top: -4,
+        right: -4,
+        backgroundColor: '#EF4444',
+        minWidth: 18,
+        height: 18,
+        borderRadius: 9,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 4,
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
+        zIndex: 10,
+    },
+    unreadBadgeText: {
+        color: '#FFFFFF',
+        fontSize: 9,
+        fontWeight: '900',
     },
     menuLabelWrap: {
         flex: 1,
@@ -805,7 +899,21 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderTopLeftRadius: 40,
         borderTopRightRadius: 40,
-        padding: 30,
+        paddingHorizontal: 30,
+        paddingBottom: 30,
+        paddingTop: 10, // Reduced to give space for drag handle
+    },
+    modalDragHandle: {
+        width: '100%',
+        height: 30,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalDragIndicator: {
+        width: 40,
+        height: 5,
+        backgroundColor: '#E2E8F0',
+        borderRadius: 3,
     },
     modalHeader: {
         flexDirection: 'row',
@@ -856,7 +964,6 @@ const styles = StyleSheet.create({
     textAreaWrap: {
         alignItems: 'flex-start',
     },
-    // New styles for sound grid
     soundGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
@@ -898,13 +1005,11 @@ const styles = StyleSheet.create({
     soundNameSelected: {
         color: '#065F46',
     },
-
     textArea: {
         height: 120,
         textAlignVertical: 'top',
         paddingTop: 16,
     },
-    // Points Styles
     pointsCard: {
         flexDirection: 'row',
         alignItems: 'center',

@@ -26,15 +26,24 @@ const BottomModalTemplate = ({
     title = 'Detail',
     children,
     footer,
-    heightPercentage = 0.85
+    heightPercentage = 0.85,
+    height = null, // Can be "85%" style string
+    disableSwipe = false
 }) => {
     const { height: screenHeight } = useWindowDimensions();
     const insets = useSafeAreaInsets();
 
-    // Calculate modal height explicitly for mobile web stability
-    const modalHeight = useMemo(() => screenHeight * heightPercentage, [screenHeight, heightPercentage]);
+    // Calculate modal height explicitly
+    const resolvedHeightPercentage = useMemo(() => {
+        if (height && typeof height === 'string' && height.endsWith('%')) {
+            return parseInt(height) / 100;
+        }
+        return heightPercentage;
+    }, [height, heightPercentage]);
 
-    const isFullscreen = heightPercentage >= 1;
+    const modalHeight = useMemo(() => screenHeight * resolvedHeightPercentage, [screenHeight, resolvedHeightPercentage]);
+
+    const isFullscreen = resolvedHeightPercentage >= 1;
     const safeTopPadding = isFullscreen
         ? Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0) + 10
         : 10;
@@ -108,17 +117,24 @@ const BottomModalTemplate = ({
                     style={[
                         styles.modalContainer,
                         { height: modalHeight },
-                        { transform: [{ translateY: pan.y }] }
+                        { transform: [{ translateY: pan.y }] },
+                        isFullscreen && { borderTopLeftRadius: 0, borderTopRightRadius: 0 }
                     ]}
                 >
                     {/* Header - Fixed & Swipeable */}
                     <View
-                        style={[styles.header, { paddingTop: safeTopPadding }]}
-                        {...panResponder.panHandlers}
+                        style={[
+                            styles.header,
+                            { paddingTop: safeTopPadding },
+                            isFullscreen && { borderTopLeftRadius: 0, borderTopRightRadius: 0 }
+                        ]}
+                        {...(!disableSwipe ? panResponder.panHandlers : {})}
                     >
-                        <View style={styles.grabberContainer}>
-                            <View style={styles.grabber} />
-                        </View>
+                        {!disableSwipe && (
+                            <View style={styles.grabberContainer}>
+                                <View style={styles.grabber} />
+                            </View>
+                        )}
                         <View style={styles.headerContent}>
                             <Text style={styles.headerTitle}>{title}</Text>
                             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>

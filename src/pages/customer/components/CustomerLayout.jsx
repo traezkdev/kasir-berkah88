@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
+import PopupDisplay from './PopupDisplay';
 
 const CustomerLayout = () => {
     const location = useLocation();
@@ -16,6 +17,8 @@ const CustomerLayout = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 font-sans">
+            <PopupDisplay />
+
             {/* Main Content Area */}
             <main className={`w-full max-w-md lg:max-w-7xl mx-auto min-h-screen relative overflow-x-hidden ${currentPath !== '/customer/chat' && currentPath !== '/customer/cart' ? 'pb-24' : ''}`}>
                 <Outlet />

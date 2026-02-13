@@ -46,6 +46,10 @@ import TransactionTrash from '../screens/seller/TransactionTrash';
 import BusinessReports from '../screens/seller/BusinessReports';
 import PromoManagement from '../screens/seller/PromoManagement';
 import ManageInformation from '../screens/seller/ManageInformation';
+import FinancialReport from '../screens/seller/FinancialReport';
+import HppManagement from '../screens/seller/HppManagement';
+// Popup Management Scale
+import PopupManagement from '../screens/seller/PopupManagement';
 
 // Customer Screens
 import InformationScreen from '../screens/customer/InformationScreen';
@@ -90,52 +94,150 @@ const PromoStack = () => (
 
 import Svg, { Path } from 'react-native-svg';
 
-const SellerTabs = () => {
-    const { pendingCount } = useOrderNotification();
-    const { unreadCount } = useChat();
+const CustomSellerTabBar = ({ state, descriptors, navigation }) => {
     const insets = useSafeAreaInsets();
+    const { pendingCount } = useOrderNotification();
 
     return (
-        <Tab.Navigator
-            screenOptions={({ route }) => ({
-                headerShown: false,
-                tabBarStyle: {
-                    height: getSafeFooterHeight(insets, 70),
-                    paddingBottom: getSafeBottomPadding(insets, 5, 20),
-                    paddingTop: 10,
-                    backgroundColor: '#FFFFFF',
-                    borderTopWidth: 1,
-                    borderTopColor: '#F1F5F9',
-                    elevation: 8,
-                },
-                tabBarActiveTintColor: '#138FEA',
-                tabBarInactiveTintColor: '#94A3B8',
-                tabBarLabelStyle: {
-                    fontSize: 9,
-                    fontWeight: '900',
-                    textTransform: 'uppercase',
-                    letterSpacing: -0.5,
-                },
-                tabBarIcon: ({ color, size, focused }) => {
-                    const iconProps = { size, color, strokeWidth: focused ? 2.5 : 2 };
-                    if (route.name === 'Dashboard') return <LayoutDashboard {...iconProps} />;
-                    if (route.name === 'Pesanan') return <ShoppingBag {...iconProps} />;
-                    if (route.name === 'Jual') return <ShoppingCart {...iconProps} />;
-                    if (route.name === 'Katalog') return <Utensils {...iconProps} />;
-                    if (route.name === 'Transaksi') return <History {...iconProps} />;
+        <View style={[
+            sellerNavStyles.bottomNav,
+            {
+                height: getSafeFooterHeight(insets, 65),
+                paddingBottom: getSafeBottomPadding(insets, 6, 15),
+                paddingTop: 18,
+            }
+        ]}>
+            {state.routes.map((route, index) => {
+                const { options } = descriptors[route.key];
+                const label = options.tabBarLabel !== undefined ? options.tabBarLabel : options.title !== undefined ? options.title : route.name;
+                const isFocused = state.index === index;
+
+                const onPress = () => {
+                    const event = navigation.emit({
+                        type: 'tabPress',
+                        target: route.key,
+                        canPreventDefault: true,
+                    });
+
+                    if (!isFocused && !event.defaultPrevented) {
+                        navigation.navigate(route.name);
+                    }
+                };
+
+                const iconColor = isFocused ? '#138FEA' : '#94A3B8';
+                const strokeWidth = isFocused ? 2.5 : 2;
+                const size = 22;
+
+                const renderIcon = () => {
+                    const props = { size, color: iconColor, strokeWidth };
+                    if (route.name === 'Dashboard') return <LayoutDashboard {...props} />;
+                    if (route.name === 'Pesanan') return <ShoppingBag {...props} />;
+                    if (route.name === 'Jual') return <ShoppingCart {...props} />;
+                    if (route.name === 'Katalog') return <Utensils {...props} />;
+                    if (route.name === 'Transaksi') return <History {...props} />;
                     return null;
-                },
+                };
+
+                return (
+                    <TouchableOpacity
+                        key={index}
+                        onPress={onPress}
+                        style={sellerNavStyles.navItem}
+                        activeOpacity={0.7}
+                    >
+                        <View style={sellerNavStyles.iconWrapper}>
+                            {renderIcon()}
+                            {route.name === 'Pesanan' && pendingCount > 0 && (
+                                <View style={sellerNavStyles.badge}>
+                                    <Text style={sellerNavStyles.badgeText}>{pendingCount}</Text>
+                                </View>
+                            )}
+                        </View>
+                        <Text style={[
+                            sellerNavStyles.navLabel,
+                            isFocused && sellerNavStyles.activeNavLabel
+                        ]}>
+                            {label}
+                        </Text>
+                    </TouchableOpacity>
+                );
             })}
+        </View>
+    );
+};
+
+const sellerNavStyles = {
+    bottomNav: {
+        flexDirection: 'row',
+        backgroundColor: '#FFFFFF',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        paddingHorizontal: 10,
+        ...Platform.select({
+            web: { boxShadow: '0px -8px 25px rgba(0,0,0,0.06)' },
+            android: { elevation: 20 },
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -8 },
+                shadowOpacity: 0.06,
+                shadowRadius: 15,
+            }
+        })
+    },
+    navItem: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 2,
+    },
+    iconWrapper: {
+        width: 42,
+        height: 32,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 12,
+        position: 'relative',
+    },
+    navLabel: {
+        fontSize: 9,
+        fontWeight: '700',
+        color: '#94A3B8',
+        textTransform: 'uppercase',
+        letterSpacing: -0.2,
+    },
+    activeNavLabel: {
+        color: '#138FEA',
+        fontWeight: '900',
+    },
+    badge: {
+        position: 'absolute',
+        top: -2,
+        right: 0,
+        backgroundColor: '#EF4444',
+        minWidth: 16,
+        height: 16,
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 4,
+        borderWidth: 1.5,
+        borderColor: '#FFFFFF',
+    },
+    badgeText: {
+        color: '#FFFFFF',
+        fontSize: 8,
+        fontWeight: 'bold',
+    }
+};
+
+const SellerTabs = () => {
+    return (
+        <Tab.Navigator
+            tabBar={props => <CustomSellerTabBar {...props} />}
+            screenOptions={{ headerShown: false }}
         >
             <Tab.Screen name="Dashboard" component={SellerDashboard} />
-            <Tab.Screen
-                name="Pesanan"
-                component={OrderManagement}
-                options={{
-                    tabBarBadge: pendingCount > 0 ? pendingCount : null,
-                    tabBarBadgeStyle: { backgroundColor: '#EF4444', color: '#FFFFFF' }
-                }}
-            />
+            <Tab.Screen name="Pesanan" component={OrderManagement} />
             <Tab.Screen name="Jual" component={SalesPOS} />
             <Tab.Screen name="Katalog" component={MenuManagement} />
             <Tab.Screen name="Transaksi" component={TransactionHistory} />
@@ -162,6 +264,9 @@ const SellerRootStack = () => (
         <Stack.Screen name="BusinessReports" component={BusinessReports} />
         <Stack.Screen name="PromoManagement" component={PromoManagement} />
         <Stack.Screen name="ManageInformation" component={ManageInformation} />
+        <Stack.Screen name="FinancialReport" component={FinancialReport} />
+        <Stack.Screen name="HppManagement" component={HppManagement} />
+        <Stack.Screen name="PopupManagement" component={PopupManagement} />
     </Stack.Navigator>
 );
 
@@ -203,7 +308,7 @@ const CustomCustomerTabBar = ({ state, descriptors, navigation }) => {
                     if (route.name === 'Promo') {
                         return (
                             <View style={[navStyles.promoIconContainer, isFocused && navStyles.activePromoIcon]}>
-                                <Ticket size={24} color={isFocused ? '#FFFFFF' : '#059669'} fill={isFocused ? '#FFFFFF' : 'none'} strokeWidth={2.5} />
+                                <Ticket size={24} color={isFocused ? '#FFFFFF' : '#059669'} fill="none" strokeWidth={2.5} />
                             </View>
                         );
                     }
@@ -236,7 +341,6 @@ const navStyles = {
         backgroundColor: '#FFFFFF',
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',
-        paddingTop: 12,
         paddingHorizontal: 16,
         justifyContent: 'space-between',
         alignItems: 'center',

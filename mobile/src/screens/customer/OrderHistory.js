@@ -37,8 +37,10 @@ import {
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
+import usePopups from '../../hooks/usePopups';
+import PopupModal from '../../components/PopupModal';
 
-const { width } = Dimensions.get('window');
+const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const OrderHistory = ({ navigation }) => {
     const [orders, setOrders] = useState([]);
@@ -50,6 +52,7 @@ const OrderHistory = ({ navigation }) => {
     const [selectedOrderForRating, setSelectedOrderForRating] = useState(null);
     const [submittingRating, setSubmittingRating] = useState(false);
     const insets = useSafeAreaInsets();
+    const { popups } = usePopups('orders');
 
     const fetchOrders = useCallback(async (pageNum = 1, isRefresh = false) => {
         if (!isRefresh && pageNum === 1) setIsLoading(true);
@@ -196,7 +199,7 @@ const OrderHistory = ({ navigation }) => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
 
             {/* Header */}
             <View style={styles.header}>
@@ -249,6 +252,17 @@ const OrderHistory = ({ navigation }) => {
                 onSubmit={handleSubmitRating}
                 submitting={submittingRating}
                 insets={insets}
+            />
+
+            {/* Popup System */}
+            <PopupModal
+                popups={popups}
+                currentPage="orders"
+                onClose={(screenName) => {
+                    if (screenName) {
+                        navigation.navigate(screenName);
+                    }
+                }}
             />
         </SafeAreaView>
     );
@@ -329,7 +343,8 @@ const RatingModal = ({ visible, order, onClose, onSubmit, submitting, insets }) 
         >
             <View style={styles.modalOverlay}>
                 <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
                     style={[styles.modalContent, { paddingBottom: getSafeBottomPadding(insets) }]}
                 >
                     <View style={styles.modalHeader}>
@@ -342,7 +357,7 @@ const RatingModal = ({ visible, order, onClose, onSubmit, submitting, insets }) 
                         </TouchableOpacity>
                     </View>
 
-                    <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+                    <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                         {loadingExisting ? (
                             <View style={{ padding: 40, alignItems: 'center' }}>
                                 <ActivityIndicator size="large" color="#F59E0B" />
@@ -644,7 +659,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
-        height: '85%',
+        height: SCREEN_HEIGHT * 0.85,
         paddingHorizontal: 24,
         paddingTop: 24,
     },

@@ -34,7 +34,9 @@ const io = new Server(server, {
     cors: {
         origin: "*",
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
-    }
+    },
+    pingTimeout: 30000,
+    pingInterval: 10000
 });
 app.set('io', io);
 
@@ -300,7 +302,7 @@ const sendUniversalNotification = async (userIds, message, heading, data = {}, e
         } else {
             // Broadcast case (e.g. for new_order or promos)
             if (type === 'new_order') {
-                sql += " AND role IN ('admin', 'penjual', 'owner', 'kasir')";
+                sql += " AND role IN ('admin', 'penjual', 'owner', 'kasir', 'seller')";
             }
         }
 
@@ -1413,7 +1415,7 @@ app.post("/api/banners", authenticateToken, authorizeRoles('admin', 'penjual'), 
             bannerData = req.body;
         }
 
-        const { title, subtitle, color_class, icon_name, link_url, is_active } = bannerData;
+        const { title, subtitle, color_class, icon_name, link_url, is_active, show_text } = bannerData;
 
         // Validasi field wajib
         if (!title) {
@@ -1422,15 +1424,16 @@ app.post("/api/banners", authenticateToken, authorizeRoles('admin', 'penjual'), 
 
         const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
         const final_is_active = is_active !== undefined ? (is_active ? 1 : 0) : 1;
+        const final_show_text = show_text !== undefined ? (show_text ? 1 : 0) : 1;
 
-        const sql = 'INSERT INTO banners (title, subtitle, image_url, color_class, icon_name, link_url, is_active) VALUES (?,?,?,?,?,?,?)';
-        const [result] = await db.query(sql, [title, subtitle || '', image_url, color_class, icon_name, link_url || '', final_is_active]);
+        const sql = 'INSERT INTO banners (title, subtitle, image_url, color_class, icon_name, link_url, is_active, show_text) VALUES (?,?,?,?,?,?,?,?)';
+        const [result] = await db.query(sql, [title, subtitle || '', image_url, color_class, icon_name, link_url || '', final_is_active, final_show_text]);
 
         await logActivity(req.user.userId, 'Tambah Banner', 'banner', result.insertId, `Banner baru: ${title}`);
 
         res.status(201).json({
             "message": "success",
-            "data": { id: result.insertId, ...bannerData, image_url, is_active: final_is_active }
+            "data": { id: result.insertId, ...bannerData, image_url, is_active: final_is_active, show_text: final_show_text }
         });
     } catch (err) {
         console.error("Error adding banner:", err);
@@ -1632,16 +1635,33 @@ app.put("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penjual'
             bannerData = req.body;
         }
 
-        const { title, subtitle, color_class, icon_name, link_url, is_active } = bannerData;
+        const { title, subtitle, color_class, icon_name, link_url, is_active, show_text, remove_image } = bannerData;
         const final_is_active = is_active !== undefined ? (is_active ? 1 : 0) : 1;
+        const final_show_text = show_text !== undefined ? (show_text ? 1 : 0) : 1;
 
-        let sql = 'UPDATE banners SET title = ?, subtitle = ?, color_class = ?, icon_name = ?, link_url = ?, is_active = ?';
-        let params = [title, subtitle || '', color_class, icon_name, link_url || '', final_is_active];
+        // Fetch current banner to handle image cleanup
+        const [currentBanner] = await db.query('SELECT image_url FROM banners WHERE id = ?', [id]);
+
+        let sql = 'UPDATE banners SET title = ?, subtitle = ?, color_class = ?, icon_name = ?, link_url = ?, is_active = ?, show_text = ?';
+        let params = [title, subtitle || '', color_class, icon_name, link_url || '', final_is_active, final_show_text];
 
         if (req.file) {
             const image_url = `/public/uploads/${req.file.filename}`;
             sql += ', image_url = ?';
             params.push(image_url);
+
+            // Delete old image if it exists
+            if (currentBanner.length > 0 && currentBanner[0].image_url) {
+                const oldPath = path.join(__dirname, currentBanner[0].image_url);
+                if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+            }
+        } else if (remove_image === true || remove_image === 'true') {
+            sql += ', image_url = NULL';
+            // Delete old image if it exists
+            if (currentBanner.length > 0 && currentBanner[0].image_url) {
+                const oldPath = path.join(__dirname, currentBanner[0].image_url);
+                if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+            }
         }
 
         sql += ' WHERE id = ?';
@@ -1651,7 +1671,7 @@ app.put("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penjual'
         await logActivity(req.user.userId, 'Update Banner', 'banner', id, `Banner ID ${id} diperbarui`);
         res.json({
             "message": "success",
-            "data": { id, ...bannerData, is_active: final_is_active }
+            "data": { id, ...bannerData, is_active: final_is_active, show_text: final_show_text }
         });
     } catch (err) {
         console.error("Error updating banner:", err);
@@ -1663,11 +1683,22 @@ app.put("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penjual'
 app.delete("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penjual'), async (req, res) => {
     try {
         const { id } = req.params;
+
+        // Fetch image_url for cleanup
+        const [rows] = await db.query('SELECT image_url FROM banners WHERE id = ?', [id]);
+        if (rows.length > 0 && rows[0].image_url) {
+            const imagePath = path.join(__dirname, rows[0].image_url);
+            if (fs.existsSync(imagePath)) {
+                fs.unlinkSync(imagePath);
+            }
+        }
+
         const sql = 'DELETE FROM banners WHERE id = ?';
         await db.query(sql, [id]);
         await logActivity(req.user.userId, 'Hapus Banner', 'banner', id, `Banner ID ${id} dihapus`);
         res.json({ "message": "success" });
     } catch (err) {
+        console.error("Error deleting banner:", err);
         res.status(400).json({ "error": err.message });
     }
 });
@@ -1960,12 +1991,21 @@ app.put('/api/settings/:key', authenticateToken, authorizeRoles('admin', 'user',
     try {
         const { key } = req.params;
         const { value } = req.body;
-        if (value === undefined || value === null || value.toString().trim() === '') {
+        if (value === undefined || value === null || (typeof value === 'string' && value.trim() === '')) {
             return res.status(400).json({ "error": "Value is required" });
+        }
+        let finalValue = value.toString();
+
+        // Process image if it's popup_promo_image and is base64
+        if (key === 'popup_promo_image' && value && value.toString().startsWith('data:image')) {
+            const processedPath = await processBase64Image(value.toString(), 'marketing_popup');
+            if (processedPath) {
+                finalValue = processedPath;
+            }
         }
 
         const sql = 'INSERT INTO settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
-        const [result] = await db.query(sql, [key, value.toString()]);
+        const [result] = await db.query(sql, [key, finalValue]);
 
         // If initial_capital is updated, also update initial_capital_date
         if (key === 'initial_capital') {
@@ -1974,7 +2014,7 @@ app.put('/api/settings/:key', authenticateToken, authorizeRoles('admin', 'user',
             await db.query(dateSql, ['initial_capital_date', now]);
         }
 
-        res.json({ message: "Setting updated successfully", data: { key, value } });
+        res.json({ message: "Setting updated successfully", data: { key, value: finalValue } });
 
     } catch (err) {
         res.status(400).json({ "error": err.message });
@@ -6070,13 +6110,13 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
         // 1. Cek peran penerima
         const [receiverRows] = await db.query("SELECT role FROM users WHERE id = ?", [receiver_id]);
         const receiverRole = receiverRows[0]?.role;
-        const sellerRoles = ['admin', 'owner', 'penjual', 'kasir'];
+        const sellerRoles = ['admin', 'owner', 'penjual', 'kasir', 'seller'];
 
         let targetUserIds = [receiver_id];
 
         // 2. Jika pesan ditujukan ke salah satu tim seller, notifikasi ke SELURUH tim seller
         if (sellerRoles.includes(receiverRole)) {
-            const [allSellers] = await db.query("SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')");
+            const [allSellers] = await db.query("SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')");
             targetUserIds = allSellers.map(s => s.id);
         }
 
@@ -6099,20 +6139,24 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
             image_url: processedImageUrl,
             created_at: now,
             sender_role: req.user.role,
-            receiver_role: receiverRole
+            receiver_role: receiverRole,
+            sender_name: req.user.username || 'User'
         };
 
-        // Emit to specific rooms instead of global broadcast for stability and performance
-        // 1. To the specific receiver
-        // 2. To the sender (for multi-device sync)
-        // 3. To 'sellers' room if receiver is part of the staff
-        let emitTarget = io.to(`user_${receiver_id}`).to(`user_${sender_id}`);
 
-        if (sellerRoles.includes(receiverRole)) {
-            emitTarget = emitTarget.to('sellers');
+        // Emit to specific rooms for better reliability
+        io.to(`user_${receiver_id}`).emit('new_message', messageData);
+        io.to(`user_${sender_id}`).emit('new_message', messageData);
+
+        // Jika salah satu (pengirim atau penerima) adalah seller, kirim ke room 'sellers'
+        // agar seluruh tim seller bisa melihat update chat tersebut secara realtime (Shared Inbox)
+        if (sellerRoles.includes(receiverRole) || sellerRoles.includes(req.user.role)) {
+            io.to('sellers').emit('new_message', messageData);
         }
 
-        emitTarget.emit('new_message', messageData);
+        // Global broadcast removed to prevent duplicates as we already use room-based emits
+        // io.emit('new_message', messageData); 
+
 
         res.status(201).json({
             message: "Pesan terkirim",
@@ -6124,6 +6168,70 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
         try {
             fs.appendFileSync(path.join(__dirname, 'error.log'), errorLog);
         } catch (e) { }
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Edit Pesan Individual
+app.put("/api/messages/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { message } = req.body;
+        const userId = req.user.userId;
+
+        if (!message) {
+            return res.status(400).json({ error: "Pesan tidak boleh kosong" });
+        }
+
+        // Pastikan hanya pengirim yang bisa mengedit pesannya sendiri
+        const [rows] = await db.query("SELECT sender_id FROM messages WHERE id = ?", [id]);
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Pesan tidak ditemukan" });
+        }
+
+        if (rows[0].sender_id !== userId) {
+            return res.status(403).json({ error: "Anda tidak memiliki izin untuk mengedit pesan ini" });
+        }
+
+        await db.query("UPDATE messages SET message = ?, is_edited = 1 WHERE id = ?", [message, id]);
+
+        const io = req.app.get('io');
+        // Beritahu semua client yang terlibat bahwa pesan telah diupdate
+        io.emit('message_edited', { id: parseInt(id), message });
+
+        res.json({ message: "Pesan berhasil diupdate" });
+    } catch (err) {
+        console.error("Error editing message:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Hapus Pesan Individual
+app.delete("/api/messages/:id", authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.userId;
+
+        // Pastikan hanya pengirim yang bisa menghapus pesannya sendiri
+        const [rows] = await db.query("SELECT sender_id FROM messages WHERE id = ?", [id]);
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Pesan tidak ditemukan" });
+        }
+
+        if (rows[0].sender_id !== userId) {
+            return res.status(403).json({ error: "Anda tidak memiliki izin untuk menghapus pesan ini" });
+        }
+
+        // Gunakan hard delete sesuai pola penghapusan riwayat chat di atas
+        await db.query("DELETE FROM messages WHERE id = ?", [id]);
+
+        const io = req.app.get('io');
+        // Beritahu semua client yang terlibat bahwa pesan telah dihapus
+        io.emit('message_deleted', { id: parseInt(id) });
+
+        res.json({ message: "Pesan berhasil dihapus" });
+    } catch (err) {
+        console.error("Error deleting message:", err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -6146,8 +6254,8 @@ app.get("/api/messages/history/:otherUserId", authenticateToken, async (req, res
                 SELECT m.*, u.username as sender_name 
                 FROM messages m
                 JOIN users u ON m.sender_id = u.id
-                WHERE (m.sender_id = ? AND m.receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')))
-                   OR (m.sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND m.receiver_id = ?)
+                WHERE (m.sender_id = ? AND m.receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')))
+                   OR (m.sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')) AND m.receiver_id = ?)
                 ORDER BY m.created_at ASC
             `;
             params = [otherUserId, otherUserId];
@@ -6158,8 +6266,8 @@ app.get("/api/messages/history/:otherUserId", authenticateToken, async (req, res
                 SELECT m.*, u.username as sender_name 
                 FROM messages m
                 JOIN users u ON m.sender_id = u.id
-                WHERE (m.sender_id = ? AND m.receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')))
-                   OR (m.sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND m.receiver_id = ?)
+                WHERE (m.sender_id = ? AND m.receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')))
+                   OR (m.sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')) AND m.receiver_id = ?)
                 ORDER BY m.created_at ASC
             `;
             params = [myId, myId];
@@ -6179,7 +6287,7 @@ app.delete("/api/messages/history/:otherUserId", authenticateToken, async (req, 
         const { otherUserId } = req.params;
         const myId = req.user.userId;
         const myRole = req.user.role;
-        const sellerRoles = ['admin', 'owner', 'penjual', 'kasir'];
+        const sellerRoles = ['admin', 'owner', 'penjual', 'kasir', 'seller'];
         const isSeller = sellerRoles.includes(myRole);
 
         // Target user ID adalah pelanggan (jika saya seller, itu otherUserId. Jika saya pelanggan, itu myId)
@@ -6189,8 +6297,8 @@ app.delete("/api/messages/history/:otherUserId", authenticateToken, async (req, 
         // Gunakan hard delete sesuai kode asli agar benar-benar hilang dari DB
         const sql = `
             DELETE FROM messages 
-            WHERE (sender_id = ? AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')))
-               OR (sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND receiver_id = ?)
+            WHERE (sender_id = ? AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')))
+               OR (sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')) AND receiver_id = ?)
         `;
         await db.query(sql, [targetCustomerId, targetCustomerId]);
 
@@ -6209,7 +6317,7 @@ app.get("/api/messages/conversations", authenticateToken, async (req, res) => {
     try {
         const myId = req.user.userId;
         const myRole = req.user.role;
-        const sellerRoles = ['admin', 'owner', 'penjual', 'kasir'];
+        const sellerRoles = ['admin', 'owner', 'penjual', 'kasir', 'seller'];
         const isSeller = sellerRoles.includes(myRole);
 
         let sql;
@@ -6225,40 +6333,31 @@ app.get("/api/messages/conversations", authenticateToken, async (req, res) => {
                     u.avatar_url,
                     m.message as last_message, 
                     m.created_at as last_message_time,
-                    (SELECT COUNT(*) FROM messages WHERE sender_id = u.id AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND is_read = 0) as unread_count
+                    (SELECT COUNT(*) FROM messages WHERE sender_id = u.id AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')) AND is_read = 0) as unread_count
                 FROM users u
                 JOIN messages m ON m.id = (
                     SELECT MAX(id) 
                     FROM messages 
-                    WHERE (sender_id = u.id AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')))
-                       OR (sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND receiver_id = u.id)
+                    WHERE (sender_id = u.id AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')))
+                       OR (sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')) AND receiver_id = u.id)
                 )
-                WHERE u.role NOT IN ('admin', 'owner', 'penjual', 'kasir')
+                WHERE u.role NOT IN ('admin', 'owner', 'penjual', 'kasir', 'seller')
                 ORDER BY m.created_at DESC
             `;
             params = [];
         } else {
-            // Logika Inbox untuk Pelanggan (Hanya menampilkan satu entitas "Toko")
+            // Query Super Akurat (Tanpa Cache)
             sql = `
                 SELECT 
-                    u.id as user_id, 
+                    SQL_NO_CACHE
+                    COALESCE((SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller') LIMIT 1), 1) as user_id, 
                     'Pusat Bantuan (Toko)' as username, 
-                    u.role,
-                    u.avatar_url,
-                    m.message as last_message, 
-                    m.created_at as last_message_time,
-                    (SELECT COUNT(*) FROM messages WHERE sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND receiver_id = ? AND is_read = 0) as unread_count
-                FROM users u
-                JOIN messages m ON m.id = (
-                    SELECT MAX(id) 
-                    FROM messages 
-                    WHERE (sender_id = ? AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')))
-                       OR (sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND receiver_id = ?)
-                )
-                WHERE u.id = m.sender_id OR u.id = m.receiver_id
-                LIMIT 1
+                    'admin' as role,
+                    (SELECT message FROM messages WHERE (sender_id = ? OR receiver_id = ?) ORDER BY id DESC LIMIT 1) as last_message,
+                    (SELECT created_at FROM messages WHERE (sender_id = ? OR receiver_id = ?) ORDER BY id DESC LIMIT 1) as last_message_time,
+                    COALESCE((SELECT COUNT(*) FROM messages WHERE receiver_id = ? AND is_read = 0), 0) as unread_count
             `;
-            params = [myId, myId, myId];
+            params = [myId, myId, myId, myId, myId];
         }
 
         const [rows] = await db.query(sql, params);
@@ -6275,16 +6374,16 @@ app.put("/api/messages/read/:senderId", authenticateToken, async (req, res) => {
         const { senderId } = req.params;
         const myId = req.user.userId;
         const myRole = req.user.role;
-        const isSeller = ['admin', 'owner', 'penjual', 'kasir'].includes(myRole);
+        const isSeller = ['admin', 'owner', 'penjual', 'kasir', 'seller'].includes(myRole);
 
         let sql;
         if (isSeller) {
             // Jika dibaca oleh salah satu SELLER, tandai pesan dari PELANGGAN ini (senderId) sudah dibaca oleh TIM SELLER
-            sql = "UPDATE messages SET is_read = 1 WHERE sender_id = ? AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND is_read = 0";
+            sql = "UPDATE messages SET is_read = 1 WHERE sender_id = ? AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')) AND is_read = 0";
             await db.query(sql, [senderId]);
         } else {
-            // Jika dibaca oleh PELANGGAN, tandai SEMUA pesan dari SELURUH TIM SELLER ke Pelanggan ini sebagai sudah dibaca
-            sql = "UPDATE messages SET is_read = 1 WHERE sender_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')) AND receiver_id = ? AND is_read = 0";
+            // Jika dibaca oleh PELANGGAN, tandai SEMUA pesan ke Pelanggan ini sebagai sudah dibaca (Sapu bersih)
+            sql = "UPDATE messages SET is_read = 1 WHERE receiver_id = ? AND is_read = 0";
             await db.query(sql, [myId]);
         }
 
@@ -6306,8 +6405,8 @@ app.get("/api/messages/contacts", authenticateToken, async (req, res) => {
     try {
         let sql;
         if (req.user.role === 'pelanggan' || req.user.role === 'user' || req.user.role === 'keluarga') {
-            // Pelanggan/User/Keluarga hanya bisa melihat Admin, Owner, Penjual, dan Kasir
-            sql = "SELECT id, username, role, avatar_url FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir')";
+            // Pelanggan/User/Keluarga hanya bisa melihat Admin, Owner, Penjual, Kasir, dan Seller
+            sql = "SELECT id, username, role, avatar_url FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')";
         } else {
             // Admin/Owner/Penjual/Kasir bisa melihat semua tipe pelanggan
             sql = "SELECT id, username, role, avatar_url FROM users WHERE role IN ('pelanggan', 'user', 'keluarga', 'guest')";
@@ -6401,7 +6500,7 @@ app.put("/api/user/notification-settings", authenticateToken, async (req, res) =
 // --- Promo Management Endpoints ---
 
 // Get all promos (Seller/Admin view - including inactive)
-app.get("/api/promos", authenticateToken, authorizeRoles('admin', 'owner', 'penjual'), async (req, res) => {
+app.get("/api/promos", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
     try {
         const sql = "SELECT * FROM promos ORDER BY created_at DESC";
         const [rows] = await db.query(sql);
@@ -6423,7 +6522,7 @@ app.get("/api/customer/promos", async (req, res) => {
 });
 
 // Add new promo
-app.post("/api/promos", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+app.post("/api/promos", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
     try {
         const { title, description, code, icon, color, expiry, is_active, discount_value, discount_type, min_purchase, is_hero, image_url, badge_text, is_one_time } = req.body;
         if (!title && !is_hero) { // Title mandatory unless it's a banner (sometimes banners have no title)
@@ -6475,7 +6574,7 @@ app.post("/api/promos", authenticateToken, authorizeRoles('admin', 'owner'), asy
 });
 
 // Update promo
-app.put("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+app.put("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
     try {
         const { id } = req.params;
         const { title, description, code, icon, color, expiry, is_active, discount_value, discount_type, min_purchase, is_hero, image_url, badge_text, is_one_time } = req.body;
@@ -6530,7 +6629,7 @@ app.put("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner'), 
 });
 
 // Delete promo
-app.delete("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+app.delete("/api/promos/:id", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir'), async (req, res) => {
     try {
         const { id } = req.params;
         const [promo] = await db.query("SELECT title FROM promos WHERE id = ?", [id]);
@@ -6671,6 +6770,489 @@ app.get("/api/promos/:id/usage", authenticateToken, authorizeRoles('admin', 'own
         });
     } catch (err) {
         console.error("Error fetching promo usage:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- Financial Report Endpoint ---
+app.get("/api/reports/financial-summary", authenticateToken, authorizeRoles('admin', 'owner', 'penjual'), async (req, res) => {
+    try {
+        let { startDate, endDate } = req.query;
+        if (!startDate || !endDate) {
+            return res.status(400).json({ error: "StartDate and EndDate are required" });
+        }
+
+        // 1. Get Transactions (Omzet & Sales Volume)
+        // Exclude 'employee_meal' if that's considered internal use, or include it if it's revenue (usually internal use is cost).
+        // Based on logic in BusinessReports.js, revenue excludes employee_meal.
+        const transSql = `
+            SELECT t.total, t.items
+            FROM transactions t
+            WHERE t.timestamp BETWEEN ? AND ?
+            AND (t.payment_method != 'employee_meal' OR t.payment_method IS NULL)
+        `;
+        const [transactions] = await db.query(transSql, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
+
+        let totalRevenue = 0;
+        let totalCOGS = 0; // Cost of Goods Sold
+
+        // Helper Map for HPP to calculate COGS
+        // We use CURRENT HPP because historical HPP is not stored in transaction items
+        const [menuItems] = await db.query("SELECT id, name, hpp, stock FROM menu_items");
+        const hppMap = new Map();
+        menuItems.forEach(m => {
+            // Map by ID
+            hppMap.set(String(m.id), parseFloat(m.hpp || 0));
+            // Map by Name as fallback
+            hppMap.set(m.name, parseFloat(m.hpp || 0));
+        });
+
+        transactions.forEach(t => {
+            totalRevenue += parseFloat(t.total || 0);
+            let items = [];
+            try { items = typeof t.items === 'string' ? JSON.parse(t.items) : t.items; } catch (e) { }
+
+            if (Array.isArray(items)) {
+                items.forEach(item => {
+                    // Try to find HPP
+                    let hpp = 0;
+                    if (item.id && hppMap.has(String(item.id))) {
+                        hpp = hppMap.get(String(item.id));
+                    } else if (item.name && hppMap.has(item.name)) {
+                        hpp = hppMap.get(item.name);
+                    }
+
+                    const qty = parseInt(item.quantity || item.qty || 0);
+                    totalCOGS += (hpp * qty);
+                });
+            }
+        });
+
+        // 2. Get Expenses (Operational Costs)
+        const expSql = `
+            SELECT SUM(amount) as total
+            FROM expenses
+            WHERE date BETWEEN ? AND ?
+        `;
+        const [expRows] = await db.query(expSql, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
+        const totalExpenses = parseFloat(expRows[0]?.total || 0);
+
+        // 3. Asset Value (Nilai Kekayaan Stok / Inventory Value)
+        let totalMenuAsset = 0;
+        let totalMenuAssetSellPrice = 0;
+
+        // We already fetched menuItems above
+        menuItems.forEach(m => {
+            const stock = parseFloat(m.stock || 0);
+            if (stock > 0) {
+                totalMenuAsset += (stock * parseFloat(m.hpp || 0)); // Asset at Cost
+                // We could also calculate Asset at Retail Price if needed
+            }
+        });
+
+        // Raw Materials Asset
+        const [rawMaterials] = await db.query("SELECT current_stock, price_per_item FROM raw_materials");
+        let totalRawMaterialAsset = 0;
+        rawMaterials.forEach(r => {
+            const stock = parseFloat(r.current_stock || 0);
+            if (stock > 0) {
+                totalRawMaterialAsset += (stock * parseFloat(r.price_per_item || 0));
+            }
+        });
+
+        const grossProfit = totalRevenue - totalCOGS; // Laba Kotor (Revenue - HPP)
+        const netProfit = grossProfit - totalExpenses; // Laba Bersih (Accrual-ish approximation)
+        const netCashFlow = totalRevenue - totalExpenses; // Cash Flow Basis
+
+        res.json({
+            message: "success",
+            data: {
+                period: { startDate, endDate },
+                revenue: totalRevenue,              // Omzet / Pendapatan Penjualan
+                cogs: totalCOGS,                    // HPP Terjual (Estimasi)
+                grossProfit: grossProfit,           // Laba Kotor
+                expenses: totalExpenses,            // Total Pengeluaran Operasional
+                netProfit: netProfit,               // Laba Bersih (Revenue - HPP - Expenses)
+                netCashFlow: netCashFlow,           // Arus Kas Bersih (Revenue - Expenses)
+                assets: {
+                    menu: totalMenuAsset,           // Nilai Stok Barang Jadi (based on HPP)
+                    rawMaterial: totalRawMaterialAsset, // Nilai Stok Bahan Baku
+                    total: totalMenuAsset + totalRawMaterialAsset // Total Nilai Aset Stock
+                }
+            }
+        });
+
+    } catch (err) {
+        console.error("Error financial summary:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- Popup Management Endpoints ---
+
+// Get all popups (for seller/admin management)
+app.get("/api/popups", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir', 'seller'), async (req, res) => {
+    try {
+        const sql = `
+            SELECT * FROM popups 
+            ORDER BY priority DESC, created_at DESC
+        `;
+        const [rows] = await db.query(sql);
+
+        res.json({
+            message: "success",
+            data: rows.map(row => {
+                let show_on_pages = [];
+                if (row.show_on_pages) {
+                    try {
+                        show_on_pages = typeof row.show_on_pages === 'string' ? JSON.parse(row.show_on_pages) : row.show_on_pages;
+                        // Handle potential double stringify
+                        if (typeof show_on_pages === 'string') {
+                            show_on_pages = JSON.parse(show_on_pages);
+                        }
+                    } catch (e) {
+                        console.error(`Error parsing show_on_pages for popup ${row.id}:`, e);
+                        show_on_pages = [];
+                    }
+                }
+                return {
+                    ...row,
+                    show_on_pages: Array.isArray(show_on_pages) ? show_on_pages : [],
+                    is_active: row.is_active === 1
+                };
+            })
+        });
+    } catch (err) {
+        console.error("Error fetching popups:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get active popups for customer (filtered by page)
+app.get("/api/popups/active", async (req, res) => {
+    try {
+        const { page } = req.query; // e.g., 'dashboard', 'menu', 'cart', 'profile'
+
+        let sql = `
+            SELECT id, title, image_url, link_type, link_value, show_on_pages, priority, last_pushed_at
+            FROM popups 
+            WHERE is_active = 1
+        `;
+
+        const [rows] = await db.query(sql);
+
+        // Filter by page if specified
+        let filteredPopups = rows;
+        if (page) {
+            filteredPopups = rows.filter(popup => {
+                if (!popup.show_on_pages) return true; // Show on all pages if not specified
+                try {
+                    let pages = typeof popup.show_on_pages === 'string'
+                        ? JSON.parse(popup.show_on_pages)
+                        : popup.show_on_pages;
+
+                    // Handle potential double stringify
+                    if (typeof pages === 'string') {
+                        pages = JSON.parse(pages);
+                    }
+
+                    return !pages || (Array.isArray(pages) && pages.length === 0) || (Array.isArray(pages) && pages.includes(page));
+                } catch (e) {
+                    console.error(`Error parsing show_on_pages in filter for popup ${popup.id}:`, e);
+                    return true; // Fallback to showing it
+                }
+            });
+        }
+
+        // Sort by priority
+        filteredPopups.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+
+        res.json({
+            message: "success",
+            data: filteredPopups.map(row => {
+                let show_on_pages = [];
+                if (row.show_on_pages) {
+                    try {
+                        show_on_pages = typeof row.show_on_pages === 'string' ? JSON.parse(row.show_on_pages) : row.show_on_pages;
+                        // Handle potential double stringify
+                        if (typeof show_on_pages === 'string') {
+                            show_on_pages = JSON.parse(show_on_pages);
+                        }
+                    } catch (e) {
+                        show_on_pages = [];
+                    }
+                }
+                return {
+                    ...row,
+                    show_on_pages: Array.isArray(show_on_pages) ? show_on_pages : []
+                };
+            })
+        });
+    } catch (err) {
+        console.error("Error fetching active popups:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Create new popup
+app.post("/api/popups", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir', 'seller'), upload.single('image'), async (req, res) => {
+    try {
+        let popupData;
+
+        if (req.body.data) {
+            try {
+                popupData = typeof req.body.data === 'string' ? JSON.parse(req.body.data) : req.body.data;
+            } catch (err) {
+                console.error("Failed to parse req.body.data:", err);
+                popupData = req.body;
+            }
+        } else {
+            popupData = req.body;
+        }
+
+        const { title, link_type, link_value, show_on_pages, priority, is_active } = popupData;
+
+        if (!title) {
+            return res.status(400).json({ error: "Title is required" });
+        }
+
+        const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
+
+        // Fix double stringify bug
+        let pages_json;
+        if (typeof show_on_pages === 'string') {
+            pages_json = show_on_pages; // Already a string from client
+        } else {
+            pages_json = JSON.stringify(show_on_pages || []);
+        }
+
+        const final_is_active = is_active !== undefined ? (is_active == 'true' || is_active === true || is_active == 1 ? 1 : 0) : 1;
+        const final_priority = priority !== undefined ? parseInt(priority) : 0;
+
+        const sql = `
+            INSERT INTO popups (title, image_url, link_type, link_value, show_on_pages, priority, is_active)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        const [result] = await db.query(sql, [
+            title,
+            image_url,
+            link_type || 'none',
+            link_value || null,
+            pages_json,
+            final_priority,
+            final_is_active
+        ]);
+
+        await logActivity(req.user.userId, 'Tambah Popup', 'popup', result.insertId, `Popup baru: ${title}`);
+
+        res.status(201).json({
+            message: "success",
+            data: {
+                id: result.insertId,
+                title,
+                image_url,
+                link_type: link_type || 'none',
+                link_value: link_value || null,
+                show_on_pages: show_on_pages || [],
+                priority: final_priority,
+                is_active: final_is_active
+            }
+        });
+    } catch (err) {
+        console.error("Error creating popup:", err);
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Update popup
+app.put("/api/popups/:id", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir', 'seller'), upload.single('image'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        let popupData;
+
+        if (req.body.data) {
+            try {
+                popupData = typeof req.body.data === 'string' ? JSON.parse(req.body.data) : req.body.data;
+            } catch (err) {
+                console.error("Failed to parse req.body.data:", err);
+                popupData = req.body;
+            }
+        } else {
+            popupData = req.body;
+        }
+
+        const { title, link_type, link_value, show_on_pages, priority, is_active, remove_image } = popupData;
+
+        // Fetch current popup for image cleanup
+        const [currentPopup] = await db.query('SELECT image_url FROM popups WHERE id = ?', [id]);
+
+        if (currentPopup.length === 0) {
+            return res.status(404).json({ error: "Popup not found" });
+        }
+
+        let sql = 'UPDATE popups SET title = ?, link_type = ?, link_value = ?, show_on_pages = ?, priority = ?, is_active = ?';
+
+        // Fix double stringify bug
+        let pages_json;
+        if (typeof show_on_pages === 'string') {
+            pages_json = show_on_pages; // Already a string from client
+        } else {
+            pages_json = JSON.stringify(show_on_pages || []);
+        }
+
+        const final_is_active = is_active !== undefined ? (is_active == 'true' || is_active === true || is_active == 1 ? 1 : 0) : 1;
+        const final_priority = priority !== undefined ? parseInt(priority) : 0;
+
+        let params = [
+            title,
+            link_type || 'none',
+            link_value || null,
+            pages_json,
+            final_priority,
+            final_is_active
+        ];
+
+        if (req.file) {
+            const image_url = `/public/uploads/${req.file.filename}`;
+            sql += ', image_url = ?';
+            params.push(image_url);
+
+            // Delete old image
+            if (currentPopup[0].image_url) {
+                const oldPath = path.join(__dirname, currentPopup[0].image_url);
+                if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+            }
+        } else if (remove_image === true || remove_image === 'true') {
+            sql += ', image_url = NULL';
+            // Delete old image
+            if (currentPopup[0].image_url) {
+                const oldPath = path.join(__dirname, currentPopup[0].image_url);
+                if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+            }
+        }
+
+        sql += ' WHERE id = ?';
+        params.push(id);
+
+        await db.query(sql, params);
+        await logActivity(req.user.userId, 'Update Popup', 'popup', id, `Popup ID ${id} diperbarui`);
+
+        res.json({
+            message: "success",
+            data: { id, ...popupData, is_active: final_is_active, priority: final_priority }
+        });
+    } catch (err) {
+        console.error("Error updating popup:", err);
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Delete popup
+app.delete("/api/popups/:id", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir', 'seller'), async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Fetch image_url for cleanup
+        const [rows] = await db.query('SELECT image_url FROM popups WHERE id = ?', [id]);
+        if (rows.length > 0 && rows[0].image_url) {
+            const imagePath = path.join(__dirname, rows[0].image_url);
+            if (fs.existsSync(imagePath)) {
+                fs.unlinkSync(imagePath);
+            }
+        }
+
+        const sql = 'DELETE FROM popups WHERE id = ?';
+        await db.query(sql, [id]);
+        await logActivity(req.user.userId, 'Hapus Popup', 'popup', id, `Popup ID ${id} dihapus`);
+
+        res.json({ message: "success" });
+    } catch (err) {
+        console.error("Error deleting popup:", err);
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Push popup (update last_pushed_at to make it appear again for users)
+app.post("/api/popups/:id/push", authenticateToken, authorizeRoles('admin', 'owner', 'penjual', 'kasir', 'seller'), async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const sql = 'UPDATE popups SET last_pushed_at = NOW() WHERE id = ?';
+        const [result] = await db.query(sql, [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Popup not found" });
+        }
+
+        await logActivity(req.user.userId, 'Push Popup', 'popup', id, `Popup ID ${id} di-push ulang`);
+
+        res.json({
+            message: "Popup berhasil di-push ulang",
+            data: { id, last_pushed_at: new Date() }
+        });
+    } catch (err) {
+        console.error("Error pushing popup:", err);
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Track popup view
+app.post("/api/popups/:id/view", async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const sql = 'UPDATE popups SET view_count = view_count + 1 WHERE id = ?';
+        await db.query(sql, [id]);
+
+        res.json({ message: "success" });
+    } catch (err) {
+        console.error("Error tracking popup view:", err);
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Track popup click
+app.post("/api/popups/:id/click", async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const sql = 'UPDATE popups SET click_count = click_count + 1 WHERE id = ?';
+        await db.query(sql, [id]);
+
+        res.json({ message: "success" });
+    } catch (err) {
+        console.error("Error tracking popup click:", err);
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Get popup statistics
+app.get("/api/popups/:id/stats", authenticateToken, authorizeRoles('admin', 'penjual', 'seller'), async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const sql = 'SELECT view_count, click_count, last_pushed_at FROM popups WHERE id = ?';
+        const [rows] = await db.query(sql, [id]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Popup not found" });
+        }
+
+        const stats = rows[0];
+        const ctr = stats.view_count > 0 ? (stats.click_count / stats.view_count * 100).toFixed(2) : 0;
+
+        res.json({
+            message: "success",
+            data: {
+                view_count: stats.view_count,
+                click_count: stats.click_count,
+                ctr: parseFloat(ctr),
+                last_pushed_at: stats.last_pushed_at
+            }
+        });
+    } catch (err) {
+        console.error("Error fetching popup stats:", err);
         res.status(500).json({ error: err.message });
     }
 });

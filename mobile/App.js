@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, View, Text, StatusBar, ActivityIndicator } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
+// import * as Updates from 'expo-updates'; // Dimatikan sementara untuk mencegah error native module di dev build
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -57,10 +58,32 @@ const MainApp = () => {
 
 export default function App() {
   useEffect(() => {
-    // Sembunyikan splash screen setelah 3 detik
+    // Jalankan pengecekan OTA (Saat ini dinonaktifkan karena build development belum mendukung)
+    /*
+    async function onFetchUpdateAsync() {
+      try {
+        const Updates = require('expo-updates');
+        if (Updates.isEnabled) {
+          const update = await Updates.checkForUpdateAsync();
+          if (update.isAvailable) {
+            await Updates.fetchUpdateAsync();
+            await Updates.reloadAsync();
+          }
+        }
+      } catch (error) {
+        console.log("OTA update check skipped or failed:", error.message);
+      }
+    }
+
+    if (!__DEV__) {
+      onFetchUpdateAsync();
+    }
+    */
+
+    // Sembunyikan splash screen setelah 1 detik
     const timer = setTimeout(async () => {
       await SplashScreen.hideAsync();
-    }, 2000);
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, []);

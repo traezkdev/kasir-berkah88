@@ -1,1 +1,31 @@
-ulang modal ini dengan desain yang jauh lebih modern, premium, dan native style dengan gradient header, better form layout, dan animasi yang smooth:
+Saya menggunakan React Native dengan Expo development build untuk aplikasi mobile Android/iOS.
+Saya tidak menggunakan Expo Web Preview sebagai acuan utama.
+Mohon setiap solusi, layout, dan debugging difokuskan ke native mobile environment.
+
+
+Saya memiliki aplikasi React Native besar dengan banyak screen dan komponen kompleks.
+
+Jangan refactor seluruh project sekaligus.
+
+Lakukan perbaikan UI secara bertahap per screen tanpa merusak flow aplikasi.
+
+Untuk setiap kode yang saya kirim:
+
+Buat layout responsive semua device
+
+Hilangkan ukuran pixel tetap
+
+Gunakan Flexbox best practice
+
+Gunakan SafeAreaView dan ScrollView bila perlu
+
+Pastikan modal tidak tenggelam dan text tidak terpotong
+
+Jangan ubah logic business.
+Fokus hanya pada UI & responsiveness.
+
+Kembalikan hanya kode yang sudah diperbaiki.
+
+
+
+eas update --branch preview --message "Memperbaiki tampilan header"

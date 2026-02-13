@@ -46,6 +46,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import apiService, { API_URL } from '../../api/apiService';
+import usePopups from '../../hooks/usePopups';
+import PopupModal from '../../components/PopupModal';
 
 const { width } = Dimensions.get('window');
 
@@ -112,6 +114,7 @@ const CustomerCart = ({ navigation }) => {
     const { user } = useAuth();
     const { showToast } = useToast();
     const { confirm } = useConfirm();
+    const { popups } = usePopups('cart');
 
     const [loading, setLoading] = useState(false);
     const [notes, setNotes] = useState('');
@@ -427,7 +430,7 @@ const CustomerCart = ({ navigation }) => {
 
     return (
         <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
 
             {/* Header */}
             <View style={styles.header}>
@@ -853,6 +856,16 @@ const CustomerCart = ({ navigation }) => {
                     </View>
                 </View>
             </Modal>
+            {/* Popup System */}
+            <PopupModal
+                popups={popups}
+                currentPage="cart"
+                onClose={(screenName) => {
+                    if (screenName) {
+                        navigation.navigate(screenName);
+                    }
+                }}
+            />
         </SafeAreaView>
     );
 };

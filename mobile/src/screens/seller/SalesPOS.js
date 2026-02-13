@@ -9,7 +9,7 @@ import {
     TextInput,
     ActivityIndicator,
     Alert,
-    Dimensions,
+    useWindowDimensions,
     Platform,
     Modal,
     ScrollView,
@@ -36,7 +36,9 @@ import {
     QrCode,
     Banknote,
     PackageX,
-    ArrowRight
+    ArrowRight,
+    LayoutGrid,
+    List
 } from 'lucide-react-native';
 // LinearGradient removed to avoid native module errors
 import apiService, { API_URL } from '../../api/apiService';
@@ -44,18 +46,16 @@ import ReceiptModal from '../../components/ReceiptModal';
 import ModernLoader from '../../components/ModernLoader';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useAppSettings } from '../../context/AppSettingsContext';
-
-// LinearGradient wrapper removed
-
-const { width, height } = Dimensions.get('window');
-const COLUMN_WIDTH = (width - 48) / 2;
+import { useOrderNotification } from '../../context/OrderNotificationContext';
 
 // Komponen Item yang dimemoize untuk performa (Anti-Delay)
-const ProductCardItem = React.memo(({ item, qty, addToCart, ignoreStock, formatCurrency, isOutOfStock }) => {
+const ProductCardItem = React.memo(({ item, qty, addToCart, ignoreStock, formatCurrency, isOutOfStock, viewMode }) => {
+    const isList = viewMode === 'list';
+
     return (
         <Pressable
             style={({ pressed }) => [
-                styles.productCard,
+                isList ? styles.productCardList : styles.productCard,
                 isOutOfStock && !ignoreStock && styles.outOfStockCard,
                 qty > 0 && styles.selectedProductCard,
                 pressed && { transform: [{ scale: 0.98 }] }
@@ -63,7 +63,7 @@ const ProductCardItem = React.memo(({ item, qty, addToCart, ignoreStock, formatC
             onPress={() => (ignoreStock || !isOutOfStock) && addToCart(item)}
             disabled={isOutOfStock && !ignoreStock}
         >
-            <View style={styles.imageWrapper}>
+            <View style={isList ? styles.imageWrapperList : styles.imageWrapper}>
                 {item.image_url ? (
                     <Image
                         source={{ uri: `${API_URL}${item.image_url}` }}
@@ -71,29 +71,40 @@ const ProductCardItem = React.memo(({ item, qty, addToCart, ignoreStock, formatC
                     />
                 ) : (
                     <View style={styles.placeholderImg}>
-                        <ShoppingCart size={30} color="#CBD5E1" />
-                    </View>
-                )}
-                {qty > 0 && (
-                    <View style={styles.qtyBadge}>
-                        <Text style={qtyBadgeTextStyles}>{qty}</Text>
+                        <ShoppingCart size={isList ? 24 : 30} color="#CBD5E1" />
                     </View>
                 )}
                 {item.discount > 0 && (
-                    <View style={styles.discountBadge}>
+                    <View style={isList ? styles.discountBadgeList : styles.discountBadge}>
                         <Text style={styles.discountText}>{Math.round(item.discount)}%</Text>
                     </View>
                 )}
             </View>
-            <View style={styles.productInfo}>
-                <Text style={styles.productCat}>{item.category}</Text>
-                <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
-                <Text style={styles.productPrice}>{formatCurrency(item.price)}</Text>
-                <View style={styles.stockInfo}>
-                    <View style={[styles.stockDot, { backgroundColor: isOutOfStock ? '#EF4444' : '#22C55E' }]} />
-                    <Text style={styles.stockText}>Stok: {item.stock ?? '∞'}</Text>
+
+            <View style={isList ? styles.productInfoList : styles.productInfo}>
+                <View style={{ flex: 1 }}>
+                    <Text style={styles.productCat}>{item.category}</Text>
+                    <Text style={isList ? styles.productNameList : styles.productName} numberOfLines={2} ellipsizeMode="tail">{item.name}</Text>
+                </View>
+
+                {isList && (
+                    <View style={styles.verticalDividerList} />
+                )}
+
+                <View style={isList ? { alignItems: 'center' } : {}}>
+                    <Text style={isList ? styles.productPriceList : styles.productPrice}>{formatCurrency(item.price)}</Text>
+                    <View style={styles.stockInfo}>
+                        <View style={[styles.stockDot, { backgroundColor: isOutOfStock ? '#EF4444' : '#22C55E' }]} />
+                        <Text style={styles.stockText}>Stok: {item.stock ?? '∞'}</Text>
+                    </View>
                 </View>
             </View>
+
+            {qty > 0 && (
+                <View style={isList ? styles.qtyBadgeList : styles.qtyBadge}>
+                    <Text style={qtyBadgeTextStyles}>{qty}</Text>
+                </View>
+            )}
         </Pressable>
     );
 });
@@ -101,17 +112,46 @@ const ProductCardItem = React.memo(({ item, qty, addToCart, ignoreStock, formatC
 // Styles khusus untuk didalam memo agar tidak error
 const qtyBadgeTextStyles = {
     color: '#FFFFFF',
-    fontSize: 10,
+    fontSize: 14, // Increased font size
     fontWeight: 'bold',
 };
 
 const SalesPOS = () => {
+    const { width: windowWidth } = useWindowDimensions();
     const insets = useSafeAreaInsets();
+    const { refreshTrigger } = useOrderNotification();
     const [menuItems, setMenuItems] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [hasError, setHasError] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeCategory, setActiveCategory] = useState('Semua');
+    const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+
+    // Load viewMode from storage
+    useEffect(() => {
+        const loadViewMode = async () => {
+            try {
+                const savedMode = await AsyncStorage.getItem('salesPOS_viewMode');
+                if (savedMode) {
+                    setViewMode(savedMode);
+                }
+            } catch (error) {
+                console.error('Failed to load view mode', error);
+            }
+        };
+        loadViewMode();
+    }, []);
+
+    const toggleViewMode = async () => {
+        const newMode = viewMode === 'grid' ? 'list' : 'grid';
+        setViewMode(newMode);
+        try {
+            await AsyncStorage.setItem('salesPOS_viewMode', newMode);
+        } catch (error) {
+            console.error('Failed to save view mode', error);
+        }
+    };
 
     // Cart State
     const [cart, setCart] = useState([]);
@@ -187,11 +227,16 @@ const SalesPOS = () => {
 
             setMenuItems(fetchedMenuItems);
             setCategories(sortedCategories);
+            setHasError(false);
         } catch (error) {
             console.error('Error fetching POS data:', error);
+            setHasError(true);
             // Hanya tampilkan alert jika ini adalah percobaan pertama dan gagal
             if (menuItems.length === 0) {
-                Alert.alert('Error', 'Gagal memuat data menu');
+                Alert.alert('Gagal Memuat Data', 'Pastikan koneksi internet Anda stabil dan coba lagi.');
+            } else {
+                // Optional: silent toast instead? but let's be clear for now
+                console.log('Update failed silently');
             }
         } finally {
             setLoading(false);
@@ -201,7 +246,7 @@ const SalesPOS = () => {
     useFocusEffect(
         useCallback(() => {
             fetchData();
-        }, [])
+        }, [refreshTrigger])
     );
 
 
@@ -455,9 +500,10 @@ const SalesPOS = () => {
                 ignoreStock={ignoreStock}
                 formatCurrency={formatCurrency}
                 isOutOfStock={isOutOfStock}
+                viewMode={viewMode}
             />
         );
-    }, [cart, addToCart, ignoreStock, formatCurrency]);
+    }, [cart, addToCart, ignoreStock, formatCurrency, viewMode]);
 
     return (
         <View style={styles.container}>
@@ -478,14 +524,27 @@ const SalesPOS = () => {
                         />
                     </View>
                 </View>
-                <View style={styles.searchBar}>
-                    <Search size={20} color="#94A3B8" />
-                    <TextInput
-                        placeholder="Cari menu..."
-                        style={styles.searchInput}
-                        value={searchTerm}
-                        onChangeText={setSearchTerm}
-                    />
+
+                <View style={styles.searchRow}>
+                    <View style={styles.searchBar}>
+                        <Search size={20} color="#94A3B8" />
+                        <TextInput
+                            placeholder="Cari menu..."
+                            style={styles.searchInput}
+                            value={searchTerm}
+                            onChangeText={setSearchTerm}
+                        />
+                    </View>
+                    <TouchableOpacity
+                        style={styles.viewToggleBtn}
+                        onPress={toggleViewMode}
+                    >
+                        {viewMode === 'grid' ? (
+                            <List size={24} color="#64748B" />
+                        ) : (
+                            <LayoutGrid size={24} color="#64748B" />
+                        )}
+                    </TouchableOpacity>
                 </View>
             </View>
 
@@ -523,9 +582,10 @@ const SalesPOS = () => {
                 <ModernLoader type="grid" />
             ) : (
                 <FlatList
+                    key={viewMode} // Force re-render when switching modes
                     data={filteredItems}
                     keyExtractor={item => item.id.toString()}
-                    numColumns={2}
+                    numColumns={viewMode === 'grid' ? 2 : 1}
                     renderItem={renderMenuItem}
                     contentContainerStyle={styles.listContent}
                     refreshControl={
@@ -538,8 +598,24 @@ const SalesPOS = () => {
                     }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <ShoppingCart size={60} color="#E2E8F0" />
-                            <Text style={styles.emptyText}>Menu tidak ditemukan</Text>
+                            <ShoppingCart size={60} color={hasError ? "#EF4444" : "#E2E8F0"} />
+                            <Text style={styles.emptyText}>
+                                {hasError ? 'Gagal Memuat Menu' : 'Menu tidak ditemukan'}
+                            </Text>
+                            {hasError && (
+                                <TouchableOpacity
+                                    style={{
+                                        marginTop: 15,
+                                        backgroundColor: '#138FEA',
+                                        paddingHorizontal: 20,
+                                        paddingVertical: 10,
+                                        borderRadius: 10
+                                    }}
+                                    onPress={() => fetchData()}
+                                >
+                                    <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Coba Lagi</Text>
+                                </TouchableOpacity>
+                            )}
                         </View>
                     }
                 />
@@ -647,7 +723,7 @@ const SalesPOS = () => {
                                         {cart.map(item => (
                                             <View key={item.id} style={styles.cartItem}>
                                                 <View style={styles.cartItemLeft}>
-                                                    <Text style={styles.cartItemName}>{item.name}</Text>
+                                                    <Text style={styles.cartItemName} numberOfLines={2} ellipsizeMode="tail">{item.name}</Text>
                                                     <Text style={styles.cartItemPrice}>{formatCurrency(item.price)}</Text>
                                                 </View>
                                                 <View style={styles.cartItemRight}>
@@ -766,7 +842,7 @@ const SalesPOS = () => {
                                         )}
 
                                         <Text style={styles.sectionLabel}>DISKON MANUAL</Text>
-                                        <View style={[styles.cashInputWrapper, { paddingHorizontal: 0, marginBottom: 20 }]}>
+                                        <View style={[styles.cashInputWrapper, { paddingHorizontal: 0, marginBottom: 20, height: 50, minHeight: 'auto' }]}>
                                             <View style={styles.manualDiscountIconArea}>
                                                 <Text style={styles.discountIconText}>%</Text>
                                             </View>
@@ -845,11 +921,11 @@ const SalesPOS = () => {
 
                     {/* Modal Footer */}
                     <View style={[styles.modalFooter, { paddingBottom: getSafeBottomPadding(insets) }]}>
-                        <View style={{ gap: 8, marginBottom: 15 }}>
+                        <View style={{ gap: 4, marginBottom: 12 }}>
                             {parseFloat(manualDiscount || 0) > 0 && (
                                 <View style={styles.totalRow}>
-                                    <Text style={[styles.totalLabel, { color: '#64748B' }]}>Subtotal</Text>
-                                    <Text style={[styles.totalLabel, { color: '#64748B' }]}>{formatCurrency(subtotal)}</Text>
+                                    <Text style={{ color: '#64748B', fontSize: 14, fontWeight: 'bold' }}>Subtotal</Text>
+                                    <Text style={{ color: '#64748B', fontSize: 14, fontWeight: 'bold' }}>{formatCurrency(subtotal)}</Text>
                                 </View>
                             )}
                             {parseFloat(manualDiscount || 0) > 0 && (
@@ -859,7 +935,7 @@ const SalesPOS = () => {
                                             <Text style={{ color: '#EF4444', fontSize: 10, fontWeight: 'bold' }}>DISKON</Text>
                                         </View>
                                     </View>
-                                    <Text style={{ color: '#EF4444', fontWeight: 'bold' }}>-{formatCurrency(parseFloat(manualDiscount))}</Text>
+                                    <Text style={{ color: '#EF4444', fontSize: 14, fontWeight: 'bold' }}>-{formatCurrency(parseFloat(manualDiscount))}</Text>
                                 </View>
                             )}
                             {usePoints && pointsToUse > 0 && (
@@ -869,7 +945,7 @@ const SalesPOS = () => {
                                             <Text style={{ color: '#2563EB', fontSize: 10, fontWeight: 'bold' }}>POIN</Text>
                                         </View>
                                     </View>
-                                    <Text style={{ color: '#2563EB', fontWeight: 'bold' }}>-{formatCurrency(pointsToUse)}</Text>
+                                    <Text style={{ color: '#2563EB', fontSize: 14, fontWeight: 'bold' }}>-{formatCurrency(pointsToUse)}</Text>
                                 </View>
                             )}
                         </View>
@@ -928,67 +1004,66 @@ const SalesPOS = () => {
             <Modal
                 visible={showCustomerSearch}
                 animationType="slide"
-                transparent={true}
+                transparent={false}
                 onRequestClose={() => setShowCustomerSearch(false)}
             >
-                <View style={styles.customerSearchOverlay}>
-                    <View style={styles.customerSearchContainer}>
-                        <View style={[styles.customerSearchHeader, { paddingTop: Math.max(insets.top, 20) }]}>
-                            <Text style={styles.customerSearchTitle}>Cari Pelanggan</Text>
-                            <TouchableOpacity onPress={() => {
-                                setShowCustomerSearch(false);
-                                setIsCustomerSearchReady(false);
-                            }}>
-                                <X size={24} color="#64748B" />
-                            </TouchableOpacity>
-                        </View>
-
-                        <View style={styles.customerSearchBar}>
-                            <Search size={20} color="#94A3B8" />
-                            <TextInput
-                                style={styles.customerSearchInput}
-                                placeholder="Nama atau No. HP"
-                                value={customerSearchQuery}
-                                onChangeText={(text) => {
-                                    setCustomerSearchQuery(text);
-                                }}
-                                autoFocus
-                            />
-                        </View>
-
-                        {!isCustomerSearchReady ? (
-                            <ActivityIndicator style={{ marginTop: 40 }} color="#2563EB" />
-                        ) : (
-                            <FlatList
-                                data={customerSearchResults}
-                                keyExtractor={item => item.id.toString()}
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity
-                                        style={styles.customerSearchResultItem}
-                                        onPress={() => handleSelectCustomer(item)}
-                                    >
-                                        <View>
-                                            <Text style={styles.resultName}>{item.name || item.username}</Text>
-                                            <Text style={styles.resultPhone}>{item.phone}</Text>
-                                        </View>
-                                        <View style={{ alignItems: 'flex-end' }}>
-                                            <Text style={styles.resultPoints}>{formatCurrency(item.points)}</Text>
-                                            <Text style={{ fontSize: 10, color: '#94A3B8' }}>Poin</Text>
-                                        </View>
-                                    </TouchableOpacity>
-                                )}
-                                ListEmptyComponent={() => (
-                                    isSearchingCustomer ? (
-                                        <ActivityIndicator style={{ marginTop: 20 }} color="#2563EB" />
-                                    ) : (
-                                        <View style={{ padding: 20, alignItems: 'center' }}>
-                                            <Text style={{ color: '#94A3B8' }}>Tidak ada hasil</Text>
-                                        </View>
-                                    )
-                                )}
-                            />
-                        )}
+                <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+                <View style={styles.customerSearchContainer}>
+                    <View style={[styles.customerSearchHeader, { paddingTop: Math.max(insets.top + 15, 35) }]}>
+                        <Text style={styles.customerSearchTitle}>Cari Pelanggan</Text>
+                        <TouchableOpacity onPress={() => {
+                            setShowCustomerSearch(false);
+                            setIsCustomerSearchReady(false);
+                        }}>
+                            <X size={24} color="#64748B" />
+                        </TouchableOpacity>
                     </View>
+
+                    <View style={styles.customerSearchBar}>
+                        <Search size={20} color="#94A3B8" />
+                        <TextInput
+                            style={styles.customerSearchInput}
+                            placeholder="Nama atau No. HP"
+                            value={customerSearchQuery}
+                            onChangeText={(text) => {
+                                setCustomerSearchQuery(text);
+                            }}
+                            autoFocus
+                        />
+                    </View>
+
+                    {!isCustomerSearchReady ? (
+                        <ActivityIndicator style={{ marginTop: 40 }} color="#2563EB" />
+                    ) : (
+                        <FlatList
+                            data={customerSearchResults}
+                            keyExtractor={item => item.id.toString()}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={styles.customerSearchResultItem}
+                                    onPress={() => handleSelectCustomer(item)}
+                                >
+                                    <View>
+                                        <Text style={styles.resultName} numberOfLines={1} ellipsizeMode="tail">{item.name || item.username}</Text>
+                                        <Text style={styles.resultPhone}>{item.phone}</Text>
+                                    </View>
+                                    <View style={{ alignItems: 'flex-end' }}>
+                                        <Text style={styles.resultPoints}>{formatCurrency(item.points)}</Text>
+                                        <Text style={{ fontSize: 10, color: '#94A3B8' }}>Poin</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            )}
+                            ListEmptyComponent={() => (
+                                isSearchingCustomer ? (
+                                    <ActivityIndicator style={{ marginTop: 20 }} color="#2563EB" />
+                                ) : (
+                                    <View style={{ padding: 20, alignItems: 'center' }}>
+                                        <Text style={{ color: '#94A3B8' }}>Tidak ada hasil</Text>
+                                    </View>
+                                )
+                            )}
+                        />
+                    )}
                 </View>
             </Modal>
         </View>
@@ -1008,10 +1083,11 @@ const styles = StyleSheet.create({
     header: {
         backgroundColor: '#FFFFFF',
         paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : (Platform.OS === 'web' ? 15 : 20),
-        paddingHorizontal: 20,
+        paddingHorizontal: '5%',
         paddingBottom: 15,
         borderBottomWidth: 1,
         borderBottomColor: '#F1F5F9',
+        minHeight: 140,
     },
     title: {
         fontSize: 24,
@@ -1020,6 +1096,7 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     searchBar: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F1F5F9',
@@ -1039,7 +1116,7 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
     },
     catScroll: {
-        paddingHorizontal: 20,
+        paddingHorizontal: '5%',
         gap: 10,
     },
     catBtn: {
@@ -1063,41 +1140,136 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
     },
     listContent: {
-        padding: 15,
+        padding: '3%',
         paddingBottom: 100,
     },
+    // List View Styles
+    productCardList: {
+        backgroundColor: '#FFFFFF',
+        width: '100%',
+        marginBottom: 12,
+        borderRadius: 20, // Slightly more rounded
+        padding: 12, // Increased padding for breathability
+        borderWidth: 1,
+        borderColor: '#E2E8F0', // Softer border color
+        flexDirection: 'row',
+        alignItems: 'center',
+        ...Platform.select({
+            web: { boxShadow: '0px 4px 6px -1px rgba(0,0,0,0.05), 0px 2px 4px -1px rgba(0,0,0,0.03)' }, // Modern soft shadow
+            android: { elevation: 2 }
+        })
+    },
+    imageWrapperList: {
+        width: '22%',
+        aspectRatio: 1,
+        borderRadius: 16,
+        overflow: 'hidden',
+        backgroundColor: '#F1F5F9',
+        marginRight: 16,
+        position: 'relative',
+        borderWidth: 1,
+        borderColor: '#F8FAFC',
+    },
+    productInfoList: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+    },
+    verticalDividerList: {
+        width: 2,
+        alignSelf: 'stretch',
+        backgroundColor: '#CBD5E1',
+        marginHorizontal: 8,
+    },
+    productNameList: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#1E293B',
+        marginBottom: 4,
+    },
+    productPriceList: {
+        fontSize: 16,
+        fontWeight: '900',
+        color: '#0F172A',
+        marginBottom: 4,
+    },
+    discountBadgeList: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        backgroundColor: '#EF4444',
+        paddingHorizontal: 6,
+        paddingVertical: 3,
+        borderBottomRightRadius: 8,
+    },
+    qtyBadgeList: {
+        position: 'absolute',
+        top: -8,
+        right: -8,
+        backgroundColor: '#2563EB',
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
+        zIndex: 10,
+    },
+    searchRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    viewToggleBtn: {
+        width: 50,
+        height: 50,
+        backgroundColor: '#F1F5F9',
+        borderRadius: 15,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    // End List Styles
+
     productCard: {
         backgroundColor: '#FFFFFF',
-        width: COLUMN_WIDTH,
-        margin: 7,
+        flex: 1,
+        maxWidth: '48%',
+        marginHorizontal: '1%',
+        marginVertical: 6,
         borderRadius: 20,
-        padding: 12,
+        padding: 10,
         borderWidth: 1,
         borderColor: '#F1F5F9',
         ...Platform.select({
-            web: { boxShadow: '0px 2px 8px rgba(0,0,0,0.05)' },
-            android: { elevation: 2 }
+            web: { boxShadow: '0px 2px 8px rgba(0,0,0,0.04)' },
+            android: { elevation: 3 }
         })
     },
     selectedProductCard: {
         borderColor: '#2563EB',
         borderWidth: 2,
-        backgroundColor: '#F0F7FF',
+        backgroundColor: '#F8FAFC',
+        transform: [{ scale: 0.98 }]
     },
     outOfStockCard: {
         opacity: 0.6,
+        backgroundColor: '#F1F5F9'
     },
     imageWrapper: {
         width: '100%',
-        height: 110,
-        borderRadius: 15,
+        aspectRatio: 1.2,
+        borderRadius: 14,
         overflow: 'hidden',
         backgroundColor: '#F8FAFC',
         position: 'relative',
+        marginBottom: 8,
     },
     productImage: {
         width: '100%',
         height: '100%',
+        resizeMode: 'cover',
     },
     placeholderImg: {
         flex: 1,
@@ -1106,91 +1278,101 @@ const styles = StyleSheet.create({
     },
     qtyBadge: {
         position: 'absolute',
-        top: 5,
-        right: 5,
+        bottom: 10,
+        right: 10,
         backgroundColor: '#2563EB',
-        width: 24,
-        height: 24,
-        borderRadius: 12,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 2,
         borderColor: '#FFFFFF',
+        zIndex: 10,
     },
     qtyBadgeText: {
         color: '#FFFFFF',
-        fontSize: 10,
+        fontSize: 14,
         fontWeight: 'bold',
     },
     discountBadge: {
         position: 'absolute',
-        bottom: 0,
-        left: 0,
+        bottom: 6,
+        left: 6,
         backgroundColor: '#EF4444',
         paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderTopRightRadius: 10,
+        paddingVertical: 3,
+        borderRadius: 6,
     },
     discountText: {
         color: '#FFFFFF',
-        fontSize: 10,
-        fontWeight: '900',
+        fontSize: 9,
+        fontWeight: 'bold',
     },
     productInfo: {
-        marginTop: 10,
+        padding: 2,
     },
     productCat: {
-        fontSize: 9,
-        fontWeight: '900',
+        fontSize: 10,
+        fontWeight: 'bold',
         color: '#2563EB',
+        backgroundColor: '#EFF6FF',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+        alignSelf: 'flex-start',
+        marginBottom: 8,
+        overflow: 'hidden',
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     },
     productName: {
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: 'bold',
         color: '#1E293B',
-        marginTop: 2,
-        height: 36,
+        lineHeight: 20,
+        marginBottom: 2,
+        flexWrap: 'wrap',
+        flexShrink: 1,
     },
     productPrice: {
         fontSize: 16,
         fontWeight: '900',
-        color: '#1E293B',
-        marginTop: 4,
+        color: '#0F172A',
+        marginBottom: 4,
     },
     stockInfo: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 6,
     },
     stockDot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
+        width: 8,
+        height: 8,
+        borderRadius: 4,
         marginRight: 6,
     },
     stockText: {
-        fontSize: 10,
+        fontSize: 11,
         color: '#64748B',
-        fontWeight: 'bold',
+        fontWeight: '600',
     },
     fabWrapper: {
         position: 'absolute',
         bottom: 25,
-        left: 20,
-        right: 20,
+        left: '5%',
+        right: '5%',
         zIndex: 1000,
     },
     fabCard: {
         backgroundColor: '#FFFFFF',
-        height: 72,
+        minHeight: 72,
         borderRadius: 24,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingLeft: 16,
         paddingRight: 8,
+        paddingVertical: 12,
         borderWidth: 1,
         borderColor: '#F1F5F9',
         ...Platform.select({
@@ -1259,8 +1441,9 @@ const styles = StyleSheet.create({
     },
     payButtonPill: {
         backgroundColor: '#2563EB',
-        height: 56,
+        minHeight: 56,
         paddingHorizontal: 20,
+        paddingVertical: 12,
         borderRadius: 18,
         flexDirection: 'row',
         alignItems: 'center',
@@ -1346,7 +1529,7 @@ const styles = StyleSheet.create({
     },
     modalBodyContent: {
         padding: 24,
-        paddingBottom: 180, // Tambahkan padding besar agar konten tidak tertutup footer absolute
+        paddingBottom: 40,
         flexGrow: 1,
     },
     cartList: {
@@ -1444,7 +1627,8 @@ const styles = StyleSheet.create({
     methodBtn: {
         flex: 1,
         backgroundColor: '#F8FAFC',
-        paddingVertical: 12,
+        paddingVertical: 10,
+        minHeight: 48,
         borderRadius: 15,
         flexDirection: 'row',
         alignItems: 'center',
@@ -1474,7 +1658,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#F8FAFC',
         borderRadius: 15,
         paddingHorizontal: 16,
-        height: 56,
+        height: 50,
         borderWidth: 1,
         borderColor: '#E2E8F0',
     },
@@ -1567,7 +1751,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: 8,
     },
     totalLabel: {
         fontSize: 10,
@@ -1595,12 +1779,14 @@ const styles = StyleSheet.create({
         fontWeight: '900',
     },
     payBtn: {
-        height: 60,
+        minHeight: 60,
         borderRadius: 20,
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
         gap: 12,
+        paddingVertical: 16,
+        paddingHorizontal: 20,
         ...Platform.select({
             ios: {
                 shadowColor: '#1E40AF',
@@ -1629,12 +1815,13 @@ const styles = StyleSheet.create({
         backgroundColor: '#F1F5F9',
         borderRadius: 12,
         paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingVertical: 10,
         fontSize: 14,
         fontWeight: 'bold',
         color: '#1E293B',
         borderWidth: 1,
         borderColor: '#E2E8F0',
+        minHeight: 44,
     },
     customerName: {
         fontSize: 16,
@@ -1651,23 +1838,17 @@ const styles = StyleSheet.create({
         color: '#2563EB',
         marginTop: 2,
     },
-    customerSearchOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'flex-end',
-    },
     customerSearchContainer: {
+        flex: 1,
         backgroundColor: '#FFFFFF',
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        height: '70%',
-        padding: 20,
+        padding: 16,
     },
     customerSearchHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 16,
+        minHeight: 40,
     },
     customerSearchTitle: {
         fontSize: 18,
@@ -1693,9 +1874,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 15,
+        paddingVertical: 12,
         borderBottomWidth: 1,
         borderBottomColor: '#F1F5F9',
+        minHeight: 60,
     },
     resultName: {
         fontSize: 15,

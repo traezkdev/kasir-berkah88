@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import apiService from '../api/apiService';
+import apiService, { setOnUnauthorized } from '../api/apiService';
 import { jwtDecode } from 'jwt-decode';
 
 const AuthContext = createContext();
@@ -11,6 +11,11 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         checkLoginStatus();
+
+        // Listen for session expiration from apiService
+        setOnUnauthorized(() => {
+            setUser(null);
+        });
     }, []);
 
     const checkLoginStatus = async () => {

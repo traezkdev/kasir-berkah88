@@ -17,6 +17,9 @@ import {
     Dimensions,
     StatusBar
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { getSafeBottomPadding } from '../../utils/safeArea';
 import {
     ChevronLeft,
     Plus,
@@ -41,7 +44,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useToast } from '../../context/ToastContext';
 
-const { width } = Dimensions.get('window');
+const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
 
 const ICON_MAP = {
     Percent: Percent,
@@ -68,6 +71,7 @@ const COLOR_MAP = {
 const Banners = ({ navigation }) => {
     const { confirm } = useConfirm();
     const { showToast } = useToast();
+    const insets = useSafeAreaInsets();
     const [banners, setBanners] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -76,15 +80,18 @@ const Banners = ({ navigation }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [isLayoutReady, setIsLayoutReady] = useState(false);
     const [formData, setFormData] = useState({
         title: '',
         subtitle: '',
         color_class: 'bg-indigo-600',
         icon_name: 'Percent',
         link_url: '',
+        show_text: true,
         is_active: true
     });
     const [imageUri, setImageUri] = useState(null);
+    const [isImageRemoved, setIsImageRemoved] = useState(false);
 
     const colors = [
         { name: 'Indigo', class: 'bg-indigo-600' },
@@ -98,6 +105,17 @@ const Banners = ({ navigation }) => {
     ];
 
     const icons = ['Percent', 'Utensils', 'Star', 'Gift', 'Tag', 'Coffee', 'Zap', 'ShoppingBag'];
+
+    // Effect untuk menangani bug layout Android pada Modal
+    useEffect(() => {
+        if (isModalOpen) {
+            setIsLayoutReady(false);
+            const timer = setTimeout(() => {
+                setIsLayoutReady(true);
+            }, 100); // 100ms untuk memastikan mesin render Android siap
+            return () => clearTimeout(timer);
+        }
+    }, [isModalOpen]);
 
     const fetchData = async () => {
         setLoading(true);
@@ -131,9 +149,11 @@ const Banners = ({ navigation }) => {
                 color_class: item.color_class || 'bg-indigo-600',
                 icon_name: item.icon_name || 'Percent',
                 link_url: item.link_url || '',
+                show_text: item.show_text === 1 || item.show_text === true,
                 is_active: item.is_active === 1 || item.is_active === true
             });
             setImageUri(item.image_url ? `${API_URL}${item.image_url}` : null);
+            setIsImageRemoved(false);
         } else {
             setEditingItem(null);
             setFormData({
@@ -142,9 +162,11 @@ const Banners = ({ navigation }) => {
                 color_class: 'bg-indigo-600',
                 icon_name: 'Percent',
                 link_url: '',
+                show_text: true,
                 is_active: true
             });
             setImageUri(null);
+            setIsImageRemoved(false);
         }
         setIsModalOpen(true);
     };
@@ -166,6 +188,7 @@ const Banners = ({ navigation }) => {
 
             if (!result.canceled) {
                 setImageUri(result.assets[0].uri);
+                setIsImageRemoved(false);
             }
         } catch (error) {
             console.error('Error picking image:', error);
@@ -187,7 +210,10 @@ const Banners = ({ navigation }) => {
             // However, the web version appends 'data' as JSON under 'data' field.
             // Let's check how many fields the backend expects.
             // If the backend uses multer and then JSON.parse(req.body.data):
-            formDataToSend.append('data', JSON.stringify(formData));
+            formDataToSend.append('data', JSON.stringify({
+                ...formData,
+                remove_image: isImageRemoved
+            }));
 
             if (imageUri && !imageUri.startsWith('http')) {
                 const filename = imageUri.split('/').pop();
@@ -259,35 +285,42 @@ const Banners = ({ navigation }) => {
                         />
                     )}
                     {/* Overlay untuk memastikan text tetap terbaca */}
-                    {item.image_url && <View style={styles.bannerOverlay} />}
+                    {item.image_url && (item.show_text === 1 || item.show_text === true) && <View style={styles.bannerOverlay} />}
 
-                    <View style={styles.bannerContent}>
-                        <View style={styles.bannerText}>
-                            <Text style={styles.bannerTitle} numberOfLines={1}>{item.title}</Text>
-                            <Text style={styles.bannerSubtitle} numberOfLines={1}>{item.subtitle}</Text>
-                        </View>
-                        <View style={styles.bannerIconBadge}>
-                            <IconComp size={22} color="#FFFFFF" strokeWidth={2.5} />
-                        </View>
-                    </View>
-                    <View style={styles.bannerFooter}>
-                        <View style={[styles.statusBadge, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                            <Text style={styles.statusText}>
-                                {item.is_active ? 'AKTIF' : 'NON-AKTIF'}
-                            </Text>
-                        </View>
-                        <View style={styles.arrowCircle}>
-                            <ArrowRight size={14} color="#1E293B" />
-                        </View>
-                    </View>
                     {/* Background decoration */}
-                    <IconComp
-                        size={120}
-                        color="#FFFFFF"
-                        style={styles.bgDecoration}
-                        strokeWidth={1}
-                        opacity={0.1}
-                    />
+                    {(item.show_text === 1 || item.show_text === true) && (
+                        <IconComp
+                            size={120}
+                            color="#FFFFFF"
+                            style={styles.bgDecoration}
+                            strokeWidth={1}
+                            opacity={0.1}
+                        />
+                    )}
+
+                    <View style={styles.bannerContentWrapper}>
+                        {item.show_text === 1 || item.show_text === true ? (
+                            <View style={styles.bannerContent}>
+                                <View style={styles.bannerText}>
+                                    <Text style={styles.bannerTitle} numberOfLines={1}>{item.title}</Text>
+                                    <Text style={styles.bannerSubtitle} numberOfLines={1}>{item.subtitle}</Text>
+                                </View>
+                                <View style={styles.bannerIconBadge}>
+                                    <IconComp size={22} color="#FFFFFF" strokeWidth={2.5} />
+                                </View>
+                            </View>
+                        ) : null}
+                        <View style={styles.bannerFooter}>
+                            <View style={[styles.statusBadge, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                                <Text style={styles.statusText}>
+                                    {item.is_active ? 'AKTIF' : 'NON-AKTIF'}
+                                </Text>
+                            </View>
+                            <View style={styles.arrowCircle}>
+                                <ArrowRight size={14} color="#1E293B" />
+                            </View>
+                        </View>
+                    </View>
                 </View>
 
                 <View style={styles.cardActions}>
@@ -361,8 +394,15 @@ const Banners = ({ navigation }) => {
                 transparent={false}
                 onRequestClose={() => setIsModalOpen(false)}
             >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalHeader}>
+                {/* Gunakan tinggi eksplisit untuk mematikan ketidakpastian layout Android */}
+                <View style={[styles.modalContainer, { height: windowHeight, backgroundColor: '#FFFFFF' }]}>
+                    {/* Header */}
+                    <View style={[styles.modalHeader, {
+                        paddingTop: Math.max(insets.top + 10, 20),
+                        borderBottomWidth: 1,
+                        borderBottomColor: '#F1F5F9',
+                        backgroundColor: '#FFFFFF'
+                    }]}>
                         <View>
                             <Text style={styles.modalTitle}>{editingItem ? 'Edit' : 'Buat'} Banner</Text>
                             <Text style={styles.modalSubtitle}>KONFIGURASI TAMPILAN</Text>
@@ -372,158 +412,199 @@ const Banners = ({ navigation }) => {
                         </TouchableOpacity>
                     </View>
 
-                    <View style={styles.modalScrollContainer}>
-                        <ScrollView
-                            style={styles.scrollBody}
+                    {/* Konten Utama: Menggunakan flex: 1 untuk mendorong footer ke bawah */}
+                    <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+                        <KeyboardAwareScrollView
+                            style={{ flex: 1 }}
                             showsVerticalScrollIndicator={false}
-                            decelerationRate="fast"
-                            scrollEventThrottle={16}
-                            contentContainerStyle={styles.scrollBodyContent}
+                            keyboardShouldPersistTaps="handled"
+                            enableOnAndroid={true}
+                            extraScrollHeight={Platform.OS === 'ios' ? 40 : 20}
+                            contentContainerStyle={[
+                                styles.scrollBodyContent,
+                                { paddingBottom: 40 } // Padding agar item terakhir tidak mepet footer
+                            ]}
                         >
-                            {/* Live Preview */}
-                            <Text style={styles.labelGroup}>PRATINJAU LANGSUNG</Text>
-                            <View style={[styles.bannerPreview, { backgroundColor: COLOR_MAP[formData.color_class] || '#4F46E5', marginBottom: 30 }]}>
-                                {/* Background Image */}
-                                {imageUri && (
-                                    <Image
-                                        source={{ uri: imageUri }}
-                                        style={styles.bannerBackgroundImage}
-                                        resizeMode="cover"
-                                    />
-                                )}
-                                {/* Overlay untuk memastikan text tetap terbaca */}
-                                {imageUri && <View style={styles.bannerOverlay} />}
+                            {/* Hanya tampilkan konten jika layout sudah 'Ready' (Hack untuk Android) */}
+                            {isLayoutReady ? (
+                                <View style={styles.formSection}>
+                                    {/* Live Preview */}
+                                    <Text style={styles.labelGroup}>PRATINJAU LANGSUNG</Text>
+                                    <View style={[styles.bannerPreview, { backgroundColor: COLOR_MAP[formData.color_class] || '#4F46E5', marginBottom: 30 }]}>
+                                        {imageUri && (
+                                            <Image
+                                                source={{ uri: imageUri }}
+                                                style={styles.bannerBackgroundImage}
+                                                resizeMode="cover"
+                                            />
+                                        )}
+                                        {imageUri && formData.show_text && <View style={styles.bannerOverlay} />}
 
-                                <View style={styles.bannerContent}>
-                                    <View style={styles.bannerText}>
-                                        <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '900' }}>{formData.title || 'Judul Banner'}</Text>
-                                        <Text style={{ color: '#FFFFFF', fontSize: 13, opacity: 0.8, marginTop: 2 }}>{formData.subtitle || 'Sub-titel banner Anda'}</Text>
-                                    </View>
-                                    <View style={styles.bannerIconBadge}>
-                                        {React.createElement(ICON_MAP[formData.icon_name] || Percent, { size: 24, color: '#FFFFFF', strokeWidth: 2.5 })}
-                                    </View>
-                                </View>
-                                <View style={styles.bannerFooter}>
-                                    <View style={styles.footerLine} />
-                                    <View style={styles.arrowCircle}>
-                                        <ArrowRight size={14} color="#1E293B" />
-                                    </View>
-                                </View>
-                                {React.createElement(ICON_MAP[formData.icon_name] || Percent, {
-                                    size: 120,
-                                    color: '#FFFFFF',
-                                    style: styles.bgDecoration,
-                                    strokeWidth: 1,
-                                    opacity: 0.1
-                                })}
-                            </View>
+                                        {formData.show_text && React.createElement(ICON_MAP[formData.icon_name] || Percent, {
+                                            size: 120,
+                                            color: '#FFFFFF',
+                                            style: styles.bgDecoration,
+                                            strokeWidth: 1,
+                                            opacity: 0.1
+                                        })}
 
-                            {/* Form Inputs */}
-                            <View style={styles.formSection}>
-                                <View style={styles.formGroup}>
-                                    <Text style={styles.label}>JUDUL KONTEN</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder="Contoh: Diskon Kopi 50%"
-                                        value={formData.title}
-                                        onChangeText={(val) => setFormData({ ...formData, title: val })}
-                                    />
-                                </View>
-
-                                {/* Upload Background Image */}
-                                <View style={styles.formGroup}>
-                                    <Text style={styles.label}>GAMBAR LATAR BELAKANG (OPSIONAL)</Text>
-                                    <TouchableOpacity onPress={pickImage} style={styles.imageUploadBox}>
-                                        {imageUri ? (
-                                            <View style={styles.imagePreviewContainer}>
-                                                <Image source={{ uri: imageUri }} style={styles.imagePreview} resizeMode="cover" />
-                                                <View style={styles.imageOverlay}>
-                                                    <Camera size={24} color="#FFFFFF" />
-                                                    <Text style={styles.imageOverlayText}>Ganti Gambar</Text>
+                                        <View style={styles.bannerContentWrapper}>
+                                            {formData.show_text ? (
+                                                <View style={styles.bannerContent}>
+                                                    <View style={styles.bannerText}>
+                                                        <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '900' }}>{formData.title || 'Judul Banner'}</Text>
+                                                        <Text style={{ color: '#FFFFFF', fontSize: 13, opacity: 0.8, marginTop: 2 }}>{formData.subtitle || 'Sub-titel banner Anda'}</Text>
+                                                    </View>
+                                                    <View style={styles.bannerIconBadge}>
+                                                        {React.createElement(ICON_MAP[formData.icon_name] || Percent, { size: 24, color: '#FFFFFF', strokeWidth: 2.5 })}
+                                                    </View>
+                                                </View>
+                                            ) : null}
+                                            <View style={styles.bannerFooter}>
+                                                <View style={styles.footerLine} />
+                                                <View style={styles.arrowCircle}>
+                                                    <ArrowRight size={14} color="#1E293B" />
                                                 </View>
                                             </View>
-                                        ) : (
-                                            <View style={styles.uploadPlaceholder}>
-                                                <ImageIcon size={32} color="#94A3B8" />
-                                                <Text style={styles.uploadText}>Pilih Gambar</Text>
-                                                <Text style={styles.uploadHint}>Rasio 16:9 • Max 2MB</Text>
-                                            </View>
-                                        )}
-                                    </TouchableOpacity>
-                                    {imageUri && (
-                                        <TouchableOpacity
-                                            onPress={() => setImageUri(null)}
-                                            style={styles.removeImageBtn}
-                                        >
-                                            <X size={16} color="#EF4444" />
-                                            <Text style={styles.removeImageText}>Hapus Gambar</Text>
-                                        </TouchableOpacity>
-                                    )}
-                                </View>
-
-                                <View style={styles.formGroup}>
-                                    <Text style={styles.label}>DESKRIPSI / SUB-TITEL</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder="Contoh: Berlaku s/d jam 10 pagi"
-                                        value={formData.subtitle}
-                                        onChangeText={(val) => setFormData({ ...formData, subtitle: val })}
-                                    />
-                                </View>
-
-                                <View style={styles.formGroup}>
-                                    <Text style={styles.label}>WARNA UTAMA</Text>
-                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.colorGrid}>
-                                        {colors.map(color => (
-                                            <TouchableOpacity
-                                                key={color.class}
-                                                onPress={() => setFormData({ ...formData, color_class: color.class })}
-                                                style={[
-                                                    styles.colorCircle,
-                                                    { backgroundColor: COLOR_MAP[color.class] },
-                                                    formData.color_class === color.class && styles.activeColor
-                                                ]}
-                                            />
-                                        ))}
-                                    </ScrollView>
-                                </View>
-
-                                <View style={styles.formGroup}>
-                                    <Text style={styles.label}>IKON ILUSTRASI</Text>
-                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.iconGrid}>
-                                        {icons.map(iconName => {
-                                            const IconComp = ICON_MAP[iconName];
-                                            const isActive = formData.icon_name === iconName;
-                                            return (
-                                                <TouchableOpacity
-                                                    key={iconName}
-                                                    onPress={() => setFormData({ ...formData, icon_name: iconName })}
-                                                    style={[styles.iconBox, isActive && styles.activeIconBox]}
-                                                >
-                                                    <IconComp size={20} color={isActive ? '#FFFFFF' : '#94A3B8'} />
-                                                </TouchableOpacity>
-                                            );
-                                        })}
-                                    </ScrollView>
-                                </View>
-
-                                <View style={styles.toggleRow}>
-                                    <View>
-                                        <Text style={styles.toggleTitle}>Status Banner</Text>
-                                        <Text style={styles.toggleSubtitle}>Tampilkan ke pelanggan</Text>
+                                        </View>
                                     </View>
-                                    <Switch
-                                        value={formData.is_active}
-                                        onValueChange={(val) => setFormData({ ...formData, is_active: val })}
-                                        trackColor={{ false: '#E2E8F0', true: '#BFDBFE' }}
-                                        thumbColor={formData.is_active ? '#2563EB' : '#94A3B8'}
-                                    />
+
+                                    {/* Form Inputs */}
+                                    <View style={styles.formGroup}>
+                                        <Text style={styles.label}>JUDUL KONTEN</Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Contoh: Diskon Kopi 50%"
+                                            value={formData.title}
+                                            onChangeText={(val) => setFormData({ ...formData, title: val })}
+                                        />
+                                    </View>
+
+                                    <View style={styles.formGroup}>
+                                        <Text style={styles.label}>GAMBAR LATAR BELAKANG (OPSIONAL)</Text>
+                                        <TouchableOpacity onPress={pickImage} style={styles.imageUploadBox}>
+                                            {imageUri ? (
+                                                <View style={styles.imagePreviewContainer}>
+                                                    <Image source={{ uri: imageUri }} style={styles.imagePreview} resizeMode="cover" />
+                                                    <View style={styles.imageOverlay}>
+                                                        <Camera size={24} color="#FFFFFF" />
+                                                        <Text style={styles.imageOverlayText}>Ganti Gambar</Text>
+                                                    </View>
+                                                </View>
+                                            ) : (
+                                                <View style={styles.uploadPlaceholder}>
+                                                    <ImageIcon size={32} color="#94A3B8" />
+                                                    <Text style={styles.uploadText}>Pilih Gambar</Text>
+                                                    <Text style={styles.uploadHint}>Rasio 16:9 • Max 2MB</Text>
+                                                </View>
+                                            )}
+                                        </TouchableOpacity>
+                                        {imageUri && (
+                                            <TouchableOpacity
+                                                onPress={() => {
+                                                    setImageUri(null);
+                                                    setIsImageRemoved(true);
+                                                }}
+                                                style={styles.removeImageBtn}
+                                            >
+                                                <X size={16} color="#EF4444" />
+                                                <Text style={styles.removeImageText}>Hapus Gambar</Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
+
+                                    <View style={styles.formGroup}>
+                                        <Text style={styles.label}>DESKRIPSI / SUB-TITEL</Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Contoh: Berlaku s/d jam 10 pagi"
+                                            value={formData.subtitle}
+                                            onChangeText={(val) => setFormData({ ...formData, subtitle: val })}
+                                        />
+                                    </View>
+
+                                    <View style={styles.formGroup}>
+                                        <Text style={styles.label}>WARNA UTAMA</Text>
+                                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.colorGrid}>
+                                            {colors.map(color => (
+                                                <TouchableOpacity
+                                                    key={color.class}
+                                                    onPress={() => setFormData({ ...formData, color_class: color.class })}
+                                                    style={[
+                                                        styles.colorCircle,
+                                                        { backgroundColor: COLOR_MAP[color.class] },
+                                                        formData.color_class === color.class && styles.activeColor
+                                                    ]}
+                                                />
+                                            ))}
+                                        </ScrollView>
+                                    </View>
+
+                                    <View style={styles.formGroup}>
+                                        <Text style={styles.label}>IKON ILUSTRASI</Text>
+                                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.iconGrid}>
+                                            {icons.map(iconName => {
+                                                const IconComp = ICON_MAP[iconName];
+                                                const isActive = formData.icon_name === iconName;
+                                                return (
+                                                    <TouchableOpacity
+                                                        key={iconName}
+                                                        onPress={() => setFormData({ ...formData, icon_name: iconName })}
+                                                        style={[styles.iconBox, isActive && styles.activeIconBox]}
+                                                    >
+                                                        <IconComp size={20} color={isActive ? '#FFFFFF' : '#94A3B8'} />
+                                                    </TouchableOpacity>
+                                                );
+                                            })}
+                                        </ScrollView>
+                                    </View>
+
+                                    <View style={styles.toggleRow}>
+                                        <View>
+                                            <Text style={styles.toggleTitle}>Tampilkan Teks & Tombol</Text>
+                                            <Text style={styles.toggleSubtitle}>Sembunyikan jika hanya ingin gambar banner saja</Text>
+                                        </View>
+                                        <Switch
+                                            value={formData.show_text}
+                                            onValueChange={(val) => setFormData({ ...formData, show_text: val })}
+                                            trackColor={{ false: '#CBD5E1', true: '#BFDBFE' }}
+                                            thumbColor={formData.show_text ? '#2563EB' : '#F8FAFC'}
+                                        />
+                                    </View>
+
+                                    <View style={styles.toggleRow}>
+                                        <View>
+                                            <Text style={styles.toggleTitle}>Status Banner Aktif</Text>
+                                            <Text style={styles.toggleSubtitle}>Munculkan banner di dashboard pelanggan</Text>
+                                        </View>
+                                        <Switch
+                                            value={formData.is_active}
+                                            onValueChange={(val) => setFormData({ ...formData, is_active: val })}
+                                            trackColor={{ false: '#CBD5E1', true: '#BFDBFE' }}
+                                            thumbColor={formData.is_active ? '#2563EB' : '#F8FAFC'}
+                                        />
+                                    </View>
                                 </View>
-                            </View>
-                        </ScrollView>
+                            ) : (
+                                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+                                    <ActivityIndicator size="large" color="#2563EB" />
+                                </View>
+                            )}
+                        </KeyboardAwareScrollView>
                     </View>
 
-                    <View style={styles.modalFooter}>
+                    {/* Footer / Navbar: Pola standard (non-absolute) agar tidak menutupi konten */}
+                    <View style={[
+                        styles.modalFooter,
+                        {
+                            paddingBottom: Math.max(insets.bottom, 24),
+                            backgroundColor: '#FFFFFF',
+                            borderTopWidth: 1,
+                            borderTopColor: '#F1F5F9',
+                            elevation: 10,
+                            zIndex: 10
+                        }
+                    ]}>
                         <TouchableOpacity onPress={() => setIsModalOpen(false)} style={styles.cancelBtn}>
                             <Text style={styles.cancelBtnText}>Batal</Text>
                         </TouchableOpacity>
@@ -597,11 +678,15 @@ const styles = StyleSheet.create({
     },
     bannerPreview: {
         height: 160,
-        padding: 24,
-        justifyContent: 'space-between',
         position: 'relative',
         overflow: 'hidden',
         borderRadius: 20,
+    },
+    bannerContentWrapper: {
+        ...StyleSheet.absoluteFillObject,
+        padding: 24,
+        justifyContent: 'space-between',
+        zIndex: 10,
     },
     bannerContent: {
         flexDirection: 'row',
@@ -726,8 +811,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 24,
-        paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : (Platform.OS === 'web' ? 15 : 20),
+        paddingHorizontal: 24,
+        paddingBottom: 24,
+        paddingTop: 10,
         borderBottomWidth: 1,
         borderBottomColor: '#F1F5F9',
     },
@@ -847,7 +933,6 @@ const styles = StyleSheet.create({
     },
     modalFooter: {
         padding: 24,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 30,
         flexDirection: 'row',
         gap: 12,
         borderTopWidth: 1,
