@@ -13,7 +13,8 @@ import {
     TextInput,
     Alert,
     ActivityIndicator,
-    Switch
+    Switch,
+    Linking
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getSafeBottomPadding } from '../../utils/safeArea';
@@ -41,6 +42,8 @@ import { useOrderNotification } from '../../context/OrderNotificationContext';
 import apiService, { API_URL } from '../../api/apiService';
 import * as ImagePicker from 'expo-image-picker';
 import BottomModalTemplate from '../../components/templates/BottomModalTemplate';
+
+import AppImage from '../../components/AppImage';
 
 const ProfileScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
@@ -261,7 +264,7 @@ const ProfileScreen = ({ navigation }) => {
                 <View style={styles.profileCard}>
                     <View style={styles.avatarContainer}>
                         {user?.avatar_url ? (
-                            <Image source={{ uri: `${API_URL}${user.avatar_url}` }} style={styles.avatar} />
+                            <AppImage uri={user.avatar_url} style={styles.avatar} />
                         ) : (
                             <View style={styles.avatarPlaceholder}>
                                 <UserCircle size={60} color="#FFFFFF" strokeWidth={1.5} />
@@ -316,18 +319,25 @@ const ProfileScreen = ({ navigation }) => {
 
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>DUKUNGAN</Text>
-                    {renderMenuItem(<HelpCircle size={20} color="#6366F1" />, 'Pusat Bantuan', 'FAQ dan Kontak Admin', () => { }, '#6366F1')}
+                    {renderMenuItem(<HelpCircle size={20} color="#6366F1" />, 'Hubungi Developer', 'Tanya fitur atau laporkan bug', () => {
+                        const phoneNumber = '6285864875536';
+                        const message = 'Saya mau bertanya tentang aplikasi berkah 88';
+                        const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+                        Linking.openURL(url).catch(() => {
+                            showToast('Gagal membuka WhatsApp', 'error');
+                        });
+                    }, '#6366F1')}
                 </View>
 
                 <TouchableOpacity
-                    style={{ alignItems: 'center', marginTop: 15 }}
+                    style={{ alignItems: 'center', marginTop: 15, marginBottom: 30 }}
                     onPress={() => navigation.navigate('DeveloperCreditsScreen')}
                     activeOpacity={0.7}
                 >
                     <Text style={styles.versionText}>Versi 1.6.1 (Alpha)</Text>
                     <Text style={styles.developerText}>Develop By traezkdev</Text>
                 </TouchableOpacity>
-                <View style={{ height: 100 }} />
+                <View style={{ height: 120 }} />
             </ScrollView>
 
             {/* Fixed Logout Button */}

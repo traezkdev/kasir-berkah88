@@ -51,6 +51,7 @@ import { useOrderNotification } from '../../context/OrderNotificationContext';
 import useSwipeToClose from '../../hooks/useSwipeToClose';
 import usePopups from '../../hooks/usePopups';
 import PopupModal from '../../components/PopupModal';
+import AppImage from '../../components/AppImage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -66,17 +67,11 @@ const MenuCardItem = React.memo(({ item, qty, isOpen, ignoreStock, onOpenDetail,
             onPress={() => isOpen && !isOutOfStock && onOpenDetail(item)}
         >
             <View style={styles.menuImageContainer}>
-                {item.image_url ? (
-                    <Image
-                        source={{ uri: `${API_URL}${item.image_url}` }}
-                        style={styles.menuImage}
-                        onError={() => console.log(`Menu image 404: ${item.name}`)}
-                    />
-                ) : (
-                    <View style={styles.menuImagePlaceholder}>
-                        <ImageIcon size={24} color="#CBD5E1" />
-                    </View>
-                )}
+                <AppImage
+                    uri={item.image_url}
+                    style={styles.menuImage}
+                    placeholderIcon={ImageIcon}
+                />
                 {item.discount > 0 && (
                     <View style={styles.rowDiscountBadge}>
                         <Text style={styles.rowDiscountText}>{parseFloat(item.discount).toFixed(0)}% OFF</Text>
@@ -387,9 +382,10 @@ const CustomerMenu = ({ navigation, route }) => {
                                 onPress={() => setSelectedCategory(cat.id)}
                             >
                                 {cat.icon ? (
-                                    <Image
-                                        source={{ uri: `${API_URL}${cat.icon}` }}
-                                        style={{ width: 14, height: 14, marginRight: 6, resizeMode: 'contain' }}
+                                    <AppImage
+                                        uri={cat.icon}
+                                        style={{ width: 14, height: 14, marginRight: 6 }}
+                                        resizeMode="contain"
                                     />
                                 ) : (
                                     <IconComponent size={14} color={selectedCategory === cat.id ? "#FFFFFF" : "#64748B"} style={{ marginRight: 6 }} />
@@ -411,9 +407,9 @@ const CustomerMenu = ({ navigation, route }) => {
                     renderItem={renderMenuCard}
                     keyExtractor={item => item.id.toString()}
                     contentContainerStyle={styles.listContent}
-                    initialNumToRender={8}
-                    maxToRenderPerBatch={5}
-                    windowSize={5}
+                    initialNumToRender={10}
+                    maxToRenderPerBatch={10}
+                    windowSize={11}
                     removeClippedSubviews={Platform.OS !== 'web'}
                     ListHeaderComponent={!isOpen && (
                         <View style={styles.closedWarning}>
@@ -484,13 +480,11 @@ const CustomerMenu = ({ navigation, route }) => {
 
                         {/* Image Header */}
                         <View style={styles.modalImageWrap} {...panResponder.panHandlers}>
-                            {selectedItem?.image_url ? (
-                                <Image source={{ uri: `${API_URL}${selectedItem.image_url}` }} style={styles.modalImage} />
-                            ) : (
-                                <View style={styles.modalImagePlaceholder}>
-                                    <ImageIcon size={50} color="#CBD5E1" />
-                                </View>
-                            )}
+                            <AppImage
+                                uri={selectedItem?.image_url}
+                                style={styles.modalImage}
+                                placeholderIcon={ImageIcon}
+                            />
                             <TouchableOpacity
                                 style={styles.modalCloseBtn}
                                 onPress={() => setSelectedItem(null)}

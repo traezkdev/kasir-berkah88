@@ -94,7 +94,9 @@ const setupDatabase = async () => {
         amount DECIMAL(10, 2) NOT NULL,
         category VARCHAR(255),
         date DATETIME NOT NULL,
-        notes TEXT DEFAULT NULL
+        notes TEXT DEFAULT NULL,
+        user_id INT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
       );
     `;
 
@@ -2034,6 +2036,24 @@ const setupDatabase = async () => {
       console.log('expense_categories table checked/created.');
     } catch (err) {
       console.error('Error setting up expense_categories table:', err);
+    }
+
+    // --- Expenses Table Migrations ---
+    try {
+      const [expenseCols] = await connection.query("SHOW COLUMNS FROM expenses");
+      const expenseColNames = expenseCols.map(c => c.Field);
+
+      if (!expenseColNames.includes('user_id')) {
+        await connection.query("ALTER TABLE expenses ADD COLUMN user_id INT NULL");
+        try {
+          await connection.query("ALTER TABLE expenses ADD FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL");
+        } catch (fkErr) {
+          console.log('Skipping FK creation for expenses.user_id (might already exist)');
+        }
+        console.log("Added user_id column to expenses table.");
+      }
+    } catch (err) {
+      console.error('Error migrating expenses table:', err);
     }
 
     // --- Information Table Migrations ---

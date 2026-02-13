@@ -3317,7 +3317,7 @@ app.post("/api/v2/transactions", authenticateToken, authorizeRoles('user', 'admi
 // --- Expense Endpoints ---
 
 // Get all expenses without pagination
-app.get("/api/expenses/all", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'owner'), async (req, res) => {
+app.get("/api/expenses/all", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'user'), async (req, res) => {
     try {
         const [closingRow] = await db.query("SELECT value FROM settings WHERE `key` = 'last_closing_date'");
         const lastClosingDate = closingRow.length > 0 ? closingRow[0].value : null;
@@ -3349,7 +3349,7 @@ app.get("/api/expenses/all", authenticateToken, authorizeRoles('user', 'admin', 
 });
 
 // Get all expenses with pagination and date range filtering
-app.get("/api/expenses", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'owner'), async (req, res, next) => {
+app.get("/api/expenses", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'user'), async (req, res, next) => {
     try {
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 20;
@@ -3429,7 +3429,7 @@ app.get("/api/expenses", authenticateToken, authorizeRoles('user', 'admin', 'gue
 });
 
 // Add a new expense
-app.post("/api/expenses", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
+app.post("/api/expenses", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'user'), async (req, res, next) => {
     try {
         const { name, amount, category, date, notes } = req.body;
         if (!name || !amount || !date) {
@@ -3451,7 +3451,7 @@ app.post("/api/expenses", authenticateToken, authorizeRoles('user', 'admin'), as
 });
 
 // Update an expense
-app.put("/api/expenses/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
+app.put("/api/expenses/:id", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'user'), async (req, res, next) => {
     try {
         const { name, amount, category, date, notes } = req.body;
         const sql = `UPDATE expenses set 
@@ -3507,7 +3507,7 @@ app.delete("/api/expenses/all", authenticateToken, authorizeRoles('admin'), asyn
 });
 
 // Delete an expense
-app.delete("/api/expenses/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
+app.delete("/api/expenses/:id", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'user'), async (req, res, next) => {
     try {
         const sql = 'DELETE FROM expenses WHERE id = ?';
         const [result] = await db.query(sql, [req.params.id]);

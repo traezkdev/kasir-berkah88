@@ -54,6 +54,7 @@ import { useChat } from '../../context/ChatContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import usePopups from '../../hooks/usePopups';
 import PopupModal from '../../components/PopupModal';
+import AppImage from '../../components/AppImage';
 
 const CustomerDashboard = ({ navigation }) => {
     const { width, height } = useWindowDimensions();
@@ -526,10 +527,9 @@ const CustomerDashboard = ({ navigation }) => {
                                 onPress={() => navigation.navigate('Promo')}
                             >
                                 {banner.image_url && (
-                                    <Image
-                                        source={{ uri: `${API_URL}${banner.image_url}` }}
+                                    <AppImage
+                                        uri={banner.image_url}
                                         style={styles.bannerBackgroundImage}
-                                        resizeMode="cover"
                                     />
                                 )}
                                 {banner.image_url && (banner.show_text === 1 || banner.show_text === true) && <View style={styles.bannerOverlay} />}
@@ -580,9 +580,10 @@ const CustomerDashboard = ({ navigation }) => {
                                 >
                                     <View style={[styles.categoryIconWrap, { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0', borderWidth: 1, overflow: 'hidden' }]}>
                                         {cat.icon ? (
-                                            <Image
-                                                source={{ uri: `${API_URL}${cat.icon}` }}
-                                                style={{ width: 28, height: 28, resizeMode: 'contain' }}
+                                            <AppImage
+                                                uri={cat.icon}
+                                                style={{ width: 28, height: 28 }}
+                                                resizeMode="contain"
                                             />
                                         ) : (
                                             <IconComponent size={28} color="#059669" />
@@ -613,19 +614,11 @@ const CustomerDashboard = ({ navigation }) => {
                                     disabled={!isOpen || (isOutOfStock && !isOpen)}
                                 >
                                     <View style={styles.menuImageContainer}>
-                                        {menu.image_url ? (
-                                            <Image
-                                                source={{ uri: `${API_URL}${menu.image_url}` }}
-                                                style={styles.menuImage}
-                                                onError={(e) => {
-                                                    console.log(`Image 404 for ${menu.name}`);
-                                                }}
-                                            />
-                                        ) : (
-                                            <View style={styles.menuImagePlaceholder}>
-                                                <Package size={30} color="#CBD5E1" />
-                                            </View>
-                                        )}
+                                        <AppImage
+                                            uri={menu.image_url}
+                                            style={styles.menuImage}
+                                            placeholderIcon={Package}
+                                        />
                                         {menu.discount > 0 && (
                                             <View style={styles.discountBadge}>
                                                 <Zap size={10} color="#FFFFFF" fill="#FFFFFF" />

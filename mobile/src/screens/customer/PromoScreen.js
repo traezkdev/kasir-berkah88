@@ -44,6 +44,7 @@ import apiService, { API_URL } from '../../api/apiService';
 import { getSafeBottomPadding } from '../../utils/safeArea';
 import usePopups from '../../hooks/usePopups';
 import PopupModal from '../../components/PopupModal';
+import AppImage from '../../components/AppImage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -252,10 +253,9 @@ const PromoScreen = ({ navigation }) => {
                                             style={{ width: width - 40, marginHorizontal: 20 }}
                                             onPress={() => handleClaimPress(item)}
                                         >
-                                            <ImageBackground
-                                                source={{ uri: getImageUrl(item.image_url) || 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1000&auto=format&fit=crop' }}
+                                            <AppImage
+                                                uri={item.image_url}
                                                 style={styles.heroSection}
-                                                imageStyle={{ borderRadius: 30 }}
                                             />
                                         </TouchableOpacity>
                                     )}
@@ -362,10 +362,9 @@ const PromoScreen = ({ navigation }) => {
 
                         <ScrollView showsVerticalScrollIndicator={false} bounceless={true}>
                             {/* Image Header */}
-                            <ImageBackground
-                                source={{ uri: getImageUrl(selectedPromoDetail?.image_url) || 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1000&auto=format&fit=crop' }}
+                            <AppImage
+                                uri={selectedPromoDetail?.image_url}
                                 style={styles.detailHeroImage}
-                                imageStyle={{ borderTopLeftRadius: 30, borderTopRightRadius: 30 }}
                             >
                                 <View style={styles.detailImageBlur} />
                                 <View style={styles.detailTitleWrapper}>
@@ -374,7 +373,7 @@ const PromoScreen = ({ navigation }) => {
                                     </View>
                                     <Text style={styles.detailMainTitle}>{selectedPromoDetail?.title}</Text>
                                 </View>
-                            </ImageBackground>
+                            </AppImage>
 
                             {/* Content Body */}
                             <View style={styles.detailBody}>
