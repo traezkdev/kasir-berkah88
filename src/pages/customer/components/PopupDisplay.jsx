@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { X, ArrowRight } from 'lucide-react';
+import { io } from 'socket.io-client';
 import authFetch from '../../../utils/authFetch';
 
 const PopupDisplay = () => {
@@ -13,6 +14,22 @@ const PopupDisplay = () => {
     // Fetch active popups on mount
     useEffect(() => {
         fetchActivePopups();
+
+        // Socket.io Realtime Implementation
+        const API_URL = import.meta.env.VITE_API_URL || '';
+        const socket = io(API_URL, {
+            transports: ['websocket'],
+            forceNew: true
+        });
+
+        socket.on('popup_push', (data) => {
+            console.log('Realtime Popup Push Received:', data);
+            fetchActivePopups(); // Refresh the list of active popups
+        });
+
+        return () => {
+            socket.disconnect();
+        };
     }, []);
 
     // Check for popups whenever location changes or popups array updates
