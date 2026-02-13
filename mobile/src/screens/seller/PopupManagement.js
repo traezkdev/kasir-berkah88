@@ -586,193 +586,188 @@ const PopupManagement = ({ navigation }) => {
                     </TouchableOpacity>
                 }
             >
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    style={{ flex: 1 }}
-                >
-                    <View style={styles.modalContent}>
-                        {/* Image Selection - moved to top for better flow */}
-                        <View style={[styles.sectionHeader, { marginTop: 0 }]}>
-                            <ImageIcon size={14} color="#64748B" />
-                            <Text style={styles.sectionTitle}>MEDIA POPUP</Text>
-                        </View>
+                <View style={styles.modalContent}>
+                    {/* Image Selection - moved to top for better flow */}
+                    <View style={[styles.sectionHeader, { marginTop: 0 }]}>
+                        <ImageIcon size={14} color="#64748B" />
+                        <Text style={styles.sectionTitle}>MEDIA POPUP</Text>
+                    </View>
 
-                        <TouchableOpacity style={styles.uploadArea} onPress={pickImage} activeOpacity={0.8}>
-                            {formData.imageUri ? (
-                                <ImageBackground
-                                    source={{ uri: formData.imageUri }}
-                                    style={styles.uploadPreview}
-                                    imageStyle={{ borderRadius: 16 }}
-                                >
-                                    <View style={styles.uploadOverlay}>
-                                        <View style={styles.uploadActionBtn}>
-                                            <Camera size={20} color="#FFFFFF" strokeWidth={2.5} />
-                                        </View>
-                                    </View>
-                                </ImageBackground>
-                            ) : (
-                                <View style={styles.uploadPlaceholder}>
-                                    <View style={styles.uploadIconCircle}>
-                                        <ImageIcon size={28} color="#059669" />
-                                    </View>
-                                    <View style={styles.uploadTexts}>
-                                        <Text style={styles.uploadTitle}>Upload Gambar</Text>
-                                        <Text style={styles.uploadSubtitle}>Format PNG/JPG, Rasio 4:3</Text>
+                    <TouchableOpacity style={styles.uploadArea} onPress={pickImage} activeOpacity={0.8}>
+                        {formData.imageUri ? (
+                            <ImageBackground
+                                source={{ uri: formData.imageUri }}
+                                style={styles.uploadPreview}
+                                imageStyle={{ borderRadius: 16 }}
+                            >
+                                <View style={styles.uploadOverlay}>
+                                    <View style={styles.uploadActionBtn}>
+                                        <Camera size={20} color="#FFFFFF" strokeWidth={2.5} />
                                     </View>
                                 </View>
-                            )}
-                        </TouchableOpacity>
+                            </ImageBackground>
+                        ) : (
+                            <View style={styles.uploadPlaceholder}>
+                                <View style={styles.uploadIconCircle}>
+                                    <ImageIcon size={28} color="#059669" />
+                                </View>
+                                <View style={styles.uploadTexts}>
+                                    <Text style={styles.uploadTitle}>Upload Gambar</Text>
+                                    <Text style={styles.uploadSubtitle}>Format PNG/JPG, Rasio 4:3</Text>
+                                </View>
+                            </View>
+                        )}
+                    </TouchableOpacity>
 
-                        {/* Basic Info */}
-                        <View style={styles.sectionHeader}>
-                            <Edit2 size={14} color="#64748B" />
-                            <Text style={styles.sectionTitle}>INFORMASI DASAR</Text>
+                    {/* Basic Info */}
+                    <View style={styles.sectionHeader}>
+                        <Edit2 size={14} color="#64748B" />
+                        <Text style={styles.sectionTitle}>INFORMASI DASAR</Text>
+                    </View>
+
+                    <View style={styles.formGroup}>
+                        <Text style={styles.inputLabel}>Judul Popup</Text>
+                        <TextInput
+                            style={styles.textInput}
+                            value={formData.title}
+                            onChangeText={(text) => setFormData(prev => ({ ...prev, title: text }))}
+                            placeholder="Contoh: Promo Spesial Ramadhan"
+                            placeholderTextColor="#CBD5E1"
+                        />
+                    </View>
+
+                    <View style={styles.formGroup}>
+                        <View style={styles.rowBetween}>
+                            <Text style={styles.inputLabel}>Prioritas Tampil</Text>
+                            <View style={styles.priorityHelp}>
+                                <Info size={12} color="#059669" />
+                                <Text style={styles.priorityHelpText}>Angka tinggi = Tampil duluan</Text>
+                            </View>
                         </View>
-
-                        <View style={styles.formGroup}>
-                            <Text style={styles.inputLabel}>Judul Popup</Text>
+                        <View style={styles.priorityInputContainer}>
+                            <TrendingUp size={18} color="#64748B" style={{ marginRight: 10 }} />
                             <TextInput
-                                style={styles.textInput}
-                                value={formData.title}
-                                onChangeText={(text) => setFormData(prev => ({ ...prev, title: text }))}
-                                placeholder="Contoh: Promo Spesial Ramadhan"
+                                style={[styles.textInput, { flex: 1, borderWidth: 0, paddingHorizontal: 0, marginTop: 0 }]}
+                                value={formData.priority.toString()}
+                                onChangeText={(text) => setFormData(prev => ({ ...prev, priority: text.replace(/[^0-9]/g, '') }))}
+                                placeholder="0"
+                                keyboardType="numeric"
                                 placeholderTextColor="#CBD5E1"
                             />
                         </View>
+                    </View>
 
-                        <View style={styles.formGroup}>
-                            <View style={styles.rowBetween}>
-                                <Text style={styles.inputLabel}>Prioritas Tampil</Text>
-                                <View style={styles.priorityHelp}>
-                                    <Info size={12} color="#059669" />
-                                    <Text style={styles.priorityHelpText}>Angka tinggi = Tampil duluan</Text>
-                                </View>
-                            </View>
-                            <View style={styles.priorityInputContainer}>
-                                <TrendingUp size={18} color="#64748B" style={{ marginRight: 10 }} />
-                                <TextInput
-                                    style={[styles.textInput, { flex: 1, borderWidth: 0, paddingHorizontal: 0, marginTop: 0 }]}
-                                    value={formData.priority.toString()}
-                                    onChangeText={(text) => setFormData(prev => ({ ...prev, priority: text.replace(/[^0-9]/g, '') }))}
-                                    placeholder="0"
-                                    keyboardType="numeric"
-                                    placeholderTextColor="#CBD5E1"
-                                />
-                            </View>
-                        </View>
+                    {/* Action Link */}
+                    <View style={styles.sectionHeader}>
+                        <Link2 size={14} color="#64748B" />
+                        <Text style={styles.sectionTitle}>AKSI & NAVIGASI</Text>
+                    </View>
 
-                        {/* Action Link */}
-                        <View style={styles.sectionHeader}>
-                            <Link2 size={14} color="#64748B" />
-                            <Text style={styles.sectionTitle}>AKSI & NAVIGASI</Text>
-                        </View>
+                    <View style={styles.linkTypeContainer}>
+                        {LINK_TYPES.map((type) => (
+                            <TouchableOpacity
+                                key={type.value}
+                                style={[
+                                    styles.linkTypeOption,
+                                    formData.link_type === type.value && styles.linkTypeActive
+                                ]}
+                                onPress={() => setFormData(prev => ({ ...prev, link_type: type.value, link_value: '' }))}
+                            >
+                                <Text style={[
+                                    styles.linkTypeText,
+                                    formData.link_type === type.value && styles.linkTypeTextActive
+                                ]}>{type.label}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
 
-                        <View style={styles.linkTypeContainer}>
-                            {LINK_TYPES.map((type) => (
+                    {formData.link_type === 'screen' && (
+                        <View style={styles.screenSelectorContainer}>
+                            {SCREEN_OPTIONS.map((opt) => (
                                 <TouchableOpacity
-                                    key={type.value}
+                                    key={opt.value}
                                     style={[
-                                        styles.linkTypeOption,
-                                        formData.link_type === type.value && styles.linkTypeActive
+                                        styles.screenOption,
+                                        formData.link_value === opt.value && styles.screenOptionActive
                                     ]}
-                                    onPress={() => setFormData(prev => ({ ...prev, link_type: type.value, link_value: '' }))}
+                                    onPress={() => setFormData(prev => ({ ...prev, link_value: opt.value }))}
                                 >
+                                    <View style={[
+                                        styles.radioButton,
+                                        formData.link_value === opt.value && styles.radioButtonActive
+                                    ]}>
+                                        {formData.link_value === opt.value && <View style={styles.radioInnerCircle} />}
+                                    </View>
                                     <Text style={[
-                                        styles.linkTypeText,
-                                        formData.link_type === type.value && styles.linkTypeTextActive
-                                    ]}>{type.label}</Text>
+                                        styles.screenOptionText,
+                                        formData.link_value === opt.value && styles.screenOptionTextActive
+                                    ]}>{opt.label}</Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
+                    )}
 
-                        {formData.link_type === 'screen' && (
-                            <View style={styles.screenSelectorContainer}>
-                                {SCREEN_OPTIONS.map((opt) => (
-                                    <TouchableOpacity
-                                        key={opt.value}
-                                        style={[
-                                            styles.screenOption,
-                                            formData.link_value === opt.value && styles.screenOptionActive
-                                        ]}
-                                        onPress={() => setFormData(prev => ({ ...prev, link_value: opt.value }))}
-                                    >
-                                        <View style={[
-                                            styles.radioButton,
-                                            formData.link_value === opt.value && styles.radioButtonActive
-                                        ]}>
-                                            {formData.link_value === opt.value && <View style={styles.radioInnerCircle} />}
-                                        </View>
-                                        <Text style={[
-                                            styles.screenOptionText,
-                                            formData.link_value === opt.value && styles.screenOptionTextActive
-                                        ]}>{opt.label}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        )}
-
-                        {formData.link_type === 'url' && (
-                            <View style={styles.urlInputContainer}>
-                                <Link2 size={18} color="#64748B" />
-                                <TextInput
-                                    style={styles.urlInput}
-                                    value={formData.link_value}
-                                    onChangeText={(text) => setFormData(prev => ({ ...prev, link_value: text }))}
-                                    placeholder="https://..."
-                                    keyboardType="url"
-                                    autoCapitalize="none"
-                                    placeholderTextColor="#CBD5E1"
-                                />
-                            </View>
-                        )}
-
-                        {/* Target Pages */}
-                        <View style={styles.sectionHeader}>
-                            <Eye size={14} color="#64748B" />
-                            <Text style={styles.sectionTitle}>TARGET HALAMAN</Text>
-                        </View>
-
-                        <View style={styles.targetPagesGrid}>
-                            {AVAILABLE_PAGES.map((page) => {
-                                const isSelected = formData.show_on_pages.includes(page.value);
-                                return (
-                                    <TouchableOpacity
-                                        key={page.value}
-                                        style={[styles.pageChip, isSelected && styles.pageChipActive]}
-                                        onPress={() => togglePage(page.value)}
-                                    >
-                                        <Text style={[styles.pageChipText, isSelected && styles.pageChipTextActive]}>
-                                            {page.label}
-                                        </Text>
-                                        {isSelected && <CheckCircle2 size={14} color="#FFFFFF" style={{ marginLeft: 4 }} />}
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </View>
-                        <Text style={styles.helperTextSimple}>*Biarkan kosong untuk tampil di semua halaman</Text>
-
-                        {/* Active Switch */}
-                        <View style={styles.statusSwitchContainer}>
-                            <View style={styles.switchLabelArea}>
-                                <View style={[styles.switchIcon, { backgroundColor: formData.is_active ? '#DCFCE7' : '#F1F5F9' }]}>
-                                    <Megaphone size={18} color={formData.is_active ? '#059669' : '#94A3B8'} />
-                                </View>
-                                <View>
-                                    <Text style={styles.switchTitle}>Status Publikasi</Text>
-                                    <Text style={styles.switchSub}>{formData.is_active ? 'Popup akan ditampilkan' : 'Disimpan sebagai draft'}</Text>
-                                </View>
-                            </View>
-                            <Switch
-                                value={formData.is_active}
-                                onValueChange={(value) => setFormData(prev => ({ ...prev, is_active: value }))}
-                                trackColor={{ false: '#E2E8F0', true: '#86EFAC' }}
-                                thumbColor={formData.is_active ? '#059669' : '#FFFFFF'}
+                    {formData.link_type === 'url' && (
+                        <View style={styles.urlInputContainer}>
+                            <Link2 size={18} color="#64748B" />
+                            <TextInput
+                                style={styles.urlInput}
+                                value={formData.link_value}
+                                onChangeText={(text) => setFormData(prev => ({ ...prev, link_value: text }))}
+                                placeholder="https://..."
+                                keyboardType="url"
+                                autoCapitalize="none"
+                                placeholderTextColor="#CBD5E1"
                             />
                         </View>
+                    )}
 
-                        <View style={{ height: 40 }} />
+                    {/* Target Pages */}
+                    <View style={styles.sectionHeader}>
+                        <Eye size={14} color="#64748B" />
+                        <Text style={styles.sectionTitle}>TARGET HALAMAN</Text>
                     </View>
-                </KeyboardAvoidingView>
+
+                    <View style={styles.targetPagesGrid}>
+                        {AVAILABLE_PAGES.map((page) => {
+                            const isSelected = formData.show_on_pages.includes(page.value);
+                            return (
+                                <TouchableOpacity
+                                    key={page.value}
+                                    style={[styles.pageChip, isSelected && styles.pageChipActive]}
+                                    onPress={() => togglePage(page.value)}
+                                >
+                                    <Text style={[styles.pageChipText, isSelected && styles.pageChipTextActive]}>
+                                        {page.label}
+                                    </Text>
+                                    {isSelected && <CheckCircle2 size={14} color="#FFFFFF" style={{ marginLeft: 4 }} />}
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                    <Text style={styles.helperTextSimple}>*Biarkan kosong untuk tampil di semua halaman</Text>
+
+                    {/* Active Switch */}
+                    <View style={styles.statusSwitchContainer}>
+                        <View style={styles.switchLabelArea}>
+                            <View style={[styles.switchIcon, { backgroundColor: formData.is_active ? '#DCFCE7' : '#F1F5F9' }]}>
+                                <Megaphone size={18} color={formData.is_active ? '#059669' : '#94A3B8'} />
+                            </View>
+                            <View>
+                                <Text style={styles.switchTitle}>Status Publikasi</Text>
+                                <Text style={styles.switchSub}>{formData.is_active ? 'Popup akan ditampilkan' : 'Disimpan sebagai draft'}</Text>
+                            </View>
+                        </View>
+                        <Switch
+                            value={formData.is_active}
+                            onValueChange={(value) => setFormData(prev => ({ ...prev, is_active: value }))}
+                            trackColor={{ false: '#E2E8F0', true: '#86EFAC' }}
+                            thumbColor={formData.is_active ? '#059669' : '#FFFFFF'}
+                        />
+                    </View>
+
+                    <View style={{ height: 40 }} />
+                </View>
             </BottomModalTemplate>
 
             {/* Premium Confirm Modal */}
@@ -1141,8 +1136,7 @@ const styles = StyleSheet.create({
         fontWeight: '800',
     },
     modalContent: {
-        padding: 20,
-        paddingBottom: 40,
+        paddingBottom: 80, // Tambah padding bawah agar scroll lebih lega dan tidak terpotong footer
     },
     saveBtn: {
         backgroundColor: '#059669',
@@ -1151,20 +1145,30 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 10,
+        gap: 12,
+        width: '100%',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#059669',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+            },
+            android: {
+                elevation: 6,
+            },
+        }),
     },
     saveBtnDisabled: {
-        backgroundColor: '#94A3B8',
+        backgroundColor: '#CBD5E1',
+        elevation: 0,
     },
     saveBtnText: {
         fontSize: 16,
-        fontWeight: 'bold',
+        fontWeight: '900',
         color: '#FFFFFF',
-        letterSpacing: 0.5,
-    },
-    // Modal Styles
-    modalContent: {
-        paddingTop: 10,
+        letterSpacing: 1,
+        textTransform: 'uppercase',
     },
     sectionHeader: {
         flexDirection: 'row',
