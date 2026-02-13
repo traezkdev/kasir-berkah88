@@ -105,8 +105,6 @@ const CustomSellerTabBar = ({ state, descriptors, navigation }) => {
                 height: getSafeFooterHeight(insets, 65),
                 paddingBottom: getSafeBottomPadding(insets, 6, 15),
                 paddingTop: 18,
-                borderTopLeftRadius: 20,
-                borderTopRightRadius: 20,
             }
         ]}>
             {state.routes.map((route, index) => {
