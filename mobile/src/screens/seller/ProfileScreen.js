@@ -33,7 +33,8 @@ import {
     Check,
     Camera,
     PlayCircle,
-    Ticket
+    Ticket,
+    Database
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useConfirm } from '../../context/ConfirmContext';
@@ -314,6 +315,9 @@ const ProfileScreen = ({ navigation }) => {
                     {renderMenuItem(<Bell size={20} color="#F59E0B" />, 'Notifikasi', 'Pengaturan pemberitahuan', () => setActiveModal('notif'), '#F59E0B')}
                     {(user?.role === 'admin' || user?.role === 'owner') &&
                         renderMenuItem(<Ticket size={20} color="#059669" />, 'Manajemen Promo', 'Kelola Voucher & Diskon', () => navigation.navigate('PromoManagement'), '#059669')
+                    }
+                    {(user?.role === 'admin' || user?.role === 'owner') &&
+                        renderMenuItem(<Database size={20} color="#138FEA" />, 'Manajemen Database', 'Backup & Restore Data JSON', () => navigation.navigate('DatabaseManagement'), '#138FEA')
                     }
                 </View>
 

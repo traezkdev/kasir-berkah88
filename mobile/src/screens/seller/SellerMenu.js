@@ -32,7 +32,8 @@ import {
     Briefcase,
     TrendingUp,
     Megaphone,
-    Star
+    Star,
+    Database
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -59,11 +60,15 @@ const MENU_ITEMS = [
     { label: 'Laporan Harian', icon: ClipboardCheck, color: '#10B981', bgColor: '#ECFDF5', target: 'DailyReport' },
     { label: 'Chat', icon: MessageCircle, color: '#0EA5E9', bgColor: '#F0F9FF', target: 'ChatScreen' },
     { label: 'Review', icon: Star, color: '#F59E0B', bgColor: '#FFFBEB', target: 'ReviewManagement' },
+    { label: 'Backup DB', icon: Database, color: '#138FEA', bgColor: '#E0F2FE', target: 'DatabaseManagement' },
     { label: 'Profil Saya', icon: UserCircle, color: '#475569', bgColor: '#F1F5F9', target: 'ProfileScreen' },
     { label: 'Tentang App', icon: Code, color: '#64748B', bgColor: '#F8FAFC', target: 'DeveloperCreditsScreen' },
 ];
 
+import { useAuth } from '../../context/AuthContext';
+
 const SellerMenu = ({ navigation }) => {
+    const { user } = useAuth();
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -83,7 +88,16 @@ const SellerMenu = ({ navigation }) => {
             >
                 <Text style={styles.sectionTitle}>Menu Utama</Text>
                 <View style={styles.grid}>
-                    {MENU_ITEMS.map((item, index) => (
+                    {MENU_ITEMS.filter(item => {
+                        // Restrict sensitive menus to admin/owner
+                        const sensitiveMenus = ['Backup DB', 'Promo', 'HPP Management', 'Popup'];
+                        const isAdminOrOwner = user?.role === 'admin' || user?.role === 'owner';
+
+                        if (sensitiveMenus.includes(item.label) || item.target === 'PromoManagement' || item.target === 'PopupManagement') {
+                            return isAdminOrOwner;
+                        }
+                        return true;
+                    }).map((item, index) => (
                         <TouchableOpacity
                             key={index}
                             style={styles.menuItem}

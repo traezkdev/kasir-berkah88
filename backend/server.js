@@ -5930,7 +5930,6 @@ app.delete("/api/cash-reconciliation/:id", authenticateToken, async (req, res) =
 
 // --- Database Backup & Restore Endpoints ---
 
-// Backup Database (Export to JSON)
 app.get("/api/database/backup", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
         const [tables] = await db.query("SHOW TABLES");
@@ -5948,16 +5947,27 @@ app.get("/api/database/backup", authenticateToken, authorizeRoles('admin', 'owne
 
         for (const tableName of tableNames) {
             const [rows] = await db.query(`SELECT * FROM \`${tableName}\``);
-            backupData.data[tableName] = rows;
+
+            // Format dates to local string to prevent UTC conversion in JSON.stringify
+            const formattedRows = rows.map(row => {
+                const newRow = { ...row };
+                for (const key in newRow) {
+                    if (newRow[key] instanceof Date) {
+                        // Offset by 7 hours for WIB and format as YYYY-MM-DD HH:mm:ss
+                        const d = newRow[key];
+                        const offsetDate = new Date(d.getTime() + (7 * 60 * 60 * 1000));
+                        newRow[key] = offsetDate.toISOString().replace('T', ' ').substring(0, 19);
+                    }
+                }
+                return newRow;
+            });
+
+            backupData.data[tableName] = formattedRows;
             backupData.summary[tableName] = rows.length;
         }
 
-        const fileName = `backup-${dbName}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
-
-        res.setHeader('Content-disposition', `attachment; filename=${fileName}`);
-        res.setHeader('Content-type', 'application/json');
-        res.write(JSON.stringify(backupData, null, 2));
-        res.end();
+        // Use res.json instead of res.write for better stability and automatic headers
+        res.json(backupData);
     } catch (err) {
         console.error("Error creating database backup:", err);
         res.status(500).json({ error: "Failed to create backup: " + err.message });
@@ -6012,10 +6022,16 @@ app.post("/api/database/restore", authenticateToken, authorizeRoles('admin', 'ow
                             return JSON.stringify(val);
                         }
 
-                        // NEW: Handle ISO Date strings for MySQL DATETIME columns
+                        // Handle ISO Date strings for MySQL DATETIME columns
                         if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(val)) {
-                            // Convert '2025-11-21T23:37:58.000Z' to '2025-11-21 23:37:58'
-                            return val.replace('T', ' ').split('.')[0].replace('Z', '');
+                            // If it's UTC (ends with Z), convert to local WIB (+7)
+                            if (val.endsWith('Z')) {
+                                const d = new Date(val);
+                                // Format to MySQL DATETIME string in local time
+                                return new Date(d.getTime() + (7 * 60 * 60 * 1000)).toISOString().replace('T', ' ').substring(0, 19);
+                            }
+                            // If already formatted as local, just cleanup T
+                            return val.replace('T', ' ').split('.')[0];
                         }
 
                         return val;

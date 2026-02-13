@@ -1720,10 +1720,14 @@ const setupDatabase = async () => {
 
     // Ensure messages table supports emojis (utf8mb4)
     try {
-      await connection.query("ALTER TABLE messages CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-      console.log('Converted messages table to utf8mb4.');
+      const [tableStatus] = await connection.query("SHOW TABLE STATUS WHERE Name = 'messages'");
+      if (tableStatus.length > 0 && tableStatus[0].Collation !== 'utf8mb4_unicode_ci') {
+        console.log('Migrating messages table to utf8mb4 for emoji support...');
+        await connection.query("ALTER TABLE messages CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        console.log('Successfully converted messages table to utf8mb4.');
+      }
     } catch (e) {
-      console.error('Failed to convert messages table to utf8mb4:', e.message);
+      console.error('Info: Charset conversion for messages table skipped or failed:', e.message);
     }
 
     // Create menu_reviews table
