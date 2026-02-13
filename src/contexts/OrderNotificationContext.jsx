@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import authFetch from '../utils/authFetch';
 import NewOrderPopup from '../components/ui/NewOrderPopup';
 import { jwtDecode } from 'jwt-decode';
@@ -9,6 +10,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 const OrderNotificationContext = createContext();
 
 export const OrderNotificationProvider = ({ children }) => {
+    const location = useLocation();
     const [pendingCount, setPendingCount] = useState(0);
     const [lastSync, setLastSync] = useState(null);
     const [isPopupOpen, setIsPopupOpen] = useState(false);
@@ -81,7 +83,7 @@ export const OrderNotificationProvider = ({ children }) => {
                     });
 
                     // Tampilkan Popup jika role sesuai
-                    if (['admin', 'penjual', 'owner'].includes(currentRole)) {
+                    if (['admin', 'penjual', 'owner', 'kasir'].includes(currentRole)) {
                         fetchLatestOrder();
                     }
                 }
@@ -132,7 +134,7 @@ export const OrderNotificationProvider = ({ children }) => {
         });
 
         newSocket.on('new_order', (order) => {
-            if (['admin', 'penjual', 'owner'].includes(userRole)) {
+            if (['admin', 'penjual', 'owner', 'kasir'].includes(userRole)) {
                 // Play Sound
                 const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
                 audio.play().catch(() => { });
@@ -157,12 +159,14 @@ export const OrderNotificationProvider = ({ children }) => {
     return (
         <OrderNotificationContext.Provider value={{ pendingCount, fetchPendingCount, lastSync, onlineUsers }}>
             {children}
-            <NewOrderPopup
-                isOpen={isPopupOpen}
-                onClose={() => setIsPopupOpen(false)}
-                orderData={latestOrder}
-                userRole={userRole}
-            />
+            {!location.pathname.startsWith('/customer') && (
+                <NewOrderPopup
+                    isOpen={isPopupOpen}
+                    onClose={() => setIsPopupOpen(false)}
+                    orderData={latestOrder}
+                    userRole={userRole}
+                />
+            )}
         </OrderNotificationContext.Provider>
     );
 };

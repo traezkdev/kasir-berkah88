@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import { useChat } from '../../../contexts/ChatContext';
 
-const MobileOrderCard = ({ order, onAccept, onReject, onDelete }) => {
+const MobileOrderCard = ({ order, onAccept, onReject, onComplete, onDelete }) => {
     const navigate = useNavigate();
     const { setActiveChat, setActiveOrder } = useChat();
     const [isExpanded, setIsExpanded] = useState(false);
@@ -30,12 +30,23 @@ const MobileOrderCard = ({ order, onAccept, onReject, onDelete }) => {
         navigate('/admin/chat');
     };
 
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'pending': return 'bg-yellow-500';
+            case 'accepted': return 'bg-blue-500';
+            case 'completed': return 'bg-emerald-500';
+            case 'rejected': return 'bg-red-500';
+            case 'cancelled': return 'bg-gray-400';
+            default: return 'bg-gray-200';
+        }
+    };
+
     return (
         <div className="bg-white dark:bg-slate-800 rounded-[2rem] border border-indigo-50 dark:border-slate-700 shadow-sm overflow-hidden hover:shadow-md transition-all duration-300">
             {/* Top Info Bar */}
             <div className="bg-indigo-50/50 dark:bg-slate-700/50 px-5 py-3 flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full animate-pulse ${order.status === 'pending' ? 'bg-yellow-500' : order.status === 'accepted' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <div className={`w-2 h-2 rounded-full animate-pulse ${getStatusColor(order.status)}`}></div>
                     <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Pesanan #{order.id}</span>
                 </div>
                 <span className="text-[10px] font-bold text-gray-400 capitalize">
@@ -128,6 +139,23 @@ const MobileOrderCard = ({ order, onAccept, onReject, onDelete }) => {
                             >
                                 Terima Sekarang
                                 <Icon name="ArrowRight" size={18} className="group-hover:translate-x-1 transition-transform" />
+                            </button>
+                        </>
+                    ) : order.status === 'accepted' ? (
+                        <>
+                            <button
+                                onClick={onReject}
+                                className="bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 p-3 rounded-2xl transition-all active:scale-90"
+                                title="Batalkan Pesanan"
+                            >
+                                <Icon name="X" size={20} strokeWidth={3} />
+                            </button>
+                            <button
+                                onClick={onComplete}
+                                className="flex-1 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white py-3.5 rounded-2xl font-black shadow-lg shadow-emerald-200 flex items-center justify-center gap-2 transition-all active:scale-95 group"
+                            >
+                                Selesaikan Pesanan
+                                <Icon name="CheckCircle2" size={18} className="group-hover:scale-110 transition-transform" />
                             </button>
                         </>
                     ) : (

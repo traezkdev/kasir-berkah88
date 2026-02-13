@@ -5,6 +5,7 @@ import Icon from '../../../components/AppIcon';
 import authFetch from '../../../utils/authFetch';
 import { useAppSettings } from '../../../contexts/AppSettingsContext';
 import { useCart } from '../context/CartContext';
+import { useChat } from '../../../contexts/ChatContext';
 
 const CustomerDashboard = () => {
     const navigate = useNavigate();
@@ -14,6 +15,7 @@ const CustomerDashboard = () => {
     const [userName, setUserName] = useState('Pelanggan');
     const [points, setPoints] = useState(0);
     const { cartCount } = useCart();
+    const { unreadCount } = useChat();
     const { isOpen } = useAppSettings();
 
     const [banners, setBanners] = useState([]);
@@ -22,6 +24,7 @@ const CustomerDashboard = () => {
 
     // Information Center States - Only keep essential for notification dot
     const [hasNewInfo, setHasNewInfo] = useState(false);
+    const [latestInfoTimestamp, setLatestInfoTimestamp] = useState(0);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -103,7 +106,10 @@ const CustomerDashboard = () => {
                 if (infoData.data && infoData.data.length > 0) {
                     const latestInfo = infoData.data[0];
                     const latestTimestamp = new Date(latestInfo.created_at).getTime();
-                    const lastSeenTimestamp = parseInt(localStorage.getItem('last_seen_info_timestamp') || '0');
+                    setLatestInfoTimestamp(latestTimestamp);
+
+                    const storedTimestamp = localStorage.getItem('last_seen_info_timestamp');
+                    const lastSeenTimestamp = storedTimestamp ? Number(storedTimestamp) : 0;
 
                     if (lastSeenTimestamp < latestTimestamp) {
                         setHasNewInfo(true);
@@ -122,9 +128,9 @@ const CustomerDashboard = () => {
         const pollInterval = setInterval(fetchData, 10000); // Poll every 10s for better responsiveness
 
         // Socket.io Realtime Implementation
-        const API_URL = import.meta.env.VITE_API_URL || '';
+        const API_URL = import.meta.env.VITE_API_URL;
         const socket = io(API_URL, {
-            transports: ['websocket'],
+            transports: ['polling', 'websocket'],
             forceNew: true
         });
 
@@ -162,7 +168,11 @@ const CustomerDashboard = () => {
     };
 
     const handleOpenInfo = () => {
-        // Navigate to Information Center page
+        // Mark info as seen
+        if (latestInfoTimestamp > 0) {
+            localStorage.setItem('last_seen_info_timestamp', latestInfoTimestamp.toString());
+        }
+        setHasNewInfo(false);
         navigate('/customer/information');
     };
 
@@ -195,8 +205,11 @@ const CustomerDashboard = () => {
                         <Icon name="Search" className="w-4 h-4 text-gray-400" />
                         <span className="text-gray-400 text-xs font-medium">Cari menu favorit...</span>
                     </div>
-                    <Link to="/customer/chat" className="p-2 text-gray-400 hover:text-green-600 transition-colors">
+                    <Link to="/customer/chat" className="p-2 text-gray-400 hover:text-green-600 transition-colors relative">
                         <Icon name="MessageCircle" className="w-5 h-5" />
+                        {unreadCount > 0 && (
+                            <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                        )}
                     </Link>
                     <Link to="/customer/cart" className="p-2 text-gray-400 hover:text-green-600 transition-colors relative">
                         <Icon name="ShoppingCart" className="w-5 h-5" />
@@ -223,11 +236,14 @@ const CustomerDashboard = () => {
                         >
                             <Icon name="Bell" className="w-5 h-5 text-white" />
                             {hasNewInfo && (
-                                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border border-white"></span>
+                                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border border-white shadow-sm ring-2 ring-red-500/20"></span>
                             )}
                         </button>
                         <Link to="/customer/chat" className="bg-white/20 p-2 rounded-full hover:bg-white/30 transition-colors backdrop-blur-sm relative">
                             <Icon name="MessageCircle" className="w-5 h-5 text-white" />
+                            {unreadCount > 0 && (
+                                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border border-white shadow-sm"></span>
+                            )}
                         </Link>
                         <Link to="/customer/cart" className="bg-white/20 p-2 rounded-full hover:bg-white/30 transition-colors backdrop-blur-sm relative">
                             <Icon name="ShoppingCart" className="w-5 h-5 text-white" />

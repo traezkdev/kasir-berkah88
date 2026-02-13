@@ -24,6 +24,20 @@ const setupDatabase = async () => {
     console.log('Connected to MySQL database.');
 
     // SQL statements to create tables if they don't exist
+    const createReviewsTable = `
+      CREATE TABLE IF NOT EXISTS reviews (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        menu_item_id VARCHAR(255) NOT NULL,
+        rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+        comment TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE
+      );
+    `;
+
     const createMenuItemsTable = `
       CREATE TABLE IF NOT EXISTS menu_items (
         id VARCHAR(255) PRIMARY KEY,
@@ -171,6 +185,9 @@ const setupDatabase = async () => {
     console.log('promos table is ready.');
     await connection.query(createInformationTable);
     console.log('information table is ready.');
+
+    await connection.query(createReviewsTable);
+    console.log('reviews table is ready.');
 
     // Create popups table for multiple popup management
     const createPopupsTable = `

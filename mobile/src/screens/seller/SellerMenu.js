@@ -31,7 +31,8 @@ import {
     Bell,
     Briefcase,
     TrendingUp,
-    Megaphone
+    Megaphone,
+    Star
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -57,6 +58,7 @@ const MENU_ITEMS = [
     { label: 'Manajemen HPP', icon: TrendingUp, color: '#2563EB', bgColor: '#EFF6FF', target: 'HppManagement' },
     { label: 'Laporan Harian', icon: ClipboardCheck, color: '#10B981', bgColor: '#ECFDF5', target: 'DailyReport' },
     { label: 'Chat', icon: MessageCircle, color: '#0EA5E9', bgColor: '#F0F9FF', target: 'ChatScreen' },
+    { label: 'Review', icon: Star, color: '#F59E0B', bgColor: '#FFFBEB', target: 'ReviewManagement' },
     { label: 'Profil Saya', icon: UserCircle, color: '#475569', bgColor: '#F1F5F9', target: 'ProfileScreen' },
     { label: 'Tentang App', icon: Code, color: '#64748B', bgColor: '#F8FAFC', target: 'DeveloperCreditsScreen' },
 ];

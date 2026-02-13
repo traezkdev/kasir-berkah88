@@ -37,7 +37,7 @@ const EditRawMaterialModal = ({ isOpen, onClose, material, onMaterialUpdated, sh
   const [error, setError] = useState(null);
   const [units, setUnits] = useState([]); // State for units
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+  const API_BASE_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     if (isOpen && material) {

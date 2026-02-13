@@ -15,7 +15,7 @@ const CustomerOrderConfirmation = () => {
     const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
     const [selectedOrderForRating, setSelectedOrderForRating] = useState(null);
     const [submittingRating, setSubmittingRating] = useState(false);
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+    const API_URL = import.meta.env.VITE_API_URL || '';
     const [scrolled, setScrolled] = useState(false);
 
     useEffect(() => {
@@ -75,11 +75,20 @@ const CustomerOrderConfirmation = () => {
 
         socket.on('order_update', (data) => {
             console.log('Realtime Order Update (Customer Tracking):', data);
+
+            // Play sound for status update
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+            audio.play().catch(e => console.warn('Audio play failed:', e));
+
             fetchOrders(1);
         });
 
+        // Polling fallback every 30 seconds
+        const pollInterval = setInterval(() => fetchOrders(1), 30000);
+
         return () => {
             socket.disconnect();
+            clearInterval(pollInterval);
         };
     }, [fetchOrders, API_URL]);
 
@@ -90,17 +99,17 @@ const CustomerOrderConfirmation = () => {
     const getStatusInfo = (status) => {
         switch (status) {
             case 'pending':
-                return { label: 'Baru', icon: 'Clock', color: 'text-yellow-500', bg: 'bg-yellow-50' };
+                return { label: 'BARU', icon: 'Clock', color: 'text-yellow-500', bg: 'bg-yellow-50' };
             case 'accepted':
-                return { label: 'Diproses', icon: 'ShoppingBag', color: 'text-blue-500', bg: 'bg-blue-50' };
+                return { label: 'SEDANG DIPROSES', icon: 'ShoppingBag', color: 'text-blue-500', bg: 'bg-blue-50' };
             case 'ready':
-                return { label: 'Siap Diambil', icon: 'CheckCircle', color: 'text-green-500', bg: 'bg-green-50' };
+                return { label: 'SIAP DIAMBIL', icon: 'ShoppingBag', color: 'text-green-500', bg: 'bg-green-50' };
             case 'rejected':
-                return { label: 'Ditolak', icon: 'XCircle', color: 'text-red-500', bg: 'bg-red-50' };
+                return { label: 'PESANAN DITOLAK', icon: 'XCircle', color: 'text-red-500', bg: 'bg-red-50' };
             case 'cancelled':
-                return { label: 'Batal', icon: 'Slash', color: 'text-gray-400', bg: 'bg-gray-50' };
+                return { label: 'PESANAN BATAL', icon: 'Slash', color: 'text-gray-400', bg: 'bg-gray-50' };
             case 'completed':
-                return { label: 'Selesai', icon: 'CheckCircle', color: 'text-emerald-600', bg: 'bg-emerald-50' };
+                return { label: 'PESANAN SELESAI', icon: 'CheckCircle2', color: 'text-emerald-600', bg: 'bg-emerald-50' };
             default:
                 return { label: status, icon: 'Info', color: 'text-gray-500', bg: 'bg-gray-50' };
         }
@@ -394,7 +403,8 @@ const RatingModal = ({ order, onClose, onSubmit, submitting }) => {
                 <div className="flex justify-between items-center mb-6 shrink-0">
                     <div>
                         <h2 className="text-xl font-black text-gray-900 tracking-tight leading-none mb-1">Beri Ulasan</h2>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Pesanan #{order.id}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-2">Pesanan #{order.id}</p>
+                        <p className="text-[11px] text-gray-500 font-medium">Bagaimana makananmu? Ceritakan pengalamanmu untuk membantu pelanggan lain.</p>
                     </div>
                     <button onClick={onClose} className="p-2 bg-gray-100 rounded-full text-gray-500">
                         <Icon name="X" className="w-5 h-5" />

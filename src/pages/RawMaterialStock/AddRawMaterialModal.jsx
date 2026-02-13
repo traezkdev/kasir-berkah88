@@ -16,7 +16,7 @@ const AddRawMaterialModal = ({ isOpen, onClose, onMaterialAdded, showMessage, sh
   const [error, setError] = useState(null);
   const [units, setUnits] = useState([]);
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+  const API_BASE_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     if (isOpen) {
