@@ -25,3 +25,7 @@ Jangan ubah logic business.
 Fokus hanya pada UI & responsiveness.
 
 Kembalikan hanya kode yang sudah diperbaiki.
+
+
+
+eas update --branch preview --message "Memperbaiki tampilan header"
