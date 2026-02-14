@@ -18,6 +18,8 @@ import logoImg from '/assets/images/logo.png';
 /**
  * LANDING PAGE UNTUK DOWNLOAD APLIKASI K BERKAH 88 (ANDROID ONLY)
  * Dibuat dengan gaya modern, premium, dan responsive.
+ * Copywriting: Santai & Agamis.
+ * by traezkdev
  */
 const DownloadApp = () => {
     // ==========================================
@@ -37,38 +39,38 @@ const DownloadApp = () => {
     const features = [
         {
             icon: ShoppingBag,
-            title: "Pemesanan Instan",
-            desc: "Pesan makanan favorit Anda hanya dalam beberapa ketukan tanpa harus mengantri di kasir.",
+            title: "Pesan Sat-set!",
+            desc: "Gak perlu antri lama lagi. Bismillah, klik-klik aja, pesanan langsung kami proses dengan cinta.",
             color: "bg-emerald-100 text-emerald-600"
         },
         {
             icon: Clock,
-            title: "Status Real-time",
-            desc: "Pantau proses pembuatan pesanan Anda mulai dari dapur hingga siap diantar ke meja.",
+            title: "Pantau Real-time",
+            desc: "InsyaAllah pesanan Anda selalu terpantau. Dari dapur sampai ke meja, semua kelihatan statusnya.",
             color: "bg-blue-100 text-blue-600"
         },
         {
             icon: Star,
-            title: "Poin Loyalitas",
-            desc: "Kumpulkan poin setiap kali Anda bertransaksi dan tukarkan dengan diskon menarik.",
+            title: "Tabungan Berkah",
+            desc: "Setiap transaksi ada poinnya lho. Kumpulkan terus buat dapet diskon yang bikin makin bersyukur.",
             color: "bg-amber-100 text-amber-600"
         },
         {
             icon: Bell,
-            title: "Notifikasi Promo",
-            desc: "Dapatkan pemberitahuan eksklusif tentang menu baru dan promo spesial khusus pengguna aplikasi.",
+            title: "Kabar Bahagia",
+            desc: "Jangan sampai ketinggalan info menu baru atau promo spesial yang cuma ada di aplikasi.",
             color: "bg-rose-100 text-rose-600"
         },
         {
             icon: CreditCard,
-            title: "Riwayat Transaksi",
-            desc: "Lihat semua riwayat belanja dan struk digital Anda tersimpan rapi dalam aplikasi.",
+            title: "Catatan Rapi",
+            desc: "Semua struk belanja tersimpan aman di aplikasi. Gak perlu takut hilang, sejarah jajanmu tetap rapi.",
             color: "bg-purple-100 text-purple-600"
         },
         {
             icon: BarChart3,
-            title: "Rekomendasi Menu",
-            desc: "Temukan menu terlaris dan rekomendasi spesial yang disesuaikan dengan selera Anda.",
+            title: "Pas di Lidah",
+            desc: "Dapetin rekomendasi menu yang paling cocok buat kamu. Makan enak, hati pun jadi senang.",
             color: "bg-indigo-100 text-indigo-600"
         }
     ];
@@ -90,18 +92,18 @@ const DownloadApp = () => {
                 <div className="flex items-center gap-8">
                     <div className="hidden md:flex items-center gap-6">
                         <a href="#features" onClick={scrollToFeatures} className="text-sm font-bold text-slate-600 hover:text-emerald-600 transition-colors">
-                            Fitur Unggulan
+                            Apa Yang Menarik?
                         </a>
                     </div>
                     <div className="hidden sm:block">
-                        <span className="text-sm font-medium text-slate-500">Aplikasi Kasir & Pemesanan</span>
+                        <span className="text-sm font-medium text-slate-500 italic">Makan Enak, Hidup Berkah</span>
                     </div>
                 </div>
             </nav>
 
             <main className="relative z-10 max-w-7xl mx-auto px-6 pt-16 lg:pt-24 pb-24 lg:flex lg:items-center lg:gap-12 min-h-[80vh]">
                 {/* Left Content */}
-                <div className="lg:w-1/2 text-left">
+                <div className="lg:w-1/2 text-center lg:text-left">
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -109,50 +111,49 @@ const DownloadApp = () => {
                     >
                         <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-8 text-sm font-bold tracking-wide text-emerald-700 uppercase bg-emerald-100/80 backdrop-blur-sm rounded-full border border-emerald-200">
                             <Smartphone size={16} />
-                            Tersedia Untuk Android
+                            Khusus Pengguna Android
                         </div>
 
                         <h1 className="text-5xl lg:text-7xl font-extrabold leading-[1.1] mb-8 tracking-tight text-slate-900">
-                            Cara <span className="text-emerald-600">Terbaik</span> Pesan Makan Favoritmu.
+                            Bismillah, <span className="text-emerald-600 text-shadow-sm">Makan Enak</span> Jadi Lebih Mudah.
                         </h1>
 
-                        <p className="text-lg lg:text-xl text-slate-600 mb-12 max-w-lg leading-relaxed">
-                            Dapatkan pengalaman memesan yang lebih cepat dan nyaman langsung dari genggaman Anda. Dirancang khusus untuk pelanggan setia <span className="font-semibold text-emerald-700">K Berkah 88</span>.
+                        <p className="text-lg lg:text-xl text-slate-600 mb-12 max-w-lg leading-relaxed font-medium">
+                            Nikmati kemudahan pesan makanan dari <span className="font-bold text-emerald-700 underline decoration-emerald-200">Berkah 88</span> langsung di genggamanmu. Gak pake antri, gak pake ribet, semua jadi makin berkah.
                         </p>
 
-                        <div className="flex flex-col sm:flex-row gap-5 mb-16">
+                        <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-5 mb-16">
                             <motion.a
                                 href={downloadLink}
                                 download
                                 whileHover={{ scale: 1.02, translateY: -2 }}
                                 whileTap={{ scale: 0.98 }}
-                                className="flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white px-10 py-5 rounded-2xl font-bold text-lg shadow-2xl shadow-emerald-200 transition-all group"
+                                className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3.5 sm:px-10 sm:py-5 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-lg shadow-2xl shadow-emerald-200 transition-all group whitespace-nowrap"
                             >
-                                <Download size={24} className="group-hover:translate-y-0.5 transition-transform" />
-                                Download Link (APK)
+                                <Download size={20} className="sm:size-6 group-hover:translate-y-0.5 transition-transform" />
+                                Unduh Aplikasi
                             </motion.a>
-                            <div className="flex flex-col justify-center gap-1.5 px-2">
-                                <div className="flex items-center gap-2 text-slate-700 font-semibold">
+                            <div className="flex flex-col justify-center gap-1.5 px-2 text-center sm:text-left">
+                                <div className="flex items-center justify-center sm:justify-start gap-2 text-slate-700 font-bold">
                                     <CheckCircle2 size={18} className="text-emerald-500" />
-                                    <span>Gratis & Aman</span>
+                                    <span>Alhamdulillah, Gratis!</span>
                                 </div>
-                                <span className="text-xs text-slate-400 font-medium ml-6 uppercase tracking-widest">Versi Terbaru 1.6.1</span>
+                                <span className="text-xs text-slate-400 font-medium ml-0 sm:ml-6 uppercase tracking-widest leading-none">Versi Terbaru 1.6.1</span>
                             </div>
                         </div>
 
-                        {/* Badges Row */}
-                        <div className="flex flex-wrap gap-4 border-t border-slate-200 pt-10">
+                        <div className="flex flex-wrap justify-center lg:justify-start gap-4 border-t border-slate-200 pt-10">
                             <div className="flex items-center gap-2 text-sm font-bold text-slate-500">
                                 <Zap size={16} className="text-emerald-500" />
-                                Instan & Cepat
+                                Sat-set & Praktis
                             </div>
                             <div className="flex items-center gap-2 text-sm font-bold text-slate-500 border-l border-slate-200 pl-4">
                                 <ShieldCheck size={16} className="text-emerald-500" />
-                                Aman 100%
+                                Aman & Terpercaya
                             </div>
                             <div className="flex items-center gap-2 text-sm font-bold text-slate-500 border-l border-slate-200 pl-4">
                                 <CheckCircle2 size={16} className="text-emerald-500" />
-                                Update Setiap Hari
+                                Selalu Update
                             </div>
                         </div>
                     </motion.div>
@@ -169,7 +170,7 @@ const DownloadApp = () => {
                         className="relative mx-auto lg:ml-auto w-full max-w-[340px]"
                     >
                         {/* Phone Frame */}
-                        <div className="relative z-10 bg-slate-900 p-3.5 rounded-[3.2rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] border-[8px] border-slate-800 aspect-[9/18.5] overflow-hidden">
+                        <div className="relative z-10 bg-slate-900 p-3.5 rounded-[3.2rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] border-[8px] border-slate-800 aspect-[9/18.5] overflow-hidden leading-none">
                             <div className="w-full h-full bg-slate-50 rounded-[2.2rem] overflow-hidden relative">
                                 <div className="pt-2 px-6 flex justify-between items-center bg-emerald-600 text-white/90 text-[10px] font-bold">
                                     <span>12:30</span>
@@ -186,7 +187,8 @@ const DownloadApp = () => {
                                         <div className="w-16 h-16 bg-white shadow-xl rounded-2xl flex items-center justify-center mb-6 overflow-hidden">
                                             <img src={logoImg} alt="Logo" className="w-10 h-10 object-contain" />
                                         </div>
-                                        <h3 className="text-2xl font-black text-white leading-tight">Selamat Datang di Berkah 88</h3>
+                                        <h3 className="text-2xl font-black text-white leading-tight">Selamat Datang Kak!</h3>
+                                        <p className="text-emerald-100 text-xs mt-2 font-medium">Siap kulineran penuh berkah hari ini?</p>
                                         <div className="w-12 h-1 bg-emerald-400 mt-4 rounded-full" />
                                     </div>
 
@@ -217,8 +219,8 @@ const DownloadApp = () => {
                                 <CheckCircle2 size={20} />
                             </div>
                             <div className="pr-4">
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider text-left">Status</p>
-                                <p className="text-sm font-black text-slate-800">Pesanan Siap!</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider text-left">Hehe...</p>
+                                <p className="text-sm font-black text-slate-800">Udah Siap Makan!</p>
                             </div>
                         </motion.div>
 
@@ -228,11 +230,11 @@ const DownloadApp = () => {
                             className="absolute -right-16 bottom-32 z-20 bg-white p-4 rounded-2xl shadow-xl border border-emerald-50 flex items-center gap-3"
                         >
                             <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
-                                <Zap size={20} />
+                                <Star size={20} />
                             </div>
                             <div className="pr-4 text-left">
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Promo</p>
-                                <p className="text-sm font-black text-slate-800">Diskon 20%</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Rezeki</p>
+                                <p className="text-sm font-black text-slate-800">Dapet Poin Lagi!</p>
                             </div>
                         </motion.div>
                     </motion.div>
@@ -243,13 +245,13 @@ const DownloadApp = () => {
             <section id="features" ref={featureSectionRef} className="relative z-10 max-w-7xl mx-auto px-6 py-24 border-t border-slate-200">
                 <div className="text-center mb-20">
                     <span className="inline-block px-4 py-1.5 mb-6 text-xs font-black tracking-[0.2em] text-emerald-600 uppercase bg-emerald-100/80 rounded-full border border-emerald-200">
-                        EKOSISTEM DIGITAL
+                        KENAPA PUNYA APLIKASINYA?
                     </span>
                     <h2 className="text-4xl lg:text-6xl font-black leading-tight mb-8 text-slate-900 tracking-tight">
-                        Fitur Yang Membuat <br /><span className="text-emerald-600 italic">Perbedaan.</span>
+                        Ikhtiar Kami Buat <br /><span className="text-emerald-600 italic">Kamu Nyaman.</span>
                     </h2>
-                    <p className="text-lg text-slate-500 max-w-2xl mx-auto leading-relaxed">
-                        Kami memadukan kemudahan teknologi dengan kehangatan pelayanan kami. Jelajahi bagaimana aplikasi kami mempermudah hari-hari Anda.
+                    <p className="text-lg text-slate-500 max-w-2xl mx-auto leading-relaxed font-medium">
+                        Bukan cuma sekadar aplikasi, ini adalah cara kami memuliakan setiap pelanggan setia Berkah 88. Cobain deh beberapa keunggulannya!
                     </p>
                 </div>
 
@@ -289,15 +291,16 @@ const DownloadApp = () => {
                     <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[100px]" />
 
                     <div className="relative z-10">
-                        <h2 className="text-3xl lg:text-5xl font-black mb-8 leading-tight">Mulai Pengalaman <br />Digital Anda Sekarang</h2>
-                        <p className="text-slate-400 text-lg mb-12 max-w-xl mx-auto">Tersedia untuk pengguna Android. Unduh aplikasinya dan dapatkan kemudahan di setiap pesanan.</p>
+                        <h2 className="text-3xl lg:text-5xl font-black mb-8 leading-tight">Alhamdulillah, <br />Yuk Mulai Sekarang!</h2>
+                        <p className="text-slate-400 text-lg mb-2 max-w-xl mx-auto italic">"Makanlah di antara rezeki yang baik yang telah Kami berikan kepadamu..."</p>
+                        <p className="text-emerald-500/60 text-xs mb-12 font-bold uppercase tracking-widest">(QS. Thaha: 81)</p>
                         <a
                             href={downloadLink}
                             download
-                            className="inline-flex items-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white px-10 py-5 rounded-2xl font-bold text-lg transition-all hover:scale-105"
+                            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3.5 sm:px-10 sm:py-5 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-lg transition-all hover:scale-105 shadow-xl shadow-emerald-900/20 whitespace-nowrap"
                         >
-                            Unduh Aplikasi Sekarang
-                            <Zap size={20} className="fill-white" />
+                            Pasang Sekarang
+                            <Download size={18} className="sm:size-5" />
                         </a>
                     </div>
                 </motion.div>
@@ -311,18 +314,17 @@ const DownloadApp = () => {
                             <img src={logoImg} alt="Logo" className="w-8 h-8 object-contain" />
                             <span className="font-bold text-lg">Berkah 88</span>
                         </div>
-                        <p className="text-slate-500 text-sm max-w-xs">Solusi cerdas pemesanan makanan untuk pelanggan setia Berkah 88.</p>
+                        <p className="text-slate-500 text-sm max-w-xs font-medium italic">Ikut andil melayani kebaikan lewat setiap hidangan.</p>
                     </div>
 
-                    <div className="flex flex-wrap justify-center md:justify-start gap-6 text-slate-400 text-sm font-medium">
-                        <a href="#features" onClick={scrollToFeatures} className="hover:text-emerald-600 transition-colors">Fitur</a>
-                        <a href="#" className="hover:text-emerald-600 transition-colors">Tentang Kami</a>
-                        <a href="#" className="hover:text-emerald-600 transition-colors">Bantuan</a>
-                        <a href="#" className="hover:text-emerald-600 transition-colors">Kebijakan Privasi</a>
+                    <div className="flex flex-wrap justify-center md:justify-start gap-6 text-slate-400 text-sm font-bold">
+                        <a href="#features" onClick={scrollToFeatures} className="hover:text-emerald-600 transition-colors uppercase tracking-widest text-xs">Fitur</a>
+                        <a href="#" className="hover:text-emerald-600 transition-colors uppercase tracking-widest text-xs">Tentang Kami</a>
+                        <a href="#" className="hover:text-emerald-600 transition-colors uppercase tracking-widest text-xs">Bantuan</a>
                     </div>
 
-                    <div className="text-slate-400 text-xs">
-                        &copy; {new Date().getFullYear()} K Berkah 88. All rights reserved.
+                    <div className="text-slate-400 text-xs font-bold uppercase tracking-widest leading-none">
+                        &copy; {new Date().getFullYear()} K Berkah 88. Biidznillah.
                     </div>
                 </div>
             </footer>
