@@ -166,7 +166,8 @@ const DownloadApp = () => {
                         {/* Phone Frame */}
                         <div className="relative z-10 bg-slate-900 p-3.5 rounded-[3.2rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] border-[8px] border-slate-800 aspect-[9/18.5] overflow-hidden leading-none">
                             <div className="w-full h-full bg-slate-50 rounded-[2.2rem] overflow-hidden relative">
-                                <div className="pt-2 px-6 flex justify-between items-center bg-emerald-600 text-white/90 text-[10px] font-bold">
+                                {/* Status Bar */}
+                                <div className="pt-2 px-6 flex justify-between items-center bg-emerald-600 text-white/90 text-[10px] font-bold absolute top-0 left-0 right-0 z-10">
                                     <span>12:30</span>
                                     <div className="flex gap-1.5 items-center">
                                         <Zap size={10} />
@@ -176,29 +177,12 @@ const DownloadApp = () => {
                                     </div>
                                 </div>
 
-                                <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 to-emerald-800 flex flex-col pt-12 text-left">
-                                    <div className="px-8 mb-8">
-                                        <div className="w-16 h-16 bg-white shadow-xl rounded-2xl flex items-center justify-center mb-6 overflow-hidden">
-                                            <img src={logoImg} alt="Logo" className="w-10 h-10 object-contain" />
-                                        </div>
-                                        <h3 className="text-2xl font-black text-white leading-tight">Selamat Datang Kak!</h3>
-                                        <p className="text-emerald-100 text-xs mt-2 font-medium">Siap kulineran penuh berkah hari ini?</p>
-                                        <div className="w-12 h-1 bg-emerald-400 mt-4 rounded-full" />
-                                    </div>
-
-                                    <div className="mt-auto bg-slate-50 rounded-t-[2.5rem] p-8 space-y-5 flex-1 shadow-2xl">
-                                        <div className="space-y-2">
-                                            <div className="h-4 w-2/3 bg-slate-200 rounded-full" />
-                                            <div className="h-4 w-full bg-slate-100 rounded-full" />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="h-20 bg-emerald-50 rounded-2xl border border-emerald-100" />
-                                            <div className="h-20 bg-emerald-50 rounded-2xl border border-emerald-100" />
-                                        </div>
-                                        <div className="h-32 bg-slate-100 rounded-2xl" />
-                                        <div className="h-14 w-full bg-emerald-600 rounded-2xl shadow-lg shadow-emerald-200 mt-4" />
-                                    </div>
-                                </div>
+                                {/* App Screenshot */}
+                                <img
+                                    src="/assets/images/kberkah88mobile.jpeg"
+                                    alt="Aplikasi K Berkah 88"
+                                    className="w-full h-full object-cover object-top"
+                                />
                             </div>
                             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-7 bg-slate-900 rounded-b-2xl z-20" />
                         </div>
