@@ -79,7 +79,7 @@ const BerkahLandingPage = () => {
                     <div className="absolute inset-0 bg-black/40" />
                 </div>
 
-                <div className="container relative z-10 mx-auto px-6 text-center text-white">
+                <div className="max-w-7xl relative z-10 mx-auto px-6 text-center text-white">
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -90,7 +90,7 @@ const BerkahLandingPage = () => {
                             Paling Berkah se-Bogor
                         </div>
 
-                        <h1 className="text-5xl md:text-8xl font-black mb-8 leading-[1.05] tracking-tight">
+                        <h1 className="text-5xl md:text-6xl lg:text-7xl font-black mb-8 leading-[1.05] tracking-tight">
                             Bismillah,<br />
                             <span className="text-emerald-400">Makan Enak</span><br />
                             <span className="text-white/90">Hidup Berkah.</span>
@@ -128,7 +128,7 @@ const BerkahLandingPage = () => {
 
             {/* Highlights Section */}
             <section id="highlights" className="py-24 relative z-10 bg-white">
-                <div className="container mx-auto px-6">
+                <div className="max-w-7xl mx-auto px-6">
                     <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-8 text-center md:text-left">
                         <div className="max-w-2xl">
                             <span className="text-emerald-600 font-black text-xs uppercase tracking-[0.3em] mb-4 block">IKHTIAR TERBAIK</span>
@@ -163,7 +163,7 @@ const BerkahLandingPage = () => {
 
             {/* Products Grid Section */}
             <section id="products" className="py-24 bg-slate-50 relative z-10">
-                <div className="container mx-auto px-6">
+                <div className="max-w-7xl mx-auto px-6">
                     <div className="text-center mb-16">
                         <span className="inline-block px-4 py-1.5 mb-6 text-xs font-black tracking-[0.2em] text-emerald-600 uppercase bg-emerald-100/80 rounded-full border border-emerald-200">
                             EKOSISTEM MENU
@@ -238,7 +238,7 @@ const BerkahLandingPage = () => {
 
             {/* Services / Partner Section */}
             <section id="delivery" className="py-24 bg-white relative z-10 overflow-hidden">
-                <div className="container mx-auto px-6">
+                <div className="max-w-7xl mx-auto px-6">
                     <div className="text-center mb-20">
                         <span className="text-emerald-600 font-black text-xs uppercase tracking-[0.3em] mb-4 block">PESAN ONLINE</span>
                         <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
@@ -298,7 +298,7 @@ const BerkahLandingPage = () => {
 
             {/* Mobile App CTA Section */}
             <section className="py-24 bg-white relative z-10">
-                <div className="container mx-auto px-6">
+                <div className="max-w-7xl mx-auto px-6">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         whileInView={{ opacity: 1, scale: 1 }}
@@ -319,15 +319,28 @@ const BerkahLandingPage = () => {
                                 </a>
                             </div>
                             <div className="relative">
-                                <div className="w-64 h-[500px] bg-slate-800 rounded-[3rem] border-[8px] border-slate-700 shadow-2xl relative overflow-hidden group">
-                                    <div className="absolute inset-0 bg-emerald-600 flex items-center justify-center p-8">
-                                        <div className="text-center">
-                                            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-6 mx-auto">
-                                                <img src={logoImg} className="w-10 h-10 object-contain" alt="Logo" />
+                                <div className="relative z-10 bg-slate-900 p-3.5 rounded-[3.2rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] border-[8px] border-slate-800 w-64 aspect-[9/18.5] overflow-hidden">
+                                    <div className="w-full h-full bg-slate-50 rounded-[2.2rem] overflow-hidden relative">
+                                        {/* Status Bar */}
+                                        <div className="pt-2 px-6 flex justify-between items-center bg-emerald-600 text-white/90 text-[10px] font-bold absolute top-0 left-0 right-0 z-10">
+                                            <span>12:30</span>
+                                            <div className="flex gap-1.5 items-center">
+                                                <Zap size={10} />
+                                                <div className="w-4 h-2 rounded-sm border border-white/50 relative">
+                                                    <div className="absolute left-0.5 top-0.5 bottom-0.5 right-0.5 bg-white rounded-px" />
+                                                </div>
                                             </div>
-                                            <div className="h-4 w-24 bg-white/20 rounded-full mx-auto" />
                                         </div>
+
+                                        {/* App Screenshot */}
+                                        <img
+                                            src="/assets/images/kberkah88mobile.jpeg"
+                                            alt="Aplikasi K Berkah 88"
+                                            className="w-full h-full object-cover object-top"
+                                        />
                                     </div>
+                                    {/* Notch */}
+                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-7 bg-slate-900 rounded-b-2xl z-20" />
                                 </div>
                             </div>
                         </div>
@@ -337,7 +350,7 @@ const BerkahLandingPage = () => {
 
             {/* Location Section */}
             <section id="location" className="py-24 bg-slate-50 relative z-10">
-                <div className="container mx-auto px-6 text-center">
+                <div className="max-w-7xl mx-auto px-6 text-center">
                     <div className="mb-16">
                         <span className="text-emerald-600 font-black text-xs uppercase tracking-[0.3em] mb-4 block">MAMPIR YUK</span>
                         <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">Lokasi Outlet Kami</h2>
