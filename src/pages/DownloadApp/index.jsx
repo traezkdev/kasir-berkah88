@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
     Smartphone,
@@ -35,27 +35,6 @@ const DownloadApp = () => {
         e.preventDefault();
         featureSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
-
-    // Update browser theme color for mobile
-    useEffect(() => {
-        let metaThemeColor = document.querySelector('meta[name="theme-color"]');
-        const originalColor = metaThemeColor ? metaThemeColor.getAttribute('content') : '#128EEA';
-
-        if (!metaThemeColor) {
-            metaThemeColor = document.createElement('meta');
-            metaThemeColor.setAttribute('name', 'theme-color');
-            document.head.appendChild(metaThemeColor);
-        }
-
-        metaThemeColor.setAttribute('content', '#059669'); // Emerald 600
-
-        return () => {
-            const meta = document.querySelector('meta[name="theme-color"]');
-            if (meta) {
-                meta.setAttribute('content', originalColor);
-            }
-        };
-    }, []);
 
     const features = [
         {
