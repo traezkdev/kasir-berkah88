@@ -3317,7 +3317,7 @@ app.post("/api/v2/transactions", authenticateToken, authorizeRoles('user', 'admi
 // --- Expense Endpoints ---
 
 // Get all expenses without pagination
-app.get("/api/expenses/all", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'owner'), async (req, res) => {
+app.get("/api/expenses/all", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'seller', 'user', 'guest'), async (req, res) => {
     try {
         const [closingRow] = await db.query("SELECT value FROM settings WHERE `key` = 'last_closing_date'");
         const lastClosingDate = closingRow.length > 0 ? closingRow[0].value : null;
@@ -3349,7 +3349,7 @@ app.get("/api/expenses/all", authenticateToken, authorizeRoles('user', 'admin', 
 });
 
 // Get all expenses with pagination and date range filtering
-app.get("/api/expenses", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'owner'), async (req, res, next) => {
+app.get("/api/expenses", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'seller', 'user', 'guest'), async (req, res, next) => {
     try {
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 20;
@@ -3429,14 +3429,15 @@ app.get("/api/expenses", authenticateToken, authorizeRoles('user', 'admin', 'gue
 });
 
 // Add a new expense
-app.post("/api/expenses", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
+app.post("/api/expenses", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'seller', 'user'), async (req, res, next) => {
     try {
         const { name, amount, category, date, notes } = req.body;
         if (!name || !amount || !date) {
             return res.status(400).json({ "error": "Missing required fields: name, amount, date" });
         }
         const sql = 'INSERT INTO expenses (name, amount, category, date, notes, user_id) VALUES (?,?,?,?,?,?)';
-        const params = [name, amount, category, date, notes, req.user.userId];
+        const cleanDate = date ? date.split('+')[0].split('Z')[0].replace('T', ' ') : null;
+        const params = [name, parseFloat(amount) || 0, category, cleanDate, notes, req.user.userId];
         const [result] = await db.query(sql, params);
 
         await logActivity(req.user.userId, 'Tambah Pengeluaran', 'expense', result.insertId, `Pengeluaran baru: ${name} sebesar Rp ${parseFloat(amount).toLocaleString('id-ID')}`);
@@ -3451,7 +3452,7 @@ app.post("/api/expenses", authenticateToken, authorizeRoles('user', 'admin'), as
 });
 
 // Update an expense
-app.put("/api/expenses/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
+app.put("/api/expenses/:id", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'seller', 'user'), async (req, res, next) => {
     try {
         const { name, amount, category, date, notes } = req.body;
         const sql = `UPDATE expenses set 
@@ -3461,7 +3462,11 @@ app.put("/api/expenses/:id", authenticateToken, authorizeRoles('user', 'admin'),
            date = COALESCE(?, date), 
            notes = COALESCE(?, notes) 
            WHERE id = ?`;
-        const params = [name, amount, category, date ? date.replace('T', ' ') : null, notes, req.params.id];
+
+        // Clean date for MySQL (e.g. 2024-02-14T10:00:00.000Z or 2024-02-14 10:00:00+07:00 -> 2024-02-14 10:00:00)
+        const cleanDate = date ? date.split('+')[0].split('Z')[0].replace('T', ' ') : null;
+
+        const params = [name, amount ? parseFloat(amount) : null, category, cleanDate, notes, req.params.id];
         const [result] = await db.query(sql, params);
 
         if (result.affectedRows === 0) {
@@ -3507,7 +3512,7 @@ app.delete("/api/expenses/all", authenticateToken, authorizeRoles('admin'), asyn
 });
 
 // Delete an expense
-app.delete("/api/expenses/:id", authenticateToken, authorizeRoles('user', 'admin'), async (req, res, next) => {
+app.delete("/api/expenses/:id", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual', 'seller', 'user'), async (req, res, next) => {
     try {
         const sql = 'DELETE FROM expenses WHERE id = ?';
         const [result] = await db.query(sql, [req.params.id]);
@@ -5925,7 +5930,6 @@ app.delete("/api/cash-reconciliation/:id", authenticateToken, async (req, res) =
 
 // --- Database Backup & Restore Endpoints ---
 
-// Backup Database (Export to JSON)
 app.get("/api/database/backup", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
         const [tables] = await db.query("SHOW TABLES");
@@ -5943,16 +5947,27 @@ app.get("/api/database/backup", authenticateToken, authorizeRoles('admin', 'owne
 
         for (const tableName of tableNames) {
             const [rows] = await db.query(`SELECT * FROM \`${tableName}\``);
-            backupData.data[tableName] = rows;
+
+            // Format dates to local string to prevent UTC conversion in JSON.stringify
+            const formattedRows = rows.map(row => {
+                const newRow = { ...row };
+                for (const key in newRow) {
+                    if (newRow[key] instanceof Date) {
+                        // Offset by 7 hours for WIB and format as YYYY-MM-DD HH:mm:ss
+                        const d = newRow[key];
+                        const offsetDate = new Date(d.getTime() + (7 * 60 * 60 * 1000));
+                        newRow[key] = offsetDate.toISOString().replace('T', ' ').substring(0, 19);
+                    }
+                }
+                return newRow;
+            });
+
+            backupData.data[tableName] = formattedRows;
             backupData.summary[tableName] = rows.length;
         }
 
-        const fileName = `backup-${dbName}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
-
-        res.setHeader('Content-disposition', `attachment; filename=${fileName}`);
-        res.setHeader('Content-type', 'application/json');
-        res.write(JSON.stringify(backupData, null, 2));
-        res.end();
+        // Use res.json instead of res.write for better stability and automatic headers
+        res.json(backupData);
     } catch (err) {
         console.error("Error creating database backup:", err);
         res.status(500).json({ error: "Failed to create backup: " + err.message });
@@ -6007,10 +6022,16 @@ app.post("/api/database/restore", authenticateToken, authorizeRoles('admin', 'ow
                             return JSON.stringify(val);
                         }
 
-                        // NEW: Handle ISO Date strings for MySQL DATETIME columns
+                        // Handle ISO Date strings for MySQL DATETIME columns
                         if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(val)) {
-                            // Convert '2025-11-21T23:37:58.000Z' to '2025-11-21 23:37:58'
-                            return val.replace('T', ' ').split('.')[0].replace('Z', '');
+                            // If it's UTC (ends with Z), convert to local WIB (+7)
+                            if (val.endsWith('Z')) {
+                                const d = new Date(val);
+                                // Format to MySQL DATETIME string in local time
+                                return new Date(d.getTime() + (7 * 60 * 60 * 1000)).toISOString().replace('T', ' ').substring(0, 19);
+                            }
+                            // If already formatted as local, just cleanup T
+                            return val.replace('T', ' ').split('.')[0];
                         }
 
                         return val;

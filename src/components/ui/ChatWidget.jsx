@@ -5,11 +5,13 @@ import {
     FiUser, FiCheck, FiClock, FiMoreVertical, FiArrowLeft, FiTrash2
 } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
+import { useLocation } from 'react-router-dom';
 import { useChat } from '../../contexts/ChatContext';
 import authFetch from '../../utils/authFetch';
 import OrderPinWidget from './OrderPinWidget';
 
 const ChatWidget = () => {
+    const location = useLocation();
     const {
         unreadCount,
         activeChat,
@@ -241,6 +243,11 @@ const ChatWidget = () => {
 
     // If customer and no conversations, the list view should show "Contacts" (Sellers)
     const displayList = (userRole === 'pelanggan' && conversations.length === 0) ? otherUsers : conversations;
+
+    // Sembunyikan widget di Halaman Utama (/) dan Halaman Download (/download)
+    if (location.pathname === '/' || location.pathname === '/berkah88' || location.pathname === '/download') {
+        return null;
+    }
 
     return (
         <div className="fixed bottom-24 right-6 z-[9999] font-sans">

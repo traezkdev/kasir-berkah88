@@ -48,6 +48,7 @@ import { useConfirm } from '../../context/ConfirmContext';
 import apiService, { API_URL } from '../../api/apiService';
 import usePopups from '../../hooks/usePopups';
 import PopupModal from '../../components/PopupModal';
+import AppImage from '../../components/AppImage';
 
 const { width } = Dimensions.get('window');
 
@@ -55,8 +56,8 @@ const { width } = Dimensions.get('window');
 const CartItem = React.memo(({ item, updateQuantity, handleRemoveItem, formatCurrency }) => {
     return (
         <View style={styles.cartItem}>
-            <Image
-                source={{ uri: item.image_url ? `${API_URL}${item.image_url}` : 'https://via.placeholder.com/150' }}
+            <AppImage
+                uri={item.image_url}
                 style={styles.itemImage}
             />
             <View style={styles.itemInfo}>

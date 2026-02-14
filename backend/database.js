@@ -94,7 +94,9 @@ const setupDatabase = async () => {
         amount DECIMAL(10, 2) NOT NULL,
         category VARCHAR(255),
         date DATETIME NOT NULL,
-        notes TEXT DEFAULT NULL
+        notes TEXT DEFAULT NULL,
+        user_id INT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
       );
     `;
 
@@ -1718,10 +1720,14 @@ const setupDatabase = async () => {
 
     // Ensure messages table supports emojis (utf8mb4)
     try {
-      await connection.query("ALTER TABLE messages CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-      console.log('Converted messages table to utf8mb4.');
+      const [tableStatus] = await connection.query("SHOW TABLE STATUS WHERE Name = 'messages'");
+      if (tableStatus.length > 0 && tableStatus[0].Collation !== 'utf8mb4_unicode_ci') {
+        console.log('Migrating messages table to utf8mb4 for emoji support...');
+        await connection.query("ALTER TABLE messages CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        console.log('Successfully converted messages table to utf8mb4.');
+      }
     } catch (e) {
-      console.error('Failed to convert messages table to utf8mb4:', e.message);
+      console.error('Info: Charset conversion for messages table skipped or failed:', e.message);
     }
 
     // Create menu_reviews table
@@ -2036,6 +2042,29 @@ const setupDatabase = async () => {
       console.error('Error setting up expense_categories table:', err);
     }
 
+    // --- Expenses Table Migrations ---
+    try {
+      const [expenseCols] = await connection.query("SHOW COLUMNS FROM expenses");
+      const expenseColNames = expenseCols.map(c => c.Field);
+
+      if (!expenseColNames.includes('user_id')) {
+        await connection.query("ALTER TABLE expenses ADD COLUMN user_id INT NULL");
+        try {
+          await connection.query("ALTER TABLE expenses ADD FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL");
+        } catch (fkErr) {
+          console.log('Skipping FK creation for expenses.user_id (might already exist)');
+        }
+        console.log("Added user_id column to expenses table.");
+      }
+
+      if (!expenseColNames.includes('notes')) {
+        await connection.query("ALTER TABLE expenses ADD COLUMN notes TEXT DEFAULT NULL");
+        console.log("Added notes column to expenses table.");
+      }
+    } catch (err) {
+      console.error('Error migrating expenses table:', err);
+    }
+
     // --- Information Table Migrations ---
     try {
       const [linkTypeCol] = await connection.query("SHOW COLUMNS FROM information LIKE 'link_type'");
@@ -2053,11 +2082,6 @@ const setupDatabase = async () => {
     }
 
     connection.release();
-
-
-
-
-
 
   } catch (error) {
     console.error('Error setting up the database:', error);

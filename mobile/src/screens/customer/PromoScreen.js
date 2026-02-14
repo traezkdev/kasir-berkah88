@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     StyleSheet,
     View,
@@ -13,7 +13,9 @@ import {
     Alert,
     Clipboard,
     Modal,
-    FlatList
+    FlatList,
+    PanResponder,
+    Animated
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -44,6 +46,7 @@ import apiService, { API_URL } from '../../api/apiService';
 import { getSafeBottomPadding } from '../../utils/safeArea';
 import usePopups from '../../hooks/usePopups';
 import PopupModal from '../../components/PopupModal';
+import AppImage from '../../components/AppImage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -57,6 +60,52 @@ const PromoScreen = ({ navigation }) => {
     const [copied, setCopied] = useState(false);
     const insets = useSafeAreaInsets();
     const { popups } = usePopups('promo');
+
+    // Reference for modal animation
+    const panY = useRef(new Animated.Value(0)).current;
+
+    // PanResponder for interactive swipe-to-close
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (_, gestureState) => {
+                // Capture downward vertical swipes
+                return gestureState.dy > 5 && Math.abs(gestureState.dx) < 20;
+            },
+            onPanResponderMove: (_, gestureState) => {
+                // Only allow downward movement
+                if (gestureState.dy > 0) {
+                    panY.setValue(gestureState.dy);
+                }
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                if (gestureState.dy > 120) {
+                    // Animate all the way down and close
+                    Animated.timing(panY, {
+                        toValue: height,
+                        duration: 250,
+                        useNativeDriver: true,
+                    }).start(() => {
+                        setDetailModalVisible(false);
+                    });
+                } else {
+                    // Spring back to original position
+                    Animated.spring(panY, {
+                        toValue: 0,
+                        useNativeDriver: true,
+                        bounciness: 8,
+                    }).start();
+                }
+            },
+        })
+    ).current;
+
+    // Reset animation position when modal opens/closes
+    useEffect(() => {
+        if (detailModalVisible) {
+            panY.setValue(0);
+        }
+    }, [detailModalVisible]);
 
     const getImageUrl = (url) => {
         if (!url) return null;
@@ -249,13 +298,13 @@ const PromoScreen = ({ navigation }) => {
                                     renderItem={({ item }) => (
                                         <TouchableOpacity
                                             activeOpacity={0.95}
-                                            style={{ width: width - 40, marginHorizontal: 20 }}
+                                            style={{ width: width - 40, marginHorizontal: 20, borderRadius: 24, overflow: 'hidden' }}
                                             onPress={() => handleClaimPress(item)}
                                         >
-                                            <ImageBackground
-                                                source={{ uri: getImageUrl(item.image_url) || 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1000&auto=format&fit=crop' }}
+                                            <AppImage
+                                                uri={item.image_url}
                                                 style={styles.heroSection}
-                                                imageStyle={{ borderRadius: 30 }}
+                                                resizeMode="cover"
                                             />
                                         </TouchableOpacity>
                                     )}
@@ -351,21 +400,24 @@ const PromoScreen = ({ navigation }) => {
                 onRequestClose={() => setDetailModalVisible(false)}
             >
                 <View style={styles.detailModalOverlay}>
-                    <View style={styles.detailModalCard}>
-                        {/* Close Button Header */}
-                        <TouchableOpacity
-                            style={styles.detailCloseCircle}
-                            onPress={() => setDetailModalVisible(false)}
-                        >
-                            <X size={32} color="#FFFFFF" strokeWidth={1.5} />
-                        </TouchableOpacity>
+                    <Animated.View
+                        style={[
+                            styles.detailModalCard,
+                            { transform: [{ translateY: panY }] }
+                        ]}
+                    >
+                        {/* Decorative Handle */}
+                        <View style={styles.modalHandle} />
 
-                        <ScrollView showsVerticalScrollIndicator={false} bounceless={true}>
-                            {/* Image Header */}
-                            <ImageBackground
-                                source={{ uri: getImageUrl(selectedPromoDetail?.image_url) || 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1000&auto=format&fit=crop' }}
+                        {/* Fixed Header with Image - Supports Swipe Down to Close */}
+                        <View
+                            style={{ position: 'relative' }}
+                            {...panResponder.panHandlers}
+                        >
+                            <AppImage
+                                uri={selectedPromoDetail?.image_url}
                                 style={styles.detailHeroImage}
-                                imageStyle={{ borderTopLeftRadius: 30, borderTopRightRadius: 30 }}
+                                resizeMode="cover"
                             >
                                 <View style={styles.detailImageBlur} />
                                 <View style={styles.detailTitleWrapper}>
@@ -374,9 +426,21 @@ const PromoScreen = ({ navigation }) => {
                                     </View>
                                     <Text style={styles.detailMainTitle}>{selectedPromoDetail?.title}</Text>
                                 </View>
-                            </ImageBackground>
+                            </AppImage>
 
-                            {/* Content Body */}
+                            <TouchableOpacity
+                                style={styles.detailCloseCircle}
+                                onPress={() => setDetailModalVisible(false)}
+                            >
+                                <X size={24} color="#FFFFFF" strokeWidth={2} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView
+                            showsVerticalScrollIndicator={false}
+                            bounceless={true}
+                            style={{ flex: 1 }}
+                        >
                             <View style={styles.detailBody}>
                                 <View style={styles.detailInfoGrid}>
                                     <View style={styles.detailInfoBox}>
@@ -442,7 +506,7 @@ const PromoScreen = ({ navigation }) => {
                                 <Text style={styles.detailActionText}>PAKAI PROMO SEKARANG</Text>
                             </TouchableOpacity>
                         </View>
-                    </View>
+                    </Animated.View>
                 </View>
             </Modal>
 
@@ -507,7 +571,7 @@ const PromoScreen = ({ navigation }) => {
                     }
                 }}
             />
-        </SafeAreaView>
+        </SafeAreaView >
     );
 };
 
@@ -541,8 +605,13 @@ const styles = StyleSheet.create({
     },
     heroSection: {
         height: 200,
-        marginBottom: 30,
         justifyContent: 'flex-end',
+        borderRadius: 24,
+        overflow: 'hidden',
+        ...Platform.select({
+            web: { boxShadow: '0px 10px 25px rgba(0,0,0,0.15)' },
+            android: { elevation: 8 }
+        })
     },
     heroOverlay: {
         padding: 20,
@@ -935,17 +1004,37 @@ const styles = StyleSheet.create({
         borderTopRightRadius: 35,
         height: height * 0.88,
         width: '100%',
+        overflow: 'hidden', // Memastikan konten terpotong rapi mengikuti radius
+    },
+    modalHandle: {
+        width: 40,
+        height: 5,
+        borderRadius: 2.5,
+        backgroundColor: '#E2E8F0',
+        alignSelf: 'center',
+        marginTop: 12,
+        position: 'absolute',
+        zIndex: 101,
     },
     detailCloseCircle: {
         position: 'absolute',
-        top: -60,
-        alignSelf: 'center',
+        top: 20,
+        right: 20,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        justifyContent: 'center',
+        alignItems: 'center',
         zIndex: 100,
     },
     detailHeroImage: {
         width: '100%',
         height: 300,
         justifyContent: 'flex-end',
+        borderTopLeftRadius: 35,
+        borderTopRightRadius: 35,
+        overflow: 'hidden',
     },
     detailImageBlur: {
         ...StyleSheet.absoluteFillObject,

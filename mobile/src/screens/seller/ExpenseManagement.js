@@ -395,10 +395,14 @@ const ExpenseManagement = ({ navigation }) => {
                 if (isEditing && originalFullDate) {
                     const originalDatePart = originalFullDate.split(' ')[0];
                     if (formData.date === originalDatePart) {
-                        const originalTimePart = originalFullDate.split(' ')[1] || '00:00:00';
-                        hours = originalTimePart.split(':')[0] || '00';
-                        minutes = originalTimePart.split(':')[1] || '00';
-                        seconds = originalTimePart.split(':')[2] || '00';
+                        // Extract time part and remove timezone suffix if exists (e.g. +07:00)
+                        const rawTimePart = originalFullDate.split(' ')[1] || '00:00:00';
+                        const originalTimePart = rawTimePart.split('+')[0].split('Z')[0];
+
+                        const timeSegments = originalTimePart.split(':');
+                        hours = timeSegments[0] || '00';
+                        minutes = timeSegments[1] || '00';
+                        seconds = timeSegments[2] || '00';
                     }
                 }
 
@@ -415,7 +419,9 @@ const ExpenseManagement = ({ navigation }) => {
             setShowModal(false);
             handleRefresh();
         } catch (error) {
-            showToast('Gagal menyimpan data', 'error');
+            console.error('Submit error:', error);
+            const errorMsg = error.response?.data?.error || error.message || 'Gagal menyimpan data';
+            showToast(errorMsg, 'error');
         }
     };
 
