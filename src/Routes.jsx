@@ -44,6 +44,7 @@ import LandingPage from './pages/landing-page';
 import BerkahLandingPage from './pages/berkah88';
 import AuditorPage from './pages/Auditor';
 import AllFeatures from './pages/AllFeatures';
+import DownloadApp from './pages/DownloadApp';
 
 import TransactionTrash from './pages/TransactionTrash';
 import DatabaseManagement from './pages/Settings/DatabaseManagement';
@@ -154,6 +155,7 @@ const AppRoutes = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/home" element={<LandingPage />} />
       <Route path="/" element={<BerkahLandingPage />} />
+      <Route path="/download" element={<DownloadApp />} />
       <Route path="/guest-checkout" element={<GuestCheckout />} />
 
       {/* Owner Dashboard Routes */}
