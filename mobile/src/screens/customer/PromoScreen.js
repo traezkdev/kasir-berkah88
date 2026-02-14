@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     StyleSheet,
     View,
@@ -13,7 +13,9 @@ import {
     Alert,
     Clipboard,
     Modal,
-    FlatList
+    FlatList,
+    PanResponder,
+    Animated
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -58,6 +60,52 @@ const PromoScreen = ({ navigation }) => {
     const [copied, setCopied] = useState(false);
     const insets = useSafeAreaInsets();
     const { popups } = usePopups('promo');
+
+    // Reference for modal animation
+    const panY = useRef(new Animated.Value(0)).current;
+
+    // PanResponder for interactive swipe-to-close
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (_, gestureState) => {
+                // Capture downward vertical swipes
+                return gestureState.dy > 5 && Math.abs(gestureState.dx) < 20;
+            },
+            onPanResponderMove: (_, gestureState) => {
+                // Only allow downward movement
+                if (gestureState.dy > 0) {
+                    panY.setValue(gestureState.dy);
+                }
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                if (gestureState.dy > 120) {
+                    // Animate all the way down and close
+                    Animated.timing(panY, {
+                        toValue: height,
+                        duration: 250,
+                        useNativeDriver: true,
+                    }).start(() => {
+                        setDetailModalVisible(false);
+                    });
+                } else {
+                    // Spring back to original position
+                    Animated.spring(panY, {
+                        toValue: 0,
+                        useNativeDriver: true,
+                        bounciness: 8,
+                    }).start();
+                }
+            },
+        })
+    ).current;
+
+    // Reset animation position when modal opens/closes
+    useEffect(() => {
+        if (detailModalVisible) {
+            panY.setValue(0);
+        }
+    }, [detailModalVisible]);
 
     const getImageUrl = (url) => {
         if (!url) return null;
@@ -352,12 +400,20 @@ const PromoScreen = ({ navigation }) => {
                 onRequestClose={() => setDetailModalVisible(false)}
             >
                 <View style={styles.detailModalOverlay}>
-                    <View style={styles.detailModalCard}>
+                    <Animated.View
+                        style={[
+                            styles.detailModalCard,
+                            { transform: [{ translateY: panY }] }
+                        ]}
+                    >
                         {/* Decorative Handle */}
                         <View style={styles.modalHandle} />
 
-                        {/* Fixed Header with Image */}
-                        <View style={{ position: 'relative' }}>
+                        {/* Fixed Header with Image - Supports Swipe Down to Close */}
+                        <View
+                            style={{ position: 'relative' }}
+                            {...panResponder.panHandlers}
+                        >
                             <AppImage
                                 uri={selectedPromoDetail?.image_url}
                                 style={styles.detailHeroImage}
@@ -450,7 +506,7 @@ const PromoScreen = ({ navigation }) => {
                                 <Text style={styles.detailActionText}>PAKAI PROMO SEKARANG</Text>
                             </TouchableOpacity>
                         </View>
-                    </View>
+                    </Animated.View>
                 </View>
             </Modal>
 
@@ -515,7 +571,7 @@ const PromoScreen = ({ navigation }) => {
                     }
                 }}
             />
-        </SafeAreaView>
+        </SafeAreaView >
     );
 };
 
