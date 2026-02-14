@@ -40,7 +40,11 @@ const LandingHeader = () => {
 
     return (
         <header
-            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 gpu-acceleration ${scrolled ? 'bg-white/95 backdrop-blur-md border-b border-slate-100 py-3 shadow-sm' : 'bg-transparent py-5'
+            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 gpu-acceleration ${isMobileMenuOpen
+                    ? 'bg-white border-b border-slate-100 py-3 shadow-sm'
+                    : scrolled
+                        ? 'bg-white/95 backdrop-blur-md border-b border-slate-100 py-3 shadow-sm'
+                        : 'bg-transparent py-5'
                 }`}
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -48,7 +52,7 @@ const LandingHeader = () => {
                     {/* Logo */}
                     <button onClick={() => scrollToSection('hero')} className="flex items-center gap-2 group">
                         <img src={logoImg} alt="Logo Berkah 88" className="w-10 h-10 object-contain group-hover:scale-105 transition-transform" />
-                        <span className={`text-xl font-black tracking-tight ${scrolled ? 'text-slate-900' : 'text-white'}`}>
+                        <span className={`text-xl font-black tracking-tight ${(scrolled || isMobileMenuOpen) ? 'text-slate-900' : 'text-white'}`}>
                             Berkah 88
                         </span>
                     </button>
@@ -78,7 +82,7 @@ const LandingHeader = () => {
                     {/* Mobile Menu Button */}
                     <button
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                        className={`md:hidden p-2 transition-colors ${scrolled ? 'text-slate-900' : 'text-white'}`}
+                        className={`md:hidden p-2 transition-colors ${(scrolled || isMobileMenuOpen) ? 'text-slate-900' : 'text-white'}`}
                     >
                         <Icon name={isMobileMenuOpen ? 'X' : 'Menu'} size={24} />
                     </button>
