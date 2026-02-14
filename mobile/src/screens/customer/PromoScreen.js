@@ -353,16 +353,11 @@ const PromoScreen = ({ navigation }) => {
             >
                 <View style={styles.detailModalOverlay}>
                     <View style={styles.detailModalCard}>
-                        {/* Close Button Header */}
-                        <TouchableOpacity
-                            style={styles.detailCloseCircle}
-                            onPress={() => setDetailModalVisible(false)}
-                        >
-                            <X size={32} color="#FFFFFF" strokeWidth={1.5} />
-                        </TouchableOpacity>
+                        {/* Decorative Handle */}
+                        <View style={styles.modalHandle} />
 
-                        <ScrollView showsVerticalScrollIndicator={false} bounceless={true}>
-                            {/* Image Header */}
+                        {/* Fixed Header with Image */}
+                        <View style={{ position: 'relative' }}>
                             <AppImage
                                 uri={selectedPromoDetail?.image_url}
                                 style={styles.detailHeroImage}
@@ -377,7 +372,19 @@ const PromoScreen = ({ navigation }) => {
                                 </View>
                             </AppImage>
 
-                            {/* Content Body */}
+                            <TouchableOpacity
+                                style={styles.detailCloseCircle}
+                                onPress={() => setDetailModalVisible(false)}
+                            >
+                                <X size={24} color="#FFFFFF" strokeWidth={2} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView
+                            showsVerticalScrollIndicator={false}
+                            bounceless={true}
+                            style={{ flex: 1 }}
+                        >
                             <View style={styles.detailBody}>
                                 <View style={styles.detailInfoGrid}>
                                     <View style={styles.detailInfoBox}>
@@ -941,11 +948,28 @@ const styles = StyleSheet.create({
         borderTopRightRadius: 35,
         height: height * 0.88,
         width: '100%',
+        overflow: 'hidden', // Memastikan konten terpotong rapi mengikuti radius
+    },
+    modalHandle: {
+        width: 40,
+        height: 5,
+        borderRadius: 2.5,
+        backgroundColor: '#E2E8F0',
+        alignSelf: 'center',
+        marginTop: 12,
+        position: 'absolute',
+        zIndex: 101,
     },
     detailCloseCircle: {
         position: 'absolute',
-        top: -60,
-        alignSelf: 'center',
+        top: 20,
+        right: 20,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        justifyContent: 'center',
+        alignItems: 'center',
         zIndex: 100,
     },
     detailHeroImage: {
