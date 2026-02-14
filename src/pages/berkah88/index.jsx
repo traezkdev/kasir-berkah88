@@ -63,6 +63,22 @@ const BerkahLandingPage = () => {
     // Get 3 featured products for hero/highlights
     const featuredProducts = products.filter(p => p.is_featured === 1).slice(0, 3);
 
+    // Update browser theme color for mobile
+    useEffect(() => {
+        const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+        const originalColor = metaThemeColor ? metaThemeColor.getAttribute('content') : '#128EEA';
+
+        if (metaThemeColor) {
+            metaThemeColor.setAttribute('content', '#059669'); // Emerald 600
+        }
+
+        return () => {
+            if (metaThemeColor) {
+                metaThemeColor.setAttribute('content', originalColor);
+            }
+        };
+    }, []);
+
     return (
         <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden">
             <LandingHeader />

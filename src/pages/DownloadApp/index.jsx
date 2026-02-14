@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
     Smartphone,
@@ -35,6 +35,22 @@ const DownloadApp = () => {
         e.preventDefault();
         featureSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
+
+    // Update browser theme color for mobile
+    useEffect(() => {
+        const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+        const originalColor = metaThemeColor ? metaThemeColor.getAttribute('content') : '#128EEA';
+
+        if (metaThemeColor) {
+            metaThemeColor.setAttribute('content', '#059669'); // Emerald 600
+        }
+
+        return () => {
+            if (metaThemeColor) {
+                metaThemeColor.setAttribute('content', originalColor);
+            }
+        };
+    }, []);
 
     const features = [
         {
