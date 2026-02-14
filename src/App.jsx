@@ -134,6 +134,8 @@ function App() {
 
     if (isDarkMode) {
       themeColorMeta.setAttribute('content', '#0F172A'); // Global Dark Mode Color
+    } else if (location.pathname === '/' || location.pathname === '/berkah88' || location.pathname === '/download') {
+      themeColorMeta.setAttribute('content', '#059669'); // Landing Pages - Emerald Green
     } else if (location.pathname.startsWith('/customer')) {
       themeColorMeta.setAttribute('content', '#0D9C59'); // Customer Green
     } else if (location.pathname.startsWith('/seller')) {
