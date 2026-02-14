@@ -77,11 +77,6 @@ const DownloadApp = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden font-sans selection:bg-emerald-100 selection:text-emerald-900">
-            {/* Background Decorative Blobs */}
-            <div className="fixed inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-100 rounded-full blur-[120px] opacity-60 animate-blob" />
-                <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-green-100 rounded-full blur-[120px] opacity-60 animate-blob animation-delay-2000" />
-            </div>
 
             {/* Navbar Placeholder - Minimalist */}
             <nav className="relative z-10 flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
@@ -161,7 +156,6 @@ const DownloadApp = () => {
 
                 {/* Right Content - Mockup */}
                 <div className="lg:w-1/2 mt-24 lg:mt-0 relative group">
-                    <div className="absolute -inset-4 bg-emerald-400/20 rounded-full blur-[100px] opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9, y: 40 }}
@@ -287,8 +281,6 @@ const DownloadApp = () => {
                     viewport={{ once: true }}
                     className="bg-slate-900 rounded-[3rem] p-12 lg:p-20 text-center text-white relative overflow-hidden"
                 >
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-[100px]" />
-                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[100px]" />
 
                     <div className="relative z-10">
                         <h2 className="text-3xl lg:text-5xl font-black mb-8 leading-tight">Alhamdulillah, <br />Yuk Mulai Sekarang!</h2>

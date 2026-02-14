@@ -67,21 +67,16 @@ const BerkahLandingPage = () => {
         <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden">
             <LandingHeader />
 
-            {/* Background Decorative Blobs (Same as /download) */}
-            <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-                <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-100 rounded-full blur-[120px] opacity-40 animate-blob" />
-                <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-green-100 rounded-full blur-[120px] opacity-40 animate-blob animation-delay-2000" />
-            </div>
 
             {/* Hero Section */}
             <section id="hero" className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
                 <div className="absolute inset-0 z-0">
                     <img
                         src="/assets/images/bg.jpeg"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover blur-[6px] scale-105"
                         alt="Background"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/40 to-white" />
+                    <div className="absolute inset-0 bg-black/40" />
                 </div>
 
                 <div className="container relative z-10 mx-auto px-6 text-center text-white">
@@ -309,8 +304,6 @@ const BerkahLandingPage = () => {
                         whileInView={{ opacity: 1, scale: 1 }}
                         className="bg-slate-900 rounded-[3rem] p-12 md:p-20 relative overflow-hidden text-center md:text-left"
                     >
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-[100px]" />
-                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[100px]" />
 
                         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
                             <div className="max-w-xl text-white">
