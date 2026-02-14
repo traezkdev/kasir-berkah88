@@ -26,7 +26,7 @@ const DownloadApp = () => {
     // GANTI LINK DOWNLOAD DI BAWAH INI
     // CHANGE THE DOWNLOAD LINK BELOW
     // ==========================================
-    const downloadLink = "https://drive.google.com/file/d/17-FJtL_ePWuj8K1Ij3u8gV0ljXbs0qdk/view?usp=drive_link";
+    const downloadLink = "https://82.153.226.195:1610/down/LwmJOGu0GyTv.apk";
     // ==========================================
 
     const featureSectionRef = useRef(null);
