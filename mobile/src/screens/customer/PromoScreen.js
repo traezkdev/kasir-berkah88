@@ -250,12 +250,13 @@ const PromoScreen = ({ navigation }) => {
                                     renderItem={({ item }) => (
                                         <TouchableOpacity
                                             activeOpacity={0.95}
-                                            style={{ width: width - 40, marginHorizontal: 20 }}
+                                            style={{ width: width - 40, marginHorizontal: 20, borderRadius: 24, overflow: 'hidden' }}
                                             onPress={() => handleClaimPress(item)}
                                         >
                                             <AppImage
                                                 uri={item.image_url}
                                                 style={styles.heroSection}
+                                                resizeMode="cover"
                                             />
                                         </TouchableOpacity>
                                     )}
@@ -365,6 +366,7 @@ const PromoScreen = ({ navigation }) => {
                             <AppImage
                                 uri={selectedPromoDetail?.image_url}
                                 style={styles.detailHeroImage}
+                                resizeMode="cover"
                             >
                                 <View style={styles.detailImageBlur} />
                                 <View style={styles.detailTitleWrapper}>
@@ -540,8 +542,13 @@ const styles = StyleSheet.create({
     },
     heroSection: {
         height: 200,
-        marginBottom: 30,
         justifyContent: 'flex-end',
+        borderRadius: 24,
+        overflow: 'hidden',
+        ...Platform.select({
+            web: { boxShadow: '0px 10px 25px rgba(0,0,0,0.15)' },
+            android: { elevation: 8 }
+        })
     },
     heroOverlay: {
         padding: 20,
@@ -945,6 +952,9 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 300,
         justifyContent: 'flex-end',
+        borderTopLeftRadius: 35,
+        borderTopRightRadius: 35,
+        overflow: 'hidden',
     },
     detailImageBlur: {
         ...StyleSheet.absoluteFillObject,
