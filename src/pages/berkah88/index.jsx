@@ -1,8 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import LandingHeader from './components/LandingHeader';
 import LandingFooter from './components/LandingFooter';
 import ProductCard from './components/ProductCard';
-import Icon from '../../components/AppIcon';
+import {
+    ChevronDown,
+    Search,
+    PackageOpen,
+    Smartphone,
+    Zap,
+    CheckCircle2,
+    Star,
+    ShoppingBag,
+    MoveRight
+} from 'lucide-react';
+import logoImg from '/assets/images/logo.png';
 
 const BerkahLandingPage = () => {
     const [products, setProducts] = useState([]);
@@ -28,7 +40,7 @@ const BerkahLandingPage = () => {
         };
 
         fetchProducts();
-    }, []);
+    }, [apiUrl]);
 
     // Extract unique categories
     const categories = ['all', ...new Set(products.map(p => p.category).filter(Boolean))];
@@ -52,229 +64,293 @@ const BerkahLandingPage = () => {
     const featuredProducts = products.filter(p => p.is_featured === 1).slice(0, 3);
 
     return (
-        <div className="min-h-screen bg-slate-50 font-sans selection:bg-purple-500 selection:text-white">
+        <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden">
             <LandingHeader />
 
+            {/* Background Decorative Blobs (Same as /download) */}
+            <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+                <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-100 rounded-full blur-[120px] opacity-40 animate-blob" />
+                <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-green-100 rounded-full blur-[120px] opacity-40 animate-blob animation-delay-2000" />
+            </div>
+
             {/* Hero Section */}
-            <section id="hero" className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden gpu-acceleration">
-                {/* Background Video/Image Placeholder */}
+            <section id="hero" className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
                 <div className="absolute inset-0 z-0">
                     <img
                         src="/assets/images/bg.jpeg"
-                        className="w-full h-full object-cover gpu-acceleration"
+                        className="w-full h-full object-cover"
                         alt="Background"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/60 to-slate-50" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/40 to-white" />
                 </div>
 
-                <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
-                    <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight animate-fade-in-up">
-                        <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-yellow-400 bg-clip-text text-transparent">
-                            Nikmati Kelezatan
-                        </span><br />
-                        Tanpa Batas
-                    </h1>
-                    <p className="text-xl md:text-2xl text-gray-300 mb-10 max-w-2xl mx-auto animate-fade-in-up delay-100">
-                        Sajikan momen terbaik Anda dengan menu spesial dari Berkah88.
-                        Kualitas rasa bintang lima, harga kaki lima.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up delay-200">
-                        <button
-                            onClick={() => document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' })}
-                            className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full font-bold text-lg hover:shadow-lg hover:shadow-purple-500/50 hover:scale-105 transition-all text-white"
-                        >
-                            Lihat Menu Kami
-                        </button>
-                        <button className="px-8 py-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-full font-bold text-lg hover:bg-white/20 transition-all text-white flex items-center justify-center gap-2">
-                            <Icon name="Search" size={20} />
-                            Cari Favoritmu
-                        </button>
+                <div className="container relative z-10 mx-auto px-6 text-center text-white">
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8 }}
+                    >
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-8 text-sm font-bold tracking-wide text-emerald-400 uppercase bg-emerald-900/40 backdrop-blur-md rounded-full border border-emerald-500/30">
+                            <Star size={16} fill="currentColor" />
+                            Paling Berkah se-Bogor
+                        </div>
+
+                        <h1 className="text-5xl md:text-8xl font-black mb-8 leading-[1.05] tracking-tight">
+                            Bismillah,<br />
+                            <span className="text-emerald-400">Makan Enak</span><br />
+                            <span className="text-white/90">Hidup Berkah.</span>
+                        </h1>
+
+                        <p className="text-lg md:text-xl text-slate-200 mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
+                            Nikmati kelezatan tiada tara dengan sentuhan cinta dan doa di setiap suapan. Kami siap memuliakan hidangan Anda dengan cara terbaik.
+                        </p>
+
+                        <div className="flex flex-col sm:flex-row gap-5 justify-center">
+                            <button
+                                onClick={() => document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' })}
+                                className="px-10 py-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-lg shadow-2xl shadow-emerald-500/30 hover:scale-105 transition-all flex items-center justify-center gap-3 group"
+                            >
+                                Lihat Menu Kami
+                                <MoveRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                            </button>
+                            <button className="px-10 py-5 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl font-black text-lg hover:bg-white/20 transition-all text-white flex items-center justify-center gap-3 group">
+                                <Search size={20} className="group-hover:scale-110 transition-transform" />
+                                Cari Favoritmu
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+
+                <motion.div
+                    animate={{ y: [0, 10, 0] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="absolute bottom-10 left-1/2 transform -translate-x-1/2 text-white/50 cursor-pointer"
+                    onClick={() => document.getElementById('highlights')?.scrollIntoView({ behavior: 'smooth' })}
+                >
+                    <ChevronDown size={32} />
+                </motion.div>
+            </section>
+
+            {/* Highlights Section */}
+            <section id="highlights" className="py-24 relative z-10 bg-white">
+                <div className="container mx-auto px-6">
+                    <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-8 text-center md:text-left">
+                        <div className="max-w-2xl">
+                            <span className="text-emerald-600 font-black text-xs uppercase tracking-[0.3em] mb-4 block">IKHTIAR TERBAIK</span>
+                            <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+                                Menu Pilihan Yang Selalu <span className="text-emerald-600 italic">Ditunggu.</span>
+                            </h2>
+                        </div>
+                        <p className="text-slate-500 font-medium max-w-sm">Dibuat dari bahan-bahan pilihan yang segar dan penuh keberkahan.</p>
                     </div>
-                </div>
 
-                {/* Decor elements */}
-                <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce text-white/50">
-                    <Icon name="ChevronDown" size={32} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                        {loading ? (
+                            [1, 2, 3].map(i => (
+                                <div key={i} className="h-[450px] bg-slate-100 rounded-[2.5rem] animate-pulse" />
+                            ))
+                        ) : (
+                            featuredProducts.map((product, idx) => (
+                                <motion.div
+                                    key={product.id}
+                                    initial={{ opacity: 0, y: 30 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.5, delay: idx * 0.1 }}
+                                >
+                                    <ProductCard product={product} />
+                                </motion.div>
+                            ))
+                        )}
+                    </div>
                 </div>
             </section>
 
-            {/* Featured Highlights (if any) */}
-            {featuredProducts.length > 0 && (
-                <section className="py-20 relative z-20 -mt-20">
-                    <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            {featuredProducts.map((product, idx) => (
-                                <div key={product.id} className={`transform translate-y-${idx * 4} hover:-translate-y-2 transition-transform duration-500`}>
-                                    <ProductCard product={product} />
-                                </div>
+            {/* Products Grid Section */}
+            <section id="products" className="py-24 bg-slate-50 relative z-10">
+                <div className="container mx-auto px-6">
+                    <div className="text-center mb-16">
+                        <span className="inline-block px-4 py-1.5 mb-6 text-xs font-black tracking-[0.2em] text-emerald-600 uppercase bg-emerald-100/80 rounded-full border border-emerald-200">
+                            EKOSISTEM MENU
+                        </span>
+                        <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight mb-8">
+                            Jelajahi Rasa Berkah Kami
+                        </h2>
+
+                        {/* Category Filter */}
+                        <div className="flex flex-wrap justify-center gap-3">
+                            {categories.map((cat) => (
+                                <button
+                                    key={cat}
+                                    onClick={() => handleCategoryChange(cat)}
+                                    className={`px-8 py-3 rounded-2xl font-bold transition-all duration-300 capitalize text-sm ${activeCategory === cat
+                                        ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-500/30 scale-105'
+                                        : 'bg-white text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 border border-slate-100'
+                                        }`}
+                                >
+                                    {cat}
+                                </button>
                             ))}
                         </div>
-                    </div>
-                </section>
-            )}
-
-            {/* Main Product Grid */}
-            <section id="products" className="py-20 bg-slate-50 optimize-scroll">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-16">
-                        <h2 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600 mb-4 inline-block">
-                            Daftar Menu Pilihan
-                        </h2>
-                        <div className="h-1 w-24 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto rounded-full" />
-                        <p className="mt-4 text-gray-500 text-lg">Temukan selera Anda dari berbagai kategori pilihan kami</p>
-                    </div>
-
-                    {/* Category Filter */}
-                    <div className="flex flex-wrap justify-center gap-4 mb-12">
-                        {categories.map((cat) => (
-                            <button
-                                key={cat}
-                                onClick={() => handleCategoryChange(cat)}
-                                className={`px-6 py-2 rounded-full font-medium transition-all duration-300 capitalize ${activeCategory === cat
-                                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30 scale-105'
-                                    : 'bg-white text-gray-500 hover:bg-purple-50 hover:text-purple-600 border border-gray-100'
-                                    }`}
-                            >
-                                {cat}
-                            </button>
-                        ))}
                     </div>
 
                     {/* Grid */}
                     {loading ? (
                         <div className="flex justify-center items-center h-64">
-                            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500" />
+                            <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
                         </div>
                     ) : (
                         <>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                                {productsToShow.map((product) => (
-                                    <ProductCard key={product.id} product={product} />
-                                ))}
+                                <AnimatePresence mode="popLayout">
+                                    {productsToShow.map((product) => (
+                                        <motion.div
+                                            layout
+                                            key={product.id}
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.9 }}
+                                            transition={{ duration: 0.3 }}
+                                        >
+                                            <ProductCard product={product} />
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
                             </div>
 
                             {visibleCount < filteredProducts.length && (
-                                <div className="mt-16 text-center">
+                                <div className="mt-20 text-center">
                                     <button
                                         onClick={handleShowMore}
-                                        className="inline-flex items-center gap-2 px-10 py-4 bg-white border-2 border-purple-600 text-purple-600 rounded-full font-bold text-lg hover:bg-purple-600 hover:text-white transition-all duration-300 shadow-lg hover:shadow-purple-500/30 active:scale-95 group"
+                                        className="inline-flex items-center gap-3 px-12 py-5 bg-white border border-slate-200 text-slate-900 rounded-[2rem] font-black text-lg hover:border-emerald-600 hover:text-emerald-600 transition-all duration-300 shadow-sm hover:shadow-xl active:scale-95 group"
                                     >
                                         Tampilkan Lebih Banyak
-                                        <Icon name="ChevronDown" size={20} className="group-hover:translate-y-1 transition-transform" />
+                                        <ChevronDown size={24} className="group-hover:translate-y-1 transition-transform" />
                                     </button>
                                 </div>
                             )}
                         </>
                     )}
 
-                    {filteredProducts.length === 0 && !loading && (
-                        <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-300">
-                            <Icon name="PackageOpen" size={48} className="mx-auto text-gray-300 mb-4" />
-                            <p className="text-gray-500 text-lg">Belum ada produk di kategori ini.</p>
+                    {!loading && filteredProducts.length === 0 && (
+                        <div className="text-center py-24 bg-white rounded-[3rem] border border-dashed border-slate-200">
+                            <PackageOpen size={64} className="mx-auto text-slate-200 mb-6" />
+                            <p className="text-slate-400 font-bold text-xl uppercase tracking-widest">Belum ada menu di sini, Kak.</p>
                         </div>
                     )}
                 </div>
             </section>
 
-            {/* Call to Action */}
-            <section className="py-20 bg-gradient-to-r from-purple-900 to-slate-900 text-white relative overflow-hidden">
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/food.png')] opacity-5" />
-                <div className="container mx-auto px-4 text-center relative z-10">
-                    <h2 className="text-3xl md:text-5xl font-bold mb-8">Siap Memesan?</h2>
-                    <p className="text-xl text-purple-200 mb-10 max-w-2xl mx-auto">
-                        Kunjungi outlet kami atau pesan sekarang untuk merasakan kenikmatan yang sesungguhnya.
-                    </p>
-                    <button className="px-10 py-4 bg-white text-purple-900 rounded-full font-bold text-lg hover:bg-gray-100 hover:scale-105 transition-transform shadow-2xl">
-                        Hubungi Kami
-                    </button>
+            {/* Services / Partner Section */}
+            <section id="delivery" className="py-24 bg-white relative z-10 overflow-hidden">
+                <div className="container mx-auto px-6">
+                    <div className="text-center mb-20">
+                        <span className="text-emerald-600 font-black text-xs uppercase tracking-[0.3em] mb-4 block">PESAN ONLINE</span>
+                        <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+                            Gak Sempet Mampir? <br /><span className="text-emerald-600 italic">Pesan Aja!</span>
+                        </h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-10 max-w-6xl mx-auto">
+                        {[
+                            {
+                                name: "GoFood",
+                                color: "bg-rose-50 border-rose-100 hover:shadow-rose-100",
+                                btn: "bg-rose-600 hover:bg-rose-700",
+                                img: "/assets/images/gofood6210-removebg-preview.png",
+                                link: "https://gofood.link/a/QVAjFq9",
+                                desc: "Ikhtiar cepat lewat partner setia Gojek."
+                            },
+                            {
+                                name: "GrabFood",
+                                color: "bg-emerald-50 border-emerald-100 hover:shadow-emerald-100",
+                                btn: "bg-emerald-600 hover:bg-emerald-700",
+                                img: "/assets/images/grab-food-logo-png_seeklogo-389124-removebg-preview.png",
+                                link: "https://r.grab.com/g/6-20251229_174338_37485b0ebedc4ef5b3754243f90f52ff_MEXMPS-6-C7LELKEFJKL2HE",
+                                desc: "Alhamdulillah promo melimpah setiap hari."
+                            },
+                            {
+                                name: "ShopeeFood",
+                                color: "bg-orange-50 border-orange-100 hover:shadow-orange-100",
+                                btn: "bg-orange-600 hover:bg-orange-700",
+                                img: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Shopee.svg/512px-Shopee.svg.png",
+                                link: "https://shopee.co.id/universal-link/now-food/shop/22596619?deep_and_deferred=1&shareChannel=copy_link",
+                                desc: "Gratis ongkir Biidznillah di Shopee!"
+                            }
+                        ].map((partner, idx) => (
+                            <motion.a
+                                key={idx}
+                                href={partner.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: idx * 0.1 }}
+                                className={`p-10 rounded-[2.5rem] bg-white border border-slate-100 shadow-sm hover:shadow-2xl transition-all hover:-translate-y-2 flex flex-col items-center text-center group ${partner.color}`}
+                            >
+                                <div className="w-24 h-24 bg-white rounded-3xl shadow-sm flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                                    <img src={partner.img} alt={partner.name} className="w-16 h-16 object-contain" />
+                                </div>
+                                <h3 className="text-2xl font-black text-slate-900 mb-4">{partner.name}</h3>
+                                <p className="text-slate-500 font-medium mb-8 leading-relaxed italic">"{partner.desc}"</p>
+                                <span className={`px-8 py-3 text-white rounded-2xl font-bold text-sm transition-all shadow-lg ${partner.btn}`}>Pesan Sekarang</span>
+                            </motion.a>
+                        ))}
+                    </div>
                 </div>
             </section>
 
-            {/* Delivery Services Section */}
-            <section id="delivery" className="py-20 bg-slate-50 relative overflow-hidden optimize-scroll">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="text-center mb-16">
-                        <h2 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600 mb-4 inline-block">
-                            Pesan Melalui Aplikasi
-                        </h2>
-                        <div className="h-1 w-24 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto rounded-full" />
-                        <p className="mt-4 text-gray-500 text-lg">Nikmati kemudahan memesan dari rumah melalui partner delivery kami</p>
-                    </div>
+            {/* Mobile App CTA Section */}
+            <section className="py-24 bg-white relative z-10">
+                <div className="container mx-auto px-6">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        className="bg-slate-900 rounded-[3rem] p-12 md:p-20 relative overflow-hidden text-center md:text-left"
+                    >
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-[100px]" />
+                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[100px]" />
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                        {/* GoFood */}
-                        <a
-                            href="https://gofood.link/a/QVAjFq9"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bg-white p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 border border-gray-100 flex flex-col items-center text-center group"
-                        >
-                            <div className="w-20 h-20 bg-red-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                                <img
-                                    src="/assets/images/gofood6210-removebg-preview.png"
-                                    alt="GoFood"
-                                    className="w-16 h-16 object-contain"
-                                />
+                        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
+                            <div className="max-w-xl text-white">
+                                <span className="inline-flex items-center gap-2 px-4 py-1.5 mb-8 text-xs font-black tracking-widest text-emerald-400 uppercase bg-emerald-500/10 rounded-full border border-emerald-500/20">
+                                    <Smartphone size={16} />
+                                    ANDROID APP
+                                </span>
+                                <h2 className="text-4xl md:text-6xl font-black mb-8 leading-tight tracking-tight">Kini dalam <br /><span className="text-emerald-400 italic"> Genggamanmu.</span></h2>
+                                <p className="text-slate-400 text-lg mb-10 font-medium italic">Pasang aplikasinya dan rasakan kemudahan pesan makanan semudah membalikkan telapak tangan. InsyaAllah makin Berkah!</p>
+                                <a href="/download" className="inline-flex items-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white px-10 py-5 rounded-2xl font-black text-lg transition-all hover:scale-105 shadow-xl shadow-emerald-900/40 group">
+                                    Dapatkan Aplikasinya
+                                    <Zap size={20} className="fill-white" />
+                                </a>
                             </div>
-                            <h3 className="text-2xl font-bold text-gray-900 mb-2">GoFood</h3>
-                            <p className="text-gray-500 mb-6">Pesan lebih cepat dan praktis lewat aplikasi Gojek.</p>
-                            <span className="px-6 py-2 bg-red-600 text-white rounded-full font-semibold group-hover:bg-red-700 transition-colors">Pesan Sekarang</span>
-                        </a>
-
-                        {/* GrabFood */}
-                        <a
-                            href="https://r.grab.com/g/6-20251229_174338_37485b0ebedc4ef5b3754243f90f52ff_MEXMPS-6-C7LELKEFJKL2HE"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bg-white p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 border border-gray-100 flex flex-col items-center text-center group"
-                        >
-                            <div className="w-20 h-20 bg-green-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                                <img
-                                    src="/assets/images/grab-food-logo-png_seeklogo-389124-removebg-preview.png"
-                                    alt="GrabFood"
-                                    className="w-16 h-16 object-contain"
-                                />
+                            <div className="relative">
+                                <div className="w-64 h-[500px] bg-slate-800 rounded-[3rem] border-[8px] border-slate-700 shadow-2xl relative overflow-hidden group">
+                                    <div className="absolute inset-0 bg-emerald-600 flex items-center justify-center p-8">
+                                        <div className="text-center">
+                                            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-6 mx-auto">
+                                                <img src={logoImg} className="w-10 h-10 object-contain" alt="Logo" />
+                                            </div>
+                                            <div className="h-4 w-24 bg-white/20 rounded-full mx-auto" />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <h3 className="text-2xl font-bold text-gray-900 mb-2">GrabFood</h3>
-                            <p className="text-gray-500 mb-6">Nikmati promo menarik setiap hari di GrabFood.</p>
-                            <span className="px-6 py-2 bg-green-600 text-white rounded-full font-semibold group-hover:bg-green-700 transition-colors">Pesan Sekarang</span>
-                        </a>
-
-                        {/* ShopeeFood */}
-                        <a
-                            href="https://shopee.co.id/universal-link/now-food/shop/22596619?deep_and_deferred=1&shareChannel=copy_link"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bg-white p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all hover:-translate-y-2 border border-gray-100 flex flex-col items-center text-center group"
-                        >
-                            <div className="w-20 h-20 bg-orange-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                                <img
-                                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Shopee.svg/512px-Shopee.svg.png"
-                                    alt="ShopeeFood"
-                                    className="w-12 h-12 object-contain"
-                                />
-                            </div>
-                            <h3 className="text-2xl font-bold text-gray-900 mb-2">ShopeeFood</h3>
-                            <p className="text-gray-500 mb-6">Gratis ongkir dan cashback melimpah di ShopeeFood.</p>
-                            <span className="px-6 py-2 bg-orange-600 text-white rounded-full font-semibold group-hover:bg-orange-700 transition-colors">Pesan Sekarang</span>
-                        </a>
-                    </div>
+                        </div>
+                    </motion.div>
                 </div>
             </section>
 
             {/* Location Section */}
-            <section id="location" className="py-20 bg-white optimize-scroll">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-12">
-                        <h2 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600 mb-4 inline-block">
-                            Lokasi Kami
-                        </h2>
-                        <div className="h-1 w-24 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto rounded-full" />
-                        <p className="mt-4 text-gray-500 text-lg">Kunjungi outlet kami di lokasi strategis</p>
+            <section id="location" className="py-24 bg-slate-50 relative z-10">
+                <div className="container mx-auto px-6 text-center">
+                    <div className="mb-16">
+                        <span className="text-emerald-600 font-black text-xs uppercase tracking-[0.3em] mb-4 block">MAMPIR YUK</span>
+                        <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">Lokasi Outlet Kami</h2>
                     </div>
 
-                    <div className="w-full max-w-6xl mx-auto rounded-2xl overflow-hidden shadow-2xl border border-gray-100 relative group">
-                        <div className="absolute inset-0 bg-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity z-0 pointer-events-none"></div>
+                    <div className="w-full max-w-6xl mx-auto rounded-[3rem] overflow-hidden shadow-2xl border border-white bg-white p-4">
                         <iframe
                             src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3963.481862573946!2d106.74469039576967!3d-6.586867632287096!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69c5b6b9c1dcbb%3A0xa0c72d1985eb1b95!2sKerongkongan%20Berkah%2088!5e0!3m2!1sid!2sid!4v1767004583440!5m2!1sid!2sid"
                             width="100%"
@@ -284,27 +360,13 @@ const BerkahLandingPage = () => {
                             loading="lazy"
                             referrerPolicy="no-referrer-when-downgrade"
                             title="Lokasi Berkah88"
-                            className="w-full h-[400px] md:h-[500px] z-10 relative"
+                            className="w-full h-[400px] md:h-[500px] rounded-[2.5rem]"
                         ></iframe>
                     </div>
                 </div>
             </section>
 
             <LandingFooter />
-
-            {/* Global Styles for Animations */}
-            <style>{`
-                @keyframes fade-in-up {
-                    from { opacity: 0; transform: translateY(20px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                .animate-fade-in-up {
-                    animation: fade-in-up 0.8s ease-out forwards;
-                    will-change: transform, opacity;
-                }
-                .delay-100 { animation-delay: 0.1s; }
-                .delay-200 { animation-delay: 0.2s; }
-            `}</style>
         </div>
     );
 };
