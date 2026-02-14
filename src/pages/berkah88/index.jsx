@@ -65,16 +65,21 @@ const BerkahLandingPage = () => {
 
     // Update browser theme color for mobile
     useEffect(() => {
-        const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+        let metaThemeColor = document.querySelector('meta[name="theme-color"]');
         const originalColor = metaThemeColor ? metaThemeColor.getAttribute('content') : '#128EEA';
 
-        if (metaThemeColor) {
-            metaThemeColor.setAttribute('content', '#059669'); // Emerald 600
+        if (!metaThemeColor) {
+            metaThemeColor = document.createElement('meta');
+            metaThemeColor.setAttribute('name', 'theme-color');
+            document.head.appendChild(metaThemeColor);
         }
 
+        metaThemeColor.setAttribute('content', '#059669'); // Emerald 600
+
         return () => {
-            if (metaThemeColor) {
-                metaThemeColor.setAttribute('content', originalColor);
+            const meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) {
+                meta.setAttribute('content', originalColor);
             }
         };
     }, []);
