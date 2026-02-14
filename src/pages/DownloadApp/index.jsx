@@ -136,7 +136,7 @@ const DownloadApp = () => {
                                     <CheckCircle2 size={18} className="text-emerald-500" />
                                     <span>Gratis & Aman</span>
                                 </div>
-                                <span className="text-xs text-slate-400 font-medium ml-6 uppercase tracking-widest">Versi Terbaru 1.0.0</span>
+                                <span className="text-xs text-slate-400 font-medium ml-6 uppercase tracking-widest">Versi Terbaru 1.6.1</span>
                             </div>
                         </div>
 
