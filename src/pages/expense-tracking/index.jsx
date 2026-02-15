@@ -58,7 +58,8 @@ const ExpenseTracking = ({ headerTitle }) => {
 
   // Filter state (lifted from ExpenseHistoryTable)
   const [searchTerm, setSearchTerm] = useState(''); // Lifted search state
-  const [dateFilter, setDateFilter] = useState('');
+  const [startDateFilter, setStartDateFilter] = useState('');
+  const [endDateFilter, setEndDateFilter] = useState('');
   const [filteredCount, setFilteredCount] = useState(0); // Track filtered expenses count for pagination
 
   const showNotification = (message, type) => {
@@ -373,42 +374,73 @@ const ExpenseTracking = ({ headerTitle }) => {
     const expenseCount = allExpenses?.length;
 
     // Determine reference date: use filter date if exists, otherwise use today
-    const referenceDate = dateFilter ? new Date(dateFilter) : new Date();
+    const referenceDate = endDateFilter ? new Date(endDateFilter) : new Date();
     const referenceDateFormatted = formatInTimeZone(referenceDate, 'Asia/Jakarta', 'yyyy-MM-dd');
 
-    // Calculate "today" expenses (or filtered date expenses)
-    const todayExpenses = allExpenses?.filter(expense => {
-      const expenseDateFormatted = formatInTimeZone(new Date(expense.date), 'Asia/Jakarta', 'yyyy-MM-dd');
-      return expenseDateFormatted === referenceDateFormatted;
-    })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
+    // Calculate expenses based on date range filter
+    let filteredExpenses = allExpenses;
+    let todayExpenses = 0;
+    let weeklyExpenses = 0;
+    let monthlyExpenses = 0;
+    let monthlyExpenseCount = 0;
 
-    // Calculate week expenses for the week containing the reference date
-    const startOfCurrentWeek = startOfWeek(referenceDate, { weekStartsOn: 1 }); // Monday as start of week
-    const endOfCurrentWeek = endOfWeek(referenceDate, { weekStartsOn: 1 }); // Sunday as end of week
+    if (startDateFilter || endDateFilter) {
+      // Filter by date range
+      filteredExpenses = allExpenses?.filter(expense => {
+        const expenseDate = formatInTimeZone(new Date(expense.date), 'Asia/Jakarta', 'yyyy-MM-dd');
+        if (startDateFilter && endDateFilter) {
+          return expenseDate >= startDateFilter && expenseDate <= endDateFilter;
+        } else if (startDateFilter) {
+          return expenseDate >= startDateFilter;
+        } else if (endDateFilter) {
+          return expenseDate <= endDateFilter;
+        }
+        return true;
+      });
 
-    const weeklyExpenses = allExpenses?.filter(expense => {
-      const expenseDate = new Date(expense.date);
-      return expenseDate >= startOfCurrentWeek && expenseDate <= endOfCurrentWeek;
-    })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
+      // Calculate totals from filtered data
+      const filteredTotal = filteredExpenses?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
+      todayExpenses = filteredTotal;
+      weeklyExpenses = filteredTotal;
+      monthlyExpenses = filteredTotal;
+      monthlyExpenseCount = filteredExpenses?.length || 0;
+    } else {
+      // Default behavior: calculate by today/week/month
+      todayExpenses = allExpenses?.filter(expense => {
+        const expenseDateFormatted = formatInTimeZone(new Date(expense.date), 'Asia/Jakarta', 'yyyy-MM-dd');
+        return expenseDateFormatted === referenceDateFormatted;
+      })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
 
-    // Calculate month expenses for the month containing the reference date
-    const monthlyExpenses = allExpenses?.filter(expense => {
-      const expenseDate = new Date(expense.date);
-      return expenseDate.getMonth() === referenceDate.getMonth() && expenseDate.getFullYear() === referenceDate.getFullYear();
-    });
+      const startOfCurrentWeek = startOfWeek(referenceDate, { weekStartsOn: 1 });
+      const endOfCurrentWeek = endOfWeek(referenceDate, { weekStartsOn: 1 });
 
-    const monthlyExpenseTotal = monthlyExpenses.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
-    const monthlyExpenseCount = monthlyExpenses.length;
+      weeklyExpenses = allExpenses?.filter(expense => {
+        const expenseDate = new Date(expense.date);
+        return expenseDate >= startOfCurrentWeek && expenseDate <= endOfCurrentWeek;
+      })?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
+
+      const monthlyExpensesArray = allExpenses?.filter(expense => {
+        const expenseDate = new Date(expense.date);
+        return expenseDate.getMonth() === referenceDate.getMonth() && expenseDate.getFullYear() === referenceDate.getFullYear();
+      });
+
+      monthlyExpenses = monthlyExpensesArray?.reduce((sum, expense) => sum + parseFloat(expense?.amount || 0), 0);
+      monthlyExpenseCount = monthlyExpensesArray?.length || 0;
+    }
+
+    const startOfCurrentWeek = startOfWeek(referenceDate, { weekStartsOn: 1 });
+    const endOfCurrentWeek = endOfWeek(referenceDate, { weekStartsOn: 1 });
 
     return {
       totalExpenses,
       expenseCount,
       todayExpenses,
       weeklyExpenses,
-      monthlyExpenses: monthlyExpenseTotal,
+      monthlyExpenses,
       monthlyExpenseCount,
-      filterDate: dateFilter, // Pass filter date to summary card
-      referenceDate, // Pass reference date for label formatting
+      filterStartDate: startDateFilter,
+      filterEndDate: endDateFilter,
+      referenceDate,
       weekStart: startOfCurrentWeek,
       weekEnd: endOfCurrentWeek
     };
@@ -576,8 +608,10 @@ const ExpenseTracking = ({ headerTitle }) => {
               onEditExpense={handleOpenEditModal} // Pass the handler
               isLoading={isLoading}
               userRole={userRole}
-              dateFilter={dateFilter}
-              onDateFilterChange={setDateFilter}
+              startDateFilter={startDateFilter}
+              endDateFilter={endDateFilter}
+              onStartDateFilterChange={setStartDateFilter}
+              onEndDateFilterChange={setEndDateFilter}
               onFilteredCountChange={setFilteredCount}
               currentPage={currentPage}
               itemsPerPage={itemsPerPage}

@@ -52,8 +52,36 @@ const FinancialReport = ({ navigation }) => {
         return date.toISOString().split('T')[0];
     };
 
-    const [startDate, setStartDate] = useState(getLocalDateString(30)); // Default last 30 days
-    const [endDate, setEndDate] = useState(getLocalDateString());
+    const getMonthlyPeriod = () => {
+        const today = new Date();
+        const currentDay = today.getDate();
+
+        let startDate, endDate;
+
+        if (currentDay >= 5) {
+            // Jika hari ini >= 5, periode: 5 bulan ini sampai 4 bulan depan
+            // Tapi untuk end date, kita ambil tanggal 4 bulan ini (belum lewat)
+            // Atau tanggal kemarin jika belum sampai tanggal 4
+            startDate = new Date(today.getFullYear(), today.getMonth(), 5);
+
+            // End date: tanggal 4 bulan depan, atau hari ini jika belum sampai tanggal 4 bulan depan
+            const nextMonth4th = new Date(today.getFullYear(), today.getMonth() + 1, 4);
+            endDate = today < nextMonth4th ? today : nextMonth4th;
+        } else {
+            // Jika hari ini < 5, periode: 5 bulan lalu sampai 4 bulan ini
+            startDate = new Date(today.getFullYear(), today.getMonth() - 1, 5);
+            endDate = new Date(today.getFullYear(), today.getMonth(), 4);
+        }
+
+        return {
+            startDate: startDate.toISOString().split('T')[0],
+            endDate: endDate.toISOString().split('T')[0]
+        };
+    };
+
+    const defaultPeriod = getMonthlyPeriod();
+    const [startDate, setStartDate] = useState(defaultPeriod.startDate);
+    const [endDate, setEndDate] = useState(defaultPeriod.endDate);
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);
     const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
@@ -141,8 +169,8 @@ const FinancialReport = ({ navigation }) => {
                             <span class="value">${formatCurrency(financialData.revenue)}</span>
                         </div>
                         <div class="row">
-                            <span class="label">Harga Pokok Penjualan (HPP Estimasi)</span>
-                            <span class="value danger">(${formatCurrency(financialData.cogs)})</span>
+                            <span class="label">Uang Lapak</span>
+                            <span class="value" style="color: #059669;">${formatCurrency(balances.lapak + balances.owner)}</span>
                         </div>
                         <div class="row total-row">
                             <span class="label">Laba Kotor (Gross Profit)</span>
@@ -261,7 +289,6 @@ const FinancialReport = ({ navigation }) => {
                     <>
                         {/* Laba Rugi Section */}
                         <View style={styles.card}>
-                            <View style={styles.cardHeaderDecoration} />
 
                             {/* Header Inside Card */}
                             <View style={styles.cardHeaderInternal}>
@@ -282,12 +309,12 @@ const FinancialReport = ({ navigation }) => {
                             <View style={styles.separatorWithOffset} />
                             <View style={styles.row}>
                                 <View style={styles.labelContainer}>
-                                    <View style={[styles.iconBox, { backgroundColor: '#FFFBEB' }]}>
-                                        <ArrowDownRight size={16} color="#D97706" />
+                                    <View style={[styles.iconBox, { backgroundColor: '#F0F9FF' }]}>
+                                        <Wallet size={16} color="#0284C7" />
                                     </View>
-                                    <Text style={styles.label}>HPP (Estimasi Modal)</Text>
+                                    <Text style={styles.label}>Uang Lapak</Text>
                                 </View>
-                                <Text style={styles.valueNegative}>({formatCurrency(financialData.cogs)})</Text>
+                                <Text style={[styles.value, { color: '#059669' }]}>{formatCurrency(balances.lapak + balances.owner)}</Text>
                             </View>
                             <View style={styles.separatorWithOffset} />
 
@@ -314,7 +341,7 @@ const FinancialReport = ({ navigation }) => {
                                     <CircleDollarSign size={20} color="#FFFFFF" />
                                 </View>
                                 <Text style={styles.netProfitValue}>{formatCurrency(financialData.netProfit)}</Text>
-                                <Text style={styles.netProfitSub}>*Laba Kotor - Pengeluaran</Text>
+                                <Text style={styles.netProfitSub}>*Pemasukan - Pengeluaran Operasional</Text>
                             </View>
                         </View>
 

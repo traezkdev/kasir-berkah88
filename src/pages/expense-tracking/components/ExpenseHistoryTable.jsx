@@ -14,8 +14,10 @@ const ExpenseHistoryTable = ({
   onEditExpense,
   isLoading = false,
   userRole,
-  dateFilter = '',
-  onDateFilterChange,
+  startDateFilter = '',
+  endDateFilter = '',
+  onStartDateFilterChange,
+  onEndDateFilterChange,
   onFilteredCountChange, // New prop to send filtered count to parent
   currentPage = 1,
   itemsPerPage = 20,
@@ -87,8 +89,21 @@ const ExpenseHistoryTable = ({
     const lowercasedSearchTerm = searchTerm?.toLowerCase() || '';
     const matchesSearch = expense?.name?.toLowerCase()?.includes(lowercasedSearchTerm);
     const matchesCategory = !categoryFilter || expense?.category === categoryFilter;
-    const matchesDate = !dateFilter || (expense?.date && formatInTimeZone(new Date(expense.date), 'Asia/Jakarta', 'yyyy-MM-dd') === dateFilter);
-    return matchesSearch && matchesCategory && matchesDate;
+
+    // Date range filtering
+    let matchesDateRange = true;
+    if (startDateFilter || endDateFilter) {
+      const expenseDate = formatInTimeZone(new Date(expense.date), 'Asia/Jakarta', 'yyyy-MM-dd');
+      if (startDateFilter && endDateFilter) {
+        matchesDateRange = expenseDate >= startDateFilter && expenseDate <= endDateFilter;
+      } else if (startDateFilter) {
+        matchesDateRange = expenseDate >= startDateFilter;
+      } else if (endDateFilter) {
+        matchesDateRange = expenseDate <= endDateFilter;
+      }
+    }
+
+    return matchesSearch && matchesCategory && matchesDateRange;
   });
 
   // Notify parent about filtered count for pagination
@@ -193,7 +208,7 @@ const ExpenseHistoryTable = ({
 
       {/* Filters Overlay */}
       <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <select
               value={categoryFilter}
@@ -210,8 +225,19 @@ const ExpenseHistoryTable = ({
           <div>
             <input
               type="date"
-              value={dateFilter}
-              onChange={(e) => onDateFilterChange(e.target.value)}
+              value={startDateFilter}
+              onChange={(e) => onStartDateFilterChange(e.target.value)}
+              placeholder="Dari Tanggal"
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all dark:text-white"
+            />
+          </div>
+
+          <div>
+            <input
+              type="date"
+              value={endDateFilter}
+              onChange={(e) => onEndDateFilterChange(e.target.value)}
+              placeholder="Sampai Tanggal"
               className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-4 focus:ring-blue-500/10 outline-none transition-all dark:text-white"
             />
           </div>

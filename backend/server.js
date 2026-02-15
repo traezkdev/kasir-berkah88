@@ -6994,11 +6994,9 @@ app.get("/api/reports/financial-summary", authenticateToken, authorizeRoles('adm
             return res.status(400).json({ error: "StartDate and EndDate are required" });
         }
 
-        // 1. Get Transactions (Omzet & Sales Volume)
-        // Exclude 'employee_meal' if that's considered internal use, or include it if it's revenue (usually internal use is cost).
-        // Based on logic in BusinessReports.js, revenue excludes employee_meal.
+        // 1. Get Transactions (Omzet)
         const transSql = `
-            SELECT t.total, t.items
+            SELECT t.total
             FROM transactions t
             WHERE t.timestamp BETWEEN ? AND ?
             AND (t.payment_method != 'employee_meal' OR t.payment_method IS NULL)
@@ -7006,41 +7004,19 @@ app.get("/api/reports/financial-summary", authenticateToken, authorizeRoles('adm
         const [transactions] = await db.query(transSql, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
 
         let totalRevenue = 0;
-        let totalCOGS = 0; // Cost of Goods Sold
-
-        // Helper Map for HPP to calculate COGS
-        // We use CURRENT HPP because historical HPP is not stored in transaction items
-        const [menuItems] = await db.query("SELECT id, name, hpp, stock FROM menu_items");
-        const hppMap = new Map();
-        menuItems.forEach(m => {
-            // Map by ID
-            hppMap.set(String(m.id), parseFloat(m.hpp || 0));
-            // Map by Name as fallback
-            hppMap.set(m.name, parseFloat(m.hpp || 0));
-        });
-
         transactions.forEach(t => {
             totalRevenue += parseFloat(t.total || 0);
-            let items = [];
-            try { items = typeof t.items === 'string' ? JSON.parse(t.items) : t.items; } catch (e) { }
-
-            if (Array.isArray(items)) {
-                items.forEach(item => {
-                    // Try to find HPP
-                    let hpp = 0;
-                    if (item.id && hppMap.has(String(item.id))) {
-                        hpp = hppMap.get(String(item.id));
-                    } else if (item.name && hppMap.has(item.name)) {
-                        hpp = hppMap.get(item.name);
-                    }
-
-                    const qty = parseInt(item.quantity || item.qty || 0);
-                    totalCOGS += (hpp * qty);
-                });
-            }
         });
 
-        // 2. Get Expenses (Operational Costs)
+        // 2. Get Lapak Depot Data (Combined Real-Time Balances)
+        // Revised: Sum of Saldo Lapak + Saldo Owner
+        const [accountRows] = await db.query(
+            "SELECT SUM(balance) as total_balance FROM accounts WHERE name IN ('lapak_deposit', 'owner_deposit')"
+        );
+        const totalBalances = parseFloat(accountRows[0]?.total_balance || 0);
+        console.log(`[DEBUG] Financial Summary - Combined Balances: ${totalBalances}`);
+
+        // 3. Get Expenses (Operational Costs)
         const expSql = `
             SELECT SUM(amount) as total
             FROM expenses
@@ -7049,20 +7025,16 @@ app.get("/api/reports/financial-summary", authenticateToken, authorizeRoles('adm
         const [expRows] = await db.query(expSql, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
         const totalExpenses = parseFloat(expRows[0]?.total || 0);
 
-        // 3. Asset Value (Nilai Kekayaan Stok / Inventory Value)
+        // 4. Asset Value (Inventory)
+        const [menuItems] = await db.query("SELECT id, name, hpp, stock FROM menu_items");
         let totalMenuAsset = 0;
-        let totalMenuAssetSellPrice = 0;
-
-        // We already fetched menuItems above
         menuItems.forEach(m => {
             const stock = parseFloat(m.stock || 0);
             if (stock > 0) {
-                totalMenuAsset += (stock * parseFloat(m.hpp || 0)); // Asset at Cost
-                // We could also calculate Asset at Retail Price if needed
+                totalMenuAsset += (stock * parseFloat(m.hpp || 0));
             }
         });
 
-        // Raw Materials Asset
         const [rawMaterials] = await db.query("SELECT current_stock, price_per_item FROM raw_materials");
         let totalRawMaterialAsset = 0;
         rawMaterials.forEach(r => {
@@ -7072,24 +7044,23 @@ app.get("/api/reports/financial-summary", authenticateToken, authorizeRoles('adm
             }
         });
 
-        const grossProfit = totalRevenue - totalCOGS; // Laba Kotor (Revenue - HPP)
-        const netProfit = grossProfit - totalExpenses; // Laba Bersih (Accrual-ish approximation)
-        const netCashFlow = totalRevenue - totalExpenses; // Cash Flow Basis
+        // CORRECTED FORMULAS (Lapak Depot is current balance info, not a cost)
+        const grossProfit = totalRevenue;               // Laba Kotor = Omzet
+        const netProfit = totalRevenue - totalExpenses; // Laba Bersih = Omzet - Biaya Operasional
 
         res.json({
             message: "success",
             data: {
                 period: { startDate, endDate },
-                revenue: totalRevenue,              // Omzet / Pendapatan Penjualan
-                cogs: totalCOGS,                    // HPP Terjual (Estimasi)
+                revenue: totalRevenue,              // Pemasukan (Omzet)
+                lapakDepot: totalBalances,           // Lapak Depot (Saldo Lapak + Owner)
                 grossProfit: grossProfit,           // Laba Kotor
-                expenses: totalExpenses,            // Total Pengeluaran Operasional
-                netProfit: netProfit,               // Laba Bersih (Revenue - HPP - Expenses)
-                netCashFlow: netCashFlow,           // Arus Kas Bersih (Revenue - Expenses)
+                expenses: totalExpenses,            // Pengeluaran Ops.
+                netProfit: netProfit,               // LABA BERSIH
                 assets: {
-                    menu: totalMenuAsset,           // Nilai Stok Barang Jadi (based on HPP)
-                    rawMaterial: totalRawMaterialAsset, // Nilai Stok Bahan Baku
-                    total: totalMenuAsset + totalRawMaterialAsset // Total Nilai Aset Stock
+                    menu: totalMenuAsset,
+                    rawMaterial: totalRawMaterialAsset,
+                    total: totalMenuAsset + totalRawMaterialAsset
                 }
             }
         });
