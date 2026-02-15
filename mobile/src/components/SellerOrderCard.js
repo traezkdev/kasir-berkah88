@@ -83,6 +83,20 @@ const SellerOrderCard = ({ order, onAccept, onReject, onComplete, onViewDetail }
         return <CreditCard size={120} color="#3B82F6" />;
     };
 
+    const getCorrectedDate = (dateStr) => {
+        if (!dateStr) return new Date();
+        const now = new Date();
+        let date = new Date(dateStr);
+        if (typeof dateStr === 'string' && !dateStr.endsWith('Z') && !dateStr.includes('+')) {
+            const dateLocal = new Date(dateStr);
+            const dateUTC = new Date(dateStr + 'Z');
+            if (Math.abs(now - dateUTC) < Math.abs(now - dateLocal)) {
+                date = dateUTC;
+            }
+        }
+        return date;
+    };
+
     return (
         <View style={styles.card}>
             {/* Background Icon */}
@@ -96,7 +110,7 @@ const SellerOrderCard = ({ order, onAccept, onReject, onComplete, onViewDetail }
                     <Text style={styles.orderIdText}>PESANAN #{order.id}</Text>
                 </View>
                 <Text style={styles.timeText}>
-                    {new Date(order.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                    {getCorrectedDate(order.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                 </Text>
             </View>
 
@@ -226,7 +240,10 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         marginBottom: 16,
         ...Platform.select({
-            web: { boxShadow: '0px 4px 12px rgba(0,0,0,0.05)' },
+            web: {
+                boxShadow: '0px 4px 12px rgba(0,0,0,0.05)',
+                transform: [{ translateZ: 0 }], // Force clipping on Web
+            },
             android: { elevation: 3 }
         })
     },

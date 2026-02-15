@@ -56,7 +56,25 @@ const NewOrderPopup = () => {
                 const now = new Date();
                 // Check multiple possible date fields from different notification types
                 const orderTimeStr = newOrder.created_at || newOrder.timestamp || new Date().toISOString();
-                const createdAt = new Date(orderTimeStr);
+
+                // Heuristic Timezone Fix:
+                // Determine if we should treat the date as UTC or Local based on which is closer to "now".
+                // This solves the issue where Production sends UTC string (treated as Local by default = wrong time)
+                // vs Local sending Local string (treated as Local by default = correct time).
+                let createdAt = new Date(orderTimeStr);
+
+                if (typeof orderTimeStr === 'string' && !orderTimeStr.endsWith('Z') && !orderTimeStr.includes('+')) {
+                    const dateLocal = new Date(orderTimeStr);
+                    const dateUTC = new Date(orderTimeStr + 'Z');
+
+                    const diffLocal = Math.abs(now - dateLocal);
+                    const diffUTC = Math.abs(now - dateUTC);
+
+                    // If UTC interpretation is significantly closer to current time, use UTC
+                    if (diffUTC < diffLocal) {
+                        createdAt = dateUTC;
+                    }
+                }
 
                 // Validate if createdAt is a valid date
                 if (isNaN(createdAt.getTime())) {
