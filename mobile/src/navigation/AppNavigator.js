@@ -13,7 +13,10 @@ import {
     History,
     MessageCircle,
     Search,
-    Ticket
+
+    Ticket,
+    DollarSign,
+    BarChart3
 } from 'lucide-react-native';
 import NewOrderPopup from '../components/NewOrderPopup';
 import { useAuth } from '../context/AuthContext';
@@ -21,12 +24,14 @@ import { useOrderNotification } from '../context/OrderNotificationContext';
 import { useChat } from '../context/ChatContext';
 import { useConfirm } from '../context/ConfirmContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 
 // Screens
 import ChatScreen from '../screens/seller/ChatScreen';
 import ProfileScreen from '../screens/seller/ProfileScreen';
 import CustomerDashboard from '../screens/customer/Dashboard';
 import SellerDashboard from '../screens/seller/Dashboard';
+import OwnerDashboard from '../screens/owner/Dashboard';
 import OrderManagement from '../screens/seller/OrderManagement';
 import MenuManagement from '../screens/seller/MenuManagement';
 import TransactionHistory from '../screens/seller/TransactionHistory';
@@ -52,6 +57,21 @@ import HppManagement from '../screens/seller/HppManagement';
 import PopupManagement from '../screens/seller/PopupManagement';
 import ReviewManagement from '../screens/seller/ReviewManagement';
 import DatabaseManagement from '../screens/seller/DatabaseManagement';
+import OwnerDatabaseManagement from '../screens/owner/DatabaseManagement';
+import OwnerDeveloperCreditsScreen from '../screens/owner/DeveloperCreditsScreen';
+import OwnerExpenseManagement from '../screens/owner/ExpenseManagement';
+import OwnerLapakDeposit from '../screens/owner/LapakDeposit';
+
+// Owner Screens
+import OwnerBusinessReports from '../screens/owner/BusinessReports';
+import OwnerFinancialReport from '../screens/owner/FinancialReport';
+import OwnerDailyReport from '../screens/owner/DailyReport';
+import OwnerCashReconciliation from '../screens/owner/CashReconciliation';
+import OwnerCategoryManagement from '../screens/owner/CategoryManagement';
+import OwnerPromoManagement from '../screens/owner/PromoManagement';
+import OwnerManageInformation from '../screens/owner/ManageInformation';
+import OwnerProfileScreen from '../screens/owner/ProfileScreen';
+import OwnerAllFeatures from '../screens/owner/AllFeatures';
 
 // Customer Screens
 import InformationScreen from '../screens/customer/InformationScreen';
@@ -94,7 +114,7 @@ const PromoStack = () => (
     </Stack.Navigator>
 );
 
-import Svg, { Path } from 'react-native-svg';
+
 
 const CustomSellerTabBar = ({ state, descriptors, navigation }) => {
     const insets = useSafeAreaInsets();
@@ -232,23 +252,9 @@ const sellerNavStyles = {
     }
 };
 
-const SellerTabs = () => {
-    return (
-        <Tab.Navigator
-            tabBar={props => <CustomSellerTabBar {...props} />}
-            screenOptions={{ headerShown: false }}
-        >
-            <Tab.Screen name="Dashboard" component={SellerDashboard} />
-            <Tab.Screen name="Pesanan" component={OrderManagement} />
-            <Tab.Screen name="Jual" component={SalesPOS} />
-            <Tab.Screen name="Katalog" component={MenuManagement} />
-            <Tab.Screen name="Transaksi" component={TransactionHistory} />
-        </Tab.Navigator>
-    );
-};
-const SellerRootStack = () => (
+const SellerDashboardStack = () => (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="MainTabs" component={SellerTabs} />
+        <Stack.Screen name="Dashboard" component={SellerDashboard} />
         <Stack.Screen name="ChatScreen" component={ChatScreen} />
         <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
         <Stack.Screen name="Banners" component={Banners} />
@@ -271,6 +277,162 @@ const SellerRootStack = () => (
         <Stack.Screen name="PopupManagement" component={PopupManagement} />
         <Stack.Screen name="ReviewManagement" component={ReviewManagement} />
         <Stack.Screen name="DatabaseManagement" component={DatabaseManagement} />
+    </Stack.Navigator>
+);
+
+const SellerTabs = () => {
+    return (
+        <Tab.Navigator
+            tabBar={props => <CustomSellerTabBar {...props} />}
+            screenOptions={{ headerShown: false }}
+        >
+            <Tab.Screen name="Dashboard" component={SellerDashboardStack} />
+            <Tab.Screen name="Pesanan" component={OrderManagement} />
+            <Tab.Screen name="Jual" component={SalesPOS} />
+            <Tab.Screen name="Katalog" component={MenuManagement} />
+            <Tab.Screen name="Transaksi" component={TransactionHistory} />
+        </Tab.Navigator>
+    );
+};
+const SellerRootStack = () => (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="MainTabs" component={SellerTabs} />
+    </Stack.Navigator>
+);
+
+const OwnerNavStyles = {
+    bottomNav: {
+        flexDirection: 'row',
+        backgroundColor: '#FFFFFF',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        paddingHorizontal: 10,
+        ...Platform.select({
+            web: { boxShadow: '0px -8px 25px rgba(0,0,0,0.05)' },
+            android: { elevation: 20 },
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -8 },
+                shadowOpacity: 0.05,
+                shadowRadius: 15,
+            }
+        })
+    },
+    navItem: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+    },
+    navLabel: {
+        fontSize: 9,
+        fontWeight: '700',
+        color: '#94A3B8',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    activeNavLabel: {
+        color: '#F59E0B',
+        fontWeight: '900',
+    },
+};
+
+const CustomOwnerTabBar = ({ state, descriptors, navigation }) => {
+    const insets = useSafeAreaInsets();
+
+    return (
+        <View style={[
+            OwnerNavStyles.bottomNav,
+            {
+                height: getSafeFooterHeight(insets, 70),
+                paddingBottom: getSafeBottomPadding(insets, 8, 20),
+                paddingTop: 15,
+            }
+        ]}>
+            {state.routes.map((route, index) => {
+                const { options } = descriptors[route.key];
+                const label = options.tabBarLabel !== undefined ? options.tabBarLabel : options.title !== undefined ? options.title : route.name;
+                const isFocused = state.index === index;
+
+                const onPress = () => {
+                    const event = navigation.emit({
+                        type: 'tabPress',
+                        target: route.key,
+                        canPreventDefault: true,
+                    });
+
+                    if (!isFocused && !event.defaultPrevented) {
+                        navigation.navigate(route.name);
+                    }
+                };
+
+                const iconColor = isFocused ? '#F59E0B' : '#64748B';
+
+                const renderIcon = () => {
+                    if (route.name === 'Dashboard') return <LayoutDashboard size={24} color={iconColor} strokeWidth={isFocused ? 2.5 : 2} />;
+                    if (route.name === 'Bisnis') return <BarChart3 size={24} color={iconColor} strokeWidth={isFocused ? 2.5 : 2} />;
+                    if (route.name === 'Keuangan') return <DollarSign size={24} color={iconColor} strokeWidth={isFocused ? 2.5 : 2} />;
+                    if (route.name === 'Profil') return <User size={24} color={iconColor} strokeWidth={isFocused ? 2.5 : 2} />;
+                    return null;
+                };
+
+                return (
+                    <TouchableOpacity
+                        key={index}
+                        onPress={onPress}
+                        style={OwnerNavStyles.navItem}
+                        activeOpacity={0.7}
+                    >
+                        {renderIcon()}
+                        <Text style={[
+                            OwnerNavStyles.navLabel,
+                            isFocused && OwnerNavStyles.activeNavLabel
+                        ]}>
+                            {label}
+                        </Text>
+                    </TouchableOpacity>
+                );
+            })}
+        </View>
+    );
+};
+
+const OwnerDashboardStack = () => (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="OwnerDashboard" component={OwnerDashboard} />
+        <Stack.Screen name="BusinessReports" component={OwnerBusinessReports} />
+        <Stack.Screen name="FinancialReport" component={OwnerFinancialReport} />
+        <Stack.Screen name="DailyReport" component={OwnerDailyReport} />
+        <Stack.Screen name="CashReconciliation" component={OwnerCashReconciliation} />
+        <Stack.Screen name="ExpenseManagement" component={OwnerExpenseManagement} />
+        <Stack.Screen name="LapakDeposit" component={OwnerLapakDeposit} />
+        <Stack.Screen name="CategoryManagement" component={OwnerCategoryManagement} />
+        <Stack.Screen name="PromoManagement" component={OwnerPromoManagement} />
+        <Stack.Screen name="ManageInformation" component={OwnerManageInformation} />
+        <Stack.Screen name="DatabaseManagement" component={OwnerDatabaseManagement} />
+        <Stack.Screen name="ProfileScreen" component={OwnerProfileScreen} />
+        <Stack.Screen name="DeveloperCreditsScreen" component={OwnerDeveloperCreditsScreen} />
+        <Stack.Screen name="AllFeatures" component={OwnerAllFeatures} />
+    </Stack.Navigator>
+);
+
+const OwnerTabs = () => {
+    return (
+        <Tab.Navigator
+            tabBar={props => <CustomOwnerTabBar {...props} />}
+            screenOptions={{ headerShown: false }}
+        >
+            <Tab.Screen name="Dashboard" component={OwnerDashboardStack} options={{ tabBarLabel: 'Beranda' }} />
+            <Tab.Screen name="Bisnis" component={OwnerBusinessReports} options={{ tabBarLabel: 'Bisnis' }} />
+            <Tab.Screen name="Keuangan" component={OwnerFinancialReport} options={{ tabBarLabel: 'Keuangan' }} />
+            <Tab.Screen name="Profil" component={OwnerProfileScreen} options={{ tabBarLabel: 'Profil' }} />
+        </Tab.Navigator>
+    );
+};
+
+const OwnerRootStack = () => (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="MainTabs" component={OwnerTabs} />
     </Stack.Navigator>
 );
 
@@ -441,7 +603,18 @@ const AppNavigator = () => {
     const { user } = useAuth();
 
     // Tentukan Dashboard berdasarkan Role
-    const isSeller = user?.role === 'penjual' || user?.role === 'admin' || user?.role === 'seller' || user?.role === 'kasir' || user?.role === 'owner';
+    const isOwner = user?.role === 'owner';
+    const isSeller = user?.role === 'penjual' || user?.role === 'admin' || user?.role === 'seller' || user?.role === 'kasir';
+
+    console.log('[DEBUG Navigation] User Role:', user?.role, '| isOwner:', isOwner, '| isSeller:', isSeller);
+
+    if (isOwner) {
+        return (
+            <NavigationContainer ref={navigationRef}>
+                <OwnerRootStack />
+            </NavigationContainer>
+        );
+    }
 
     if (isSeller) {
         return (
@@ -455,7 +628,6 @@ const AppNavigator = () => {
     return (
         <NavigationContainer ref={navigationRef}>
             <CustomerRootStack />
-            <NewOrderPopup />
         </NavigationContainer>
     );
 };

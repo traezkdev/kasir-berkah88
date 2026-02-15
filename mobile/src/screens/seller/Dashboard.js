@@ -389,7 +389,7 @@ const SellerDashboard = ({ navigation }) => {
                                 <Text style={styles.actionLabel}>{action.label}</Text>
                             </TouchableOpacity>
                         ))}
-                        {(user?.role === 'admin' || user?.role === 'owner') && (
+                        {user?.role === 'admin' && (
                             <TouchableOpacity
                                 style={styles.actionItem}
                                 onPress={() => navigation.navigate('PromoManagement')}

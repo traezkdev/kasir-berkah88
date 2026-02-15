@@ -259,7 +259,7 @@ const authorizeAccountAccess = (accountType) => {
     return (req, res, next) => {
         const userRole = req.user.role;
 
-        if (accountType === 'lapak' && (userRole === 'admin' || userRole === 'user' || userRole === 'kasir')) {
+        if (accountType === 'lapak' && (userRole === 'admin' || userRole === 'user' || userRole === 'kasir' || userRole === 'owner')) {
             next();
         } else if (accountType === 'owner' && (userRole === 'admin' || userRole === 'owner')) {
             next();
@@ -853,6 +853,79 @@ app.get("/api/analytics/breakdown", authenticateToken, authorizeRoles('admin', '
     }
 });
 
+// --- Financial Report Endpoint ---
+app.get("/api/reports/financial-summary", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        let { startDate, endDate } = req.query;
+        if (!startDate || !endDate) {
+            return res.status(400).json({ error: "startDate and endDate are required" });
+        }
+
+        // 1. Revenue
+        const [revenueRows] = await db.query(`
+            SELECT SUM(total) as revenue 
+            FROM transactions 
+            WHERE timestamp BETWEEN ? AND ? 
+            AND (payment_method != 'employee_meal' OR payment_method IS NULL)
+        `, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
+        const revenue = parseFloat(revenueRows[0].revenue || 0);
+
+        // 2. Expenses
+        const [expenseRows] = await db.query(`
+            SELECT SUM(amount) as total 
+            FROM expenses 
+            WHERE date BETWEEN ? AND ?
+        `, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
+        const expenses = parseFloat(expenseRows[0].total || 0);
+
+        // 3. COGS (Estimation via Raw Material Expenses for now)
+        const [cogsRows] = await db.query(`
+            SELECT SUM(amount) as total 
+            FROM expenses 
+            WHERE date BETWEEN ? AND ? 
+            AND (category = 'Bahan Baku' OR category = 'Belanja Pasar' OR category = 'Stok')
+        `, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
+        const cogs = parseFloat(cogsRows[0].total || 0);
+
+        // 4. Assets
+        // Menu Assets
+        const [menuAssetsRows] = await db.query(`
+            SELECT SUM(CAST(stock AS DECIMAL(10,2)) * price) as value FROM menu_items
+        `);
+        const menuAssets = parseFloat(menuAssetsRows[0].value || 0);
+
+        // Raw Material Assets
+        // Logic: (current_stock * raw_stock_price) + (menu_stock * price_per_item)
+        const [rawAssetsRows] = await db.query(`
+            SELECT SUM((current_stock * raw_stock_price) + (menu_stock * price_per_item)) as value 
+            FROM raw_materials
+        `);
+        const rawMaterialAssets = parseFloat(rawAssetsRows[0].value || 0);
+
+        const totalAssets = menuAssets + rawMaterialAssets;
+
+        res.json({
+            message: "success",
+            data: {
+                revenue,
+                cogs, // This is just a proxy for now
+                grossProfit: revenue - cogs,
+                expenses,
+                netProfit: revenue - expenses,
+                assets: {
+                    menu: menuAssets,
+                    rawMaterial: rawMaterialAssets,
+                    total: totalAssets
+                }
+            }
+        });
+
+    } catch (err) {
+        console.error("Error in financial summary:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // --- Cash Reconciliations Endpoints ---
 app.get("/api/menu-recipes/:menu_item_id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
@@ -901,7 +974,7 @@ app.delete("/api/menu-recipes/:id", authenticateToken, authorizeRoles('admin', '
 // --- Menu Items Endpoints ---
 
 // Get all menu items with pagination and category filtering
-app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'pelanggan', 'penjual'), async (req, res) => {
+app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'pelanggan', 'penjual', 'owner'), async (req, res) => {
     try {
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 20;
@@ -1364,7 +1437,7 @@ app.get("/api/menu-reviews/:menu_item_id", async (req, res) => {
 
 
 // --- Categories Endpoints ---
-app.get("/api/categories", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'pelanggan', 'penjual'), async (req, res) => {
+app.get("/api/categories", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'pelanggan', 'penjual', 'owner'), async (req, res) => {
     try {
         const sql = "SELECT * FROM categories ORDER BY name ASC";
         const [rows] = await db.query(sql);
@@ -1495,7 +1568,7 @@ app.delete("/api/categories/:id", authenticateToken, authorizeRoles('user', 'adm
 // --- Banners Endpoints ---
 
 // Get all active banners
-app.get("/api/banners", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'pelanggan', 'penjual'), async (req, res) => {
+app.get("/api/banners", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'pelanggan', 'penjual', 'owner'), async (req, res) => {
     try {
         const sql = "SELECT * FROM banners WHERE is_active = TRUE ORDER BY created_at DESC";
         const [rows] = await db.query(sql);
@@ -1506,7 +1579,7 @@ app.get("/api/banners", authenticateToken, authorizeRoles('user', 'admin', 'gues
 });
 
 // Get all banners (for management)
-app.get("/api/banners/all", authenticateToken, authorizeRoles('admin', 'penjual'), async (req, res) => {
+app.get("/api/banners/all", authenticateToken, authorizeRoles('admin', 'penjual', 'owner'), async (req, res) => {
     try {
         const sql = "SELECT * FROM banners ORDER BY created_at DESC";
         const [rows] = await db.query(sql);
@@ -1517,7 +1590,7 @@ app.get("/api/banners/all", authenticateToken, authorizeRoles('admin', 'penjual'
 });
 
 // Add a new banner
-app.post("/api/banners", authenticateToken, authorizeRoles('admin', 'penjual'), upload.single('image'), async (req, res) => {
+app.post("/api/banners", authenticateToken, authorizeRoles('admin', 'penjual', 'owner'), upload.single('image'), async (req, res) => {
     try {
         let bannerData;
 
@@ -1736,7 +1809,7 @@ app.post("/api/information/:id/broadcast", authenticateToken, authorizeRoles('ad
 });
 
 // Update a banner
-app.put("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penjual'), upload.single('image'), async (req, res) => {
+app.put("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'owner', 'penjual'), upload.single('image'), async (req, res) => {
     try {
         const { id } = req.params;
         let bannerData;
@@ -2585,7 +2658,7 @@ app.get("/api/transactions/trash", authenticateToken, authorizeRoles('admin'), a
 
 
 // Get a single transaction by id
-app.get("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir'), async (req, res, next) => {
+app.get("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'owner'), async (req, res, next) => {
     try {
         const sql = "select * from transactions where id = ? AND deleted_at IS NULL";
         const params = [req.params.id];
@@ -3667,7 +3740,7 @@ app.post("/api/accounts/deposit", authenticateToken, async (req, res) => {
 
         let allowedRoles;
         if (account_name === 'lapak_deposit') {
-            allowedRoles = ['admin', 'user', 'kasir'];
+            allowedRoles = ['admin', 'user', 'kasir', 'owner'];
         } else if (account_name === 'owner_deposit') {
             allowedRoles = ['admin', 'owner'];
         } else {
@@ -3726,7 +3799,7 @@ app.post("/api/accounts/expense", authenticateToken, async (req, res) => {
 
         let allowedRoles;
         if (account_name === 'lapak_deposit') {
-            allowedRoles = ['admin', 'user', 'kasir'];
+            allowedRoles = ['admin', 'user', 'kasir', 'owner'];
         } else if (account_name === 'owner_deposit') {
             allowedRoles = ['admin', 'owner'];
         } else {
@@ -3811,7 +3884,7 @@ app.put("/api/accounts/transactions/:id", authenticateToken, async (req, res) =>
         const type = transaction.type; // 'deposit' or 'expense'
 
         // Check ownership or admin role
-        if (transaction.created_by_user_id !== userId && req.user.role !== 'admin') {
+        if (transaction.created_by_user_id !== userId && req.user.role !== 'admin' && req.user.role !== 'owner') {
             await connection.rollback();
             return res.status(403).json({ error: "Forbidden: You are not authorized to edit this transaction" });
         }
@@ -3868,7 +3941,7 @@ app.delete("/api/accounts/transactions/:id", authenticateToken, async (req, res)
         const transaction = transRows[0];
 
         // Check ownership or admin role
-        if (transaction.created_by_user_id !== userId && req.user.role !== 'admin') {
+        if (transaction.created_by_user_id !== userId && req.user.role !== 'admin' && req.user.role !== 'owner') {
             await connection.rollback();
             return res.status(403).json({ error: "Forbidden: You are not authorized to delete this transaction" });
         }
