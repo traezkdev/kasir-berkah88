@@ -21,11 +21,17 @@ import { ChatProvider } from './src/context/ChatContext';
 import { CartProvider } from './src/context/CartContext';
 import { AppSettingsProvider } from './src/context/AppSettingsContext';
 
+import AuthWelcomeScreen from './src/screens/AuthWelcomeScreen';
+
 const AuthStack = createNativeStackNavigator();
 
 const AuthNavigator = () => (
   <NavigationContainer ref={navigationRef}>
-    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+    <AuthStack.Navigator
+      initialRouteName="Welcome"
+      screenOptions={{ headerShown: false }}
+    >
+      <AuthStack.Screen name="Welcome" component={AuthWelcomeScreen} />
       <AuthStack.Screen name="Login" component={LoginScreen} />
       <AuthStack.Screen name="Register" component={RegisterScreen} />
     </AuthStack.Navigator>

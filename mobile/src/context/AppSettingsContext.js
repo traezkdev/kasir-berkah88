@@ -19,6 +19,9 @@ export const AppSettingsProvider = ({ children }) => {
             if (response.data && response.data.data) {
                 setIsOpen(!!response.data.data.is_open);
                 setIgnoreStock(!!response.data.data.ignore_stock);
+                if (response.data.data.app_name) {
+                    setHeaderTitle(response.data.data.app_name);
+                }
             }
 
             // Fetch logo

@@ -1041,7 +1041,12 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     rangeBtnActive: {
-        backgroundColor: '#349BE5',
+        backgroundColor: '#FFFFFF',
+        ...Platform.select({
+            web: { boxShadow: '0px 4px 10px rgba(0,0,0,0.1)' },
+            android: { elevation: 4 },
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 6 }
+        }),
     },
     rangeText: {
         fontSize: 12,
@@ -1049,7 +1054,7 @@ const styles = StyleSheet.create({
         color: '#BFDBFE',
     },
     rangeTextActive: {
-        color: '#FFFFFF',
+        color: '#349BE5',
     },
     customDateRow: {
         flexDirection: 'row',

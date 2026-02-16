@@ -30,7 +30,8 @@ import {
     FileText,
     CreditCard,
     Database,
-    ArrowRight
+    ArrowRight,
+    Briefcase
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import apiService, { API_URL } from '../../api/apiService';
@@ -186,10 +187,10 @@ const OwnerDashboard = ({ navigation }) => {
                         </View>
 
                         <TouchableOpacity
-                            onPress={() => navigation.navigate('Keuangan')}
+                            onPress={() => navigation.navigate('BusinessMoney')}
                             style={styles.summaryFooter}
                         >
-                            <Text style={styles.summaryFooterText}>Lihat Detail Keuangan</Text>
+                            <Text style={styles.summaryFooterText}>Lihat Arus Kas Bisnis</Text>
                             <ArrowRight size={14} color="#349BE5" />
                         </TouchableOpacity>
                     </View>
@@ -265,15 +266,15 @@ const OwnerDashboard = ({ navigation }) => {
                     <View style={styles.buttonGrid}>
                         <QuickButton
                             icon={BarChart3}
-                            label="Bisnis"
+                            label="Laporan"
                             color="#3B82F6"
                             onPress={() => navigation.navigate('BusinessReports')}
                         />
                         <QuickButton
-                            icon={FileText}
-                            label="Harian"
+                            icon={Briefcase}
+                            label="Uang"
                             color="#10B981"
-                            onPress={() => navigation.navigate('DailyReport')}
+                            onPress={() => navigation.navigate('BusinessMoney')}
                         />
                         <QuickButton
                             icon={CreditCard}
