@@ -268,7 +268,7 @@ const SellerDashboardStack = () => (
         <Stack.Screen name="CashReconciliation" component={CashReconciliation} />
         <Stack.Screen name="DailyReport" component={DailyReport} />
         <Stack.Screen name="DeveloperCreditsScreen" component={DeveloperCreditsScreen} />
-        <Stack.Screen name="TransactionTrash" component={TransactionTrash} />
+
         <Stack.Screen name="BusinessReports" component={BusinessReports} />
         <Stack.Screen name="PromoManagement" component={PromoManagement} />
         <Stack.Screen name="ManageInformation" component={ManageInformation} />
@@ -297,7 +297,9 @@ const SellerTabs = () => {
 const SellerRootStack = () => (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="MainTabs" component={SellerTabs} />
+        <Stack.Screen name="TransactionTrash" component={TransactionTrash} />
     </Stack.Navigator>
+
 );
 
 const OwnerNavStyles = {

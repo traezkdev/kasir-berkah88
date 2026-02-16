@@ -4273,7 +4273,7 @@ app.post("/api/orders", (req, res, next) => {
             total: calculatedTotal,
             promo_discount: finalPromoDiscount,
             status: 'pending',
-            created_at: new Date()
+            created_at: new Date().toISOString()
         });
 
         res.status(201).json({
@@ -4336,9 +4336,15 @@ app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user', 'pelan
         const dataSql = `SELECT * FROM orders ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
         const [rows] = await db.query(dataSql, [...queryParams, limit, offset]);
 
+        // Fix timezone for production: ensure all dates are sent in ISO format
+        const formattedRows = rows.map(order => ({
+            ...order,
+            created_at: order.created_at ? new Date(order.created_at).toISOString() : null
+        }));
+
         res.json({
             "message": "success",
-            "data": rows,
+            "data": formattedRows,
             "pagination": {
                 "currentPage": page,
                 "totalPages": totalPages,
@@ -4378,6 +4384,11 @@ app.get("/api/orders/:id", authenticateToken, authorizeRoles('admin', 'user', 'p
             order.items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
         } catch (e) {
             console.error("Error parsing order items:", e);
+        }
+
+        // Fix timezone: ensure created_at is sent in ISO format
+        if (order.created_at) {
+            order.created_at = new Date(order.created_at).toISOString();
         }
 
         res.json({
@@ -7124,8 +7135,19 @@ app.get("/api/popups/active", async (req, res) => {
 
         const [rows] = await db.query(sql);
 
+        // Filter out popups with missing images
+        const existingPopups = rows.filter(popup => {
+            if (!popup.image_url) return true;
+            try {
+                const filePath = path.join(__dirname, popup.image_url);
+                return fs.existsSync(filePath);
+            } catch (err) {
+                return false;
+            }
+        });
+
         // Filter by page if specified
-        let filteredPopups = rows;
+        let filteredPopups = existingPopups;
         if (page) {
             filteredPopups = rows.filter(popup => {
                 if (!popup.show_on_pages) return true; // Show on all pages if not specified

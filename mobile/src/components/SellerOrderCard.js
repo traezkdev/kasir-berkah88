@@ -88,10 +88,13 @@ const SellerOrderCard = ({ order, onAccept, onReject, onComplete, onViewDetail }
         const now = new Date();
         let date = new Date(dateStr);
         if (typeof dateStr === 'string' && !dateStr.endsWith('Z') && !dateStr.includes('+')) {
-            const dateLocal = new Date(dateStr);
-            const dateUTC = new Date(dateStr + 'Z');
+            const isoStr = dateStr.replace(' ', 'T');
+            const dateLocal = new Date(isoStr);
+            const dateUTC = new Date(isoStr + 'Z');
             if (Math.abs(now - dateUTC) < Math.abs(now - dateLocal)) {
                 date = dateUTC;
+            } else {
+                date = dateLocal;
             }
         }
         return date;
