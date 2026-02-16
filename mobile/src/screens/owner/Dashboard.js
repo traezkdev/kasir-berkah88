@@ -132,7 +132,7 @@ const OwnerDashboard = ({ navigation }) => {
     if (loading && !refreshing) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#F59E0B" />
+                <ActivityIndicator size="large" color="#349BE5" />
                 <Text style={styles.loadingText}>Menyiapkan Insight Bisnis...</Text>
             </View>
         );
@@ -144,9 +144,8 @@ const OwnerDashboard = ({ navigation }) => {
 
             {/* Fixed Header Content */}
             <View style={styles.fixedHeaderArea}>
-                <LinearGradient
-                    colors={['#0F172A', '#1E293B']}
-                    style={[styles.header, { paddingTop: (insets.top || 0) + 10 }]}
+                <View
+                    style={[styles.header, { paddingTop: (insets.top || 0) + 10, backgroundColor: '#349BE5' }]}
                 >
                     <View style={styles.headerTop}>
                         <View>
@@ -159,7 +158,7 @@ const OwnerDashboard = ({ navigation }) => {
                             <LogOut size={22} color="#FFFFFF" />
                         </TouchableOpacity>
                     </View>
-                </LinearGradient>
+                </View>
 
                 <View style={styles.fixedCardContainer}>
                     <View style={styles.mainStatsCard}>
@@ -191,7 +190,7 @@ const OwnerDashboard = ({ navigation }) => {
                             style={styles.summaryFooter}
                         >
                             <Text style={styles.summaryFooterText}>Lihat Detail Keuangan</Text>
-                            <ArrowRight size={14} color="#F59E0B" />
+                            <ArrowRight size={14} color="#349BE5" />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -201,7 +200,7 @@ const OwnerDashboard = ({ navigation }) => {
                 style={styles.content}
                 contentContainerStyle={styles.scrollContent}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#F59E0B']} />
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#349BE5']} />
                 }
                 showsVerticalScrollIndicator={false}
             >
@@ -212,7 +211,7 @@ const OwnerDashboard = ({ navigation }) => {
                         {/* Transaction Methods */}
                         <View style={styles.insightCard}>
                             <View style={styles.insightHeader}>
-                                <PieChart size={16} color="#F59E0B" />
+                                <PieChart size={16} color="#349BE5" />
                                 <Text style={styles.insightTitle}>Metode Bayar</Text>
                             </View>
                             {stats.today.payments.length > 0 ? (
@@ -230,7 +229,7 @@ const OwnerDashboard = ({ navigation }) => {
                         {/* Top Selling Today */}
                         <View style={styles.insightCard}>
                             <View style={styles.insightHeader}>
-                                <BarChart3 size={16} color="#F59E0B" />
+                                <BarChart3 size={16} color="#349BE5" />
                                 <Text style={styles.insightTitle}>Menu Terlaris</Text>
                             </View>
                             {stats.today.topItems.length > 0 ? (
@@ -259,7 +258,7 @@ const OwnerDashboard = ({ navigation }) => {
                             style={styles.seeAllBtn}
                         >
                             <Text style={styles.seeAllText}>Lihat Semua</Text>
-                            <ChevronRight size={14} color="#F59E0B" />
+                            <ChevronRight size={14} color="#349BE5" />
                         </TouchableOpacity>
                     </View>
 
@@ -279,7 +278,7 @@ const OwnerDashboard = ({ navigation }) => {
                         <QuickButton
                             icon={CreditCard}
                             label="Kas"
-                            color="#F59E0B"
+                            color="#349BE5"
                             onPress={() => navigation.navigate('CashReconciliation')}
                         />
                         <QuickButton
@@ -364,7 +363,7 @@ const styles = StyleSheet.create({
     },
     loadingText: {
         marginTop: 12,
-        color: '#F59E0B',
+        color: '#349BE5',
         fontSize: 14,
         fontWeight: 'bold',
     },
@@ -373,6 +372,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         borderBottomLeftRadius: 24,
         borderBottomRightRadius: 24,
+        backgroundColor: '#349BE5',
     },
     fixedHeaderArea: {
         backgroundColor: '#F8FAFC',
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
         fontWeight: '900',
     },
     headerDate: {
-        color: '#94A3B8',
+        color: '#E1F5FE',
         fontSize: 12,
         marginTop: 2,
         fontWeight: '600',
@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
         borderTopColor: '#F1F5F9',
     },
     summaryFooterText: {
-        color: '#F59E0B',
+        color: '#349BE5',
         fontSize: 12,
         fontWeight: '800',
     },
@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
     },
     paymentVal: {
         fontSize: 11,
-        color: '#F59E0B',
+        color: '#349BE5',
         fontWeight: '800',
     },
     topItemRow: {
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     sectionBadge: {
-        backgroundColor: '#FFFBEB',
+        backgroundColor: '#E1F5FE',
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 8,
@@ -566,7 +566,7 @@ const styles = StyleSheet.create({
     },
     sectionBadgeText: {
         fontSize: 10,
-        color: '#D97706',
+        color: '#0284C7',
         fontWeight: '900',
     },
     seeAllBtn: {
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
     seeAllText: {
         fontSize: 12,
         fontWeight: '800',
-        color: '#F59E0B',
+        color: '#349BE5',
     },
     buttonGrid: {
         flexDirection: 'row',

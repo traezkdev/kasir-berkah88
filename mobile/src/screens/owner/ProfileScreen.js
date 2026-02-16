@@ -257,7 +257,7 @@ const ProfileScreen = ({ navigation }) => {
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Profil Saya</Text>
                 <TouchableOpacity onPress={handleLogout} style={styles.logoutHeaderBtn}>
-                    <LogOut size={22} color="#EF4444" />
+                    <LogOut size={22} color="#FFFFFF" />
                 </TouchableOpacity>
             </View>
 
@@ -279,7 +279,7 @@ const ProfileScreen = ({ navigation }) => {
 
                     <Text style={styles.userName}>{user?.name || 'User'}</Text>
                     <View style={styles.roleBadge}>
-                        <Shield size={12} color="#138FEA" />
+                        <Shield size={12} color="#349BE5" />
                         <Text style={styles.roleText}>{user?.role?.toUpperCase() || 'GUEST'}</Text>
                     </View>
                     <Text style={styles.userId}>ID: #{user?.id || '0'}</Text>
@@ -296,13 +296,13 @@ const ProfileScreen = ({ navigation }) => {
                 {/* Stats / Info Summary */}
                 <View style={styles.statsRow}>
                     <View style={styles.statBox}>
-                        <Store size={20} color="#F59E0B" />
+                        <Store size={20} color="#349BE5" />
                         <Text style={styles.statLabel}>Status Toko</Text>
                         <Text style={styles.statValue}>Aktif</Text>
                     </View>
                     <View style={styles.divider} />
                     <View style={styles.statBox}>
-                        <Clock size={20} color="#F59E0B" />
+                        <Clock size={20} color="#349BE5" />
                         <Text style={styles.statLabel}>Beroperasi</Text>
                         <Text style={styles.statValue}>Sejak 2025</Text>
                     </View>
@@ -311,14 +311,14 @@ const ProfileScreen = ({ navigation }) => {
                 {/* Menu Sections */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>PENGATURAN AKUN</Text>
-                    {renderMenuItem(<User size={20} color="#D97706" />, 'Informasi Pribadi', 'Username, Email, No. Telp, & Alamat', () => setActiveModal('info'), '#F59E0B')}
-                    {renderMenuItem(<Shield size={20} color="#D97706" />, 'Keamanan', 'Kata sandi dan Autentikasi', () => setActiveModal('security'), '#F59E0B')}
-                    {renderMenuItem(<Bell size={20} color="#D97706" />, 'Notifikasi', 'Pengaturan pemberitahuan', () => setActiveModal('notif'), '#F59E0B')}
+                    {renderMenuItem(<User size={20} color="#2176AE" />, 'Informasi Pribadi', 'Username, Email, No. Telp, & Alamat', () => setActiveModal('info'), '#349BE5')}
+                    {renderMenuItem(<Shield size={20} color="#2176AE" />, 'Keamanan', 'Kata sandi dan Autentikasi', () => setActiveModal('security'), '#349BE5')}
+                    {renderMenuItem(<Bell size={20} color="#2176AE" />, 'Notifikasi', 'Pengaturan pemberitahuan', () => setActiveModal('notif'), '#349BE5')}
                     {(user?.role === 'admin' || user?.role === 'owner') &&
-                        renderMenuItem(<Ticket size={20} color="#D97706" />, 'Manajemen Promo', 'Kelola Voucher & Diskon', () => navigation.navigate('PromoManagement'), '#F59E0B')
+                        renderMenuItem(<Ticket size={20} color="#2176AE" />, 'Manajemen Promo', 'Kelola Voucher & Diskon', () => navigation.navigate('PromoManagement'), '#349BE5')
                     }
                     {(user?.role === 'admin' || user?.role === 'owner') &&
-                        renderMenuItem(<Database size={20} color="#D97706" />, 'Manajemen Database', 'Backup & Restore Data JSON', () => navigation.navigate('DatabaseManagement'), '#F59E0B')
+                        renderMenuItem(<Database size={20} color="#2176AE" />, 'Manajemen Database', 'Backup & Restore Data JSON', () => navigation.navigate('DatabaseManagement'), '#349BE5')
                     }
                 </View>
 
@@ -331,7 +331,7 @@ const ProfileScreen = ({ navigation }) => {
                         Linking.openURL(url).catch(() => {
                             showToast('Gagal membuka WhatsApp', 'error');
                         });
-                    }, '#F59E0B')}
+                    }, '#349BE5')}
                 </View>
 
                 <TouchableOpacity
@@ -533,7 +533,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 20,
         paddingBottom: 25,
-        backgroundColor: '#0F172A', // Owner Dark Theme
+        backgroundColor: '#349BE5',
         borderBottomLeftRadius: 30,
         borderBottomRightRadius: 30,
         zIndex: 10,
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: '900',
-        color: '#F59E0B', // Owner Gold
+        color: '#FFFFFF',
     },
     logoutHeaderBtn: {
         width: 40,
@@ -613,7 +613,7 @@ const styles = StyleSheet.create({
     roleBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFFBEB', // Light Gold
+        backgroundColor: '#E1F5FE', // Light Blue
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 10,
@@ -623,7 +623,7 @@ const styles = StyleSheet.create({
     roleText: {
         fontSize: 10,
         fontWeight: '900',
-        color: '#F59E0B', // Gold
+        color: '#349BE5', // Blue
         letterSpacing: 1,
     },
     userEmail: {

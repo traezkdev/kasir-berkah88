@@ -62,7 +62,7 @@ const OwnerDeveloperCreditsScreen = ({ navigation }) => {
                     <View style={styles.cardInner}>
                         <View style={styles.devHeader}>
                             <View style={styles.sparkleWrap}>
-                                <Sparkles size={20} color="#F59E0B" />
+                                <Sparkles size={20} color="#349BE5" />
                             </View>
                             <Text style={styles.devLabel}>DIKEMBANGKAN OLEH</Text>
                         </View>
@@ -81,28 +81,28 @@ const OwnerDeveloperCreditsScreen = ({ navigation }) => {
                         {/* Social Links */}
                         <View style={styles.socialGrid}>
                             <TouchableOpacity
-                                style={[styles.socialBtn, { backgroundColor: '#FFFBEB' }]}
+                                style={[styles.socialBtn, { backgroundColor: '#E1F5FE' }]}
                                 onPress={() => handleOpenLink('https://github.com/traezkdev')}
                             >
-                                <Github size={20} color="#D97706" />
+                                <Github size={20} color="#349BE5" />
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.socialBtn, { backgroundColor: '#FFFBEB' }]}
+                                style={[styles.socialBtn, { backgroundColor: '#E1F5FE' }]}
                                 onPress={() => handleOpenLink('https://instagram.com/traezkdev')}
                             >
-                                <Instagram size={20} color="#D97706" />
+                                <Instagram size={20} color="#349BE5" />
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.socialBtn, { backgroundColor: '#FFFBEB' }]}
+                                style={[styles.socialBtn, { backgroundColor: '#E1F5FE' }]}
                                 onPress={() => handleOpenLink('mailto:traezkdev@gmail.com')}
                             >
-                                <Mail size={20} color="#D97706" />
+                                <Mail size={20} color="#349BE5" />
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.socialBtn, { backgroundColor: '#FFFBEB' }]}
+                                style={[styles.socialBtn, { backgroundColor: '#E1F5FE' }]}
                                 onPress={() => handleOpenLink('https://traezkdev.com')}
                             >
-                                <Globe size={20} color="#D97706" />
+                                <Globe size={20} color="#349BE5" />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -113,7 +113,7 @@ const OwnerDeveloperCreditsScreen = ({ navigation }) => {
                     <View style={styles.cardInner}>
                         <View style={styles.devHeader}>
                             <View style={styles.sparkleWrap}>
-                                <Cpu size={18} color="#D97706" />
+                                <Cpu size={18} color="#349BE5" />
                             </View>
                             <Text style={styles.devLabel}>TECH STACK</Text>
                         </View>
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 20,
         paddingBottom: 25,
-        backgroundColor: '#0F172A', // Owner Dark Theme
+        backgroundColor: '#349BE5',
         borderBottomLeftRadius: 30,
         borderBottomRightRadius: 30,
     },
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 16,
         fontWeight: '900',
-        color: '#F59E0B',
+        color: '#FFFFFF',
         letterSpacing: 0.5,
     },
     scrollContent: {
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     sparkleWrap: {
-        backgroundColor: '#FEF3C7',
+        backgroundColor: '#E1F5FE',
         padding: 4,
         borderRadius: 8,
     },
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     },
     studioName: {
         fontSize: 14,
-        color: '#138FEA',
+        color: '#349BE5',
         fontWeight: 'bold',
         marginTop: 4,
     },

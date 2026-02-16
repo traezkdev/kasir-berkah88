@@ -56,7 +56,7 @@ const OwnerAllFeatures = ({ navigation }) => {
             items: [
                 { id: 'BusinessReports', label: "Laporan Bisnis", icon: BarChart3, color: "#3B82F6" },
                 { id: 'FinancialReport', label: "Laporan Keuangan", icon: DollarSign, color: "#10B981" },
-                { id: 'DailyReport', label: "Laporan Harian", icon: FileText, color: "#F59E0B" },
+                { id: 'DailyReport', label: "Laporan Harian", icon: FileText, color: "#349BE5" },
                 { id: 'CashReconciliation', label: "Rekonsiliasi Kas", icon: CreditCard, color: "#6366F1" },
             ]
         },
@@ -84,9 +84,8 @@ const OwnerAllFeatures = ({ navigation }) => {
         <View style={styles.container}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-            <LinearGradient
-                colors={['#0F172A', '#1E293B']}
-                style={[styles.header, { paddingTop: (insets.top || 0) + 10 }]}
+            <View
+                style={[styles.header, { paddingTop: (insets.top || 0) + 10, backgroundColor: '#349BE5' }]}
             >
                 <View style={styles.headerTop}>
                     <TouchableOpacity
@@ -101,7 +100,7 @@ const OwnerAllFeatures = ({ navigation }) => {
                     </View>
                     <View style={{ width: 44 }} />
                 </View>
-            </LinearGradient>
+            </View>
 
             <ScrollView
                 style={styles.content}
@@ -129,15 +128,10 @@ const OwnerAllFeatures = ({ navigation }) => {
                     style={styles.dashboardBtn}
                     onPress={() => navigation.navigate('OwnerDashboard')}
                 >
-                    <LinearGradient
-                        colors={['#F59E0B', '#D97706']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.dashboardGradient}
-                    >
+                    <View style={[styles.dashboardGradient, { backgroundColor: '#349BE5' }]}>
                         <LayoutDashboard size={20} color="#FFFFFF" />
                         <Text style={styles.dashboardBtnText}>Kembali ke Beranda</Text>
-                    </LinearGradient>
+                    </View>
                 </TouchableOpacity>
             </ScrollView>
         </View>
@@ -154,6 +148,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         borderBottomLeftRadius: 30,
         borderBottomRightRadius: 30,
+        backgroundColor: '#349BE5',
     },
     headerTop: {
         flexDirection: 'row',
@@ -178,7 +173,7 @@ const styles = StyleSheet.create({
     },
     headerSubtitle: {
         fontSize: 12,
-        color: '#94A3B8',
+        color: '#E1F5FE',
         fontWeight: '600',
         marginTop: 2,
     },
@@ -201,7 +196,7 @@ const styles = StyleSheet.create({
     sectionLine: {
         width: 4,
         height: 18,
-        backgroundColor: '#F59E0B',
+        backgroundColor: '#349BE5',
         borderRadius: 2,
     },
     sectionTitle: {

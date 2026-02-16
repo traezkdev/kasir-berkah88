@@ -257,8 +257,8 @@ const StatsSection = React.memo(({ totalPromos }) => {
 
             <View style={styles.statsGrid}>
                 <View style={styles.statBox}>
-                    <View style={[styles.statIcon, { backgroundColor: '#FFFBEB' }]}>
-                        <Ticket size={20} color="#D97706" />
+                    <View style={[styles.statIcon, { backgroundColor: '#E1F5FE' }]}>
+                        <Ticket size={20} color="#2176AE" />
                     </View>
                     <Text style={styles.statNumber}>{stats.active}</Text>
                     <Text style={styles.statLabel}>Aktif</Text>
@@ -267,8 +267,8 @@ const StatsSection = React.memo(({ totalPromos }) => {
                 <View style={styles.verticalDivider} />
 
                 <View style={styles.statBox}>
-                    <View style={[styles.statIcon, { backgroundColor: '#FFFBEB' }]}>
-                        <Hash size={20} color="#D97706" />
+                    <View style={[styles.statIcon, { backgroundColor: '#E1F5FE' }]}>
+                        <Hash size={20} color="#2176AE" />
                     </View>
                     <Text style={styles.statNumber}>{stats.voucher}</Text>
                     <Text style={styles.statLabel}>Voucher</Text>
@@ -277,8 +277,8 @@ const StatsSection = React.memo(({ totalPromos }) => {
                 <View style={styles.verticalDivider} />
 
                 <View style={styles.statBox}>
-                    <View style={[styles.statIcon, { backgroundColor: '#FFFBEB' }]}>
-                        <Zap size={20} color="#D97706" />
+                    <View style={[styles.statIcon, { backgroundColor: '#E1F5FE' }]}>
+                        <Zap size={20} color="#2176AE" />
                     </View>
                     <Text style={styles.statNumber}>{stats.auto}</Text>
                     <Text style={styles.statLabel}>Otomatis</Text>
@@ -742,7 +742,7 @@ const PromoManagement = ({ navigation }) => {
                 renderItem={renderPromoItem}
                 ListHeaderComponent={mainListHeader}
                 contentContainerStyle={styles.scrollContent}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#F59E0B']} />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#349BE5']} />}
                 ListEmptyComponent={ListEmptyComponent}
                 initialNumToRender={10}
                 maxToRenderPerBatch={10}
@@ -1275,7 +1275,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#F9FAFB',
     },
     header: {
-        backgroundColor: '#0F172A',
+        backgroundColor: '#349BE5',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -1301,12 +1301,12 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: '900',
-        color: '#F59E0B',
+        color: '#FFFFFF',
         textAlign: 'center',
     },
     headerSubtitle: {
         fontSize: 12,
-        color: '#94A3B8',
+        color: '#E1F5FE',
         fontWeight: '600',
     },
     addBtnHeader: {
@@ -1457,7 +1457,7 @@ const styles = StyleSheet.create({
         width: 56,
         height: 56,
         borderRadius: 28,
-        backgroundColor: '#F59E0B',
+        backgroundColor: '#349BE5',
         justifyContent: 'center',
         alignItems: 'center',
         elevation: 5,
@@ -1477,7 +1477,7 @@ const styles = StyleSheet.create({
     },
     emptyAddBtn: {
         marginTop: 20,
-        backgroundColor: '#F59E0B',
+        backgroundColor: '#349BE5',
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderRadius: 10,
@@ -1711,8 +1711,8 @@ const styles = StyleSheet.create({
         borderColor: '#E5E7EB',
     },
     tabBtnActive: {
-        backgroundColor: '#F59E0B',
-        borderColor: '#F59E0B',
+        backgroundColor: '#349BE5',
+        borderColor: '#349BE5',
     },
     tabText: {
         fontSize: 13,
@@ -1811,8 +1811,8 @@ const styles = StyleSheet.create({
         borderRadius: 8,
     },
     typeBtnActive: {
-        backgroundColor: '#F59E0B',
-        borderColor: '#F59E0B',
+        backgroundColor: '#349BE5',
+        borderColor: '#349BE5',
     },
     typeBtnText: {
         fontSize: 13,
@@ -2051,10 +2051,10 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     ctaBanner: {
-        backgroundColor: '#F59E0B', // Owner Gold
+        backgroundColor: '#349BE5', // Owner Blue
         borderRadius: 20,
         padding: 20,
-        shadowColor: '#059669',
+        shadowColor: '#349BE5',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -2077,7 +2077,7 @@ const styles = StyleSheet.create({
     },
     ctaDesc: {
         fontSize: 12,
-        color: '#D1FAE5', // Emerald 100
+        color: '#E1F5FE', // Blue 100
         lineHeight: 18,
     },
     ctaIconContainer: {

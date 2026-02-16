@@ -349,7 +349,7 @@ const CashReconciliation = ({ navigation }) => {
                     </TouchableOpacity>
                     <Text style={styles.navTitle}>Rekonsiliasi</Text>
                     <TouchableOpacity onPress={handleRefresh} style={styles.navBtn}>
-                        {loading ? <ActivityIndicator size="small" color="#F59E0B" /> : <RefreshCw size={20} color="#F59E0B" />}
+                        {loading ? <ActivityIndicator size="small" color="#FFFFFF" /> : <RefreshCw size={20} color="#FFFFFF" />}
                     </TouchableOpacity>
                 </View>
 
@@ -392,7 +392,7 @@ const CashReconciliation = ({ navigation }) => {
                     contentContainerStyle={styles.scrollMain}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
-                        <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} colors={['#F59E0B']} />
+                        <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} colors={['#349BE5']} />
                     }
                 >
                     {/* Step 1: Date */}
@@ -636,7 +636,7 @@ const CashReconciliation = ({ navigation }) => {
                         }}
                         contentContainerStyle={styles.histListScroll}
                         refreshControl={
-                            <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} colors={['#F59E0B']} />
+                            <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} colors={['#349BE5']} />
                         }
                         ListEmptyComponent={
                             <View style={styles.emptyContainer}>
@@ -663,7 +663,7 @@ const styles = StyleSheet.create({
     },
     // HEADER STYLES
     headerPremium: {
-        backgroundColor: '#0F172A', // Owner Dashboard Dark Theme
+        backgroundColor: '#349BE5',
         paddingTop: Platform.OS === 'android' && StatusBar ? (StatusBar.currentHeight || 0) + 10 : 60,
         paddingBottom: 20,
         paddingHorizontal: 20,
@@ -690,7 +690,7 @@ const styles = StyleSheet.create({
     },
     navTitle: {
         flex: 1,
-        color: '#F59E0B',
+        color: '#FFFFFF',
         fontSize: 18,
         fontWeight: '900',
         letterSpacing: 0.5,
@@ -737,10 +737,10 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     tabActive: {
-        backgroundColor: '#F59E0B',
+        backgroundColor: '#FFFFFF',
     },
     tabActiveText: {
-        color: '#0F172A',
+        color: '#349BE5',
     },
     tabBtnText: {
         color: '#FFFFFF',

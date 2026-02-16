@@ -208,7 +208,7 @@ const OwnerDatabaseManagement = ({ navigation }) => {
 
             <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
                 <View style={styles.descSection}>
-                    <Database size={48} color="#D97706" style={styles.mainIcon} />
+                    <Database size={48} color="#349BE5" style={styles.mainIcon} />
                     <Text style={styles.mainTitle}>Amankan Data Anda</Text>
                     <Text style={styles.mainDesc}>
                         Lakukan pencadangan berkala untuk menghindari kehilangan data transaksi dan inventaris Anda.
@@ -222,8 +222,8 @@ const OwnerDatabaseManagement = ({ navigation }) => {
                         onPress={handleBackup}
                         disabled={isLoading}
                     >
-                        <View style={[styles.iconContainer, { backgroundColor: '#FFFBEB' }]}>
-                            <Download size={24} color="#D97706" />
+                        <View style={[styles.iconContainer, { backgroundColor: '#E1F5FE' }]}>
+                            <Download size={24} color="#349BE5" />
                         </View>
                         <View style={styles.cardContent}>
                             <Text style={styles.cardTitle}>Cadangkan Data (Backup)</Text>
@@ -237,8 +237,8 @@ const OwnerDatabaseManagement = ({ navigation }) => {
                         onPress={handleRestore}
                         disabled={isLoading}
                     >
-                        <View style={[styles.iconContainer, { backgroundColor: '#FFFBEB' }]}>
-                            <Upload size={24} color="#D97706" />
+                        <View style={[styles.iconContainer, { backgroundColor: '#E1F5FE' }]}>
+                            <Upload size={24} color="#349BE5" />
                         </View>
                         <View style={styles.cardContent}>
                             <Text style={styles.cardTitle}>Pulihkan Data (Restore)</Text>
@@ -249,8 +249,8 @@ const OwnerDatabaseManagement = ({ navigation }) => {
                 </View>
 
                 {/* Security Tip */}
-                <View style={[styles.tipContainer, { backgroundColor: '#FFFBEB', borderColor: '#FEF3C7' }]}>
-                    <ShieldCheck size={24} color="#D97706" />
+                <View style={[styles.tipContainer, { backgroundColor: '#E1F5FE', borderColor: '#B3E5FC' }]}>
+                    <ShieldCheck size={24} color="#349BE5" />
                     <View style={styles.tipContent}>
                         <Text style={styles.tipTitle}>Tips Keamanan</Text>
                         <Text style={styles.tipDesc}>
@@ -263,7 +263,7 @@ const OwnerDatabaseManagement = ({ navigation }) => {
 
             {isLoading && (
                 <View style={styles.loaderOverlay}>
-                    <ActivityIndicator size="large" color="#0F172A" />
+                    <ActivityIndicator size="large" color="#349BE5" />
                     <Text style={styles.loaderText}>Sedang Memproses...</Text>
                     <Text style={styles.loaderSubtext}>Mohon jangan tutup aplikasi</Text>
                 </View>
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingTop: Platform.OS === 'android' && StatusBar ? (StatusBar.currentHeight || 0) + 10 : 60,
         paddingBottom: 25,
-        backgroundColor: '#0F172A', // Owner Dark Theme
+        backgroundColor: '#349BE5',
         borderBottomLeftRadius: 30,
         borderBottomRightRadius: 30,
     },
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 18,
         fontWeight: '900',
-        color: '#F59E0B', // Owner Gold
+        color: '#FFFFFF',
         textAlign: 'center',
     },
     content: {
@@ -384,12 +384,12 @@ const styles = StyleSheet.create({
     tipTitle: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: '#065F46',
+        color: '#075985',
         marginBottom: 4,
     },
     tipDesc: {
         fontSize: 12,
-        color: '#047857',
+        color: '#0284C7',
         lineHeight: 18,
     },
     loaderOverlay: {

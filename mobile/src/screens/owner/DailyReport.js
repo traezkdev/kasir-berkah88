@@ -196,7 +196,7 @@ const DailyReport = ({ navigation }) => {
                 </View>
 
                 <View style={styles.dateCard}>
-                    <Calendar size={20} color="#F59E0B" />
+                    <Calendar size={20} color="#349BE5" />
                     <View style={styles.dateInfo}>
                         <Text style={styles.dateLabel}>Tanggal Laporan</Text>
                         <Text style={styles.dateValue}>
@@ -231,7 +231,7 @@ const DailyReport = ({ navigation }) => {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#F59E0B']} />
+                    <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#349BE5']} />
                 }
             >
                 {loading ? (
@@ -249,8 +249,8 @@ const DailyReport = ({ navigation }) => {
                             title="Pencatatan Pengeluaran"
                             description="Catat semua pengeluaran operasional hari ini"
                             icon={TrendingDown}
-                            iconColor="#D97706"
-                            iconBg="#FFFBEB"
+                            iconColor="#2176AE"
+                            iconBg="#E1F5FE"
                             completed={taskStatus.expense.completed}
                             onPress={() => navigation.navigate('ExpenseManagement')}
                             stats={taskStatus.expense.completed ?
@@ -263,8 +263,8 @@ const DailyReport = ({ navigation }) => {
                             title="Pencatatan Deposit Lapak"
                             description="Catat deposit dari pelanggan lapak"
                             icon={Wallet}
-                            iconColor="#D97706"
-                            iconBg="#FFFBEB"
+                            iconColor="#2176AE"
+                            iconBg="#E1F5FE"
                             completed={taskStatus.deposit.completed}
                             onPress={() => navigation.navigate('LapakDeposit')}
                             stats={taskStatus.deposit.completed ?
@@ -277,8 +277,8 @@ const DailyReport = ({ navigation }) => {
                             title="Rekonsiliasi Kas"
                             description="Cocokkan kas fisik dengan sistem"
                             icon={Calculator}
-                            iconColor="#F59E0B"
-                            iconBg="#FFFBEB"
+                            iconColor="#349BE5"
+                            iconBg="#E1F5FE"
                             completed={taskStatus.reconciliation.completed}
                             onPress={() => navigation.navigate('CashReconciliation')}
                             stats={taskStatus.reconciliation.completed ?
@@ -289,8 +289,8 @@ const DailyReport = ({ navigation }) => {
                         {/* Summary Card */}
                         {allCompleted && (
                             <View style={styles.summaryCard}>
-                                <View style={[styles.summaryIcon, { backgroundColor: '#FFFBEB' }]}>
-                                    <CheckCircle2 size={32} color="#D97706" />
+                                <View style={[styles.summaryIcon, { backgroundColor: '#E1F5FE' }]}>
+                                    <CheckCircle2 size={32} color="#10B981" />
                                 </View>
                                 <Text style={styles.summaryTitle}>Laporan Harian Selesai!</Text>
                                 <Text style={styles.summaryText}>
@@ -313,7 +313,7 @@ const DailyReport = ({ navigation }) => {
                         {/* Reminder Card */}
                         {!allCompleted && (
                             <View style={styles.reminderCard}>
-                                <AlertCircle size={20} color="#F59E0B" />
+                                <AlertCircle size={20} color="#349BE5" />
                                 <View style={styles.reminderContent}>
                                     <Text style={styles.reminderTitle}>Jangan Lupa!</Text>
                                     <Text style={styles.reminderText}>
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#F8FAFC',
     },
     header: {
-        backgroundColor: '#0F172A', // Owner Dashboard Dark Theme
+        backgroundColor: '#349BE5',
         paddingTop: Platform.OS === 'android' && StatusBar ? (StatusBar.currentHeight || 0) + 10 : 60,
         paddingBottom: 25,
         paddingHorizontal: 20,
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         flex: 1,
-        color: '#F59E0B',
+        color: '#FFFFFF',
         fontSize: 18,
         fontWeight: '900',
         letterSpacing: 0.5,
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
     },
     progressBarFill: {
         height: '100%',
-        backgroundColor: '#F59E0B',
+        backgroundColor: '#349BE5',
         borderRadius: 10,
     },
     progressSubtext: {
@@ -567,14 +567,14 @@ const styles = StyleSheet.create({
         backgroundColor: '#A7F3D0',
     },
     reminderCard: {
-        backgroundColor: '#FFFBEB',
+        backgroundColor: '#E1F5FE',
         borderRadius: 15,
         padding: 15,
         marginTop: 10,
         flexDirection: 'row',
         gap: 12,
         borderWidth: 1,
-        borderColor: '#FEF3C7',
+        borderColor: '#B3E5FC',
     },
     reminderContent: {
         flex: 1,
@@ -582,12 +582,12 @@ const styles = StyleSheet.create({
     reminderTitle: {
         fontSize: 14,
         fontWeight: '900',
-        color: '#92400E',
+        color: '#075985',
         marginBottom: 4,
     },
     reminderText: {
         fontSize: 12,
-        color: '#78350F',
+        color: '#0369A1',
         lineHeight: 18,
     },
     footer: {

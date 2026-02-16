@@ -227,7 +227,7 @@ const CategoryManagement = ({ navigation }) => {
                                 style={{ width: 24, height: 24, resizeMode: 'contain' }}
                             />
                         ) : (
-                            <IconComponent size={18} color="#D97706" />
+                            <IconComponent size={18} color="#2176AE" />
                         )}
                     </View>
                     <View>
@@ -281,7 +281,7 @@ const CategoryManagement = ({ navigation }) => {
 
             {loading && !refreshing ? (
                 <View style={styles.loadingArea}>
-                    <ActivityIndicator size="large" color="#0F172A" />
+                    <ActivityIndicator size="large" color="#349BE5" />
                 </View>
             ) : (
                 <FlatList
@@ -293,7 +293,7 @@ const CategoryManagement = ({ navigation }) => {
                         <RefreshControl
                             refreshing={refreshing}
                             onRefresh={onRefresh}
-                            colors={['#F59E0B']}
+                            colors={['#349BE5']}
                         />
                     }
                     ListEmptyComponent={
@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingTop: Platform.OS === 'android' && StatusBar ? (StatusBar.currentHeight || 0) + 10 : (Platform.OS === 'web' ? 15 : 20),
         paddingBottom: 20,
-        backgroundColor: '#0F172A', // Owner Dark Theme
+        backgroundColor: '#349BE5',
         borderBottomLeftRadius: 20,
         borderBottomRightRadius: 20,
     },
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 18,
         fontWeight: '900',
-        color: '#F59E0B', // Owner Gold
+        color: '#FFFFFF',
         textAlign: 'center',
     },
     headerAdd: {
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#FFFBEB',
+        backgroundColor: '#E1F5FE',
         justifyContent: 'center',
         alignItems: 'center',
     },

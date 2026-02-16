@@ -446,7 +446,7 @@ const OwnerLapakDeposit = ({ navigation }) => {
                 <View style={styles.balanceCard}>
                     <View style={styles.balanceInfo}>
                         <View style={styles.walletIconBg}>
-                            <Wallet size={24} color="#F59E0B" />
+                            <Wallet size={24} color="#349BE5" />
                         </View>
                         <View style={{ flex: 1 }}>
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
@@ -470,13 +470,13 @@ const OwnerLapakDeposit = ({ navigation }) => {
                     {/* Stats Summary Row */}
                     <View style={styles.statsSummaryRow}>
                         <View style={styles.statMini}>
-                            <TrendingUp size={14} color="#D97706" />
+                            <TrendingUp size={14} color="#349BE5" />
                             <Text style={styles.statMiniValue}>{formatCurrency(statsSummary.deposit)}</Text>
                             <Text style={styles.statMiniLabel}>Masuk</Text>
                         </View>
                         <View style={styles.statDivider} />
                         <View style={styles.statMini}>
-                            <TrendingDown size={14} color="#D97706" />
+                            <TrendingDown size={14} color="#349BE5" />
                             <Text style={styles.statMiniValue}>{formatCurrency(statsSummary.expense)}</Text>
                             <Text style={styles.statMiniLabel}>Keluar</Text>
                         </View>
@@ -484,14 +484,14 @@ const OwnerLapakDeposit = ({ navigation }) => {
 
                     <View style={styles.actionButtons}>
                         <TouchableOpacity style={styles.actionBtnMain} onPress={handleAddDeposit}>
-                            <View style={[styles.actionIconBg, { backgroundColor: '#FFFBEB' }]}>
-                                <Plus size={18} color="#D97706" />
+                            <View style={[styles.actionIconBg, { backgroundColor: '#E1F5FE' }]}>
+                                <Plus size={18} color="#349BE5" />
                             </View>
                             <Text style={styles.actionText}>Deposit</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={[styles.actionBtnMain, { backgroundColor: '#FEE2E2' }]} onPress={handleRecordExpense}>
-                            <View style={[styles.actionIconBg, { backgroundColor: '#FFFBEB' }]}>
-                                <TrendingDown size={18} color="#D97706" />
+                            <View style={[styles.actionIconBg, { backgroundColor: '#E1F5FE' }]}>
+                                <TrendingDown size={18} color="#349BE5" />
                             </View>
                             <Text style={[styles.actionText, { color: '#B91C1C' }]}>Pengeluaran</Text>
                         </TouchableOpacity>
@@ -525,7 +525,7 @@ const OwnerLapakDeposit = ({ navigation }) => {
 
                 {loading && !lapakAccount ? (
                     <View style={styles.centerPadding}>
-                        <ActivityIndicator size="large" color="#F59E0B" />
+                        <ActivityIndicator size="large" color="#349BE5" />
                         <Text style={styles.loadingText}>Memuat data...</Text>
                     </View>
                 ) : (
@@ -543,7 +543,7 @@ const OwnerLapakDeposit = ({ navigation }) => {
                         contentContainerStyle={styles.listContent}
                         showsVerticalScrollIndicator={false}
                         refreshControl={
-                            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+                            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#349BE5']} />
                         }
                         // Performance Props
                         initialNumToRender={10}
@@ -752,7 +752,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#F8FAFC',
     },
     header: {
-        backgroundColor: '#0F172A', // Owner Dark
+        backgroundColor: '#349BE5',
         paddingTop: Platform.OS === 'android' && StatusBar ? (StatusBar.currentHeight || 0) + 10 : 50,
         paddingBottom: 170,
         paddingHorizontal: 20,
@@ -779,13 +779,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     headerSubtitle: {
-        color: '#F59E0B',
+        color: '#E1F5FE',
         fontSize: 12,
         fontWeight: '700',
         textTransform: 'uppercase',
     },
     headerFullTitle: {
-        color: '#F59E0B',
+        color: '#FFFFFF',
         fontSize: 20,
         fontWeight: '900',
     },
@@ -888,8 +888,8 @@ const styles = StyleSheet.create({
         borderColor: '#E2E8F0',
     },
     quickFilterBtnActive: {
-        backgroundColor: '#0F172A',
-        borderColor: '#0F172A',
+        backgroundColor: '#349BE5',
+        borderColor: '#349BE5',
     },
     quickFilterText: {
         fontSize: 12,

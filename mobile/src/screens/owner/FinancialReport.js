@@ -281,10 +281,10 @@ const FinancialReport = ({ navigation }) => {
 
             <ScrollView
                 contentContainerStyle={styles.content}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#F59E0B']} />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#349BE5']} />}
             >
                 {loading && !financialData ? (
-                    <ActivityIndicator size="large" color="#F59E0B" style={{ marginTop: 50 }} />
+                    <ActivityIndicator size="large" color="#349BE5" style={{ marginTop: 50 }} />
                 ) : financialData ? (
                     <>
                         {/* Laba Rugi Section */}
@@ -292,15 +292,15 @@ const FinancialReport = ({ navigation }) => {
 
                             {/* Header Inside Card */}
                             <View style={styles.cardHeaderInternal}>
-                                <Briefcase size={20} color="#D97706" />
+                                <Briefcase size={20} color="#2176AE" />
                                 <Text style={styles.cardSectionTitle}>Analisis Laba Rugi</Text>
                             </View>
                             <View style={styles.cardInnerDivider} />
 
                             <View style={styles.row}>
                                 <View style={styles.labelContainer}>
-                                    <View style={[styles.iconBox, { backgroundColor: '#FFFBEB' }]}>
-                                        <ArrowUpRight size={16} color="#D97706" />
+                                    <View style={[styles.iconBox, { backgroundColor: '#E1F5FE' }]}>
+                                        <ArrowUpRight size={16} color="#2176AE" />
                                     </View>
                                     <Text style={styles.label}>Pemasukan (Omzet)</Text>
                                 </View>
@@ -326,8 +326,8 @@ const FinancialReport = ({ navigation }) => {
 
                             <View style={styles.row}>
                                 <View style={styles.labelContainer}>
-                                    <View style={[styles.iconBox, { backgroundColor: '#FFFBEB' }]}>
-                                        <TrendingDown size={16} color="#D97706" />
+                                    <View style={[styles.iconBox, { backgroundColor: '#E1F5FE' }]}>
+                                        <TrendingDown size={16} color="#2176AE" />
                                     </View>
                                     <Text style={styles.label}>Pengeluaran Ops.</Text>
                                 </View>
@@ -349,7 +349,7 @@ const FinancialReport = ({ navigation }) => {
                         <View style={[styles.card, { marginTop: 20 }]}>
                             {/* Header Inside Card */}
                             <View style={styles.cardHeaderInternal}>
-                                <PieChart size={20} color="#D97706" />
+                                <PieChart size={20} color="#2176AE" />
                                 <Text style={styles.cardSectionTitle}>Nilai Kekayaan (Aset Stok)</Text>
                             </View>
                             <View style={styles.cardInnerDivider} />
@@ -366,7 +366,7 @@ const FinancialReport = ({ navigation }) => {
                             <View style={styles.divider} />
                             <View style={styles.row}>
                                 <Text style={[styles.label, { fontWeight: 'bold' }]}>Total Nilai Aset</Text>
-                                <Text style={[styles.value, { color: '#D97706', fontWeight: 'bold' }]}>
+                                <Text style={[styles.value, { color: '#2176AE', fontWeight: 'bold' }]}>
                                     {formatCurrency(financialData.assets.total)}
                                 </Text>
                             </View>
@@ -376,24 +376,24 @@ const FinancialReport = ({ navigation }) => {
                         <View style={[styles.card, { marginTop: 20, paddingBottom: 0 }]}>
                             {/* Header Inside Card */}
                             <View style={styles.cardHeaderInternal}>
-                                <Wallet size={20} color="#D97706" />
+                                <Wallet size={20} color="#2176AE" />
                                 <Text style={styles.cardSectionTitle}>Posisi Kas</Text>
                             </View>
                             <View style={styles.cardInnerDivider} />
 
                             <View style={styles.balanceContainer}>
                                 <View style={styles.balanceCard}>
-                                    <View style={[styles.balanceIconCircle, { backgroundColor: '#FFFBEB' }]}>
-                                        <CreditCard size={20} color="#D97706" />
+                                    <View style={[styles.balanceIconCircle, { backgroundColor: '#E1F5FE' }]}>
+                                        <CreditCard size={20} color="#2176AE" />
                                     </View>
                                     <Text style={styles.balanceLabel}>Saldo Lapak</Text>
                                     <Text style={styles.balanceValue}>{formatCurrency(balances.lapak)}</Text>
                                 </View>
-                                <View style={[styles.balanceCard, { backgroundColor: '#0F172A', borderWidth: 0 }]}>
+                                <View style={[styles.balanceCard, { backgroundColor: '#349BE5', borderWidth: 0 }]}>
                                     <View style={[styles.balanceIconCircle, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
                                         <Wallet size={20} color="#FFFFFF" />
                                     </View>
-                                    <Text style={[styles.balanceLabel, { color: '#94A3B8' }]}>Saldo Owner</Text>
+                                    <Text style={[styles.balanceLabel, { color: '#E1F5FE' }]}>Saldo Owner</Text>
                                     <Text style={[styles.balanceValue, { color: '#FFFFFF' }]}>{formatCurrency(balances.owner)}</Text>
                                 </View>
                             </View>
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#F8FAFC',
     },
     header: {
-        backgroundColor: '#0F172A', // Owner Dashboard Dark Theme
+        backgroundColor: '#349BE5',
         paddingTop: Platform.OS === 'android' && StatusBar ? (StatusBar.currentHeight || 0) + 10 : 50,
         paddingBottom: 20,
         paddingHorizontal: 20,
@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         flex: 1,
-        color: '#F59E0B',
+        color: '#FFFFFF',
         fontSize: 18,
         fontWeight: 'bold',
         textAlign: 'center',
@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         height: 4,
-        backgroundColor: '#F59E0B',
+        backgroundColor: '#349BE5',
     },
     row: {
         flexDirection: 'row',
@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
         color: '#166534',
     },
     netProfitContainer: {
-        backgroundColor: '#0F172A',
+        backgroundColor: '#349BE5',
         borderRadius: 12,
         padding: 16,
         marginTop: 8,
@@ -574,7 +574,7 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     netProfitLabel: {
-        color: '#94A3B8',
+        color: '#E1F5FE',
         fontSize: 12,
         fontWeight: '600',
         letterSpacing: 1,
@@ -586,7 +586,7 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     netProfitSub: {
-        color: '#64748B',
+        color: '#B3E5FC',
         fontSize: 11,
         marginTop: 4,
     },

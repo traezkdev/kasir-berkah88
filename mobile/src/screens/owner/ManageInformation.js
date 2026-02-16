@@ -373,7 +373,7 @@ const ManageInformation = ({ navigation }) => {
 
                         {isLoading ? (
                             <View style={styles.loaderContainer}>
-                                <ActivityIndicator size="large" color="#F59E0B" />
+                                <ActivityIndicator size="large" color="#349BE5" />
                                 <Text style={styles.loaderText}>Menyinkronkan data...</Text>
                             </View>
                         ) : infos.length > 0 ? (
@@ -682,8 +682,8 @@ const ManageInformation = ({ navigation }) => {
                             <Switch
                                 value={isActive}
                                 onValueChange={setIsActive}
-                                trackColor={{ false: "#E2E8F0", true: "#C7D2FE" }}
-                                thumbColor={isActive ? "#4F46E5" : "#f4f3f4"}
+                                trackColor={{ false: "#E2E8F0", true: "#B3E5FC" }}
+                                thumbColor={isActive ? "#349BE5" : "#f4f3f4"}
                             />
                         </View>
 
@@ -808,9 +808,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 20,
-        paddingTop: Platform.OS === 'android' && StatusBar ? (StatusBar.currentHeight || 0) + 15 : 60,
+        paddingTop: Platform.OS === 'android' && StatusBar ? (StatusBar.currentHeight || 0) + 10 : 50,
         paddingBottom: 25,
-        backgroundColor: '#0F172A', // Owner Dark Theme
+        backgroundColor: '#349BE5',
         borderBottomLeftRadius: 30,
         borderBottomRightRadius: 30,
         zIndex: 10,
@@ -832,25 +832,25 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     headerLabel: {
-        fontSize: 12,
-        fontWeight: 'bold',
-        color: '#94A3B8',
-        letterSpacing: 1,
+        color: '#E1F5FE',
+        fontSize: 10,
+        fontWeight: '900',
+        textTransform: 'uppercase',
+        letterSpacing: 1.5,
     },
     headerMainTitle: {
+        color: '#FFFFFF',
         fontSize: 20,
         fontWeight: '900',
-        color: '#F59E0B', // Owner Gold
-        marginTop: -2,
     },
     addBtn: {
         width: 48,
         height: 48,
-        backgroundColor: '#F59E0B', // Owner Gold for add button
+        backgroundColor: '#349BE5',
         borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#F59E0B',
+        shadowColor: '#349BE5',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.3,
         shadowRadius: 12,
@@ -1007,14 +1007,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     submitBtn: {
-        backgroundColor: '#0F172A',
+        backgroundColor: '#349BE5',
         height: 56,
         borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
         width: '100%',
         marginTop: 10,
-        shadowColor: '#0F172A',
+        shadowColor: '#349BE5',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.2,
         shadowRadius: 12,

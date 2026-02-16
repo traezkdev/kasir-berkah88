@@ -50,9 +50,9 @@ const { width } = Dimensions.get('window');
 // --- Optimized Components with React.memo ---
 
 const StatCard = memo(({ title, value, icon: Icon, color, subValue }) => (
-    <View style={[styles.statCard, { borderColor: '#FDE68A' }]}>
-        <View style={[styles.statIcon, { backgroundColor: '#FFFBEB' }]}>
-            <Icon size={20} color="#D97706" />
+    <View style={[styles.statCard, { borderColor: color + '20' }]}>
+        <View style={[styles.statIcon, { backgroundColor: color + '10' }]}>
+            <Icon size={20} color={color} />
         </View>
         <View style={styles.statInfo}>
             <Text style={styles.statTitle}>{title}</Text>
@@ -62,12 +62,12 @@ const StatCard = memo(({ title, value, icon: Icon, color, subValue }) => (
     </View>
 ));
 
-const ReportSection = memo(({ title, icon: Icon, expanded, onToggle, children, count, showMore, onShowMore }) => (
+const ReportSection = memo(({ title, icon: Icon, color, expanded, onToggle, children, count, showMore, onShowMore }) => (
     <View style={styles.sectionContainer}>
         <TouchableOpacity style={styles.sectionHeader} onPress={onToggle} activeOpacity={0.7}>
             <View style={styles.sectionHeaderLeft}>
-                <View style={[styles.sectionIconWrap, { backgroundColor: '#FFFBEB' }]}>
-                    <Icon size={20} color="#D97706" />
+                <View style={[styles.sectionIconWrap, { backgroundColor: color + '15' }]}>
+                    <Icon size={20} color={color} />
                 </View>
                 <View>
                     <Text style={styles.sectionTitle}>{title}</Text>
@@ -83,8 +83,8 @@ const ReportSection = memo(({ title, icon: Icon, expanded, onToggle, children, c
                 {children}
                 {showMore && (
                     <TouchableOpacity style={styles.showMoreBtn} onPress={onShowMore}>
-                        <Text style={styles.showMoreText}>Tampilkan Lebih Banyak</Text>
-                        <ChevronDown size={14} color="#3B82F6" />
+                        <Text style={[styles.showMoreText, { color: color }]}>Tampilkan Lebih Banyak</Text>
+                        <ChevronDown size={14} color={color} />
                     </TouchableOpacity>
                 )}
             </View>
@@ -648,7 +648,7 @@ const BusinessReports = ({ navigation }) => {
     if (loading && dataState.transactions.length === 0) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#1E40AF" />
+                <ActivityIndicator size="large" color="#349BE5" />
                 <Text style={styles.loadingText}>Menyiapkan Laporan Bisnis...</Text>
             </View>
         );
@@ -728,7 +728,7 @@ const BusinessReports = ({ navigation }) => {
                     style={styles.content}
                     contentContainerStyle={styles.scrollContent}
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#1E40AF']} />
+                        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#349BE5']} />
                     }
                 >
                     {/* Ringkasan Statistik */}
@@ -746,11 +746,8 @@ const BusinessReports = ({ navigation }) => {
                         onPress={() => navigation.navigate('Keuangan')}
                         style={styles.financialCardContainer}
                     >
-                        <LinearGradient
-                            colors={['#1E293B', '#0F172A']} // Dark Gradient
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={styles.financialGradient}
+                        <View
+                            style={[styles.financialGradient, { backgroundColor: '#349BE5' }]}
                         >
                             {/* Decorative Elements */}
                             <View style={styles.decorativeCircle1} />
@@ -759,22 +756,22 @@ const BusinessReports = ({ navigation }) => {
                             <View style={styles.financialContent}>
                                 <View style={styles.financialIconRow}>
                                     <View style={styles.financialIconBox}>
-                                        <Briefcase size={24} color="#F59E0B" />
+                                        <Briefcase size={24} color="#349BE5" />
                                     </View>
                                     <View style={styles.financialTitleBox}>
-                                        <Text style={[styles.financialTitleText, { color: '#F59E0B' }]}>Laporan Keuangan & Aset</Text>
-                                        <Text style={styles.financialSubText}>Analisis Laba Rugi & Valuasi Stok</Text>
+                                        <Text style={[styles.financialTitleText, { color: '#FFFFFF' }]}>Laporan Keuangan & Aset</Text>
+                                        <Text style={[styles.financialSubText, { color: '#E1F5FE' }]}>Analisis Laba Rugi & Valuasi Stok</Text>
                                     </View>
                                 </View>
 
                                 <View style={styles.financialActionRow}>
                                     <Text style={styles.financialActionText}>Lihat Detail Lengkap</Text>
                                     <View style={styles.financialActionIcon}>
-                                        <ArrowRight size={16} color="#FFFFFF" />
+                                        <ArrowRight size={16} color="#349BE5" />
                                     </View>
                                 </View>
                             </View>
-                        </LinearGradient>
+                        </View>
                     </TouchableOpacity>
 
                     {/* Charts Area */}
@@ -800,6 +797,7 @@ const BusinessReports = ({ navigation }) => {
                     <ReportSection
                         title="Daftar Transaksi"
                         icon={ShoppingCart}
+                        color="#3B82F6"
                         expanded={expandedSections.sales}
                         onToggle={() => toggleSection('sales')}
                         count={reports?.sales?.allTransactions?.length}
@@ -824,6 +822,7 @@ const BusinessReports = ({ navigation }) => {
                     <ReportSection
                         title="Inventaris Menu"
                         icon={Package}
+                        color="#EC4899"
                         expanded={expandedSections.stock}
                         onToggle={() => toggleSection('stock')}
                         count={reports?.stock?.items?.length}
@@ -850,6 +849,7 @@ const BusinessReports = ({ navigation }) => {
                     <ReportSection
                         title="Daftar Pengeluaran"
                         icon={TrendingUp}
+                        color="#EF4444"
                         expanded={expandedSections.expenses}
                         onToggle={() => toggleSection('expenses')}
                         count={reports?.expenses?.items?.length}
@@ -873,6 +873,7 @@ const BusinessReports = ({ navigation }) => {
                     <ReportSection
                         title="Detail Bon Karyawan"
                         icon={Receipt}
+                        color="#F59E0B"
                         expanded={expandedSections.employeeMeals}
                         onToggle={() => toggleSection('employeeMeals')}
                         count={reports?.employeeMeals?.items?.length}
@@ -896,6 +897,7 @@ const BusinessReports = ({ navigation }) => {
                     <ReportSection
                         title="Rekonsiliasi Kas"
                         icon={Calculator}
+                        color="#6366F1"
                         expanded={expandedSections.reconciliation}
                         onToggle={() => toggleSection('reconciliation')}
                         count={reports?.reconciliation?.items?.length}
@@ -921,6 +923,7 @@ const BusinessReports = ({ navigation }) => {
                     <ReportSection
                         title="Stok Bahan Baku"
                         icon={Package}
+                        color="#06B6D4"
                         expanded={expandedSections.rawMaterials}
                         onToggle={() => toggleSection('rawMaterials')}
                         count={reports?.rawMaterials?.items?.length}
@@ -944,7 +947,7 @@ const BusinessReports = ({ navigation }) => {
                     <View style={styles.exportSection}>
                         <View style={styles.exportHeader}>
                             <View style={styles.exportIconBox}>
-                                <Share2 size={24} color="#F59E0B" />
+                                <Share2 size={24} color="#349BE5" />
                             </View>
                             <View>
                                 <Text style={styles.exportTitle}>Export Center</Text>
@@ -952,7 +955,7 @@ const BusinessReports = ({ navigation }) => {
                             </View>
                         </View>
                         <View style={styles.exportButtonGrid}>
-                            <TouchableOpacity style={[styles.exportBtn, { backgroundColor: '#F59E0B' }]} onPress={exportToExcel}>
+                            <TouchableOpacity style={[styles.exportBtn, { backgroundColor: '#349BE5' }]} onPress={exportToExcel}>
                                 <Package size={18} color="#FFF" />
                                 <Text style={styles.exportBtnText}>Excel (CSV)</Text>
                             </TouchableOpacity>
@@ -988,7 +991,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     header: {
-        backgroundColor: '#0F172A', // Owner Dashboard Dark Theme
+        backgroundColor: '#349BE5',
         paddingTop: Platform.OS === 'android' && StatusBar ? (StatusBar.currentHeight || 0) + 10 : 50,
         paddingBottom: 20,
         paddingHorizontal: 20,
@@ -1012,7 +1015,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         flex: 1,
-        color: '#F59E0B',
+        color: '#FFFFFF',
         fontSize: 18,
         fontWeight: 'bold',
         textAlign: 'center',
@@ -1038,7 +1041,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     rangeBtnActive: {
-        backgroundColor: '#F59E0B',
+        backgroundColor: '#349BE5',
     },
     rangeText: {
         fontSize: 12,
@@ -1046,7 +1049,7 @@ const styles = StyleSheet.create({
         color: '#BFDBFE',
     },
     rangeTextActive: {
-        color: '#0F172A',
+        color: '#FFFFFF',
     },
     customDateRow: {
         flexDirection: 'row',
@@ -1086,7 +1089,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         padding: 15,
         marginBottom: 15,
-        borderWidth: 1,
+        borderWidth: 1.5,
     },
     statIcon: {
         width: 40,
@@ -1260,12 +1263,12 @@ const styles = StyleSheet.create({
     exportIconBox: {
         width: 48,
         height: 48,
-        backgroundColor: '#FFFBEB',
+        backgroundColor: '#E1F5FE',
         borderRadius: 15,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#FEF3C7',
+        borderColor: '#B3E5FC',
     },
     exportTitle: {
         fontSize: 18,
@@ -1360,7 +1363,7 @@ const styles = StyleSheet.create({
         width: 100,
         height: 100,
         borderRadius: 50,
-        backgroundColor: 'rgba(245, 158, 11, 0.1)', // Gold transparent
+        backgroundColor: 'rgba(52, 155, 229, 0.1)', // Blue transparent
     },
     decorativeCircle2: {
         position: 'absolute',
@@ -1369,7 +1372,7 @@ const styles = StyleSheet.create({
         width: 140,
         height: 140,
         borderRadius: 70,
-        backgroundColor: 'rgba(245, 158, 11, 0.05)', // Gold transparent
+        backgroundColor: 'rgba(52, 155, 229, 0.05)', // Blue transparent
     },
     financialContent: {
         position: 'relative',
@@ -1423,12 +1426,12 @@ const styles = StyleSheet.create({
         fontSize: 13,
     },
     financialActionIcon: {
-        width: 28,
-        height: 28,
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        borderRadius: 14,
-        alignItems: 'center',
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#FFFFFF',
         justifyContent: 'center',
+        alignItems: 'center',
     },
 });
 

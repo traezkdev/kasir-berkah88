@@ -496,8 +496,8 @@ const OwnerExpenseManagement = ({ navigation }) => {
                         <Text style={styles.headerFullTitle}>Pengeluaran</Text>
                     </View>
                     <TouchableOpacity onPress={handleAddExpense} style={styles.plusBtnHeader}>
-                        <View style={[styles.plusIconBg, { backgroundColor: '#FFFBEB' }]}>
-                            <Plus size={20} color="#D97706" />
+                        <View style={[styles.plusIconBg, { backgroundColor: '#E1F5FE' }]}>
+                            <Plus size={20} color="#349BE5" />
                         </View>
                     </TouchableOpacity>
                 </View>
@@ -543,8 +543,8 @@ const OwnerExpenseManagement = ({ navigation }) => {
                                 setLocalFilters(filters);
                                 setShowFilterModal(true);
                             }}>
-                                <Filter size={16} color={filters.startDate || filters.endDate || filters.category ? "#F59E0B" : "#64748B"} />
-                                <Text style={[styles.filterBtnMiniText, (!!filters.startDate || !!filters.endDate || !!filters.category) && { color: '#F59E0B' }]}>Filter</Text>
+                                <Filter size={16} color={filters.startDate || filters.endDate || filters.category ? "#349BE5" : "#64748B"} />
+                                <Text style={[styles.filterBtnMiniText, (!!filters.startDate || !!filters.endDate || !!filters.category) && { color: '#349BE5' }]}>Filter</Text>
                             </TouchableOpacity>
                         </View>
                         <Text style={styles.summaryAmountPremium}>{formatCurrency(totalAmount)}</Text>
@@ -565,7 +565,7 @@ const OwnerExpenseManagement = ({ navigation }) => {
                             <View style={styles.activeFilterBadge}>
                                 <Text style={styles.activeFilterText}>Kategori: {filters.category}</Text>
                                 <TouchableOpacity onPress={() => setFilters(prev => ({ ...prev, category: '' }))}>
-                                    <X size={12} color="#F59E0B" />
+                                    <X size={12} color="#349BE5" />
                                 </TouchableOpacity>
                             </View>
                         )}
@@ -575,7 +575,7 @@ const OwnerExpenseManagement = ({ navigation }) => {
                 {/* Section Header */}
                 <View style={styles.listHeaderSection}>
                     <Text style={styles.listTitle}>Riwayat Transaksi</Text>
-                    {loading ? <ActivityIndicator size="small" color="#F59E0B" /> : null}
+                    {loading ? <ActivityIndicator size="small" color="#349BE5" /> : null}
                 </View>
 
                 {/* List */}
@@ -586,7 +586,7 @@ const OwnerExpenseManagement = ({ navigation }) => {
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+                        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#349BE5']} />
                     }
                     onEndReached={handleLoadMore}
                     onEndReachedThreshold={0.5}
@@ -596,13 +596,13 @@ const OwnerExpenseManagement = ({ navigation }) => {
                     removeClippedSubviews={Platform.OS !== 'web'}
                     ListFooterComponent={
                         loading && page > 1 ? (
-                            <ActivityIndicator size="small" color="#F59E0B" style={{ marginVertical: 20 }} />
+                            <ActivityIndicator size="small" color="#349BE5" style={{ marginVertical: 20 }} />
                         ) : <View style={{ height: 100 }} />
                     }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <View style={[styles.emptyIconBg, { backgroundColor: '#FFFBEB' }]}>
-                                <TrendingDown size={40} color="#D97706" />
+                            <View style={[styles.emptyIconBg, { backgroundColor: '#E1F5FE' }]}>
+                                <TrendingDown size={40} color="#349BE5" />
                             </View>
                             <Text style={styles.emptyTitle}>Data Tidak Ditemukan</Text>
                             <Text style={styles.emptySubtitle}>Tidak ada pengeluaran untuk kriteria ini</Text>
@@ -863,7 +863,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#F8FAFC',
     },
     headerGradient: {
-        paddingTop: Platform.OS === 'android' && StatusBar ? (StatusBar.currentHeight || 0) + 10 : 50,
+        backgroundColor: '#349BE5',
+        paddingTop: Platform.OS === 'android' && StatusBar ? (StatusBar.currentHeight || 0) + 10 : 60,
         paddingBottom: 40,
         paddingHorizontal: 20,
         borderBottomLeftRadius: 30,
@@ -888,16 +889,16 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     headerSubtitle: {
-        fontSize: 10,
-        fontWeight: '900',
-        color: '#F59E0B',
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#E1F5FE',
         textTransform: 'uppercase',
-        letterSpacing: 1.5,
+        letterSpacing: 1,
     },
     headerFullTitle: {
-        fontSize: 20,
+        fontSize: 24,
         fontWeight: '900',
-        color: '#F59E0B',
+        color: '#FFFFFF',
     },
     plusBtnHeader: {
         width: 40,
@@ -979,6 +980,7 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: 'bold',
         color: '#64748B',
+        marginLeft: 4,
     },
     summaryAmountPremium: {
         fontSize: 28,
@@ -1017,7 +1019,7 @@ const styles = StyleSheet.create({
     activeFilterBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F59E0B15',
+        backgroundColor: '#349BE515',
         alignSelf: 'flex-start',
         marginTop: 12,
         paddingHorizontal: 10,
@@ -1028,7 +1030,7 @@ const styles = StyleSheet.create({
     activeFilterText: {
         fontSize: 11,
         fontWeight: 'bold',
-        color: '#F59E0B',
+        color: '#349BE5',
     },
     listHeaderSection: {
         flexDirection: 'row',
@@ -1145,7 +1147,7 @@ const styles = StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: 25,
-        backgroundColor: '#F1F5F9',
+        backgroundColor: '#E1F5FE',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 10,
@@ -1242,8 +1244,8 @@ const styles = StyleSheet.create({
         borderColor: '#E2E8F0',
     },
     quickFilterBtnActive: {
-        backgroundColor: '#0F172A', // Owner Dark
-        borderColor: '#0F172A',
+        backgroundColor: '#349BE5', // Owner Blue
+        borderColor: '#349BE5',
     },
     quickFilterText: {
         fontSize: 12,

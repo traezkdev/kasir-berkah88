@@ -334,7 +334,7 @@ const OwnerNavStyles = {
         letterSpacing: 0.5,
     },
     activeNavLabel: {
-        color: '#F59E0B',
+        color: '#349BE5',
         fontWeight: '900',
     },
 };
@@ -368,7 +368,7 @@ const CustomOwnerTabBar = ({ state, descriptors, navigation }) => {
                     }
                 };
 
-                const iconColor = isFocused ? '#F59E0B' : '#64748B';
+                const iconColor = isFocused ? '#349BE5' : '#64748B';
 
                 const renderIcon = () => {
                     if (route.name === 'Dashboard') return <LayoutDashboard size={24} color={iconColor} strokeWidth={isFocused ? 2.5 : 2} />;

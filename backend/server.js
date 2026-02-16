@@ -4337,10 +4337,19 @@ app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user', 'pelan
         const [rows] = await db.query(dataSql, [...queryParams, limit, offset]);
 
         // Fix timezone for production: ensure all dates are sent in ISO format
-        const formattedRows = rows.map(order => ({
-            ...order,
-            created_at: order.created_at ? new Date(order.created_at).toISOString() : null
-        }));
+        const formattedRows = rows.map(order => {
+            let isoDate = null;
+            if (order.created_at) {
+                const d = new Date(order.created_at);
+                if (!isNaN(d.getTime())) {
+                    isoDate = d.toISOString();
+                }
+            }
+            return {
+                ...order,
+                created_at: isoDate
+            };
+        });
 
         res.json({
             "message": "success",
@@ -4388,7 +4397,10 @@ app.get("/api/orders/:id", authenticateToken, authorizeRoles('admin', 'user', 'p
 
         // Fix timezone: ensure created_at is sent in ISO format
         if (order.created_at) {
-            order.created_at = new Date(order.created_at).toISOString();
+            const d = new Date(order.created_at);
+            if (!isNaN(d.getTime())) {
+                order.created_at = d.toISOString();
+            }
         }
 
         res.json({
