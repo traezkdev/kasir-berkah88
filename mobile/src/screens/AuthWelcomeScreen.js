@@ -7,28 +7,91 @@ import {
     Dimensions,
     Platform,
     StatusBar,
-    StatusBar,
     Image,
-    Modal,
-    Pressable
+    FlatList
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppSettings } from '../context/AppSettingsContext';
 import { API_URL } from '../api/apiService';
-import { Info, X, ShoppingBag } from 'lucide-react-native';
+import { ShoppingBag, Star, Clock } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
 
 const AuthWelcomeScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
     const { logoUrl, headerTitle } = useAppSettings();
-    const [showInfo, setShowInfo] = React.useState(false);
+    const [activeSlide, setActiveSlide] = React.useState(0);
+
+    const onboardingData = [
+        {
+            id: '1',
+            title: 'Selamat Datang',
+            description: `Aplikasi ${headerTitle || 'Berkah 88'} memudahkan Anda memesan makanan favorit dengan cepat dan aman.`,
+            icon: ShoppingBag,
+            color: '#3B82F6'
+        },
+        {
+            id: '2',
+            title: 'Menu Terlengkap',
+            description: 'Temukan berbagai pilihan kuliner lezat yang siap memanjakan lidah Anda setiap hari.',
+            icon: Star,
+            color: '#F59E0B'
+        },
+        {
+            id: '3',
+            title: 'Layanan Cepat',
+            description: 'Nikmati kemudahan pemesanan instan tanpa perlu mengantri lama.',
+            icon: Clock,
+            color: '#10B981'
+        }
+    ];
 
     const getLogoSource = () => {
         if (!logoUrl) return null;
         if (logoUrl.startsWith('http')) return { uri: logoUrl };
         return { uri: `${API_URL}${logoUrl}` };
+    };
+
+    const renderSlide = ({ item }) => (
+        <View style={styles.slide}>
+            <View style={styles.logoContainer}>
+                {logoUrl ? (
+                    <Image
+                        source={getLogoSource()}
+                        style={styles.logoImage}
+                        resizeMode="contain"
+                    />
+                ) : (
+                    <View style={styles.placeholderLogo}>
+                        <View style={styles.placeholderLogoIcon}>
+                            <View style={styles.placeholderLogoBar1} />
+                            <View style={styles.placeholderLogoBar2} />
+                        </View>
+                    </View>
+                )}
+                <Text style={[
+                    styles.placeholderLogoText,
+                    headerTitle?.length > 10 && { fontSize: 16 }
+                ]}>
+                    {headerTitle?.toUpperCase() || 'VISTA'}
+                </Text>
+            </View>
+
+            <View style={styles.slideInfo}>
+                <View style={[styles.slideIconBox, { backgroundColor: `${item.color}15` }]}>
+                    <item.icon size={32} color={item.color} />
+                </View>
+                <Text style={styles.slideTitle}>{item.title}</Text>
+                <Text style={styles.slideDesc}>{item.description}</Text>
+            </View>
+        </View>
+    );
+
+    const onScroll = (event) => {
+        const slideSize = event.nativeEvent.layoutMeasurement.width;
+        const index = event.nativeEvent.contentOffset.x / slideSize;
+        setActiveSlide(Math.round(index));
     };
 
     return (
@@ -50,44 +113,33 @@ const AuthWelcomeScreen = ({ navigation }) => {
                     )}
                 </View>
 
-                {/* Central Logo Section */}
-                <View style={styles.logoSection}>
-                    <View style={styles.logoContainer}>
-                        {logoUrl ? (
-                            <Image
-                                source={getLogoSource()}
-                                style={styles.logoImage}
-                                resizeMode="contain"
-                            />
-                        ) : (
-                            <View style={styles.placeholderLogo}>
-                                <View style={styles.placeholderLogoIcon}>
-                                    <View style={styles.placeholderLogoBar1} />
-                                    <View style={styles.placeholderLogoBar2} />
-                                </View>
-                            </View>
-                        )}
-                        <Text style={[
-                            styles.placeholderLogoText,
-                            headerTitle?.length > 10 && { fontSize: 16 }
-                        ]}>
-                            {headerTitle?.toUpperCase() || 'VISTA'}
-                        </Text>
-                    </View>
-                </View>
+                {/* Onboarding Carousel */}
+                <FlatList
+                    data={onboardingData}
+                    renderItem={renderSlide}
+                    keyExtractor={(item) => item.id}
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    onScroll={onScroll}
+                    scrollEventThrottle={16}
+                    style={styles.carousel}
+                />
 
                 {/* Footer Section */}
                 <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 40) }]}>
                     {/* Pagination Dots */}
-                    <TouchableOpacity
-                        style={styles.dotsContainer}
-                        onPress={() => setShowInfo(true)}
-                        activeOpacity={0.7}
-                    >
-                        <View style={styles.dot} />
-                        <View style={[styles.dot, styles.dotActive]} />
-                        <View style={styles.dot} />
-                    </TouchableOpacity>
+                    <View style={styles.dotsContainer}>
+                        {onboardingData.map((_, index) => (
+                            <View
+                                key={index}
+                                style={[
+                                    styles.dot,
+                                    activeSlide === index && styles.dotActive
+                                ]}
+                            />
+                        ))}
+                    </View>
 
                     {/* Action Buttons */}
                     <View style={styles.buttonContainer}>
@@ -125,60 +177,6 @@ const AuthWelcomeScreen = ({ navigation }) => {
                     {/* Home Indicator Placeholder */}
                     <View style={styles.homeIndicator} />
                 </View>
-
-                {/* Info Modal */}
-                <Modal
-                    visible={showInfo}
-                    transparent={true}
-                    animationType="slide"
-                    onRequestClose={() => setShowInfo(false)}
-                >
-                    <Pressable
-                        style={styles.modalOverlay}
-                        onPress={() => setShowInfo(false)}
-                    >
-                        <Pressable
-                            style={styles.modalContent}
-                            onPress={(e) => e.stopPropagation()}
-                        >
-                            <View style={styles.modalHeader}>
-                                <View style={styles.infoIconContainer}>
-                                    <Info size={24} color="#3B82F6" />
-                                </View>
-                                <TouchableOpacity
-                                    onPress={() => setShowInfo(false)}
-                                    style={styles.closeBtn}
-                                >
-                                    <X size={20} color="#94A3B8" />
-                                </TouchableOpacity>
-                            </View>
-
-                            <View style={styles.modalBody}>
-                                <Text style={styles.modalTitle}>Tentang Aplikasi</Text>
-                                <Text style={styles.modalDescription}>
-                                    Aplikasi <Text style={{ fontWeight: '900', color: '#1E40AF' }}>{headerTitle}</Text> ini ditujukan khusus bagi Anda yang ingin memesan berbagai pilihan kuliner lezat dengan cara yang lebih praktis, cepat, dan aman.
-                                </Text>
-
-                                <View style={styles.featureItem}>
-                                    <View style={styles.featureIconBox}>
-                                        <ShoppingBag size={18} color="#059669" />
-                                    </View>
-                                    <View style={styles.featureTextWrap}>
-                                        <Text style={styles.featureTitle}>Pesan Instan</Text>
-                                        <Text style={styles.featureDesc}>Pilih menu favorit Anda dan selesaikan pesanan dalam hitungan detik.</Text>
-                                    </View>
-                                </View>
-
-                                <TouchableOpacity
-                                    style={styles.modalActionBtn}
-                                    onPress={() => setShowInfo(false)}
-                                >
-                                    <Text style={styles.modalActionText}>Saya Mengerti</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </Pressable>
-                    </Pressable>
-                </Modal>
             </LinearGradient>
         </View>
     );
@@ -205,14 +203,19 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         letterSpacing: 1,
     },
-    logoSection: {
+    carousel: {
         flex: 1,
+    },
+    slide: {
+        width: width,
         justifyContent: 'center',
         alignItems: 'center',
+        paddingHorizontal: 40,
     },
     logoContainer: {
         alignItems: 'center',
         justifyContent: 'center',
+        marginBottom: 30,
     },
     logoImage: {
         width: 100,
@@ -251,13 +254,30 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         letterSpacing: 2,
     },
-    brandName: {
+    slideInfo: {
+        alignItems: 'center',
+    },
+    slideIconBox: {
+        width: 70,
+        height: 70,
+        borderRadius: 25,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    slideTitle: {
         color: '#FFFFFF',
-        fontSize: 14,
+        fontSize: 24,
         fontWeight: '900',
-        marginTop: 5,
-        opacity: 0.9,
-        letterSpacing: 3,
+        marginBottom: 10,
+        textAlign: 'center',
+    },
+    slideDesc: {
+        color: 'rgba(255, 255, 255, 0.8)',
+        fontSize: 15,
+        textAlign: 'center',
+        lineHeight: 22,
+        fontWeight: '600',
     },
     footer: {
         paddingHorizontal: 30,
@@ -339,105 +359,6 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255, 255, 255, 0.4)',
         borderRadius: 10,
         marginTop: 30,
-    },
-    // Modal Styles
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'flex-end',
-    },
-    modalContent: {
-        backgroundColor: '#FFFFFF',
-        borderTopLeftRadius: 30,
-        borderTopRightRadius: 30,
-        padding: 30,
-        paddingBottom: 50,
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.1, shadowRadius: 10 },
-            android: { elevation: 20 }
-        })
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 25,
-    },
-    infoIconContainer: {
-        width: 48,
-        height: 48,
-        borderRadius: 15,
-        backgroundColor: '#EFF6FF',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    closeBtn: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: '#F8FAFC',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalBody: {
-        width: '100%',
-    },
-    modalTitle: {
-        fontSize: 22,
-        fontWeight: '900',
-        color: '#1E293B',
-        marginBottom: 12,
-    },
-    modalDescription: {
-        fontSize: 15,
-        lineHeight: 22,
-        color: '#64748B',
-        marginBottom: 25,
-    },
-    featureItem: {
-        flexDirection: 'row',
-        gap: 15,
-        marginBottom: 30,
-        backgroundColor: '#F0FDF4',
-        padding: 15,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: '#DCFCE7',
-    },
-    featureIconBox: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        backgroundColor: '#FFFFFF',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    featureTextWrap: {
-        flex: 1,
-    },
-    featureTitle: {
-        fontSize: 14,
-        fontWeight: '800',
-        color: '#065F46',
-        marginBottom: 2,
-    },
-    featureDesc: {
-        fontSize: 12,
-        color: '#166534',
-        lineHeight: 18,
-    },
-    modalActionBtn: {
-        backgroundColor: '#3B82F6',
-        height: 56,
-        borderRadius: 28,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 10,
-    },
-    modalActionText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '900',
     }
 });
 
