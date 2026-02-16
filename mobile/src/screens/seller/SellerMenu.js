@@ -119,8 +119,8 @@ const SellerMenu = ({ navigation }) => {
                 </View>
 
                 <View style={styles.footer}>
-                    <Text style={styles.footerText}>Kasir Berkah88 v1.0.0</Text>
-                    <Text style={styles.footerSubtext}>© 2024 Berkah88 Team</Text>
+                    <Text style={styles.footerText}>Kasir Berkah88 v1.6.1</Text>
+                    <Text style={styles.footerSubtext}>© 2026 TraezkDev</Text>
                 </View>
             </ScrollView>
         </View>

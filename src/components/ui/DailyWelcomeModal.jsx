@@ -46,7 +46,7 @@ const DailyWelcomeModal = () => {
     const location = useLocation();
 
     // Daftar halaman di mana popup tidak boleh muncul
-    const hiddenPages = ['/', '/guest-checkout', '/login', '/register'];
+    const hiddenPages = ['/', '/berkah88', '/download', '/guest-checkout', '/login', '/register'];
     const shouldHidePopup = hiddenPages.includes(location.pathname);
 
     useEffect(() => {

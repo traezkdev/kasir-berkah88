@@ -389,7 +389,7 @@ const SellerDashboard = ({ navigation }) => {
                                 <Text style={styles.actionLabel}>{action.label}</Text>
                             </TouchableOpacity>
                         ))}
-                        {(user?.role === 'admin' || user?.role === 'owner') && (
+                        {user?.role === 'admin' && (
                             <TouchableOpacity
                                 style={styles.actionItem}
                                 onPress={() => navigation.navigate('PromoManagement')}
@@ -486,6 +486,11 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 32,
         borderBottomRightRadius: 32,
         overflow: 'hidden',
+        ...Platform.select({
+            web: {
+                transform: [{ translateZ: 0 }], // Force clipping on Web
+            }
+        })
     },
     headerBgLogo: {
         position: 'absolute',
@@ -661,6 +666,12 @@ const styles = StyleSheet.create({
         position: 'relative',
         justifyContent: 'center',
         minHeight: 80,
+        ...Platform.select({
+            web: {
+                transform: [{ translateZ: 0 }], // Force clipping on Web for statDecor
+                boxShadow: '0px 2px 8px rgba(0,0,0,0.05)'
+            }
+        })
     },
     statContent: {
         flexDirection: 'row',

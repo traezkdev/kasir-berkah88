@@ -475,6 +475,9 @@ const PopupManagement = ({ navigation }) => {
                                             source={{ uri: `${API_URL}${popup.image_url.startsWith('/') ? '' : '/'}${popup.image_url}` }}
                                             style={styles.popupThumbImage}
                                             resizeMode="cover"
+                                            onError={(e) => {
+                                                // Handle 404 silently in the list
+                                            }}
                                         />
                                     ) : (
                                         <View style={styles.popupImagePlaceholder}>

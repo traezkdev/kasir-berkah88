@@ -39,7 +39,10 @@ const PopupModal = ({ popups = [], currentPage = 'dashboard', onClose }) => {
                     setImageRatio(width / height);
                 },
                 (error) => {
-                    console.error('Error getting image size:', error);
+                    // Fail silently or with minimal log for missing images
+                    if (__DEV__) {
+                        console.warn('Popup image missing or failed to load:', currentPopup.image_url);
+                    }
                     setImageRatio(1);
                 }
             );

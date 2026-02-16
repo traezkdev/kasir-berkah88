@@ -8,7 +8,8 @@ const ExpenseSummaryCard = ({
   weeklyExpenses = 0,
   monthlyExpenses = 0,
   monthlyExpenseCount = 0,
-  filterDate = '',
+  filterStartDate = '',
+  filterEndDate = '',
   referenceDate,
   weekStart,
   weekEnd,
@@ -58,30 +59,46 @@ const ExpenseSummaryCard = ({
     return `${startFormatted} - ${endFormatted}`;
   };
 
+  const isFiltered = filterStartDate || filterEndDate;
+
   const summaryItems = [
     {
-      label: filterDate ? `Pengeluaran Bulan ${formatMonthYear(referenceDate)}` : 'Pengeluaran Bulan Ini',
+      label: isFiltered
+        ? 'Total Pengeluaran (Filter)'
+        : 'Pengeluaran Bulan Ini',
       value: formatCurrency(monthlyExpenses),
       icon: 'Wallet',
       color: 'text-destructive',
       bgColor: 'bg-destructive/10',
-      description: filterDate ? `${monthlyExpenseCount} transaksi` : `${monthlyExpenseCount} transaksi bulan ini`
+      description: isFiltered
+        ? (filterStartDate && filterEndDate
+          ? `${formatDate(filterStartDate)} - ${formatDate(filterEndDate)}`
+          : filterStartDate
+            ? `Dari ${formatDate(filterStartDate)}`
+            : `Sampai ${formatDate(filterEndDate)}`)
+        : `${monthlyExpenseCount} transaksi bulan ini`
     },
     {
-      label: filterDate ? `Pengeluaran ${formatDate(referenceDate)}` : 'Pengeluaran Hari Ini',
-      value: formatCurrency(todayExpenses),
+      label: isFiltered
+        ? 'Jumlah Transaksi'
+        : 'Pengeluaran Hari Ini',
+      value: isFiltered ? `${monthlyExpenseCount} transaksi` : formatCurrency(todayExpenses),
       icon: 'Calendar',
       color: 'text-warning',
       bgColor: 'bg-warning/10',
-      description: filterDate ? 'Tanggal terpilih' : 'Hari ini'
+      description: isFiltered ? 'Dalam periode terpilih' : 'Hari ini'
     },
     {
-      label: filterDate ? `Pengeluaran Minggu (${formatDateRange(weekStart, weekEnd)})` : 'Pengeluaran Minggu Ini',
-      value: formatCurrency(weeklyExpenses),
+      label: isFiltered
+        ? 'Rata-rata per Transaksi'
+        : 'Pengeluaran Minggu Ini',
+      value: isFiltered
+        ? formatCurrency(monthlyExpenseCount > 0 ? monthlyExpenses / monthlyExpenseCount : 0)
+        : formatCurrency(weeklyExpenses),
       icon: 'TrendingDown',
       color: 'text-accent',
       bgColor: 'bg-accent/10',
-      description: filterDate ? 'Minggu terpilih' : 'Minggu berjalan'
+      description: isFiltered ? 'Biaya rata-rata' : 'Minggu berjalan'
     }
   ];
 

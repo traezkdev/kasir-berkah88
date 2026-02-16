@@ -259,7 +259,7 @@ const authorizeAccountAccess = (accountType) => {
     return (req, res, next) => {
         const userRole = req.user.role;
 
-        if (accountType === 'lapak' && (userRole === 'admin' || userRole === 'user' || userRole === 'kasir')) {
+        if (accountType === 'lapak' && (userRole === 'admin' || userRole === 'user' || userRole === 'kasir' || userRole === 'owner')) {
             next();
         } else if (accountType === 'owner' && (userRole === 'admin' || userRole === 'owner')) {
             next();
@@ -853,6 +853,79 @@ app.get("/api/analytics/breakdown", authenticateToken, authorizeRoles('admin', '
     }
 });
 
+// --- Financial Report Endpoint ---
+app.get("/api/reports/financial-summary", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    try {
+        let { startDate, endDate } = req.query;
+        if (!startDate || !endDate) {
+            return res.status(400).json({ error: "startDate and endDate are required" });
+        }
+
+        // 1. Revenue
+        const [revenueRows] = await db.query(`
+            SELECT SUM(total) as revenue 
+            FROM transactions 
+            WHERE timestamp BETWEEN ? AND ? 
+            AND (payment_method != 'employee_meal' OR payment_method IS NULL)
+        `, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
+        const revenue = parseFloat(revenueRows[0].revenue || 0);
+
+        // 2. Expenses
+        const [expenseRows] = await db.query(`
+            SELECT SUM(amount) as total 
+            FROM expenses 
+            WHERE date BETWEEN ? AND ?
+        `, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
+        const expenses = parseFloat(expenseRows[0].total || 0);
+
+        // 3. COGS (Estimation via Raw Material Expenses for now)
+        const [cogsRows] = await db.query(`
+            SELECT SUM(amount) as total 
+            FROM expenses 
+            WHERE date BETWEEN ? AND ? 
+            AND (category = 'Bahan Baku' OR category = 'Belanja Pasar' OR category = 'Stok')
+        `, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
+        const cogs = parseFloat(cogsRows[0].total || 0);
+
+        // 4. Assets
+        // Menu Assets
+        const [menuAssetsRows] = await db.query(`
+            SELECT SUM(CAST(stock AS DECIMAL(10,2)) * price) as value FROM menu_items
+        `);
+        const menuAssets = parseFloat(menuAssetsRows[0].value || 0);
+
+        // Raw Material Assets
+        // Logic: (current_stock * raw_stock_price) + (menu_stock * price_per_item)
+        const [rawAssetsRows] = await db.query(`
+            SELECT SUM((current_stock * raw_stock_price) + (menu_stock * price_per_item)) as value 
+            FROM raw_materials
+        `);
+        const rawMaterialAssets = parseFloat(rawAssetsRows[0].value || 0);
+
+        const totalAssets = menuAssets + rawMaterialAssets;
+
+        res.json({
+            message: "success",
+            data: {
+                revenue,
+                cogs, // This is just a proxy for now
+                grossProfit: revenue - cogs,
+                expenses,
+                netProfit: revenue - expenses,
+                assets: {
+                    menu: menuAssets,
+                    rawMaterial: rawMaterialAssets,
+                    total: totalAssets
+                }
+            }
+        });
+
+    } catch (err) {
+        console.error("Error in financial summary:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // --- Cash Reconciliations Endpoints ---
 app.get("/api/menu-recipes/:menu_item_id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
     try {
@@ -901,7 +974,7 @@ app.delete("/api/menu-recipes/:id", authenticateToken, authorizeRoles('admin', '
 // --- Menu Items Endpoints ---
 
 // Get all menu items with pagination and category filtering
-app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'pelanggan', 'penjual'), async (req, res) => {
+app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'pelanggan', 'penjual', 'owner'), async (req, res) => {
     try {
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 20;
@@ -1364,7 +1437,7 @@ app.get("/api/menu-reviews/:menu_item_id", async (req, res) => {
 
 
 // --- Categories Endpoints ---
-app.get("/api/categories", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'pelanggan', 'penjual'), async (req, res) => {
+app.get("/api/categories", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'pelanggan', 'penjual', 'owner'), async (req, res) => {
     try {
         const sql = "SELECT * FROM categories ORDER BY name ASC";
         const [rows] = await db.query(sql);
@@ -1495,7 +1568,7 @@ app.delete("/api/categories/:id", authenticateToken, authorizeRoles('user', 'adm
 // --- Banners Endpoints ---
 
 // Get all active banners
-app.get("/api/banners", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'pelanggan', 'penjual'), async (req, res) => {
+app.get("/api/banners", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'pelanggan', 'penjual', 'owner'), async (req, res) => {
     try {
         const sql = "SELECT * FROM banners WHERE is_active = TRUE ORDER BY created_at DESC";
         const [rows] = await db.query(sql);
@@ -1506,7 +1579,7 @@ app.get("/api/banners", authenticateToken, authorizeRoles('user', 'admin', 'gues
 });
 
 // Get all banners (for management)
-app.get("/api/banners/all", authenticateToken, authorizeRoles('admin', 'penjual'), async (req, res) => {
+app.get("/api/banners/all", authenticateToken, authorizeRoles('admin', 'penjual', 'owner'), async (req, res) => {
     try {
         const sql = "SELECT * FROM banners ORDER BY created_at DESC";
         const [rows] = await db.query(sql);
@@ -1517,7 +1590,7 @@ app.get("/api/banners/all", authenticateToken, authorizeRoles('admin', 'penjual'
 });
 
 // Add a new banner
-app.post("/api/banners", authenticateToken, authorizeRoles('admin', 'penjual'), upload.single('image'), async (req, res) => {
+app.post("/api/banners", authenticateToken, authorizeRoles('admin', 'penjual', 'owner'), upload.single('image'), async (req, res) => {
     try {
         let bannerData;
 
@@ -1736,7 +1809,7 @@ app.post("/api/information/:id/broadcast", authenticateToken, authorizeRoles('ad
 });
 
 // Update a banner
-app.put("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'penjual'), upload.single('image'), async (req, res) => {
+app.put("/api/banners/:id", authenticateToken, authorizeRoles('admin', 'owner', 'penjual'), upload.single('image'), async (req, res) => {
     try {
         const { id } = req.params;
         let bannerData;
@@ -2585,7 +2658,7 @@ app.get("/api/transactions/trash", authenticateToken, authorizeRoles('admin'), a
 
 
 // Get a single transaction by id
-app.get("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir'), async (req, res, next) => {
+app.get("/api/transactions/:id", authenticateToken, authorizeRoles('user', 'admin', 'guest', 'kasir', 'owner'), async (req, res, next) => {
     try {
         const sql = "select * from transactions where id = ? AND deleted_at IS NULL";
         const params = [req.params.id];
@@ -3667,7 +3740,7 @@ app.post("/api/accounts/deposit", authenticateToken, async (req, res) => {
 
         let allowedRoles;
         if (account_name === 'lapak_deposit') {
-            allowedRoles = ['admin', 'user', 'kasir'];
+            allowedRoles = ['admin', 'user', 'kasir', 'owner'];
         } else if (account_name === 'owner_deposit') {
             allowedRoles = ['admin', 'owner'];
         } else {
@@ -3726,7 +3799,7 @@ app.post("/api/accounts/expense", authenticateToken, async (req, res) => {
 
         let allowedRoles;
         if (account_name === 'lapak_deposit') {
-            allowedRoles = ['admin', 'user', 'kasir'];
+            allowedRoles = ['admin', 'user', 'kasir', 'owner'];
         } else if (account_name === 'owner_deposit') {
             allowedRoles = ['admin', 'owner'];
         } else {
@@ -3811,7 +3884,7 @@ app.put("/api/accounts/transactions/:id", authenticateToken, async (req, res) =>
         const type = transaction.type; // 'deposit' or 'expense'
 
         // Check ownership or admin role
-        if (transaction.created_by_user_id !== userId && req.user.role !== 'admin') {
+        if (transaction.created_by_user_id !== userId && req.user.role !== 'admin' && req.user.role !== 'owner') {
             await connection.rollback();
             return res.status(403).json({ error: "Forbidden: You are not authorized to edit this transaction" });
         }
@@ -3868,7 +3941,7 @@ app.delete("/api/accounts/transactions/:id", authenticateToken, async (req, res)
         const transaction = transRows[0];
 
         // Check ownership or admin role
-        if (transaction.created_by_user_id !== userId && req.user.role !== 'admin') {
+        if (transaction.created_by_user_id !== userId && req.user.role !== 'admin' && req.user.role !== 'owner') {
             await connection.rollback();
             return res.status(403).json({ error: "Forbidden: You are not authorized to delete this transaction" });
         }
@@ -4200,7 +4273,7 @@ app.post("/api/orders", (req, res, next) => {
             total: calculatedTotal,
             promo_discount: finalPromoDiscount,
             status: 'pending',
-            created_at: new Date()
+            created_at: new Date().toISOString()
         });
 
         res.status(201).json({
@@ -4263,9 +4336,24 @@ app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user', 'pelan
         const dataSql = `SELECT * FROM orders ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
         const [rows] = await db.query(dataSql, [...queryParams, limit, offset]);
 
+        // Fix timezone for production: ensure all dates are sent in ISO format
+        const formattedRows = rows.map(order => {
+            let isoDate = null;
+            if (order.created_at) {
+                const d = new Date(order.created_at);
+                if (!isNaN(d.getTime())) {
+                    isoDate = d.toISOString();
+                }
+            }
+            return {
+                ...order,
+                created_at: isoDate
+            };
+        });
+
         res.json({
             "message": "success",
-            "data": rows,
+            "data": formattedRows,
             "pagination": {
                 "currentPage": page,
                 "totalPages": totalPages,
@@ -4305,6 +4393,14 @@ app.get("/api/orders/:id", authenticateToken, authorizeRoles('admin', 'user', 'p
             order.items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
         } catch (e) {
             console.error("Error parsing order items:", e);
+        }
+
+        // Fix timezone: ensure created_at is sent in ISO format
+        if (order.created_at) {
+            const d = new Date(order.created_at);
+            if (!isNaN(d.getTime())) {
+                order.created_at = d.toISOString();
+            }
         }
 
         res.json({
@@ -6921,11 +7017,9 @@ app.get("/api/reports/financial-summary", authenticateToken, authorizeRoles('adm
             return res.status(400).json({ error: "StartDate and EndDate are required" });
         }
 
-        // 1. Get Transactions (Omzet & Sales Volume)
-        // Exclude 'employee_meal' if that's considered internal use, or include it if it's revenue (usually internal use is cost).
-        // Based on logic in BusinessReports.js, revenue excludes employee_meal.
+        // 1. Get Transactions (Omzet)
         const transSql = `
-            SELECT t.total, t.items
+            SELECT t.total
             FROM transactions t
             WHERE t.timestamp BETWEEN ? AND ?
             AND (t.payment_method != 'employee_meal' OR t.payment_method IS NULL)
@@ -6933,41 +7027,19 @@ app.get("/api/reports/financial-summary", authenticateToken, authorizeRoles('adm
         const [transactions] = await db.query(transSql, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
 
         let totalRevenue = 0;
-        let totalCOGS = 0; // Cost of Goods Sold
-
-        // Helper Map for HPP to calculate COGS
-        // We use CURRENT HPP because historical HPP is not stored in transaction items
-        const [menuItems] = await db.query("SELECT id, name, hpp, stock FROM menu_items");
-        const hppMap = new Map();
-        menuItems.forEach(m => {
-            // Map by ID
-            hppMap.set(String(m.id), parseFloat(m.hpp || 0));
-            // Map by Name as fallback
-            hppMap.set(m.name, parseFloat(m.hpp || 0));
-        });
-
         transactions.forEach(t => {
             totalRevenue += parseFloat(t.total || 0);
-            let items = [];
-            try { items = typeof t.items === 'string' ? JSON.parse(t.items) : t.items; } catch (e) { }
-
-            if (Array.isArray(items)) {
-                items.forEach(item => {
-                    // Try to find HPP
-                    let hpp = 0;
-                    if (item.id && hppMap.has(String(item.id))) {
-                        hpp = hppMap.get(String(item.id));
-                    } else if (item.name && hppMap.has(item.name)) {
-                        hpp = hppMap.get(item.name);
-                    }
-
-                    const qty = parseInt(item.quantity || item.qty || 0);
-                    totalCOGS += (hpp * qty);
-                });
-            }
         });
 
-        // 2. Get Expenses (Operational Costs)
+        // 2. Get Lapak Depot Data (Combined Real-Time Balances)
+        // Revised: Sum of Saldo Lapak + Saldo Owner
+        const [accountRows] = await db.query(
+            "SELECT SUM(balance) as total_balance FROM accounts WHERE name IN ('lapak_deposit', 'owner_deposit')"
+        );
+        const totalBalances = parseFloat(accountRows[0]?.total_balance || 0);
+        console.log(`[DEBUG] Financial Summary - Combined Balances: ${totalBalances}`);
+
+        // 3. Get Expenses (Operational Costs)
         const expSql = `
             SELECT SUM(amount) as total
             FROM expenses
@@ -6976,20 +7048,16 @@ app.get("/api/reports/financial-summary", authenticateToken, authorizeRoles('adm
         const [expRows] = await db.query(expSql, [`${startDate} 00:00:00`, `${endDate} 23:59:59`]);
         const totalExpenses = parseFloat(expRows[0]?.total || 0);
 
-        // 3. Asset Value (Nilai Kekayaan Stok / Inventory Value)
+        // 4. Asset Value (Inventory)
+        const [menuItems] = await db.query("SELECT id, name, hpp, stock FROM menu_items");
         let totalMenuAsset = 0;
-        let totalMenuAssetSellPrice = 0;
-
-        // We already fetched menuItems above
         menuItems.forEach(m => {
             const stock = parseFloat(m.stock || 0);
             if (stock > 0) {
-                totalMenuAsset += (stock * parseFloat(m.hpp || 0)); // Asset at Cost
-                // We could also calculate Asset at Retail Price if needed
+                totalMenuAsset += (stock * parseFloat(m.hpp || 0));
             }
         });
 
-        // Raw Materials Asset
         const [rawMaterials] = await db.query("SELECT current_stock, price_per_item FROM raw_materials");
         let totalRawMaterialAsset = 0;
         rawMaterials.forEach(r => {
@@ -6999,24 +7067,23 @@ app.get("/api/reports/financial-summary", authenticateToken, authorizeRoles('adm
             }
         });
 
-        const grossProfit = totalRevenue - totalCOGS; // Laba Kotor (Revenue - HPP)
-        const netProfit = grossProfit - totalExpenses; // Laba Bersih (Accrual-ish approximation)
-        const netCashFlow = totalRevenue - totalExpenses; // Cash Flow Basis
+        // CORRECTED FORMULAS (Lapak Depot is current balance info, not a cost)
+        const grossProfit = totalRevenue;               // Laba Kotor = Omzet
+        const netProfit = totalRevenue - totalExpenses; // Laba Bersih = Omzet - Biaya Operasional
 
         res.json({
             message: "success",
             data: {
                 period: { startDate, endDate },
-                revenue: totalRevenue,              // Omzet / Pendapatan Penjualan
-                cogs: totalCOGS,                    // HPP Terjual (Estimasi)
+                revenue: totalRevenue,              // Pemasukan (Omzet)
+                lapakDepot: totalBalances,           // Lapak Depot (Saldo Lapak + Owner)
                 grossProfit: grossProfit,           // Laba Kotor
-                expenses: totalExpenses,            // Total Pengeluaran Operasional
-                netProfit: netProfit,               // Laba Bersih (Revenue - HPP - Expenses)
-                netCashFlow: netCashFlow,           // Arus Kas Bersih (Revenue - Expenses)
+                expenses: totalExpenses,            // Pengeluaran Ops.
+                netProfit: netProfit,               // LABA BERSIH
                 assets: {
-                    menu: totalMenuAsset,           // Nilai Stok Barang Jadi (based on HPP)
-                    rawMaterial: totalRawMaterialAsset, // Nilai Stok Bahan Baku
-                    total: totalMenuAsset + totalRawMaterialAsset // Total Nilai Aset Stock
+                    menu: totalMenuAsset,
+                    rawMaterial: totalRawMaterialAsset,
+                    total: totalMenuAsset + totalRawMaterialAsset
                 }
             }
         });
@@ -7080,8 +7147,19 @@ app.get("/api/popups/active", async (req, res) => {
 
         const [rows] = await db.query(sql);
 
+        // Filter out popups with missing images
+        const existingPopups = rows.filter(popup => {
+            if (!popup.image_url) return true;
+            try {
+                const filePath = path.join(__dirname, popup.image_url);
+                return fs.existsSync(filePath);
+            } catch (err) {
+                return false;
+            }
+        });
+
         // Filter by page if specified
-        let filteredPopups = rows;
+        let filteredPopups = existingPopups;
         if (page) {
             filteredPopups = rows.filter(popup => {
                 if (!popup.show_on_pages) return true; // Show on all pages if not specified

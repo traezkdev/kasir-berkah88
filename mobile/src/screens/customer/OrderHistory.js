@@ -134,6 +134,20 @@ const OrderHistory = ({ navigation }) => {
         }
     };
 
+    const getCorrectedDate = (dateStr) => {
+        if (!dateStr) return new Date();
+        const now = new Date();
+        let date = new Date(dateStr);
+        if (typeof dateStr === 'string' && !dateStr.endsWith('Z') && !dateStr.includes('+')) {
+            const dateLocal = new Date(dateStr);
+            const dateUTC = new Date(dateStr + 'Z');
+            if (Math.abs(now - dateUTC) < Math.abs(now - dateLocal)) {
+                date = dateUTC;
+            }
+        }
+        return date;
+    };
+
     const renderOrderItem = ({ item }) => {
         const status = getStatusInfo(item.status);
         const orderItems = typeof item.items === 'string' ? JSON.parse(item.items) : item.items;
@@ -154,7 +168,7 @@ const OrderHistory = ({ navigation }) => {
                             <Text style={[styles.statusLabel, { color: status.color }]}>{status.label.toUpperCase()}</Text>
                         </View>
                     </View>
-                    <Text style={styles.orderTime}>{new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                    <Text style={styles.orderTime}>{getCorrectedDate(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
                 </View>
 
                 <View style={styles.cardBody}>

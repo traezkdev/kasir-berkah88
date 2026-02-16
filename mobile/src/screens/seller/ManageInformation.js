@@ -35,7 +35,6 @@ const ManageInformation = ({ navigation }) => {
     const [editingId, setEditingId] = useState(null);
     const [showImageModal, setShowImageModal] = useState(false);
     const { showToast } = useToast();
-    const [imagePickerTrigger, setImagePickerTrigger] = useState(null); // 'camera' or 'gallery'
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [pendingInfo, setPendingInfo] = useState(null);
 
@@ -88,21 +87,6 @@ const ManageInformation = ({ navigation }) => {
         fetchMenuItems();
     }, []);
 
-    // Effect to handle image picker after modal is closed (to avoid Android conflicts)
-    useEffect(() => {
-        if (!showImageModal && imagePickerTrigger) {
-            const timer = setTimeout(() => {
-                if (imagePickerTrigger === 'camera') {
-                    executeCamera();
-                } else if (imagePickerTrigger === 'gallery') {
-                    executeGallery();
-                }
-                setImagePickerTrigger(null);
-            }, 500); // 500ms delay to ensure modal is fully dismissed
-            return () => clearTimeout(timer);
-        }
-    }, [showImageModal, imagePickerTrigger]);
-
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
@@ -114,12 +98,18 @@ const ManageInformation = ({ navigation }) => {
 
     const handleCamera = () => {
         setShowImageModal(false);
-        setImagePickerTrigger('camera');
+        // Small delay to ensure modal is fully dismissed before launching camera
+        setTimeout(() => {
+            executeCamera();
+        }, 400);
     };
 
     const handleGallery = () => {
         setShowImageModal(false);
-        setImagePickerTrigger('gallery');
+        // Small delay to ensure modal is fully dismissed before launching gallery
+        setTimeout(() => {
+            executeGallery();
+        }, 400);
     };
 
     const executeCamera = async () => {
@@ -147,7 +137,7 @@ const ManageInformation = ({ navigation }) => {
     const executeGallery = async () => {
         try {
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ['images'], // Updated from deprecated MediaTypeOptions
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
                 allowsEditing: true,
                 aspect: [16, 9],
                 quality: 0.7,

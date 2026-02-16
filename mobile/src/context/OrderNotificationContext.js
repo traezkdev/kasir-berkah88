@@ -138,7 +138,8 @@ export const OrderNotificationProvider = ({ children }) => {
     // Seller Logic: Check for new pending orders
     const fetchPendingCount = useCallback(async () => {
         const currentUser = user;
-        if (!currentUser || !['admin', 'penjual', 'owner', 'kasir', 'seller'].includes(currentUser.role)) return;
+        const managementRoles = ['admin', 'penjual', 'owner', 'kasir', 'seller', 'user'];
+        if (!currentUser || !managementRoles.includes(currentUser.role)) return;
 
         try {
             const response = await apiService.get('/api/orders?status=pending&limit=1');
@@ -186,6 +187,10 @@ export const OrderNotificationProvider = ({ children }) => {
 
                 if (prevOrders.length > 0) {
                     currentOrders.forEach((order) => {
+                        // FIX: Only notify if it's the current user's order (Avoid leak to sellers)
+                        const currentUserId = String(user.id || user.userId);
+                        if (String(order.user_id) !== currentUserId) return;
+
                         const prevOrder = prevOrders.find(o => o.id === order.id);
                         if (prevOrder && prevOrder.status !== order.status) {
                             playNotificationSound();
@@ -330,7 +335,8 @@ export const OrderNotificationProvider = ({ children }) => {
 
     useEffect(() => {
         if (user) {
-            if (['admin', 'penjual', 'owner', 'kasir', 'seller'].includes(user.role)) {
+            const managementRoles = ['admin', 'penjual', 'owner', 'kasir', 'seller', 'user'];
+            if (managementRoles.includes(user.role)) {
                 fetchPendingCount();
                 pollingInterval.current = setInterval(fetchPendingCount, 8000); // 8s polling as safe backup
             } else {
@@ -459,10 +465,11 @@ export const OrderNotificationProvider = ({ children }) => {
         newSocket.on('order_update', (data) => {
             if (isMounted.current) {
                 setRefreshTrigger(prev => prev + 1);
-                if (user.role === 'pelanggan') {
-                    checkCustomerNotifications();
-                } else {
+                const managementRoles = ['admin', 'penjual', 'owner', 'kasir', 'seller', 'user'];
+                if (managementRoles.includes(user.role)) {
                     fetchPendingCount();
+                } else {
+                    checkCustomerNotifications();
                 }
             }
         });
