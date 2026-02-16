@@ -7,8 +7,8 @@ const localUrl = process.env.EXPO_PUBLIC_API_URL_LOCAL || 'http://localhost:4000
 const prodUrl = process.env.EXPO_PUBLIC_API_URL_PROD || 'https://api.inviteshare.my.id';
 
 // === PILIH URL API DI SINI ===
-// export const API_URL = __DEV__ ? localUrl : prodUrl; // Auto (Lokal saat dev, Prod saat build)
-export const API_URL = prodUrl;                         // Paksa Production (Untuk Debugging)
+export const API_URL = __DEV__ ? localUrl : prodUrl; // Auto (Lokal saat dev, Prod saat build)
+//export const API_URL = prodUrl;                         // Paksa Production (Untuk Debugging)
 // export const API_URL = localUrl;                        // Paksa Lokal (Gunakan IP komputer jika di HP asli)
 // =============================
 

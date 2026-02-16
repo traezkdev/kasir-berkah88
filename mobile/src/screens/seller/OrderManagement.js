@@ -8,7 +8,9 @@ import {
     ActivityIndicator,
     Platform,
     RefreshControl,
-    StatusBar
+    StatusBar,
+    Alert,
+    Modal
 } from 'react-native';
 import {
     ChevronLeft,
@@ -17,7 +19,9 @@ import {
     CheckCircle,
     XCircle,
     Slash,
-    ShoppingBag
+    ShoppingBag,
+    Trash2,
+    AlertTriangle
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 import SellerOrderCard from '../../components/SellerOrderCard';
@@ -35,6 +39,11 @@ const OrderManagement = ({ navigation, route }) => {
     const { confirm } = useConfirm();
     const { refreshTrigger } = useOrderNotification();
     const { showToast } = useToast();
+
+    // Delete State
+    const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
+    const [showDeleteSingleConfirm, setShowDeleteSingleConfirm] = useState(false);
+    const [selectedOrderToDelete, setSelectedOrderToDelete] = useState(null);
 
     // Efek untuk menangkap perubahan status dari navigasi luar (misal: dari Chat)
     useEffect(() => {
@@ -127,6 +136,56 @@ const OrderManagement = ({ navigation, route }) => {
         handleUpdateStatus(orderId, 'cancelled');
     }, [handleUpdateStatus]);
 
+
+    // Delete Functions
+    const confirmDeleteAllAction = async () => {
+        try {
+            setLoading(true);
+            const response = await apiService.delete('/api/orders/delete-all/confirm');
+            if (response.data && response.data.message === 'deleted_all') {
+                setShowDeleteAllConfirm(false);
+                fetchOrders(true);
+                Alert.alert("Berhasil", `Berhasil menghapus ${response.data.count} pesanan ke sampah.`);
+            } else {
+                Alert.alert("Info", "Tidak ada pesanan yang dihapus.");
+                setShowDeleteAllConfirm(false);
+            }
+        } catch (error) {
+            console.error('Delete all orders error:', error);
+            Alert.alert("Error", "Gagal menghapus semua pesanan.");
+            setShowDeleteAllConfirm(false);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    const handleDeleteSingle = (order) => {
+        setSelectedOrderToDelete(order);
+        setShowDeleteSingleConfirm(true);
+    };
+
+    const confirmDeleteSingleAction = async () => {
+        if (!selectedOrderToDelete) return;
+        try {
+            setLoading(true);
+            const response = await apiService.delete(`/api/orders/${selectedOrderToDelete.id}`);
+            if (response.data && response.data.message === 'deleted') {
+                setShowDeleteSingleConfirm(false);
+                setSelectedOrderToDelete(null);
+                // Remove from list immediately
+                setOrders(prev => prev.filter(o => o.id !== selectedOrderToDelete.id));
+                showToast('Pesanan berhasil dihapus', 'success');
+            }
+        } catch (error) {
+            console.error('Delete order error:', error);
+            showToast('Gagal menghapus pesanan', 'error');
+            setShowDeleteSingleConfirm(false);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const renderOrderItem = useCallback(({ item }) => (
         <SellerOrderCard
             order={item}
@@ -134,6 +193,7 @@ const OrderManagement = ({ navigation, route }) => {
             onAccept={activeTab === 'pending' ? handleAccept : null}
             onComplete={activeTab === 'accepted' ? handleComplete : null}
             onReject={(activeTab === 'pending' || activeTab === 'accepted') ? handleReject : null}
+            onDelete={handleDeleteSingle}
         />
     ), [activeTab, handleViewDetail, handleAccept, handleComplete, handleReject]);
 
@@ -154,9 +214,14 @@ const OrderManagement = ({ navigation, route }) => {
                     <ChevronLeft size={24} color="#1E293B" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Manajemen Pesanan</Text>
-                <TouchableOpacity onPress={() => fetchOrders()} style={styles.headerAction}>
-                    <RefreshCw size={20} color="#1E293B" className={loading ? 'animate-spin' : ''} />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TouchableOpacity onPress={() => setShowDeleteAllConfirm(true)} style={[styles.headerAction, { backgroundColor: '#FEF2F2' }]}>
+                        <Trash2 size={20} color="#EF4444" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => fetchOrders()} style={styles.headerAction}>
+                        <RefreshCw size={20} color="#1E293B" className={loading ? 'animate-spin' : ''} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Tabs */}
@@ -221,6 +286,68 @@ const OrderManagement = ({ navigation, route }) => {
                     order={selectedOrderForDetail}
                 />
             )}
+
+            {/* Delete Single Confirmation Modal */}
+            <Modal visible={showDeleteSingleConfirm} transparent animationType="fade">
+                <View style={styles.confirmOverlay}>
+                    <View style={styles.confirmCard}>
+                        <View style={styles.confirmIconBg}>
+                            <AlertTriangle size={32} color="#DC2626" />
+                        </View>
+                        <Text style={styles.confirmTitle}>Hapus Pesanan?</Text>
+                        <Text style={styles.confirmSubtitle}>
+                            Pesanan dari <Text style={{ fontWeight: '900', color: '#1E293B' }}>{selectedOrderToDelete?.customer_name}</Text> akan dipindahkan ke sampah.
+                        </Text>
+                        <View style={styles.confirmActions}>
+                            <TouchableOpacity
+                                style={styles.confirmCancelBtn}
+                                onPress={() => setShowDeleteSingleConfirm(false)}
+                                disabled={loading}
+                            >
+                                <Text style={styles.confirmCancelText}>Batal</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.confirmDeleteBtn}
+                                onPress={confirmDeleteSingleAction}
+                                disabled={loading}
+                            >
+                                {loading ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Text style={styles.confirmDeleteText}>Hapus</Text>}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Delete ALL Confirmation Modal */}
+            <Modal visible={showDeleteAllConfirm} transparent animationType="fade">
+                <View style={styles.confirmOverlay}>
+                    <View style={styles.confirmCard}>
+                        <View style={styles.confirmIconBg}>
+                            <AlertTriangle size={32} color="#DC2626" />
+                        </View>
+                        <Text style={styles.confirmTitle}>Hapus SEMUA Pesanan?</Text>
+                        <Text style={styles.confirmSubtitle}>
+                            Tindakan ini akan menghapus <Text style={{ color: '#DC2626', fontWeight: '900' }}>SEMUA</Text> riwayat pesanan yang ada dan memindahkannya ke sampah.
+                        </Text>
+                        <View style={styles.confirmActions}>
+                            <TouchableOpacity
+                                style={styles.confirmCancelBtn}
+                                onPress={() => setShowDeleteAllConfirm(false)}
+                                disabled={loading}
+                            >
+                                <Text style={styles.confirmCancelText}>Batal</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.confirmDeleteBtn, { backgroundColor: '#DC2626' }]}
+                                onPress={confirmDeleteAllAction}
+                                disabled={loading}
+                            >
+                                {loading ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Text style={styles.confirmDeleteText}>Hapus Semua</Text>}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -310,6 +437,79 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#94A3B8',
         fontWeight: 'bold',
+    },
+    confirmOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20
+    },
+    confirmCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 24,
+        padding: 24,
+        width: '100%',
+        maxWidth: 340,
+        alignItems: 'center',
+        ...Platform.select({
+            web: { boxShadow: '0px 10px 25px rgba(0,0,0,0.1)' },
+            android: { elevation: 10 }
+        })
+    },
+    confirmIconBg: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: '#FEF2F2',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 16
+    },
+    confirmTitle: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#1E293B',
+        marginBottom: 8,
+        textAlign: 'center'
+    },
+    confirmSubtitle: {
+        fontSize: 14,
+        color: '#64748B',
+        textAlign: 'center',
+        marginBottom: 24,
+        lineHeight: 20
+    },
+    confirmActions: {
+        flexDirection: 'row',
+        gap: 12,
+        width: '100%'
+    },
+    confirmCancelBtn: {
+        flex: 1,
+        height: 48,
+        backgroundColor: '#F1F5F9',
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    confirmCancelText: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#64748B'
+    },
+    confirmDeleteBtn: {
+        flex: 1,
+        height: 48,
+        backgroundColor: '#EF4444',
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    confirmDeleteText: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#FFFFFF'
     }
 });
 

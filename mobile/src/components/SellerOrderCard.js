@@ -1,6 +1,6 @@
 import React, { useState, memo } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, LayoutAnimation, Platform, UIManager } from 'react-native';
-import { User, MapPin, Wallet, ShoppingBag, ChevronDown, X, ArrowRight, MessageCircle, CheckCircle, Info, Banknote, QrCode, CreditCard } from 'lucide-react-native';
+import { User, MapPin, Wallet, ShoppingBag, ChevronDown, X, ArrowRight, MessageCircle, CheckCircle, Info, Banknote, QrCode, CreditCard, Trash2 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useChat } from '../context/ChatContext';
 import { useConfirm } from '../context/ConfirmContext';
@@ -11,7 +11,7 @@ if (Platform.OS === 'android') {
     }
 }
 
-const SellerOrderCard = ({ order, onAccept, onReject, onComplete, onViewDetail }) => {
+const SellerOrderCard = ({ order, onAccept, onReject, onComplete, onViewDetail, onDelete }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const navigation = useNavigation();
     const { setActiveChat, setActiveOrder } = useChat();
@@ -136,6 +136,14 @@ const SellerOrderCard = ({ order, onAccept, onReject, onComplete, onViewDetail }
                     </View>
 
                     <View style={styles.customerActions}>
+                        {onDelete && (
+                            <TouchableOpacity
+                                style={styles.deleteBtn}
+                                onPress={() => onDelete(order)}
+                            >
+                                <Trash2 size={20} color="#EF4444" />
+                            </TouchableOpacity>
+                        )}
                         <TouchableOpacity
                             style={styles.detailBtn}
                             onPress={handleViewDetail}
@@ -450,6 +458,16 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderWidth: 1,
         borderColor: '#E2E8F0',
+    },
+    deleteBtn: {
+        width: 40,
+        height: 40,
+        backgroundColor: '#FEF2F2',
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#FECACA',
     },
     noteContainer: {
         backgroundColor: '#FFFBEB',
