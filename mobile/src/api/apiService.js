@@ -6,8 +6,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const localUrl = process.env.EXPO_PUBLIC_API_URL_LOCAL || 'http://localhost:4000';
 const prodUrl = process.env.EXPO_PUBLIC_API_URL_PROD || 'https://api.inviteshare.my.id';
 
-// Pilih URL berdasarkan environment
-export const API_URL = __DEV__ ? localUrl : prodUrl;
+// === PILIH URL API DI SINI ===
+// export const API_URL = __DEV__ ? localUrl : prodUrl; // Auto (Lokal saat dev, Prod saat build)
+export const API_URL = prodUrl;                         // Paksa Production (Untuk Debugging)
+// export const API_URL = localUrl;                        // Paksa Lokal (Gunakan IP komputer jika di HP asli)
+// =============================
 
 const apiService = axios.create({
     baseURL: API_URL,
