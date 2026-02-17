@@ -297,12 +297,12 @@ const CustomerDashboard = ({ navigation }) => {
                             style={styles.compactSearch}
                             onPress={() => navigation.navigate('Menu')}
                         >
-                            <Search size={16} color="#94A3B8" />
+                            <Search size={16} color="#FFFFFF" />
                             <Text style={styles.compactSearchText}>Cari menu favorit...</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => navigation.navigate('ChatScreen')}>
                             <View>
-                                <MessageCircle size={20} color="#64748B" />
+                                <MessageCircle size={20} color="#FFFFFF" />
                                 {unreadCount > 0 && (
                                     <View style={[styles.statusBadge, { top: -6, right: -6, width: 14, height: 14, borderRadius: 7, borderWidth: 1.5 }]}>
                                         <Text style={[styles.statusBadgeText, { fontSize: 7 }]}>{unreadCount}</Text>
@@ -312,7 +312,7 @@ const CustomerDashboard = ({ navigation }) => {
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => navigation.navigate('Cart')}>
                             <View>
-                                <ShoppingCart size={20} color="#64748B" />
+                                <ShoppingCart size={20} color="#FFFFFF" />
                                 {cartCount > 0 && (
                                     <View style={[styles.statusBadge, { top: -6, right: -6, width: 14, height: 14, borderRadius: 7, borderWidth: 1.5 }]}>
                                         <Text style={[styles.statusBadgeText, { fontSize: 7 }]}>{cartCount}</Text>
@@ -702,13 +702,13 @@ const styles = StyleSheet.create({
         top: 0,
         left: 0,
         right: 0,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#059669',
         zIndex: 100,
         paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : (Platform.OS === 'web' ? 15 : 20),
         paddingBottom: 12,
         paddingHorizontal: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#F1F5F9',
+        borderBottomColor: 'rgba(255,255,255,0.1)',
     },
     compactHeaderContent: {
         flexDirection: 'row',
@@ -718,7 +718,7 @@ const styles = StyleSheet.create({
     compactSearch: {
         flex: 1,
         height: 40,
-        backgroundColor: '#F1F5F9',
+        backgroundColor: 'rgba(255,255,255,0.2)',
         borderRadius: 20,
         flexDirection: 'row',
         alignItems: 'center',
@@ -727,7 +727,7 @@ const styles = StyleSheet.create({
     compactSearchText: {
         marginLeft: 8,
         fontSize: 12,
-        color: '#94A3B8',
+        color: '#D1FAE5',
         fontWeight: '500',
     },
     mainHeader: {
