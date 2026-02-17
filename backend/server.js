@@ -1151,7 +1151,7 @@ app.get("/api/public/menu-items", async (req, res) => {
 });
 
 // Add a new menu item
-app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'penjual'), upload.single('image'), async (req, res, next) => {
+app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'penjual', 'owner', 'kasir'), upload.single('image'), async (req, res, next) => {
     let connection;
     try {
         connection = await db.getConnection();
@@ -1204,7 +1204,7 @@ app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', '
 });
 
 // Endpoint untuk memperbarui urutan item menu
-app.put('/api/menu-items/reorder', authenticateToken, authorizeRoles('admin', 'penjual'), async (req, res) => {
+app.put('/api/menu-items/reorder', authenticateToken, authorizeRoles('admin', 'penjual', 'owner', 'kasir'), async (req, res) => {
     const { itemIds } = req.body; // itemIds adalah array ID dalam urutan baru
 
     if (!Array.isArray(itemIds)) {
@@ -1238,7 +1238,7 @@ app.put('/api/menu-items/reorder', authenticateToken, authorizeRoles('admin', 'p
 });
 
 // Update a menu item
-app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin', 'penjual'), upload.single('image'), async (req, res, next) => {
+app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin', 'penjual', 'owner', 'kasir'), upload.single('image'), async (req, res, next) => {
     let connection;
     try {
         const { id } = req.params;
@@ -1335,7 +1335,7 @@ app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'
 });
 
 // Delete a menu item
-app.delete("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin', 'penjual'), async (req, res, next) => {
+app.delete("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin', 'penjual', 'owner', 'kasir'), async (req, res, next) => {
     try {
         const sql = 'DELETE FROM menu_items WHERE id = ?';
         const [result] = await db.query(sql, [req.params.id]);
@@ -4345,6 +4345,9 @@ app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user', 'pelan
             queryParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
         }
 
+        // Always hide soft-deleted orders
+        whereClauses.push('deleted_at IS NULL');
+
         const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
         // Query to get total count
@@ -4413,8 +4416,8 @@ app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user', 'pelan
     }
 });
 
-// Soft delete ALL orders (Admin only)
-app.delete("/api/orders/delete-all/confirm", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+// Soft delete ALL orders (Management only)
+app.delete("/api/orders/delete-all/confirm", authenticateToken, authorizeRoles('admin', 'owner', 'kasir'), async (req, res) => {
     try {
         // Only delete active orders (not already deleted)
         const sql = 'UPDATE orders SET deleted_at = NOW() WHERE deleted_at IS NULL';
@@ -4437,17 +4440,58 @@ app.delete("/api/orders/delete-all/confirm", authenticateToken, authorizeRoles('
     }
 });
 
-// Soft delete single order (Admin/Management only)
+// Soft delete single order (Management only)
 app.delete("/api/orders/:id", authenticateToken, authorizeRoles('admin', 'user', 'penjual', 'kasir', 'owner'), async (req, res) => {
     const { id } = req.params;
+    let connection;
     try {
-        // Soft delete: update deleted_at
-        const sql = 'UPDATE orders SET deleted_at = NOW() WHERE id = ?';
-        const [result] = await db.query(sql, [id]);
+        connection = await db.getConnection();
+        await connection.beginTransaction();
 
-        if (result.affectedRows === 0) {
+        // Get the full order details for side-effect handling
+        const [orderRows] = await connection.query('SELECT * FROM orders WHERE id = ? FOR UPDATE', [id]);
+
+        if (orderRows.length === 0) {
+            await connection.rollback();
             return res.status(404).json({ error: "Order not found or already deleted." });
         }
+
+        const order = orderRows[0];
+
+        // Side-effect: If the order was accepted, reverse stock and delete transaction
+        if (order.status === 'accepted' || order.status === 'completed') {
+            let items = [];
+            try {
+                items = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
+            } catch (e) {
+                console.error("Error parsing items for stock restoration:", e);
+            }
+
+            // Restore stock if it was an active order
+            if (Array.isArray(items)) {
+                for (const item of items) {
+                    const itemId = item.id || item.menu_item_id;
+                    const qty = parseInt(item.qty || item.quantity || 0);
+                    if (itemId && qty > 0) {
+                        await connection.query('UPDATE menu_items SET stock = stock + ? WHERE id = ?', [qty, itemId]);
+                    }
+                }
+            }
+
+            // Delete the associated transaction to maintain financial accuracy
+            await connection.query('DELETE FROM transactions WHERE order_id = ?', [id]);
+        }
+
+        // Soft delete: update deleted_at
+        const sql = 'UPDATE orders SET deleted_at = NOW() WHERE id = ?';
+        const [result] = await connection.query(sql, [id]);
+
+        if (result.affectedRows === 0) {
+            await connection.rollback();
+            return res.status(404).json({ error: "Order not found during deletion update." });
+        }
+
+        await connection.commit();
 
         await logActivity(req.user.userId, 'Menghapus Pesanan', 'order', id, `Pesanan #${id} dipindahkan ke sampah`);
 
@@ -4459,6 +4503,84 @@ app.delete("/api/orders/:id", authenticateToken, authorizeRoles('admin', 'user',
 
         res.json({ message: "deleted" });
     } catch (err) {
+        if (connection) await connection.rollback();
+        console.error("Order deletion error:", err);
+        res.status(500).json({ error: err.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// --- Order Trash Management ---
+
+// Get trashed orders (Management only)
+app.get("/api/orders/trash", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual'), async (req, res) => {
+    try {
+        const sql = 'SELECT * FROM orders WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC';
+        const [rows] = await db.query(sql);
+
+        const formattedRows = rows.map(order => {
+            let isoDate = null;
+            if (order.created_at) {
+                isoDate = new Date(order.created_at).toISOString();
+            }
+            let deletedAtIso = null;
+            if (order.deleted_at) {
+                deletedAtIso = new Date(order.deleted_at).toISOString();
+            }
+            return {
+                ...order,
+                created_at: isoDate,
+                deleted_at: deletedAtIso,
+                timestamp: isoDate
+            };
+        });
+
+        res.json({ message: "success", data: formattedRows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Restore order from trash
+app.put("/api/orders/:id/restore", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual'), async (req, res) => {
+    const { id } = req.params;
+    try {
+        const sql = 'UPDATE orders SET deleted_at = NULL WHERE id = ?';
+        const [result] = await db.query(sql, [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Pesanan tidak ditemukan di tempat sampah." });
+        }
+
+        await logActivity(req.user.userId, 'Memulihkan Pesanan', 'order', id, `Pesanan #${id} dipulihkan dari sampah`);
+
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('order_update', { id, status: 'restored' });
+        }
+
+        res.json({ message: "restored" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Permanent delete order
+app.delete("/api/orders/:id/permanent", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    const { id } = req.params;
+    try {
+        const sql = 'DELETE FROM orders WHERE id = ? AND deleted_at IS NOT NULL';
+        const [result] = await db.query(sql, [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Pesanan tidak ditemukan atau bukan di tempat sampah." });
+        }
+
+        await logActivity(req.user.userId, 'Hapus Permanen Pesanan', 'order', id, `Pesanan #${id} dihapus permanen dari sistem`);
+
+        res.json({ message: "permanently_deleted" });
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
@@ -4469,7 +4591,7 @@ app.get("/api/orders/:id", authenticateToken, authorizeRoles('admin', 'user', 'p
         const { id } = req.params;
         const isManagement = ['admin', 'user', 'kasir', 'penjual', 'owner'].includes(req.user.role);
 
-        let sql = 'SELECT * FROM orders WHERE id = ?';
+        let sql = 'SELECT * FROM orders WHERE id = ? AND deleted_at IS NULL';
         let queryParams = [id];
 
         if (!isManagement) {
@@ -4886,111 +5008,6 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
     } finally {
         if (connection) connection.release();
     }
-});
-
-
-
-// Delete a single order by ID
-
-app.delete("/api/orders/:id", authenticateToken, authorizeRoles('admin'), async (req, res) => {
-    const { id } = req.params;
-    const connection = await db.getConnection();
-    try {
-        await connection.beginTransaction();
-
-        // Get the full order details
-        const [orderRows] = await connection.query('SELECT * FROM orders WHERE id = ? FOR UPDATE', [id]);
-
-        if (orderRows.length === 0) {
-            await connection.rollback();
-            return res.status(404).json({ error: "Order not found." });
-        }
-
-        const order = orderRows[0];
-        const orderStatus = order.status;
-
-        // If the order was accepted, we need to reverse the stock reduction and delete the transaction
-        if (orderStatus === 'accepted') {
-            const items = JSON.parse(order.items);
-
-            // Restore stock
-            for (const item of items) {
-                await connection.query('UPDATE menu_items SET stock = stock + ? WHERE id = ?', [item.quantity, item.id]);
-            }
-
-            // Delete the associated transaction
-            await connection.query('DELETE FROM transactions WHERE order_id = ?', [id]);
-        }
-
-        // Finally, delete the order itself
-        const sql = 'DELETE FROM orders WHERE id = ?';
-        const [result] = await connection.query(sql, [id]);
-
-        if (result.affectedRows === 0) {
-            await connection.rollback();
-            // This case should ideally not be reached if the first query found the order
-            return res.status(404).json({ "error": "Order not found during deletion" });
-        }
-
-        await connection.commit();
-        res.json({ "message": "Order deleted successfully", changes: result.affectedRows });
-
-    } catch (err) {
-        await connection.rollback();
-        res.status(500).json({ error: err.message, stack: err.stack });
-    } finally {
-        connection.release();
-    }
-});
-
-
-
-// Delete all orders by status
-
-app.delete("/api/orders/status/:status", authenticateToken, authorizeRoles('admin'), async (req, res) => {
-
-    const { status } = req.params;
-
-    const connection = await db.getConnection();
-
-    try {
-
-        await connection.beginTransaction();
-
-
-
-        if (!['pending', 'rejected'].includes(status)) {
-
-            await connection.rollback();
-
-            return res.status(400).json({ error: "Invalid status for bulk deletion. Only 'pending' or 'rejected' orders can be bulk deleted." });
-
-        }
-
-
-
-        const sql = 'DELETE FROM orders WHERE status = ?';
-
-        const [result] = await connection.query(sql, [status]);
-
-
-
-        await connection.commit();
-
-        res.json({ "message": `${result.affectedRows} orders with status '${status}' deleted successfully`, changes: result.affectedRows });
-
-    } catch (err) {
-
-        await connection.rollback();
-
-        res.status(500).json({ error: err.message, stack: err.stack });
-
-    } finally {
-
-        connection.release();
-
-    }
-
 });
 
 

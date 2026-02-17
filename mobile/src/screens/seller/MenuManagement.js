@@ -249,10 +249,17 @@ const MenuManagement = ({ navigation }) => {
 
         if (accepted) {
             try {
-                await apiService.delete(`/api/menu-items/${id}`);
-                fetchData();
+                const response = await apiService.delete(`/api/menu-items/${id}`);
+                if (response.status === 200 || response.status === 204) {
+                    Alert.alert('Sukses', 'Menu berhasil dihapus');
+                    fetchData();
+                } else {
+                    Alert.alert('Gagal', 'Gagal menghapus menu');
+                }
             } catch (error) {
                 console.error('Error deleting menu:', error);
+                const errorMsg = error.response?.data?.error || 'Gagal menghapus menu. Pastikan Anda memiliki menu tersebut atau coba lagi.';
+                Alert.alert('Error', errorMsg);
             }
         }
     }, [confirm, fetchData]);

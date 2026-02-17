@@ -33,7 +33,8 @@ import {
     TrendingUp,
     Megaphone,
     Star,
-    Database
+    Database,
+    Trash2
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -60,6 +61,8 @@ const MENU_ITEMS = [
     { label: 'Laporan Harian', icon: ClipboardCheck, color: '#10B981', bgColor: '#ECFDF5', target: 'DailyReport' },
     { label: 'Chat', icon: MessageCircle, color: '#0EA5E9', bgColor: '#F0F9FF', target: 'ChatScreen' },
     { label: 'Review', icon: Star, color: '#F59E0B', bgColor: '#FFFBEB', target: 'ReviewManagement' },
+    { label: 'Sampah Pesanan', icon: Trash2, color: '#EF4444', bgColor: '#FEF2F2', target: 'OrderTrash' },
+    { label: 'Sampah Transaksi', icon: Trash2, color: '#DC2626', bgColor: '#FEF2F2', target: 'TransactionTrash' },
     { label: 'Backup DB', icon: Database, color: '#138FEA', bgColor: '#E0F2FE', target: 'DatabaseManagement' },
     { label: 'Profil Saya', icon: UserCircle, color: '#475569', bgColor: '#F1F5F9', target: 'ProfileScreen' },
     { label: 'Tentang App', icon: Code, color: '#64748B', bgColor: '#F8FAFC', target: 'DeveloperCreditsScreen' },

@@ -61,6 +61,7 @@ import OwnerDatabaseManagement from '../screens/owner/DatabaseManagement';
 import OwnerDeveloperCreditsScreen from '../screens/owner/DeveloperCreditsScreen';
 import OwnerExpenseManagement from '../screens/owner/ExpenseManagement';
 import OwnerLapakDeposit from '../screens/owner/LapakDeposit';
+import OrderTrash from '../screens/seller/OrderTrash';
 
 // Owner Screens
 import OwnerBusinessReports from '../screens/owner/BusinessReports';
@@ -299,6 +300,7 @@ const SellerRootStack = () => (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="MainTabs" component={SellerTabs} />
         <Stack.Screen name="TransactionTrash" component={TransactionTrash} />
+        <Stack.Screen name="OrderTrash" component={OrderTrash} />
     </Stack.Navigator>
 
 );
