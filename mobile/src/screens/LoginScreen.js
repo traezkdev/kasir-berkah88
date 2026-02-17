@@ -118,6 +118,7 @@ const LoginScreen = ({ navigation }) => {
                                         value={password}
                                         onChangeText={setPassword}
                                         secureTextEntry
+                                        autoCapitalize="none"
                                     />
                                 </View>
                             </View>

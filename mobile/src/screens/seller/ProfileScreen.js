@@ -16,13 +16,13 @@ import {
     Switch,
     Linking
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getSafeBottomPadding } from '../../utils/safeArea';
 import {
     User,
     ChevronLeft,
     LogOut,
-    Settings,
     Shield,
     Bell,
     HelpCircle,
@@ -34,7 +34,10 @@ import {
     Camera,
     PlayCircle,
     Ticket,
-    Database
+    Database,
+    Mail,
+    Phone,
+    MapPin
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useConfirm } from '../../context/ConfirmContext';
@@ -261,35 +264,70 @@ const ProfileScreen = ({ navigation }) => {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Profile Card */}
-                <View style={styles.profileCard}>
-                    <View style={styles.avatarContainer}>
-                        {user?.avatar_url ? (
-                            <AppImage uri={user.avatar_url} style={styles.avatar} />
-                        ) : (
-                            <View style={styles.avatarPlaceholder}>
-                                <UserCircle size={60} color="#FFFFFF" strokeWidth={1.5} />
-                            </View>
-                        )}
-                        <TouchableOpacity style={styles.editBadge} onPress={handlePickImage} disabled={isSaving}>
-                            {isSaving ? <ActivityIndicator size={14} color="#FFFFFF" /> : <Camera size={14} color="#FFFFFF" />}
-                        </TouchableOpacity>
-                    </View>
+                {/* New Premium Profile Card */}
+                <View style={styles.newProfileSection}>
+                    <View style={styles.premiumCardContainer}>
+                        <LinearGradient
+                            colors={['#FFFFFF', '#F8FAFF']}
+                            style={styles.premiumCard}
+                        >
+                            <View style={styles.cardHeaderSide}>
+                                <View style={styles.newAvatarWrapper}>
+                                    <View style={styles.avatarBorderDecoration}>
+                                        <LinearGradient
+                                            colors={['#138FEA', '#6366F1']}
+                                            style={{ flex: 1, borderRadius: 28 }}
+                                        />
+                                    </View>
+                                    {user?.avatar_url ? (
+                                        <AppImage uri={user.avatar_url} style={styles.newAvatar} />
+                                    ) : (
+                                        <View style={styles.newAvatarPlaceholder}>
+                                            <UserCircle size={50} color="#FFFFFF" strokeWidth={1.5} />
+                                        </View>
+                                    )}
+                                    <TouchableOpacity style={styles.newEditBadge} onPress={handlePickImage} disabled={isSaving}>
+                                        {isSaving ? <ActivityIndicator size={12} color="#FFFFFF" /> : <Camera size={12} color="#FFFFFF" />}
+                                    </TouchableOpacity>
+                                </View>
 
-                    <Text style={styles.userName}>{user?.name || 'User'}</Text>
-                    <View style={styles.roleBadge}>
-                        <Shield size={12} color="#138FEA" />
-                        <Text style={styles.roleText}>{user?.role?.toUpperCase() || 'GUEST'}</Text>
+                                <View style={styles.headerTextSide}>
+                                    <Text style={styles.newUserName}>{user?.name || 'User'}</Text>
+                                    <View style={styles.newBadgeRow}>
+                                        <View style={styles.newRoleBadge}>
+                                            <Shield size={10} color="#FFFFFF" />
+                                            <Text style={styles.newRoleText}>{user?.role?.toUpperCase() || 'GUEST'}</Text>
+                                        </View>
+                                        <Text style={styles.newUserId}>ID: #{user?.id || '0'}</Text>
+                                    </View>
+                                </View>
+                            </View>
+
+                            <View style={styles.cardInfoDivider} />
+
+                            <View style={styles.contactDetailsGrid}>
+                                <View style={styles.contactChip}>
+                                    <View style={[styles.chipIcon, { backgroundColor: '#EFF6FF' }]}>
+                                        <Mail size={12} color="#138FEA" />
+                                    </View>
+                                    <Text style={styles.chipText} numberOfLines={1}>{user?.email || 'Email belum diatur'}</Text>
+                                </View>
+                                <View style={styles.contactChip}>
+                                    <View style={[styles.chipIcon, { backgroundColor: '#F0FDF4' }]}>
+                                        <Phone size={12} color="#10B981" />
+                                    </View>
+                                    <Text style={styles.chipText} numberOfLines={1}>{user?.phone || 'No. Telp belum ada'}</Text>
+                                </View>
+                            </View>
+
+                            {user?.address && (
+                                <View style={styles.addressSection}>
+                                    <MapPin size={12} color="#94A3B8" />
+                                    <Text style={styles.addressText} numberOfLines={1}>{user.address}</Text>
+                                </View>
+                            )}
+                        </LinearGradient>
                     </View>
-                    <Text style={styles.userId}>ID: #{user?.id || '0'}</Text>
-                    <View style={styles.contactRow}>
-                        <Text style={styles.userContactText}>{user?.email || 'Email belum diatur'}</Text>
-                        <Text style={styles.userContactDivider}> • </Text>
-                        <Text style={styles.userContactText}>{user?.phone || 'No. Telp belum ada'}</Text>
-                    </View>
-                    <Text style={[styles.userContactText, { marginTop: 4, fontStyle: 'italic', opacity: 0.8 }]}>
-                        {user?.address || 'Alamat belum diatur'}
-                    </Text>
                 </View>
 
                 {/* Stats / Info Summary */}
@@ -553,101 +591,165 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         color: '#1E293B',
     },
-    profileCard: {
-        alignItems: 'center',
-        paddingVertical: 30,
+    newProfileSection: {
+        paddingHorizontal: 20,
+        paddingTop: 10,
+        paddingBottom: 25,
     },
-    avatarContainer: {
-        position: 'relative',
-        marginBottom: 20,
-    },
-    avatar: {
-        width: 100,
-        height: 100,
-        borderRadius: 35,
-    },
-    avatarPlaceholder: {
-        width: 100,
-        height: 100,
-        borderRadius: 35,
-        backgroundColor: '#138FEA',
-        justifyContent: 'center',
-        alignItems: 'center',
+    premiumCardContainer: {
         ...Platform.select({
             ios: {
                 shadowColor: '#138FEA',
-                shadowOffset: { width: 0, height: 10 },
-                shadowOpacity: 0.3,
-                shadowRadius: 15,
+                shadowOffset: { width: 0, height: 12 },
+                shadowOpacity: 0.12,
+                shadowRadius: 20,
             },
-            android: { elevation: 10 },
-            web: { boxShadow: '0px 10px 20px rgba(19, 143, 234, 0.3)' }
+            android: { elevation: 12 },
         })
     },
-    editBadge: {
+    premiumCard: {
+        borderRadius: 28,
+        padding: 20,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+    },
+    cardHeaderSide: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 18,
+    },
+    newAvatarWrapper: {
+        position: 'relative',
+        width: 80,
+        height: 80,
+    },
+    avatarBorderDecoration: {
         position: 'absolute',
-        bottom: 0,
-        right: -5,
+        top: -4,
+        left: -4,
+        right: -4,
+        bottom: -4,
+        borderRadius: 32,
+        padding: 2,
+    },
+    newAvatar: {
+        width: 80,
+        height: 80,
+        borderRadius: 28,
+        borderWidth: 3,
+        borderColor: '#FFFFFF',
+    },
+    newAvatarPlaceholder: {
+        width: 80,
+        height: 80,
+        borderRadius: 28,
+        backgroundColor: '#138FEA',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 3,
+        borderColor: '#FFFFFF',
+    },
+    newEditBadge: {
+        position: 'absolute',
+        bottom: -2,
+        right: -2,
         backgroundColor: '#1E293B',
-        width: 32,
-        height: 32,
+        width: 28,
+        height: 28,
         borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 3,
         borderColor: '#FFFFFF',
     },
-    userName: {
+    headerTextSide: {
+        flex: 1,
+    },
+    newUserName: {
         fontSize: 22,
         fontWeight: '900',
         color: '#1E293B',
-        marginBottom: 8,
+        marginBottom: 6,
     },
-    roleBadge: {
+    newBadgeRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#EFF6FF',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 10,
-        gap: 6,
-        marginBottom: 8,
+        gap: 10,
     },
-    roleText: {
+    newRoleBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#138FEA',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 10,
+        gap: 5,
+    },
+    newRoleText: {
         fontSize: 10,
         fontWeight: '900',
-        color: '#138FEA',
+        color: '#FFFFFF',
         letterSpacing: 1,
     },
-    userEmail: {
-        fontSize: 14,
-        color: '#64748B',
-        fontWeight: '500',
-    },
-    userId: {
-        fontSize: 12,
+    newUserId: {
+        fontSize: 11,
         fontWeight: 'bold',
         color: '#94A3B8',
         backgroundColor: '#F1F5F9',
         paddingHorizontal: 10,
-        paddingVertical: 2,
-        borderRadius: 6,
-        marginBottom: 8,
+        paddingVertical: 3,
+        borderRadius: 8,
     },
-    contactRow: {
+    cardInfoDivider: {
+        height: 1,
+        backgroundColor: '#F1F5F9',
+        marginVertical: 18,
+    },
+    contactDetailsGrid: {
+        flexDirection: 'row',
+        gap: 10,
+        marginBottom: 12,
+    },
+    contactChip: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        borderRadius: 12,
+        gap: 8,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+    },
+    chipIcon: {
+        width: 24,
+        height: 24,
+        borderRadius: 8,
         justifyContent: 'center',
+        alignItems: 'center',
     },
-    userContactText: {
-        fontSize: 13,
+    chipText: {
+        fontSize: 11,
+        fontWeight: '700',
         color: '#64748B',
-        fontWeight: '600',
+        flex: 1,
     },
-    userContactDivider: {
-        fontSize: 13,
-        color: '#CBD5E1',
-        marginHorizontal: 4,
+    addressSection: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingHorizontal: 4,
+    },
+    addressText: {
+        fontSize: 12,
+        color: '#94A3B8',
+        fontWeight: '500',
+        fontStyle: 'italic',
+    },
+    profileCard: {
+        alignItems: 'center',
+        paddingVertical: 30,
     },
     statsRow: {
         flexDirection: 'row',

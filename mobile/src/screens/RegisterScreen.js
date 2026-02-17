@@ -133,6 +133,7 @@ const RegisterScreen = ({ navigation }) => {
                                 placeholder="Pilih nama pengguna"
                                 value={formData.username}
                                 onChangeText={(text) => setFormData({ ...formData, username: text })}
+                                autoCapitalize="none"
                             />
                             <InputGroup
                                 label="Nomor Telepon"
@@ -157,6 +158,7 @@ const RegisterScreen = ({ navigation }) => {
                                 value={formData.password}
                                 onChangeText={(text) => setFormData({ ...formData, password: text })}
                                 secureTextEntry
+                                autoCapitalize="none"
                             />
                             <InputGroup
                                 label="Konfirmasi Kata Sandi"
@@ -165,6 +167,7 @@ const RegisterScreen = ({ navigation }) => {
                                 value={formData.confirmPassword}
                                 onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
                                 secureTextEntry
+                                autoCapitalize="none"
                             />
 
                             <TouchableOpacity
@@ -204,7 +207,7 @@ const RegisterScreen = ({ navigation }) => {
     );
 };
 
-const InputGroup = ({ label, icon: Icon, placeholder, value, onChangeText, secureTextEntry, keyboardType, multiline }) => (
+const InputGroup = ({ label, icon: Icon, placeholder, value, onChangeText, secureTextEntry, keyboardType, multiline, autoCapitalize = 'sentences' }) => (
     <View style={styles.inputWrapper}>
         <Text style={styles.inputLabel}>{label}</Text>
         <View style={[styles.inputField, multiline && styles.inputFieldMultiline]}>
@@ -219,6 +222,7 @@ const InputGroup = ({ label, icon: Icon, placeholder, value, onChangeText, secur
                 keyboardType={keyboardType}
                 multiline={multiline}
                 textAlignVertical={multiline ? 'top' : 'center'}
+                autoCapitalize={autoCapitalize}
             />
         </View>
     </View>
