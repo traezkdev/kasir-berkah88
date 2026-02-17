@@ -259,8 +259,6 @@ const SellerDashboardStack = () => (
         <Stack.Screen name="Dashboard" component={SellerDashboard} />
         <Stack.Screen name="Banners" component={Banners} />
         <Stack.Screen name="CategoryManagement" component={CategoryManagement} />
-        <Stack.Screen name="CustomerManagement" component={CustomerManagement} />
-        <Stack.Screen name="CustomerDetails" component={CustomerDetails} />
         <Stack.Screen name="PointManagement" component={PointManagement} />
         <Stack.Screen name="SellerMenu" component={SellerMenu} />
         <Stack.Screen name="ExpenseManagement" component={ExpenseManagement} />
@@ -301,6 +299,8 @@ const SellerRootStack = () => (
         <Stack.Screen name="OrderTrash" component={OrderTrash} />
         <Stack.Screen name="ChatScreen" component={ChatScreen} />
         <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+        <Stack.Screen name="CustomerManagement" component={CustomerManagement} />
+        <Stack.Screen name="CustomerDetails" component={CustomerDetails} />
     </Stack.Navigator>
 );
 
