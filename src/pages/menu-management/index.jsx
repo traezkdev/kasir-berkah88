@@ -137,6 +137,7 @@ const MenuManagement = ({ headerTitle }) => {
       hpp: parseFloat(itemData.hpp || 0),
       discount: parseFloat(itemData.discount || 0),
       is_featured: itemData.is_featured ? 1 : 0, // Ensure 0 or 1
+      is_hidden: itemData.is_hidden ? 1 : 0, // Include is_hidden
       options: itemData.options || [], // Include options
       description: itemData.description,
     };
@@ -188,6 +189,7 @@ const MenuManagement = ({ headerTitle }) => {
       hpp: parseFloat(updatedData.hpp || 0),
       discount: parseFloat(updatedData.discount || 0),
       is_featured: updatedData.is_featured ? 1 : 0, // Ensure 0 or 1
+      is_hidden: updatedData.is_hidden ? 1 : 0, // Include is_hidden
       options: updatedData.options || [], // Include options
       description: updatedData.description,
     };

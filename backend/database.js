@@ -469,7 +469,8 @@ const setupDatabase = async () => {
       { name: 'discount', type: 'DECIMAL(10, 2) DEFAULT 0' },
       { name: 'is_featured', type: 'BOOLEAN DEFAULT FALSE' },
       { name: 'description', type: 'TEXT' },
-      { name: 'order_index', type: 'INTEGER DEFAULT 0' }
+      { name: 'order_index', type: 'INTEGER DEFAULT 0' },
+      { name: 'is_hidden', type: 'BOOLEAN DEFAULT FALSE' }
     ];
 
     for (const col of columnsToEnsure) {

@@ -988,6 +988,19 @@ app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'g
             queryParams.push(category);
         }
 
+        // Filter hidden items for non-admin roles (unless specific query param is present, but safety first)
+        // If user is NOT admin, owner, or penjual, OR if they are 'pelanggan'/'guest'
+        // Actually, let's look at the allowed roles for this endpoint: 'user', 'admin', 'guest', 'kasir', 'pelanggan', 'penjual', 'owner'
+        // 'user' is the default role for employees/staff?
+        // Let's filter out hidden items for 'pelanggan' and 'guest'.
+        if (['pelanggan', 'guest'].includes(req.user.role)) {
+            if (whereClause) {
+                whereClause += ' AND mi.is_hidden = FALSE';
+            } else {
+                whereClause = 'WHERE mi.is_hidden = FALSE';
+            }
+        }
+
         // Query to get total count
         const countSql = `SELECT COUNT(*) as totalItems FROM menu_items mi ${whereClause}`;
         const [countRows] = await db.query(countSql, queryParams);
@@ -1117,6 +1130,7 @@ app.get("/api/public/menu-items", async (req, res) => {
                 (SELECT COALESCE(AVG(rating), 0) FROM menu_reviews WHERE menu_item_id = mi.id) as average_rating,
                 (SELECT COUNT(*) FROM menu_reviews WHERE menu_item_id = mi.id) as total_reviews
             FROM menu_items mi
+            WHERE mi.is_hidden = FALSE
             ORDER BY mi.order_index ASC;
         `;
         const [rows] = await db.query(sql);
@@ -1151,12 +1165,13 @@ app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', '
             itemData = req.body;
         }
 
-        const { id, name, price, stock, category, hpp, discount, is_featured, options, description } = itemData;
+        const { id, name, price, stock, category, hpp, discount, is_featured, options, description, is_hidden } = itemData;
         const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
         const final_is_featured = is_featured ? 1 : 0;
+        const final_is_hidden = is_hidden ? 1 : 0;
 
-        const menuItemSql = 'INSERT INTO menu_items (id, name, price, stock, category, image_url, hpp, discount, is_featured, description) VALUES (?,?,?,?,?,?,?,?,?,?)';
-        const menuItemParams = [id, name, price, stock, category, image_url, hpp, discount, final_is_featured, description || null];
+        const menuItemSql = 'INSERT INTO menu_items (id, name, price, stock, category, image_url, hpp, discount, is_featured, description, is_hidden) VALUES (?,?,?,?,?,?,?,?,?,?,?)';
+        const menuItemParams = [id, name, price, stock, category, image_url, hpp, discount, final_is_featured, description || null, final_is_hidden];
         const [rows] = await connection.query(menuItemSql, menuItemParams); // Need result for consistency, although ID is manually provided in this app logic usually
 
         if (options && Array.isArray(options) && options.length > 0) {
@@ -1249,12 +1264,12 @@ app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'
         const params = [];
 
         // List of allowed fields to update
-        const allowedFields = ['name', 'price', 'stock', 'category', 'hpp', 'discount', 'is_featured', 'description'];
+        const allowedFields = ['name', 'price', 'stock', 'category', 'hpp', 'discount', 'is_featured', 'description', 'is_hidden'];
 
         allowedFields.forEach(field => {
             if (itemData[field] !== undefined) {
                 // Special handling for boolean
-                if (field === 'is_featured') {
+                if (field === 'is_featured' || field === 'is_hidden') {
                     updateFields[field] = itemData[field] ? 1 : 0;
                 } else {
                     updateFields[field] = itemData[field];

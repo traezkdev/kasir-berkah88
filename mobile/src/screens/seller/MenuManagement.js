@@ -37,7 +37,9 @@ import {
     CupSoda,
     Soup,
     Cookie,
-    LayoutGrid
+    LayoutGrid,
+    Eye,
+    EyeOff
 } from 'lucide-react-native';
 import apiService, { API_URL } from '../../api/apiService';
 import * as ImagePicker from 'expo-image-picker';
@@ -64,6 +66,7 @@ const MenuManagement = ({ navigation }) => {
         hpp: '',
         discount: 0,
         is_featured: false,
+        is_hidden: false,
         description: ''
     });
     const [imageUri, setImageUri] = useState(null);
@@ -115,6 +118,7 @@ const MenuManagement = ({ navigation }) => {
                 hpp: (item.hpp || '0').toString(),
                 discount: (item.discount || '0').toString(),
                 is_featured: item.is_featured === 1 || item.is_featured === true,
+                is_hidden: item.is_hidden === 1 || item.is_hidden === true,
                 description: item.description || ''
             });
             setImageUri(item.image_url ? `${API_URL}${item.image_url}` : null);
@@ -128,6 +132,7 @@ const MenuManagement = ({ navigation }) => {
                 hpp: '',
                 discount: 0,
                 is_featured: false,
+                is_hidden: false,
                 description: ''
             });
             setImageUri(null);
@@ -196,6 +201,7 @@ const MenuManagement = ({ navigation }) => {
             formDataToSend.append('hpp', hppNum);
             formDataToSend.append('discount', discNum);
             formDataToSend.append('is_featured', formData.is_featured ? 1 : 0);
+            formDataToSend.append('is_hidden', formData.is_hidden ? 1 : 0);
             formDataToSend.append('description', formData.description || '');
 
             // Append image if selected and it's a new image (not from server)
@@ -251,6 +257,25 @@ const MenuManagement = ({ navigation }) => {
         }
     }, [confirm, fetchData]);
 
+    const handleToggleVisibility = useCallback(async (item) => {
+        try {
+            const newStatus = !item.is_hidden;
+            // Optimistic update
+            setMenuItems(prev => prev.map(i => i.id === item.id ? { ...i, is_hidden: newStatus } : i));
+
+            await apiService.put(`/api/menu-items/${item.id}`, {
+                is_hidden: newStatus ? 1 : 0
+            });
+            // No need to fetch data again if optimistic update works, but to be safe:
+            // fetchData(); 
+        } catch (error) {
+            console.error('Error toggling visibility:', error);
+            Alert.alert('Error', 'Gagal mengubah status visibilitas');
+            // Revert on error
+            setMenuItems(prev => prev.map(i => i.id === item.id ? { ...i, is_hidden: item.is_hidden } : i));
+        }
+    }, []);
+
     const filteredItems = menuItems.filter(item => {
         const matchesCategory = activeCategory === 'Semua' || item.category === activeCategory;
         const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -266,8 +291,9 @@ const MenuManagement = ({ navigation }) => {
             item={item}
             onEdit={handleOpenModal}
             onDelete={handleDelete}
+            onToggleVisibility={handleToggleVisibility}
         />
-    ), [handleOpenModal, handleDelete]);
+    ), [handleOpenModal, handleDelete, handleToggleVisibility]);
 
     return (
         <View style={styles.container}>
@@ -496,12 +522,25 @@ const MenuManagement = ({ navigation }) => {
                         thumbColor={formData.is_featured ? '#2563EB' : '#94A3B8'}
                     />
                 </View>
+
+                <View style={[styles.featuredToggle, { marginBottom: 40, backgroundColor: '#FFF1F2', borderColor: '#FFE4E6' }]}>
+                    <View>
+                        <Text style={[styles.toggleTitle, { color: '#BE123C' }]}>Sembunyikan Menu</Text>
+                        <Text style={[styles.toggleSubtitle, { color: '#9F1239' }]}>Jangan tampilkan di aplikasi pelanggan</Text>
+                    </View>
+                    <Switch
+                        value={formData.is_hidden}
+                        onValueChange={(val) => setFormData({ ...formData, is_hidden: val })}
+                        trackColor={{ false: '#E2E8F0', true: '#FECDD3' }}
+                        thumbColor={formData.is_hidden ? '#E11D48' : '#94A3B8'}
+                    />
+                </View>
             </BottomModalTemplate>
         </View >
     );
 };
 
-const MenuItem = React.memo(({ item, onEdit, onDelete }) => {
+const MenuItem = React.memo(({ item, onEdit, onDelete, onToggleVisibility }) => {
     const formatCurrency = (val) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
     };
@@ -517,6 +556,12 @@ const MenuItem = React.memo(({ item, onEdit, onDelete }) => {
                 {item.discount > 0 && (
                     <View style={styles.discountBadge}>
                         <Text style={styles.discountText}>Hemat {parseFloat(item.discount)}%</Text>
+                    </View>
+                )}
+                {item.is_hidden && (
+                    <View style={[styles.discountBadge, { backgroundColor: '#64748B' }]}>
+                        <EyeOff size={8} color="#FFFFFF" style={{ marginRight: 2 }} />
+                        <Text style={styles.discountText}>HIDDEN</Text>
                     </View>
                 )}
             </View>
@@ -558,6 +603,16 @@ const MenuItem = React.memo(({ item, onEdit, onDelete }) => {
                 >
                     <Settings size={18} color="#2563EB" />
                     <Text style={styles.editBtnText}>Atur Menu</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => onToggleVisibility(item)}
+                    style={[styles.deleteBtn, { backgroundColor: item.is_hidden ? '#F0FDF4' : '#F1F5F9' }]}
+                >
+                    {item.is_hidden ? (
+                        <EyeOff size={18} color="#16A34A" />
+                    ) : (
+                        <Eye size={18} color="#64748B" />
+                    )}
                 </TouchableOpacity>
                 <TouchableOpacity
                     onPress={() => onDelete(item.id)}

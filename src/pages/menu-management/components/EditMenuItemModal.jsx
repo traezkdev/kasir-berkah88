@@ -23,6 +23,7 @@ const EditMenuItemModal = ({
         image: null,
         discount: menuItem.discount ? menuItem.discount.toString() : '0',
         is_featured: !!menuItem.is_featured,
+        is_hidden: !!menuItem.is_hidden, // Add is_hidden
         options: menuItem.options || [], // Initialize options
         description: menuItem.description || '',
       });
@@ -60,6 +61,7 @@ const EditMenuItemModal = ({
       image: finalFormData.image,
       discount: parseFloat(finalFormData.discount || '0'),
       is_featured: finalFormData.is_featured,
+      is_hidden: finalFormData.is_hidden, // Add is_hidden
       options: finalFormData.options || [], // Include options in the save payload
       description: finalFormData.description,
     };
