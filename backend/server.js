@@ -4361,7 +4361,7 @@ app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user', 'pelan
         // Historical data was stored when server was in GMT+1 (Europe)
         // Now server is in GMT+7 (WIB), so we need to add 6 hours offset to old data
         // CUTOFF DATE: 2026-02-17 00:00:00 WIB (when timezone was fixed)
-        const TIMEZONE_MIGRATION_DATE = new Date('2026-02-17T00:00:00+07:00');
+        const TIMEZONE_MIGRATION_DATE = new Date('2026-02-17T23:30:00+07:00');
 
         const formattedRows = rows.map(order => {
             let isoDate = null;

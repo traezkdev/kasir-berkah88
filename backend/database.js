@@ -16,6 +16,10 @@ const pool = mysql.createPool({
   charset: 'utf8mb4'
 });
 
+pool.on('connection', (connection) => {
+  connection.query('SET time_zone = "+07:00"');
+});
+
 const promisePool = pool.promise();
 
 const setupDatabase = async () => {
