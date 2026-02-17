@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import { AppState } from 'react-native';
 import apiService from '../api/apiService';
 
 const AppSettingsContext = createContext();
@@ -47,9 +48,21 @@ export const AppSettingsProvider = ({ children }) => {
 
     useEffect(() => {
         fetchSettings();
+
+        // Refresh when app returns to foreground
+        const subscription = AppState.addEventListener('change', (nextAppState) => {
+            if (nextAppState === 'active') {
+                console.log('[Settings] App active, refreshing settings...');
+                fetchSettings();
+            }
+        });
+
         // Poll for status every 1 minute
         const interval = setInterval(fetchSettings, 60000);
-        return () => clearInterval(interval);
+        return () => {
+            subscription.remove();
+            clearInterval(interval);
+        };
     }, []);
 
     const value = {

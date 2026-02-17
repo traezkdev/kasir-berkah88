@@ -10,7 +10,8 @@ import {
     Platform,
     StatusBar,
     Animated,
-    PanResponder
+    PanResponder,
+    AppState
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getSafeBottomPadding } from '../../utils/safeArea';
@@ -51,11 +52,32 @@ const BottomModalTemplate = ({
     // Animation & Gesture State
     const pan = React.useRef(new Animated.ValueXY()).current;
 
-    // Reset position when modal becomes visible
+    // Reset position when modal becomes visible or app returns to foreground
     React.useEffect(() => {
+        const resetPosition = () => {
+            if (visible) {
+                // Ensure the modal returns to its original position if it was stuck
+                Animated.spring(pan, {
+                    toValue: { x: 0, y: 0 },
+                    friction: 8,
+                    useNativeDriver: false
+                }).start();
+            }
+        };
+
         if (visible) {
-            pan.setValue({ x: 0, y: 0 });
+            resetPosition();
         }
+
+        // Listen for AppState changes to fix "stuck" modals after foregrounding
+        const subscription = AppState.addEventListener('change', (nextAppState) => {
+            if (nextAppState === 'active' && visible) {
+                console.log('[Modal] App active, recalibrating modal position...');
+                resetPosition();
+            }
+        });
+
+        return () => subscription.remove();
     }, [visible, pan]);
 
     // PanResponder for drag-to-close behavior

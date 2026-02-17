@@ -350,26 +350,29 @@ export const OrderNotificationProvider = ({ children }) => {
         };
     }, [user, fetchPendingCount, checkCustomerNotifications]);
 
-    // Handle AppState changes to reconnect socket when app returns to foreground
+    // Handle AppState changes to reconnect socket and refresh data when app returns to foreground
     useEffect(() => {
         const handleAppStateChange = (nextAppState) => {
             if (nextAppState === 'active') {
-                console.log('[App] App kembali aktif, mengecek koneksi socket...');
+                console.log('[App] App kembali aktif! Memicu penyegaran data...');
+
                 if (socket && !socket.connected) {
                     socket.connect();
                 }
 
-                // Beri jeda sedikit agar sistem internet HP siap sebelum menembak API
+                // Increment trigger immediately for faster UI feedback
+                setRefreshTrigger(prev => prev + 1);
+
+                // Delay backup fetch to ensure network is ready
                 setTimeout(() => {
-                    if (user) {
-                        setRefreshTrigger(prev => prev + 1);
+                    if (user && isMounted.current) {
                         if (['admin', 'penjual', 'owner', 'kasir', 'seller'].includes(user.role)) {
                             fetchPendingCount();
                         } else {
                             checkCustomerNotifications();
                         }
                     }
-                }, 800);
+                }, 500);
             }
         };
 

@@ -26,22 +26,22 @@ const AuthWelcomeScreen = ({ navigation }) => {
     const onboardingData = [
         {
             id: '1',
-            title: 'Selamat Datang',
-            description: `Aplikasi ${headerTitle || 'Berkah 88'} memudahkan Anda memesan makanan favorit dengan cepat dan aman.`,
+            title: 'Assalamu’alaikum',
+            description: `Telah hadir ${headerTitle || 'Berkah 88'} buat nemenin hari kamu dengan menu-menu pilihan yang insyaAllah berkah.`,
             icon: ShoppingBag,
-            color: '#3B82F6'
+            color: '#059669'
         },
         {
             id: '2',
-            title: 'Menu Terlengkap',
-            description: 'Temukan berbagai pilihan kuliner lezat yang siap memanjakan lidah Anda setiap hari.',
+            title: 'Menu Penuh Berkah',
+            description: 'Banyak pilihan menu halal dan lezat yang siap bikin lidah kamu happy setiap hari.',
             icon: Star,
-            color: '#F59E0B'
+            color: '#10B981'
         },
         {
             id: '3',
-            title: 'Layanan Cepat',
-            description: 'Nikmati kemudahan pemesanan instan tanpa perlu mengantri lama.',
+            title: 'Layanan Amanah',
+            description: 'Gak perlu antre lama, pesanan kamu langsung kami proses dengan cepat dan jujur.',
             icon: Clock,
             color: '#10B981'
         }
@@ -79,8 +79,8 @@ const AuthWelcomeScreen = ({ navigation }) => {
             </View>
 
             <View style={styles.slideInfo}>
-                <View style={[styles.slideIconBox, { backgroundColor: `${item.color}15` }]}>
-                    <item.icon size={32} color={item.color} />
+                <View style={[styles.slideIconBox, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}>
+                    <item.icon size={32} color="#FFFFFF" />
                 </View>
                 <Text style={styles.slideTitle}>{item.title}</Text>
                 <Text style={styles.slideDesc}>{item.description}</Text>
@@ -98,7 +98,7 @@ const AuthWelcomeScreen = ({ navigation }) => {
         <View style={styles.container}>
             <StatusBar barStyle="light-content" transparent backgroundColor="transparent" />
             <LinearGradient
-                colors={['#3B82F6', '#60A5FA', '#DBEAFE']}
+                colors={['#059669', '#065F46', '#064E3B']}
                 style={styles.gradient}
             >
                 {/* Header Navigation */}
@@ -147,14 +147,14 @@ const AuthWelcomeScreen = ({ navigation }) => {
                             style={styles.signInBtn}
                             onPress={() => navigation.navigate('Login')}
                         >
-                            <Text style={styles.signInText}>Masuk Ke Akun</Text>
+                            <Text style={styles.signInText}>Masuk Akun</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
                             style={styles.registerBtn}
                             onPress={() => navigation.navigate('Register')}
                         >
-                            <Text style={styles.registerText}>Daftar Sekarang</Text>
+                            <Text style={styles.registerText}>Bismillah, Daftar Member</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
         })
     },
     signInText: {
-        color: '#3B82F6',
+        color: '#059669',
         fontSize: 16,
         fontWeight: '900',
     },

@@ -55,7 +55,7 @@ const LoginScreen = ({ navigation }) => {
         <View style={styles.container}>
             <StatusBar barStyle="light-content" transparent backgroundColor="transparent" />
             <LinearGradient
-                colors={['#3B82F6', '#60A5FA', '#DBEAFE']}
+                colors={['#059669', '#065F46', '#064E3B']}
                 style={styles.gradient}
             >
                 <KeyboardAvoidingView
@@ -87,8 +87,8 @@ const LoginScreen = ({ navigation }) => {
                                     </View>
                                 )}
                             </View>
-                            <Text style={styles.welcomeTitle}>Selamat Datang</Text>
-                            <Text style={styles.welcomeSubtitle}>Silakan masuk untuk melanjutkan ke akun Anda</Text>
+                            <Text style={styles.welcomeTitle}>Bismillah, Masuk Yuk</Text>
+                            <Text style={styles.welcomeSubtitle}>Ayo lanjutin pesanan kamu dengan masuk ke akun</Text>
                         </View>
 
                         <View style={styles.formArea}>
@@ -132,12 +132,12 @@ const LoginScreen = ({ navigation }) => {
                                 disabled={loading}
                             >
                                 {loading ? (
-                                    <ActivityIndicator color="#3B82F6" />
+                                    <ActivityIndicator color="#059669" />
                                 ) : (
                                     <View style={styles.btnContent}>
-                                        <Text style={styles.btnText}>Masuk Sekarang</Text>
+                                        <Text style={styles.btnText}>Bismillah, Masuk</Text>
                                         <View style={styles.btnIconBox}>
-                                            <ArrowRight size={16} color="#3B82F6" />
+                                            <ArrowRight size={16} color="#059669" />
                                         </View>
                                     </View>
                                 )}
@@ -297,14 +297,14 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     btnText: {
-        color: '#3B82F6',
+        color: '#059669',
         fontSize: 16,
         fontWeight: '900',
     },
     btnIconBox: {
         width: 24,
         height: 24,
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        backgroundColor: 'rgba(5, 150, 105, 0.1)',
         borderRadius: 8,
         justifyContent: 'center',
         alignItems: 'center',

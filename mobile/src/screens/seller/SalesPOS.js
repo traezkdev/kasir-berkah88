@@ -630,9 +630,7 @@ const SalesPOS = () => {
                         style={styles.fabCard}
                         onPress={() => {
                             setIsCartModalOpen(true);
-                            InteractionManager.runAfterInteractions(() => {
-                                setIsCartReady(true);
-                            });
+                            setTimeout(() => setIsCartReady(true), 50);
                         }}
                     >
                         {/* Info Section: Left side focuses on value and quantity */}
@@ -662,9 +660,8 @@ const SalesPOS = () => {
                                 style={styles.payButtonPill}
                                 onPress={() => {
                                     setIsCartModalOpen(true);
-                                    InteractionManager.runAfterInteractions(() => {
-                                        setIsCartReady(true);
-                                    });
+                                    // Use a direct timeout instead of InteractionManager which can be unreliable when app is backgrounded
+                                    setTimeout(() => setIsCartReady(true), 50);
                                 }}
                             >
                                 <Text style={styles.payButtonText}>BAYAR</Text>
@@ -705,9 +702,9 @@ const SalesPOS = () => {
                     </View>
 
                     <KeyboardAvoidingView
-                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                        behavior={Platform.OS === 'ios' ? 'padding' : undefined} // 'height' often causes jumps on Android
                         style={{ flex: 1 }}
-                        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
                     >
                         <View style={styles.modalScrollContainer}>
                             {!isCartReady ? (
