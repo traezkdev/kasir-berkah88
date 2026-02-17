@@ -34,6 +34,7 @@ import {
 import apiService from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useConfirm } from '../../context/ConfirmContext';
 import BottomModalTemplate from '../../components/templates/BottomModalTemplate';
 
 const { width } = Dimensions.get('window');
@@ -78,6 +79,7 @@ const ExpenseCard = React.memo(({ item, handleEditExpense, handleDeleteExpense, 
 const ExpenseManagement = ({ navigation }) => {
     const { user } = useAuth();
     const { showToast } = useToast();
+    const { confirm } = useConfirm();
     const abortControllerRef = useRef(null);
 
     // Helper for local date string YYYY-MM-DD to avoid timezone issues
@@ -350,27 +352,23 @@ const ExpenseManagement = ({ navigation }) => {
         setShowModal(true);
     };
 
-    const handleDeleteExpense = (id) => {
-        Alert.alert(
-            'Konfirmasi Hapus',
-            'Apakah Anda yakin ingin menghapus catatan pengeluaran ini?',
-            [
-                { text: 'Batal', style: 'cancel' },
-                {
-                    text: 'Hapus',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await apiService.delete(`/api/expenses/${id}`);
-                            showToast('Pengeluaran berhasil dihapus', 'success');
-                            handleRefresh();
-                        } catch (error) {
-                            showToast('Gagal menghapus pengeluaran', 'error');
-                        }
-                    }
-                }
-            ]
-        );
+    const handleDeleteExpense = async (id) => {
+        const accepted = await confirm({
+            title: 'Hapus Catatan',
+            message: 'Tindakan ini tidak dapat dibatalkan. Apakah Anda yakin ingin menghapus catatan pengeluaran ini?',
+            confirmText: 'Ya, Hapus',
+            type: 'danger'
+        });
+
+        if (accepted) {
+            try {
+                await apiService.delete(`/api/expenses/${id}`);
+                showToast('Pengeluaran berhasil dihapus', 'success');
+                handleRefresh();
+            } catch (error) {
+                showToast('Gagal menghapus pengeluaran', 'error');
+            }
+        }
     };
 
     const handleSubmit = async () => {
@@ -610,6 +608,8 @@ const ExpenseManagement = ({ navigation }) => {
                     }
                 />
             </View>
+
+
 
             {/* Add/Edit Modal */}
             <BottomModalTemplate
@@ -1342,7 +1342,7 @@ const styles = StyleSheet.create({
         height: 6,
         borderRadius: 3,
         backgroundColor: '#1E40AF',
-    }
+    },
 });
 
 export default ExpenseManagement;

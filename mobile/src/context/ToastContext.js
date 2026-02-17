@@ -6,8 +6,7 @@ import {
     Animated,
     TouchableOpacity,
     Dimensions,
-    Platform,
-    Modal
+    Platform
 } from 'react-native';
 import { CheckCircle2, AlertCircle, XCircle, Info, X } from 'lucide-react-native';
 
@@ -88,32 +87,36 @@ export const ToastProvider = ({ children }) => {
     return (
         <ToastContext.Provider value={{ showToast }}>
             {children}
-            <Modal
-                transparent
-                visible={toast.visible}
-                animationType="none"
-                pointerEvents="box-none"
-            >
-                <Animated.View style={[
-                    styles.toastContainer,
-                    { transform: [{ translateY }], opacity, borderLeftColor: getBorderColor() }
-                ]}>
-                    <View style={styles.toastContent}>
-                        <View style={styles.iconArea}>
-                            {getIcon()}
+            {toast.visible && (
+                <View
+                    style={styles.overlay}
+                    pointerEvents="box-none"
+                >
+                    <Animated.View style={[
+                        styles.toastContainer,
+                        {
+                            transform: [{ translateY }],
+                            opacity,
+                            borderLeftColor: getBorderColor()
+                        }
+                    ]}>
+                        <View style={styles.toastContent}>
+                            <View style={styles.iconArea}>
+                                {getIcon()}
+                            </View>
+                            <View style={styles.textArea}>
+                                <Text style={styles.toastTitle}>
+                                    {toast.type.toUpperCase()}
+                                </Text>
+                                <Text style={styles.toastMessage}>{toast.message}</Text>
+                            </View>
+                            <TouchableOpacity onPress={hideToast} style={styles.closeBtn}>
+                                <X size={18} color="#94A3B8" />
+                            </TouchableOpacity>
                         </View>
-                        <View style={styles.textArea}>
-                            <Text style={styles.toastTitle}>
-                                {toast.type.toUpperCase()}
-                            </Text>
-                            <Text style={styles.toastMessage}>{toast.message}</Text>
-                        </View>
-                        <TouchableOpacity onPress={hideToast} style={styles.closeBtn}>
-                            <X size={18} color="#94A3B8" />
-                        </TouchableOpacity>
-                    </View>
-                </Animated.View>
-            </Modal>
+                    </Animated.View>
+                </View>
+            )}
         </ToastContext.Provider>
     );
 };
@@ -127,6 +130,11 @@ export const useToast = () => {
 };
 
 const styles = StyleSheet.create({
+    overlay: {
+        ...StyleSheet.absoluteFillObject,
+        zIndex: 999999,
+        elevation: Platform.OS === 'android' ? 10 : 0,
+    },
     toastContainer: {
         position: 'absolute',
         top: 0,
