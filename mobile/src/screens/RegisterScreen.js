@@ -10,11 +10,16 @@ import {
     ActivityIndicator,
     Alert,
     Dimensions,
-    ScrollView
+    ScrollView,
+    StatusBar,
+    Image
 } from 'react-native';
-import { User, Lock, Phone, MapPin, ArrowRight, ArrowLeft } from 'lucide-react-native';
+import { User, Lock, Phone, MapPin, ChevronLeft, ArrowRight } from 'lucide-react-native';
 import apiService from '../api/apiService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useAppSettings } from '../context/AppSettingsContext';
+import { API_URL } from '../api/apiService';
 
 const { width } = Dimensions.get('window');
 
@@ -28,6 +33,7 @@ const RegisterScreen = ({ navigation }) => {
     });
     const [loading, setLoading] = useState(false);
     const insets = useSafeAreaInsets();
+    const { logoUrl } = useAppSettings();
 
     const handleRegister = async () => {
         const { username, phone, address, password, confirmPassword } = formData;
@@ -71,219 +77,330 @@ const RegisterScreen = ({ navigation }) => {
         }
     };
 
+    const getLogoSource = () => {
+        if (!logoUrl) return null;
+        if (logoUrl.startsWith('http')) return { uri: logoUrl };
+        return { uri: `${API_URL}${logoUrl}` };
+    };
+
     return (
         <View style={styles.container}>
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={{ flex: 1 }}
+            <StatusBar barStyle="light-content" transparent backgroundColor="transparent" />
+            <LinearGradient
+                colors={['#3B82F6', '#60A5FA', '#DBEAFE']}
+                style={styles.gradient}
             >
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                    <View style={styles.header}>
-                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                            <ArrowLeft size={24} color="#1E293B" />
-                        </TouchableOpacity>
-                        <View style={styles.headerTextWrap}>
-                            <Text style={styles.title}>Buat Akun Baru</Text>
-                            <Text style={styles.subtitle}>Lengkapi data diri Anda untuk bergabung</Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.form}>
-                        <InputGroup
-                            icon={User}
-                            placeholder="Username"
-                            value={formData.username}
-                            onChangeText={(text) => setFormData({ ...formData, username: text })}
-                        />
-                        <InputGroup
-                            icon={Phone}
-                            placeholder="No. WhatsApp / HP"
-                            value={formData.phone}
-                            onChangeText={(text) => setFormData({ ...formData, phone: text })}
-                            keyboardType="phone-pad"
-                        />
-                        <InputGroup
-                            icon={MapPin}
-                            placeholder="Alamat Lengkap"
-                            value={formData.address}
-                            onChangeText={(text) => setFormData({ ...formData, address: text })}
-                            multiline
-                        />
-                        <InputGroup
-                            icon={Lock}
-                            placeholder="Kata Sandi"
-                            value={formData.password}
-                            onChangeText={(text) => setFormData({ ...formData, password: text })}
-                            secureTextEntry
-                        />
-                        <InputGroup
-                            icon={Lock}
-                            placeholder="Konfirmasi Kata Sandi"
-                            value={formData.confirmPassword}
-                            onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
-                            secureTextEntry
-                        />
-
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={{ flex: 1 }}
+                >
+                    <View style={[styles.headerArea, { paddingTop: Math.max(insets.top, 20) }]}>
                         <TouchableOpacity
-                            style={[styles.button, loading && styles.buttonDisabled]}
-                            onPress={handleRegister}
-                            disabled={loading}
+                            onPress={() => navigation.goBack()}
+                            style={styles.backBtn}
                         >
-                            {loading ? (
-                                <ActivityIndicator color="#FFFFFF" />
-                            ) : (
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                    <Text style={styles.buttonText}>DAFTAR SEKARANG</Text>
-                                    <ArrowRight size={20} color="#FFFFFF" />
-                                </View>
-                            )}
+                            <ChevronLeft size={24} color="#FFFFFF" />
                         </TouchableOpacity>
-
-                        <View style={styles.loginLink}>
-                            <Text style={styles.loginText}>Sudah punya akun? </Text>
-                            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                                <Text style={styles.loginBtn}>MASUK DISINI</Text>
-                            </TouchableOpacity>
-                        </View>
                     </View>
-                </ScrollView>
-            </KeyboardAvoidingView>
 
-            {/* Footer - Outside KeyboardAvoidingView to stay at bottom */}
-            <View style={[styles.footerOutside, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-                <Text style={styles.footerText}>© 2024 Kasir Berkah88. All Rights Reserved.</Text>
-            </View>
+                    <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.scrollContent}
+                    >
+                        <View style={styles.branding}>
+                            <View style={styles.logoBox}>
+                                {logoUrl ? (
+                                    <Image
+                                        source={getLogoSource()}
+                                        style={styles.logoImage}
+                                        resizeMode="contain"
+                                    />
+                                ) : (
+                                    <View style={styles.placeholderLogoIcon}>
+                                        <View style={styles.placeholderLogoBar1} />
+                                        <View style={styles.placeholderLogoBar2} />
+                                    </View>
+                                )}
+                            </View>
+                            <Text style={styles.welcomeTitle}>Daftar Akun</Text>
+                            <Text style={styles.welcomeSubtitle}>Buat akun Anda untuk pengalaman yang lebih baik</Text>
+                        </View>
+
+                        <View style={styles.formArea}>
+                            <InputGroup
+                                label="Nama Pengguna"
+                                icon={User}
+                                placeholder="Pilih nama pengguna"
+                                value={formData.username}
+                                onChangeText={(text) => setFormData({ ...formData, username: text })}
+                            />
+                            <InputGroup
+                                label="Nomor Telepon"
+                                icon={Phone}
+                                placeholder="Nomor WhatsApp aktif"
+                                value={formData.phone}
+                                onChangeText={(text) => setFormData({ ...formData, phone: text })}
+                                keyboardType="phone-pad"
+                            />
+                            <InputGroup
+                                label="Alamat"
+                                icon={MapPin}
+                                placeholder="Alamat lengkap"
+                                value={formData.address}
+                                onChangeText={(text) => setFormData({ ...formData, address: text })}
+                                multiline
+                            />
+                            <InputGroup
+                                label="Kata Sandi"
+                                icon={Lock}
+                                placeholder="Minimal 6 karakter"
+                                value={formData.password}
+                                onChangeText={(text) => setFormData({ ...formData, password: text })}
+                                secureTextEntry
+                            />
+                            <InputGroup
+                                label="Konfirmasi Kata Sandi"
+                                icon={Lock}
+                                placeholder="Ketik ulang kata sandi"
+                                value={formData.confirmPassword}
+                                onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
+                                secureTextEntry
+                            />
+
+                            <TouchableOpacity
+                                style={[styles.mainBtn, loading && styles.btnDisabled]}
+                                onPress={handleRegister}
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator color="#3B82F6" />
+                                ) : (
+                                    <View style={styles.btnContent}>
+                                        <Text style={styles.btnText}>Daftar Sekarang</Text>
+                                        <View style={styles.btnIconBox}>
+                                            <ArrowRight size={16} color="#3B82F6" />
+                                        </View>
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+
+                            <View style={styles.switchContainer}>
+                                <Text style={styles.switchText}>Sudah punya akun? </Text>
+                                <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                                    <Text style={styles.switchLink}>Masuk Disini</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        <View style={styles.footerSpacing} />
+                    </ScrollView>
+
+                    <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+                        <Text style={styles.footerText}>© 2026 Kasir Berkah88. Mari Bergabung.</Text>
+                    </View>
+                </KeyboardAvoidingView>
+            </LinearGradient>
         </View>
     );
 };
 
-const InputGroup = ({ icon: Icon, placeholder, value, onChangeText, secureTextEntry, keyboardType, multiline }) => (
-    <View style={[styles.inputContainer, multiline && styles.inputContainerMultiline]}>
-        <Icon size={20} color="#94A3B8" style={[styles.inputIcon, multiline && { marginTop: 12 }]} />
-        <TextInput
-            style={[styles.input, multiline && styles.inputMultiline]}
-            placeholder={placeholder}
-            placeholderTextColor="#94A3B8"
-            value={value}
-            onChangeText={onChangeText}
-            secureTextEntry={secureTextEntry}
-            keyboardType={keyboardType}
-            multiline={multiline}
-            textAlignVertical={multiline ? 'top' : 'center'}
-        />
+const InputGroup = ({ label, icon: Icon, placeholder, value, onChangeText, secureTextEntry, keyboardType, multiline }) => (
+    <View style={styles.inputWrapper}>
+        <Text style={styles.inputLabel}>{label}</Text>
+        <View style={[styles.inputField, multiline && styles.inputFieldMultiline]}>
+            <Icon size={18} color="rgba(255,255,255,0.7)" style={multiline && { marginTop: 12 }} />
+            <TextInput
+                style={[styles.input, multiline && styles.inputMultiline]}
+                placeholder={placeholder}
+                placeholderTextColor="rgba(255,255,255,0.4)"
+                value={value}
+                onChangeText={onChangeText}
+                secureTextEntry={secureTextEntry}
+                keyboardType={keyboardType}
+                multiline={multiline}
+                textAlignVertical={multiline ? 'top' : 'center'}
+            />
+        </View>
     </View>
 );
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8FAFC',
     },
-    scrollContent: {
-        flexGrow: 1,
-        padding: 30,
-        paddingTop: Platform.OS === 'android' ? 50 : 30,
-    },
-    header: {
-        marginBottom: 30,
-    },
-    backBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        backgroundColor: '#E2E8F0',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: '900',
-        color: '#1E293B',
-        marginBottom: 8,
-    },
-    subtitle: {
-        fontSize: 14,
-        color: '#64748B',
-    },
-    form: {
+    gradient: {
         flex: 1,
     },
-    inputContainer: {
+    headerArea: {
+        paddingHorizontal: 25,
+    },
+    backBtn: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    scrollContent: {
+        paddingHorizontal: 30,
+        paddingTop: 20,
+    },
+    branding: {
+        alignItems: 'center',
+        marginBottom: 30,
+    },
+    logoBox: {
+        width: 60,
+        height: 60,
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    logoImage: {
+        width: '60%',
+        height: '60%',
+    },
+    placeholderLogoIcon: {
+        width: 30,
+        height: 25,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 3,
+    },
+    placeholderLogoBar1: {
+        width: 10,
+        height: 20,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 5,
+        transform: [{ rotate: '45deg' }, { translateY: 3 }],
+    },
+    placeholderLogoBar2: {
+        width: 10,
+        height: 20,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 5,
+        transform: [{ rotate: '45deg' }, { translateY: -3 }],
+    },
+    welcomeTitle: {
+        color: '#FFFFFF',
+        fontSize: 26,
+        fontWeight: '900',
+        marginBottom: 5,
+    },
+    welcomeSubtitle: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 13,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+    formArea: {
+        width: '100%',
+    },
+    inputWrapper: {
+        marginBottom: 18,
+    },
+    inputLabel: {
+        color: '#FFFFFF',
+        fontSize: 11,
+        fontWeight: '800',
+        marginBottom: 6,
+        marginLeft: 4,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    inputField: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
+        height: 54,
+        backgroundColor: 'rgba(255,255,255,0.15)',
         borderRadius: 16,
-        marginBottom: 16,
-        paddingHorizontal: 16,
-        height: 56,
+        paddingHorizontal: 18,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
     },
-    inputContainerMultiline: {
+    inputFieldMultiline: {
         height: 100,
         alignItems: 'flex-start',
     },
-    inputIcon: {
-        marginRight: 12,
-    },
     input: {
         flex: 1,
-        color: '#1E293B',
-        fontSize: 15,
+        marginLeft: 10,
+        color: '#FFFFFF',
+        fontSize: 14,
         fontWeight: '600',
-        height: '100%',
     },
     inputMultiline: {
         paddingTop: 12,
         paddingBottom: 12,
     },
-    button: {
-        backgroundColor: '#138FEA',
-        height: 56,
-        borderRadius: 16,
+    mainBtn: {
+        backgroundColor: '#FFFFFF',
+        height: 58,
+        borderRadius: 18,
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 10,
-        marginBottom: 24,
+        marginTop: 15,
         ...Platform.select({
-            web: { boxShadow: '0px 10px 20px rgba(19, 143, 234, 0.3)' },
-            android: { elevation: 8 }
+            web: { boxShadow: '0px 10px 20px rgba(0,0,0,0.1)' },
+            android: { elevation: 5 },
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.1, shadowRadius: 10 }
         })
     },
-    buttonDisabled: {
-        backgroundColor: '#94A3B8',
-        elevation: 0,
+    btnDisabled: {
+        opacity: 0.7,
+        backgroundColor: 'rgba(255,255,255,0.8)',
     },
-    buttonText: {
-        color: '#FFFFFF',
+    btnContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    btnText: {
+        color: '#3B82F6',
         fontSize: 16,
         fontWeight: '900',
-        letterSpacing: 1,
     },
-    loginLink: {
-        flexDirection: 'row',
+    btnIconBox: {
+        width: 24,
+        height: 24,
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderRadius: 8,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    loginText: {
-        color: '#64748B',
-        fontSize: 14,
+    switchContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginTop: 20,
     },
-    loginBtn: {
-        color: '#138FEA',
+    switchText: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    switchLink: {
+        color: '#FFFFFF',
+        fontSize: 14,
         fontWeight: '900',
-        fontSize: 14,
     },
-    footerOutside: {
+    footerSpacing: {
+        height: 100,
+    },
+    footer: {
         alignItems: 'center',
-        paddingBottom: 20,
-        backgroundColor: '#F8FAFC',
+        position: 'absolute',
+        bottom: 0,
+        width: '100%',
+        backgroundColor: 'transparent',
     },
     footerText: {
-        color: '#CBD5E1',
-        fontSize: 12,
-        fontWeight: 'bold',
+        color: 'rgba(255,255,255,0.4)',
+        fontSize: 10,
+        fontWeight: '700',
+        letterSpacing: 1,
     }
 });
 

@@ -988,6 +988,19 @@ app.get("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'g
             queryParams.push(category);
         }
 
+        // Filter hidden items for non-admin roles (unless specific query param is present, but safety first)
+        // If user is NOT admin, owner, or penjual, OR if they are 'pelanggan'/'guest'
+        // Actually, let's look at the allowed roles for this endpoint: 'user', 'admin', 'guest', 'kasir', 'pelanggan', 'penjual', 'owner'
+        // 'user' is the default role for employees/staff?
+        // Let's filter out hidden items for 'pelanggan' and 'guest'.
+        if (['pelanggan', 'guest'].includes(req.user.role)) {
+            if (whereClause) {
+                whereClause += ' AND mi.is_hidden = FALSE';
+            } else {
+                whereClause = 'WHERE mi.is_hidden = FALSE';
+            }
+        }
+
         // Query to get total count
         const countSql = `SELECT COUNT(*) as totalItems FROM menu_items mi ${whereClause}`;
         const [countRows] = await db.query(countSql, queryParams);
@@ -1117,6 +1130,7 @@ app.get("/api/public/menu-items", async (req, res) => {
                 (SELECT COALESCE(AVG(rating), 0) FROM menu_reviews WHERE menu_item_id = mi.id) as average_rating,
                 (SELECT COUNT(*) FROM menu_reviews WHERE menu_item_id = mi.id) as total_reviews
             FROM menu_items mi
+            WHERE mi.is_hidden = FALSE
             ORDER BY mi.order_index ASC;
         `;
         const [rows] = await db.query(sql);
@@ -1151,12 +1165,13 @@ app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', '
             itemData = req.body;
         }
 
-        const { id, name, price, stock, category, hpp, discount, is_featured, options, description } = itemData;
+        const { id, name, price, stock, category, hpp, discount, is_featured, options, description, is_hidden } = itemData;
         const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
         const final_is_featured = is_featured ? 1 : 0;
+        const final_is_hidden = is_hidden ? 1 : 0;
 
-        const menuItemSql = 'INSERT INTO menu_items (id, name, price, stock, category, image_url, hpp, discount, is_featured, description) VALUES (?,?,?,?,?,?,?,?,?,?)';
-        const menuItemParams = [id, name, price, stock, category, image_url, hpp, discount, final_is_featured, description || null];
+        const menuItemSql = 'INSERT INTO menu_items (id, name, price, stock, category, image_url, hpp, discount, is_featured, description, is_hidden) VALUES (?,?,?,?,?,?,?,?,?,?,?)';
+        const menuItemParams = [id, name, price, stock, category, image_url, hpp, discount, final_is_featured, description || null, final_is_hidden];
         const [rows] = await connection.query(menuItemSql, menuItemParams); // Need result for consistency, although ID is manually provided in this app logic usually
 
         if (options && Array.isArray(options) && options.length > 0) {
@@ -1249,12 +1264,12 @@ app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'
         const params = [];
 
         // List of allowed fields to update
-        const allowedFields = ['name', 'price', 'stock', 'category', 'hpp', 'discount', 'is_featured', 'description'];
+        const allowedFields = ['name', 'price', 'stock', 'category', 'hpp', 'discount', 'is_featured', 'description', 'is_hidden'];
 
         allowedFields.forEach(field => {
             if (itemData[field] !== undefined) {
                 // Special handling for boolean
-                if (field === 'is_featured') {
+                if (field === 'is_featured' || field === 'is_hidden') {
                     updateFields[field] = itemData[field] ? 1 : 0;
                 } else {
                     updateFields[field] = itemData[field];
@@ -2993,15 +3008,18 @@ app.post("/api/transactions", authenticateToken, authorizeRoles('user', 'admin',
         // Emit Socket Event for Real-time Updates
         const io = req.app.get('io');
         if (io) {
+            const socketTimestamp = new Date().toISOString();
             io.emit('new_order', {
                 id: newTransactionId,
                 customer_name: customer_name || 'Pelanggan POS',
                 total: finalTotal,
-                timestamp: timestamp,
+                created_at: socketTimestamp,
+                timestamp: socketTimestamp,
                 items: itemsWithDetails,
                 status: 'completed', // Transactions are instantly completed
                 payment_method: finalPaymentMethod,
-                is_transaction: true // Marker so frontend knows it's a direct transaction
+                is_transaction: true, // Marker so frontend knows it's a direct transaction
+                user_id: finalUserId
             });
         }
 
@@ -4267,13 +4285,16 @@ app.post("/api/orders", (req, res, next) => {
         });
 
         // Realtime Update via Socket.io (instant)
+        const socketTimestamp = new Date().toISOString();
         req.app.get('io').emit('new_order', {
             id: orderId,
             customer_name,
             total: calculatedTotal,
             promo_discount: finalPromoDiscount,
             status: 'pending',
-            created_at: new Date().toISOString()
+            created_at: socketTimestamp,
+            timestamp: socketTimestamp,
+            user_id: userId
         });
 
         res.status(201).json({
@@ -4336,18 +4357,43 @@ app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user', 'pelan
         const dataSql = `SELECT * FROM orders ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
         const [rows] = await db.query(dataSql, [...queryParams, limit, offset]);
 
-        // Fix timezone for production: ensure all dates are sent in ISO format
+        // Fix timezone for production: MySQL DATETIME is timezone-naive
+        // Historical data was stored when server was in GMT+1 (Europe)
+        // Now server is in GMT+7 (WIB), so we need to add 6 hours offset to old data
+        // CUTOFF DATE: 2026-02-17 00:00:00 WIB (when timezone was fixed)
+        const TIMEZONE_MIGRATION_DATE = new Date('2026-02-17T00:00:00+07:00');
+
         const formattedRows = rows.map(order => {
             let isoDate = null;
             if (order.created_at) {
-                const d = new Date(order.created_at);
-                if (!isNaN(d.getTime())) {
-                    isoDate = d.toISOString();
+                const mysqlDateStr = order.created_at;
+                let dateObj = null;
+
+                // If it's already a Date object
+                if (mysqlDateStr instanceof Date) {
+                    dateObj = mysqlDateStr;
+                } else if (typeof mysqlDateStr === 'string') {
+                    // MySQL DATETIME format: "YYYY-MM-DD HH:MM:SS"
+                    dateObj = new Date(mysqlDateStr);
+                }
+
+                if (dateObj && !isNaN(dateObj.getTime())) {
+                    // Only apply offset to data created BEFORE timezone migration
+                    if (dateObj < TIMEZONE_MIGRATION_DATE) {
+                        // Old data: Add 6 hours offset to compensate (GMT+1 → GMT+7 = +6 hours)
+                        const offsetMs = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
+                        const correctedDate = new Date(dateObj.getTime() + offsetMs);
+                        isoDate = correctedDate.toISOString();
+                    } else {
+                        // New data: Already stored with correct timezone, no offset needed
+                        isoDate = dateObj.toISOString();
+                    }
                 }
             }
             return {
                 ...order,
-                created_at: isoDate
+                created_at: isoDate,
+                timestamp: isoDate // Add timestamp field for consistency
             };
         });
 
@@ -4362,6 +4408,56 @@ app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user', 'pelan
                 "status": status || null
             }
         });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Soft delete ALL orders (Admin only)
+app.delete("/api/orders/delete-all/confirm", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+    try {
+        // Only delete active orders (not already deleted)
+        const sql = 'UPDATE orders SET deleted_at = NOW() WHERE deleted_at IS NULL';
+        const [result] = await db.query(sql);
+
+        if (result.affectedRows > 0) {
+            await logActivity(req.user.userId, 'Menghapus Semua Pesanan', 'order', null, `Semua pesanan (${result.affectedRows} item) dipindahkan ke sampah`);
+
+            // Emit Socket Update to refresh all clients
+            const io = req.app.get('io');
+            if (io) {
+                // Determine a special status or just trigger a refresh
+                io.emit('order_update', { status: 'bulk_deleted' });
+            }
+        }
+
+        res.json({ message: "deleted_all", count: result.affectedRows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Soft delete single order (Admin/Management only)
+app.delete("/api/orders/:id", authenticateToken, authorizeRoles('admin', 'user', 'penjual', 'kasir', 'owner'), async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Soft delete: update deleted_at
+        const sql = 'UPDATE orders SET deleted_at = NOW() WHERE id = ?';
+        const [result] = await db.query(sql, [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Order not found or already deleted." });
+        }
+
+        await logActivity(req.user.userId, 'Menghapus Pesanan', 'order', id, `Pesanan #${id} dipindahkan ke sampah`);
+
+        // Emit Socket Update
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('order_update', { id, status: 'deleted' });
+        }
+
+        res.json({ message: "deleted" });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

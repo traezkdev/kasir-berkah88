@@ -381,6 +381,17 @@ const setupDatabase = async () => {
       console.log('Added customer_phone column to orders table.');
     }
 
+    // Check and add deleted_at to orders for soft delete
+    const checkOrderDeletedAtColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'deleted_at';
+    `;
+    const [deletedAtOrdersRows] = await connection.query(checkOrderDeletedAtColumn);
+    if (deletedAtOrdersRows[0]['COUNT(*)'] === 0) {
+      await connection.query("ALTER TABLE orders ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL");
+      console.log('Added deleted_at column to orders table.');
+    }
+
     const createEmployeesTable = `
       CREATE TABLE IF NOT EXISTS employees(
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -458,7 +469,8 @@ const setupDatabase = async () => {
       { name: 'discount', type: 'DECIMAL(10, 2) DEFAULT 0' },
       { name: 'is_featured', type: 'BOOLEAN DEFAULT FALSE' },
       { name: 'description', type: 'TEXT' },
-      { name: 'order_index', type: 'INTEGER DEFAULT 0' }
+      { name: 'order_index', type: 'INTEGER DEFAULT 0' },
+      { name: 'is_hidden', type: 'BOOLEAN DEFAULT FALSE' }
     ];
 
     for (const col of columnsToEnsure) {

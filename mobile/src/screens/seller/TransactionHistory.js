@@ -45,6 +45,7 @@ import { useOrderNotification } from '../../context/OrderNotificationContext';
 import { useAuth } from '../../context/AuthContext';
 import { Alert } from 'react-native';
 import { Trash2, AlertTriangle } from 'lucide-react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const { width } = Dimensions.get('window');
 
@@ -155,17 +156,24 @@ const TransactionHistory = ({ navigation }) => {
         return `${year}-${month}-${day}`;
     };
 
-    const [selectedDate, setSelectedDate] = useState(getLocalDateString()); // Default ke hari ini (Local Time)
+    const [filterPeriod, setFilterPeriod] = useState('today'); // all, today, yesterday, custom
+    const [startDate, setStartDate] = useState(getLocalDateString());
+    const [endDate, setEndDate] = useState(getLocalDateString());
     const [showFilterModal, setShowFilterModal] = useState(false);
+    const [showStartPicker, setShowStartPicker] = useState(false);
+    const [showEndPicker, setShowEndPicker] = useState(false);
 
-    const fetchTransactions = useCallback(async (pageNum = 1, isRefresh = false, search = '', date = null) => {
+    const fetchTransactions = useCallback(async (pageNum = 1, isRefresh = false, search = '', sDate = '', eDate = '') => {
         if (pageNum === 1 && !isRefresh) setLoading(true);
         if (pageNum > 1) setLoadingMore(true);
 
         try {
             let url = `/api/transactions?page=${pageNum}&limit=10&search=${search}`;
-            if (date) {
-                url += `&startDate=${date}&endDate=${date}`;
+            if (sDate) {
+                url += `&startDate=${sDate}`;
+            }
+            if (eDate) {
+                url += `&endDate=${eDate}`;
             }
             const response = await apiService.get(url);
             if (response.data && response.data.message === 'success') {
@@ -201,7 +209,7 @@ const TransactionHistory = ({ navigation }) => {
         // Refresh data when a new order/transaction is detected globally via Socket
         if (refreshTrigger > 0) {
             console.log('Real-time update: Refreshing transactions...');
-            fetchTransactions(1, true, debouncedSearch, selectedDate);
+            fetchTransactions(1, true, debouncedSearch, startDate, endDate);
         }
     }, [refreshTrigger]);
 
@@ -217,21 +225,21 @@ const TransactionHistory = ({ navigation }) => {
     useFocusEffect(
         useCallback(() => {
             setPage(1);
-            fetchTransactions(1, false, debouncedSearch, selectedDate);
-        }, [debouncedSearch, selectedDate, fetchTransactions])
+            fetchTransactions(1, false, debouncedSearch, startDate, endDate);
+        }, [debouncedSearch, startDate, endDate, fetchTransactions])
     );
 
     const onRefresh = () => {
         setRefreshing(true);
         setPage(1);
-        fetchTransactions(1, true, debouncedSearch, selectedDate);
+        fetchTransactions(1, true, debouncedSearch, startDate, endDate);
     };
 
     const handleLoadMore = () => {
         if (!loadingMore && hasMore && !loading) {
             const nextPage = page + 1;
             setPage(nextPage);
-            fetchTransactions(nextPage, false, debouncedSearch, selectedDate);
+            fetchTransactions(nextPage, false, debouncedSearch, startDate, endDate);
         }
     };
 
@@ -258,7 +266,7 @@ const TransactionHistory = ({ navigation }) => {
             if (response.data && response.data.message === 'deleted') {
                 setShowDeleteConfirm(false);
                 setSelectedTx(null);
-                fetchTransactions(1, true, debouncedSearch, selectedDate);
+                fetchTransactions(1, true, debouncedSearch, startDate, endDate);
             } else {
                 Alert.alert("Gagal", "Gagal menghapus transaksi.");
             }
@@ -362,15 +370,22 @@ const TransactionHistory = ({ navigation }) => {
                     />
                 </View>
                 <TouchableOpacity
-                    style={[styles.datePickerBtn, selectedDate && styles.datePickerBtnActive]}
+                    style={[styles.datePickerBtn, (startDate || endDate) && styles.datePickerBtnActive]}
                     onPress={() => setShowFilterModal(true)}
                 >
-                    <Calendar size={18} color={selectedDate ? "#FFFFFF" : "#64748B"} />
-                    <Text style={[styles.dateLabel, selectedDate && styles.dateLabelActive]}>
-                        {selectedDate ? selectedDate : "Filter Tanggal"}
+                    <Calendar size={18} color={(startDate || endDate) ? "#FFFFFF" : "#64748B"} />
+                    <Text style={[styles.dateLabel, (startDate || endDate) && styles.dateLabelActive]}>
+                        {filterPeriod === 'all' ? 'Semua Waktu' : (filterPeriod === 'custom' ? `${startDate}` : (startDate || "Filter Tanggal"))}
                     </Text>
-                    {selectedDate && (
-                        <TouchableOpacity onPress={() => setSelectedDate(null)} style={styles.clearDateBtn}>
+                    {filterPeriod !== 'all' && (
+                        <TouchableOpacity
+                            onPress={() => {
+                                setFilterPeriod('all');
+                                setStartDate('');
+                                setEndDate('');
+                            }}
+                            style={styles.clearDateBtn}
+                        >
                             <X size={14} color="#FFFFFF" />
                         </TouchableOpacity>
                     )}
@@ -462,7 +477,7 @@ const TransactionHistory = ({ navigation }) => {
                     onClose={() => setShowEditModal(false)}
                     transaction={selectedTx}
                     onSave={() => {
-                        fetchTransactions(1, true, debouncedSearch, selectedDate);
+                        fetchTransactions(1, true, debouncedSearch, startDate, endDate);
                         setSelectedTx(null);
                     }}
                 />
@@ -479,7 +494,7 @@ const TransactionHistory = ({ navigation }) => {
                     style={styles.modalOverlay}
                     onPress={() => setShowFilterModal(false)}
                 >
-                    <Animated.View style={styles.filterModalContent}>
+                    <Pressable style={styles.filterModalContent} onPress={(e) => e.stopPropagation()}>
                         <View style={styles.filterHeader}>
                             <Text style={styles.filterTitle}>Pilih Rentang Waktu</Text>
                             <TouchableOpacity onPress={() => setShowFilterModal(false)}>
@@ -489,56 +504,112 @@ const TransactionHistory = ({ navigation }) => {
 
                         <View style={styles.filterOptions}>
                             <TouchableOpacity
-                                style={[styles.filterOption, !selectedDate && styles.filterOptionActive]}
+                                style={[styles.filterOption, filterPeriod === 'all' && styles.filterOptionActive]}
                                 onPress={() => {
-                                    setSelectedDate(null);
+                                    setFilterPeriod('all');
+                                    setStartDate('');
+                                    setEndDate('');
                                     setShowFilterModal(false);
                                 }}
                             >
-                                <History size={20} color={!selectedDate ? "#1E40AF" : "#64748B"} />
-                                <Text style={[styles.filterOptionText, !selectedDate && styles.filterOptionTextActive]}>Semua Waktu</Text>
+                                <History size={20} color={filterPeriod === 'all' ? "#1E40AF" : "#64748B"} />
+                                <Text style={[styles.filterOptionText, filterPeriod === 'all' && styles.filterOptionTextActive]}>Semua Waktu</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity
-                                style={[styles.filterOption, selectedDate === getLocalDateString() && styles.filterOptionActive]}
+                                style={[styles.filterOption, filterPeriod === 'today' && styles.filterOptionActive]}
                                 onPress={() => {
-                                    setSelectedDate(getLocalDateString());
+                                    const today = getLocalDateString();
+                                    setFilterPeriod('today');
+                                    setStartDate(today);
+                                    setEndDate(today);
                                     setShowFilterModal(false);
                                 }}
                             >
-                                <Calendar size={20} color={selectedDate === getLocalDateString() ? "#1E40AF" : "#64748B"} />
-                                <Text style={[styles.filterOptionText, selectedDate === getLocalDateString() && styles.filterOptionTextActive]}>Hari Ini</Text>
+                                <Calendar size={20} color={filterPeriod === 'today' ? "#1E40AF" : "#64748B"} />
+                                <Text style={[styles.filterOptionText, filterPeriod === 'today' && styles.filterOptionTextActive]}>Hari Ini</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity
-                                style={[styles.filterOption, selectedDate === getLocalDateString(new Date(Date.now() - 86400000)) && styles.filterOptionActive]}
+                                style={[styles.filterOption, filterPeriod === 'yesterday' && styles.filterOptionActive]}
                                 onPress={() => {
-                                    setSelectedDate(getLocalDateString(new Date(Date.now() - 86400000)));
+                                    const yesterday = getLocalDateString(new Date(Date.now() - 86400000));
+                                    setFilterPeriod('yesterday');
+                                    setStartDate(yesterday);
+                                    setEndDate(yesterday);
                                     setShowFilterModal(false);
                                 }}
                             >
-                                <Calendar size={20} color={selectedDate === getLocalDateString(new Date(Date.now() - 86400000)) ? "#1E40AF" : "#64748B"} />
-                                <Text style={[styles.filterOptionText, selectedDate === getLocalDateString(new Date(Date.now() - 86400000)) && styles.filterOptionTextActive]}>Kemarin</Text>
+                                <Calendar size={20} color={filterPeriod === 'yesterday' ? "#1E40AF" : "#64748B"} />
+                                <Text style={[styles.filterOptionText, filterPeriod === 'yesterday' && styles.filterOptionTextActive]}>Kemarin</Text>
                             </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.filterOption, filterPeriod === 'custom' && styles.filterOptionActive]}
+                                onPress={() => setFilterPeriod('custom')}
+                            >
+                                <Calendar size={20} color={filterPeriod === 'custom' ? "#1E40AF" : "#64748B"} />
+                                <Text style={[styles.filterOptionText, filterPeriod === 'custom' && styles.filterOptionTextActive]}>Custom Tanggal</Text>
+                            </TouchableOpacity>
+
+                            {filterPeriod === 'custom' && (
+                                <View style={styles.customDateRange}>
+                                    <View style={styles.dateField}>
+                                        <Text style={styles.dateFieldLabel}>Dari</Text>
+                                        <TouchableOpacity
+                                            style={styles.dateInput}
+                                            onPress={() => setShowStartPicker(true)}
+                                        >
+                                            <Text style={styles.dateInputText}>{startDate || 'Mulai'}</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                    <View style={styles.dateField}>
+                                        <Text style={styles.dateFieldLabel}>Sampai</Text>
+                                        <TouchableOpacity
+                                            style={styles.dateInput}
+                                            onPress={() => setShowEndPicker(true)}
+                                        >
+                                            <Text style={styles.dateInputText}>{endDate || 'Selesai'}</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            )}
 
                             <View style={styles.filterDivider} />
 
-                            <Text style={styles.filterSubLabel}>Bulan Ini</Text>
-
                             <TouchableOpacity
-                                style={styles.filterOption}
-                                onPress={() => {
-                                    setSelectedDate(getLocalDateString());
-                                    setShowFilterModal(false);
-                                }}
+                                style={styles.applyFilterBtn}
+                                onPress={() => setShowFilterModal(false)}
                             >
-                                <TrendingUp size={20} color="#64748B" />
-                                <Text style={styles.filterOptionText}>Kembali ke Hari Ini</Text>
+                                <Text style={styles.applyFilterText}>Terapkan Filter</Text>
                             </TouchableOpacity>
                         </View>
-                    </Animated.View>
+                    </Pressable>
                 </Pressable>
             </Modal>
+
+            {showStartPicker && (
+                <DateTimePicker
+                    value={startDate ? new Date(startDate) : new Date()}
+                    mode="date"
+                    display="default"
+                    onChange={(e, date) => {
+                        setShowStartPicker(false);
+                        if (date) setStartDate(getLocalDateString(date));
+                    }}
+                />
+            )}
+            {showEndPicker && (
+                <DateTimePicker
+                    value={endDate ? new Date(endDate) : new Date()}
+                    mode="date"
+                    display="default"
+                    onChange={(e, date) => {
+                        setShowEndPicker(false);
+                        if (date) setEndDate(getLocalDateString(date));
+                    }}
+                />
+            )}
         </View>
     );
 };
@@ -762,6 +833,49 @@ const styles = StyleSheet.create({
         color: '#94A3B8',
         letterSpacing: 1,
         marginBottom: 4,
+    },
+    customDateRange: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 4,
+        padding: 12,
+        backgroundColor: '#EFF6FF',
+        borderRadius: 16,
+    },
+    dateField: {
+        flex: 1,
+    },
+    dateFieldLabel: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#1E40AF',
+        marginBottom: 4,
+        textTransform: 'uppercase',
+    },
+    dateInput: {
+        backgroundColor: '#FFFFFF',
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#BFDBFE',
+    },
+    dateInputText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#1E293B',
+    },
+    applyFilterBtn: {
+        backgroundColor: '#1E40AF',
+        paddingVertical: 14,
+        borderRadius: 16,
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    applyFilterText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '900',
     },
     loadingArea: {
         flex: 1,

@@ -134,6 +134,9 @@ export const OrderNotificationProvider = ({ children }) => {
         });
 
         newSocket.on('new_order', (order) => {
+            // Ignore manual transactions or completed orders (POS)
+            if (order.is_transaction || order.status === 'completed') return;
+
             if (['admin', 'penjual', 'owner', 'kasir'].includes(userRole)) {
                 // Play Sound
                 const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');

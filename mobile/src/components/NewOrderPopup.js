@@ -54,28 +54,11 @@ const NewOrderPopup = () => {
         if (showPopup && newOrder) {
             const updateTime = () => {
                 const now = new Date();
-                // Check multiple possible date fields from different notification types
+                // Backend sends ISO format (e.g., "2026-02-17T18:40:03.000Z")
                 const orderTimeStr = newOrder.created_at || newOrder.timestamp || new Date().toISOString();
 
-                // Advanced Date Parsing for Production/Local robustnes
-                let createdAt = new Date(orderTimeStr);
-
-                // If date parsing resulted in an invalid date or it's from a non-ISO string, 
-                // try to handle it (legacy fix or safety fallback)
-                if (typeof orderTimeStr === 'string' && !orderTimeStr.endsWith('Z') && !orderTimeStr.includes('+')) {
-                    const dateLocal = new Date(orderTimeStr.replace(' ', 'T'));
-                    const dateUTC = new Date(orderTimeStr.replace(' ', 'T') + 'Z');
-
-                    const diffLocal = Math.abs(now - dateLocal);
-                    const diffUTC = Math.abs(now - dateUTC);
-
-                    // If UTC interpretation is significantly closer to current time, use UTC
-                    if (diffUTC < diffLocal) {
-                        createdAt = dateUTC;
-                    } else {
-                        createdAt = dateLocal;
-                    }
-                }
+                // Parse ISO string directly - JavaScript handles timezone conversion automatically
+                const createdAt = new Date(orderTimeStr);
 
                 // Validate if createdAt is a valid date
                 if (isNaN(createdAt.getTime())) {

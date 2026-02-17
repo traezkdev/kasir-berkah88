@@ -63,6 +63,7 @@ const OwnerAllFeatures = ({ navigation }) => {
         {
             title: "Manajemen Toko",
             items: [
+                { id: 'BusinessMoney', label: "Uang Bisnis", icon: Briefcase, color: "#349BE5" },
                 { id: 'LapakDeposit', label: "Lapak Deposit", icon: Wallet, color: "#EF4444" },
                 { id: 'ExpenseManagement', label: "Pengeluaran", icon: TrendingUp, color: "#8B5CF6" },
                 { id: 'CategoryManagement', label: "Menu & Kategori", icon: Utensils, color: "#EC4899" },

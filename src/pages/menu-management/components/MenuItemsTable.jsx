@@ -91,6 +91,12 @@ const MenuItemsTable = ({
               <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tighter leading-tight truncate">
                 {item?.name}
               </h3>
+              {item?.is_hidden && (
+                <div className="flex items-center gap-1 mt-1">
+                  <Icon name="EyeOff" size={12} className="text-gray-400" />
+                  <span className="text-[9px] font-bold text-gray-400 uppercase">Disembunyikan</span>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-4">
@@ -207,6 +213,7 @@ const MenuItemsTable = ({
               <th className="text-left py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Unggulan</th>
               <th className="text-left p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Rating</th>
               <th className="text-left p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+              <th className="text-left p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Tampil</th>
               <th className="text-left p-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Update</th>
               <th className="text-center p-4 w-40 text-[10px] font-black text-gray-400 uppercase tracking-widest">Aksi</th>
             </tr>
@@ -297,6 +304,20 @@ const MenuItemsTable = ({
                     <div className={`inline-flex px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${stockStatus?.color} ${stockStatus?.bg}`}>
                       {stockStatus?.label}
                     </div>
+                  </td>
+                  <td className="p-4">
+                    <button
+                      onClick={() => onUpdateItem(item.id, { ...item, is_hidden: !item.is_hidden })}
+                      disabled={userRole === 'guest'}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${!item.is_hidden ? 'bg-blue-600' : 'bg-gray-200'}`}
+                    >
+                      <span
+                        className={`${!item.is_hidden ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                      />
+                    </button>
+                    <span className="ml-2 text-[10px] font-bold text-gray-400 uppercase">
+                      {!item.is_hidden ? 'Aktif' : 'Hidden'}
+                    </span>
                   </td>
                   <td className="p-4 text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
                     {item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : '-'}

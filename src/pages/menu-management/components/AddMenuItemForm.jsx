@@ -16,6 +16,8 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
     image: null,
     discount: '',
     is_featured: false,
+    is_featured: false,
+    is_hidden: false, // Add is_hidden
     options: [], // Add options to initial state
     description: '',
   });
@@ -46,6 +48,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
       setFormData({
         ...initialData,
         is_featured: !!initialData.is_featured,
+        is_hidden: !!initialData.is_hidden,
         options: initialData.options || [],
       });
     } else {
@@ -57,6 +60,7 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
         image: null,
         discount: '',
         is_featured: false,
+        is_hidden: false,
         options: [],
         description: '',
       });
@@ -211,6 +215,22 @@ const AddMenuItemForm = ({ onAddItem, isLoading, userRole, initialData, isEditin
             </div>
             <label htmlFor="is_featured" className="ml-3 text-sm font-black text-gray-700 dark:text-gray-300 cursor-pointer select-none">
               Jadikan Menu Unggulan
+            </label>
+          </div>
+
+          <div className="flex items-center group cursor-pointer lg:col-span-2 py-2">
+            <div className="relative flex items-center">
+              <input
+                type="checkbox"
+                id="is_hidden"
+                name="is_hidden"
+                checked={!!formData?.is_hidden}
+                onChange={handleChange}
+                className="w-5 h-5 text-rose-600 bg-gray-100 border-gray-300 rounded-lg focus:ring-rose-500/20 transition-all cursor-pointer"
+              />
+            </div>
+            <label htmlFor="is_hidden" className="ml-3 text-sm font-black text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+              Sembunyikan dari Menu Pelanggan
             </label>
           </div>
 

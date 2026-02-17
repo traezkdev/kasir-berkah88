@@ -72,6 +72,7 @@ import OwnerPromoManagement from '../screens/owner/PromoManagement';
 import OwnerManageInformation from '../screens/owner/ManageInformation';
 import OwnerProfileScreen from '../screens/owner/ProfileScreen';
 import OwnerAllFeatures from '../screens/owner/AllFeatures';
+import BusinessMoney from '../screens/owner/BusinessMoney';
 
 // Customer Screens
 import InformationScreen from '../screens/customer/InformationScreen';
@@ -415,6 +416,7 @@ const OwnerDashboardStack = () => (
         <Stack.Screen name="ProfileScreen" component={OwnerProfileScreen} />
         <Stack.Screen name="DeveloperCreditsScreen" component={OwnerDeveloperCreditsScreen} />
         <Stack.Screen name="AllFeatures" component={OwnerAllFeatures} />
+        <Stack.Screen name="BusinessMoney" component={BusinessMoney} />
     </Stack.Navigator>
 );
 
