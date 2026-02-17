@@ -604,7 +604,7 @@ const CashReconciliation = ({ navigation }) => {
                                             <View style={styles.histStatBox}>
                                                 <Text style={styles.histStatLbl}>Fisik</Text>
                                                 <Text style={styles.histStatVal}>
-                                                    {formatCurrency(parseFloat(item.actual_tunai) + parseFloat(item.actual_transfer) + parseFloat(item.actual_gojek))}
+                                                    {formatCurrency(parseFloat(item.actual_tunai))}
                                                 </Text>
                                             </View>
                                             <View style={styles.histStatBox}>
