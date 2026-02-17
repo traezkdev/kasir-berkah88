@@ -141,7 +141,7 @@ const LapakDeposit = ({ navigation }) => {
     const [formData, setFormData] = useState({
         amount: '',
         description: '',
-        date: new Date().toISOString().split('T')[0]
+        date: getLocalDateString()
     });
 
     // DatePicker States

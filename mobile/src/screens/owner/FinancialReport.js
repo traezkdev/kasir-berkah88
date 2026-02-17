@@ -49,7 +49,10 @@ const FinancialReport = ({ navigation }) => {
     const getLocalDateString = (daysAgo = 0) => {
         const date = new Date();
         if (daysAgo !== 0) date.setDate(date.getDate() - daysAgo);
-        return date.toISOString().split('T')[0];
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     };
 
     const getMonthlyPeriod = () => {
@@ -73,9 +76,16 @@ const FinancialReport = ({ navigation }) => {
             endDate = new Date(today.getFullYear(), today.getMonth(), 4);
         }
 
+        const formatToYMD = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
         return {
-            startDate: startDate.toISOString().split('T')[0],
-            endDate: endDate.toISOString().split('T')[0]
+            startDate: formatToYMD(startDate),
+            endDate: formatToYMD(endDate)
         };
     };
 
@@ -263,7 +273,12 @@ const FinancialReport = ({ navigation }) => {
                     display="default"
                     onChange={(e, date) => {
                         setShowStartDatePicker(false);
-                        if (date) setStartDate(date.toISOString().split('T')[0]);
+                        if (date) {
+                            const year = date.getFullYear();
+                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                            const day = String(date.getDate()).padStart(2, '0');
+                            setStartDate(`${year}-${month}-${day}`);
+                        }
                     }}
                 />
             )}
@@ -274,7 +289,12 @@ const FinancialReport = ({ navigation }) => {
                     display="default"
                     onChange={(e, date) => {
                         setShowEndDatePicker(false);
-                        if (date) setEndDate(date.toISOString().split('T')[0]);
+                        if (date) {
+                            const year = date.getFullYear();
+                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                            const day = String(date.getDate()).padStart(2, '0');
+                            setEndDate(`${year}-${month}-${day}`);
+                        }
                     }}
                 />
             )}

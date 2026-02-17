@@ -141,7 +141,10 @@ const BusinessReports = ({ navigation }) => {
     const getLocalDateString = useCallback((daysAgo = 0) => {
         const date = new Date();
         if (daysAgo !== 0) date.setDate(date.getDate() - daysAgo);
-        return date.toISOString().split('T')[0];
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }, []);
 
     const [selectedRange, setSelectedRange] = useState('today');
@@ -706,7 +709,12 @@ const BusinessReports = ({ navigation }) => {
                         display="default"
                         onChange={(e, date) => {
                             setShowStartDatePicker(false);
-                            if (date) setStartDate(date.toISOString().split('T')[0]);
+                            if (date) {
+                                const year = date.getFullYear();
+                                const month = String(date.getMonth() + 1).padStart(2, '0');
+                                const day = String(date.getDate()).padStart(2, '0');
+                                setStartDate(`${year}-${month}-${day}`);
+                            }
                         }}
                     />
                 )}
@@ -717,7 +725,12 @@ const BusinessReports = ({ navigation }) => {
                         display="default"
                         onChange={(e, date) => {
                             setShowEndDatePicker(false);
-                            if (date) setEndDate(date.toISOString().split('T')[0]);
+                            if (date) {
+                                const year = date.getFullYear();
+                                const month = String(date.getMonth() + 1).padStart(2, '0');
+                                const day = String(date.getDate()).padStart(2, '0');
+                                setEndDate(`${year}-${month}-${day}`);
+                            }
                         }}
                     />
                 )}

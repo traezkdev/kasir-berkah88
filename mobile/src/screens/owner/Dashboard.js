@@ -74,8 +74,11 @@ const OwnerDashboard = ({ navigation }) => {
 
     const fetchDashboardData = useCallback(async () => {
         try {
-            const today = new Date().toISOString().split('T')[0];
-            const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+            const now = new Date();
+            const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+            const yesterdayDate = new Date(now.getTime() - 86400000);
+            const yesterday = `${yesterdayDate.getFullYear()}-${String(yesterdayDate.getMonth() + 1).padStart(2, '0')}-${String(yesterdayDate.getDate()).padStart(2, '0')}`;
 
             // 1. Get Today's Data
             const todayRes = await apiService.get(`/api/analytics/breakdown?startDate=${today}&endDate=${today}`);
