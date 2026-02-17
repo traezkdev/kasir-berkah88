@@ -75,7 +75,7 @@ const OwnerAllFeatures = ({ navigation }) => {
             title: "Sistem & Pengaturan",
             items: [
                 { id: 'DatabaseManagement', label: "Basis Data", icon: Database, color: "#475569" },
-                { id: 'ProfileScreen', label: "Profil Akun", icon: Settings, color: "#14B8A6" },
+                { id: 'Profil', label: "Profil Akun", icon: Settings, color: "#14B8A6" },
                 { id: 'DeveloperCreditsScreen', label: "Kredit Dev", icon: Code, color: "#6D28D9" },
             ]
         }

@@ -271,7 +271,7 @@ const OwnerDashboard = ({ navigation }) => {
                             icon={BarChart3}
                             label="Laporan"
                             color="#3B82F6"
-                            onPress={() => navigation.navigate('BusinessReports')}
+                            onPress={() => navigation.navigate('Bisnis')}
                         />
                         <QuickButton
                             icon={Briefcase}
@@ -314,7 +314,7 @@ const OwnerDashboard = ({ navigation }) => {
                         <ListButton
                             icon={Settings}
                             label="Pengaturan Keamanan & Akun"
-                            onPress={() => navigation.navigate('ProfileScreen')}
+                            onPress={() => navigation.navigate('Profil')}
                         />
                     </View>
                 </View>
