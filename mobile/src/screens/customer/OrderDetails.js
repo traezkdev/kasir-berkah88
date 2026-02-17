@@ -93,27 +93,27 @@ const OrderDetails = ({ navigation, route }) => {
         switch (status) {
             case 'pending':
                 return {
-                    label: 'BARU',
+                    label: 'PESANAN MASUK',
                     color: '#F59E0B',
                     bg: '#FFFBEB',
                     icon: Clock,
-                    desc: 'Pesanan Anda sedang dikirim ke penjual. Mohon tunggu sebentar ya.'
+                    desc: 'Bismillah, pesananmu sudah terkirim. Tunggu konfirmasi penjual ya.'
                 };
             case 'accepted':
                 return {
-                    label: 'SEDANG DIPROSES',
+                    label: 'LAGI DISIAPIN',
                     color: '#138FEA',
                     bg: '#EFF6FF',
                     icon: ShoppingBag,
-                    desc: 'Yeay! Pesanan Anda telah diterima dan sedang disiapkan.'
+                    desc: 'Alhamdulillah! Pesananmu lagi disiapin dengan cinta & berkah.'
                 };
             case 'ready':
                 return {
-                    label: 'SIAP DIAMBIL',
+                    label: 'ALHAMDULILLAH SIAP',
                     color: '#10B981',
                     bg: '#ECFDF5',
                     icon: ShoppingBag,
-                    desc: 'Pesanan Anda sudah siap! Silakan ambil di toko.'
+                    desc: 'Pesananmu sudah siap nih! Yuk ambil di toko.'
                 };
             case 'rejected':
                 return {
@@ -121,23 +121,23 @@ const OrderDetails = ({ navigation, route }) => {
                     color: '#EF4444',
                     bg: '#FEF2F2',
                     icon: XCircle,
-                    desc: 'Maaf, penjual tidak dapat menerima pesanan Anda saat ini.'
+                    desc: 'Mohon maaf ya, penjual belum bisa terima pesananmu saat ini.'
                 };
             case 'cancelled':
                 return {
-                    label: 'PESANAN BATAL',
+                    label: 'PESANAN DIBATALKAN',
                     color: '#64748B',
                     bg: '#F8FAFC',
                     icon: XCircle,
-                    desc: 'Pesanan ini telah dibatalkan.'
+                    desc: 'Pesanan ini telah dibatalkan. Mampir lagi lain kali ya!'
                 };
             case 'completed':
                 return {
-                    label: 'PESANAN SELESAI',
+                    label: 'ALHAMDULILLAH SELESAI',
                     color: '#059669',
                     bg: '#ECFDF5',
                     icon: CheckCircle2,
-                    desc: 'Pesanan Anda telah selesai dan akan segera diantar.'
+                    desc: 'Pesanan Anda telah selesai. Semoga berkah dan suka ya!'
                 };
             default:
                 return {
@@ -155,7 +155,7 @@ const OrderDetails = ({ navigation, route }) => {
             <SafeAreaView style={styles.container}>
                 <View style={styles.loadingArea}>
                     <ActivityIndicator size="large" color="#059669" />
-                    <Text style={styles.loadingText}>Memuat Detail Pesanan...</Text>
+                    <Text style={styles.loadingText}>Sabar ya, lagi ambil detail pesanan...</Text>
                 </View>
             </SafeAreaView>
         );
@@ -166,9 +166,9 @@ const OrderDetails = ({ navigation, route }) => {
             <SafeAreaView style={styles.container}>
                 <View style={styles.emptyArea}>
                     <Search size={50} color="#E2E8F0" />
-                    <Text style={styles.emptyText}>Pesanan tidak ditemukan</Text>
+                    <Text style={styles.emptyText}>Afwan, pesanan gak ketemu nih...</Text>
                     <TouchableOpacity onPress={() => navigation.navigate('MainTabs')} style={styles.homeBtn}>
-                        <Text style={styles.homeBtnText}>Kembali ke Beranda</Text>
+                        <Text style={styles.homeBtnText}>Balik ke Depan</Text>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
@@ -186,7 +186,7 @@ const OrderDetails = ({ navigation, route }) => {
                 <TouchableOpacity onPress={() => navigation.navigate('MainTabs')} style={styles.backBtn}>
                     <ArrowLeft size={20} color="#1E293B" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Konfirmasi Pesanan</Text>
+                <Text style={styles.headerTitle}>Detail Pesanan Berkah</Text>
                 <TouchableOpacity onPress={() => fetchOrderDetail()} style={styles.refreshBtn}>
                     <RefreshCcw size={18} color="#94A3B8" />
                 </TouchableOpacity>
@@ -206,12 +206,12 @@ const OrderDetails = ({ navigation, route }) => {
                 <View style={styles.section}>
                     <View style={styles.metaBox}>
                         <View style={styles.metaItem}>
-                            <Text style={styles.metaLabel}>ID PESANAN</Text>
+                            <Text style={styles.metaLabel}>KODE PESANAN</Text>
                             <Text style={styles.metaValue}>#{order.id}</Text>
                         </View>
                         <View style={styles.metaDivider} />
                         <View style={styles.metaItem}>
-                            <Text style={styles.metaLabel}>WAKTU</Text>
+                            <Text style={styles.metaLabel}>WAKTU PESAN</Text>
                             <Text style={styles.metaValue}>{new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
                         </View>
                     </View>
@@ -221,7 +221,7 @@ const OrderDetails = ({ navigation, route }) => {
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
                         <ShoppingBag size={18} color="#1E293B" />
-                        <Text style={styles.sectionTitle}>Ringkasan Pesanan</Text>
+                        <Text style={styles.sectionTitle}>Menu Berkah Pilihanmu</Text>
                     </View>
 
                     <View style={styles.itemsBox}>
@@ -245,7 +245,7 @@ const OrderDetails = ({ navigation, route }) => {
                         <View style={styles.priceDivider} />
 
                         <View style={styles.summaryRow}>
-                            <Text style={styles.summaryLabel}>Subtotal</Text>
+                            <Text style={styles.summaryLabel}>Harga Menu</Text>
                             <Text style={[styles.summaryLabel, { color: '#1E293B', fontSize: 15, fontWeight: '900' }]}>{formatCurrency((parseFloat(order.total) || 0) + (parseFloat(order.points_used) || 0) + (parseFloat(order.promo_discount) || 0))}</Text>
                         </View>
                         {order.points_used > 0 && (
@@ -261,13 +261,13 @@ const OrderDetails = ({ navigation, route }) => {
                             </View>
                         )}
                         <View style={[styles.summaryRow, { marginTop: 12 }]}>
-                            <Text style={styles.summaryLabel}>Total Bayar</Text>
+                            <Text style={styles.summaryLabel}>Total Semuanya</Text>
                             <Text style={styles.summaryValue}>{formatCurrency(parseFloat(order.total) || 0)}</Text>
                         </View>
                         <View style={styles.summaryRow}>
                             <Text style={styles.summaryLabel}>Metode Pembayaran</Text>
                             <Text style={styles.paymentMethod}>
-                                {order.payment_method === 'cash' ? 'Tunai' : (order.payment_method === 'transfer' ? 'Transfer Bank' : order.payment_method)}
+                                {order.payment_method === 'cash' ? 'Bayar di Tempat (COD)' : (order.payment_method === 'transfer' ? 'Transfer QRIS' : order.payment_method)}
                             </Text>
                         </View>
                     </View>
@@ -275,8 +275,8 @@ const OrderDetails = ({ navigation, route }) => {
 
                 {/* Action Card */}
                 <View style={styles.actionCard}>
-                    <Text style={styles.cardTitle}>Butuh bantuan?</Text>
-                    <Text style={styles.cardDesc}>Hubungi penjual jika Anda memiliki pertanyaan terkait pesanan Anda.</Text>
+                    <Text style={styles.cardTitle}>Ada yang Bingung?</Text>
+                    <Text style={styles.cardDesc}>Tanya penjual yuk kalau ada yang mau ditanyain soal pesananmu.</Text>
 
                     <View style={styles.actionButtons}>
                         <TouchableOpacity
@@ -284,7 +284,7 @@ const OrderDetails = ({ navigation, route }) => {
                             onPress={() => navigation.navigate('ChatScreen')}
                         >
                             <MessageCircle size={20} color="#FFFFFF" />
-                            <Text style={styles.chatBtnText}>Tanya Penjual</Text>
+                            <Text style={styles.chatBtnText}>Chat Penjual Bismillah</Text>
                         </TouchableOpacity>
 
                         {order.status === 'pending' && (
@@ -293,7 +293,7 @@ const OrderDetails = ({ navigation, route }) => {
                                 onPress={handleCancelOrder}
                             >
                                 <XCircle size={20} color="#FFFFFF" />
-                                <Text style={styles.cancelBtnText}>Batalkan Pesanan</Text>
+                                <Text style={styles.cancelBtnText}>Batal Pesan</Text>
                             </TouchableOpacity>
                         )}
                     </View>
@@ -307,7 +307,7 @@ const OrderDetails = ({ navigation, route }) => {
                     style={styles.primaryBtn}
                     onPress={() => navigation.navigate('MainTabs')}
                 >
-                    <Text style={styles.primaryBtnText}>Kembali ke Beranda</Text>
+                    <Text style={styles.primaryBtnText}>Balik ke Depan</Text>
                 </TouchableOpacity>
             </View>
 
@@ -323,22 +323,22 @@ const OrderDetails = ({ navigation, route }) => {
                         <View style={styles.modalIconWrap}>
                             <XCircle size={32} color="#EF4444" />
                         </View>
-                        <Text style={styles.modalTitle}>Batalkan Pesanan?</Text>
+                        <Text style={styles.modalTitle}>Yakin Mau Batal?</Text>
                         <Text style={styles.modalDesc}>
-                            Apakah Anda yakin ingin membatalkan pesanan ini? Tindakan ini tidak dapat dibatalkan.
+                            Yakin nih mau batalin pesanannya? Sayang banget loh, menu lezatnya nungguin kamu...
                         </Text>
                         <View style={styles.modalActions}>
                             <TouchableOpacity
                                 style={styles.modalBtnCancel}
                                 onPress={() => setShowCancelModal(false)}
                             >
-                                <Text style={styles.modalBtnCancelText}>Tidak, Kembali</Text>
+                                <Text style={styles.modalBtnCancelText}>Gak Jadi Deh</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={styles.modalBtnConfirm}
                                 onPress={confirmCancelOrder}
                             >
-                                <Text style={styles.modalBtnConfirmText}>Ya, Batalkan</Text>
+                                <Text style={styles.modalBtnConfirmText}>Iya, Batalin Saja</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

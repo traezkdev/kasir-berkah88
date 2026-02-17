@@ -192,10 +192,10 @@ const CustomerDashboard = ({ navigation }) => {
 
     const getGreeting = () => {
         const hour = new Date().getHours();
-        if (hour >= 5 && hour < 11) return 'Selamat Pagi';
-        if (hour >= 11 && hour < 15) return 'Selamat Siang';
-        if (hour >= 15 && hour < 19) return 'Selamat Sore';
-        return 'Selamat Malam';
+        if (hour >= 5 && hour < 11) return "Semangat Pagi";
+        if (hour >= 11 && hour < 15) return "Selamat Siang";
+        if (hour >= 15 && hour < 19) return "Selamat Sore";
+        return "Selamat Malam";
     };
 
     const formatCurrency = (val) => {
@@ -298,7 +298,7 @@ const CustomerDashboard = ({ navigation }) => {
                             onPress={() => navigation.navigate('Menu')}
                         >
                             <Search size={16} color="#FFFFFF" />
-                            <Text style={styles.compactSearchText}>Cari menu favorit...</Text>
+                            <Text style={styles.compactSearchText}>Bismillah, cari menu apa ya?</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => navigation.navigate('ChatScreen')}>
                             <View>
@@ -393,8 +393,8 @@ const CustomerDashboard = ({ navigation }) => {
                             <View style={styles.closedBanner}>
                                 <AlertCircle size={18} color="#FFFFFF" />
                                 <View style={styles.closedBannerText}>
-                                    <Text style={styles.closedTitle}>Maaf, Toko Sedang Tutup</Text>
-                                    <Text style={styles.closedSubtitle}>Kamu tetap bisa melihat menu, tapi belum bisa pesan.</Text>
+                                    <Text style={styles.closedTitle}>Afwan, Toko Lagi Istirahat</Text>
+                                    <Text style={styles.closedSubtitle}>Sabar ya, insyaAllah nanti mampir lagi. Sekarang liat-liat dulu aja.</Text>
                                 </View>
                             </View>
                         )}
@@ -405,7 +405,7 @@ const CustomerDashboard = ({ navigation }) => {
                             onPress={() => navigation.navigate('Menu')}
                         >
                             <Search size={20} color="#94A3B8" />
-                            <Text style={styles.searchText}>Mau makan apa hari ini?</Text>
+                            <Text style={styles.searchText}>Bismillah, mau jajan apa hari ini?</Text>
                         </TouchableOpacity>
 
                         {/* Quick Shortcuts */}
@@ -446,7 +446,7 @@ const CustomerDashboard = ({ navigation }) => {
                     <View style={styles.actionCard}>
                         <View style={styles.saldoRow}>
                             <View>
-                                <Text style={styles.saldoLabel}>Poin Berkah 88</Text>
+                                <Text style={styles.saldoLabel}>Tabungan Poin Berkah</Text>
                                 <Text style={styles.saldoValue}>{new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(points)} Poin</Text>
                             </View>
                             <View style={styles.saldoActions}>
@@ -475,8 +475,8 @@ const CustomerDashboard = ({ navigation }) => {
                                 )}
                             </View>
                             <View style={styles.statusContent}>
-                                <Text style={styles.statusTitle}>Status Pesanan</Text>
-                                <Text style={styles.statusSubtitle}>LACAK PESANAN AKTIF ANDA</Text>
+                                <Text style={styles.statusTitle}>Cek Pesananmu</Text>
+                                <Text style={styles.statusSubtitle}>YUK CEK POSISI PESANANMU</Text>
                             </View>
                             {latestOrder ? (
                                 <TouchableOpacity

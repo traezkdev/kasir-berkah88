@@ -218,8 +218,8 @@ const CustomerProfile = ({ navigation }) => {
             <View style={[styles.header, {
                 paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 15 : (insets.top > 0 ? insets.top + 10 : 25)
             }]}>
-                <Text style={styles.headerTitle}>Profil Saya</Text>
-                <Text style={styles.headerSubtitle}>INFORMASI & PENGATURAN AKUN</Text>
+                <Text style={styles.headerTitle}>Profil Berkah Saya</Text>
+                <Text style={styles.headerSubtitle}>INFO & ATUR AKUN BIAR BERKAH</Text>
             </View>
 
             {/* Fixed Profile Card (Outside ScrollView) */}
@@ -257,7 +257,7 @@ const CustomerProfile = ({ navigation }) => {
                             <Banknote size={24} color="#138FEA" />
                         </View>
                         <View style={styles.pointsContent}>
-                            <Text style={styles.pointsLabel}>Poin Berkah88</Text>
+                            <Text style={styles.pointsLabel}>Tabungan Poin Berkah</Text>
                             <Text style={styles.pointsValue}>{Math.floor(userData.points || 0)} Poin</Text>
                         </View>
                         <ChevronRight size={20} color="#CBD5E1" />
@@ -269,18 +269,18 @@ const CustomerProfile = ({ navigation }) => {
                     {[
                         {
                             icon: MapPin,
-                            label: 'Alamat Tersimpan',
+                            label: 'Alamat Pengiriman',
                             color: '#3B82F6',
                             bg: '#EFF6FF',
-                            desc: userData.address || 'Klik untuk atur alamat',
+                            desc: userData.address || 'Atur alamat pengirimanmu di sini',
                             onClick: () => setIsProfileModalOpen(true)
                         },
                         {
                             icon: ShoppingBag,
-                            label: 'Status Pesanan',
+                            label: 'Pesanan Berkahku',
                             color: '#F97316',
                             bg: '#FFF7ED',
-                            desc: 'Lacak pesanan aktif Anda',
+                            desc: 'Lacak pesanan aktifmu, semoga berkah',
                             onClick: () => navigation.navigate('Orders')
                         },
                         {
@@ -288,15 +288,15 @@ const CustomerProfile = ({ navigation }) => {
                             label: 'Bantuan & Dukungan',
                             color: '#F59E0B',
                             bg: '#FFFBEB',
-                            desc: 'Pusat bantuan 24/7',
+                            desc: 'Tanya admin kalau ada yang kurang jelas',
                             onClick: () => navigation.navigate('ChatScreen')
                         },
                         {
                             icon: Shield,
-                            label: 'Keamanan Akun',
+                            label: 'Ganti Password & Keamanan',
                             color: '#059669',
                             bg: '#ECFDF5',
-                            desc: 'Ubah password & keamanan',
+                            desc: 'Ubah password biar akun makin aman',
                             onClick: () => setIsAccountModalOpen(true)
                         },
                         {
@@ -304,7 +304,7 @@ const CustomerProfile = ({ navigation }) => {
                             label: 'Pengaturan Notifikasi',
                             color: '#6366F1',
                             bg: '#EEF2FF',
-                            desc: 'Suara & Pemberitahuan',
+                            desc: 'Atur suara & pemberitahuan pesan',
                             onClick: () => setIsNotifModalOpen(true)
                         }
                     ].map((item, idx) => (
@@ -339,7 +339,7 @@ const CustomerProfile = ({ navigation }) => {
                     <View style={styles.logoutIconWrap}>
                         <LogOut size={20} color="#FFFFFF" />
                     </View>
-                    <Text style={styles.logoutText}>Keluar dari Aplikasi</Text>
+                    <Text style={styles.logoutText}>Pamit Keluar Dulu</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -347,7 +347,7 @@ const CustomerProfile = ({ navigation }) => {
                     onPress={() => navigation.navigate('DeveloperCreditsScreen')}
                     activeOpacity={0.7}
                 >
-                    <Text style={styles.versionText}>BERKAH88 • VERSI 1.6.1</Text>
+                    <Text style={styles.versionText}>ALHAMDULILLAH • BERKAH88 v1.6.1</Text>
                     <Text style={styles.developerText}>by traezkdev</Text>
                 </TouchableOpacity>
             </ScrollView>
@@ -375,7 +375,7 @@ const CustomerProfile = ({ navigation }) => {
                         </View>
 
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Atur Profil</Text>
+                            <Text style={styles.modalTitle}>Update Profil Bismillah</Text>
                             <TouchableOpacity onPress={() => setIsProfileModalOpen(false)} style={styles.modalClose}>
                                 <X size={20} color="#64748B" />
                             </TouchableOpacity>
@@ -389,7 +389,7 @@ const CustomerProfile = ({ navigation }) => {
                         >
                             <View style={styles.modalBody}>
                                 <View style={styles.inputGroup}>
-                                    <Text style={styles.inputLabel}>NOMOR TELEPON</Text>
+                                    <Text style={styles.inputLabel}>NOMOR WA AKTIF</Text>
                                     <View style={styles.inputWrap}>
                                         <TextInput
                                             style={styles.input}
@@ -403,7 +403,7 @@ const CustomerProfile = ({ navigation }) => {
                                 </View>
 
                                 <View style={styles.inputGroup}>
-                                    <Text style={styles.inputLabel}>ALAMAT LENGKAP</Text>
+                                    <Text style={styles.inputLabel}>ALAMAT KIRIM LENGKAP</Text>
                                     <View style={[styles.inputWrap, styles.textAreaWrap]}>
                                         <TextInput
                                             style={[styles.input, styles.textArea]}
@@ -425,7 +425,7 @@ const CustomerProfile = ({ navigation }) => {
                                     {isLoading ? (
                                         <ActivityIndicator color="#FFFFFF" size="small" />
                                     ) : (
-                                        <Text style={styles.saveBtnText}>Simpan Perubahan</Text>
+                                        <Text style={styles.saveBtnText}>Bismillah, Update Profil</Text>
                                     )}
                                 </TouchableOpacity>
                             </View>
@@ -458,7 +458,7 @@ const CustomerProfile = ({ navigation }) => {
                         </View>
 
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Keamanan Akun</Text>
+                            <Text style={styles.modalTitle}>Keamanan Akun Bismillah</Text>
                             <TouchableOpacity onPress={() => setIsAccountModalOpen(false)} style={styles.modalClose}>
                                 <X size={20} color="#64748B" />
                             </TouchableOpacity>
@@ -530,7 +530,7 @@ const CustomerProfile = ({ navigation }) => {
                                     {isLoading ? (
                                         <ActivityIndicator color="#FFFFFF" size="small" />
                                     ) : (
-                                        <Text style={styles.saveBtnText}>Perbarui Password</Text>
+                                        <Text style={styles.saveBtnText}>Bismillah, Ganti Password</Text>
                                     )}
                                 </TouchableOpacity>
                             </View>

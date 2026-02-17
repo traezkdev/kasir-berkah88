@@ -416,13 +416,13 @@ const CustomerCart = ({ navigation }) => {
                     <View style={styles.emptyIconWrap}>
                         <ShoppingBag size={60} color="#E2E8F0" />
                     </View>
-                    <Text style={styles.emptyTitle}>Keranjang Kosong</Text>
-                    <Text style={styles.emptySubtitle}>Sepertinya Anda belum memilih menu apapun.</Text>
+                    <Text style={styles.emptyTitle}>Wah, Masih Kosong Nih</Text>
+                    <Text style={styles.emptySubtitle}>Yuk, isi dengan menu favoritmu biar berkah!</Text>
                     <TouchableOpacity
                         style={styles.browseBtn}
                         onPress={() => navigation.navigate('Menu')}
                     >
-                        <Text style={styles.browseBtnText}>Cari Menu Sekarang</Text>
+                        <Text style={styles.browseBtnText}>Cari Menu Bismillah</Text>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
@@ -438,7 +438,7 @@ const CustomerCart = ({ navigation }) => {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                     <ArrowLeft size={20} color="#1E293B" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Keranjang Saya</Text>
+                <Text style={styles.headerTitle}>Pesanan Berkah Kamu</Text>
                 <TouchableOpacity onPress={() => clearCart()} style={styles.clearBtn}>
                     <Trash2 size={18} color="#94A3B8" />
                 </TouchableOpacity>
@@ -453,7 +453,7 @@ const CustomerCart = ({ navigation }) => {
                 extraScrollHeight={100} // Memberikan ruang ekstra di atas keyboard
             >
                 <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Item Pesanan</Text>
+                    <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Daftar Pesanan Berkah</Text>
                     {cart.map((item) => (
                         <CartItem
                             key={item.cartId}
@@ -469,11 +469,11 @@ const CustomerCart = ({ navigation }) => {
 
                 {/* Delivery Notes */}
                 <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Catatan Pesanan (Optional)</Text>
+                    <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Request Tambahan (Opsional)</Text>
                     <View style={[styles.notesInputRow, { alignItems: 'flex-start', paddingVertical: 14 }]}>
                         <Info size={18} color="#94A3B8" style={{ marginTop: 12 }} />
                         <TextInput
-                            placeholder="Contoh: Jangan terlalu pedas ya..."
+                            placeholder="Bismillah, request-nya apa nih? (Contoh: Gak pake sambel ya)"
                             style={[styles.notesInput, { minHeight: 80, textAlignVertical: 'top', paddingTop: 8 }]}
                             value={notes}
                             onChangeText={setNotes}
@@ -487,7 +487,7 @@ const CustomerCart = ({ navigation }) => {
                 {/* Delivery Address */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>
-                        Data Pengiriman <Text style={{ color: '#EF4444' }}>*</Text>
+                        Tujuan Pengiriman <Text style={{ color: '#EF4444' }}>*</Text>
                     </Text>
 
                     {/* Delivery Type Selector */}
@@ -499,7 +499,7 @@ const CustomerCart = ({ navigation }) => {
                             <View style={[styles.radioOutline, deliveryDataType === 'profile' && styles.radioActive]}>
                                 {deliveryDataType === 'profile' && <View style={styles.radioInner} />}
                             </View>
-                            <Text style={[styles.deliveryOptionText, deliveryDataType === 'profile' && styles.deliveryOptionTextActive]}>Gunakan Data Profil</Text>
+                            <Text style={[styles.deliveryOptionText, deliveryDataType === 'profile' && styles.deliveryOptionTextActive]}>Sesuai Profil</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.deliveryOption, deliveryDataType === 'new' && styles.deliveryOptionActive]}
@@ -508,7 +508,7 @@ const CustomerCart = ({ navigation }) => {
                             <View style={[styles.radioOutline, deliveryDataType === 'new' && styles.radioActive]}>
                                 {deliveryDataType === 'new' && <View style={styles.radioInner} />}
                             </View>
-                            <Text style={[styles.deliveryOptionText, deliveryDataType === 'new' && styles.deliveryOptionTextActive]}>Gunakan Data Baru</Text>
+                            <Text style={[styles.deliveryOptionText, deliveryDataType === 'new' && styles.deliveryOptionTextActive]}>Alamat Baru</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -519,7 +519,7 @@ const CustomerCart = ({ navigation }) => {
                                     <Phone size={16} color="#3B82F6" />
                                 </View>
                                 <View>
-                                    <Text style={styles.profileDataLabel}>Nomor Telepon</Text>
+                                    <Text style={styles.profileDataLabel}>Nomor WA Aktif</Text>
                                     <Text style={styles.profileDataValue}>{profilePhone || 'Belum diatur'}</Text>
                                 </View>
                             </View>
@@ -585,8 +585,8 @@ const CustomerCart = ({ navigation }) => {
                                 <Banknote size={20} color={paymentMethod === 'cash' ? "#059669" : "#64748B"} />
                             </View>
                             <View>
-                                <Text style={[styles.paymentName, paymentMethod === 'cash' && { color: '#059669' }]}>Bayar Tunai</Text>
-                                <Text style={styles.paymentDesc}>bayar ketika makanan sudah sampai</Text>
+                                <Text style={[styles.paymentName, paymentMethod === 'cash' && { color: '#059669' }]}>Bayar Cash (COD)</Text>
+                                <Text style={styles.paymentDesc}>bayar santai pas makanan nyampe</Text>
                             </View>
                         </View>
                         {paymentMethod === 'cash' && <CheckCircle2 size={20} color="#059669" />}
@@ -602,8 +602,8 @@ const CustomerCart = ({ navigation }) => {
                                 <QrCode size={20} color={paymentMethod === 'transfer' ? "#2563EB" : "#64748B"} />
                             </View>
                             <View>
-                                <Text style={[styles.paymentName, paymentMethod === 'transfer' && { color: '#2563EB' }]}>Bayar dengan Qris</Text>
-                                <Text style={styles.paymentDesc}>Bayar dengan scan qris</Text>
+                                <Text style={[styles.paymentName, paymentMethod === 'transfer' && { color: '#2563EB' }]}>Scan QRIS Berkah</Text>
+                                <Text style={styles.paymentDesc}>Biar praktis bin berkah</Text>
                             </View>
                         </View>
                         {paymentMethod === 'transfer' && <CheckCircle2 size={20} color="#2563EB" />}
@@ -643,8 +643,8 @@ const CustomerCart = ({ navigation }) => {
                                     <Text style={styles.pointsHeaderEmoji}>💎</Text>
                                 </View>
                                 <View style={styles.pointsHeaderText}>
-                                    <Text style={styles.sectionTitle}>Tukar Poin Berkah88</Text>
-                                    <Text style={styles.pointsHeaderSubtitle}>Hemat lebih banyak dengan poin!</Text>
+                                    <Text style={styles.sectionTitle}>Tukar Poin Berkah</Text>
+                                    <Text style={styles.pointsHeaderSubtitle}>Alhamdulillah, poin bisa buat jajan hemat!</Text>
                                 </View>
                             </View>
 
@@ -654,10 +654,10 @@ const CustomerCart = ({ navigation }) => {
                                         <View style={styles.pointsMainRow}>
                                             <View style={styles.pointsLeft}>
                                                 <View style={styles.pointsBadge}>
-                                                    <Text style={styles.pointsBadgeText}>SALDO POIN</Text>
+                                                    <Text style={styles.pointsBadgeText}>SISA POIN</Text>
                                                 </View>
                                                 <Text style={styles.pointsValue}>{points.toLocaleString('id-ID')}</Text>
-                                                <Text style={styles.pointsValueLabel}>Poin Tersedia</Text>
+                                                <Text style={styles.pointsValueLabel}>Siap dipakai nih</Text>
                                             </View>
 
                                             <View style={styles.pointsRight}>
@@ -688,7 +688,7 @@ const CustomerCart = ({ navigation }) => {
                                         <Text style={styles.pointsActiveIconText}>✓</Text>
                                     </View>
                                     <View style={styles.pointsActiveContent}>
-                                        <Text style={styles.pointsActiveTitle}>Poin Digunakan</Text>
+                                        <Text style={styles.pointsActiveTitle}>Alhamdulillah, Poin Terpakai</Text>
                                         <Text style={styles.pointsActiveDesc}>
                                             Kamu menghemat <Text style={styles.pointsActiveAmount}>{formatCurrency(pointsToUse)}</Text> dengan {pointsToUse.toLocaleString('id-ID')} poin
                                         </Text>
@@ -703,7 +703,7 @@ const CustomerCart = ({ navigation }) => {
 
                 {/* Promo Code Section */}
                 <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Gunakan Kode Promo</Text>
+                    <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Pake Kode Promo</Text>
                     {appliedPromo ? (
                         <View style={styles.appliedPromoBox}>
                             <View style={styles.promoInfo}>
@@ -723,7 +723,7 @@ const CustomerCart = ({ navigation }) => {
                         <View style={styles.promoInputRow}>
                             <Ticket size={20} color="#94A3B8" />
                             <TextInput
-                                placeholder="Masukkan kode promo..."
+                                placeholder="Ketik kode promo di sini..."
                                 style={styles.promoInput}
                                 value={promoCode}
                                 onChangeText={setPromoCode}
@@ -737,7 +737,7 @@ const CustomerCart = ({ navigation }) => {
                                 {validatingPromo ? (
                                     <ActivityIndicator size="small" color="#FFFFFF" />
                                 ) : (
-                                    <Text style={styles.applyPromoBtnText}>PAKAI</Text>
+                                    <Text style={styles.applyPromoBtnText}>GAS</Text>
                                 )}
                             </TouchableOpacity>
                         </View>
@@ -769,7 +769,7 @@ const CustomerCart = ({ navigation }) => {
                         </View>
                     )}
                     <View style={[styles.summaryRow, styles.totalRow]}>
-                        <Text style={styles.totalLabel}>Total Pembayaran</Text>
+                        <Text style={styles.totalLabel}>Total Semuanya</Text>
                         <Text style={styles.totalValue}>{formatCurrency(finalTotal)}</Text>
                     </View>
                 </View>
@@ -780,7 +780,7 @@ const CustomerCart = ({ navigation }) => {
             {/* Sticky Checkout Button - Outside Scroll, but inside SafeArea */}
             <View style={[styles.footer, { paddingBottom: getSafeBottomPadding(insets, -18, 20) }]}>
                 <View style={styles.footerLeft}>
-                    <Text style={styles.footerLabel}>Total Bayar</Text>
+                    <Text style={styles.footerLabel}>Total</Text>
                     <Text style={styles.footerValue}>{formatCurrency(finalTotal)}</Text>
                 </View>
                 <TouchableOpacity
@@ -792,7 +792,7 @@ const CustomerCart = ({ navigation }) => {
                         <ActivityIndicator color="#FFFFFF" size="small" />
                     ) : (
                         <>
-                            <Text style={styles.checkoutBtnText}>Buat Pesanan</Text>
+                            <Text style={styles.checkoutBtnText}>Bismillah, Pesan Sekarang</Text>
                             <ChevronRight size={20} color="#FFFFFF" />
                         </>
                     )}
