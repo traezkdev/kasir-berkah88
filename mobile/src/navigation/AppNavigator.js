@@ -257,8 +257,6 @@ const sellerNavStyles = {
 const SellerDashboardStack = () => (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Dashboard" component={SellerDashboard} />
-        <Stack.Screen name="ChatScreen" component={ChatScreen} />
-        <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
         <Stack.Screen name="Banners" component={Banners} />
         <Stack.Screen name="CategoryManagement" component={CategoryManagement} />
         <Stack.Screen name="CustomerManagement" component={CustomerManagement} />
@@ -301,8 +299,9 @@ const SellerRootStack = () => (
         <Stack.Screen name="MainTabs" component={SellerTabs} />
         <Stack.Screen name="TransactionTrash" component={TransactionTrash} />
         <Stack.Screen name="OrderTrash" component={OrderTrash} />
+        <Stack.Screen name="ChatScreen" component={ChatScreen} />
+        <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
     </Stack.Navigator>
-
 );
 
 const OwnerNavStyles = {
