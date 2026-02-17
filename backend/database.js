@@ -51,7 +51,8 @@ const setupDatabase = async () => {
         is_featured BOOLEAN DEFAULT FALSE,
         description TEXT,
         updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-        order_index INTEGER DEFAULT 0
+        order_index INTEGER DEFAULT 0,
+        is_hidden BOOLEAN DEFAULT FALSE
       );
     `;
 
@@ -482,6 +483,17 @@ const setupDatabase = async () => {
       if (rows[0].colCount === 0) {
         await connection.query(`ALTER TABLE menu_items ADD COLUMN ${col.name} ${col.type}`);
         console.log(`Successfully added column '${col.name}' to menu_items table.`);
+      }
+
+      // --- Explicit check for 'is_hidden' using SHOW COLUMNS (more reliable) ---
+      try {
+        const [isHiddenCol] = await connection.query("SHOW COLUMNS FROM menu_items LIKE 'is_hidden'");
+        if (isHiddenCol.length === 0) {
+          await connection.query("ALTER TABLE menu_items ADD COLUMN is_hidden BOOLEAN DEFAULT FALSE");
+          console.log("Added is_hidden column to menu_items table (explicit migration).");
+        }
+      } catch (err) {
+        console.error('Error in explicit is_hidden migration:', err);
       }
     }
 

@@ -558,7 +558,7 @@ const MenuItem = React.memo(({ item, onEdit, onDelete, onToggleVisibility }) => 
                         <Text style={styles.discountText}>Hemat {parseFloat(item.discount)}%</Text>
                     </View>
                 )}
-                {item.is_hidden && (
+                {(item.is_hidden === 1 || item.is_hidden === true) && (
                     <View style={[styles.discountBadge, { backgroundColor: '#64748B' }]}>
                         <EyeOff size={8} color="#FFFFFF" style={{ marginRight: 2 }} />
                         <Text style={styles.discountText}>HIDDEN</Text>
