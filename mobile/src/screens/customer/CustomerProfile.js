@@ -33,6 +33,7 @@ import {
     Bell,
     Banknote,
     Lock,
+    Mail,
     Eye,
     EyeOff,
     Check,
@@ -64,6 +65,7 @@ const CustomerProfile = ({ navigation }) => {
     const [userData, setUserData] = useState({
         username: 'Pelanggan',
         role: 'user',
+        email: '',
         phone: '',
         address: '',
         avatar_url: null
@@ -71,6 +73,7 @@ const CustomerProfile = ({ navigation }) => {
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [tempAddress, setTempAddress] = useState('');
     const [tempPhone, setTempPhone] = useState('');
+    const [tempEmail, setTempEmail] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [pageLoading, setPageLoading] = useState(true);
 
@@ -122,6 +125,7 @@ const CustomerProfile = ({ navigation }) => {
                 setUserData(result.data);
                 setTempAddress(result.data.address || '');
                 setTempPhone(result.data.phone || '');
+                setTempEmail(result.data.email || '');
             }
         } catch (error) {
             console.error("Error fetching profile:", error);
@@ -139,11 +143,12 @@ const CustomerProfile = ({ navigation }) => {
         setIsLoading(true);
         try {
             const response = await apiService.put('/api/user/profile', {
+                email: tempEmail,
                 phone: tempPhone,
                 address: tempAddress
             });
             if (response.data.message === 'success') {
-                setUserData({ ...userData, address: tempAddress, phone: tempPhone });
+                setUserData({ ...userData, address: tempAddress, phone: tempPhone, email: tempEmail });
                 setIsProfileModalOpen(false);
                 showToast('Profil berhasil diperbarui!', 'success');
             }
@@ -241,6 +246,7 @@ const CustomerProfile = ({ navigation }) => {
                                 <Text style={styles.roleText}>{userData.role?.toUpperCase()}</Text>
                             </View>
                         </View>
+                        <Text style={styles.userEmail}>{userData.email || 'Email belum diatur'}</Text>
                         <Text style={styles.userPhone}>{userData.phone || 'Belum ada nomor HP'}</Text>
                     </View>
                 </View>
@@ -268,11 +274,11 @@ const CustomerProfile = ({ navigation }) => {
                 <View style={styles.menuBox}>
                     {[
                         {
-                            icon: MapPin,
-                            label: 'Alamat Pengiriman',
+                            icon: UserCircle,
+                            label: 'Informasi Profil & Email',
                             color: '#3B82F6',
                             bg: '#EFF6FF',
-                            desc: userData.address || 'Atur alamat pengirimanmu di sini',
+                            desc: userData.email || 'Lengkapi data profil & alamat berkatmu',
                             onClick: () => setIsProfileModalOpen(true)
                         },
                         {
@@ -388,6 +394,21 @@ const CustomerProfile = ({ navigation }) => {
                             extraScrollHeight={20}
                         >
                             <View style={styles.modalBody}>
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.inputLabel}>ALAMAT EMAIL</Text>
+                                    <View style={styles.inputWrap}>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Contoh: user@email.com"
+                                            value={tempEmail}
+                                            onChangeText={setTempEmail}
+                                            keyboardType="email-address"
+                                            autoCapitalize="none"
+                                        />
+                                        <Mail size={18} color="#94A3B8" />
+                                    </View>
+                                </View>
+
                                 <View style={styles.inputGroup}>
                                     <Text style={styles.inputLabel}>NOMOR WA AKTIF</Text>
                                     <View style={styles.inputWrap}>
@@ -782,9 +803,15 @@ const styles = StyleSheet.create({
         color: '#059669',
     },
     userPhone: {
-        fontSize: 14,
+        fontSize: 12,
         color: '#94A3B8',
         fontWeight: '500',
+    },
+    userEmail: {
+        fontSize: 12,
+        color: '#64748B',
+        fontWeight: '600',
+        marginBottom: 2,
     },
     menuBox: {
         backgroundColor: '#FFFFFF',

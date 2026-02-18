@@ -2722,7 +2722,7 @@ app.get("/api/customers/search", authenticateToken, authorizeRoles('user', 'admi
         if (!query) return res.json({ message: "success", data: [] });
 
         // Search by name or phone
-        const sql = "SELECT id, username as name, phone, points, address FROM users WHERE role = 'pelanggan' AND (username LIKE ? OR phone LIKE ?) LIMIT 10";
+        const sql = "SELECT id, username as name, phone, email, points, address FROM users WHERE role = 'pelanggan' AND (username LIKE ? OR phone LIKE ?) LIMIT 10";
         const [rows] = await db.query(sql, [`%${query}%`, `%${query}%`]);
         res.json({ message: "success", data: rows });
     } catch (err) {
@@ -2752,6 +2752,7 @@ app.get("/api/customers", authenticateToken, authorizeRoles('user', 'admin', 'ka
                 u.id, 
                 u.username, 
                 u.phone, 
+                u.email, 
                 u.address, 
                 u.points, 
                 COUNT(o.id) as total_orders,
@@ -2759,7 +2760,7 @@ app.get("/api/customers", authenticateToken, authorizeRoles('user', 'admin', 'ka
             FROM users u
             LEFT JOIN orders o ON u.id = o.user_id AND o.status = 'completed'
             ${whereClause}
-            GROUP BY u.id, u.username, u.phone, u.address, u.points
+            GROUP BY u.id, u.username, u.phone, u.email, u.address, u.points
             ORDER BY u.id DESC 
             LIMIT ? OFFSET ?
         `;

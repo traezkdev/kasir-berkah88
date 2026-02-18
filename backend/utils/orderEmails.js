@@ -21,8 +21,16 @@ const sendOrderEmailNotification = async (orderId, type, status = null) => {
 
         const order = orderRows[0];
         const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
-        const totalAmount = parseFloat(order.total || 0);
-        const totalFormatted = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(totalAmount);
+
+        // Perhitungan biaya
+        const pointsDiscount = parseFloat(order.points_used || 0);
+        const promoDiscount = parseFloat(order.promo_discount || 0);
+        const finalTotal = parseFloat(order.total || 0);
+
+        // Menghitung subtotal kotor (sebelum diskon poin & promo)
+        const subtotalGross = finalTotal + pointsDiscount + promoDiscount;
+
+        const formatCurrency = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(val);
 
         // Get primary frontend URL from potentially comma-separated list
         const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').split(',')[0].trim();
@@ -45,28 +53,54 @@ const sendOrderEmailNotification = async (orderId, type, status = null) => {
                         <p>Ada pesanan baru masuk dari <strong>${order.customer_name}</strong>.</p>
                         
                         <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                            <h3 style="margin-top: 0; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Detail Pesanan:</h3>
-                            <table style="width: 100%; border-collapse: collapse;">
-                                ${items.map(item => `
+                            <h3 style="margin-top: 0; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Rincian Pesanan:</h3>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                                ${items.map(item => {
+                const discText = item.discount > 0 ? `<br/><span style="color: #ef4444; font-size: 12px;">(Disc. ${item.discount}${item.discount <= 100 ? '%' : ''})</span>` : '';
+                return `
                                     <tr>
-                                        <td style="padding: 5px 0;">${item.name} x${item.quantity}</td>
-                                        <td style="text-align: right; padding: 5px 0;">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(item.subtotal)}</td>
+                                        <td style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                                            <strong>${item.name}</strong> x${item.quantity}${discText}
+                                        </td>
+                                        <td style="text-align: right; padding: 8px 0; border-bottom: 1px solid #eee;">${formatCurrency(item.subtotal)}</td>
                                     </tr>
-                                `).join('')}
-                                <tr style="border-top: 2px solid #ddd;">
-                                    <td style="padding: 10px 0; font-weight: bold;">TOTAL</td>
-                                    <td style="text-align: right; padding: 10px 0; font-weight: bold; color: #059669;">${totalFormatted}</td>
+                                    `;
+            }).join('')}
+                            </table>
+                            
+                            <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                                <tr>
+                                    <td style="padding: 4px 0; font-size: 14px;">Subtotal</td>
+                                    <td style="text-align: right; padding: 4px 0; font-size: 14px;">${formatCurrency(subtotalGross)}</td>
+                                </tr>
+                                ${pointsDiscount > 0 ? `
+                                <tr style="color: #ef4444; font-size: 14px;">
+                                    <td style="padding: 4px 0;">Diskon Poin</td>
+                                    <td style="text-align: right; padding: 4px 0;">-${formatCurrency(pointsDiscount)}</td>
+                                </tr>` : ''}
+                                ${promoDiscount > 0 ? `
+                                <tr style="color: #ef4444; font-size: 14px;">
+                                    <td style="padding: 4px 0;">Kupon Promo</td>
+                                    <td style="text-align: right; padding: 4px 0;">-${formatCurrency(promoDiscount)}</td>
+                                </tr>` : ''}
+                                <tr style="border-top: 2px solid #ddd; font-size: 16px;">
+                                    <td style="padding: 10px 0; font-weight: bold;">TOTAL AKHIR</td>
+                                    <td style="text-align: right; padding: 10px 0; font-weight: bold; color: #059669;">${formatCurrency(finalTotal)}</td>
                                 </tr>
                             </table>
+
+                            <div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed #ccc; font-size: 13px;">
+                                <p style="margin: 4px 0;"><strong>Metode Pembayaran:</strong> ${order.payment_method || 'Tunai'}</p>
+                                <p style="margin: 4px 0;"><strong>Catatan:</strong> ${order.note || '-'}</p>
+                            </div>
                         </div>
 
                         <p><strong>Info Pelanggan:</strong><br/>
-                        Nama: ${order.customer_name}<br/>
                         Telp: ${order.customer_phone || '-'}<br/>
                         Alamat: ${order.customer_address || '-'}</p>
 
                         <div style="text-align: center; margin-top: 30px;">
-                            <a href="${frontendUrl}/seller/orders" style="background-color: #059669; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Lihat Daftar Pesanan</a>
+                            <a href="${frontendUrl}/seller/orders" style="background-color: #059669; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Kelola Pesanan</a>
                         </div>
                     </div>
                     <div style="background-color: #f4f4f4; padding: 15px; text-align: center; color: #888; font-size: 12px;">
@@ -90,22 +124,22 @@ const sendOrderEmailNotification = async (orderId, type, status = null) => {
 
             switch (status) {
                 case 'accepted':
-                    statusTitle = 'Pesanan Diterima';
-                    statusMsg = 'Kabar baik! Pesanan Anda telah diterima dan sekarang sedang kami siapkan. Mohon ditunggu ya!';
+                    statusTitle = 'Pesanan Kamu Diterima';
+                    statusMsg = 'Hore! Pesanan kamu sudah kami terima dan lagi disiapkan nih. Ditunggu ya!';
                     break;
                 case 'rejected':
-                    statusTitle = 'Pesanan Ditolak';
-                    statusMsg = 'Mohon maaf, pesanan Anda tidak dapat kami proses saat ini. Dana/Poin (jika ada) telah dikembalikan ke akun Anda.';
+                    statusTitle = 'Pesanan Belum Bisa Diproses';
+                    statusMsg = 'Yah, maaf banget ya, pesanan kamu belum bisa kami proses sekarang. Dana atau poin kamu sudah dikembalikan otomatis kok.';
                     headerColor = '#DC2626';
                     break;
                 case 'cancelled':
                     statusTitle = 'Pesanan Dibatalkan';
-                    statusMsg = 'Pesanan Anda telah berhasil dibatalkan sesuai permintaan.';
+                    statusMsg = 'Pesanan kamu sudah berhasil dibatalkan nih. Sampai jumpa di pesanan berikutnya ya!';
                     headerColor = '#4B5563';
                     break;
                 case 'completed':
-                    statusTitle = 'Pesanan Selesai';
-                    statusMsg = 'Alhamdulillah, pesanan Anda telah selesai. Terima kasih telah berbelanja di Berkah 88! Semoga berkah.';
+                    statusTitle = 'Pesanan Sudah Selesai';
+                    statusMsg = 'Pesanan kamu sudah selesai nih! Makasih banyak ya sudah jajan di Berkah 88. Semoga suka sama pesanannya!';
                     break;
                 default:
                     return { success: false, error: 'Invalid status for email' };
@@ -119,31 +153,42 @@ const sendOrderEmailNotification = async (orderId, type, status = null) => {
                         <p style="margin: 5px 0 0 0;">ID Pesanan: #${orderId}</p>
                     </div>
                     <div style="padding: 20px;">
-                        <p>Assalamu’alaikum <strong>${order.customer_username || order.customer_name}</strong>,</p>
+                        <p>Halo <strong>${order.customer_username || order.customer_name}</strong>,</p>
                         <p>${statusMsg}</p>
                         
                         <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                            <h3 style="margin-top: 0; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Ringkasan Pesanan:</h3>
-                            <table style="width: 100%; border-collapse: collapse;">
+                            <h3 style="margin-top: 0; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Ringkasan Pembayaran:</h3>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
                                 <tr>
-                                    <td style="padding: 5px 0;">Status Saat Ini:</td>
-                                    <td style="text-align: right; padding: 5px 0; font-weight: bold; color: ${headerColor};">${status.toUpperCase()}</td>
+                                    <td style="padding: 6px 0;">Total Pesanan</td>
+                                    <td style="text-align: right; padding: 6px 0;">${formatCurrency(subtotalGross)}</td>
                                 </tr>
-                                <tr>
-                                    <td style="padding: 5px 0;">Total Bayar:</td>
-                                    <td style="text-align: right; padding: 5px 0; font-weight: bold;">${totalFormatted}</td>
+                                ${pointsDiscount > 0 ? `
+                                <tr style="color: #ef4444;">
+                                    <td style="padding: 4px 0;">Diskon Poin</td>
+                                    <td style="text-align: right; padding: 4px 0;">-${formatCurrency(pointsDiscount)}</td>
+                                </tr>` : ''}
+                                ${promoDiscount > 0 ? `
+                                <tr style="color: #ef4444;">
+                                    <td style="padding: 4px 0;">Diskon Kupon</td>
+                                    <td style="text-align: right; padding: 4px 0;">-${formatCurrency(promoDiscount)}</td>
+                                </tr>` : ''}
+                                <tr style="border-top: 1px solid #ddd; font-size: 15px;">
+                                    <td style="padding: 10px 0; font-weight: bold;">Total Bayar</td>
+                                    <td style="text-align: right; padding: 10px 0; font-weight: bold; color: ${headerColor};">${formatCurrency(finalTotal)}</td>
                                 </tr>
                             </table>
+                            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ccc; font-size: 12px;">
+                                <strong>Metode Pembayaran:</strong> ${order.payment_method || 'Tunai'}
+                            </div>
                         </div>
 
-                        <p style="font-size: 14px; color: #666;">Anda dapat memantau status pesanan kapan saja melalui aplikasi atau website kami.</p>
-
                         <div style="text-align: center; margin-top: 30px;">
-                            <a href="${frontendUrl}/orders" style="background-color: ${headerColor}; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Lihat Riwayat Pesanan</a>
+                            <a href="${frontendUrl}/orders" style="background-color: ${headerColor}; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Pantau Pesanan</a>
                         </div>
                     </div>
                     <div style="background-color: #f4f4f4; padding: 15px; text-align: center; color: #888; font-size: 12px;">
-                        © 2026 Kasir Berkah 88 - Jajan Enak, Hati Tenang, Hidup Berkah
+                        © 2026 Kasir Berkah 88 - Jajan Enak, Hati Senang!
                     </div>
                 </div>
             `;

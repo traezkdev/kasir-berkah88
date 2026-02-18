@@ -172,9 +172,15 @@ const CustomerManagement = () => {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <h3 className="text-lg font-black text-gray-900 truncate">{customer.username}</h3>
-                                        <div className="flex items-center gap-2 text-gray-400 mt-0.5">
-                                            <Icon name="Phone" size={12} />
-                                            <span className="text-[10px] font-bold">{customer.phone || 'No Phone'}</span>
+                                        <div className="flex flex-col gap-0.5 mt-0.5">
+                                            <div className="flex items-center gap-2 text-gray-400">
+                                                <Icon name="Phone" size={10} />
+                                                <span className="text-[10px] font-bold">{customer.phone || 'No Phone'}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-gray-400">
+                                                <Icon name="Mail" size={10} />
+                                                <span className="text-[10px] font-bold truncate max-w-[150px]">{customer.email || 'Email belum diatur'}</span>
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="bg-amber-50 px-2 py-1 rounded-lg border border-amber-100 flex items-center gap-1.5">

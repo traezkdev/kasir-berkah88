@@ -22,14 +22,15 @@ import {
     Calendar,
     ArrowRight,
     ChevronRight,
-    RefreshCw
+    RefreshCw,
+    Mail
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 import OrderDetailModal from '../../components/OrderDetailModal';
 import ReceiptModal from '../../components/ReceiptModal';
 
 const CustomerDetails = ({ navigation, route }) => {
-    const { customerName, customerPhone, customerAddress } = route.params;
+    const { customerName, customerPhone, customerAddress, customerEmail: initialEmail } = route.params;
     const [loading, setLoading] = useState(true);
     const [transactions, setTransactions] = useState([]);
     const [activeOrders, setActiveOrders] = useState([]);
@@ -38,6 +39,7 @@ const CustomerDetails = ({ navigation, route }) => {
         totalOrders: 0
     });
     const [points, setPoints] = useState(0);
+    const [customerEmail, setCustomerEmail] = useState(initialEmail || '');
     const [refreshing, setRefreshing] = useState(false);
 
     // Pagination for transactions
@@ -108,6 +110,7 @@ const CustomerDetails = ({ navigation, route }) => {
                         );
                         if (match) {
                             setPoints(match.points || 0);
+                            if (match.email) setCustomerEmail(match.email);
                         }
                     }
                 }
@@ -171,6 +174,10 @@ const CustomerDetails = ({ navigation, route }) => {
                             <Text style={[styles.infoBadgeText, { color: '#166534' }]}>{Math.floor(points)} Poin</Text>
                         </View>
                     )}
+                    <View style={[styles.infoBadge, { backgroundColor: '#F1F5F9' }]}>
+                        <Mail size={14} color="#64748B" />
+                        <Text style={[styles.infoBadgeText, { color: '#64748B' }]}>{customerEmail || 'No Email'}</Text>
+                    </View>
                 </View>
 
                 <View style={styles.addressBox}>
