@@ -155,6 +155,17 @@ const CustomerDetails = ({ navigation, route }) => {
         });
     };
 
+    const getStatusLabel = (status) => {
+        const map = {
+            'pending': 'MENUNGGU',
+            'accepted': 'DIPROSES',
+            'ready': 'SIAP',
+            'completed': 'SELESAI',
+            'cancelled': 'DIBATALKAN'
+        };
+        return map[status?.toLowerCase()] || status?.toUpperCase();
+    };
+
     const renderHeader = () => (
         <View style={styles.headerContent}>
             {/* Profile Card */}
@@ -226,8 +237,8 @@ const CustomerDetails = ({ navigation, route }) => {
                             <View style={styles.orderLeft}>
                                 <View style={styles.orderStatusDot} />
                                 <View>
-                                    <Text style={styles.orderId}>Order #{order.id}</Text>
-                                    <Text style={styles.orderStatus}>{(order.status || 'Pending').toUpperCase()}</Text>
+                                    <Text style={styles.orderId}>Pesanan #{order.id}</Text>
+                                    <Text style={styles.orderStatus}>{getStatusLabel(order.status || 'Pending')}</Text>
                                 </View>
                             </View>
                             <Text style={styles.orderTotal}>{formatCurrency(order.total)}</Text>
@@ -396,21 +407,25 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     contactInfo: {
-        flexDirection: 'row',
-        gap: 8,
+        flexDirection: 'column',
+        gap: 10,
         marginBottom: 20,
+        width: '100%',
     },
     infoBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F0F9FF',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 12,
-        gap: 6,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderRadius: 16,
+        gap: 10,
+        width: '100%',
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.05)',
     },
     infoBadgeText: {
-        fontSize: 13,
+        fontSize: 14,
         fontWeight: 'bold',
         color: '#138FEA',
     },

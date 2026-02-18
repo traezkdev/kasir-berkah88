@@ -204,4 +204,85 @@ const sendOrderEmailNotification = async (orderId, type, status = null) => {
     }
 };
 
-module.exports = { sendOrderEmailNotification };
+const sendNewsBroadcastEmail = async (info, customers) => {
+    try {
+        const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:4028').split(',')[0].trim();
+        const subject = `📢 Kabar Berkah: ${info.title}`;
+
+        // Base API URL to fetch images from backend
+        // Priority: 1. API_URL env, 2. Derive from frontendUrl (Localhost fallback), 3. Hardcoded default from mobile config
+        let apiUrl = process.env.API_URL;
+
+        if (!apiUrl) {
+            if (frontendUrl.includes('localhost')) {
+                apiUrl = 'http://localhost:4000';
+            } else {
+                // Gunakan default yang ada di mobile/src/api/apiService.js sebagai fallback terakhir
+                apiUrl = 'https://api.inviteshare.my.id';
+            }
+        }
+
+        // Clean API URL from trailing slash
+        const baseApiUrl = apiUrl.replace(/\/$/, '');
+
+        // Prepare image URL
+        let infoImageUrl = null;
+        if (info.image_url) {
+            if (info.image_url.startsWith('http')) {
+                infoImageUrl = info.image_url;
+            } else {
+                // Ensure image path starts with single slash
+                const cleanImagePath = info.image_url.startsWith('/') ? info.image_url : `/${info.image_url}`;
+                infoImageUrl = `${baseApiUrl}${cleanImagePath}`;
+            }
+        }
+
+        // Prepare content: Convert newlines to <br/> for better email client compatibility
+        const formattedContent = info.content ? info.content.replace(/\n/g, '<br/>') : '';
+
+        const htmlTemplate = (customerName) => `
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; color: #1E293B; border: 1px solid #E2E8F0; border-radius: 20px; overflow: hidden; background-color: #ffffff; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+                <div style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; padding: 40px 20px; text-align: center;">
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.025em;">Kabar Berkah Terbaru!</h1>
+                    <p style="margin: 10px 0 0 0; opacity: 0.9; font-weight: 500;">Jangan sampai ketinggalan info menarik hari ini</p>
+                </div>
+                
+                ${infoImageUrl ? `
+                <div style="width: 100%; text-align: center; background-color: #f8fafc;">
+                    <img src="${infoImageUrl}" alt="${info.title}" style="max-width: 100%; height: auto; display: block; margin: 0 auto;">
+                </div>
+                ` : ''}
+
+                <div style="padding: 30px;">
+                    <h2 style="margin-top: 10px; color: #0F172A; font-size: 22px; font-weight: 700; border-left: 4px solid #10B981; padding-left: 15px;">${info.title}</h2>
+                    <p style="color: #64748B; font-size: 16px; line-height: 1.6; margin-top: 20px;">
+                        Halo <strong>${customerName}</strong>,
+                    </p>
+                    <div style="color: #334155; font-size: 16px; line-height: 1.7;">${formattedContent}</div>
+                    
+                    <div style="text-align: center; margin-top: 40px; margin-bottom: 20px;">
+                        <a href="${frontendUrl}" style="background-color: #10B981; color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4);">Buka Aplikasi</a>
+                    </div>
+                </div>
+
+                <div style="background-color: #F8FAFC; padding: 25px; text-align: center; border-top: 1px solid #E2E8F0;">
+                    <p style="margin: 0; color: #94A3B8; font-size: 14px; font-weight: 600;">© 2026 Kasir Berkah 88</p>
+                    <p style="margin: 5px 0 0 0; color: #CBD5E1; font-size: 12px;">Jajan Enak, Hati Senang!</p>
+                </div>
+            </div>
+        `;
+
+        // Send to all customers with email
+        for (const customer of customers) {
+            if (customer.email) {
+                await sendEmail(customer.email, subject, htmlTemplate(customer.username || 'Pelanggan Setia'));
+            }
+        }
+        return { success: true };
+    } catch (error) {
+        console.error('Error in sendNewsBroadcastEmail:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+module.exports = { sendOrderEmailNotification, sendNewsBroadcastEmail };

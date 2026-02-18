@@ -28,7 +28,7 @@ const {
 const { sendPushNotification } = require('./utils/oneSignal');
 const { sendExpoPushNotification } = require('./utils/expoPush');
 const sendEmail = require('./utils/mailer');
-const { sendOrderEmailNotification } = require('./utils/orderEmails');
+const { sendOrderEmailNotification, sendNewsBroadcastEmail } = require('./utils/orderEmails');
 
 
 const app = express();
@@ -1813,7 +1813,7 @@ app.post("/api/information/:id/broadcast", authenticateToken, authorizeRoles('ad
         const info = infos[0];
 
         // Get all customers (pelanggan) to send notification
-        const customerSql = "SELECT id FROM users WHERE role = 'pelanggan'";
+        const customerSql = "SELECT id, email, username FROM users WHERE role = 'pelanggan'";
         const [customers] = await db.query(customerSql);
         const customerIds = customers.map(c => c.id);
 
@@ -1831,6 +1831,10 @@ app.post("/api/information/:id/broadcast", authenticateToken, authorizeRoles('ad
                 },
                 req.user.userId // Exclude the seller who is broadcasting
             ).catch(e => console.error('Error broadcasting info notification:', e));
+
+            // Kirim Email Broadcast (async)
+            sendNewsBroadcastEmail(info, customers)
+                .catch(e => console.error('Error broadcasting info email:', e));
         }
 
         await logActivity(req.user.userId, 'Broadcast Informasi', 'information', id, `Resend & Refresh info: ${info.title}`);

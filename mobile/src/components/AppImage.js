@@ -22,7 +22,8 @@ const AppImage = ({
     resizeMode = 'cover',
     placeholderIcon = ImageIcon,
     showLoader = true,
-    children
+    children,
+    refreshKey // Prop baru untuk memicu refresh manual
 }) => {
     // Gunakan satu state status untuk sinkronisasi yang lebih stabil
     const [status, setStatus] = useState(uri ? 'loading' : 'error');
@@ -43,14 +44,18 @@ const AppImage = ({
 
         // Pastikan format URL benar (menghindari double slash atau missing slash)
         const cleanPath = path.startsWith('/') ? path : `/${path}`;
-        return { uri: `${API_URL}${cleanPath}` };
+        // Jika ada refreshKey, tambahkan sebagai query param untuk memicu fetch ulang di native layer (opsional)
+        const finalUri = `${API_URL}${cleanPath}`;
+        return { uri: finalUri };
     }, [uri]);
 
-    // Reset status hanya ketika URI benar-benar berubah
+    // Reset status ketika URI atau refreshKey berubah
     useEffect(() => {
-        setStatus(uri ? 'loading' : 'error');
-        opacity.setValue(0);
-    }, [uri]);
+        if (uri) {
+            setStatus('loading');
+            opacity.setValue(0);
+        }
+    }, [uri, refreshKey]);
 
     // Gunakan useCallback untuk menjaga kestabilan referensi function
     const handleLoad = useCallback(() => {
@@ -76,6 +81,7 @@ const AppImage = ({
             {/* Hanya render gambar jika URI ada dan tidak sedang dalam status error */}
             {uri && status !== 'error' && (
                 <Animated.Image
+                    key={`${source?.uri}-${refreshKey || ''}`}
                     source={source}
                     style={[
                         styles.image,

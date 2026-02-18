@@ -227,6 +227,7 @@ const InputGroup = ({ label, icon: Icon, placeholder, value, onChangeText, secur
                 style={[styles.input, multiline && styles.inputMultiline]}
                 placeholder={placeholder}
                 placeholderTextColor="rgba(255,255,255,0.4)"
+                selectionColor="#FFFFFF"
                 value={value}
                 onChangeText={onChangeText}
                 secureTextEntry={secureTextEntry}

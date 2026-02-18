@@ -12,6 +12,8 @@ import {
     Image,
     TextInput,
     Modal,
+    AppState,
+    InteractionManager,
     Animated
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -50,6 +52,7 @@ import { useChat } from '../../context/ChatContext';
 import useSwipeToClose from '../../hooks/useSwipeToClose';
 import usePopups from '../../hooks/usePopups';
 import PopupModal from '../../components/PopupModal';
+import AppImage from '../../components/AppImage';
 
 const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -58,7 +61,7 @@ const CustomerProfile = ({ navigation }) => {
     const { logout } = useAuth();
     const { showToast } = useToast();
     const { confirm } = useConfirm();
-    const { selectedSoundId, changeNotificationSound } = useOrderNotification();
+    const { selectedSoundId, changeNotificationSound, refreshTrigger } = useOrderNotification();
     const { unreadCount } = useChat();
     const { popups } = usePopups('profile');
 
@@ -137,6 +140,16 @@ const CustomerProfile = ({ navigation }) => {
     useEffect(() => {
         fetchProfile();
         fetchNotificationSettings();
+
+        // Refresh data when app returns to foreground
+        const subscription = AppState.addEventListener('change', (nextAppState) => {
+            if (nextAppState === 'active') {
+                console.log('[CustomerProfile] App active, refreshing data...');
+                fetchProfile();
+            }
+        });
+
+        return () => subscription.remove();
     }, []);
 
     const handleUpdateProfile = async () => {
@@ -232,7 +245,7 @@ const CustomerProfile = ({ navigation }) => {
                 <View style={styles.profileCard}>
                     <View style={styles.avatarWrap}>
                         {userData.avatar_url ? (
-                            <Image source={{ uri: `${API_URL}${userData.avatar_url}` }} style={styles.avatar} />
+                            <AppImage uri={userData.avatar_url} style={styles.avatar} refreshKey={refreshTrigger} />
                         ) : (
                             <View style={styles.avatarPlaceholder}>
                                 <User size={40} color="#10B981" />

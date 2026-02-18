@@ -15,7 +15,8 @@ import {
     KeyboardAvoidingView,
     Keyboard,
     InteractionManager,
-    Alert
+    Alert,
+    AppState
 } from 'react-native';
 import {
     MessageCircle,
@@ -46,11 +47,12 @@ import { useConfirm } from '../../context/ConfirmContext';
 import { useOrderNotification } from '../../context/OrderNotificationContext';
 import { useToast } from '../../context/ToastContext';
 import { useIsFocused } from '@react-navigation/native';
+import AppImage from '../../components/AppImage';
 
 // --- WHATSAPP-STYLE OPTIMIZATIONS ---
 
 // 1. Optimistic Message Item with minimal re-renders
-const MessageItem = memo(({ item, isMine, formatTime, onImagePress, onLongPress }) => {
+const MessageItem = memo(({ item, isMine, formatTime, onImagePress, onLongPress, refreshKey }) => {
     const imageUrl = item.image_url ?
         (item.image_url.startsWith('http') ? item.image_url : `${API_URL}${item.image_url}`)
         : null;
@@ -80,11 +82,11 @@ const MessageItem = memo(({ item, isMine, formatTime, onImagePress, onLongPress 
                 </Text>
                 {imageUrl && (
                     <TouchableOpacity onPress={() => onImagePress(imageUrl)} activeOpacity={0.9}>
-                        <Image
-                            source={{ uri: imageUrl, cache: 'force-cache' }}
+                        <AppImage
+                            uri={item.image_url}
                             style={styles.messageImage}
                             resizeMode="cover"
-                            fadeDuration={0}
+                            refreshKey={refreshKey}
                         />
                     </TouchableOpacity>
                 )}
@@ -129,7 +131,7 @@ const MessageItem = memo(({ item, isMine, formatTime, onImagePress, onLongPress 
         prevProps.item.is_edited === nextProps.item.is_edited;
 });
 
-const ConversationItem = memo(({ item, isActive, onPress, onLongPress, getDisplayName, formatTime, isOnline }) => (
+const ConversationItem = memo(({ item, isActive, onPress, onLongPress, getDisplayName, formatTime, isOnline, refreshKey }) => (
     <TouchableOpacity
         style={[
             styles.convItem,
@@ -140,7 +142,7 @@ const ConversationItem = memo(({ item, isActive, onPress, onLongPress, getDispla
     >
         <View style={styles.avatarContainer}>
             {item.avatar_url ? (
-                <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
+                <AppImage uri={item.avatar_url} style={styles.avatar} refreshKey={refreshKey} />
             ) : (
                 <View style={styles.avatarPlaceholder}>
                     <User size={24} color="#94A3B8" />
@@ -270,7 +272,7 @@ const ChatScreen = ({ navigation }) => {
         setActiveOrder,
         fetchConversations
     } = useChat();
-    const { onlineUsers, socket } = useOrderNotification();
+    const { onlineUsers, socket, refreshTrigger } = useOrderNotification();
 
     const [messages, setMessages] = useState([]);
     const [isTransitioning, setIsTransitioning] = useState(false);
@@ -306,6 +308,7 @@ const ChatScreen = ({ navigation }) => {
             };
         }
     }, []);
+
 
     // Keep refs in sync
     useEffect(() => {
@@ -578,6 +581,18 @@ const ChatScreen = ({ navigation }) => {
             console.error("Error fetching active order:", e);
         }
     }, [activeChat?.user_id, user?.id, user?.role, user?.userId, setActiveOrder]);
+
+    // Refresh when app returns to foreground
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', (nextAppState) => {
+            if (nextAppState === 'active' && activeChat) {
+                console.log('[ChatScreen] App active, refreshing messages...');
+                fetchMessages(true);
+                fetchActiveOrder();
+            }
+        });
+        return () => subscription.remove();
+    }, [activeChat, fetchMessages, fetchActiveOrder]);
 
     useEffect(() => {
         if (activeChat) {
@@ -945,7 +960,16 @@ const ChatScreen = ({ navigation }) => {
                             <FlatList
                                 ref={listRef}
                                 data={displayMessages}
-                                renderItem={renderMessageItem}
+                                renderItem={({ item }) => (
+                                    <MessageItem
+                                        item={item}
+                                        isMine={String(item.sender_id) === String(user.id || user.userId)}
+                                        formatTime={formatTime}
+                                        onImagePress={setPreviewImage}
+                                        onLongPress={setSelectedMsgForMenu}
+                                        refreshKey={refreshTrigger}
+                                    />
+                                )}
                                 keyExtractor={(item, index) => item.id?.toString() || index.toString()}
                                 contentContainerStyle={styles.messagesList}
                                 inverted
