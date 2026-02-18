@@ -299,8 +299,14 @@ const LapakDeposit = ({ navigation }) => {
         try {
             setLoading(true); // Prevent double submit
             // Ensure date includes time component for proper ordering
-            const selectedDate = new Date(formData.date);
+            // Fix: Construct date using local components to avoid timezone shifts
+            // formData.date is YYYY-MM-DD
+            const [yearP, monthP, dayP] = formData.date.split('-').map(Number);
+            const selectedDate = new Date(yearP, monthP - 1, dayP);
             const now = new Date();
+
+            // Set time to current time ONLY if it's the same day, otherwise mid-day to be safe
+            // Actually, keep current time but ensure we stay on the selected day
             selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
 
             // Format as local YYYY-MM-DD HH:mm:ss to prevent backend UTC conversion issues
@@ -337,7 +343,8 @@ const LapakDeposit = ({ navigation }) => {
 
         try {
             setLoading(true);
-            const selectedDate = new Date(formData.date);
+            const [yearP, monthP, dayP] = formData.date.split('-').map(Number);
+            const selectedDate = new Date(yearP, monthP - 1, dayP);
             const now = new Date();
             selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
 
@@ -373,10 +380,31 @@ const LapakDeposit = ({ navigation }) => {
         }
 
         try {
+            // Fix: Construct robust local date string
+            const [yearP, monthP, dayP] = formData.date.split(' ')[0].split('-').map(Number);
+            const selectedDate = new Date(yearP, monthP - 1, dayP);
+            const now = new Date();
+
+            // Set to current time ONLY if it's the same day, otherwise mid-day or midnight
+            const todayStr = getLocalDateString();
+            if (formData.date.split(' ')[0] === todayStr) {
+                selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
+            } else {
+                selectedDate.setHours(0, 0, 1);
+            }
+
+            const year = selectedDate.getFullYear();
+            const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+            const day = String(selectedDate.getDate()).padStart(2, '0');
+            const hours = String(selectedDate.getHours()).padStart(2, '0');
+            const minutes = String(selectedDate.getMinutes()).padStart(2, '0');
+            const seconds = String(selectedDate.getSeconds()).padStart(2, '0');
+            const localDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
             await apiService.put(`/api/accounts/transactions/${transactionToEdit.id}`, {
                 amount: formData.amount,
                 description: formData.description,
-                date: formData.date
+                date: localDateTime
             });
             showToast('Transaksi berhasil diperbarui', 'success');
             setIsEditModalOpen(false);

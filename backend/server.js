@@ -41,7 +41,6 @@ const io = new Server(server, {
 app.set('io', io);
 
 // Socket.io Connection Logic
-// Socket.io Connection Logic
 const onlineUsers = new Map(); // userId -> { role, sockets: Set<socketId> }
 
 io.on('connection', (socket) => {
@@ -3673,24 +3672,20 @@ app.get("/api/accounts/:accountName", authenticateToken, async (req, res) => {
         }
 
         if (startDate) {
-            let effectiveStartDate = startDate;
-            if (lastClosingDate) {
-                const closingTime = new Date(lastClosingDate).getTime();
-                const startReqTime = startDate.includes(':') ? new Date(startDate).getTime() : new Date(`${startDate} 00:00:00`).getTime();
-                if (closingTime > startReqTime) {
-                    effectiveStartDate = lastClosingDate;
-                }
-            }
+            // User requested a specific start date. Honor it strictly (00:00:00)
             whereClauses.push('at.created_at >= ?');
-            queryParams.push(effectiveStartDate);
+            queryParams.push(startDate.includes(':') ? startDate : `${startDate} 00:00:00`);
         } else if (lastClosingDate) {
+            // Default view (no filters): show only since last closing
             whereClauses.push('at.created_at >= ?');
             queryParams.push(lastClosingDate);
         }
+
         if (endDate) {
             whereClauses.push('at.created_at <= ?');
-            queryParams.push(`${endDate} 23:59:59`);
+            queryParams.push(endDate.includes(':') ? endDate : `${endDate} 23:59:59`);
         }
+
         if (search) {
             whereClauses.push('at.description LIKE ?');
             queryParams.push(`%${search}%`);
@@ -3698,15 +3693,11 @@ app.get("/api/accounts/:accountName", authenticateToken, async (req, res) => {
 
         const whereSql = whereClauses.join(' AND ');
 
-        // Calculate displayed balance (if lastClosingDate exists and no startDate provided, show current period balance)
+        // Return the actual account balance for the header card
         let displayedBalance = account.balance;
-        if (lastClosingDate && !startDate) {
-            const [sumResult] = await db.query(
-                "SELECT SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) as current_balance FROM account_transactions WHERE account_id = ? AND created_at >= ?",
-                [account.id, lastClosingDate]
-            );
-            displayedBalance = sumResult[0].current_balance || 0;
-        }
+
+        // Optionally calculate period balance if needed, but for now stick to account.balance
+        // which matches high-level financial tracking expectation for 'Lapak Deposit'
 
         const [transactions] = await db.query(
             `SELECT 
