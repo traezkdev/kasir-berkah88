@@ -303,6 +303,12 @@ const LoginV2 = () => {
                                 </div>
                             </div>
 
+                            <div className="text-right">
+                                <Link to="/forgot-password" className="text-[11px] lg:text-xs text-[#138FEA] dark:text-blue-400 font-semibold hover:underline underline-offset-4">
+                                    Lupa kata sandi?
+                                </Link>
+                            </div>
+
                             <AnimatePresence>
                                 {error && (
                                     <motion.div

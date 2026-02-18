@@ -27,6 +27,8 @@ const {
 } = require('./rawMaterialsDb');
 const { sendPushNotification } = require('./utils/oneSignal');
 const { sendExpoPushNotification } = require('./utils/expoPush');
+const sendEmail = require('./utils/mailer');
+
 
 const app = express();
 const server = http.createServer(app);
@@ -412,6 +414,22 @@ app.get("/api/reviews", authenticateToken, authorizeRoles('admin', 'owner', 'kas
         res.status(500).json({ error: err.message });
     }
 });
+
+// --- Test Email Endpoint ---
+app.post("/api/test-email", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    const { to, subject, html } = req.body;
+    if (!to || !subject || !html) {
+        return res.status(400).json({ error: "Missing required fields: to, subject, html" });
+    }
+
+    const result = await sendEmail(to, subject, html);
+    if (result.success) {
+        res.json({ message: "Email sent successfully", info: result.info });
+    } else {
+        res.status(500).json({ error: "Failed to send email", details: result.error });
+    }
+});
+
 
 // Delete a review
 app.delete("/api/reviews/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
@@ -5078,7 +5096,7 @@ app.delete("/api/employees/:id", authenticateToken, authorizeRoles('admin'), asy
 // Register User
 app.post("/api/register", async (req, res) => {
     try {
-        const { username, password, phone, address } = req.body;
+        const { username, password, phone, address, email } = req.body;
         if (!username || !password) {
             return res.status(400).json({ error: "Username and password are required" });
         }
@@ -5092,8 +5110,8 @@ app.post("/api/register", async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10); // Hash password
-        const sql = 'INSERT INTO users (username, password, role, phone, address) VALUES (?, ?, ?, ?, ?)';
-        const [result] = await db.query(sql, [username, hashedPassword, 'pelanggan', phone || null, address || null]);
+        const sql = 'INSERT INTO users (username, password, role, phone, address, email) VALUES (?, ?, ?, ?, ?, ?)';
+        const [result] = await db.query(sql, [username, hashedPassword, 'pelanggan', phone || null, address || null, email || null]);
 
         res.status(201).json({ message: "User registered successfully", userId: result.insertId });
     } catch (err) {
@@ -5133,6 +5151,113 @@ app.post("/api/login", async (req, res) => {
         res.json({ message: "Login successful", token });
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// Forgot Password
+app.post("/api/forgot-password", async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ error: "Email wajib diisi" });
+        }
+
+        // Cari user berdasarkan email
+        const [rows] = await db.query('SELECT id, username, email FROM users WHERE email = ?', [email]);
+        if (rows.length === 0) {
+            // Demi keamanan, tetap kirim respons sukses meski email tidak ditemukan
+            return res.json({ message: "Jika email terdaftar, link reset password telah dikirim." });
+        }
+
+        const user = rows[0];
+
+        // Generate token acak
+        const crypto = require('crypto');
+        const token = crypto.randomBytes(32).toString('hex');
+        const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 jam dari sekarang
+
+        // Simpan token ke database
+        await db.query(
+            'UPDATE users SET reset_password_token = ?, reset_password_expires = ? WHERE id = ?',
+            [token, expires, user.id]
+        );
+
+        // Buat link reset password
+        const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').split(',')[0].trim();
+        const resetLink = `${frontendUrl}/reset-password?token=${token}`;
+
+        // Kirim email
+        const html = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
+                <h2 style="color: #2563eb; text-align: center;">Reset Kata Sandi</h2>
+                <p>Halo, <strong>${user.username}</strong>!</p>
+                <p>Kami menerima permintaan untuk mereset kata sandi akun Anda. Klik tombol di bawah ini untuk melanjutkan:</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${resetLink}" 
+                       style="background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold;">
+                        Reset Kata Sandi
+                    </a>
+                </div>
+                <p style="color: #666; font-size: 14px;">Link ini akan kedaluwarsa dalam <strong>1 jam</strong>.</p>
+                <p style="color: #666; font-size: 14px;">Jika Anda tidak meminta reset kata sandi, abaikan email ini.</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                <p style="color: #999; font-size: 12px; text-align: center;">Kasir Berkah 88</p>
+            </div>
+        `;
+
+        const emailResult = await sendEmail(email, 'Reset Kata Sandi - Kasir Berkah 88', html);
+        if (!emailResult.success) {
+            console.error('Failed to send reset password email:', emailResult.error);
+            return res.status(500).json({ error: "Gagal mengirim email. Coba lagi nanti." });
+        }
+
+        await logActivity(user.id, 'Permintaan Reset Password', 'user', user.id, `Reset password diminta untuk ${email}`);
+        res.json({ message: "Jika email terdaftar, link reset password telah dikirim." });
+
+    } catch (err) {
+        console.error("Error forgot-password:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Reset Password
+app.post("/api/reset-password", async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+        if (!token || !newPassword) {
+            return res.status(400).json({ error: "Token dan kata sandi baru wajib diisi" });
+        }
+        if (newPassword.length < 6) {
+            return res.status(400).json({ error: "Kata sandi minimal 6 karakter" });
+        }
+
+        // Cari user berdasarkan token yang masih valid
+        const [rows] = await db.query(
+            'SELECT id, username FROM users WHERE reset_password_token = ? AND reset_password_expires > NOW()',
+            [token]
+        );
+
+        if (rows.length === 0) {
+            return res.status(400).json({ error: "Token tidak valid atau sudah kedaluwarsa. Silakan minta link reset baru." });
+        }
+
+        const user = rows[0];
+
+        // Hash password baru
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update password dan hapus token
+        await db.query(
+            'UPDATE users SET password = ?, reset_password_token = NULL, reset_password_expires = NULL WHERE id = ?',
+            [hashedPassword, user.id]
+        );
+
+        await logActivity(user.id, 'Reset Password Berhasil', 'user', user.id, `Password user ${user.username} berhasil direset`);
+        res.json({ message: "Kata sandi berhasil diubah. Silakan login dengan kata sandi baru Anda." });
+
+    } catch (err) {
+        console.error("Error reset-password:", err);
+        res.status(500).json({ error: err.message });
     }
 });
 

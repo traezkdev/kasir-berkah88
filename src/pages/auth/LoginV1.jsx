@@ -190,6 +190,12 @@ const LoginV1 = () => {
             </motion.p>
           )}
 
+          <div className="text-right -mt-2">
+            <Link to="/forgot-password" className="text-sm text-purple-600 dark:text-purple-400 hover:underline">
+              Lupa kata sandi?
+            </Link>
+          </div>
+
           <motion.button
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

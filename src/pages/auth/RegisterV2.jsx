@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import authFetch from '../../utils/authFetch';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUser, FiLock, FiUserPlus, FiArrowRight, FiCheckCircle, FiAlertCircle, FiPhone, FiMapPin, FiShoppingCart, FiPackage, FiTrendingUp, FiCreditCard, FiSmartphone } from 'react-icons/fi';
+import { FiUser, FiLock, FiUserPlus, FiArrowRight, FiCheckCircle, FiAlertCircle, FiPhone, FiMapPin, FiMail, FiShoppingCart, FiPackage, FiTrendingUp, FiCreditCard, FiSmartphone } from 'react-icons/fi';
 import AppIcon from '../../components/AppIcon';
 import DarkModeToggle from '../../components/ui/DarkModeToggle';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
@@ -12,6 +12,7 @@ const apiUrl = import.meta.env.VITE_API_URL;
 const RegisterV2 = () => {
     const [formData, setFormData] = useState({
         username: '',
+        email: '',
         phone: '',
         address: '',
         password: '',
@@ -67,7 +68,8 @@ const RegisterV2 = () => {
                     username: formData.username,
                     password: formData.password,
                     phone: formData.phone,
-                    address: formData.address
+                    address: formData.address,
+                    email: formData.email || null
                 }),
             });
 
@@ -234,6 +236,23 @@ const RegisterV2 = () => {
                                             onChange={handleInputChange}
                                             placeholder="Username Baru"
                                             required
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl py-2.5 lg:py-4 pl-10 lg:pl-12 pr-4 text-xs lg:text-base text-gray-900 dark:text-white font-bold focus:outline-none focus:border-[#138FEA] transition-all"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] lg:text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Email (Opsional)</label>
+                                    <div className="relative group">
+                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                            <FiMail className="text-sm lg:text-base text-gray-400 group-focus-within:text-[#138FEA]" />
+                                        </div>
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            value={formData.email}
+                                            onChange={handleInputChange}
+                                            placeholder="email@contoh.com (untuk reset password)"
                                             className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl py-2.5 lg:py-4 pl-10 lg:pl-12 pr-4 text-xs lg:text-base text-gray-900 dark:text-white font-bold focus:outline-none focus:border-[#138FEA] transition-all"
                                         />
                                     </div>
