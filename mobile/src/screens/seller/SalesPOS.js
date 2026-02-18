@@ -534,6 +534,11 @@ const SalesPOS = () => {
                             value={searchTerm}
                             onChangeText={setSearchTerm}
                         />
+                        {searchTerm.length > 0 && (
+                            <TouchableOpacity onPress={() => setSearchTerm('')} style={styles.clearSearchBtn}>
+                                <X size={20} color="#94A3B8" />
+                            </TouchableOpacity>
+                        )}
                     </View>
                     <TouchableOpacity
                         style={styles.viewToggleBtn}
@@ -1028,6 +1033,11 @@ const SalesPOS = () => {
                             }}
                             autoFocus
                         />
+                        {customerSearchQuery.length > 0 && (
+                            <TouchableOpacity onPress={() => setCustomerSearchQuery('')} style={styles.clearSearchBtn}>
+                                <X size={20} color="#94A3B8" />
+                            </TouchableOpacity>
+                        )}
                     </View>
 
                     {!isCustomerSearchReady ? (
@@ -1108,6 +1118,9 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: 'bold',
         color: '#1E293B',
+    },
+    clearSearchBtn: {
+        padding: 5,
     },
     catContainer: {
         backgroundColor: '#FFFFFF',
