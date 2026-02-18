@@ -54,7 +54,9 @@ import AppImage from '../../components/AppImage';
 // 1. Optimistic Message Item with minimal re-renders
 const MessageItem = memo(({ item, isMine, formatTime, onImagePress, onLongPress, refreshKey }) => {
     const imageUrl = item.image_url ?
-        (item.image_url.startsWith('http') ? item.image_url : `${API_URL}${item.image_url}`)
+        ((item.image_url.startsWith('http') || item.image_url.startsWith('data:')) ?
+            item.image_url :
+            `${API_URL}${item.image_url.startsWith('/') ? '' : '/'}${item.image_url}`)
         : null;
 
     return (
@@ -128,6 +130,7 @@ const MessageItem = memo(({ item, isMine, formatTime, onImagePress, onLongPress,
         prevProps.item.is_read === nextProps.item.is_read &&
         prevProps.item.sending === nextProps.item.sending &&
         prevProps.item.message === nextProps.item.message &&
+        prevProps.item.image_url === nextProps.item.image_url &&
         prevProps.item.is_edited === nextProps.item.is_edited;
 });
 
@@ -540,22 +543,30 @@ const ChatScreen = ({ navigation }) => {
         try {
             const res = await apiService.get(`/api/messages/history/${activeChat.user_id}`);
             if (res.data && res.data.data) {
+                const newData = res.data.data;
                 setMessages(prev => {
-                    const newData = res.data.data;
+                    // Optimized merge logic:
+                    // Keep 'sending' messages AND messages that were just sent but not yet in history
                     const sendingMessages = prev.filter(m => m.sending);
+                    const recentlySent = prev.filter(m =>
+                        !m.sending &&
+                        !String(m.id).startsWith('temp_') &&
+                        !newData.some(n => String(n.id) === String(m.id))
+                    );
 
-                    // Optimized update logic:
-                    // Only update if count has changed (server data + our local pending messages)
-                    if (prev.length === (newData.length + sendingMessages.length)) {
-                        // Check if metadata like is_read changed for existing messages
+                    // Filter recentlySent to only those from the last 15 seconds to avoid ghosts
+                    const nowTS = Date.now();
+                    const validRecent = recentlySent.filter(m => (nowTS - new Date(m.created_at).getTime()) < 15000);
+
+                    // If data hasn't changed at all, return prev to avoid re-renders
+                    if (prev.length === (newData.length + sendingMessages.length + validRecent.length)) {
                         const hasChanges = newData.some((msg, idx) =>
                             prev[idx] && (msg.is_read !== prev[idx].is_read || msg.message !== prev[idx].message)
                         );
                         if (!hasChanges) return prev;
                     }
 
-                    // Always combine server data with messages that are still being sent locally
-                    return [...newData, ...sendingMessages];
+                    return [...newData, ...validRecent, ...sendingMessages];
                 });
             }
         } catch (e) {
