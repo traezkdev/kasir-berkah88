@@ -49,6 +49,7 @@ import { useToast } from '../../context/ToastContext';
 import SellerOrderCard from '../../components/SellerOrderCard';
 import OrderDetailModal from '../../components/OrderDetailModal';
 import { useChat } from '../../context/ChatContext';
+import { useOrderNotification } from '../../context/OrderNotificationContext';
 
 const SellerDashboard = ({ navigation }) => {
     const { width } = useWindowDimensions();
@@ -71,6 +72,7 @@ const SellerDashboard = ({ navigation }) => {
     const [dashboardWatermarkUrl, setDashboardWatermarkUrl] = useState('');
     const [logoUrl, setLogoUrl] = useState('');
     const { unreadCount } = useChat();
+    const { refreshTrigger } = useOrderNotification();
 
     // Modal State
     const [selectedOrderForDetail, setSelectedOrderForDetail] = useState(null);
@@ -143,20 +145,9 @@ const SellerDashboard = ({ navigation }) => {
         // Polling like web
         const interval = setInterval(fetchData, 10000);
         return () => clearInterval(interval);
-    }, [fetchData]);
+    }, [fetchData, refreshTrigger]); // Added refreshTrigger dependency
 
-    useEffect(() => {
-        const subscription = AppState.addEventListener('change', nextAppState => {
-            if (nextAppState === 'active') {
-                console.log('App has come to the foreground! Refreshing data...');
-                fetchData();
-            }
-        });
-
-        return () => {
-            subscription.remove();
-        };
-    }, [fetchData]);
+    // Removed redundant AppState listener, now handled by OrderNotificationContext's refreshTrigger
 
     const onRefresh = () => {
         setRefreshing(true);

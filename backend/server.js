@@ -27,6 +27,8 @@ const {
 } = require('./rawMaterialsDb');
 const { sendPushNotification } = require('./utils/oneSignal');
 const { sendExpoPushNotification } = require('./utils/expoPush');
+const sendEmail = require('./utils/mailer');
+
 
 const app = express();
 const server = http.createServer(app);
@@ -40,7 +42,6 @@ const io = new Server(server, {
 });
 app.set('io', io);
 
-// Socket.io Connection Logic
 // Socket.io Connection Logic
 const onlineUsers = new Map(); // userId -> { role, sockets: Set<socketId> }
 
@@ -413,6 +414,22 @@ app.get("/api/reviews", authenticateToken, authorizeRoles('admin', 'owner', 'kas
         res.status(500).json({ error: err.message });
     }
 });
+
+// --- Test Email Endpoint ---
+app.post("/api/test-email", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    const { to, subject, html } = req.body;
+    if (!to || !subject || !html) {
+        return res.status(400).json({ error: "Missing required fields: to, subject, html" });
+    }
+
+    const result = await sendEmail(to, subject, html);
+    if (result.success) {
+        res.json({ message: "Email sent successfully", info: result.info });
+    } else {
+        res.status(500).json({ error: "Failed to send email", details: result.error });
+    }
+});
+
 
 // Delete a review
 app.delete("/api/reviews/:id", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
@@ -1151,7 +1168,7 @@ app.get("/api/public/menu-items", async (req, res) => {
 });
 
 // Add a new menu item
-app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'penjual'), upload.single('image'), async (req, res, next) => {
+app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', 'penjual', 'owner', 'kasir'), upload.single('image'), async (req, res, next) => {
     let connection;
     try {
         connection = await db.getConnection();
@@ -1204,7 +1221,7 @@ app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', '
 });
 
 // Endpoint untuk memperbarui urutan item menu
-app.put('/api/menu-items/reorder', authenticateToken, authorizeRoles('admin', 'penjual'), async (req, res) => {
+app.put('/api/menu-items/reorder', authenticateToken, authorizeRoles('admin', 'penjual', 'owner', 'kasir'), async (req, res) => {
     const { itemIds } = req.body; // itemIds adalah array ID dalam urutan baru
 
     if (!Array.isArray(itemIds)) {
@@ -1238,7 +1255,7 @@ app.put('/api/menu-items/reorder', authenticateToken, authorizeRoles('admin', 'p
 });
 
 // Update a menu item
-app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin', 'penjual'), upload.single('image'), async (req, res, next) => {
+app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin', 'penjual', 'owner', 'kasir'), upload.single('image'), async (req, res, next) => {
     let connection;
     try {
         const { id } = req.params;
@@ -1335,7 +1352,7 @@ app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'
 });
 
 // Delete a menu item
-app.delete("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin', 'penjual'), async (req, res, next) => {
+app.delete("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin', 'penjual', 'owner', 'kasir'), async (req, res, next) => {
     try {
         const sql = 'DELETE FROM menu_items WHERE id = ?';
         const [result] = await db.query(sql, [req.params.id]);
@@ -3673,24 +3690,20 @@ app.get("/api/accounts/:accountName", authenticateToken, async (req, res) => {
         }
 
         if (startDate) {
-            let effectiveStartDate = startDate;
-            if (lastClosingDate) {
-                const closingTime = new Date(lastClosingDate).getTime();
-                const startReqTime = startDate.includes(':') ? new Date(startDate).getTime() : new Date(`${startDate} 00:00:00`).getTime();
-                if (closingTime > startReqTime) {
-                    effectiveStartDate = lastClosingDate;
-                }
-            }
+            // User requested a specific start date. Honor it strictly (00:00:00)
             whereClauses.push('at.created_at >= ?');
-            queryParams.push(effectiveStartDate);
+            queryParams.push(startDate.includes(':') ? startDate : `${startDate} 00:00:00`);
         } else if (lastClosingDate) {
+            // Default view (no filters): show only since last closing
             whereClauses.push('at.created_at >= ?');
             queryParams.push(lastClosingDate);
         }
+
         if (endDate) {
             whereClauses.push('at.created_at <= ?');
-            queryParams.push(`${endDate} 23:59:59`);
+            queryParams.push(endDate.includes(':') ? endDate : `${endDate} 23:59:59`);
         }
+
         if (search) {
             whereClauses.push('at.description LIKE ?');
             queryParams.push(`%${search}%`);
@@ -3698,15 +3711,11 @@ app.get("/api/accounts/:accountName", authenticateToken, async (req, res) => {
 
         const whereSql = whereClauses.join(' AND ');
 
-        // Calculate displayed balance (if lastClosingDate exists and no startDate provided, show current period balance)
+        // Return the actual account balance for the header card
         let displayedBalance = account.balance;
-        if (lastClosingDate && !startDate) {
-            const [sumResult] = await db.query(
-                "SELECT SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) as current_balance FROM account_transactions WHERE account_id = ? AND created_at >= ?",
-                [account.id, lastClosingDate]
-            );
-            displayedBalance = sumResult[0].current_balance || 0;
-        }
+
+        // Optionally calculate period balance if needed, but for now stick to account.balance
+        // which matches high-level financial tracking expectation for 'Lapak Deposit'
 
         const [transactions] = await db.query(
             `SELECT 
@@ -4345,6 +4354,9 @@ app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user', 'pelan
             queryParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
         }
 
+        // Always hide soft-deleted orders
+        whereClauses.push('deleted_at IS NULL');
+
         const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
         // Query to get total count
@@ -4361,7 +4373,7 @@ app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user', 'pelan
         // Historical data was stored when server was in GMT+1 (Europe)
         // Now server is in GMT+7 (WIB), so we need to add 6 hours offset to old data
         // CUTOFF DATE: 2026-02-17 00:00:00 WIB (when timezone was fixed)
-        const TIMEZONE_MIGRATION_DATE = new Date('2026-02-17T00:00:00+07:00');
+        const TIMEZONE_MIGRATION_DATE = new Date('2026-02-17T23:30:00+07:00');
 
         const formattedRows = rows.map(order => {
             let isoDate = null;
@@ -4413,8 +4425,8 @@ app.get("/api/orders", authenticateToken, authorizeRoles('admin', 'user', 'pelan
     }
 });
 
-// Soft delete ALL orders (Admin only)
-app.delete("/api/orders/delete-all/confirm", authenticateToken, authorizeRoles('admin'), async (req, res) => {
+// Soft delete ALL orders (Management only)
+app.delete("/api/orders/delete-all/confirm", authenticateToken, authorizeRoles('admin', 'owner', 'kasir'), async (req, res) => {
     try {
         // Only delete active orders (not already deleted)
         const sql = 'UPDATE orders SET deleted_at = NOW() WHERE deleted_at IS NULL';
@@ -4437,17 +4449,58 @@ app.delete("/api/orders/delete-all/confirm", authenticateToken, authorizeRoles('
     }
 });
 
-// Soft delete single order (Admin/Management only)
+// Soft delete single order (Management only)
 app.delete("/api/orders/:id", authenticateToken, authorizeRoles('admin', 'user', 'penjual', 'kasir', 'owner'), async (req, res) => {
     const { id } = req.params;
+    let connection;
     try {
-        // Soft delete: update deleted_at
-        const sql = 'UPDATE orders SET deleted_at = NOW() WHERE id = ?';
-        const [result] = await db.query(sql, [id]);
+        connection = await db.getConnection();
+        await connection.beginTransaction();
 
-        if (result.affectedRows === 0) {
+        // Get the full order details for side-effect handling
+        const [orderRows] = await connection.query('SELECT * FROM orders WHERE id = ? FOR UPDATE', [id]);
+
+        if (orderRows.length === 0) {
+            await connection.rollback();
             return res.status(404).json({ error: "Order not found or already deleted." });
         }
+
+        const order = orderRows[0];
+
+        // Side-effect: If the order was accepted, reverse stock and delete transaction
+        if (order.status === 'accepted' || order.status === 'completed') {
+            let items = [];
+            try {
+                items = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
+            } catch (e) {
+                console.error("Error parsing items for stock restoration:", e);
+            }
+
+            // Restore stock if it was an active order
+            if (Array.isArray(items)) {
+                for (const item of items) {
+                    const itemId = item.id || item.menu_item_id;
+                    const qty = parseInt(item.qty || item.quantity || 0);
+                    if (itemId && qty > 0) {
+                        await connection.query('UPDATE menu_items SET stock = stock + ? WHERE id = ?', [qty, itemId]);
+                    }
+                }
+            }
+
+            // Delete the associated transaction to maintain financial accuracy
+            await connection.query('DELETE FROM transactions WHERE order_id = ?', [id]);
+        }
+
+        // Soft delete: update deleted_at
+        const sql = 'UPDATE orders SET deleted_at = NOW() WHERE id = ?';
+        const [result] = await connection.query(sql, [id]);
+
+        if (result.affectedRows === 0) {
+            await connection.rollback();
+            return res.status(404).json({ error: "Order not found during deletion update." });
+        }
+
+        await connection.commit();
 
         await logActivity(req.user.userId, 'Menghapus Pesanan', 'order', id, `Pesanan #${id} dipindahkan ke sampah`);
 
@@ -4459,6 +4512,84 @@ app.delete("/api/orders/:id", authenticateToken, authorizeRoles('admin', 'user',
 
         res.json({ message: "deleted" });
     } catch (err) {
+        if (connection) await connection.rollback();
+        console.error("Order deletion error:", err);
+        res.status(500).json({ error: err.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// --- Order Trash Management ---
+
+// Get trashed orders (Management only)
+app.get("/api/orders/trash", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual'), async (req, res) => {
+    try {
+        const sql = 'SELECT * FROM orders WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC';
+        const [rows] = await db.query(sql);
+
+        const formattedRows = rows.map(order => {
+            let isoDate = null;
+            if (order.created_at) {
+                isoDate = new Date(order.created_at).toISOString();
+            }
+            let deletedAtIso = null;
+            if (order.deleted_at) {
+                deletedAtIso = new Date(order.deleted_at).toISOString();
+            }
+            return {
+                ...order,
+                created_at: isoDate,
+                deleted_at: deletedAtIso,
+                timestamp: isoDate
+            };
+        });
+
+        res.json({ message: "success", data: formattedRows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Restore order from trash
+app.put("/api/orders/:id/restore", authenticateToken, authorizeRoles('admin', 'owner', 'kasir', 'penjual'), async (req, res) => {
+    const { id } = req.params;
+    try {
+        const sql = 'UPDATE orders SET deleted_at = NULL WHERE id = ?';
+        const [result] = await db.query(sql, [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Pesanan tidak ditemukan di tempat sampah." });
+        }
+
+        await logActivity(req.user.userId, 'Memulihkan Pesanan', 'order', id, `Pesanan #${id} dipulihkan dari sampah`);
+
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('order_update', { id, status: 'restored' });
+        }
+
+        res.json({ message: "restored" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Permanent delete order
+app.delete("/api/orders/:id/permanent", authenticateToken, authorizeRoles('admin', 'owner'), async (req, res) => {
+    const { id } = req.params;
+    try {
+        const sql = 'DELETE FROM orders WHERE id = ? AND deleted_at IS NOT NULL';
+        const [result] = await db.query(sql, [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Pesanan tidak ditemukan atau bukan di tempat sampah." });
+        }
+
+        await logActivity(req.user.userId, 'Hapus Permanen Pesanan', 'order', id, `Pesanan #${id} dihapus permanen dari sistem`);
+
+        res.json({ message: "permanently_deleted" });
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
@@ -4469,7 +4600,7 @@ app.get("/api/orders/:id", authenticateToken, authorizeRoles('admin', 'user', 'p
         const { id } = req.params;
         const isManagement = ['admin', 'user', 'kasir', 'penjual', 'owner'].includes(req.user.role);
 
-        let sql = 'SELECT * FROM orders WHERE id = ?';
+        let sql = 'SELECT * FROM orders WHERE id = ? AND deleted_at IS NULL';
         let queryParams = [id];
 
         if (!isManagement) {
@@ -4890,111 +5021,6 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
 
 
 
-// Delete a single order by ID
-
-app.delete("/api/orders/:id", authenticateToken, authorizeRoles('admin'), async (req, res) => {
-    const { id } = req.params;
-    const connection = await db.getConnection();
-    try {
-        await connection.beginTransaction();
-
-        // Get the full order details
-        const [orderRows] = await connection.query('SELECT * FROM orders WHERE id = ? FOR UPDATE', [id]);
-
-        if (orderRows.length === 0) {
-            await connection.rollback();
-            return res.status(404).json({ error: "Order not found." });
-        }
-
-        const order = orderRows[0];
-        const orderStatus = order.status;
-
-        // If the order was accepted, we need to reverse the stock reduction and delete the transaction
-        if (orderStatus === 'accepted') {
-            const items = JSON.parse(order.items);
-
-            // Restore stock
-            for (const item of items) {
-                await connection.query('UPDATE menu_items SET stock = stock + ? WHERE id = ?', [item.quantity, item.id]);
-            }
-
-            // Delete the associated transaction
-            await connection.query('DELETE FROM transactions WHERE order_id = ?', [id]);
-        }
-
-        // Finally, delete the order itself
-        const sql = 'DELETE FROM orders WHERE id = ?';
-        const [result] = await connection.query(sql, [id]);
-
-        if (result.affectedRows === 0) {
-            await connection.rollback();
-            // This case should ideally not be reached if the first query found the order
-            return res.status(404).json({ "error": "Order not found during deletion" });
-        }
-
-        await connection.commit();
-        res.json({ "message": "Order deleted successfully", changes: result.affectedRows });
-
-    } catch (err) {
-        await connection.rollback();
-        res.status(500).json({ error: err.message, stack: err.stack });
-    } finally {
-        connection.release();
-    }
-});
-
-
-
-// Delete all orders by status
-
-app.delete("/api/orders/status/:status", authenticateToken, authorizeRoles('admin'), async (req, res) => {
-
-    const { status } = req.params;
-
-    const connection = await db.getConnection();
-
-    try {
-
-        await connection.beginTransaction();
-
-
-
-        if (!['pending', 'rejected'].includes(status)) {
-
-            await connection.rollback();
-
-            return res.status(400).json({ error: "Invalid status for bulk deletion. Only 'pending' or 'rejected' orders can be bulk deleted." });
-
-        }
-
-
-
-        const sql = 'DELETE FROM orders WHERE status = ?';
-
-        const [result] = await connection.query(sql, [status]);
-
-
-
-        await connection.commit();
-
-        res.json({ "message": `${result.affectedRows} orders with status '${status}' deleted successfully`, changes: result.affectedRows });
-
-    } catch (err) {
-
-        await connection.rollback();
-
-        res.status(500).json({ error: err.message, stack: err.stack });
-
-    } finally {
-
-        connection.release();
-
-    }
-
-});
-
-
-
 // --- Auth Endpoints ---
 
 // --- Employee Endpoints ---
@@ -5070,7 +5096,7 @@ app.delete("/api/employees/:id", authenticateToken, authorizeRoles('admin'), asy
 // Register User
 app.post("/api/register", async (req, res) => {
     try {
-        const { username, password, phone, address } = req.body;
+        const { username, password, phone, address, email } = req.body;
         if (!username || !password) {
             return res.status(400).json({ error: "Username and password are required" });
         }
@@ -5084,8 +5110,8 @@ app.post("/api/register", async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10); // Hash password
-        const sql = 'INSERT INTO users (username, password, role, phone, address) VALUES (?, ?, ?, ?, ?)';
-        const [result] = await db.query(sql, [username, hashedPassword, 'pelanggan', phone || null, address || null]);
+        const sql = 'INSERT INTO users (username, password, role, phone, address, email) VALUES (?, ?, ?, ?, ?, ?)';
+        const [result] = await db.query(sql, [username, hashedPassword, 'pelanggan', phone || null, address || null, email || null]);
 
         res.status(201).json({ message: "User registered successfully", userId: result.insertId });
     } catch (err) {
@@ -5125,6 +5151,113 @@ app.post("/api/login", async (req, res) => {
         res.json({ message: "Login successful", token });
     } catch (err) {
         res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// Forgot Password
+app.post("/api/forgot-password", async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ error: "Email wajib diisi" });
+        }
+
+        // Cari user berdasarkan email
+        const [rows] = await db.query('SELECT id, username, email FROM users WHERE email = ?', [email]);
+        if (rows.length === 0) {
+            // Demi keamanan, tetap kirim respons sukses meski email tidak ditemukan
+            return res.json({ message: "Jika email terdaftar, link reset password telah dikirim." });
+        }
+
+        const user = rows[0];
+
+        // Generate token acak
+        const crypto = require('crypto');
+        const token = crypto.randomBytes(32).toString('hex');
+        const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 jam dari sekarang
+
+        // Simpan token ke database
+        await db.query(
+            'UPDATE users SET reset_password_token = ?, reset_password_expires = ? WHERE id = ?',
+            [token, expires, user.id]
+        );
+
+        // Buat link reset password
+        const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').split(',')[0].trim();
+        const resetLink = `${frontendUrl}/reset-password?token=${token}`;
+
+        // Kirim email
+        const html = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
+                <h2 style="color: #2563eb; text-align: center;">Reset Kata Sandi</h2>
+                <p>Halo, <strong>${user.username}</strong>!</p>
+                <p>Kami menerima permintaan untuk mereset kata sandi akun Anda. Klik tombol di bawah ini untuk melanjutkan:</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${resetLink}" 
+                       style="background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold;">
+                        Reset Kata Sandi
+                    </a>
+                </div>
+                <p style="color: #666; font-size: 14px;">Link ini akan kedaluwarsa dalam <strong>1 jam</strong>.</p>
+                <p style="color: #666; font-size: 14px;">Jika Anda tidak meminta reset kata sandi, abaikan email ini.</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                <p style="color: #999; font-size: 12px; text-align: center;">Kasir Berkah 88</p>
+            </div>
+        `;
+
+        const emailResult = await sendEmail(email, 'Reset Kata Sandi - Kasir Berkah 88', html);
+        if (!emailResult.success) {
+            console.error('Failed to send reset password email:', emailResult.error);
+            return res.status(500).json({ error: "Gagal mengirim email. Coba lagi nanti." });
+        }
+
+        await logActivity(user.id, 'Permintaan Reset Password', 'user', user.id, `Reset password diminta untuk ${email}`);
+        res.json({ message: "Jika email terdaftar, link reset password telah dikirim." });
+
+    } catch (err) {
+        console.error("Error forgot-password:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Reset Password
+app.post("/api/reset-password", async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+        if (!token || !newPassword) {
+            return res.status(400).json({ error: "Token dan kata sandi baru wajib diisi" });
+        }
+        if (newPassword.length < 6) {
+            return res.status(400).json({ error: "Kata sandi minimal 6 karakter" });
+        }
+
+        // Cari user berdasarkan token yang masih valid
+        const [rows] = await db.query(
+            'SELECT id, username FROM users WHERE reset_password_token = ? AND reset_password_expires > NOW()',
+            [token]
+        );
+
+        if (rows.length === 0) {
+            return res.status(400).json({ error: "Token tidak valid atau sudah kedaluwarsa. Silakan minta link reset baru." });
+        }
+
+        const user = rows[0];
+
+        // Hash password baru
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update password dan hapus token
+        await db.query(
+            'UPDATE users SET password = ?, reset_password_token = NULL, reset_password_expires = NULL WHERE id = ?',
+            [hashedPassword, user.id]
+        );
+
+        await logActivity(user.id, 'Reset Password Berhasil', 'user', user.id, `Password user ${user.username} berhasil direset`);
+        res.json({ message: "Kata sandi berhasil diubah. Silakan login dengan kata sandi baru Anda." });
+
+    } catch (err) {
+        console.error("Error reset-password:", err);
+        res.status(500).json({ error: err.message });
     }
 });
 

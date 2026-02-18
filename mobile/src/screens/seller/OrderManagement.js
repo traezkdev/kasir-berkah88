@@ -133,7 +133,7 @@ const OrderManagement = ({ navigation, route }) => {
     }, [handleUpdateStatus]);
 
     const handleReject = useCallback((orderId) => {
-        handleUpdateStatus(orderId, 'cancelled');
+        handleUpdateStatus(orderId, 'rejected');
     }, [handleUpdateStatus]);
 
 
@@ -215,9 +215,10 @@ const OrderManagement = ({ navigation, route }) => {
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Manajemen Pesanan</Text>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <TouchableOpacity onPress={() => setShowDeleteAllConfirm(true)} style={[styles.headerAction, { backgroundColor: '#FEF2F2' }]}>
-                        <Trash2 size={20} color="#EF4444" />
+                    <TouchableOpacity onPress={() => navigation.navigate('OrderTrash')} style={[styles.headerAction, { backgroundColor: '#F1F5F9' }]}>
+                        <Trash2 size={20} color="#64748B" />
                     </TouchableOpacity>
+
                     <TouchableOpacity onPress={() => fetchOrders()} style={styles.headerAction}>
                         <RefreshCw size={20} color="#1E293B" className={loading ? 'animate-spin' : ''} />
                     </TouchableOpacity>
@@ -318,36 +319,7 @@ const OrderManagement = ({ navigation, route }) => {
                 </View>
             </Modal>
 
-            {/* Delete ALL Confirmation Modal */}
-            <Modal visible={showDeleteAllConfirm} transparent animationType="fade">
-                <View style={styles.confirmOverlay}>
-                    <View style={styles.confirmCard}>
-                        <View style={styles.confirmIconBg}>
-                            <AlertTriangle size={32} color="#DC2626" />
-                        </View>
-                        <Text style={styles.confirmTitle}>Hapus SEMUA Pesanan?</Text>
-                        <Text style={styles.confirmSubtitle}>
-                            Tindakan ini akan menghapus <Text style={{ color: '#DC2626', fontWeight: '900' }}>SEMUA</Text> riwayat pesanan yang ada dan memindahkannya ke sampah.
-                        </Text>
-                        <View style={styles.confirmActions}>
-                            <TouchableOpacity
-                                style={styles.confirmCancelBtn}
-                                onPress={() => setShowDeleteAllConfirm(false)}
-                                disabled={loading}
-                            >
-                                <Text style={styles.confirmCancelText}>Batal</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.confirmDeleteBtn, { backgroundColor: '#DC2626' }]}
-                                onPress={confirmDeleteAllAction}
-                                disabled={loading}
-                            >
-                                {loading ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Text style={styles.confirmDeleteText}>Hapus Semua</Text>}
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+
         </View>
     );
 };

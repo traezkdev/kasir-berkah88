@@ -192,10 +192,10 @@ const CustomerDashboard = ({ navigation }) => {
 
     const getGreeting = () => {
         const hour = new Date().getHours();
-        if (hour >= 5 && hour < 11) return 'Selamat Pagi';
-        if (hour >= 11 && hour < 15) return 'Selamat Siang';
-        if (hour >= 15 && hour < 19) return 'Selamat Sore';
-        return 'Selamat Malam';
+        if (hour >= 5 && hour < 11) return "Semangat Pagi";
+        if (hour >= 11 && hour < 15) return "Selamat Siang";
+        if (hour >= 15 && hour < 19) return "Selamat Sore";
+        return "Selamat Malam";
     };
 
     const formatCurrency = (val) => {
@@ -297,12 +297,12 @@ const CustomerDashboard = ({ navigation }) => {
                             style={styles.compactSearch}
                             onPress={() => navigation.navigate('Menu')}
                         >
-                            <Search size={16} color="#94A3B8" />
-                            <Text style={styles.compactSearchText}>Cari menu favorit...</Text>
+                            <Search size={16} color="#FFFFFF" />
+                            <Text style={styles.compactSearchText}>Bismillah, cari menu apa ya?</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => navigation.navigate('ChatScreen')}>
                             <View>
-                                <MessageCircle size={20} color="#64748B" />
+                                <MessageCircle size={20} color="#FFFFFF" />
                                 {unreadCount > 0 && (
                                     <View style={[styles.statusBadge, { top: -6, right: -6, width: 14, height: 14, borderRadius: 7, borderWidth: 1.5 }]}>
                                         <Text style={[styles.statusBadgeText, { fontSize: 7 }]}>{unreadCount}</Text>
@@ -312,7 +312,7 @@ const CustomerDashboard = ({ navigation }) => {
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => navigation.navigate('Cart')}>
                             <View>
-                                <ShoppingCart size={20} color="#64748B" />
+                                <ShoppingCart size={20} color="#FFFFFF" />
                                 {cartCount > 0 && (
                                     <View style={[styles.statusBadge, { top: -6, right: -6, width: 14, height: 14, borderRadius: 7, borderWidth: 1.5 }]}>
                                         <Text style={[styles.statusBadgeText, { fontSize: 7 }]}>{cartCount}</Text>
@@ -393,8 +393,8 @@ const CustomerDashboard = ({ navigation }) => {
                             <View style={styles.closedBanner}>
                                 <AlertCircle size={18} color="#FFFFFF" />
                                 <View style={styles.closedBannerText}>
-                                    <Text style={styles.closedTitle}>Maaf, Toko Sedang Tutup</Text>
-                                    <Text style={styles.closedSubtitle}>Kamu tetap bisa melihat menu, tapi belum bisa pesan.</Text>
+                                    <Text style={styles.closedTitle}>Afwan, Toko Lagi Istirahat</Text>
+                                    <Text style={styles.closedSubtitle}>Sabar ya, insyaAllah nanti mampir lagi. Sekarang liat-liat dulu aja.</Text>
                                 </View>
                             </View>
                         )}
@@ -405,7 +405,7 @@ const CustomerDashboard = ({ navigation }) => {
                             onPress={() => navigation.navigate('Menu')}
                         >
                             <Search size={20} color="#94A3B8" />
-                            <Text style={styles.searchText}>Mau makan apa hari ini?</Text>
+                            <Text style={styles.searchText}>Bismillah, mau jajan apa hari ini?</Text>
                         </TouchableOpacity>
 
                         {/* Quick Shortcuts */}
@@ -446,7 +446,7 @@ const CustomerDashboard = ({ navigation }) => {
                     <View style={styles.actionCard}>
                         <View style={styles.saldoRow}>
                             <View>
-                                <Text style={styles.saldoLabel}>Poin Berkah 88</Text>
+                                <Text style={styles.saldoLabel}>Tabungan Poin Berkah</Text>
                                 <Text style={styles.saldoValue}>{new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(points)} Poin</Text>
                             </View>
                             <View style={styles.saldoActions}>
@@ -475,8 +475,8 @@ const CustomerDashboard = ({ navigation }) => {
                                 )}
                             </View>
                             <View style={styles.statusContent}>
-                                <Text style={styles.statusTitle}>Status Pesanan</Text>
-                                <Text style={styles.statusSubtitle}>LACAK PESANAN AKTIF ANDA</Text>
+                                <Text style={styles.statusTitle}>Cek Pesananmu</Text>
+                                <Text style={styles.statusSubtitle}>YUK CEK POSISI PESANANMU</Text>
                             </View>
                             {latestOrder ? (
                                 <TouchableOpacity
@@ -702,13 +702,13 @@ const styles = StyleSheet.create({
         top: 0,
         left: 0,
         right: 0,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#059669',
         zIndex: 100,
         paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : (Platform.OS === 'web' ? 15 : 20),
         paddingBottom: 12,
         paddingHorizontal: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#F1F5F9',
+        borderBottomColor: 'rgba(255,255,255,0.1)',
     },
     compactHeaderContent: {
         flexDirection: 'row',
@@ -718,7 +718,7 @@ const styles = StyleSheet.create({
     compactSearch: {
         flex: 1,
         height: 40,
-        backgroundColor: '#F1F5F9',
+        backgroundColor: 'rgba(255,255,255,0.2)',
         borderRadius: 20,
         flexDirection: 'row',
         alignItems: 'center',
@@ -727,7 +727,7 @@ const styles = StyleSheet.create({
     compactSearchText: {
         marginLeft: 8,
         fontSize: 12,
-        color: '#94A3B8',
+        color: '#D1FAE5',
         fontWeight: '500',
     },
     mainHeader: {

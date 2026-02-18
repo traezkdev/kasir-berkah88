@@ -16,6 +16,10 @@ const pool = mysql.createPool({
   charset: 'utf8mb4'
 });
 
+pool.on('connection', (connection) => {
+  connection.query('SET time_zone = "+07:00"');
+});
+
 const promisePool = pool.promise();
 
 const setupDatabase = async () => {
@@ -1089,6 +1093,25 @@ const setupDatabase = async () => {
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'ignore_stock';
     `;
+
+    // Check and add reset_password_token and reset_password_expires to users
+    const [resetTokenCol] = await connection.query("SHOW COLUMNS FROM users LIKE 'reset_password_token'");
+    if (resetTokenCol.length === 0) {
+      await connection.query("ALTER TABLE users ADD COLUMN reset_password_token VARCHAR(255) DEFAULT NULL");
+      console.log('Added reset_password_token column to users table.');
+    }
+    const [resetExpiresCol] = await connection.query("SHOW COLUMNS FROM users LIKE 'reset_password_expires'");
+    if (resetExpiresCol.length === 0) {
+      await connection.query("ALTER TABLE users ADD COLUMN reset_password_expires TIMESTAMP NULL DEFAULT NULL");
+      console.log('Added reset_password_expires column to users table.');
+    }
+
+    // Check and add email column to users if it doesn't exist
+    const [emailCol] = await connection.query("SHOW COLUMNS FROM users LIKE 'email'");
+    if (emailCol.length === 0) {
+      await connection.query("ALTER TABLE users ADD COLUMN email VARCHAR(255) DEFAULT NULL");
+      console.log('Added email column to users table.');
+    }
 
     // Check and add role column if it doesn't exist
     const [rows] = await connection.query(checkRoleColumn);

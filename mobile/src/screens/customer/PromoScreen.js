@@ -197,7 +197,7 @@ const PromoScreen = ({ navigation }) => {
                         style={styles.claimBtn}
                         onPress={() => handleClaimPress(item)}
                     >
-                        <Text style={styles.claimBtnText}>{item.code ? 'KODE' : 'PAKAI'}</Text>
+                        <Text style={styles.claimBtnText}>{item.code ? 'KODE' : 'GAS'}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -265,7 +265,7 @@ const PromoScreen = ({ navigation }) => {
                 >
                     <ArrowLeft size={24} color="#1E293B" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Promo & Penawaran</Text>
+                <Text style={styles.headerTitle}>Kumpulan Promo Berkah</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={styles.backBtn}>
                     <Bell size={24} color="#1E293B" />
                 </TouchableOpacity>
@@ -281,7 +281,7 @@ const PromoScreen = ({ navigation }) => {
                 {loading ? (
                     <View style={{ paddingVertical: 100, alignItems: 'center' }}>
                         <ActivityIndicator size="large" color="#059669" />
-                        <Text style={{ marginTop: 15, color: '#94A3B8' }}>Memuat promo terbaru...</Text>
+                        <Text style={{ marginTop: 15, color: '#94A3B8' }}>Sabar ya, lagi cari promo berkah...</Text>
                     </View>
                 ) : (
                     <>
@@ -336,7 +336,7 @@ const PromoScreen = ({ navigation }) => {
                         <View style={styles.sectionHeader}>
                             <View style={styles.sectionTitleRow}>
                                 <Ticket size={20} color="#059669" />
-                                <Text style={styles.sectionTitle}>Voucer Berkah88</Text>
+                                <Text style={styles.sectionTitle}>Voucer Jajan Berkah</Text>
                             </View>
                         </View>
                         <View style={styles.voucherList}>
@@ -345,7 +345,7 @@ const PromoScreen = ({ navigation }) => {
                             ) : (
                                 <View style={{ padding: 40, alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 20 }}>
                                     <Ticket size={48} color="#D1D5DB" />
-                                    <Text style={{ marginTop: 10, color: '#94A3B8', textAlign: 'center' }}>Belum ada voucer aktif saat ini.</Text>
+                                    <Text style={{ marginTop: 10, color: '#94A3B8', textAlign: 'center' }}>Afwan, voucer lagi kosong nih.</Text>
                                 </View>
                             )}
                         </View>
@@ -354,7 +354,7 @@ const PromoScreen = ({ navigation }) => {
                         <View style={[styles.sectionHeader, { marginTop: 30 }]}>
                             <View style={styles.sectionTitleRow}>
                                 <Zap size={20} color="#FBBF24" />
-                                <Text style={styles.sectionTitle}>Kampanye Sedang Berlangsung</Text>
+                                <Text style={styles.sectionTitle}>Lagi Berlangsung Nih</Text>
                             </View>
                         </View>
 
@@ -364,7 +364,7 @@ const PromoScreen = ({ navigation }) => {
                             ) : (
                                 <View style={{ padding: 30, alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 24, borderWidth: 1, borderColor: '#F1F5F9' }}>
                                     <Zap size={32} color="#D1D5DB" />
-                                    <Text style={{ marginTop: 8, color: '#94A3B8', fontSize: 13 }}>Belum ada kampanye aktif hari ini.</Text>
+                                    <Text style={{ marginTop: 8, color: '#94A3B8', fontSize: 13 }}>Belum ada promo spesial hari ini.</Text>
                                 </View>
                             )}
                         </View>
@@ -375,13 +375,13 @@ const PromoScreen = ({ navigation }) => {
                                 <Ticket size={30} color="#FFFFFF" strokeWidth={2.5} />
                             </View>
                             <View style={styles.tipsContent}>
-                                <Text style={styles.tipsTitle}>Tips Hemat Berkah!</Text>
-                                <Text style={styles.tipsDesc}>Kumpulkan poin setiap belanja untuk ditukarkan dengan potongan harga langsung di pesanan berikutnya.</Text>
+                                <Text style={styles.tipsTitle}>Tips Jajan Hemat Berkah!</Text>
+                                <Text style={styles.tipsDesc}>Alhamdulillah, kumpulin poin terus ya biar jajan berikutnya makin hemat!</Text>
                                 <TouchableOpacity
                                     style={styles.pointsLink}
                                     onPress={() => navigation.navigate('PointsHistory')}
                                 >
-                                    <Text style={styles.pointsLinkText}>Cek Poin Sekarang</Text>
+                                    <Text style={styles.pointsLinkText}>Cek Tabungan Poin</Text>
                                     <ChevronRight size={14} color="#FFFFFF" />
                                 </TouchableOpacity>
                             </View>
@@ -422,7 +422,7 @@ const PromoScreen = ({ navigation }) => {
                                 <View style={styles.detailImageBlur} />
                                 <View style={styles.detailTitleWrapper}>
                                     <View style={[styles.detailTypeBadge, { backgroundColor: selectedPromoDetail?.color || '#059669' }]}>
-                                        <Text style={styles.detailTypeBadgeText}>PROMO SPESIAL</Text>
+                                        <Text style={styles.detailTypeBadgeText}>PROMO BERKAH</Text>
                                     </View>
                                     <Text style={styles.detailMainTitle}>{selectedPromoDetail?.title}</Text>
                                 </View>
@@ -462,7 +462,7 @@ const PromoScreen = ({ navigation }) => {
                                 <View style={styles.detailDescSection}>
                                     <View style={styles.sectionHeadingRow}>
                                         <Info size={16} color="#64748B" />
-                                        <Text style={styles.sectionHeadingText}>Deskripsi & Syarat</Text>
+                                        <Text style={styles.sectionHeadingText}>Info & Syarat Berkah</Text>
                                     </View>
                                     <Text style={styles.detailFullDesc}>
                                         {selectedPromoDetail?.description || 'Nikmati penawaran menarik ini khusus untuk pelanggan setia Kasir Berkah 88. Promo berlaku sesuai syarat dan ketentuan yang berlaku.'}
@@ -471,7 +471,7 @@ const PromoScreen = ({ navigation }) => {
 
                                 {selectedPromoDetail?.code && (
                                     <View style={styles.detailCodeSection}>
-                                        <Text style={styles.detailCodeLabel}>Gunakan Kode Promo:</Text>
+                                        <Text style={styles.detailCodeLabel}>Kode Promo Kamu:</Text>
                                         <View style={styles.detailCodeBox}>
                                             <Text style={styles.detailCodeText}>{selectedPromoDetail.code}</Text>
                                             <TouchableOpacity
@@ -483,7 +483,7 @@ const PromoScreen = ({ navigation }) => {
                                                 ) : (
                                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                                                         <Copy size={16} color="#059669" />
-                                                        <Text style={styles.detailCopyText}>SALIN</Text>
+                                                        <Text style={styles.detailCopyText}>AMBIL</Text>
                                                     </View>
                                                 )}
                                             </TouchableOpacity>
@@ -503,7 +503,7 @@ const PromoScreen = ({ navigation }) => {
                                 }}
                             >
                                 <ShoppingBag size={20} color="#FFFFFF" strokeWidth={2.5} />
-                                <Text style={styles.detailActionText}>PAKAI PROMO SEKARANG</Text>
+                                <Text style={styles.detailActionText}>Bismillah, Pakai Sekarang</Text>
                             </TouchableOpacity>
                         </View>
                     </Animated.View>
@@ -524,7 +524,7 @@ const PromoScreen = ({ navigation }) => {
                         </View>
 
                         <Text style={styles.modalTitle}>{selectedPromo?.title}</Text>
-                        <Text style={styles.modalSubtitle}>Salin kode di bawah ini untuk digunakan saat pembayaran.</Text>
+                        <Text style={styles.modalSubtitle}>Alhamdulillah, salin kode di bawah ya buat jajan hemat!</Text>
 
                         <View style={styles.codeContainer}>
                             <Text style={styles.codeText}>{selectedPromo?.code}</Text>

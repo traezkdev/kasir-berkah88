@@ -561,7 +561,12 @@ const CashReconciliation = ({ navigation }) => {
                             mode="date"
                             onChange={(event, date) => {
                                 setShowHistStartDatePicker(false);
-                                if (date) setHistoryStartDate(date.toISOString().split('T')[0]);
+                                if (date) {
+                                    const year = date.getFullYear();
+                                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                                    const day = String(date.getDate()).padStart(2, '0');
+                                    setHistoryStartDate(`${year}-${month}-${day}`);
+                                }
                             }}
                         />
                     )}
@@ -571,7 +576,12 @@ const CashReconciliation = ({ navigation }) => {
                             mode="date"
                             onChange={(event, date) => {
                                 setShowHistEndDatePicker(false);
-                                if (date) setHistoryEndDate(date.toISOString().split('T')[0]);
+                                if (date) {
+                                    const year = date.getFullYear();
+                                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                                    const day = String(date.getDate()).padStart(2, '0');
+                                    setHistoryEndDate(`${year}-${month}-${day}`);
+                                }
                             }}
                         />
                     )}

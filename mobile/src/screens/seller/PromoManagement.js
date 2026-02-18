@@ -16,7 +16,8 @@ import {
     KeyboardAvoidingView,
     ScrollView,
     Image,
-    Switch
+    Switch,
+    ToastAndroid
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -545,10 +546,18 @@ const PromoManagement = ({ navigation }) => {
 
             if (editingPromo) {
                 await apiService.put(`/api/promos/${editingPromo.id}`, cleanedForm);
-                Alert.alert('Sukses', 'Promo berhasil diperbarui');
+                if (Platform.OS === 'android') {
+                    ToastAndroid.show('Promo berhasil diperbarui', ToastAndroid.SHORT);
+                } else {
+                    Alert.alert('Sukses', 'Promo berhasil diperbarui');
+                }
             } else {
                 await apiService.post('/api/promos', cleanedForm);
-                Alert.alert('Sukses', 'Promo baru berhasil ditambahkan');
+                if (Platform.OS === 'android') {
+                    ToastAndroid.show('Promo baru berhasil ditambahkan', ToastAndroid.SHORT);
+                } else {
+                    Alert.alert('Sukses', 'Promo baru berhasil ditambahkan');
+                }
             }
             setModalVisible(false);
             fetchPromos(true);
@@ -844,7 +853,7 @@ const PromoManagement = ({ navigation }) => {
 
                                                 <View style={styles.inputGroup}>
                                                     <Text style={styles.subLabel}>Gambar Banner (Rasio 16:9)</Text>
-                                                    <TouchableOpacity style={styles.uploadContainer} onPress={pickImage}>
+                                                    <TouchableOpacity style={styles.uploadContainer} onPress={() => pickImage('banner')}>
                                                         {form.image_url ? (
                                                             <>
                                                                 <Image

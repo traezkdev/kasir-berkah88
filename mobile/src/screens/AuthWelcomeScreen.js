@@ -26,22 +26,22 @@ const AuthWelcomeScreen = ({ navigation }) => {
     const onboardingData = [
         {
             id: '1',
-            title: 'Selamat Datang',
-            description: `Aplikasi ${headerTitle || 'Berkah 88'} memudahkan Anda memesan makanan favorit dengan cepat dan aman.`,
+            title: 'Assalamu’alaikum',
+            description: `Telah hadir ${headerTitle || 'Berkah 88'} buat nemenin hari kamu dengan menu-menu pilihan yang insyaAllah berkah.`,
             icon: ShoppingBag,
-            color: '#3B82F6'
+            color: '#059669'
         },
         {
             id: '2',
-            title: 'Menu Terlengkap',
-            description: 'Temukan berbagai pilihan kuliner lezat yang siap memanjakan lidah Anda setiap hari.',
+            title: 'Menu Penuh Berkah',
+            description: 'Banyak pilihan menu halal dan lezat yang siap bikin lidah kamu happy setiap hari.',
             icon: Star,
-            color: '#F59E0B'
+            color: '#10B981'
         },
         {
             id: '3',
-            title: 'Layanan Cepat',
-            description: 'Nikmati kemudahan pemesanan instan tanpa perlu mengantri lama.',
+            title: 'Layanan Amanah',
+            description: 'Gak perlu antre lama, pesanan kamu langsung kami proses dengan cepat dan jujur.',
             icon: Clock,
             color: '#10B981'
         }
@@ -55,35 +55,45 @@ const AuthWelcomeScreen = ({ navigation }) => {
 
     const renderSlide = ({ item }) => (
         <View style={styles.slide}>
-            <View style={styles.logoContainer}>
-                {logoUrl ? (
-                    <Image
-                        source={getLogoSource()}
-                        style={styles.logoImage}
-                        resizeMode="contain"
-                    />
-                ) : (
-                    <View style={styles.placeholderLogo}>
-                        <View style={styles.placeholderLogoIcon}>
+            {/* Branding Section */}
+            <View style={styles.premiumBranding}>
+                <View style={styles.premiumLogoWrapper}>
+                    {logoUrl ? (
+                        <Image
+                            source={getLogoSource()}
+                            style={styles.premiumLogo}
+                            resizeMode="contain"
+                        />
+                    ) : (
+                        <View style={styles.premiumPlaceholderLogo}>
                             <View style={styles.placeholderLogoBar1} />
                             <View style={styles.placeholderLogoBar2} />
                         </View>
-                    </View>
-                )}
-                <Text style={[
-                    styles.placeholderLogoText,
-                    headerTitle?.length > 10 && { fontSize: 16 }
-                ]}>
-                    {headerTitle?.toUpperCase() || 'VISTA'}
-                </Text>
+                    )}
+                </View>
+                <View style={styles.premiumBrandingInfo}>
+                    <Text style={styles.premiumBrandName}>
+                        {headerTitle?.toUpperCase() || 'BERKAH 88'}
+                    </Text>
+                    <View style={styles.premiumBrandLine} />
+                </View>
             </View>
 
-            <View style={styles.slideInfo}>
-                <View style={[styles.slideIconBox, { backgroundColor: `${item.color}15` }]}>
-                    <item.icon size={32} color={item.color} />
+            {/* Content Section */}
+            <View style={styles.premiumContentCard}>
+                <View style={styles.premiumIconContainer}>
+                    <LinearGradient
+                        colors={['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.1)']}
+                        style={styles.premiumIconBox}
+                    >
+                        <item.icon size={32} color="#FFFFFF" strokeWidth={2.5} />
+                    </LinearGradient>
                 </View>
-                <Text style={styles.slideTitle}>{item.title}</Text>
-                <Text style={styles.slideDesc}>{item.description}</Text>
+
+                <Text style={styles.premiumGreeting}>{item.title}</Text>
+                <View style={styles.premiumMessageWrapper}>
+                    <Text style={styles.premiumMessage}>{item.description}</Text>
+                </View>
             </View>
         </View>
     );
@@ -98,7 +108,7 @@ const AuthWelcomeScreen = ({ navigation }) => {
         <View style={styles.container}>
             <StatusBar barStyle="light-content" transparent backgroundColor="transparent" />
             <LinearGradient
-                colors={['#3B82F6', '#60A5FA', '#DBEAFE']}
+                colors={['#059669', '#065F46', '#064E3B']}
                 style={styles.gradient}
             >
                 {/* Header Navigation */}
@@ -147,14 +157,14 @@ const AuthWelcomeScreen = ({ navigation }) => {
                             style={styles.signInBtn}
                             onPress={() => navigation.navigate('Login')}
                         >
-                            <Text style={styles.signInText}>Masuk Ke Akun</Text>
+                            <Text style={styles.signInText}>Masuk Akun</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
                             style={styles.registerBtn}
                             onPress={() => navigation.navigate('Register')}
                         >
-                            <Text style={styles.registerText}>Daftar Sekarang</Text>
+                            <Text style={styles.registerText}>Bismillah, Daftar Member</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -210,73 +220,81 @@ const styles = StyleSheet.create({
         width: width,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 40,
+        paddingHorizontal: 30,
     },
-    logoContainer: {
+    premiumBranding: {
         alignItems: 'center',
+        marginBottom: 50,
+    },
+    premiumLogoWrapper: {
+        width: 120,
+        height: 120,
         justifyContent: 'center',
-        marginBottom: 30,
-    },
-    logoImage: {
-        width: 100,
-        height: 100,
-        marginBottom: 5,
-    },
-    placeholderLogo: {
         alignItems: 'center',
-        height: 70,
+        marginBottom: 10,
     },
-    placeholderLogoIcon: {
-        width: 100,
-        height: 60,
+    premiumLogo: {
+        width: 110,
+        height: 110,
+    },
+    premiumPlaceholderLogo: {
+        width: 60,
+        height: 40,
         flexDirection: 'row',
         justifyContent: 'center',
-        gap: 10,
-        marginBottom: 5,
+        gap: 8,
     },
-    placeholderLogoBar1: {
-        width: 30,
-        height: 60,
-        backgroundColor: '#FFFFFF',
-        borderRadius: 15,
-        transform: [{ rotate: '45deg' }, { translateY: 10 }],
-    },
-    placeholderLogoBar2: {
-        width: 30,
-        height: 60,
-        backgroundColor: '#FFFFFF',
-        borderRadius: 15,
-        transform: [{ rotate: '45deg' }, { translateY: -10 }],
-    },
-    placeholderLogoText: {
-        color: '#FFFFFF',
-        fontSize: 24,
-        fontWeight: '900',
-        letterSpacing: 2,
-    },
-    slideInfo: {
+    premiumBrandingInfo: {
         alignItems: 'center',
     },
-    slideIconBox: {
-        width: 70,
-        height: 70,
-        borderRadius: 25,
+    premiumBrandName: {
+        color: '#FFFFFF',
+        fontSize: 22,
+        fontWeight: '900',
+        letterSpacing: 4,
+        marginBottom: 10,
+    },
+    premiumBrandLine: {
+        width: 40,
+        height: 3,
+        backgroundColor: '#10B981',
+        borderRadius: 2,
+    },
+    premiumContentCard: {
+        width: '100%',
+        alignItems: 'center',
+        paddingHorizontal: 10,
+    },
+    premiumIconContainer: {
+        marginBottom: 25,
+    },
+    premiumIconBox: {
+        width: 80,
+        height: 80,
+        borderRadius: 30,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 20,
+        borderWidth: 1.5,
+        borderColor: 'rgba(255,255,255,0.4)',
     },
-    slideTitle: {
+    premiumGreeting: {
         color: '#FFFFFF',
-        fontSize: 24,
+        fontSize: 32,
         fontWeight: '900',
-        marginBottom: 10,
+        marginBottom: 15,
         textAlign: 'center',
+        textShadowColor: 'rgba(0, 0, 0, 0.1)',
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 4,
     },
-    slideDesc: {
-        color: 'rgba(255, 255, 255, 0.8)',
-        fontSize: 15,
+    premiumMessageWrapper: {
+        paddingHorizontal: 20,
+    },
+    premiumMessage: {
+        color: 'rgba(255, 255, 255, 0.9)',
+        fontSize: 16,
         textAlign: 'center',
-        lineHeight: 22,
+        lineHeight: 26,
         fontWeight: '600',
     },
     footer: {
@@ -316,7 +334,7 @@ const styles = StyleSheet.create({
         })
     },
     signInText: {
-        color: '#3B82F6',
+        color: '#059669',
         fontSize: 16,
         fontWeight: '900',
     },

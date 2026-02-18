@@ -120,7 +120,7 @@ const PointsHistory = ({ navigation }) => {
         return (
             <View style={styles.footerLoader}>
                 <ActivityIndicator size="small" color="#10B981" />
-                <Text style={styles.footerLoaderText}>Memuat lebih banyak...</Text>
+                <Text style={styles.footerLoaderText}>Sabar ya, lagi ambil data...</Text>
             </View>
         );
     };
@@ -130,8 +130,8 @@ const PointsHistory = ({ navigation }) => {
         return (
             <View style={styles.emptyState}>
                 <Calendar size={64} color="#CBD5E1" />
-                <Text style={styles.emptyText}>Belum ada riwayat poin</Text>
-                <Text style={styles.emptySubtext}>Mulai belanja untuk mendapatkan poin!</Text>
+                <Text style={styles.emptyText}>Wah, Belum Ada Jejak Poin</Text>
+                <Text style={styles.emptySubtext}>Bismillah, yuk jajan menu favorit biar poin nambah!</Text>
             </View>
         );
     };
@@ -156,15 +156,15 @@ const PointsHistory = ({ navigation }) => {
                 >
                     <ArrowLeft size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Riwayat Poin</Text>
+                <Text style={styles.headerTitle}>Tabungan Poin Berkah</Text>
                 <View style={{ width: 40 }} />
             </View>
 
             {/* Points Card */}
             <View style={styles.pointsCard}>
-                <Text style={styles.pointsLabel}>TOTAL POIN ANDA</Text>
+                <Text style={styles.pointsLabel}>SISA TABUNGAN POIN</Text>
                 <Text style={styles.pointsValue}>{new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(points)}</Text>
-                <Text style={styles.pointsSubtitle}>Poin Berkah 88</Text>
+                <Text style={styles.pointsSubtitle}>Alhamdulillah, Berkah bin Hemat</Text>
             </View>
 
             {/* History List */}

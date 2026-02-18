@@ -105,7 +105,7 @@ const InformationScreen = ({ navigation }) => {
                 >
                     <ChevronLeft size={24} color="#1E293B" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Pusat Informasi</Text>
+                <Text style={styles.headerTitle}>Kabar Berkah Terbaru</Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -131,12 +131,12 @@ const InformationScreen = ({ navigation }) => {
                                 <Bell size={16} color="#2563EB" />
                             </View>
                         </View>
-                        <Text style={styles.emptyTitle}>Belum Ada Kabar Baru</Text>
+                        <Text style={styles.emptyTitle}>Wah, Belum Ada Kabar Nih</Text>
                         <Text style={styles.emptySubtitle}>
-                            Saat ini belum ada informasi promo atau pengumuman penting untukmu. Cek lagi nanti ya!
+                            Sabar ya, saat ini belum ada info menarik. Nanti mampir lagi, insyaAllah bakal ada kabar baru buat kamu.
                         </Text>
                         <TouchableOpacity style={styles.refreshButton} onPress={onRefresh} activeOpacity={0.8}>
-                            <Text style={styles.refreshButtonText}>Muat Ulang</Text>
+                            <Text style={styles.refreshButtonText}>Muat Ulang Bismillah</Text>
                         </TouchableOpacity>
                     </View>
                 ) : (
@@ -162,7 +162,7 @@ const InformationScreen = ({ navigation }) => {
                                     {isNew && (
                                         <View style={styles.newBadge}>
                                             <View style={styles.redDot} />
-                                            <Text style={styles.newBadgeText}>BARU</Text>
+                                            <Text style={styles.newBadgeText}>KABAR BARU</Text>
                                         </View>
                                     )}
                                 </View>
@@ -220,7 +220,7 @@ const InformationScreen = ({ navigation }) => {
             <BottomModalTemplate
                 visible={showDetail}
                 onClose={() => setShowDetail(false)}
-                title="Detail Informasi"
+                title="Kabar Berkah Detail"
                 height="100%"
                 disableSwipe={true}
                 footer={(selectedInfo?.link_type === 'product' || selectedInfo?.link_type === 'promo' || selectedInfo?.link_type === 'custom') && (
@@ -236,12 +236,12 @@ const InformationScreen = ({ navigation }) => {
                         {selectedInfo?.link_type === 'product' ? (
                             <>
                                 <ShoppingBag size={18} color="#FFFFFF" strokeWidth={2.5} />
-                                <Text style={styles.modalActionBtnText}>Pesan Sekarang</Text>
+                                <Text style={styles.modalActionBtnText}>Bismillah, Pesan Sekarang</Text>
                             </>
                         ) : selectedInfo?.link_type === 'promo' ? (
                             <>
                                 <Tag size={18} color="#FFFFFF" strokeWidth={2.5} />
-                                <Text style={styles.modalActionBtnText}>Lihat Promo</Text>
+                                <Text style={styles.modalActionBtnText}>Cek Promonya</Text>
                             </>
                         ) : (
                             <>

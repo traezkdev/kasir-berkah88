@@ -34,6 +34,7 @@ import {
 import apiService from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useConfirm } from '../../context/ConfirmContext';
 import BottomModalTemplate from '../../components/templates/BottomModalTemplate';
 
 const { width } = Dimensions.get('window');
@@ -78,6 +79,7 @@ const ExpenseCard = React.memo(({ item, handleEditExpense, handleDeleteExpense, 
 const OwnerExpenseManagement = ({ navigation }) => {
     const { user } = useAuth();
     const { showToast } = useToast();
+    const { confirm } = useConfirm();
     const abortControllerRef = useRef(null);
 
     // Helper for local date string YYYY-MM-DD to avoid timezone issues
@@ -350,27 +352,23 @@ const OwnerExpenseManagement = ({ navigation }) => {
         setShowModal(true);
     };
 
-    const handleDeleteExpense = (id) => {
-        Alert.alert(
-            'Konfirmasi Hapus',
-            'Apakah Anda yakin ingin menghapus catatan pengeluaran ini?',
-            [
-                { text: 'Batal', style: 'cancel' },
-                {
-                    text: 'Hapus',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await apiService.delete(`/api/expenses/${id}`);
-                            showToast('Pengeluaran berhasil dihapus', 'success');
-                            handleRefresh();
-                        } catch (error) {
-                            showToast('Gagal menghapus pengeluaran', 'error');
-                        }
-                    }
-                }
-            ]
-        );
+    const handleDeleteExpense = async (id) => {
+        const accepted = await confirm({
+            title: 'Hapus Catatan',
+            message: 'Tindakan ini tidak dapat dibatalkan. Apakah Anda yakin ingin menghapus catatan pengeluaran ini?',
+            confirmText: 'Ya, Hapus',
+            type: 'danger'
+        });
+
+        if (accepted) {
+            try {
+                await apiService.delete(`/api/expenses/${id}`);
+                showToast('Pengeluaran berhasil dihapus', 'success');
+                handleRefresh();
+            } catch (error) {
+                showToast('Gagal menghapus pengeluaran', 'error');
+            }
+        }
     };
 
     const handleSubmit = async () => {
@@ -485,7 +483,7 @@ const OwnerExpenseManagement = ({ navigation }) => {
 
             {/* Premium Header - Owner Theme */}
             <View
-                style={[styles.headerGradient, { backgroundColor: '#0F172A' }]}
+                style={styles.headerGradient}
             >
                 <View style={styles.headerTop}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtnHeader}>
@@ -610,6 +608,9 @@ const OwnerExpenseManagement = ({ navigation }) => {
                     }
                 />
             </View>
+
+
+
 
             {/* Add/Edit Modal */}
             <BottomModalTemplate
@@ -851,7 +852,7 @@ const OwnerExpenseManagement = ({ navigation }) => {
 
             {/* Floating Action Button for Add */}
             <TouchableOpacity style={styles.fab} onPress={handleAddExpense}>
-                <Plus size={30} color="#0F172A" strokeWidth={2.5} />
+                <Plus size={30} color="#FFFFFF" strokeWidth={2.5} />
             </TouchableOpacity>
         </View>
     );
@@ -1215,14 +1216,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     submitBtn: {
-        backgroundColor: '#0F172A', // Owner Dark
+        backgroundColor: '#349BE5', // Owner Blue
         borderRadius: 18,
         paddingVertical: 16,
         alignItems: 'center',
         marginTop: 10,
         ...Platform.select({
             android: { elevation: 4 },
-            ios: { shadowColor: '#0F172A', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 }
+            ios: { shadowColor: '#349BE5', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 }
         })
     },
     submitBtnText: {
@@ -1278,7 +1279,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 30,
         right: 25,
-        backgroundColor: '#F59E0B', // Owner Gold
+        backgroundColor: '#349BE5', // Owner Blue
         width: 65,
         height: 65,
         borderRadius: 22,
@@ -1286,7 +1287,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         ...Platform.select({
             android: { elevation: 6 },
-            ios: { shadowColor: '#F59E0B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 10 }
+            ios: { shadowColor: '#349BE5', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 10 }
         })
     },
     // Dropdown Styles
@@ -1345,7 +1346,7 @@ const styles = StyleSheet.create({
         height: 6,
         borderRadius: 3,
         backgroundColor: '#F59E0B',
-    }
+    },
 });
 
 export default OwnerExpenseManagement;

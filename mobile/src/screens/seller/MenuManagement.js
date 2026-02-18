@@ -206,15 +206,25 @@ const MenuManagement = ({ navigation }) => {
 
             // Append image if selected and it's a new image (not from server)
             if (imageUri && !imageUri.startsWith('http')) {
-                const filename = imageUri.split('/').pop();
-                const match = /\.(\w+)$/.exec(filename);
-                const type = match ? `image/${match[1]}` : 'image/jpeg';
+                if (Platform.OS === 'web') {
+                    try {
+                        const responseBlob = await fetch(imageUri);
+                        const blob = await responseBlob.blob();
+                        formDataToSend.append('image', blob, 'menu_image.jpg');
+                    } catch (error) {
+                        console.error('Error converting image to blob for web:', error);
+                    }
+                } else {
+                    const filename = imageUri.split('/').pop();
+                    const match = /\.(\w+)$/.exec(filename);
+                    const type = match ? `image/${match[1]}` : 'image/jpeg';
 
-                formDataToSend.append('image', {
-                    uri: imageUri,
-                    name: filename,
-                    type
-                });
+                    formDataToSend.append('image', {
+                        uri: imageUri,
+                        name: filename,
+                        type
+                    });
+                }
             }
 
             const url = editingItem
@@ -223,7 +233,9 @@ const MenuManagement = ({ navigation }) => {
             const method = editingItem ? 'put' : 'post';
 
             const response = await apiService[method](url, formDataToSend, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                headers: {
+                    'Content-Type': Platform.OS === 'web' ? undefined : 'multipart/form-data'
+                }
             });
 
             if (response.status === 200 || response.status === 201) {
@@ -249,10 +261,17 @@ const MenuManagement = ({ navigation }) => {
 
         if (accepted) {
             try {
-                await apiService.delete(`/api/menu-items/${id}`);
-                fetchData();
+                const response = await apiService.delete(`/api/menu-items/${id}`);
+                if (response.status === 200 || response.status === 204) {
+                    Alert.alert('Sukses', 'Menu berhasil dihapus');
+                    fetchData();
+                } else {
+                    Alert.alert('Gagal', 'Gagal menghapus menu');
+                }
             } catch (error) {
                 console.error('Error deleting menu:', error);
+                const errorMsg = error.response?.data?.error || 'Gagal menghapus menu. Pastikan Anda memiliki menu tersebut atau coba lagi.';
+                Alert.alert('Error', errorMsg);
             }
         }
     }, [confirm, fetchData]);

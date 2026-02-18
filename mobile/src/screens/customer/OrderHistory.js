@@ -95,17 +95,17 @@ const OrderHistory = ({ navigation }) => {
     const getStatusInfo = (status) => {
         switch (status) {
             case 'pending':
-                return { label: 'Baru', icon: Clock, color: '#F59E0B', bg: '#FFFBEB' };
+                return { label: 'Pesanan Baru nih', icon: Clock, color: '#F59E0B', bg: '#FFFBEB' };
             case 'accepted':
-                return { label: 'Diproses', icon: ShoppingBag, color: '#138FEA', bg: '#EFF6FF' };
+                return { label: 'Lagi Disiapin ya', icon: ShoppingBag, color: '#138FEA', bg: '#EFF6FF' };
             case 'ready':
-                return { label: 'Siap Diambil', icon: CheckCircle2, color: '#10B981', bg: '#ECFDF5' };
+                return { label: 'Alhamdulillah Siap!', icon: CheckCircle2, color: '#10B981', bg: '#ECFDF5' };
             case 'rejected':
-                return { label: 'Ditolak', icon: XCircle, color: '#EF4444', bg: '#FEF2F2' };
+                return { label: 'Afwan, Ditolak', icon: XCircle, color: '#EF4444', bg: '#FEF2F2' };
             case 'cancelled':
-                return { label: 'Batal', icon: Slash, color: '#64748B', bg: '#F8FAFC' };
+                return { label: 'Dibatalkan', icon: Slash, color: '#64748B', bg: '#F8FAFC' };
             case 'completed':
-                return { label: 'Selesai', icon: CheckCircle2, color: '#059669', bg: '#ECFDF5' };
+                return { label: 'Alhamdulillah Selesai', icon: CheckCircle2, color: '#059669', bg: '#ECFDF5' };
             default:
                 return { label: status, icon: Info, color: '#64748B', bg: '#F8FAFC' };
         }
@@ -164,7 +164,7 @@ const OrderHistory = ({ navigation }) => {
                             <status.icon size={20} color={status.color} />
                         </View>
                         <View>
-                            <Text style={styles.orderId}>ID PESANAN #{item.id}</Text>
+                            <Text style={styles.orderId}>KODE PESANAN #{item.id}</Text>
                             <Text style={[styles.statusLabel, { color: status.color }]}>{status.label.toUpperCase()}</Text>
                         </View>
                     </View>
@@ -185,7 +185,7 @@ const OrderHistory = ({ navigation }) => {
 
                 <View style={styles.cardFooter}>
                     <View style={{ flex: 1 }}>
-                        <Text style={styles.totalLabel}>TOTAL PEMBAYARAN</Text>
+                        <Text style={styles.totalLabel}>TOTAL SEMUANYA</Text>
                         <Text style={styles.totalValue}>{formatCurrency(item.total_amount || item.total)}</Text>
                     </View>
                     <View style={styles.footerActions}>
@@ -221,7 +221,7 @@ const OrderHistory = ({ navigation }) => {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                     <ArrowLeft size={20} color="#1E293B" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Pesanan Saya</Text>
+                <Text style={styles.headerTitle}>Pesanan Berkahku</Text>
                 <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
                     <RefreshCcw size={18} color="#94A3B8" />
                 </TouchableOpacity>
@@ -241,13 +241,13 @@ const OrderHistory = ({ navigation }) => {
                     ListEmptyComponent={
                         <View style={styles.emptyArea}>
                             <ShoppingBag size={60} color="#E2E8F0" />
-                            <Text style={styles.emptyTitle}>Belum Ada Pesanan</Text>
-                            <Text style={styles.emptySubtitle}>Anda belum melakukan pemesanan apapun hari ini.</Text>
+                            <Text style={styles.emptyTitle}>Wah, Belum Ada Pesanan Nih</Text>
+                            <Text style={styles.emptySubtitle}>Yuk cari menu favoritmu biar berkah!</Text>
                             <TouchableOpacity
                                 style={styles.orderNowBtn}
                                 onPress={() => navigation.navigate('Menu')}
                             >
-                                <Text style={styles.orderNowText}>Pesan Sekarang</Text>
+                                <Text style={styles.orderNowText}>Bismillah, Pesan Sekarang</Text>
                             </TouchableOpacity>
                         </View>
                     }
@@ -353,11 +353,11 @@ const RatingModal = ({ visible, order, onClose, onSubmit, submitting, insets }) 
         <BottomModalTemplate
             visible={visible}
             onClose={onClose}
-            title={`Beri Ulasan #${order?.id || ''}`}
+            title={`Testi Berkah #${order?.id || ''}`}
             heightPercentage={0.88}
             footer={
                 <TouchableOpacity style={styles.modalFinalBtn} onPress={onClose}>
-                    <Text style={styles.modalFinalBtnText}>Selesai</Text>
+                    <Text style={styles.modalFinalBtnText}>Alhamdulillah Selesai</Text>
                 </TouchableOpacity>
             }
         >
@@ -365,14 +365,14 @@ const RatingModal = ({ visible, order, onClose, onSubmit, submitting, insets }) 
                 {/* Header Subtitle or Info */}
                 <View style={{ marginBottom: 20 }}>
                     <Text style={{ fontSize: 13, color: '#64748B', textAlign: 'center' }}>
-                        Bagaimana makananmu? Ceritakan pengalamanmu untuk membantu pelanggan lain.
+                        Alhamdulillah, gimana rasanya? Kasih tau kami ya biar makin berkah.
                     </Text>
                 </View>
 
                 {loadingExisting ? (
                     <View style={{ padding: 40, alignItems: 'center' }}>
                         <ActivityIndicator size="large" color="#F59E0B" />
-                        <Text style={{ marginTop: 12, color: '#94A3B8', fontWeight: 'bold', fontSize: 12 }}>Memuat Ulasan...</Text>
+                        <Text style={{ marginTop: 12, color: '#94A3B8', fontWeight: 'bold', fontSize: 12 }}>Sabar ya, lagi cek testi...</Text>
                     </View>
                 ) : (
                     items.map((item, idx) => {
@@ -386,13 +386,13 @@ const RatingModal = ({ visible, order, onClose, onSubmit, submitting, insets }) 
                                     <View style={{ flex: 1 }}>
                                         <Text style={styles.reviewItemName}>{item.name}</Text>
                                         <Text style={styles.reviewItemSub}>
-                                            {state.submitted ? 'Ulasan Anda Telah Terkirim' : 'Pilih Bintang & Komentar'}
+                                            {state.submitted ? 'Testi Kamu Sudah Masuk Bin Berkah' : 'Bintang & Komentarnya ya'}
                                         </Text>
                                     </View>
                                     {state.submitted && (
                                         <View style={styles.submittedBadge}>
                                             <Check size={12} color="#059669" />
-                                            <Text style={styles.submittedText}>Terkirim</Text>
+                                            <Text style={styles.submittedText}>Masuk</Text>
                                         </View>
                                     )}
                                 </View>
@@ -416,7 +416,7 @@ const RatingModal = ({ visible, order, onClose, onSubmit, submitting, insets }) 
                                         </View>
                                         <TextInput
                                             style={styles.commentInput}
-                                            placeholder="Tulis ulasan Anda (Opsional)..."
+                                            placeholder="Ketik testimoni kamu di sini ya..."
                                             multiline
                                             placeholderTextColor="#94A3B8"
                                             value={state.comment}
@@ -431,7 +431,7 @@ const RatingModal = ({ visible, order, onClose, onSubmit, submitting, insets }) 
                                                 <ActivityIndicator size="small" color="#FFFFFF" />
                                             ) : (
                                                 <Text style={styles.submitItemBtnText}>
-                                                    {state.isEdit ? 'Simpan Perubahan' : 'Kirim Ulasan'}
+                                                    {state.isEdit ? 'Bismillah, Simpan Perubahan' : 'Bismillah, Kirim Testi'}
                                                 </Text>
                                             )}
                                         </TouchableOpacity>
@@ -441,7 +441,7 @@ const RatingModal = ({ visible, order, onClose, onSubmit, submitting, insets }) 
                                         style={styles.editUlasanBtn}
                                         onPress={() => setRatedItems(prev => ({ ...prev, [item.id]: { ...prev[item.id], submitted: false, isEdit: true } }))}
                                     >
-                                        <Text style={styles.editUlasanBtnText}>EDIT ULASAN</Text>
+                                        <Text style={styles.editUlasanBtnText}>EDIT TESTI</Text>
                                     </TouchableOpacity>
                                 )}
                             </View>

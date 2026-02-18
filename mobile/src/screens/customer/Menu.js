@@ -351,7 +351,7 @@ const CustomerMenu = ({ navigation, route }) => {
                     <View style={styles.searchInputWrap}>
                         <Search size={18} color="#94A3B8" />
                         <TextInput
-                            placeholder="Cari menu favorit..."
+                            placeholder="Bismillah, cari menu lezat..."
                             style={styles.searchInput}
                             value={searchTerm}
                             onChangeText={setSearchTerm}
@@ -371,7 +371,7 @@ const CustomerMenu = ({ navigation, route }) => {
                         onPress={() => setSelectedCategory('all')}
                     >
                         <LayoutGrid size={14} color={selectedCategory === 'all' ? "#FFFFFF" : "#64748B"} style={{ marginRight: 6 }} />
-                        <Text style={[styles.tabText, selectedCategory === 'all' && styles.activeTabText]}>Semua</Text>
+                        <Text style={[styles.tabText, selectedCategory === 'all' && styles.activeTabText]}>Semua Berkah</Text>
                     </TouchableOpacity>
                     {categories.map(cat => {
                         const IconComponent = getCategoryIcon(cat.name);
@@ -415,15 +415,15 @@ const CustomerMenu = ({ navigation, route }) => {
                         <View style={styles.closedWarning}>
                             <XCircle size={20} color="#FFFFFF" />
                             <View style={styles.closedWarningText}>
-                                <Text style={styles.warningTitle}>Toko Sedang Tutup</Text>
-                                <Text style={styles.warningSubtitle}>Maaf, saat ini kami tidak menerima pesanan.</Text>
+                                <Text style={styles.warningTitle}>Afwan, Toko Lagi Istirahat</Text>
+                                <Text style={styles.warningSubtitle}>Sabar ya, insyaAllah nanti buka lagi. Doain ya!</Text>
                             </View>
                         </View>
                     )}
                     ListEmptyComponent={
                         <View style={styles.emptyArea}>
                             <Search size={50} color="#E2E8F0" />
-                            <Text style={styles.emptyText}>Menu tidak ditemukan</Text>
+                            <Text style={styles.emptyText}>Maaf, menu belum ketemu nih...</Text>
                         </View>
                     }
                 />
@@ -504,12 +504,12 @@ const CustomerMenu = ({ navigation, route }) => {
                                         {formatCurrency(Math.round(selectedItem?.discount > 0 ? selectedItem.price * (1 - selectedItem.discount / 100) : selectedItem?.price))}
                                     </Text>
                                 </View>
-                                <Text style={styles.modalDesc}>{selectedItem?.description || 'Menu lezat yang disiapkan spesial untuk Anda.'}</Text>
+                                <Text style={styles.modalDesc}>{selectedItem?.description || 'Menu lezat bin berkah yang disiapkan spesial untuk Anda.'}</Text>
 
                                 {/* Options */}
                                 {selectedItem?.options && selectedItem.options.length > 0 && (
                                     <View style={styles.optionsSection}>
-                                        <Text style={styles.optionsTitle}>Pilihan (Wajib Pilih Satu)</Text>
+                                        <Text style={styles.optionsTitle}>Pilih yang kamu suka ya (Wajib Pilih)</Text>
                                         {selectedItem.options.map((opt) => {
                                             const isSelected = selectedOptions.some(o => o.id === opt.id);
                                             return (
@@ -540,7 +540,7 @@ const CustomerMenu = ({ navigation, route }) => {
                                 {/* Reviews */}
                                 <View style={styles.reviewsSection}>
                                     <View style={styles.reviewsHeader}>
-                                        <Text style={styles.reviewsTitle}>Ulasan Pelanggan</Text>
+                                        <Text style={styles.reviewsTitle}>Kata Mereka Yang Sudah Coba</Text>
                                         {selectedItem?.total_reviews > 0 && (
                                             <View style={styles.averageRatingWrap}>
                                                 <Star size={14} color="#FBBF24" fill="#FBBF24" />
@@ -559,7 +559,7 @@ const CustomerMenu = ({ navigation, route }) => {
                                     ) : (
                                         <View style={styles.emptyReviews}>
                                             <MessageSquare size={30} color="#E2E8F0" />
-                                            <Text style={styles.emptyReviewsText}>Belum ada ulasan</Text>
+                                            <Text style={styles.emptyReviewsText}>Belum ada testi nih, yuk jajan!</Text>
                                         </View>
                                     )}
                                 </View>
@@ -585,7 +585,7 @@ const CustomerMenu = ({ navigation, route }) => {
                                                 addToCart(selectedItem, 1, selectedOptions);
                                             }}
                                         >
-                                            <Text style={styles.addToCartText}>{modalIsOutOfStock ? 'Stok Habis' : 'Tambah ke Keranjang'}</Text>
+                                            <Text style={styles.addToCartText}>{modalIsOutOfStock ? 'Afwan, Habis Terjual' : 'Bismillah, Masukkan Keranjang'}</Text>
                                             {!modalIsOutOfStock && (
                                                 <Text style={styles.addToCartLargePrice}>
                                                     {formatCurrency(Math.round(

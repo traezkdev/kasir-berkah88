@@ -61,6 +61,7 @@ import OwnerDatabaseManagement from '../screens/owner/DatabaseManagement';
 import OwnerDeveloperCreditsScreen from '../screens/owner/DeveloperCreditsScreen';
 import OwnerExpenseManagement from '../screens/owner/ExpenseManagement';
 import OwnerLapakDeposit from '../screens/owner/LapakDeposit';
+import OrderTrash from '../screens/seller/OrderTrash';
 
 // Owner Screens
 import OwnerBusinessReports from '../screens/owner/BusinessReports';
@@ -255,29 +256,7 @@ const sellerNavStyles = {
 
 const SellerDashboardStack = () => (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Dashboard" component={SellerDashboard} />
-        <Stack.Screen name="ChatScreen" component={ChatScreen} />
-        <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
-        <Stack.Screen name="Banners" component={Banners} />
-        <Stack.Screen name="CategoryManagement" component={CategoryManagement} />
-        <Stack.Screen name="CustomerManagement" component={CustomerManagement} />
-        <Stack.Screen name="CustomerDetails" component={CustomerDetails} />
-        <Stack.Screen name="PointManagement" component={PointManagement} />
-        <Stack.Screen name="SellerMenu" component={SellerMenu} />
-        <Stack.Screen name="ExpenseManagement" component={ExpenseManagement} />
-        <Stack.Screen name="LapakDeposit" component={LapakDeposit} />
-        <Stack.Screen name="CashReconciliation" component={CashReconciliation} />
-        <Stack.Screen name="DailyReport" component={DailyReport} />
-        <Stack.Screen name="DeveloperCreditsScreen" component={DeveloperCreditsScreen} />
-
-        <Stack.Screen name="BusinessReports" component={BusinessReports} />
-        <Stack.Screen name="PromoManagement" component={PromoManagement} />
-        <Stack.Screen name="ManageInformation" component={ManageInformation} />
-        <Stack.Screen name="FinancialReport" component={FinancialReport} />
-        <Stack.Screen name="HppManagement" component={HppManagement} />
-        <Stack.Screen name="PopupManagement" component={PopupManagement} />
-        <Stack.Screen name="ReviewManagement" component={ReviewManagement} />
-        <Stack.Screen name="DatabaseManagement" component={DatabaseManagement} />
+        <Stack.Screen name="SellerDashboardHome" component={SellerDashboard} />
     </Stack.Navigator>
 );
 
@@ -299,8 +278,29 @@ const SellerRootStack = () => (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="MainTabs" component={SellerTabs} />
         <Stack.Screen name="TransactionTrash" component={TransactionTrash} />
+        <Stack.Screen name="OrderTrash" component={OrderTrash} />
+        <Stack.Screen name="ChatScreen" component={ChatScreen} />
+        <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+        <Stack.Screen name="CustomerManagement" component={CustomerManagement} />
+        <Stack.Screen name="CustomerDetails" component={CustomerDetails} />
+        <Stack.Screen name="PromoManagement" component={PromoManagement} />
+        <Stack.Screen name="BusinessReports" component={BusinessReports} />
+        <Stack.Screen name="DatabaseManagement" component={DatabaseManagement} />
+        <Stack.Screen name="DeveloperCreditsScreen" component={DeveloperCreditsScreen} />
+        <Stack.Screen name="Banners" component={Banners} />
+        <Stack.Screen name="CategoryManagement" component={CategoryManagement} />
+        <Stack.Screen name="PointManagement" component={PointManagement} />
+        <Stack.Screen name="SellerMenu" component={SellerMenu} />
+        <Stack.Screen name="ExpenseManagement" component={ExpenseManagement} />
+        <Stack.Screen name="LapakDeposit" component={LapakDeposit} />
+        <Stack.Screen name="CashReconciliation" component={CashReconciliation} />
+        <Stack.Screen name="DailyReport" component={DailyReport} />
+        <Stack.Screen name="ManageInformation" component={ManageInformation} />
+        <Stack.Screen name="FinancialReport" component={FinancialReport} />
+        <Stack.Screen name="HppManagement" component={HppManagement} />
+        <Stack.Screen name="PopupManagement" component={PopupManagement} />
+        <Stack.Screen name="ReviewManagement" component={ReviewManagement} />
     </Stack.Navigator>
-
 );
 
 const OwnerNavStyles = {
@@ -400,23 +400,47 @@ const CustomOwnerTabBar = ({ state, descriptors, navigation }) => {
     );
 };
 
+// Stack for Dashboard Tab - includes all dashboard-related screens
 const OwnerDashboardStack = () => (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="OwnerDashboard" component={OwnerDashboard} />
-        <Stack.Screen name="BusinessReports" component={OwnerBusinessReports} />
-        <Stack.Screen name="FinancialReport" component={OwnerFinancialReport} />
+        <Stack.Screen name="AllFeatures" component={OwnerAllFeatures} />
         <Stack.Screen name="DailyReport" component={OwnerDailyReport} />
-        <Stack.Screen name="CashReconciliation" component={OwnerCashReconciliation} />
         <Stack.Screen name="ExpenseManagement" component={OwnerExpenseManagement} />
         <Stack.Screen name="LapakDeposit" component={OwnerLapakDeposit} />
+        <Stack.Screen name="CashReconciliation" component={OwnerCashReconciliation} />
+        <Stack.Screen name="BusinessMoney" component={BusinessMoney} />
+    </Stack.Navigator>
+);
+
+// Stack for Business Tab - includes business-related screens
+const OwnerBusinessStack = () => (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="OwnerBusinessReports" component={OwnerBusinessReports} />
         <Stack.Screen name="CategoryManagement" component={OwnerCategoryManagement} />
         <Stack.Screen name="PromoManagement" component={OwnerPromoManagement} />
         <Stack.Screen name="ManageInformation" component={OwnerManageInformation} />
-        <Stack.Screen name="DatabaseManagement" component={OwnerDatabaseManagement} />
-        <Stack.Screen name="ProfileScreen" component={OwnerProfileScreen} />
-        <Stack.Screen name="DeveloperCreditsScreen" component={OwnerDeveloperCreditsScreen} />
-        <Stack.Screen name="AllFeatures" component={OwnerAllFeatures} />
+    </Stack.Navigator>
+);
+
+// Stack for Finance Tab - includes finance-related screens
+const OwnerFinanceStack = () => (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="OwnerFinancialReport" component={OwnerFinancialReport} />
+        <Stack.Screen name="ExpenseManagement" component={OwnerExpenseManagement} />
+        <Stack.Screen name="LapakDeposit" component={OwnerLapakDeposit} />
+        <Stack.Screen name="CashReconciliation" component={OwnerCashReconciliation} />
         <Stack.Screen name="BusinessMoney" component={BusinessMoney} />
+    </Stack.Navigator>
+);
+
+// Stack for Profile Tab - includes profile-related screens
+const OwnerProfileStack = () => (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="OwnerProfileScreen" component={OwnerProfileScreen} />
+        <Stack.Screen name="DatabaseManagement" component={OwnerDatabaseManagement} />
+        <Stack.Screen name="DeveloperCreditsScreen" component={OwnerDeveloperCreditsScreen} />
+        <Stack.Screen name="PromoManagement" component={OwnerPromoManagement} />
     </Stack.Navigator>
 );
 
@@ -427,9 +451,9 @@ const OwnerTabs = () => {
             screenOptions={{ headerShown: false }}
         >
             <Tab.Screen name="Dashboard" component={OwnerDashboardStack} options={{ tabBarLabel: 'Beranda' }} />
-            <Tab.Screen name="Bisnis" component={OwnerBusinessReports} options={{ tabBarLabel: 'Bisnis' }} />
-            <Tab.Screen name="Keuangan" component={OwnerFinancialReport} options={{ tabBarLabel: 'Keuangan' }} />
-            <Tab.Screen name="Profil" component={OwnerProfileScreen} options={{ tabBarLabel: 'Profil' }} />
+            <Tab.Screen name="Bisnis" component={OwnerBusinessStack} options={{ tabBarLabel: 'Bisnis' }} />
+            <Tab.Screen name="Keuangan" component={OwnerFinanceStack} options={{ tabBarLabel: 'Keuangan' }} />
+            <Tab.Screen name="Profil" component={OwnerProfileStack} options={{ tabBarLabel: 'Profil' }} />
         </Tab.Navigator>
     );
 };
@@ -437,6 +461,11 @@ const OwnerTabs = () => {
 const OwnerRootStack = () => (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="MainTabs" component={OwnerTabs} />
+        {/* Fallback screens for direct navigation */}
+        <Stack.Screen name="OwnerDashboard" component={OwnerDashboard} />
+        <Stack.Screen name="OwnerBusinessReports" component={OwnerBusinessReports} />
+        <Stack.Screen name="OwnerFinancialReport" component={OwnerFinancialReport} />
+        <Stack.Screen name="OwnerProfileScreen" component={OwnerProfileScreen} />
     </Stack.Navigator>
 );
 
