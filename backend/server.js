@@ -28,6 +28,7 @@ const {
 const { sendPushNotification } = require('./utils/oneSignal');
 const { sendExpoPushNotification } = require('./utils/expoPush');
 const sendEmail = require('./utils/mailer');
+const { sendOrderEmailNotification } = require('./utils/orderEmails');
 
 
 const app = express();
@@ -4291,6 +4292,10 @@ app.post("/api/orders", (req, res, next) => {
                 'Pesanan Masuk! 🔔',
                 { orderId, type: 'new_order' }
             ).catch(err => console.error('Push notification error:', err));
+
+            // Kirim Email Notifikasi Pesanan Baru (async)
+            sendOrderEmailNotification(orderId, 'new_order')
+                .catch(err => console.error('Email notification error:', err));
         });
 
         // Realtime Update via Socket.io (instant)
@@ -4766,6 +4771,10 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
                 setImmediate(() => {
                     sendUniversalNotification([order.user_id], statusMsg, title, { orderId: id, status, type: 'orders' })
                         .catch(err => console.error('Push notification error:', err));
+
+                    // Kirim Email Notifikasi Update Status ke Pelanggan (async)
+                    sendOrderEmailNotification(id, 'status_update', status)
+                        .catch(err => console.error('Email status update error:', err));
                 });
             }
 
@@ -4999,6 +5008,10 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
                         'Pesanan Diterima! ✅',
                         { orderId: id, status: 'accepted', type: 'orders' }
                     ).catch(err => console.error('Push notification error:', err));
+
+                    // Kirim Email Notifikasi Pesanan Diterima ke Pelanggan (async)
+                    sendOrderEmailNotification(id, 'status_update', 'accepted')
+                        .catch(err => console.error('Email accepted notification error:', err));
                 });
             }
 
