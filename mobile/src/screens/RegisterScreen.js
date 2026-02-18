@@ -14,7 +14,7 @@ import {
     StatusBar,
     Image
 } from 'react-native';
-import { User, Lock, Phone, MapPin, ChevronLeft, ArrowRight } from 'lucide-react-native';
+import { User, Lock, Phone, MapPin, Mail, ChevronLeft, ArrowRight } from 'lucide-react-native';
 import apiService from '../api/apiService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -26,6 +26,7 @@ const { width } = Dimensions.get('window');
 const RegisterScreen = ({ navigation }) => {
     const [formData, setFormData] = useState({
         username: '',
+        email: '',
         phone: '',
         address: '',
         password: '',
@@ -36,7 +37,7 @@ const RegisterScreen = ({ navigation }) => {
     const { logoUrl } = useAppSettings();
 
     const handleRegister = async () => {
-        const { username, phone, address, password, confirmPassword } = formData;
+        const { username, email, phone, address, password, confirmPassword } = formData;
 
         if (!username || !phone || !address || !password || !confirmPassword) {
             Alert.alert('Eror', 'Harap isi semua kolom!');
@@ -59,7 +60,8 @@ const RegisterScreen = ({ navigation }) => {
                 username,
                 password,
                 phone,
-                address
+                address,
+                email: email || null
             });
 
             if (response.data.message === 'success' || response.status === 201 || response.status === 200) {
@@ -133,6 +135,15 @@ const RegisterScreen = ({ navigation }) => {
                                 placeholder="Pilih nama pengguna"
                                 value={formData.username}
                                 onChangeText={(text) => setFormData({ ...formData, username: text })}
+                                autoCapitalize="none"
+                            />
+                            <InputGroup
+                                label="Email (Opsional)"
+                                icon={Mail}
+                                placeholder="email@contoh.com"
+                                value={formData.email}
+                                onChangeText={(text) => setFormData({ ...formData, email: text })}
+                                keyboardType="email-address"
                                 autoCapitalize="none"
                             />
                             <InputGroup

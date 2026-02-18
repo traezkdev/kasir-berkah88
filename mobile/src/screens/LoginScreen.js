@@ -123,7 +123,10 @@ const LoginScreen = ({ navigation }) => {
                                 </View>
                             </View>
 
-                            <TouchableOpacity style={styles.forgotBtn}>
+                            <TouchableOpacity
+                                style={styles.forgotBtn}
+                                onPress={() => navigation.navigate('ForgotPassword')}
+                            >
                                 <Text style={styles.forgotText}>Lupa Kata Sandi?</Text>
                             </TouchableOpacity>
 
