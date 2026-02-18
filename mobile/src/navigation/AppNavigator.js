@@ -256,7 +256,7 @@ const sellerNavStyles = {
 
 const SellerDashboardStack = () => (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Dashboard" component={SellerDashboard} />
+        <Stack.Screen name="SellerDashboardHome" component={SellerDashboard} />
     </Stack.Navigator>
 );
 
