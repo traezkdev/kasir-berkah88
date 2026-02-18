@@ -42,7 +42,12 @@ const BottomModalTemplate = ({
         return heightPercentage;
     }, [height, heightPercentage]);
 
-    const modalHeight = useMemo(() => screenHeight * resolvedHeightPercentage, [screenHeight, resolvedHeightPercentage]);
+    // Calculate modal height explicitly with a safety floor
+    const modalHeight = useMemo(() => {
+        const h = screenHeight * resolvedHeightPercentage;
+        // Safety: Prevent modal from vanishing if screenHeight reports 0 (common during backgrounding on some devices)
+        return h > 100 ? h : (screenHeight > 0 ? screenHeight * 0.85 : 500);
+    }, [screenHeight, resolvedHeightPercentage]);
 
     const isFullscreen = resolvedHeightPercentage >= 1;
     const safeTopPadding = isFullscreen
@@ -54,14 +59,23 @@ const BottomModalTemplate = ({
 
     // Reset position when modal becomes visible or app returns to foreground
     React.useEffect(() => {
-        const resetPosition = () => {
+        const resetPosition = (delay = 0) => {
             if (visible) {
-                // Ensure the modal returns to its original position if it was stuck
-                Animated.spring(pan, {
-                    toValue: { x: 0, y: 0 },
-                    friction: 8,
-                    useNativeDriver: false
-                }).start();
+                const triggerReset = () => {
+                    // Ensure the modal returns to its original position if it was stuck
+                    Animated.spring(pan, {
+                        toValue: { x: 0, y: 0 },
+                        friction: 8,
+                        tension: 40,
+                        useNativeDriver: false
+                    }).start();
+                };
+
+                if (delay > 0) {
+                    setTimeout(triggerReset, delay);
+                } else {
+                    triggerReset();
+                }
             }
         };
 
@@ -70,10 +84,11 @@ const BottomModalTemplate = ({
         }
 
         // Listen for AppState changes to fix "stuck" modals after foregrounding
+        // Adding a small delay (300ms) because on some Androids, dimensions are 0 for a moment after foregrounding
         const subscription = AppState.addEventListener('change', (nextAppState) => {
             if (nextAppState === 'active' && visible) {
-                console.log('[Modal] App active, recalibrating modal position...');
-                resetPosition();
+                console.log('[Modal] App active, recalibrating modal position with delay...');
+                resetPosition(300);
             }
         });
 

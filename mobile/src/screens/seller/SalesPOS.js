@@ -18,7 +18,8 @@ import {
     Switch,
     StatusBar,
     Pressable,
-    InteractionManager
+    InteractionManager,
+    AppState
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getSafeBottomPadding } from '../../utils/safeArea';
@@ -67,16 +68,21 @@ const ProductCardItem = React.memo(({ item, qty, addToCart, ignoreStock, formatC
                 {item.image_url ? (
                     <Image
                         source={{ uri: `${API_URL}${item.image_url}` }}
-                        style={styles.productImage}
+                        style={[styles.productImage, { borderRadius: isList ? 16 : 14 }]}
                     />
                 ) : (
-                    <View style={styles.placeholderImg}>
+                    <View style={[styles.placeholderImg, { borderRadius: isList ? 16 : 14 }]}>
                         <ShoppingCart size={isList ? 24 : 30} color="#CBD5E1" />
                     </View>
                 )}
                 {item.discount > 0 && (
                     <View style={isList ? styles.discountBadgeList : styles.discountBadge}>
                         <Text style={styles.discountText}>{Math.round(item.discount)}%</Text>
+                    </View>
+                )}
+                {qty > 0 && isList && (
+                    <View style={styles.qtyBadgeList}>
+                        <Text style={qtyBadgeTextStyles}>{qty}</Text>
                     </View>
                 )}
             </View>
@@ -100,11 +106,14 @@ const ProductCardItem = React.memo(({ item, qty, addToCart, ignoreStock, formatC
                 </View>
             </View>
 
-            {qty > 0 && (
-                <View style={isList ? styles.qtyBadgeList : styles.qtyBadge}>
-                    <Text style={qtyBadgeTextStyles}>{qty}</Text>
+            {qty > 0 && !isList && (
+                <View style={styles.qtyBadgeWrapperGrid}>
+                    <View style={styles.qtyBadge}>
+                        <Text style={qtyBadgeTextStyles}>{qty}</Text>
+                    </View>
                 </View>
             )}
+
         </Pressable>
     );
 });
@@ -461,6 +470,26 @@ const SalesPOS = () => {
             return () => clearTimeout(timer);
         }
     }, [customerSearchQuery, showCustomerSearch, searchCustomers]);
+
+    // Handle AppState changes (Foreground refresh & Modal Layout Fix)
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', nextAppState => {
+            if (nextAppState === 'active') {
+                console.log('[SalesPOS] App active, refreshing data...');
+                fetchData();
+
+                // Fix: If cart modal is open, ensure it re-renders after dimensions are stable
+                // This prevents the "sunken modal" bug on some Android devices
+                if (isCartModalOpen) {
+                    setIsCartReady(false);
+                    setTimeout(() => {
+                        setIsCartReady(true);
+                    }, 300);
+                }
+            }
+        });
+        return () => subscription.remove();
+    }, [isCartModalOpen]);
 
     const handleSelectCustomer = (customer) => {
         setSelectedCustomer(customer);
@@ -1177,7 +1206,7 @@ const styles = StyleSheet.create({
         width: '22%',
         aspectRatio: 1,
         borderRadius: 16,
-        overflow: 'hidden',
+        overflow: 'visible',
         backgroundColor: '#F1F5F9',
         marginRight: 16,
         position: 'relative',
@@ -1219,15 +1248,15 @@ const styles = StyleSheet.create({
     },
     qtyBadgeList: {
         position: 'absolute',
-        top: -8,
-        right: -8,
+        top: -10,
+        right: -10,
         backgroundColor: '#2563EB',
-        width: 28,
-        height: 28,
-        borderRadius: 14,
+        width: 24,
+        height: 24, // Sesuai permintaan: lebih kecil dan elegan
+        borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 2,
+        borderWidth: 1.5,
         borderColor: '#FFFFFF',
         zIndex: 10,
     },
@@ -1288,18 +1317,37 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     qtyBadge: {
-        position: 'absolute',
-        bottom: 10,
-        right: 10,
         backgroundColor: '#2563EB',
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 2,
         borderColor: '#FFFFFF',
-        zIndex: 10,
+        zIndex: 50,
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 3 },
+            android: { elevation: 5 },
+            web: { boxShadow: '0px 4px 10px rgba(0,0,0,0.2)' }
+        })
+    },
+    qtyBadgeWrapperGrid: {
+        position: 'absolute',
+        bottom: 8,
+        right: 8,
+        zIndex: 100,
+    },
+    qtyBadgeGridContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 50,
+        pointerEvents: 'none',
     },
     qtyBadgeText: {
         color: '#FFFFFF',

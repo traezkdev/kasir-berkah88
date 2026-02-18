@@ -252,19 +252,29 @@ const PopupManagement = ({ navigation }) => {
 
             if (formData.image) {
                 const uri = formData.image.uri;
-                const uriParts = uri.split('.');
-                const fileType = uriParts[uriParts.length - 1];
-                formDataToSend.append('image', {
-                    uri: Platform.OS === 'android' ? uri : uri.replace('file://', ''),
-                    name: `popup_${Date.now()}.${fileType}`,
-                    type: `image/${fileType}`,
-                });
+                if (Platform.OS === 'web') {
+                    try {
+                        const responseBlob = await fetch(uri);
+                        const blob = await responseBlob.blob();
+                        formDataToSend.append('image', blob, `popup_${Date.now()}.jpg`);
+                    } catch (error) {
+                        console.error('Error converting image to blob for web:', error);
+                    }
+                } else {
+                    const uriParts = uri.split('.');
+                    const fileType = uriParts[uriParts.length - 1];
+                    formDataToSend.append('image', {
+                        uri: Platform.OS === 'android' ? uri : uri.replace('file://', ''),
+                        name: `popup_${Date.now()}.${fileType}`,
+                        type: `image/${fileType}`,
+                    });
+                }
             }
 
             let response;
             const config = {
                 headers: {
-                    'Content-Type': 'multipart/form-data',
+                    'Content-Type': Platform.OS === 'web' ? undefined : 'multipart/form-data',
                 },
             };
 

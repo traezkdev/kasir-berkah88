@@ -31,7 +31,8 @@ import {
     FileText,
     X,
     ChevronDown,
-    Inbox
+    Inbox,
+    History
 } from 'lucide-react-native';
 import apiService from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
@@ -120,7 +121,17 @@ const LapakDeposit = ({ navigation }) => {
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [showFilterModal, setShowFilterModal] = useState(false);
-    const [transactionToEdit, setTransactionToEdit] = useState(null);
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+    const [historyLapak, setHistoryLapak] = useState([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+    const [historyPage, setHistoryPage] = useState(1);
+    const [hasMoreHistory, setHasMoreHistory] = useState(true);
+    const [historyFilters, setHistoryFilters] = useState({
+        startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0], // Awal bulan ini
+        endDate: new Date().toISOString().split('T')[0] // Hari ini
+    });
+    const [showHistoryStartDate, setShowHistoryStartDate] = useState(false);
+    const [showHistoryEndDate, setShowHistoryEndDate] = useState(false);
 
     // Filter & Search States
     const [searchInput, setSearchInput] = useState('');
@@ -237,6 +248,82 @@ const LapakDeposit = ({ navigation }) => {
         setSearchInput('');
         setShowFilterModal(false);
     }, [today]);
+
+    const fetchHistoryLapak = useCallback(async (isLoadMore = false) => {
+        if (loadingHistory) return;
+
+        const currentPage = isLoadMore ? historyPage + 1 : 1;
+        setLoadingHistory(true);
+
+        try {
+            const params = new URLSearchParams();
+            params.append('startDate', historyFilters.startDate);
+            params.append('endDate', historyFilters.endDate);
+            // Tambahkan limit/offset jika backend mendukung, jika tidak kita proses semua untuk periode tersebut
+
+            const response = await apiService.get(`/api/accounts/lapak_deposit?${params.toString()}`);
+            if (response.data && response.data.message === 'success') {
+                const transactions = response.data.data.transactions || [];
+                const currentAccountBalance = Number(response.data.data.account?.balance || 0);
+
+                // Group by date and calculate running balance
+                const grouped = {};
+                let runningBalance = currentAccountBalance;
+
+                // Jika ingin benar-benar akurat dengan periode lampau, 
+                // idealnya backend mengirimkan balance per tanggal. 
+                // Sementara kita asumsikan perhitungan mundur dari balance sekarang.
+
+                transactions.forEach((curr) => {
+                    const date = curr.created_at.split(' ')[0];
+                    const amount = Number(curr.amount) || 0;
+                    const type = String(curr.type).toLowerCase();
+
+                    if (!grouped[date]) {
+                        grouped[date] = {
+                            date,
+                            dateLabel: new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
+                            totalIncome: 0,
+                            totalOutcome: 0,
+                            transactionCount: 0,
+                            endBalance: runningBalance
+                        };
+                    }
+
+                    if (type === 'deposit') {
+                        grouped[date].totalIncome += amount;
+                    } else {
+                        grouped[date].totalOutcome += amount;
+                    }
+                    grouped[date].transactionCount += 1;
+
+                    if (type === 'deposit') {
+                        runningBalance -= amount;
+                    } else {
+                        runningBalance += amount;
+                    }
+                });
+
+                const historyArray = Object.values(grouped).sort((a, b) => b.date.localeCompare(a.date));
+                setHistoryLapak(historyArray);
+                setHistoryPage(currentPage);
+                // Untuk sementara kita tampilkan semua yang dalam range tanggal
+                setHasMoreHistory(false);
+            }
+        } catch (error) {
+            console.error("Error fetching history lapak:", error);
+            showToast('Gagal mengambil history lapak', 'error');
+        } finally {
+            setLoadingHistory(false);
+        }
+    }, [historyFilters, historyPage, loadingHistory, showToast]);
+
+    const handleOpenHistory = useCallback(() => {
+        setIsHistoryModalOpen(true);
+        // Reset ke default bulan ini setiap kali buka? 
+        // Atau biarkan filter terakhir. Mari gunakan filter terakhir.
+        fetchHistoryLapak();
+    }, [fetchHistoryLapak]);
 
 
     const handleAddDeposit = useCallback(() => {
@@ -461,12 +548,8 @@ const LapakDeposit = ({ navigation }) => {
                         <Text style={styles.headerSubtitle}>Atur Lapak</Text>
                         <Text style={styles.headerFullTitle}>Lapak Deposit</Text>
                     </View>
-                    <TouchableOpacity onPress={handleRefresh} style={styles.refreshBtn}>
-                        {isFilteringLoading ? (
-                            <ActivityIndicator size="small" color="#FFFFFF" />
-                        ) : (
-                            <MoreHorizontal size={24} color="#FFFFFF" />
-                        )}
+                    <TouchableOpacity onPress={handleOpenHistory} style={styles.refreshBtn}>
+                        <History size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                 </View>
 
@@ -769,6 +852,129 @@ const LapakDeposit = ({ navigation }) => {
                     <Text style={styles.inputLabel}>Sampai Tanggal</Text>
                     {renderDateInput(localFilters.endDate, (val) => setLocalFilters({ ...localFilters, endDate: val }), showEndDatePicker, setShowEndDatePicker, 'Sampai Tanggal')}
                 </View>
+            </BottomModalTemplate>
+
+            {/* History Lapak Modal */}
+            <BottomModalTemplate
+                visible={isHistoryModalOpen}
+                onClose={() => setIsHistoryModalOpen(false)}
+                title="History Lapak"
+            >
+                <View style={styles.formContainer}>
+                    <View style={styles.historyFilterContainer}>
+                        <View style={{ flex: 1 }}>
+                            <Text style={[styles.inputLabel, { marginBottom: 4 }]}>Mulai</Text>
+                            <TouchableOpacity
+                                style={styles.historyDateInput}
+                                onPress={() => setShowHistoryStartDate(true)}
+                            >
+                                <Calendar size={14} color="#64748B" />
+                                <Text style={styles.historyDateInputValue}>
+                                    {new Date(historyFilters.startDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={{ flex: 1, marginLeft: 10 }}>
+                            <Text style={[styles.inputLabel, { marginBottom: 4 }]}>Sampai</Text>
+                            <TouchableOpacity
+                                style={styles.historyDateInput}
+                                onPress={() => setShowHistoryEndDate(true)}
+                            >
+                                <Calendar size={14} color="#64748B" />
+                                <Text style={styles.historyDateInputValue}>
+                                    {new Date(historyFilters.endDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <TouchableOpacity
+                            style={styles.historySearchBtn}
+                            onPress={() => fetchHistoryLapak(false)}
+                        >
+                            <Search size={18} color="#FFFFFF" />
+                        </TouchableOpacity>
+                    </View>
+
+                    {loadingHistory ? (
+                        <View style={[styles.centerPadding, { height: 150 }]}>
+                            <ActivityIndicator size="large" color="#1E40AF" />
+                        </View>
+                    ) : (
+                        <>
+                            {historyLapak.length > 0 ? (
+                                <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 500 }}>
+                                    {historyLapak.map((day, index) => (
+                                        <View key={index} style={styles.historyCard}>
+                                            <View style={styles.historyCardHeader}>
+                                                <View style={styles.historyDateBox}>
+                                                    <Calendar size={14} color="#1E40AF" />
+                                                    <Text style={styles.historyDateText}>{day.dateLabel}</Text>
+                                                </View>
+                                                <View style={styles.historyBadge}>
+                                                    <Text style={styles.historyBadgeText}>{day.transactionCount} Transaksi</Text>
+                                                </View>
+                                            </View>
+
+                                            <View style={[styles.statsSummaryRow, { marginBottom: 0, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#F1F5F9' }]}>
+                                                <View style={styles.statMini}>
+                                                    <TrendingUp size={14} color="#10B981" />
+                                                    <Text style={styles.statMiniValue}>{formatCurrency(day.totalIncome)}</Text>
+                                                    <Text style={styles.statMiniLabel}>Masuk</Text>
+                                                </View>
+                                                <View style={styles.statDivider} />
+                                                <View style={styles.statMini}>
+                                                    <TrendingDown size={14} color="#EF4444" />
+                                                    <Text style={styles.statMiniValue}>{formatCurrency(day.totalOutcome)}</Text>
+                                                    <Text style={styles.statMiniLabel}>Keluar</Text>
+                                                </View>
+                                            </View>
+
+                                            <View style={styles.historyCardFooter}>
+                                                <Text style={styles.historyFooterLabel}>Uang Lapak Tersisa:</Text>
+                                                <Text style={styles.historyFooterValue}>{formatCurrency(day.endBalance)}</Text>
+                                            </View>
+                                        </View>
+                                    ))}
+                                    <View style={{ height: 20 }} />
+                                </ScrollView>
+                            ) : (
+                                <View style={styles.emptyContainerSmall}>
+                                    <Inbox size={40} color="#CBD5E1" />
+                                    <Text style={styles.emptyTextSmall}>Tidak ada data untuk periode ini</Text>
+                                </View>
+                            )}
+                        </>
+                    )}
+                </View>
+
+                {/* Date Pickers for History */}
+                {showHistoryStartDate && (
+                    <DateTimePicker
+                        value={new Date(historyFilters.startDate)}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={(event, selectedDate) => {
+                            setShowHistoryStartDate(false);
+                            if (selectedDate) {
+                                setHistoryFilters({ ...historyFilters, startDate: selectedDate.toISOString().split('T')[0] });
+                            }
+                        }}
+                    />
+                )}
+                {showHistoryEndDate && (
+                    <DateTimePicker
+                        value={new Date(historyFilters.endDate)}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={(event, selectedDate) => {
+                            setShowHistoryEndDate(false);
+                            if (selectedDate) {
+                                setHistoryFilters({ ...historyFilters, endDate: selectedDate.toISOString().split('T')[0] });
+                            }
+                        }}
+                    />
+                )}
             </BottomModalTemplate>
         </View>
     );
@@ -1205,6 +1411,109 @@ const styles = StyleSheet.create({
     },
     typeOptionTextActive: {
         color: '#FFFFFF',
+    },
+    // History Modal Styles
+    historyCard: {
+        backgroundColor: '#F8FAFC',
+        borderRadius: 20,
+        padding: 15,
+        marginBottom: 15,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    historyCardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    historyDateBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    historyDateText: {
+        fontSize: 14,
+        fontWeight: '800',
+        color: '#1E293B',
+    },
+    historyBadge: {
+        backgroundColor: '#E0F2FE',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    historyBadgeText: {
+        fontSize: 10,
+        fontWeight: '800',
+        color: '#1E40AF',
+        textTransform: 'uppercase',
+    },
+    emptyContainerSmall: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 40,
+    },
+    emptyTextSmall: {
+        marginTop: 10,
+        fontSize: 14,
+        color: '#94A3B8',
+        fontWeight: '600',
+    },
+    historyCardFooter: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: 12,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#F1F5F9',
+        paddingHorizontal: 5,
+    },
+    historyFooterLabel: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#64748B',
+    },
+    historyFooterValue: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: '#1E40AF',
+    },
+    historyFilterContainer: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        backgroundColor: '#FFFFFF',
+        padding: 12,
+        borderRadius: 18,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    historyDateInput: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        paddingHorizontal: 10,
+        height: 40,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        gap: 6,
+    },
+    historyDateInputValue: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#1E293B',
+    },
+    historySearchBtn: {
+        width: 40,
+        height: 40,
+        backgroundColor: '#1E40AF',
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: 10,
     }
 });
 
