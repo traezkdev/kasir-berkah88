@@ -298,7 +298,7 @@ const GuestCheckout = () => {
                                     <div className="p-4 flex flex-col flex-grow">
                                         <h3 className="text-md font-semibold text-text-primary dark:text-white flex-grow">{item.name}</h3>
                                         <p className="text-sm text-text-secondary dark:text-gray-300 mt-1">Rp {item.price.toLocaleString('id-ID')}</p>
-                                        <p className="text-xs text-text-secondary dark:text-gray-300 mt-1">Stok: {item.stock}</p>
+                                        <p className="text-xs text-text-secondary dark:text-gray-300 mt-1">Stok: {globalIgnoreStock ? '∞' : item.stock}</p>
 
                                         <div className="mt-4">
                                             {initiallyOutOfStock ? (
