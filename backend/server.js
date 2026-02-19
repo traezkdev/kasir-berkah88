@@ -1185,8 +1185,8 @@ app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', '
 
         const { id, name, price, stock, category, hpp, discount, is_featured, options, description, is_hidden } = itemData;
         const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
-        const final_is_featured = is_featured ? 1 : 0;
-        const final_is_hidden = is_hidden ? 1 : 0;
+        const final_is_featured = (is_featured == 1 || is_featured == 'true') ? 1 : 0;
+        const final_is_hidden = (is_hidden == 1 || is_hidden == 'true') ? 1 : 0;
 
         const menuItemSql = 'INSERT INTO menu_items (id, name, price, stock, category, image_url, hpp, discount, is_featured, description, is_hidden) VALUES (?,?,?,?,?,?,?,?,?,?,?)';
         const menuItemParams = [id, name, price, stock, category, image_url, hpp, discount, final_is_featured, description || null, final_is_hidden];
@@ -1288,7 +1288,7 @@ app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'
             if (itemData[field] !== undefined) {
                 // Special handling for boolean
                 if (field === 'is_featured' || field === 'is_hidden') {
-                    updateFields[field] = itemData[field] ? 1 : 0;
+                    updateFields[field] = (itemData[field] == 1 || itemData[field] == 'true') ? 1 : 0;
                 } else {
                     updateFields[field] = itemData[field];
                 }

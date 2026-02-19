@@ -9,7 +9,6 @@ import {
     ActivityIndicator,
     TextInput,
     Platform,
-    Alert,
     Modal,
     ScrollView,
     Switch,
@@ -44,10 +43,12 @@ import {
 import apiService, { API_URL } from '../../api/apiService';
 import * as ImagePicker from 'expo-image-picker';
 import { useConfirm } from '../../context/ConfirmContext';
+import { useToast } from '../../context/ToastContext';
 import BottomModalTemplate from '../../components/templates/BottomModalTemplate';
 
 const MenuManagement = ({ navigation }) => {
     const { confirm } = useConfirm();
+    const { showToast } = useToast();
     const [menuItems, setMenuItems] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -151,7 +152,7 @@ const MenuManagement = ({ navigation }) => {
         try {
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (status !== 'granted') {
-                Alert.alert('Izin Ditolak', 'Mohon izinkan akses galeri untuk memilih foto.');
+                showToast('Mohon izinkan akses galeri untuk memilih foto.', 'error');
                 return;
             }
 
@@ -167,14 +168,14 @@ const MenuManagement = ({ navigation }) => {
             }
         } catch (error) {
             console.error('Error picking image:', error);
-            Alert.alert('Gagal', 'Terjadi kesalahan saat memilih gambar.');
+            showToast('Terjadi kesalahan saat memilih gambar.', 'error');
         }
     };
 
     const handleSubmit = async () => {
         // Validasi input
         if (!formData.name || !formData.price || formData.stock === '') {
-            Alert.alert('Error', 'Mohon isi nama, harga, dan stok');
+            showToast('Mohon isi nama, harga, dan stok', 'info');
             return;
         }
 
@@ -185,7 +186,7 @@ const MenuManagement = ({ navigation }) => {
         const discNum = parseFloat(formData.discount || 0);
 
         if (isNaN(priceNum) || isNaN(stockNum)) {
-            Alert.alert('Error', 'Harga dan Stok harus berupa angka yang valid');
+            showToast('Harga dan Stok harus berupa angka yang valid', 'error');
             setIsSaving(false);
             return;
         }
@@ -239,13 +240,13 @@ const MenuManagement = ({ navigation }) => {
             });
 
             if (response.status === 200 || response.status === 201) {
-                Alert.alert('Sukses', editingItem ? 'Menu diperbarui' : 'Menu ditambahkan');
+                showToast(editingItem ? 'Menu diperbarui' : 'Menu ditambahkan', 'success');
                 setIsModalOpen(false);
                 fetchData();
             }
         } catch (error) {
             console.error('Error saving menu:', error);
-            Alert.alert('Error', 'Gagal menyimpan menu');
+            showToast('Gagal menyimpan menu', 'error');
         } finally {
             setIsSaving(false);
         }
@@ -263,15 +264,15 @@ const MenuManagement = ({ navigation }) => {
             try {
                 const response = await apiService.delete(`/api/menu-items/${id}`);
                 if (response.status === 200 || response.status === 204) {
-                    Alert.alert('Sukses', 'Menu berhasil dihapus');
+                    showToast('Menu berhasil dihapus', 'success');
                     fetchData();
                 } else {
-                    Alert.alert('Gagal', 'Gagal menghapus menu');
+                    showToast('Gagal menghapus menu', 'error');
                 }
             } catch (error) {
                 console.error('Error deleting menu:', error);
                 const errorMsg = error.response?.data?.error || 'Gagal menghapus menu. Pastikan Anda memiliki menu tersebut atau coba lagi.';
-                Alert.alert('Error', errorMsg);
+                showToast(errorMsg, 'error');
             }
         }
     }, [confirm, fetchData]);
@@ -289,7 +290,7 @@ const MenuManagement = ({ navigation }) => {
             // fetchData(); 
         } catch (error) {
             console.error('Error toggling visibility:', error);
-            Alert.alert('Error', 'Gagal mengubah status visibilitas');
+            showToast('Gagal mengubah status visibilitas', 'error');
             // Revert on error
             setMenuItems(prev => prev.map(i => i.id === item.id ? { ...i, is_hidden: item.is_hidden } : i));
         }
