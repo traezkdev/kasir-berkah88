@@ -91,9 +91,19 @@ const TransactionCard = React.memo(({ item, setSelectedTx, formatDate, formatCur
                 </View>
 
                 <View style={styles.cardHeader}>
-                    <View>
-                        <View style={styles.idBadge}>
-                            <Text style={styles.idText}>#{item.id}</Text>
+                    <View style={{ flex: 1, marginRight: 10 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            <View style={styles.idBadge}>
+                                <Text style={styles.idText}>#{item.id}</Text>
+                            </View>
+                            {item.customer_name && (
+                                <View style={styles.customerBadge}>
+                                    <User size={10} color="#3B82F6" strokeWidth={3} />
+                                    <Text style={styles.customerLabelText} numberOfLines={1}>
+                                        {item.customer_name}
+                                    </Text>
+                                </View>
+                            )}
                         </View>
                         <Text style={styles.dateText}>{formatDate(item.timestamp)}</Text>
                     </View>
@@ -159,11 +169,21 @@ const TransactionHistory = ({ navigation }) => {
     const [filterPeriod, setFilterPeriod] = useState('today'); // all, today, yesterday, custom
     const [startDate, setStartDate] = useState(getLocalDateString());
     const [endDate, setEndDate] = useState(getLocalDateString());
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('all');
     const [showFilterModal, setShowFilterModal] = useState(false);
     const [showStartPicker, setShowStartPicker] = useState(false);
     const [showEndPicker, setShowEndPicker] = useState(false);
 
-    const fetchTransactions = useCallback(async (pageNum = 1, isRefresh = false, search = '', sDate = '', eDate = '') => {
+    const PAYMENT_METHODS = useMemo(() => [
+        { label: 'Semua', value: 'all', icon: <Wallet size={14} color="#64748B" /> },
+        { label: 'Tunai', value: 'tunai', icon: <Banknote size={14} color="#22C55E" /> },
+        { label: 'QRIS', value: 'transfer', icon: <QrCode size={14} color="#3B82F6" /> },
+        { label: 'Gojek', value: 'Gojek', icon: <CreditCard size={14} color="#F59E0B" /> },
+        { label: 'Lainnya', value: 'other', icon: <Search size={14} color="#64748B" /> },
+        { label: 'Gratis', value: 'employee_meal', icon: <User size={14} color="#6366F1" /> }
+    ], []);
+
+    const fetchTransactions = useCallback(async (pageNum = 1, isRefresh = false, search = '', sDate = '', eDate = '', pMethod = 'all') => {
         if (pageNum === 1 && !isRefresh) setLoading(true);
         if (pageNum > 1) setLoadingMore(true);
 
@@ -174,6 +194,9 @@ const TransactionHistory = ({ navigation }) => {
             }
             if (eDate) {
                 url += `&endDate=${eDate}`;
+            }
+            if (pMethod && pMethod !== 'all') {
+                url += `&paymentMethod=${pMethod}`;
             }
             const response = await apiService.get(url);
             if (response.data && response.data.message === 'success') {
@@ -209,7 +232,7 @@ const TransactionHistory = ({ navigation }) => {
         // Refresh data when a new order/transaction is detected globally via Socket
         if (refreshTrigger > 0) {
             console.log('Real-time update: Refreshing transactions...');
-            fetchTransactions(1, true, debouncedSearch, startDate, endDate);
+            fetchTransactions(1, true, debouncedSearch, startDate, endDate, selectedPaymentMethod);
         }
     }, [refreshTrigger]);
 
@@ -225,21 +248,21 @@ const TransactionHistory = ({ navigation }) => {
     useFocusEffect(
         useCallback(() => {
             setPage(1);
-            fetchTransactions(1, false, debouncedSearch, startDate, endDate);
-        }, [debouncedSearch, startDate, endDate, fetchTransactions])
+            fetchTransactions(1, false, debouncedSearch, startDate, endDate, selectedPaymentMethod);
+        }, [debouncedSearch, startDate, endDate, selectedPaymentMethod, fetchTransactions])
     );
 
     const onRefresh = () => {
         setRefreshing(true);
         setPage(1);
-        fetchTransactions(1, true, debouncedSearch, startDate, endDate);
+        fetchTransactions(1, true, debouncedSearch, startDate, endDate, selectedPaymentMethod);
     };
 
     const handleLoadMore = () => {
         if (!loadingMore && hasMore && !loading) {
             const nextPage = page + 1;
             setPage(nextPage);
-            fetchTransactions(nextPage, false, debouncedSearch, startDate, endDate);
+            fetchTransactions(nextPage, false, debouncedSearch, startDate, endDate, selectedPaymentMethod);
         }
     };
 
@@ -266,7 +289,7 @@ const TransactionHistory = ({ navigation }) => {
             if (response.data && response.data.message === 'deleted') {
                 setShowDeleteConfirm(false);
                 setSelectedTx(null);
-                fetchTransactions(1, true, debouncedSearch, startDate, endDate);
+                fetchTransactions(1, true, debouncedSearch, startDate, endDate, selectedPaymentMethod);
             } else {
                 Alert.alert("Gagal", "Gagal menghapus transaksi.");
             }
@@ -392,6 +415,37 @@ const TransactionHistory = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
+            {/* Payment Method Filter Chips */}
+            <View style={styles.methodFilterArea}>
+                <FlatList
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    data={PAYMENT_METHODS}
+                    keyExtractor={item => item.value}
+                    contentContainerStyle={styles.methodChipsContainer}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            style={[
+                                styles.methodChip,
+                                selectedPaymentMethod === item.value && styles.methodChipActive
+                            ]}
+                            onPress={() => setSelectedPaymentMethod(item.value)}
+                        >
+                            {React.cloneElement(item.icon, {
+                                color: selectedPaymentMethod === item.value ? '#FFFFFF' : '#64748B',
+                                size: 14
+                            })}
+                            <Text style={[
+                                styles.methodChipText,
+                                selectedPaymentMethod === item.value && styles.methodChipTextActive
+                            ]}>
+                                {item.label}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+                />
+            </View>
+
             {/* Content */}
             {loading && transactions.length === 0 ? (
                 <ModernLoader type="list" />
@@ -477,7 +531,7 @@ const TransactionHistory = ({ navigation }) => {
                     onClose={() => setShowEditModal(false)}
                     transaction={selectedTx}
                     onSave={() => {
-                        fetchTransactions(1, true, debouncedSearch, startDate, endDate);
+                        fetchTransactions(1, true, debouncedSearch, startDate, endDate, selectedPaymentMethod);
                         setSelectedTx(null);
                     }}
                 />
@@ -1084,6 +1138,52 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '900',
         color: '#FFFFFF',
+    },
+    methodFilterArea: {
+        paddingVertical: 12,
+        backgroundColor: '#F8FAFC',
+    },
+    methodChipsContainer: {
+        paddingHorizontal: 20,
+        gap: 8,
+    },
+    methodChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 12,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        gap: 6,
+    },
+    methodChipActive: {
+        backgroundColor: '#1E40AF',
+        borderColor: '#1E40AF',
+    },
+    methodChipText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#64748B',
+    },
+    methodChipTextActive: {
+        color: '#FFFFFF',
+    },
+    customerBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#EFF6FF',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+        gap: 4,
+        maxWidth: '70%',
+    },
+    customerLabelText: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#1E40AF',
     },
 });
 
