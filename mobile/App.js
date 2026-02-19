@@ -25,6 +25,8 @@ import { AppSettingsProvider } from './src/context/AppSettingsContext';
 
 import AuthWelcomeScreen from './src/screens/AuthWelcomeScreen';
 
+import GuestCheckoutScreen from './src/screens/customer/GuestCheckoutScreen';
+
 const AuthStack = createNativeStackNavigator();
 
 const AuthNavigator = () => (
@@ -38,6 +40,7 @@ const AuthNavigator = () => (
       <AuthStack.Screen name="Register" component={RegisterScreen} />
       <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <AuthStack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+      <AuthStack.Screen name="GuestCheckout" component={GuestCheckoutScreen} />
     </AuthStack.Navigator>
   </NavigationContainer>
 );

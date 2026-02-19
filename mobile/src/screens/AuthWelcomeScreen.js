@@ -14,7 +14,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppSettings } from '../context/AppSettingsContext';
 import { API_URL } from '../api/apiService';
-import { ShoppingBag, Star, Clock } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -28,21 +27,18 @@ const AuthWelcomeScreen = ({ navigation }) => {
             id: '1',
             title: 'Assalamu’alaikum',
             description: `Telah hadir ${headerTitle || 'Berkah 88'} buat nemenin hari kamu dengan menu-menu pilihan yang insyaAllah berkah.`,
-            icon: ShoppingBag,
             color: '#059669'
         },
         {
             id: '2',
             title: 'Menu Penuh Berkah',
             description: 'Banyak pilihan menu halal dan lezat yang siap bikin lidah kamu happy setiap hari.',
-            icon: Star,
             color: '#10B981'
         },
         {
             id: '3',
             title: 'Layanan Amanah',
             description: 'Gak perlu antre lama, pesanan kamu langsung kami proses dengan cepat dan jujur.',
-            icon: Clock,
             color: '#10B981'
         }
     ];
@@ -81,14 +77,6 @@ const AuthWelcomeScreen = ({ navigation }) => {
 
             {/* Content Section */}
             <View style={styles.premiumContentCard}>
-                <View style={styles.premiumIconContainer}>
-                    <LinearGradient
-                        colors={['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.1)']}
-                        style={styles.premiumIconBox}
-                    >
-                        <item.icon size={32} color="#FFFFFF" strokeWidth={2.5} />
-                    </LinearGradient>
-                </View>
 
                 <Text style={styles.premiumGreeting}>{item.title}</Text>
                 <View style={styles.premiumMessageWrapper}>
@@ -157,7 +145,21 @@ const AuthWelcomeScreen = ({ navigation }) => {
                             style={styles.signInBtn}
                             onPress={() => navigation.navigate('Login')}
                         >
-                            <Text style={styles.signInText}>Masuk Akun</Text>
+                            <Text style={styles.signInText}>Masuk Akun Member</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.guestBtn}
+                            onPress={() => navigation.navigate('GuestCheckout')}
+                        >
+                            <LinearGradient
+                                colors={['#10B981', '#059669']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={styles.guestGradient}
+                            >
+                                <Text style={styles.guestText}>Pesan Tanpa Login (Delivery)</Text>
+                            </LinearGradient>
                         </TouchableOpacity>
 
                         <TouchableOpacity
@@ -265,18 +267,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 10,
     },
-    premiumIconContainer: {
-        marginBottom: 25,
-    },
-    premiumIconBox: {
-        width: 80,
-        height: 80,
-        borderRadius: 30,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1.5,
-        borderColor: 'rgba(255,255,255,0.4)',
-    },
     premiumGreeting: {
         color: '#FFFFFF',
         fontSize: 32,
@@ -335,6 +325,26 @@ const styles = StyleSheet.create({
     },
     signInText: {
         color: '#059669',
+        fontSize: 16,
+        fontWeight: '900',
+    },
+    guestBtn: {
+        height: 56,
+        borderRadius: 28,
+        overflow: 'hidden',
+        ...Platform.select({
+            web: { boxShadow: '0px 10px 20px rgba(16,185,129,0.2)' },
+            android: { elevation: 8 },
+            ios: { shadowColor: '#10B981', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.2, shadowRadius: 10 }
+        })
+    },
+    guestGradient: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    guestText: {
+        color: '#FFFFFF',
         fontSize: 16,
         fontWeight: '900',
     },
