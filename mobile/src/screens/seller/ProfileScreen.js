@@ -56,7 +56,8 @@ const ProfileScreen = ({ navigation }) => {
     const { showToast } = useToast();
     const {
         selectedSoundId,
-        changeNotificationSound
+        changeNotificationSound,
+        refreshTrigger
     } = useOrderNotification();
 
     // Modal States
@@ -280,7 +281,7 @@ const ProfileScreen = ({ navigation }) => {
                                         />
                                     </View>
                                     {user?.avatar_url ? (
-                                        <AppImage uri={user.avatar_url} style={styles.newAvatar} />
+                                        <AppImage uri={user.avatar_url} style={styles.newAvatar} refreshKey={refreshTrigger} />
                                     ) : (
                                         <View style={styles.newAvatarPlaceholder}>
                                             <UserCircle size={50} color="#FFFFFF" strokeWidth={1.5} />

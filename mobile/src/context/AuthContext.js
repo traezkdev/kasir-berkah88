@@ -1,4 +1,5 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { AppState, InteractionManager } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiService, { setOnUnauthorized } from '../api/apiService';
 import { jwtDecode } from 'jwt-decode';
@@ -9,16 +10,7 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        checkLoginStatus();
-
-        // Listen for session expiration from apiService
-        setOnUnauthorized(() => {
-            setUser(null);
-        });
-    }, []);
-
-    const checkLoginStatus = async () => {
+    const checkLoginStatus = useCallback(async () => {
         try {
             const token = await AsyncStorage.getItem('userToken');
             const userData = await AsyncStorage.getItem('userData');
@@ -30,7 +22,60 @@ export const AuthProvider = ({ children }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    const refreshUser = useCallback(async () => {
+        try {
+            const response = await apiService.get('/api/user/profile');
+            if (response.data && response.data.message === 'success') {
+                const profile = response.data.data;
+
+                setUser(prevUser => {
+                    const updatedUser = {
+                        ...(prevUser || {}),
+                        id: profile.id,
+                        name: profile.username,
+                        email: profile.email,
+                        role: profile.role,
+                        avatar_url: profile.avatar_url,
+                        phone: profile.phone,
+                        address: profile.address,
+                        points: profile.points || 0
+                    };
+                    AsyncStorage.setItem('userData', JSON.stringify(updatedUser));
+                    return updatedUser;
+                });
+            }
+        } catch (error) {
+            console.error('Failed to refresh user data', error);
+        }
+    }, []); // No more user dependency
+
+    useEffect(() => {
+        checkLoginStatus();
+
+        // Listen for session expiration from apiService
+        setOnUnauthorized(() => {
+            setUser(null);
+        });
+    }, [checkLoginStatus]);
+
+    // Separate effect for AppState listener to avoid re-running initialization logic
+    useEffect(() => {
+        // Refresh user data whenever the app comes back to foreground
+        const subscription = AppState.addEventListener('change', nextAppState => {
+            if (nextAppState === 'active') {
+                AsyncStorage.getItem('userToken').then(token => {
+                    if (token) {
+                        console.log('[AuthContext] App active, refreshing user data...');
+                        refreshUser();
+                    }
+                });
+            }
+        });
+
+        return () => subscription.remove();
+    }, [refreshUser]);
 
     const login = async (username, password) => {
         try {
@@ -51,6 +96,12 @@ export const AuthProvider = ({ children }) => {
             await AsyncStorage.setItem('userData', JSON.stringify(userData));
 
             setUser(userData);
+
+            // Fetch full profile details (like avatar_url) immediately after login
+            InteractionManager.runAfterInteractions(() => {
+                refreshUser();
+            });
+
             return { success: true };
         } catch (error) {
             console.error('Login Error:', error);
@@ -61,33 +112,12 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const refreshUser = async () => {
-        try {
-            const response = await apiService.get('/api/user/profile');
-            if (response.data && response.data.message === 'success') {
-                const profile = response.data.data;
-                const updatedUser = {
-                    ...user,
-                    id: profile.id,
-                    name: profile.username,
-                    email: profile.email,
-                    role: profile.role,
-                    avatar_url: profile.avatar_url,
-                    phone: profile.phone,
-                    address: profile.address
-                };
-                await AsyncStorage.setItem('userData', JSON.stringify(updatedUser));
-                setUser(updatedUser);
-            }
-        } catch (error) {
-            console.error('Failed to refresh user data', error);
-        }
-    };
-
     const updateUser = async (updatedFields) => {
-        const newUser = { ...user, ...updatedFields };
-        await AsyncStorage.setItem('userData', JSON.stringify(newUser));
-        setUser(newUser);
+        setUser(prevUser => {
+            const newUser = { ...prevUser, ...updatedFields };
+            AsyncStorage.setItem('userData', JSON.stringify(newUser));
+            return newUser;
+        });
     };
 
     const logout = async () => {

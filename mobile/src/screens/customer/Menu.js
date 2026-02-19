@@ -192,6 +192,7 @@ const CustomerMenu = ({ navigation, route }) => {
     const [selectedOptions, setSelectedOptions] = useState([]);
     const [reviews, setReviews] = useState([]);
     const [reviewsLoading, setReviewsLoading] = useState(false);
+    const itemIdHandledRef = useRef(false);
 
     // Reusable Gesture for closing modal
     const { panY, panResponder, resetPan } = useSwipeToClose(() => setSelectedItem(null));
@@ -222,9 +223,10 @@ const CustomerMenu = ({ navigation, route }) => {
     }, [searchTerm, selectedCategory, categories, filter, refreshTrigger]);
 
     useEffect(() => {
-        if (itemId && menus.length > 0) {
+        if (itemId && menus.length > 0 && !itemIdHandledRef.current) {
             const item = menus.find(m => m.id === itemId);
             if (item) {
+                itemIdHandledRef.current = true;
                 handleOpenDetail(item);
             }
         }
@@ -534,7 +536,7 @@ const CustomerMenu = ({ navigation, route }) => {
                                 {/* Stock Info */}
                                 <View style={styles.metaRow}>
                                     <MetaItem label="Kategori" value={selectedItem?.category || '-'} />
-                                    <MetaItem label="Stok" value={`${selectedItem?.stock || 0} Porsi`} />
+                                    <MetaItem label="Stok" value={ignoreStock ? '∞' : `${selectedItem?.stock || 0} Porsi`} />
                                 </View>
 
                                 {/* Reviews */}

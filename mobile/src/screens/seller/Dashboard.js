@@ -298,137 +298,142 @@ const SellerDashboard = ({ navigation }) => {
             >
 
                 {/* Quick Stats */}
-                <View style={styles.statsGrid}>
-                    <View style={[styles.statItem, { backgroundColor: '#EFF6FF', borderColor: '#DBEAFE' }]}>
-                        <View style={styles.statContent}>
-                            <View style={[styles.statIcon, { backgroundColor: '#FFFFFF' }]}><Package size={22} color="#3B82F6" /></View>
-                            <View>
-                                <Text style={[styles.statNum, { color: '#1E3A8A' }]}>{stats.totalItems}</Text>
-                                <Text style={[styles.statLabel, { color: '#3B82F6' }]}>Produk</Text>
+                <View style={styles.statsWrapper}>
+                    <View style={styles.statsGrid}>
+                        <View style={[styles.statItem, { backgroundColor: '#EFF6FF', borderColor: '#DBEAFE' }]}>
+                            <View style={styles.statContent}>
+                                <View style={[styles.statIcon, { backgroundColor: '#FFFFFF' }]}><Package size={22} color="#3B82F6" /></View>
+                                <View>
+                                    <Text style={[styles.statNum, { color: '#1E3A8A' }]}>{stats.totalItems}</Text>
+                                    <Text style={[styles.statLabel, { color: '#3B82F6' }]}>Produk</Text>
+                                </View>
+                            </View>
+                            <View style={styles.statDecor}>
+                                <Package size={60} color="#3B82F6" opacity={0.2} />
                             </View>
                         </View>
-                        <View style={styles.statDecor}>
-                            <Package size={60} color="#3B82F6" opacity={0.2} />
+                        <View style={[styles.statItem, { backgroundColor: '#FFF7ED', borderColor: '#FFEDD5' }]}>
+                            <View style={styles.statContent}>
+                                <View style={[styles.statIcon, { backgroundColor: '#FFFFFF' }]}><Star size={22} color="#F97316" /></View>
+                                <View>
+                                    <Text style={[styles.statNum, { color: '#7C2D12' }]}>{stats.featuredItems}</Text>
+                                    <Text style={[styles.statLabel, { color: '#F97316' }]}>Unggulan</Text>
+                                </View>
+                            </View>
+                            <View style={styles.statDecor}>
+                                <Star size={60} color="#F97316" opacity={0.2} />
+                            </View>
                         </View>
+                        <View style={[styles.statItem, { backgroundColor: '#F0FDF4', borderColor: '#DCFCE7' }]}>
+                            <View style={styles.statContent}>
+                                <View style={[styles.statIcon, { backgroundColor: '#FFFFFF' }]}><ShoppingBag size={22} color="#22C55E" /></View>
+                                <View>
+                                    <Text style={[styles.statNum, { color: '#14532D' }]}>{pendingOrders.length}</Text>
+                                    <Text style={[styles.statLabel, { color: '#22C55E' }]}>Pesanan</Text>
+                                </View>
+                            </View>
+                            <View style={styles.statDecor}>
+                                <ShoppingBag size={60} color="#22C55E" opacity={0.2} />
+                            </View>
+                        </View>
+                        <TouchableOpacity
+                            style={[styles.statItem, { backgroundColor: '#FAF5FF', borderColor: '#F3E8FF' }]}
+                            onPress={() => navigation.navigate('CategoryManagement')}
+                        >
+                            <View style={styles.statContent}>
+                                <View style={[styles.statIcon, { backgroundColor: '#FFFFFF' }]}><BarChart3 size={22} color="#A855F7" /></View>
+                                <View>
+                                    <Text style={[styles.statNum, { color: '#581C87' }]}>{stats.categories}</Text>
+                                    <Text style={[styles.statLabel, { color: '#A855F7' }]}>Kategori</Text>
+                                </View>
+                            </View>
+                            <View style={styles.statDecor}>
+                                <BarChart3 size={60} color="#A855F7" opacity={0.2} />
+                            </View>
+                        </TouchableOpacity>
                     </View>
-                    <View style={[styles.statItem, { backgroundColor: '#FFF7ED', borderColor: '#FFEDD5' }]}>
-                        <View style={styles.statContent}>
-                            <View style={[styles.statIcon, { backgroundColor: '#FFFFFF' }]}><Star size={22} color="#F97316" /></View>
-                            <View>
-                                <Text style={[styles.statNum, { color: '#7C2D12' }]}>{stats.featuredItems}</Text>
-                                <Text style={[styles.statLabel, { color: '#F97316' }]}>Unggulan</Text>
-                            </View>
-                        </View>
-                        <View style={styles.statDecor}>
-                            <Star size={60} color="#F97316" opacity={0.2} />
-                        </View>
-                    </View>
-                    <View style={[styles.statItem, { backgroundColor: '#F0FDF4', borderColor: '#DCFCE7' }]}>
-                        <View style={styles.statContent}>
-                            <View style={[styles.statIcon, { backgroundColor: '#FFFFFF' }]}><ShoppingBag size={22} color="#22C55E" /></View>
-                            <View>
-                                <Text style={[styles.statNum, { color: '#14532D' }]}>{pendingOrders.length}</Text>
-                                <Text style={[styles.statLabel, { color: '#22C55E' }]}>Pesanan</Text>
-                            </View>
-                        </View>
-                        <View style={styles.statDecor}>
-                            <ShoppingBag size={60} color="#22C55E" opacity={0.2} />
-                        </View>
-                    </View>
-                    <TouchableOpacity
-                        style={[styles.statItem, { backgroundColor: '#FAF5FF', borderColor: '#F3E8FF' }]}
-                        onPress={() => navigation.navigate('CategoryManagement')}
-                    >
-                        <View style={styles.statContent}>
-                            <View style={[styles.statIcon, { backgroundColor: '#FFFFFF' }]}><BarChart3 size={22} color="#A855F7" /></View>
-                            <View>
-                                <Text style={[styles.statNum, { color: '#581C87' }]}>{stats.categories}</Text>
-                                <Text style={[styles.statLabel, { color: '#A855F7' }]}>Kategori</Text>
-                            </View>
-                        </View>
-                        <View style={styles.statDecor}>
-                            <BarChart3 size={60} color="#A855F7" opacity={0.2} />
-                        </View>
-                    </TouchableOpacity>
                 </View>
 
                 {/* Quick Actions */}
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Aksi Cepat</Text>
-                        <TouchableOpacity onPress={() => navigation.navigate('SellerMenu')}>
-                            <Text style={styles.viewAll}>Lainnya</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <View style={styles.actionGrid}>
-                        {[
-                            { label: 'Laporan', icon: ClipboardCheck, color: '#10B981', bgColor: '#ECFDF5', target: 'DailyReport' },
-                            { label: 'Chat', icon: MessageCircle, color: '#3B82F6', bgColor: '#EFF6FF', target: 'ChatScreen' },
-                            { label: 'Jual', icon: ShoppingCart, color: '#FFFFFF', bgColor: '#138FEA', target: 'Jual' },
-                            { label: 'Informasi', icon: Bell, color: '#F59E0B', bgColor: '#FFFBEB', target: 'ManageInformation' },
-                            { label: 'Rekon', icon: Calculator, color: '#6366F1', bgColor: '#F5F3FF', target: 'CashReconciliation' },
-                            { label: 'Pengeluaran', icon: TrendingDown, color: '#EF4444', bgColor: '#FEF2F2', target: 'ExpenseManagement' },
-                        ].map((action, index) => (
-                            <TouchableOpacity
-                                key={index}
-                                style={styles.actionItem}
-                                onPress={() => navigation.navigate(action.target)}
-                            >
-                                <View style={[styles.actionIcon, { backgroundColor: action.bgColor }]}>
-                                    <action.icon size={25} color={action.color} />
-                                </View>
-                                <Text style={styles.actionLabel}>{action.label}</Text>
+                <View style={[styles.sectionWrapper, { marginTop: 25 }]}>
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>Aksi Cepat</Text>
+                            <TouchableOpacity onPress={() => navigation.navigate('SellerMenu')}>
+                                <Text style={styles.viewAll}>Lainnya</Text>
                             </TouchableOpacity>
-                        ))}
-                        {user?.role === 'admin' && (
+                        </View>
+                        <View style={styles.actionGrid}>
+                            {[
+                                { label: 'Laporan', icon: ClipboardCheck, color: '#10B981', bgColor: '#ECFDF5', target: 'DailyReport' },
+                                { label: 'Chat', icon: MessageCircle, color: '#3B82F6', bgColor: '#EFF6FF', target: 'ChatScreen' },
+                                { label: 'Jual', icon: ShoppingCart, color: '#FFFFFF', bgColor: '#138FEA', target: 'Jual' },
+                                { label: 'Informasi', icon: Bell, color: '#F59E0B', bgColor: '#FFFBEB', target: 'ManageInformation' },
+                                { label: 'Rekon', icon: Calculator, color: '#6366F1', bgColor: '#F5F3FF', target: 'CashReconciliation' },
+                                { label: 'Pengeluaran', icon: TrendingDown, color: '#EF4444', bgColor: '#FEF2F2', target: 'ExpenseManagement' },
+                            ].map((action, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={styles.actionItem}
+                                    onPress={() => navigation.navigate(action.target)}
+                                >
+                                    <View style={[styles.actionIcon, { backgroundColor: action.bgColor }]}>
+                                        <action.icon size={25} color={action.color} />
+                                    </View>
+                                    <Text style={styles.actionLabel}>{action.label}</Text>
+                                </TouchableOpacity>
+                            ))}
+                            {user?.role === 'admin' && (
+                                <TouchableOpacity
+                                    style={styles.actionItem}
+                                    onPress={() => navigation.navigate('PromoManagement')}
+                                >
+                                    <View style={[styles.actionIcon, { backgroundColor: '#ECFDF5' }]}>
+                                        <Ticket size={25} color="#059669" />
+                                    </View>
+                                    <Text style={styles.actionLabel}>Promo</Text>
+                                </TouchableOpacity>
+                            )}
                             <TouchableOpacity
                                 style={styles.actionItem}
-                                onPress={() => navigation.navigate('PromoManagement')}
+                                onPress={() => navigation.navigate('Transaksi')}
                             >
-                                <View style={[styles.actionIcon, { backgroundColor: '#ECFDF5' }]}>
-                                    <Ticket size={25} color="#059669" />
+                                <View style={[styles.actionIcon, { backgroundColor: '#F5F3FF' }]}>
+                                    <History size={25} color="#8B5CF6" />
                                 </View>
-                                <Text style={styles.actionLabel}>Promo</Text>
+                                <Text style={styles.actionLabel}>Riwayat</Text>
                             </TouchableOpacity>
-                        )}
-                        <TouchableOpacity
-                            style={styles.actionItem}
-                            onPress={() => navigation.navigate('Transaksi')}
-                        >
-                            <View style={[styles.actionIcon, { backgroundColor: '#F5F3FF' }]}>
-                                <History size={25} color="#8B5CF6" />
-                            </View>
-                            <Text style={styles.actionLabel}>Riwayat</Text>
-                        </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
-
                 {/* Pending Orders */}
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Pesanan Baru</Text>
-                        <TouchableOpacity onPress={() => navigation.navigate('Pesanan')}>
-                            <Text style={styles.viewAll}>Lihat Semua</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {pendingOrders.length > 0 ? (
-                        pendingOrders.slice(0, 3).map((order) => (
-                            <SellerOrderCard
-                                key={order.id}
-                                order={order}
-                                onAccept={handleAccept}
-                                onReject={handleReject}
-                                onViewDetail={handleViewDetail}
-                            />
-                        ))
-                    ) : (
-                        <View style={styles.emptyCard}>
-                            <CheckCircle size={40} color="#22C55E" />
-                            <Text style={styles.emptyTitle}>Semua Aman!</Text>
-                            <Text style={styles.emptyBody}>Belum ada pesanan baru yang menunggu.</Text>
+                <View style={[styles.sectionWrapper, { marginTop: 25 }]}>
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>Pesanan Baru</Text>
+                            <TouchableOpacity onPress={() => navigation.navigate('Pesanan')}>
+                                <Text style={styles.viewAll}>Lihat Semua</Text>
+                            </TouchableOpacity>
                         </View>
-                    )}
+
+                        {pendingOrders.length > 0 ? (
+                            pendingOrders.slice(0, 3).map((order) => (
+                                <SellerOrderCard
+                                    key={order.id}
+                                    order={order}
+                                    onAccept={handleAccept}
+                                    onReject={handleReject}
+                                    onViewDetail={handleViewDetail}
+                                />
+                            ))
+                        ) : (
+                            <View style={styles.emptyCard}>
+                                <CheckCircle size={40} color="#22C55E" />
+                                <Text style={styles.emptyTitle}>Semua Aman!</Text>
+                                <Text style={styles.emptyBody}>Belum ada pesanan baru yang menunggu.</Text>
+                            </View>
+                        )}
+                    </View>
                 </View>
 
                 <View style={{ height: 40 }} />
@@ -638,11 +643,18 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: 'bold',
     },
-    statsGrid: {
+    statsWrapper: {
+        backgroundColor: '#FFFFFF',
+        marginHorizontal: '4%',
         marginTop: 35,
+        borderRadius: 24,
+        paddingBottom: 10,
+        paddingTop: 5,
+    },
+    statsGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        paddingHorizontal: 15,
+        paddingHorizontal: 8,
     },
     statItem: {
         width: '47%',
@@ -693,8 +705,14 @@ const styles = StyleSheet.create({
         color: '#94A3B8',
         fontWeight: '600',
     },
+    sectionWrapper: {
+        backgroundColor: '#FFFFFF',
+        marginHorizontal: '4%',
+        borderRadius: 24,
+        paddingBottom: 15,
+        paddingTop: 15,
+    },
     section: {
-        marginTop: 25,
         paddingHorizontal: '5%',
     },
     sectionHeader: {

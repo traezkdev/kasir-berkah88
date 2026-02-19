@@ -28,6 +28,7 @@ const {
 const { sendPushNotification } = require('./utils/oneSignal');
 const { sendExpoPushNotification } = require('./utils/expoPush');
 const sendEmail = require('./utils/mailer');
+const { sendOrderEmailNotification, sendNewsBroadcastEmail } = require('./utils/orderEmails');
 
 
 const app = express();
@@ -1184,8 +1185,8 @@ app.post("/api/menu-items", authenticateToken, authorizeRoles('user', 'admin', '
 
         const { id, name, price, stock, category, hpp, discount, is_featured, options, description, is_hidden } = itemData;
         const image_url = req.file ? `/public/uploads/${req.file.filename}` : null;
-        const final_is_featured = is_featured ? 1 : 0;
-        const final_is_hidden = is_hidden ? 1 : 0;
+        const final_is_featured = (is_featured == 1 || is_featured == 'true') ? 1 : 0;
+        const final_is_hidden = (is_hidden == 1 || is_hidden == 'true') ? 1 : 0;
 
         const menuItemSql = 'INSERT INTO menu_items (id, name, price, stock, category, image_url, hpp, discount, is_featured, description, is_hidden) VALUES (?,?,?,?,?,?,?,?,?,?,?)';
         const menuItemParams = [id, name, price, stock, category, image_url, hpp, discount, final_is_featured, description || null, final_is_hidden];
@@ -1287,7 +1288,7 @@ app.put("/api/menu-items/:id", authenticateToken, authorizeRoles('user', 'admin'
             if (itemData[field] !== undefined) {
                 // Special handling for boolean
                 if (field === 'is_featured' || field === 'is_hidden') {
-                    updateFields[field] = itemData[field] ? 1 : 0;
+                    updateFields[field] = (itemData[field] == 1 || itemData[field] == 'true') ? 1 : 0;
                 } else {
                     updateFields[field] = itemData[field];
                 }
@@ -1812,7 +1813,7 @@ app.post("/api/information/:id/broadcast", authenticateToken, authorizeRoles('ad
         const info = infos[0];
 
         // Get all customers (pelanggan) to send notification
-        const customerSql = "SELECT id FROM users WHERE role = 'pelanggan'";
+        const customerSql = "SELECT id, email, username FROM users WHERE role = 'pelanggan'";
         const [customers] = await db.query(customerSql);
         const customerIds = customers.map(c => c.id);
 
@@ -1830,6 +1831,10 @@ app.post("/api/information/:id/broadcast", authenticateToken, authorizeRoles('ad
                 },
                 req.user.userId // Exclude the seller who is broadcasting
             ).catch(e => console.error('Error broadcasting info notification:', e));
+
+            // Kirim Email Broadcast (async)
+            sendNewsBroadcastEmail(info, customers)
+                .catch(e => console.error('Error broadcasting info email:', e));
         }
 
         await logActivity(req.user.userId, 'Broadcast Informasi', 'information', id, `Resend & Refresh info: ${info.title}`);
@@ -2721,7 +2726,7 @@ app.get("/api/customers/search", authenticateToken, authorizeRoles('user', 'admi
         if (!query) return res.json({ message: "success", data: [] });
 
         // Search by name or phone
-        const sql = "SELECT id, username as name, phone, points, address FROM users WHERE role = 'pelanggan' AND (username LIKE ? OR phone LIKE ?) LIMIT 10";
+        const sql = "SELECT id, username as name, phone, email, points, address FROM users WHERE role = 'pelanggan' AND (username LIKE ? OR phone LIKE ?) LIMIT 10";
         const [rows] = await db.query(sql, [`%${query}%`, `%${query}%`]);
         res.json({ message: "success", data: rows });
     } catch (err) {
@@ -2751,6 +2756,7 @@ app.get("/api/customers", authenticateToken, authorizeRoles('user', 'admin', 'ka
                 u.id, 
                 u.username, 
                 u.phone, 
+                u.email, 
                 u.address, 
                 u.points, 
                 COUNT(o.id) as total_orders,
@@ -2758,7 +2764,7 @@ app.get("/api/customers", authenticateToken, authorizeRoles('user', 'admin', 'ka
             FROM users u
             LEFT JOIN orders o ON u.id = o.user_id AND o.status = 'completed'
             ${whereClause}
-            GROUP BY u.id, u.username, u.phone, u.address, u.points
+            GROUP BY u.id, u.username, u.phone, u.email, u.address, u.points
             ORDER BY u.id DESC 
             LIMIT ? OFFSET ?
         `;
@@ -4291,6 +4297,10 @@ app.post("/api/orders", (req, res, next) => {
                 'Pesanan Masuk! 🔔',
                 { orderId, type: 'new_order' }
             ).catch(err => console.error('Push notification error:', err));
+
+            // Kirim Email Notifikasi Pesanan Baru (async)
+            sendOrderEmailNotification(orderId, 'new_order')
+                .catch(err => console.error('Email notification error:', err));
         });
 
         // Realtime Update via Socket.io (instant)
@@ -4766,6 +4776,10 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
                 setImmediate(() => {
                     sendUniversalNotification([order.user_id], statusMsg, title, { orderId: id, status, type: 'orders' })
                         .catch(err => console.error('Push notification error:', err));
+
+                    // Kirim Email Notifikasi Update Status ke Pelanggan (async)
+                    sendOrderEmailNotification(id, 'status_update', status)
+                        .catch(err => console.error('Email status update error:', err));
                 });
             }
 
@@ -4999,6 +5013,10 @@ app.put("/api/orders/:id/status", authenticateToken, authorizeRoles('admin', 'us
                         'Pesanan Diterima! ✅',
                         { orderId: id, status: 'accepted', type: 'orders' }
                     ).catch(err => console.error('Push notification error:', err));
+
+                    // Kirim Email Notifikasi Pesanan Diterima ke Pelanggan (async)
+                    sendOrderEmailNotification(id, 'status_update', 'accepted')
+                        .catch(err => console.error('Email accepted notification error:', err));
                 });
             }
 

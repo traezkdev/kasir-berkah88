@@ -1082,7 +1082,7 @@ const SalesPOS = () => {
                                 >
                                     <View>
                                         <Text style={styles.resultName} numberOfLines={1} ellipsizeMode="tail">{item.name || item.username}</Text>
-                                        <Text style={styles.resultPhone}>{item.phone}</Text>
+                                        <Text style={styles.resultPhone}>{item.phone || '-'} • {item.email || 'No Email'}</Text>
                                     </View>
                                     <View style={{ alignItems: 'flex-end' }}>
                                         <Text style={styles.resultPoints}>{formatCurrency(item.points)}</Text>

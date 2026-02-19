@@ -100,6 +100,7 @@ const LoginScreen = ({ navigation }) => {
                                         style={styles.input}
                                         placeholder="Masukkan nama pengguna"
                                         placeholderTextColor="rgba(255,255,255,0.4)"
+                                        selectionColor="#FFFFFF"
                                         value={username}
                                         onChangeText={setUsername}
                                         autoCapitalize="none"
@@ -115,6 +116,7 @@ const LoginScreen = ({ navigation }) => {
                                         style={styles.input}
                                         placeholder="Masukkan kata sandi"
                                         placeholderTextColor="rgba(255,255,255,0.4)"
+                                        selectionColor="#FFFFFF"
                                         value={password}
                                         onChangeText={setPassword}
                                         secureTextEntry
@@ -123,7 +125,10 @@ const LoginScreen = ({ navigation }) => {
                                 </View>
                             </View>
 
-                            <TouchableOpacity style={styles.forgotBtn}>
+                            <TouchableOpacity
+                                style={styles.forgotBtn}
+                                onPress={() => navigation.navigate('ForgotPassword')}
+                            >
                                 <Text style={styles.forgotText}>Lupa Kata Sandi?</Text>
                             </TouchableOpacity>
 

@@ -12,6 +12,8 @@ import {
     Image,
     TextInput,
     Modal,
+    AppState,
+    InteractionManager,
     Animated
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,6 +35,7 @@ import {
     Bell,
     Banknote,
     Lock,
+    Mail,
     Eye,
     EyeOff,
     Check,
@@ -49,6 +52,7 @@ import { useChat } from '../../context/ChatContext';
 import useSwipeToClose from '../../hooks/useSwipeToClose';
 import usePopups from '../../hooks/usePopups';
 import PopupModal from '../../components/PopupModal';
+import AppImage from '../../components/AppImage';
 
 const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -57,13 +61,14 @@ const CustomerProfile = ({ navigation }) => {
     const { logout } = useAuth();
     const { showToast } = useToast();
     const { confirm } = useConfirm();
-    const { selectedSoundId, changeNotificationSound } = useOrderNotification();
+    const { selectedSoundId, changeNotificationSound, refreshTrigger } = useOrderNotification();
     const { unreadCount } = useChat();
     const { popups } = usePopups('profile');
 
     const [userData, setUserData] = useState({
         username: 'Pelanggan',
         role: 'user',
+        email: '',
         phone: '',
         address: '',
         avatar_url: null
@@ -71,6 +76,7 @@ const CustomerProfile = ({ navigation }) => {
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [tempAddress, setTempAddress] = useState('');
     const [tempPhone, setTempPhone] = useState('');
+    const [tempEmail, setTempEmail] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [pageLoading, setPageLoading] = useState(true);
 
@@ -122,6 +128,7 @@ const CustomerProfile = ({ navigation }) => {
                 setUserData(result.data);
                 setTempAddress(result.data.address || '');
                 setTempPhone(result.data.phone || '');
+                setTempEmail(result.data.email || '');
             }
         } catch (error) {
             console.error("Error fetching profile:", error);
@@ -133,17 +140,28 @@ const CustomerProfile = ({ navigation }) => {
     useEffect(() => {
         fetchProfile();
         fetchNotificationSettings();
+
+        // Refresh data when app returns to foreground
+        const subscription = AppState.addEventListener('change', (nextAppState) => {
+            if (nextAppState === 'active') {
+                console.log('[CustomerProfile] App active, refreshing data...');
+                fetchProfile();
+            }
+        });
+
+        return () => subscription.remove();
     }, []);
 
     const handleUpdateProfile = async () => {
         setIsLoading(true);
         try {
             const response = await apiService.put('/api/user/profile', {
+                email: tempEmail,
                 phone: tempPhone,
                 address: tempAddress
             });
             if (response.data.message === 'success') {
-                setUserData({ ...userData, address: tempAddress, phone: tempPhone });
+                setUserData({ ...userData, address: tempAddress, phone: tempPhone, email: tempEmail });
                 setIsProfileModalOpen(false);
                 showToast('Profil berhasil diperbarui!', 'success');
             }
@@ -227,7 +245,7 @@ const CustomerProfile = ({ navigation }) => {
                 <View style={styles.profileCard}>
                     <View style={styles.avatarWrap}>
                         {userData.avatar_url ? (
-                            <Image source={{ uri: `${API_URL}${userData.avatar_url}` }} style={styles.avatar} />
+                            <AppImage uri={userData.avatar_url} style={styles.avatar} refreshKey={refreshTrigger} />
                         ) : (
                             <View style={styles.avatarPlaceholder}>
                                 <User size={40} color="#10B981" />
@@ -241,6 +259,7 @@ const CustomerProfile = ({ navigation }) => {
                                 <Text style={styles.roleText}>{userData.role?.toUpperCase()}</Text>
                             </View>
                         </View>
+                        <Text style={styles.userEmail}>{userData.email || 'Email belum diatur'}</Text>
                         <Text style={styles.userPhone}>{userData.phone || 'Belum ada nomor HP'}</Text>
                     </View>
                 </View>
@@ -268,11 +287,11 @@ const CustomerProfile = ({ navigation }) => {
                 <View style={styles.menuBox}>
                     {[
                         {
-                            icon: MapPin,
-                            label: 'Alamat Pengiriman',
+                            icon: UserCircle,
+                            label: 'Informasi Profil & Email',
                             color: '#3B82F6',
                             bg: '#EFF6FF',
-                            desc: userData.address || 'Atur alamat pengirimanmu di sini',
+                            desc: userData.email || 'Lengkapi data profil & alamat berkatmu',
                             onClick: () => setIsProfileModalOpen(true)
                         },
                         {
@@ -388,6 +407,21 @@ const CustomerProfile = ({ navigation }) => {
                             extraScrollHeight={20}
                         >
                             <View style={styles.modalBody}>
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.inputLabel}>ALAMAT EMAIL</Text>
+                                    <View style={styles.inputWrap}>
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Contoh: user@email.com"
+                                            value={tempEmail}
+                                            onChangeText={setTempEmail}
+                                            keyboardType="email-address"
+                                            autoCapitalize="none"
+                                        />
+                                        <Mail size={18} color="#94A3B8" />
+                                    </View>
+                                </View>
+
                                 <View style={styles.inputGroup}>
                                     <Text style={styles.inputLabel}>NOMOR WA AKTIF</Text>
                                     <View style={styles.inputWrap}>
@@ -782,9 +816,15 @@ const styles = StyleSheet.create({
         color: '#059669',
     },
     userPhone: {
-        fontSize: 14,
+        fontSize: 12,
         color: '#94A3B8',
         fontWeight: '500',
+    },
+    userEmail: {
+        fontSize: 12,
+        color: '#64748B',
+        fontWeight: '600',
+        marginBottom: 2,
     },
     menuBox: {
         backgroundColor: '#FFFFFF',

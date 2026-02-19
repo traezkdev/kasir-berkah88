@@ -21,7 +21,8 @@ import {
     MapPin,
     Calendar,
     Phone,
-    MessageCircle
+    MessageCircle,
+    Mail
 } from 'lucide-react-native';
 import { useChat } from '../../context/ChatContext';
 import { useOrderNotification } from '../../context/OrderNotificationContext';
@@ -102,6 +103,7 @@ const CustomerManagement = ({ navigation }) => {
                 onPress={() => navigation.navigate('CustomerDetails', {
                     customerName: item.username,
                     customerPhone: item.phone,
+                    customerEmail: item.email,
                     customerAddress: item.address,
                     customerId: item.id
                 })}
@@ -122,8 +124,12 @@ const CustomerManagement = ({ navigation }) => {
                             )}
                         </View>
                         <View style={styles.phoneRow}>
-                            <Phone size={12} color="#64748B" />
+                            <Phone size={10} color="#64748B" />
                             <Text style={styles.customerPhone}>{item.phone || 'No Phone'}</Text>
+                        </View>
+                        <View style={[styles.phoneRow, { marginTop: 1 }]}>
+                            <Mail size={10} color="#64748B" />
+                            <Text style={styles.customerPhone}>{item.email || 'Email belum diatur'}</Text>
                         </View>
                     </View>
                     <View style={styles.pointsBadge}>

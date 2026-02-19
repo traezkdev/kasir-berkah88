@@ -86,10 +86,10 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
 
     const fetchIgnoreStockSetting = async () => {
       try {
-        const ignoreStockResponse = await authFetch(`${apiUrl}/api/settings/ignore_stock_sales_form`);
-        const ignoreStockData = await ignoreStockResponse.json();
-        if (ignoreStockResponse.ok) {
-          setIgnoreStock(ignoreStockData.data.value === '1');
+        const response = await authFetch(`${apiUrl}/api/restaurant-settings`);
+        const data = await response.json();
+        if (response.ok && data.message === 'success') {
+          setIgnoreStock(!!data.data.ignore_stock);
         }
       } catch (error) {
         console.error("Error fetching initial ignore stock setting:", error);
@@ -105,19 +105,19 @@ const SalesTransactionProcessing = ({ headerTitle }) => {
     setIgnoreStock(newValue);
 
     try {
-      const response = await authFetch(`${apiUrl}/api/settings/ignore_stock_sales_form`, {
-        method: 'PUT',
+      const response = await authFetch(`${apiUrl}/api/restaurant-settings/ignore-stock`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ value: newValue ? '1' : '0' }),
+        body: JSON.stringify({ ignore_stock: newValue }),
       });
 
       if (!response.ok) {
         throw new Error('Gagal menyinkronkan pengaturan ke server');
       }
 
-      toast.success(newValue ? 'Mode Abaikan Stok Aktif' : 'Pengecekan Stok Aktif');
+      toast.success(newValue ? 'Mode Abaikan Stok Aktif (Global)' : 'Pengecekan Stok Aktif (Global)');
     } catch (err) {
       setIgnoreStock(!newValue);
       toast.error('Gagal memperbarui pengaturan: ' + err.message);

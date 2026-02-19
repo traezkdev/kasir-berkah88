@@ -9,6 +9,7 @@ const CustomerProfile = () => {
     const [userData, setUserData] = useState({
         username: 'Pelanggan',
         role: 'user',
+        email: '',
         phone: '',
         address: '',
         points: 0,
@@ -48,6 +49,7 @@ const CustomerProfile = () => {
     });
     const [tempAddress, setTempAddress] = useState('');
     const [tempPhone, setTempPhone] = useState('');
+    const [tempEmail, setTempEmail] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [notifSettings, setNotifSettings] = useState({
         orders: true,
@@ -75,6 +77,7 @@ const CustomerProfile = () => {
                 setUserData(result.data);
                 setTempAddress(result.data.address || '');
                 setTempPhone(result.data.phone || '');
+                setTempEmail(result.data.email || '');
             }
         } catch (error) {
             console.error("Error fetching profile:", error);
@@ -125,12 +128,13 @@ const CustomerProfile = () => {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
+                    email: tempEmail,
                     phone: tempPhone,
                     address: tempAddress
                 })
             });
             if (response.ok) {
-                setUserData({ ...userData, address: tempAddress, phone: tempPhone });
+                setUserData({ ...userData, address: tempAddress, phone: tempPhone, email: tempEmail });
                 setIsProfileModalOpen(false);
                 toast.success('Profil berhasil diperbarui!');
             }
@@ -221,7 +225,8 @@ const CustomerProfile = () => {
                                     {userData.role}
                                 </div>
                             </div>
-                            <p className="text-gray-400 text-sm font-bold tracking-tight">{userData.phone || 'Belum ada nomor HP'}</p>
+                            <p className="text-gray-500 text-[10px] font-bold tracking-tight mb-0.5">{userData.email || 'Email belum diatur'}</p>
+                            <p className="text-gray-400 text-xs font-bold tracking-tight">{userData.phone || 'Belum ada nomor HP'}</p>
                         </div>
                     </div>
                 </div>
@@ -252,11 +257,11 @@ const CustomerProfile = () => {
                 <div className="bg-white rounded-[2rem] shadow-xl shadow-gray-200/40 overflow-hidden border border-white">
                     {[
                         {
-                            icon: 'MapPin',
-                            label: 'Alamat Tersimpan',
+                            icon: 'User',
+                            label: 'Informasi Profil & Email',
                             color: 'text-blue-500',
                             bg: 'bg-blue-50',
-                            desc: userData.address || 'Klik untuk atur alamat',
+                            desc: userData.email || 'Klik untuk atur profil & alamat',
                             onClick: () => setIsProfileModalOpen(true)
                         },
                         {
@@ -338,6 +343,22 @@ const CustomerProfile = () => {
                         </div>
 
                         <div className="space-y-6">
+                            <div>
+                                <label className="text-[10px] font-black text-green-600 uppercase tracking-[0.2em] ml-2 mb-2 block">Alamat Email</label>
+                                <div className="relative">
+                                    <input
+                                        type="email"
+                                        className="w-full bg-gray-50 border-2 border-transparent focus:border-green-500 focus:bg-white rounded-2xl py-4 px-5 text-gray-700 font-bold transition-all outline-none"
+                                        placeholder="email@contoh.com"
+                                        value={tempEmail}
+                                        onChange={(e) => setTempEmail(e.target.value)}
+                                    />
+                                    <div className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-300">
+                                        <Icon name="Mail" className="w-5 h-5" />
+                                    </div>
+                                </div>
+                            </div>
+
                             <div>
                                 <label className="text-[10px] font-black text-green-600 uppercase tracking-[0.2em] ml-2 mb-2 block">Nomor Telepon</label>
                                 <div className="relative">

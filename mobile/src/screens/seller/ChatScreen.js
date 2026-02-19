@@ -15,7 +15,8 @@ import {
     KeyboardAvoidingView,
     Keyboard,
     InteractionManager,
-    Alert
+    Alert,
+    AppState
 } from 'react-native';
 import {
     MessageCircle,
@@ -46,13 +47,16 @@ import { useConfirm } from '../../context/ConfirmContext';
 import { useOrderNotification } from '../../context/OrderNotificationContext';
 import { useToast } from '../../context/ToastContext';
 import { useIsFocused } from '@react-navigation/native';
+import AppImage from '../../components/AppImage';
 
 // --- WHATSAPP-STYLE OPTIMIZATIONS ---
 
 // 1. Optimistic Message Item with minimal re-renders
-const MessageItem = memo(({ item, isMine, formatTime, onImagePress, onLongPress }) => {
+const MessageItem = memo(({ item, isMine, formatTime, onImagePress, onLongPress, refreshKey }) => {
     const imageUrl = item.image_url ?
-        (item.image_url.startsWith('http') ? item.image_url : `${API_URL}${item.image_url}`)
+        ((item.image_url.startsWith('http') || item.image_url.startsWith('data:')) ?
+            item.image_url :
+            `${API_URL}${item.image_url.startsWith('/') ? '' : '/'}${item.image_url}`)
         : null;
 
     return (
@@ -80,11 +84,11 @@ const MessageItem = memo(({ item, isMine, formatTime, onImagePress, onLongPress 
                 </Text>
                 {imageUrl && (
                     <TouchableOpacity onPress={() => onImagePress(imageUrl)} activeOpacity={0.9}>
-                        <Image
-                            source={{ uri: imageUrl, cache: 'force-cache' }}
+                        <AppImage
+                            uri={item.image_url}
                             style={styles.messageImage}
                             resizeMode="cover"
-                            fadeDuration={0}
+                            refreshKey={refreshKey}
                         />
                     </TouchableOpacity>
                 )}
@@ -126,10 +130,11 @@ const MessageItem = memo(({ item, isMine, formatTime, onImagePress, onLongPress 
         prevProps.item.is_read === nextProps.item.is_read &&
         prevProps.item.sending === nextProps.item.sending &&
         prevProps.item.message === nextProps.item.message &&
+        prevProps.item.image_url === nextProps.item.image_url &&
         prevProps.item.is_edited === nextProps.item.is_edited;
 });
 
-const ConversationItem = memo(({ item, isActive, onPress, onLongPress, getDisplayName, formatTime, isOnline }) => (
+const ConversationItem = memo(({ item, isActive, onPress, onLongPress, getDisplayName, formatTime, isOnline, refreshKey }) => (
     <TouchableOpacity
         style={[
             styles.convItem,
@@ -140,7 +145,7 @@ const ConversationItem = memo(({ item, isActive, onPress, onLongPress, getDispla
     >
         <View style={styles.avatarContainer}>
             {item.avatar_url ? (
-                <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
+                <AppImage uri={item.avatar_url} style={styles.avatar} refreshKey={refreshKey} />
             ) : (
                 <View style={styles.avatarPlaceholder}>
                     <User size={24} color="#94A3B8" />
@@ -270,7 +275,7 @@ const ChatScreen = ({ navigation }) => {
         setActiveOrder,
         fetchConversations
     } = useChat();
-    const { onlineUsers, socket } = useOrderNotification();
+    const { onlineUsers, socket, refreshTrigger } = useOrderNotification();
 
     const [messages, setMessages] = useState([]);
     const [isTransitioning, setIsTransitioning] = useState(false);
@@ -306,6 +311,7 @@ const ChatScreen = ({ navigation }) => {
             };
         }
     }, []);
+
 
     // Keep refs in sync
     useEffect(() => {
@@ -537,22 +543,30 @@ const ChatScreen = ({ navigation }) => {
         try {
             const res = await apiService.get(`/api/messages/history/${activeChat.user_id}`);
             if (res.data && res.data.data) {
+                const newData = res.data.data;
                 setMessages(prev => {
-                    const newData = res.data.data;
+                    // Optimized merge logic:
+                    // Keep 'sending' messages AND messages that were just sent but not yet in history
                     const sendingMessages = prev.filter(m => m.sending);
+                    const recentlySent = prev.filter(m =>
+                        !m.sending &&
+                        !String(m.id).startsWith('temp_') &&
+                        !newData.some(n => String(n.id) === String(m.id))
+                    );
 
-                    // Optimized update logic:
-                    // Only update if count has changed (server data + our local pending messages)
-                    if (prev.length === (newData.length + sendingMessages.length)) {
-                        // Check if metadata like is_read changed for existing messages
+                    // Filter recentlySent to only those from the last 15 seconds to avoid ghosts
+                    const nowTS = Date.now();
+                    const validRecent = recentlySent.filter(m => (nowTS - new Date(m.created_at).getTime()) < 15000);
+
+                    // If data hasn't changed at all, return prev to avoid re-renders
+                    if (prev.length === (newData.length + sendingMessages.length + validRecent.length)) {
                         const hasChanges = newData.some((msg, idx) =>
                             prev[idx] && (msg.is_read !== prev[idx].is_read || msg.message !== prev[idx].message)
                         );
                         if (!hasChanges) return prev;
                     }
 
-                    // Always combine server data with messages that are still being sent locally
-                    return [...newData, ...sendingMessages];
+                    return [...newData, ...validRecent, ...sendingMessages];
                 });
             }
         } catch (e) {
@@ -578,6 +592,18 @@ const ChatScreen = ({ navigation }) => {
             console.error("Error fetching active order:", e);
         }
     }, [activeChat?.user_id, user?.id, user?.role, user?.userId, setActiveOrder]);
+
+    // Refresh when app returns to foreground
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', (nextAppState) => {
+            if (nextAppState === 'active' && activeChat) {
+                console.log('[ChatScreen] App active, refreshing messages...');
+                fetchMessages(true);
+                fetchActiveOrder();
+            }
+        });
+        return () => subscription.remove();
+    }, [activeChat, fetchMessages, fetchActiveOrder]);
 
     useEffect(() => {
         if (activeChat) {
@@ -945,7 +971,16 @@ const ChatScreen = ({ navigation }) => {
                             <FlatList
                                 ref={listRef}
                                 data={displayMessages}
-                                renderItem={renderMessageItem}
+                                renderItem={({ item }) => (
+                                    <MessageItem
+                                        item={item}
+                                        isMine={String(item.sender_id) === String(user.id || user.userId)}
+                                        formatTime={formatTime}
+                                        onImagePress={setPreviewImage}
+                                        onLongPress={setSelectedMsgForMenu}
+                                        refreshKey={refreshTrigger}
+                                    />
+                                )}
                                 keyExtractor={(item, index) => item.id?.toString() || index.toString()}
                                 contentContainerStyle={styles.messagesList}
                                 inverted

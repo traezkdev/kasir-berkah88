@@ -42,6 +42,48 @@ const MenuManagement = ({ headerTitle }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
+  // Global settings state
+  const [globalIgnoreStock, setGlobalIgnoreStock] = useState(false);
+  const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+
+  const fetchGlobalSettings = useCallback(async () => {
+    try {
+      const response = await authFetch(`${apiUrl}/api/restaurant-settings`);
+      const data = await response.json();
+      if (response.ok && data.message === 'success') {
+        setGlobalIgnoreStock(!!data.data.ignore_stock);
+      }
+    } catch (error) {
+      console.error("Error fetching global settings:", error);
+    }
+  }, []);
+
+  const handleToggleGlobalIgnoreStock = async () => {
+    const newValue = !globalIgnoreStock;
+    setGlobalIgnoreStock(newValue);
+    setIsUpdatingSettings(true);
+
+    try {
+      const response = await authFetch(`${apiUrl}/api/restaurant-settings/ignore-stock`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ignore_stock: newValue }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Gagal memperbarui pengaturan');
+      }
+      showNotification(newValue ? 'Mode Abaikan Stok Aktif secara Global' : 'Pengecekan Stok Aktif secara Global');
+    } catch (error) {
+      setGlobalIgnoreStock(!newValue);
+      showError(`Gagal: ${error.message}`);
+    } finally {
+      setIsUpdatingSettings(false);
+    }
+  };
+
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
     setTimeout(() => {
@@ -110,6 +152,7 @@ const MenuManagement = ({ headerTitle }) => {
 
   useEffect(() => {
     fetchAllMenuItems(); // Fetch all items on initial load
+    fetchGlobalSettings(); // Fetch global ignore_stock configuration
     const token = localStorage.getItem('token');
     if (token) {
       try {
@@ -472,25 +515,72 @@ Powered by Kasir Berkah 88`;
               <h1 className="text-2xl lg:text-3xl font-bold text-text-primary">
                 Kelola Menu
               </h1>
-              <div className="w-12 h-1 bg-blue-600 rounded-full mt-2 lg:hidden"></div>
-              <p className="text-xs lg:text-sm text-text-secondary mt-2 font-bold uppercase tracking-widest opacity-60">
-                Tambah, edit, dan kelola menu warung Anda dengan mudah.
-              </p>
+              <p className="text-sm text-text-secondary mt-1">Atur produk, stok, dan harga warung Anda.</p>
             </div>
 
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="bg-[#118eea] hover:bg-[#0d70ba] text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-500/20 transition-all active:scale-95 flex items-center gap-2"
-            >
-              <div className="bg-white/20 p-1.5 rounded-lg">
-                <Icon name="Plus" size={16} />
+            <div className="flex items-center gap-3">
+              {/* Global Ignore Stock Toggle (Desktop) */}
+              <div
+                className={`flex items-center gap-3 px-4 py-2 rounded-2xl border transition-all duration-300 cursor-pointer select-none
+                  ${globalIgnoreStock
+                    ? 'bg-red-50 border-red-200 text-red-700 shadow-sm shadow-red-100'
+                    : 'bg-green-50 border-green-200 text-green-700 shadow-sm shadow-green-100'}`}
+                onClick={handleToggleGlobalIgnoreStock}
+              >
+                <div className={`p-2 rounded-xl transition-colors ${globalIgnoreStock ? 'bg-red-500 text-white' : 'bg-green-600 text-white'}`}>
+                  <Icon name="Package" size={18} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-black tracking-widest opacity-60">Status Stok Global</span>
+                  <span className="text-xs font-bold whitespace-nowrap">
+                    {globalIgnoreStock ? 'Abaikan Stok Aktif' : 'Pengecekan Stok Aktif'}
+                  </span>
+                </div>
+                <div className={`ml-2 w-10 h-6 rounded-full relative transition-all duration-300 ${globalIgnoreStock ? 'bg-red-500' : 'bg-gray-200 shadow-inner'}`}>
+                  <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full shadow-md transition-transform duration-300 ${globalIgnoreStock ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                </div>
               </div>
-              Tambah Menu Baru
-            </button>
+
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="bg-[#118eea] hover:bg-[#0d70ba] text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-500/20 transition-all active:scale-95 flex items-center gap-2"
+              >
+                <div className="bg-white/20 p-1.5 rounded-lg">
+                  <Icon name="Plus" size={16} />
+                </div>
+                Tambah Menu Baru
+              </button>
+            </div>
+          </div>
+
+          {/* Global Ignore Stock Toggle (Mobile) */}
+          <div className="lg:hidden mb-6">
+            <div
+              className={`p-4 rounded-2xl border flex items-center justify-between transition-all active:scale-98
+                ${globalIgnoreStock ? 'bg-red-50 border-red-100' : 'bg-green-50 border-green-100'}`}
+              onClick={handleToggleGlobalIgnoreStock}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-3 rounded-xl ${globalIgnoreStock ? 'bg-red-500' : 'bg-green-600'} text-white shadow-md`}>
+                  <Icon name="Package" size={20} />
+                </div>
+                <div>
+                  <h3 className={`font-bold text-sm ${globalIgnoreStock ? 'text-red-900' : 'text-green-900'}`}>
+                    Abaikan Stok Global
+                  </h3>
+                  <p className={`text-[11px] font-medium opacity-70 ${globalIgnoreStock ? 'text-red-700' : 'text-green-700'}`}>
+                    {globalIgnoreStock ? 'Transaksi diizinkan walau stok 0' : 'Sistem akan mengecek ketersediaan stok'}
+                  </p>
+                </div>
+              </div>
+              <div className={`w-12 h-7 rounded-full relative transition-all duration-300 ${globalIgnoreStock ? 'bg-red-500' : 'bg-gray-300 shadow-inner'}`}>
+                <div className={`absolute top-1 left-1 bg-white w-5 h-5 rounded-full shadow-md transition-transform duration-300 ${globalIgnoreStock ? 'translate-x-5' : 'translate-x-0'}`}></div>
+              </div>
+            </div>
           </div>
 
           {/* Search and Filter - Overlapping Header */}
-          <div className="!-mt-12 lg:mt-0 lg:pt-10 relative z-30 mb-6">
+          <div className="lg:mt-0 lg:pt-4 relative z-30 mb-6">
             <MenuSearchAndFilter
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
@@ -539,8 +629,8 @@ Powered by Kasir Berkah 88`;
               <Icon name="Plus" size={28} />
             </button>
           </div>
-        </div>
-      </main>
+        </div >
+      </main >
 
       {/* Quick Action Panel */}
 
