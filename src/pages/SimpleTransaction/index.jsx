@@ -55,12 +55,12 @@ export default function SimpleTransaction() { // Renamed component
     setIgnoreStock(newValue); // Optimistically update local state
 
     try {
-      const response = await authFetch(`${apiUrl}/api/settings/ignore_stock_simple_transaction`, {
-        method: 'PUT', // Use PUT to update an existing setting
+      const response = await authFetch(`${apiUrl}/api/restaurant-settings/ignore-stock`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ value: newValue ? '1' : '0' }), // Send '1' or '0'
+        body: JSON.stringify({ ignore_stock: newValue }),
       });
 
       if (!response.ok) {
@@ -68,6 +68,8 @@ export default function SimpleTransaction() { // Renamed component
         setIgnoreStock(!newValue);
         const errorData = await response.json();
         toast.error(errorData.error || 'Gagal memperbarui pengaturan Abaikan Stok.');
+      } else {
+        toast.success(newValue ? 'Mode Abaikan Stok Aktif (Global)' : 'Pengecekan Stok Aktif (Global)');
       }
     } catch (err) {
       // If API call fails, revert local state and show error
@@ -138,15 +140,15 @@ export default function SimpleTransaction() { // Renamed component
         console.error('Failed to fetch simple transaction title:', titleErr);
       }
 
-      // Fetch Ignore Stock setting for Simple Transaction
+      // Fetch Ignore Stock setting (Global)
       try {
-        const ignoreStockResponse = await authFetch(`${apiUrl}/api/settings/ignore_stock_simple_transaction`);
-        const ignoreStockData = await ignoreStockResponse.json();
-        if (ignoreStockResponse.ok) {
-          setIgnoreStock(ignoreStockData.data.value === '1'); // Convert '0'/'1' to boolean
+        const response = await authFetch(`${apiUrl}/api/restaurant-settings`);
+        const data = await response.json();
+        if (response.ok && data.message === 'success') {
+          setIgnoreStock(!!data.data.ignore_stock);
         }
       } catch (err) {
-        console.error('Failed to fetch ignore_stock_simple_transaction setting:', err);
+        console.error('Failed to fetch ignore_stock global setting:', err);
       }
 
     } catch (err) {

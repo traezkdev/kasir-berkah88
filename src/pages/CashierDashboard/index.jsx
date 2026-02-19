@@ -67,10 +67,46 @@ export default function CashierDashboard() {
 
   const quickCashAmounts = [10000, 20000, 50000, 100000, 150000, 200000];
 
+  const fetchIgnoreStockSetting = useCallback(async () => {
+    try {
+      const response = await authFetch(`${apiUrl}/api/restaurant-settings`);
+      const data = await response.json();
+      if (response.ok && data.message === 'success') {
+        setIgnoreStock(!!data.data.ignore_stock);
+      }
+    } catch (error) {
+      console.error("Error fetching initial ignore stock setting:", error);
+    }
+  }, []);
+
+  const handleToggleIgnoreStock = async (newValue) => {
+    setIgnoreStock(newValue);
+
+    try {
+      const response = await authFetch(`${apiUrl}/api/restaurant-settings/ignore-stock`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ignore_stock: newValue }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Gagal menyinkronkan pengaturan ke server');
+      }
+
+      toast.success(newValue ? 'Mode Abaikan Stok Aktif (Global)' : 'Pengecekan Stok Aktif (Global)');
+    } catch (err) {
+      setIgnoreStock(!newValue);
+      toast.error('Gagal memperbarui pengaturan: ' + err.message);
+    }
+  };
+
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError('');
     try {
+      fetchIgnoreStockSetting();
       const menuResponse = await authFetch(`${apiUrl}/api/menu-items/all`);
       const menuData = await menuResponse.json();
       if (menuResponse.ok) {
@@ -244,7 +280,7 @@ export default function CashierDashboard() {
             <Checkbox
               id="ignoreStock"
               checked={ignoreStock}
-              onCheckedChange={setIgnoreStock}
+              onCheckedChange={handleToggleIgnoreStock}
             />
             <label htmlFor="ignoreStock" className="text-sm font-medium leading-none">Abaikan Stok</label>
           </div>

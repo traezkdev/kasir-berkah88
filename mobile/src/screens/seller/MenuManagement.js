@@ -44,11 +44,14 @@ import apiService, { API_URL } from '../../api/apiService';
 import * as ImagePicker from 'expo-image-picker';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useToast } from '../../context/ToastContext';
+import { useAppSettings } from '../../context/AppSettingsContext';
 import BottomModalTemplate from '../../components/templates/BottomModalTemplate';
+import { PackageX } from 'lucide-react-native';
 
 const MenuManagement = ({ navigation }) => {
     const { confirm } = useConfirm();
     const { showToast } = useToast();
+    const { ignoreStock, toggleIgnoreStock } = useAppSettings();
     const [menuItems, setMenuItems] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -327,6 +330,35 @@ const MenuManagement = ({ navigation }) => {
                 <TouchableOpacity onPress={() => handleOpenModal()} style={styles.headerAdd}>
                     <Plus size={24} color="#1E293B" />
                 </TouchableOpacity>
+            </View>
+
+            {/* Global Settings Row */}
+            <View style={{ backgroundColor: '#FFFFFF', paddingHorizontal: 20, paddingBottom: 15 }}>
+                <View style={[styles.featuredToggle, {
+                    marginBottom: 0,
+                    padding: 12,
+                    borderRadius: 20,
+                    backgroundColor: ignoreStock ? '#FFF1F2' : '#F0FDF4',
+                    borderColor: ignoreStock ? '#FFE4E6' : '#DCFCE7'
+                }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                        <View style={{ padding: 10, backgroundColor: ignoreStock ? '#FECDD3' : '#BBF7D0', borderRadius: 14 }}>
+                            <PackageX size={20} color={ignoreStock ? "#BE123C" : "#15803D"} />
+                        </View>
+                        <View>
+                            <Text style={[styles.toggleTitle, { fontSize: 13, color: ignoreStock ? '#9F1239' : '#166534' }]}>Abaikan Stok Global</Text>
+                            <Text style={[styles.toggleSubtitle, { fontSize: 10, color: ignoreStock ? '#BE123C' : '#15803D' }]}>
+                                {ignoreStock ? 'Mode Bebas Aktif' : 'Pengecekan Aktif'}
+                            </Text>
+                        </View>
+                    </View>
+                    <Switch
+                        value={ignoreStock}
+                        onValueChange={toggleIgnoreStock}
+                        trackColor={{ false: '#E2E8F0', true: ignoreStock ? '#FECDD3' : '#BBF7D0' }}
+                        thumbColor={ignoreStock ? '#E11D48' : '#16A34A'}
+                    />
+                </View>
             </View>
 
             {/* Search */}
@@ -842,6 +874,34 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: 'bold',
         color: '#64748B',
+    },
+    headerTopRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingTop: Platform.OS === 'ios' ? 0 : 20,
+        backgroundColor: '#FFFFFF',
+    },
+    headerSwitch: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    switchLabel: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: '#64748B',
+        marginLeft: 6,
+        marginRight: 4,
+    },
+    switchLabelActive: {
+        color: '#2563EB',
     },
     ratingRow: {
         flexDirection: 'row',

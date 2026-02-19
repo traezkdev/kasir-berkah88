@@ -18,6 +18,8 @@ const GuestCheckout = () => {
     const [validationError, setValidationError] = useState('');
     const customerInfoRef = useRef(null);
 
+    const [globalIgnoreStock, setGlobalIgnoreStock] = useState(false);
+
     useEffect(() => {
         const savedCustomerName = localStorage.getItem('customerName');
         const savedCustomerAddress = localStorage.getItem('customerAddress');
@@ -43,15 +45,27 @@ const GuestCheckout = () => {
             setIsLoggedIn(true);
         }
 
-        const fetchMenuItems = async () => {
+        const fetchInitialData = async () => {
             try {
                 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-                const response = await fetch(`${API_BASE_URL}/api/guest/menu-items`);
-                if (!response.ok) {
-                    throw new Error(`Gagal memuat menu. Status: ${response.status}`);
+
+                // Fetch menu items and ignore_stock setting in parallel
+                const [menuRes, settingsRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/api/guest/menu-items`),
+                    fetch(`${API_BASE_URL}/api/restaurant-settings`)
+                ]);
+
+                if (!menuRes.ok) throw new Error(`Gagal memuat menu. Status: ${menuRes.status}`);
+
+                const menuData = await menuRes.json();
+                setMenuItems(menuData.data);
+
+                if (settingsRes.ok) {
+                    const settingsData = await settingsRes.json();
+                    if (settingsData.message === 'success') {
+                        setGlobalIgnoreStock(!!settingsData.data.ignore_stock);
+                    }
                 }
-                const data = await response.json();
-                setMenuItems(data.data);
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -59,7 +73,7 @@ const GuestCheckout = () => {
             }
         };
 
-        fetchMenuItems();
+        fetchInitialData();
     }, []);
 
     const handleAddToCart = (item) => {
@@ -252,8 +266,8 @@ const GuestCheckout = () => {
                         {menuItems.map(item => {
                             const quantityInCart = cart[item.id] || 0;
                             const isInCart = quantityInCart > 0;
-                            const initiallyOutOfStock = item.stock === 0;
-                            const effectivelyOutOfStock = item.stock <= quantityInCart;
+                            const initiallyOutOfStock = item.stock === 0 && !globalIgnoreStock;
+                            const effectivelyOutOfStock = (item.stock <= quantityInCart) && !globalIgnoreStock;
 
                             return (
                                 <div
