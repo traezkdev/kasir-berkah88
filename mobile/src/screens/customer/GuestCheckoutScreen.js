@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
 import {
     StyleSheet,
     View,
@@ -14,9 +14,11 @@ import {
     Platform,
     Linking,
     StatusBar,
-    Image
+    Image,
+    AppState
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     Plus,
     Minus,
@@ -31,11 +33,93 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import apiService, { API_URL } from '../../api/apiService';
 import AppImage from '../../components/AppImage';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 const { width } = Dimensions.get('window');
 
+// Memoized MenuItem for better performance
+const MenuItem = memo(({ item, qty, globalIgnoreStock, onAdd, onRemove }) => {
+    const discount = item.discount || 0;
+    const priceAfterDiscount = item.price * (1 - discount);
+    const isOutOfStock = !globalIgnoreStock && item.stock !== null && item.stock <= 0;
+
+    return (
+        <View style={styles.menuCard}>
+            <View style={styles.imageContainer}>
+                <AppImage
+                    uri={item.image_url}
+                    style={styles.menuImage}
+                />
+                {discount > 0 && (
+                    <View style={styles.discountBadge}>
+                        <Text style={styles.discountText}>-{Math.round(discount * 100)}%</Text>
+                    </View>
+                )}
+                {isOutOfStock && (
+                    <View style={styles.outOfStockOverlay}>
+                        <Text style={styles.outOfStockText}>HABIS</Text>
+                    </View>
+                )}
+            </View>
+
+            <View style={styles.menuInfo}>
+                <Text style={styles.menuName} numberOfLines={2}>{item.name}</Text>
+                <Text style={styles.menuCategory}>{item.category || 'Lainnya'}</Text>
+
+                <View style={styles.priceRow}>
+                    <View>
+                        {discount > 0 && (
+                            <Text style={styles.originalPrice}>Rp {item.price.toLocaleString('id-ID')}</Text>
+                        )}
+                        <Text style={styles.currentPrice}>Rp {priceAfterDiscount.toLocaleString('id-ID')}</Text>
+                    </View>
+
+                    <View style={styles.stockInfo}>
+                        {globalIgnoreStock ? (
+                            <Text style={styles.stockText}>Stok: ∞</Text>
+                        ) : (
+                            <Text style={styles.stockText}>Stok: {item.stock}</Text>
+                        )}
+                    </View>
+                </View>
+
+                <View style={styles.actionContainer}>
+                    {qty > 0 ? (
+                        <View style={styles.qtyContainer}>
+                            <TouchableOpacity
+                                style={styles.qtyBtn}
+                                onPress={() => onRemove(item)}
+                            >
+                                <Minus size={16} color="#059669" strokeWidth={2.5} />
+                            </TouchableOpacity>
+                            <Text style={styles.qtyText}>{qty}</Text>
+                            <TouchableOpacity
+                                style={[styles.qtyBtn, (isOutOfStock || (!globalIgnoreStock && qty >= item.stock)) && styles.disabledBtn]}
+                                onPress={() => onAdd(item)}
+                                disabled={isOutOfStock || (!globalIgnoreStock && qty >= item.stock)}
+                            >
+                                <Plus size={16} color="#059669" strokeWidth={2.5} />
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <TouchableOpacity
+                            style={[styles.addBtn, isOutOfStock && styles.disabledBtn]}
+                            onPress={() => onAdd(item)}
+                            disabled={isOutOfStock}
+                        >
+                            <Plus size={18} color="#FFFFFF" strokeWidth={2.5} />
+                            <Text style={styles.addBtnText}>TAMBAH</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </View>
+        </View>
+    );
+});
+
 const GuestCheckoutScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
+    const appState = useRef(AppState.currentState);
     const [menuItems, setMenuItems] = useState([]);
     const [cart, setCart] = useState({});
     const [loading, setLoading] = useState(true);
@@ -44,14 +128,10 @@ const GuestCheckoutScreen = ({ navigation }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [globalIgnoreStock, setGlobalIgnoreStock] = useState(false);
     const [activeCategory, setActiveCategory] = useState('Semua');
+    const [showClearConfirm, setShowClearConfirm] = useState(false);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
-            setLoading(true);
             const [menuRes, settingsRes] = await Promise.all([
                 apiService.get('/api/guest/menu-items'),
                 apiService.get('/api/restaurant-settings').catch(() => ({ data: { data: { ignore_stock: 0 } } }))
@@ -66,28 +146,66 @@ const GuestCheckoutScreen = ({ navigation }) => {
             }
         } catch (error) {
             console.error('Error fetching guest data:', error);
-            Alert.alert('Gagal', 'Terjadi kesalahan saat memuat menu.');
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const handleAddToCart = (item) => {
-        const currentQty = cart[item.id] || 0;
+    useEffect(() => {
+        fetchData();
+        loadStoredData();
 
-        // Stock validation if not ignoring stock
-        if (!globalIgnoreStock && item.stock !== null && currentQty >= item.stock) {
-            Alert.alert('Stok Habis', `Maaf, stok ${item.name} sudah tidak mencukupi.`);
-            return;
+        // Background to Foreground handler
+        const subscription = AppState.addEventListener('change', nextAppState => {
+            if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+                console.log('App has come to the foreground, refreshing data...');
+                fetchData();
+            }
+            appState.current = nextAppState;
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, [fetchData]);
+
+    const loadStoredData = async () => {
+        try {
+            const savedName = await AsyncStorage.getItem('guest_customer_name');
+            const savedAddress = await AsyncStorage.getItem('guest_customer_address');
+            if (savedName) setCustomerName(savedName);
+            if (savedAddress) setCustomerAddress(savedAddress);
+        } catch (error) {
+            console.error('Error loading stored guest data:', error);
         }
-
-        setCart(prev => ({
-            ...prev,
-            [item.id]: currentQty + 1
-        }));
     };
 
-    const handleRemoveFromCart = (item) => {
+    useEffect(() => {
+        const saveData = async () => {
+            try {
+                await AsyncStorage.setItem('guest_customer_name', customerName);
+                await AsyncStorage.setItem('guest_customer_address', customerAddress);
+            } catch (error) {
+                console.error('Error saving guest data:', error);
+            }
+        };
+
+        const timer = setTimeout(saveData, 1000);
+        return () => clearTimeout(timer);
+    }, [customerName, customerAddress]);
+
+    const handleAddToCart = useCallback((item) => {
+        setCart(prev => {
+            const currentQty = prev[item.id] || 0;
+            if (!globalIgnoreStock && item.stock !== null && currentQty >= item.stock) {
+                Alert.alert('Stok Habis', `Maaf, stok ${item.name} sudah tidak mencukupi.`);
+                return prev;
+            }
+            return { ...prev, [item.id]: currentQty + 1 };
+        });
+    }, [globalIgnoreStock]);
+
+    const handleRemoveFromCart = useCallback((item) => {
         setCart(prev => {
             const newQty = (prev[item.id] || 0) - 1;
             if (newQty <= 0) {
@@ -97,18 +215,18 @@ const GuestCheckoutScreen = ({ navigation }) => {
             }
             return { ...prev, [item.id]: newQty };
         });
-    };
+    }, []);
 
-    const calculateTotal = () => {
+    const calculateTotal = useMemo(() => {
         return Object.entries(cart).reduce((total, [itemId, quantity]) => {
             const item = menuItems.find(m => m.id.toString() === itemId.toString());
             if (!item) return total;
             const discountedPrice = item.price * (1 - (item.discount || 0));
             return total + (discountedPrice * quantity);
         }, 0);
-    };
+    }, [cart, menuItems]);
 
-    const totalItems = Object.values(cart).reduce((a, b) => a + b, 0);
+    const totalItems = useMemo(() => Object.values(cart).reduce((a, b) => a + b, 0), [cart]);
 
     const handleCheckout = async () => {
         if (totalItems === 0) {
@@ -131,15 +249,13 @@ const GuestCheckoutScreen = ({ navigation }) => {
             customer_name: customerName,
             customer_address: customerAddress,
             items: orderItems,
-            total: calculateTotal(),
+            total: calculateTotal,
         };
 
         try {
-            // 1. Submit order to backend for verification
             const response = await apiService.post('/api/orders', orderData);
 
             if (response.status === 201) {
-                // 2. Format WhatsApp message
                 let whatsappMessage = `*Pesan Baru (Guest Checkout)*\n\n`;
                 whatsappMessage += `👤 *Nama:* ${customerName}\n`;
                 whatsappMessage += `📍 *Alamat:* ${customerAddress}\n`;
@@ -162,10 +278,10 @@ const GuestCheckoutScreen = ({ navigation }) => {
                 });
 
                 whatsappMessage += `-----------------------------------\n`;
-                whatsappMessage += `💰 *Total Akhir: Rp ${calculateTotal().toLocaleString('id-ID')}*\n\n`;
+                whatsappMessage += `💰 *Total Akhir: Rp ${calculateTotal.toLocaleString('id-ID')}*\n\n`;
                 whatsappMessage += "Mohon segera diproses ya, terima kasih! 🙏";
 
-                const whatsappNumber = "6285864875536"; // Configurable number
+                const whatsappNumber = "6285864875536";
                 const encodedMessage = encodeURIComponent(whatsappMessage);
                 const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
@@ -173,7 +289,12 @@ const GuestCheckoutScreen = ({ navigation }) => {
                 if (supported) {
                     await Linking.openURL(whatsappUrl);
                     Alert.alert('Berhasil', 'Pesanan Anda telah dicatat. Silakan lanjutkan pesan via WhatsApp.', [
-                        { text: 'OK', onPress: () => navigation.replace('Welcome') }
+                        {
+                            text: 'OK', onPress: () => {
+                                setCart({});
+                                navigation.replace('Welcome');
+                            }
+                        }
                     ]);
                 } else {
                     Alert.alert('Error', 'Gagal membuka WhatsApp. Mohon pastikan WhatsApp terpasang.');
@@ -187,90 +308,21 @@ const GuestCheckoutScreen = ({ navigation }) => {
         }
     };
 
-    const categories = ['Semua', ...new Set(menuItems.map(item => item.category))].filter(Boolean);
-    const filteredItems = activeCategory === 'Semua'
+    const categories = useMemo(() => ['Semua', ...new Set(menuItems.map(item => item.category))].filter(Boolean), [menuItems]);
+
+    const filteredItems = useMemo(() => activeCategory === 'Semua'
         ? menuItems
-        : menuItems.filter(item => item.category === activeCategory);
+        : menuItems.filter(item => item.category === activeCategory), [activeCategory, menuItems]);
 
-    const renderMenuItem = ({ item }) => {
-        const qty = cart[item.id] || 0;
-        const discount = item.discount || 0;
-        const priceAfterDiscount = item.price * (1 - discount);
-        const isOutOfStock = !globalIgnoreStock && item.stock !== null && item.stock <= 0;
-
-        return (
-            <View style={styles.menuCard}>
-                <View style={styles.imageContainer}>
-                    <AppImage
-                        uri={item.image_url}
-                        style={styles.menuImage}
-                    />
-                    {discount > 0 && (
-                        <View style={styles.discountBadge}>
-                            <Text style={styles.discountText}>-{Math.round(discount * 100)}%</Text>
-                        </View>
-                    )}
-                    {isOutOfStock && (
-                        <View style={styles.outOfStockOverlay}>
-                            <Text style={styles.outOfStockText}>HABIS</Text>
-                        </View>
-                    )}
-                </View>
-
-                <View style={styles.menuInfo}>
-                    <Text style={styles.menuName} numberOfLines={2}>{item.name}</Text>
-                    <Text style={styles.menuCategory}>{item.category || 'Lainnya'}</Text>
-
-                    <View style={styles.priceRow}>
-                        <View>
-                            {discount > 0 && (
-                                <Text style={styles.originalPrice}>Rp {item.price.toLocaleString('id-ID')}</Text>
-                            )}
-                            <Text style={styles.currentPrice}>Rp {priceAfterDiscount.toLocaleString('id-ID')}</Text>
-                        </View>
-
-                        <View style={styles.stockInfo}>
-                            {globalIgnoreStock ? (
-                                <Text style={styles.stockText}>Stok: ∞</Text>
-                            ) : (
-                                <Text style={styles.stockText}>Stok: {item.stock}</Text>
-                            )}
-                        </View>
-                    </View>
-
-                    <View style={styles.actionContainer}>
-                        {qty > 0 ? (
-                            <View style={styles.qtyContainer}>
-                                <TouchableOpacity
-                                    style={styles.qtyBtn}
-                                    onPress={() => handleRemoveFromCart(item)}
-                                >
-                                    <Minus size={16} color="#059669" strokeWidth={2.5} />
-                                </TouchableOpacity>
-                                <Text style={styles.qtyText}>{qty}</Text>
-                                <TouchableOpacity
-                                    style={[styles.qtyBtn, (isOutOfStock || (!globalIgnoreStock && qty >= item.stock)) && styles.disabledBtn]}
-                                    onPress={() => handleAddToCart(item)}
-                                    disabled={isOutOfStock || (!globalIgnoreStock && qty >= item.stock)}
-                                >
-                                    <Plus size={16} color="#059669" strokeWidth={2.5} />
-                                </TouchableOpacity>
-                            </View>
-                        ) : (
-                            <TouchableOpacity
-                                style={[styles.addBtn, isOutOfStock && styles.disabledBtn]}
-                                onPress={() => handleAddToCart(item)}
-                                disabled={isOutOfStock}
-                            >
-                                <Plus size={18} color="#FFFFFF" strokeWidth={2.5} />
-                                <Text style={styles.addBtnText}>TAMBAH</Text>
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                </View>
-            </View>
-        );
-    };
+    const renderMenuItem = useCallback(({ item }) => (
+        <MenuItem
+            item={item}
+            qty={cart[item.id] || 0}
+            globalIgnoreStock={globalIgnoreStock}
+            onAdd={handleAddToCart}
+            onRemove={handleRemoveFromCart}
+        />
+    ), [cart, globalIgnoreStock, handleAddToCart, handleRemoveFromCart]);
 
     if (loading) {
         return (
@@ -383,10 +435,19 @@ const GuestCheckoutScreen = ({ navigation }) => {
                     <View style={styles.totalInfo}>
                         <View>
                             <Text style={styles.totalLabel}>Total Pembayaran</Text>
-                            <Text style={styles.totalAmount}>Rp {calculateTotal().toLocaleString('id-ID')}</Text>
+                            <Text style={styles.totalAmount}>Rp {calculateTotal.toLocaleString('id-ID')}</Text>
                         </View>
-                        <View style={styles.itemCountBadge}>
-                            <Text style={styles.itemCountText}>{totalItems} Item</Text>
+                        <View style={styles.rightInfo}>
+                            <TouchableOpacity
+                                style={styles.clearCartBtn}
+                                onPress={() => setShowClearConfirm(true)}
+                            >
+                                <Trash2 size={14} color="#EF4444" />
+                                <Text style={styles.clearCartText}>Hapus</Text>
+                            </TouchableOpacity>
+                            <View style={styles.itemCountBadge}>
+                                <Text style={styles.itemCountText}>{totalItems} Item</Text>
+                            </View>
                         </View>
                     </View>
 
@@ -406,6 +467,20 @@ const GuestCheckoutScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
             )}
+            {/* Confirmation Dialog */}
+            <ConfirmDialog
+                visible={showClearConfirm}
+                title="Kosongkan Keranjang"
+                message="Bismillah, apakah Anda yakin ingin menghapus semua item dari keranjang?"
+                confirmText="Ya, Hapus"
+                cancelText="Batal"
+                type="danger"
+                onConfirm={() => {
+                    setCart({});
+                    setShowClearConfirm(false);
+                }}
+                onCancel={() => setShowClearConfirm(false)}
+            />
         </View>
     );
 };
@@ -749,6 +824,25 @@ const styles = StyleSheet.create({
         color: '#059669',
         fontSize: 12,
         fontWeight: '800',
+    },
+    rightInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    clearCartBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingVertical: 6,
+        paddingHorizontal: 10,
+        backgroundColor: '#FEF2F2',
+        borderRadius: 8,
+    },
+    clearCartText: {
+        color: '#EF4444',
+        fontSize: 12,
+        fontWeight: '700',
     },
     checkoutBtn: {
         backgroundColor: '#10B981',
