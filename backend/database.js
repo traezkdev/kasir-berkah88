@@ -1751,6 +1751,20 @@ const setupDatabase = async () => {
       console.log('Added image_url column to messages table.');
     }
 
+    // Check and add audio_url column to messages if it doesn't exist
+    const checkAudioUrlMsgColumn = `
+      SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'messages' AND COLUMN_NAME = 'audio_url';
+    `;
+    const addAudioUrlMsgColumn = `
+      ALTER TABLE messages ADD COLUMN audio_url VARCHAR(255) DEFAULT NULL;
+    `;
+    const [msgAudioUrlRows] = await connection.query(checkAudioUrlMsgColumn);
+    if (msgAudioUrlRows[0]['COUNT(*)'] === 0) {
+      await connection.query(addAudioUrlMsgColumn);
+      console.log('Added audio_url column to messages table.');
+    }
+
     // Check and add is_edited column to messages if it doesn't exist
     const checkIsEditedMsgColumn = `
       SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS

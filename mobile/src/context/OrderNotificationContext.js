@@ -513,9 +513,15 @@ export const OrderNotificationProvider = ({ children }) => {
 
             if (shouldNotify) {
                 playNotificationSound();
+                // Tentukan label notifikasi berdasarkan tipe pesan
+                let msgBody = message.message;
+                if (!msgBody && message.audio_url) msgBody = '🎤 Pesan Suara';
+                else if (!msgBody && message.image_url) msgBody = '📷 Gambar';
+                else if (!msgBody) msgBody = '[Pesan]';
+
                 sendLocalNotification(
                     `Pesan dari ${message.sender_name || (isFromCustomer ? 'Pelanggan' : 'Admin')}`,
-                    message.message || '[Gambar]',
+                    msgBody,
                     { type: 'chat', senderId: message.sender_id, orderId: message.order_id }
                 );
             }

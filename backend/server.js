@@ -495,6 +495,45 @@ const processBase64Image = async (base64String, prefix = 'promo') => {
     }
 };
 
+const processBase64Audio = async (base64String, prefix = 'voice') => {
+    if (!base64String) return null;
+
+    const isAudio = base64String.startsWith('data:audio') || base64String.startsWith('data:application/octet-stream');
+    if (!isAudio) return base64String;
+
+    try {
+        // Gunakan indexOf+slice — lebih aman dari regex untuk payload besar
+        const commaIndex = base64String.indexOf(',');
+        if (commaIndex === -1) {
+            console.error('[Audio] Format base64 tidak valid: tidak ada koma pemisah');
+            return null;
+        }
+
+        const header = base64String.substring(0, commaIndex); // e.g. "data:audio/mp4;base64"
+        const rawBase64 = base64String.substring(commaIndex + 1);
+
+        // Ekstrak MIME type dari header
+        const mimeMatch = header.match(/data:([^;]+)/);
+        const mimeType = mimeMatch ? mimeMatch[1] : 'audio/m4a';
+
+        // Tentukan extension dari MIME
+        let extension = mimeType.split('/')[1] || 'm4a';
+        if (extension === 'octet-stream' || extension === 'mpeg') extension = 'm4a';
+        if (extension === 'mp4') extension = 'm4a'; // simpan sebagai .m4a untuk konsistensi
+
+        const data = Buffer.from(rawBase64, 'base64');
+        const fileName = `${prefix}_${Date.now()}.${extension}`;
+        const filePath = path.join(__dirname, 'public', 'uploads', fileName);
+
+        fs.writeFileSync(filePath, data);
+        console.log(`[Audio] File suara disimpan: ${fileName} (${(data.length / 1024).toFixed(1)} KB)`);
+        return `/public/uploads/${fileName}`;
+    } catch (err) {
+        console.error('[Audio] Error memproses audio:', err);
+        return null;
+    }
+};
+
 // API Endpoints
 
 // --- Review Management Endpoints ---
@@ -6678,40 +6717,45 @@ app.post("/api/admin/send-daily-summary", authenticateToken, authorizeRoles('adm
 // Kirim Pesan
 app.post("/api/messages", authenticateToken, async (req, res) => {
     try {
-        const { receiver_id, message, order_id, image_url } = req.body;
+        const { receiver_id, message, order_id, image_url, audio_url } = req.body;
         const sender_id = req.user.userId;
 
-        if (!receiver_id || (!message && !image_url)) {
-            return res.status(400).json({ error: "Receiver ID dan pesan/gambar wajib diisi" });
+        if (!receiver_id || (!message && !image_url && !audio_url)) {
+            return res.status(400).json({ error: "Receiver ID dan pesan/gambar/suara wajib diisi" });
         }
 
-        // Process image if it's base64
+        // Process image/audio if it's base64
         const processedImageUrl = await processBase64Image(image_url, 'chat');
+        const processedAudioUrl = await processBase64Audio(audio_url, 'voice');
+
         const now = new Date();
-        const sql = "INSERT INTO messages (sender_id, receiver_id, message, order_id, image_url, created_at) VALUES (?, ?, ?, ?, ?, ?)";
-        const [result] = await db.query(sql, [sender_id, receiver_id, message || '', order_id || null, processedImageUrl || null, now]);
+        const sql = "INSERT INTO messages (sender_id, receiver_id, message, order_id, image_url, audio_url, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        const [result] = await db.query(sql, [sender_id, receiver_id, message || '', order_id || null, processedImageUrl || null, processedAudioUrl || null, now]);
 
         // Kirim Notifikasi Push
-        // 1. Cek peran penerima
         const [receiverRows] = await db.query("SELECT role FROM users WHERE id = ?", [receiver_id]);
         const receiverRole = receiverRows[0]?.role;
         const sellerRoles = ['admin', 'owner', 'penjual', 'kasir', 'seller'];
 
         let targetUserIds = [receiver_id];
 
-        // 2. Jika pesan ditujukan ke salah satu tim seller, notifikasi ke SELURUH tim seller
         if (sellerRoles.includes(receiverRole)) {
             const [allSellers] = await db.query("SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')");
             targetUserIds = allSellers.map(s => s.id);
         }
 
-        // 3. Jalankan pengiriman notifikasi (kecuali ke pengirim sendiri)
+        // Tentukan label notifikasi
+        let notifLabel = message;
+        if (!notifLabel && processedAudioUrl) notifLabel = '🎤 Pesan Suara';
+        if (!notifLabel && processedImageUrl) notifLabel = '📷 Gambar';
+        if (!notifLabel) notifLabel = '[Pesan]';
+
         sendUniversalNotification(
             targetUserIds,
-            message || '[Gambar]',
+            notifLabel,
             `Pesan dari ${req.user.username}`,
-            { type: 'chat', senderId: sender_id, orderId: order_id, hasImage: !!processedImageUrl },
-            sender_id // excludedUserId
+            { type: 'chat', senderId: sender_id, orderId: order_id, hasImage: !!processedImageUrl, hasAudio: !!processedAudioUrl },
+            sender_id
         );
 
         const io = req.app.get('io');
@@ -6722,26 +6766,20 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
             message,
             order_id,
             image_url: processedImageUrl,
+            audio_url: processedAudioUrl,
             created_at: now,
             sender_role: req.user.role,
             receiver_role: receiverRole,
             sender_name: req.user.username || 'User'
         };
 
-
-        // Emit to specific rooms for better reliability
+        // Emit to specific rooms
         io.to(`user_${receiver_id}`).emit('new_message', messageData);
         io.to(`user_${sender_id}`).emit('new_message', messageData);
 
-        // Jika salah satu (pengirim atau penerima) adalah seller, kirim ke room 'sellers'
-        // agar seluruh tim seller bisa melihat update chat tersebut secara realtime (Shared Inbox)
         if (sellerRoles.includes(receiverRole) || sellerRoles.includes(req.user.role)) {
             io.to('sellers').emit('new_message', messageData);
         }
-
-        // Global broadcast removed to prevent duplicates as we already use room-based emits
-        // io.emit('new_message', messageData); 
-
 
         res.status(201).json({
             message: "Pesan terkirim",
@@ -6916,7 +6954,12 @@ app.get("/api/messages/conversations", authenticateToken, async (req, res) => {
                     u.username, 
                     u.role,
                     u.avatar_url,
-                    m.message as last_message, 
+                    CASE
+                        WHEN m.audio_url IS NOT NULL AND m.audio_url != '' THEN '🎤 Pesan Suara'
+                        WHEN m.image_url IS NOT NULL AND m.image_url != '' AND (m.message IS NULL OR m.message = '') THEN '📷 Gambar'
+                        WHEN m.message IS NOT NULL AND m.message != '' THEN m.message
+                        ELSE 'Mulai percakapan...'
+                    END as last_message, 
                     m.created_at as last_message_time,
                     (SELECT COUNT(*) FROM messages WHERE sender_id = u.id AND receiver_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller')) AND is_read = 0) as unread_count
                 FROM users u
@@ -6931,14 +6974,22 @@ app.get("/api/messages/conversations", authenticateToken, async (req, res) => {
             `;
             params = [];
         } else {
-            // Query Super Akurat (Tanpa Cache)
+            // Query Super Akurat (Tanpa Cache) - Untuk Pelanggan
             sql = `
                 SELECT 
                     SQL_NO_CACHE
                     COALESCE((SELECT id FROM users WHERE role IN ('admin', 'owner', 'penjual', 'kasir', 'seller') LIMIT 1), 1) as user_id, 
                     'Pusat Bantuan (Toko)' as username, 
                     'admin' as role,
-                    (SELECT message FROM messages WHERE (sender_id = ? OR receiver_id = ?) ORDER BY id DESC LIMIT 1) as last_message,
+                    (
+                        SELECT CASE
+                            WHEN audio_url IS NOT NULL AND audio_url != '' THEN '🎤 Pesan Suara'
+                            WHEN image_url IS NOT NULL AND image_url != '' AND (message IS NULL OR message = '') THEN '📷 Gambar'
+                            WHEN message IS NOT NULL AND message != '' THEN message
+                            ELSE 'Mulai percakapan...'
+                        END
+                        FROM messages WHERE (sender_id = ? OR receiver_id = ?) ORDER BY id DESC LIMIT 1
+                    ) as last_message,
                     (SELECT created_at FROM messages WHERE (sender_id = ? OR receiver_id = ?) ORDER BY id DESC LIMIT 1) as last_message_time,
                     COALESCE((SELECT COUNT(*) FROM messages WHERE receiver_id = ? AND is_read = 0), 0) as unread_count
             `;
