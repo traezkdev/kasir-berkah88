@@ -63,7 +63,7 @@ const CallOverlay = () => {
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover',
-                        transform: isLocal ? 'scaleX(-1)' : 'none'
+                        transform: 'scaleX(-1)'
                     }}
                 />
             );
@@ -75,6 +75,7 @@ const CallOverlay = () => {
                 style={isLocal ? styles.localVideo : styles.remoteVideo}
                 objectFit="cover"
                 zOrder={isLocal ? 1 : 0}
+                mirror={true}
             />
         );
     };
