@@ -142,6 +142,8 @@ const CallOverlay = () => {
                             {localStream && localVideoEnabled && (
                                 <View style={styles.localVideoWrapper}>
                                     {renderVideo(localStream, true)}
+                                    {/* Overlay untuk menjamin border melengkung tetap terlihat di atas video native */}
+                                    <View style={styles.localVideoOverlay} pointerEvents="none" />
                                 </View>
                             )}
                         </>
@@ -286,11 +288,16 @@ const styles = StyleSheet.create({
         right: 20,
         width: 120,
         height: 180,
-        borderRadius: 20,
-        overflow: 'hidden',
-        borderWidth: 2,
-        borderColor: 'rgba(255,255,255,0.3)',
         backgroundColor: '#000',
+        zIndex: 100,
+        elevation: 10,
+        overflow: 'hidden',
+    },
+    localVideoOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
+        zIndex: 101, // Pastikan di atas RTCView
     },
     localVideo: {
         width: '100%',
