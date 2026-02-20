@@ -55,7 +55,16 @@ io.on('connection', (socket) => {
         const { userId, role } = userData;
 
         if (!onlineUsers.has(userId)) {
-            onlineUsers.set(userId, { role, sockets: new Set() });
+            onlineUsers.set(userId, {
+                role,
+                name: userData.name || 'Pelanggan',
+                sockets: new Set()
+            });
+        } else {
+            // Update role/name if changed
+            const existing = onlineUsers.get(userId);
+            existing.role = role;
+            if (userData.name) existing.name = userData.name;
         }
         onlineUsers.get(userId).sockets.add(socket.id);
 
@@ -93,6 +102,100 @@ io.on('connection', (socket) => {
                 io.emit('user_status', { userId: socket.userId, role, status: 'offline' });
             }
         }
+    });
+
+    // --- Video/Voice Call Signaling ---
+    socket.on('start_call', async (data) => {
+        const { to, from, callerName, type } = data;
+        const cName = callerName || (onlineUsers.get(from)?.name) || "Pelanggan";
+        console.log(`[Socket] Call started from ${from} (${cName}) to ${to} type: ${type}`);
+
+        let targetRole = null;
+        const targetInfo = onlineUsers.get(to) || onlineUsers.get(Number(to)) || onlineUsers.get(String(to));
+
+        if (targetInfo) {
+            targetRole = targetInfo.role;
+        } else {
+            // Jika target offline, cek database untuk tahu ini seller atau bukan
+            try {
+                const [rows] = await db.query('SELECT role FROM users WHERE id = ?', [to]);
+                if (rows.length > 0) {
+                    targetRole = rows[0].role;
+                }
+            } catch (err) {
+                console.error('[Socket] Error checking user role:', err);
+            }
+        }
+
+        const sellerRoles = ['admin', 'owner', 'penjual', 'kasir'];
+
+        if (targetRole && sellerRoles.includes(targetRole)) {
+            // Jika target adalah seller (online maupun offline), broadcast ke SEMUA seller online
+            io.to('sellers').emit('incoming_call', {
+                callerId: from,
+                callerName: cName,
+                type: type,
+                isGroupCall: true,
+                targetId: to
+            });
+            console.log(`[Socket] Broadcasting call to all sellers room`);
+        } else {
+            // Panggilan personal biasa ke user spesifik
+            io.to(`user_${to}`).emit('incoming_call', {
+                callerId: from,
+                callerName: cName,
+                type: type
+            });
+        }
+    });
+
+    socket.on('accept_call', (data) => {
+        const { to } = data;
+        const acceptedBy = socket.userId;
+        const acceptedName = onlineUsers.get(acceptedBy)?.name || "Staf Berkah";
+
+        console.log(`[Socket] Call accepted by ${acceptedBy} (${acceptedName}) for: ${to}`);
+        io.to(`user_${to}`).emit('call_accepted', {
+            acceptedBy: acceptedBy,
+            acceptedName: acceptedName
+        });
+
+        // Beritahu seller lain bahwa panggilan ini sudah diambil
+        io.to('sellers').emit('call_handled', { by: acceptedBy, callerId: to });
+    });
+
+    socket.on('reject_call', (data) => {
+        const { to } = data;
+        console.log(`[Socket] Call rejected by ${socket.userId} for: ${to}`);
+        io.to(`user_${to}`).emit('call_rejected');
+
+        // Jika ini group call, beritahu seller lain untuk tutup popupnya
+        io.to('sellers').emit('call_handled', { by: socket.userId, callerId: to });
+    });
+
+    socket.on('end_call', (data) => {
+        const { to } = data;
+        console.log(`[Socket] Call ended by ${socket.userId} for: ${to}`);
+        io.to(`user_${to}`).emit('call_ended');
+
+        // Jika pemanggil (customer) menutup, beritahu semua seller agar berhenti berdering
+        io.to('sellers').emit('call_handled', { by: 'caller', callerId: socket.userId });
+    });
+
+    socket.on('call_busy', (data) => {
+        const { to } = data;
+        console.log(`[Socket] User busy for: ${to}`);
+        io.to(`user_${to}`).emit('call_busy');
+    });
+
+    // Event khusus WebRTC (SDP & ICE Candidates)
+    socket.on('webrtc_signal', (data) => {
+        const { to, signal } = data;
+        // Kirim sinyal WebRTC ke target user
+        io.to(`user_${to}`).emit('webrtc_signal', {
+            from: socket.userId,
+            signal: signal
+        });
     });
 });
 

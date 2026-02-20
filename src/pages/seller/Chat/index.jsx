@@ -2,10 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FiMessageCircle, FiSend, FiUser, FiCheck, FiClock,
-    FiSearch, FiArrowLeft, FiMoreVertical, FiShoppingBag, FiX, FiTrash2
+    FiSearch, FiArrowLeft, FiMoreVertical, FiShoppingBag, FiX, FiTrash2,
+    FiPhone, FiVideo
 } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import { useChat } from '../../../contexts/ChatContext';
+import { useCall } from '../../../contexts/CallContext';
 import authFetch from '../../../utils/authFetch';
 import OrderPinWidget from '../../../components/ui/OrderPinWidget';
 import { useNavigate } from 'react-router-dom';

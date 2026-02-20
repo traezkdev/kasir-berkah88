@@ -404,7 +404,11 @@ export const OrderNotificationProvider = ({ children }) => {
 
         newSocket.on('connect', () => {
             console.log('[Socket] Terhubung! ID:', newSocket.id);
-            newSocket.emit('user_connected', { userId: activeUserId, role: user.role });
+            newSocket.emit('user_connected', {
+                userId: activeUserId,
+                role: user.role,
+                name: user.name || user.username || 'User'
+            });
         });
 
         newSocket.on('reconnect', (attemptNumber) => {

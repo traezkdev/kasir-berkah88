@@ -33,13 +33,16 @@ import {
     Camera,
     Download,
     Share2,
-    Pencil
+    Pencil,
+    Phone,
+    Video
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 import { useChat } from '../../context/ChatContext';
+import { useCall } from '../../context/CallContext';
 import apiService, { API_URL } from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -275,6 +278,7 @@ const ChatScreen = ({ navigation }) => {
         setActiveOrder,
         fetchConversations
     } = useChat();
+    const { startCall } = useCall();
     const { onlineUsers, socket, refreshTrigger } = useOrderNotification();
 
     const [messages, setMessages] = useState([]);
@@ -898,9 +902,39 @@ const ChatScreen = ({ navigation }) => {
                             )}
                         </View>
                     </View>
-                    <TouchableOpacity onPress={handleDeleteHistory} style={styles.moreBtn}>
-                        <Trash2 size={20} color="#EF4444" />
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <TouchableOpacity
+                            onPress={() => {
+                                console.log('[ChatScreen] Voice call pressed', activeChat);
+                                if (startCall) {
+                                    startCall(activeChat, 'voice');
+                                } else {
+                                    Alert.alert('Info', 'Fitur telepon sedang disiapkan atau library belum terpasang.');
+                                }
+                            }}
+                            style={[styles.headerActionBtn, { marginRight: 15 }]}
+                            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                        >
+                            <Phone size={22} color="#138FEA" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => {
+                                console.log('[ChatScreen] Video call pressed', activeChat);
+                                if (startCall) {
+                                    startCall(activeChat, 'video');
+                                } else {
+                                    Alert.alert('Info', 'Fitur video call sedang disiapkan atau library belum terpasang.');
+                                }
+                            }}
+                            style={[styles.headerActionBtn, { marginRight: 15 }]}
+                            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                        >
+                            <Video size={22} color="#138FEA" />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={handleDeleteHistory} style={styles.moreBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                            <Trash2 size={20} color="#EF4444" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Body & Input */}
@@ -1556,6 +1590,11 @@ const styles = StyleSheet.create({
     },
     moreBtn: {
         padding: 8,
+    },
+    headerActionBtn: {
+        padding: 5,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     orderWidget: {
         flexDirection: 'row',
