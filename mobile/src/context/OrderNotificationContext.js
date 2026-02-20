@@ -404,7 +404,11 @@ export const OrderNotificationProvider = ({ children }) => {
 
         newSocket.on('connect', () => {
             console.log('[Socket] Terhubung! ID:', newSocket.id);
-            newSocket.emit('user_connected', { userId: activeUserId, role: user.role });
+            newSocket.emit('user_connected', {
+                userId: activeUserId,
+                role: user.role,
+                name: user.name || user.username || 'User'
+            });
         });
 
         newSocket.on('reconnect', (attemptNumber) => {
@@ -509,9 +513,15 @@ export const OrderNotificationProvider = ({ children }) => {
 
             if (shouldNotify) {
                 playNotificationSound();
+                // Tentukan label notifikasi berdasarkan tipe pesan
+                let msgBody = message.message;
+                if (!msgBody && message.audio_url) msgBody = '🎤 Pesan Suara';
+                else if (!msgBody && message.image_url) msgBody = '📷 Gambar';
+                else if (!msgBody) msgBody = '[Pesan]';
+
                 sendLocalNotification(
                     `Pesan dari ${message.sender_name || (isFromCustomer ? 'Pelanggan' : 'Admin')}`,
-                    message.message || '[Gambar]',
+                    msgBody,
                     { type: 'chat', senderId: message.sender_id, orderId: message.order_id }
                 );
             }

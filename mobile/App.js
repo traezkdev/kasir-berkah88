@@ -20,10 +20,12 @@ import { ToastProvider } from './src/context/ToastContext';
 import { OrderNotificationProvider } from './src/context/OrderNotificationContext';
 import { ConfirmProvider } from './src/context/ConfirmContext';
 import { ChatProvider } from './src/context/ChatContext';
+import { CallProvider } from './src/context/CallContext';
 import { CartProvider } from './src/context/CartContext';
 import { AppSettingsProvider } from './src/context/AppSettingsContext';
 
 import AuthWelcomeScreen from './src/screens/AuthWelcomeScreen';
+import CallOverlay from './src/components/CallOverlay';
 
 import GuestCheckoutScreen from './src/screens/customer/GuestCheckoutScreen';
 
@@ -65,6 +67,7 @@ const MainApp = () => {
       ) : (
         <AuthNavigator />
       )}
+      <CallOverlay />
     </View>
   );
 };
@@ -110,7 +113,9 @@ export default function App() {
               <OrderNotificationProvider>
                 <CartProvider>
                   <ChatProvider>
-                    <MainApp />
+                    <CallProvider>
+                      <MainApp />
+                    </CallProvider>
                   </ChatProvider>
                 </CartProvider>
               </OrderNotificationProvider>

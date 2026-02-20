@@ -11,6 +11,7 @@ import DailyWelcomeModal from './components/ui/DailyWelcomeModal';
 import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext';
 import OfflineSyncManager from './components/OfflineSyncManager';
 import ChatWidget from './components/ui/ChatWidget';
+import CallOverlay from './components/Call/CallOverlay';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 import { initOneSignal } from './utils/oneSignal';
@@ -156,6 +157,7 @@ function App() {
         {theme === 'default' && !['/cashier-dashboard', '/', '/transaksi-sederhana'].includes(location.pathname) && <StickyDarkModeToggle />}
         <OfflineSyncManager />
         {showFloatingButton && <ChatWidget />}
+        <CallOverlay />
       </ThemeProvider>
     </AppSettingsProvider>
   );

@@ -33,13 +33,20 @@ import {
     Camera,
     Download,
     Share2,
-    Pencil
+    Pencil,
+    Phone,
+    Video,
+    Mic,
+    StopCircle,
+    PlayCircle
 } from 'lucide-react-native';
+import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 import { useChat } from '../../context/ChatContext';
+import { useCall } from '../../context/CallContext';
 import apiService, { API_URL } from '../../api/apiService';
 import { useAuth } from '../../context/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -50,6 +57,81 @@ import { useIsFocused } from '@react-navigation/native';
 import AppImage from '../../components/AppImage';
 
 // --- WHATSAPP-STYLE OPTIMIZATIONS ---
+
+// Audio Voice Note Player Component
+const VoiceNotePlayer = memo(({ audioUrl, isMine }) => {
+    const [sound, setSound] = useState(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const fullAudioUrl = audioUrl
+        ? ((audioUrl.startsWith('http') || audioUrl.startsWith('data:'))
+            ? audioUrl
+            : `${API_URL}${audioUrl.startsWith('/') ? '' : '/'}${audioUrl}`)
+        : null;
+
+    const togglePlay = async () => {
+        if (!fullAudioUrl) return;
+        try {
+            if (isPlaying && sound) {
+                await sound.pauseAsync();
+                setIsPlaying(false);
+                return;
+            }
+            if (sound) {
+                const status = await sound.getStatusAsync();
+                if (status.isLoaded) {
+                    if (status.positionMillis >= status.durationMillis) {
+                        await sound.setPositionAsync(0);
+                    }
+                    await sound.playAsync();
+                    setIsPlaying(true);
+                    return;
+                }
+            }
+            setIsLoading(true);
+            await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+            const { sound: newSound } = await Audio.Sound.createAsync(
+                { uri: fullAudioUrl },
+                { shouldPlay: true }
+            );
+            newSound.setOnPlaybackStatusUpdate((status) => {
+                if (status.didJustFinish) setIsPlaying(false);
+            });
+            setSound(newSound);
+            setIsPlaying(true);
+        } catch (e) {
+            console.error('[VoiceNote] Error playing audio:', e);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        return () => { sound?.unloadAsync(); };
+    }, [sound]);
+
+    return (
+        <TouchableOpacity onPress={togglePlay} style={styles.voiceNoteContainer}>
+            {isLoading ? (
+                <ActivityIndicator size="small" color={isMine ? '#fff' : '#138FEA'} />
+            ) : isPlaying ? (
+                <StopCircle size={28} color={isMine ? '#fff' : '#138FEA'} />
+            ) : (
+                <PlayCircle size={28} color={isMine ? '#fff' : '#138FEA'} />
+            )}
+            <View style={[styles.voiceWaveform, isMine && styles.voiceWaveformMine]}>
+                {[4, 8, 14, 10, 6, 12, 8, 4, 10, 6].map((h, i) => (
+                    <View key={i} style={[
+                        styles.voiceBar,
+                        { height: isPlaying ? h * 1.5 : h },
+                        isMine ? styles.voiceBarMine : styles.voiceBarTheir
+                    ]} />
+                ))}
+            </View>
+            <Mic size={14} color={isMine ? 'rgba(255,255,255,0.7)' : '#94A3B8'} style={{ marginLeft: 4 }} />
+        </TouchableOpacity>
+    );
+});
 
 // 1. Optimistic Message Item with minimal re-renders
 const MessageItem = memo(({ item, isMine, formatTime, onImagePress, onLongPress, refreshKey }) => {
@@ -92,6 +174,9 @@ const MessageItem = memo(({ item, isMine, formatTime, onImagePress, onLongPress,
                         />
                     </TouchableOpacity>
                 )}
+                {item.audio_url && (
+                    <VoiceNotePlayer audioUrl={item.audio_url} isMine={isMine} />
+                )}
                 {item.message ? (
                     <Text style={[styles.messageText, isMine ? styles.myMsgText : styles.theirMsgText]}>
                         {item.message}
@@ -131,6 +216,7 @@ const MessageItem = memo(({ item, isMine, formatTime, onImagePress, onLongPress,
         prevProps.item.sending === nextProps.item.sending &&
         prevProps.item.message === nextProps.item.message &&
         prevProps.item.image_url === nextProps.item.image_url &&
+        prevProps.item.audio_url === nextProps.item.audio_url &&
         prevProps.item.is_edited === nextProps.item.is_edited;
 });
 
@@ -178,6 +264,10 @@ const ConversationItem = memo(({ item, isActive, onPress, onLongPress, getDispla
 const ChatInput = memo(({ onSendMessage, onPickImage, themeColor, editMode, initialValue, onCancelEdit }) => {
     const [localMessage, setLocalMessage] = useState('');
     const [isSendingLocal, setIsSendingLocal] = useState(false);
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordingDuration, setRecordingDuration] = useState(0);
+    const recordingRef = useRef(null);
+    const recordingTimerRef = useRef(null);
 
     // Sync local state when entering edit mode
     useEffect(() => {
@@ -188,15 +278,25 @@ const ChatInput = memo(({ onSendMessage, onPickImage, themeColor, editMode, init
         }
     }, [editMode, initialValue]);
 
+    // Cleanup recording on unmount
+    useEffect(() => {
+        return () => {
+            if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+            if (recordingRef.current) {
+                recordingRef.current.stopAndUnloadAsync().catch(() => { });
+            }
+        };
+    }, []);
+
     const handleSend = async () => {
         if (!localMessage.trim() || isSendingLocal) return;
 
         const messageText = localMessage.trim();
         setIsSendingLocal(true);
 
-        const success = await onSendMessage(messageText);
+        const success = await onSendMessage(messageText, null);
         if (success) {
-            setLocalMessage(''); // Clear only on success for manual sends
+            setLocalMessage('');
         }
         setIsSendingLocal(false);
     };
@@ -207,6 +307,121 @@ const ChatInput = memo(({ onSendMessage, onPickImage, themeColor, editMode, init
         await onPickImage();
         setIsSendingLocal(false);
     };
+
+    const startRecording = async () => {
+        if (isRecording || editMode || isSendingLocal) return;
+        try {
+            const { status } = await Audio.requestPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Izin Ditolak', 'Butuh izin mikrofon untuk merekam suara.');
+                return;
+            }
+            await Audio.setAudioModeAsync({
+                allowsRecordingIOS: true,
+                playsInSilentModeIOS: true,
+            });
+            const { recording } = await Audio.Recording.createAsync(
+                Audio.RecordingOptionsPresets.HIGH_QUALITY
+            );
+            recordingRef.current = recording;
+            setIsRecording(true);
+            setRecordingDuration(0);
+            recordingTimerRef.current = setInterval(() => {
+                setRecordingDuration(d => d + 1);
+            }, 1000);
+        } catch (e) {
+            console.error('[Voice] Gagal mulai rekam:', e);
+            Alert.alert('Error', 'Gagal memulai perekaman');
+        }
+    };
+
+    const stopRecordingAndSend = async () => {
+        if (!isRecording || !recordingRef.current) return;
+        clearInterval(recordingTimerRef.current);
+        setIsRecording(false);
+        setRecordingDuration(0);
+        setIsSendingLocal(true);
+        try {
+            let uri;
+
+            if (Platform.OS === 'web') {
+                // Di web: getURI() hanya tersedia SETELAH rekaman dihentikan
+                await recordingRef.current.stopAndUnloadAsync();
+                uri = recordingRef.current.getURI();
+            } else {
+                // Di native: ambil URI SEBELUM stop — setelah unload, URI bisa null
+                uri = recordingRef.current.getURI();
+                await recordingRef.current.stopAndUnloadAsync();
+            }
+
+            recordingRef.current = null;
+            console.log('[Voice] URI rekaman:', uri);
+
+            if (!uri) throw new Error('URI rekaman tidak ditemukan');
+
+            let base64Audio;
+            if (Platform.OS === 'web') {
+                // Di web, URI adalah blob URL — gunakan fetch untuk konversi ke base64
+                const response = await fetch(uri);
+                const blob = await response.blob();
+                base64Audio = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+                console.log('[Voice] Web base64Audio prefix:', base64Audio?.substring(0, 50));
+            } else {
+                // Di native (Android/iOS), gunakan expo-file-system
+                const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+                const mimeType = Platform.OS === 'android' ? 'audio/mp4' : 'audio/m4a';
+                base64Audio = `data:${mimeType};base64,${base64}`;
+                console.log('[Voice] Native base64Audio prefix:', base64Audio?.substring(0, 50));
+            }
+
+            await onSendMessage('', null, base64Audio);
+        } catch (e) {
+            console.error('[Voice] Gagal kirim suara:', e);
+            Alert.alert('Error', 'Gagal mengirim pesan suara: ' + e.message);
+        } finally {
+            setIsSendingLocal(false);
+        }
+    };
+
+    const cancelRecording = async () => {
+        if (!isRecording || !recordingRef.current) return;
+        clearInterval(recordingTimerRef.current);
+        try {
+            await recordingRef.current.stopAndUnloadAsync();
+        } catch (e) { /* ignore */ }
+        recordingRef.current = null;
+        setIsRecording(false);
+        setRecordingDuration(0);
+    };
+
+    const formatDuration = (s) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
+
+    if (isRecording) {
+        return (
+            <View style={styles.recordingArea}>
+                <TouchableOpacity onPress={cancelRecording} style={styles.recordCancelBtn}>
+                    <X size={22} color="#EF4444" />
+                </TouchableOpacity>
+                <View style={styles.recordingInfo}>
+                    <View style={styles.recordingDot} />
+                    <Text style={styles.recordingTimer}>{formatDuration(recordingDuration)}</Text>
+                    <Text style={styles.recordingLabel}>Sedang merekam...</Text>
+                </View>
+                <TouchableOpacity onPress={stopRecordingAndSend} style={styles.recordSendBtn}>
+                    {isSendingLocal ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                        <Send size={20} color="#FFFFFF" />
+                    )}
+                </TouchableOpacity>
+            </View>
+        );
+    }
 
     return (
         <View>
@@ -239,22 +454,32 @@ const ChatInput = memo(({ onSendMessage, onPickImage, themeColor, editMode, init
                     editable={!isSendingLocal}
                     autoFocus={editMode}
                 />
-                <TouchableOpacity
-                    style={[
-                        styles.sendBtn,
-                        (!localMessage.trim() && !isSendingLocal) && styles.sendBtnDisabled,
-                        isSendingLocal && { opacity: 0.8 },
-                        editMode && { backgroundColor: '#10B981' }
-                    ]}
-                    onPress={handleSend}
-                    disabled={!localMessage.trim() || isSendingLocal}
-                >
-                    {isSendingLocal ? (
-                        <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                        editMode ? <Check size={20} color="#FFFFFF" /> : <Send size={20} color="#FFFFFF" />
-                    )}
-                </TouchableOpacity>
+                {!localMessage.trim() && !editMode ? (
+                    <TouchableOpacity
+                        style={[styles.micBtn, isSendingLocal && { opacity: 0.5 }]}
+                        onPress={startRecording}
+                        disabled={isSendingLocal}
+                    >
+                        <Mic size={22} color="#FFFFFF" />
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity
+                        style={[
+                            styles.sendBtn,
+                            (!localMessage.trim() && !isSendingLocal) && styles.sendBtnDisabled,
+                            isSendingLocal && { opacity: 0.8 },
+                            editMode && { backgroundColor: '#10B981' }
+                        ]}
+                        onPress={handleSend}
+                        disabled={!localMessage.trim() || isSendingLocal}
+                    >
+                        {isSendingLocal ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                            editMode ? <Check size={20} color="#FFFFFF" /> : <Send size={20} color="#FFFFFF" />
+                        )}
+                    </TouchableOpacity>
+                )}
             </View>
         </View>
     );
@@ -275,6 +500,7 @@ const ChatScreen = ({ navigation }) => {
         setActiveOrder,
         fetchConversations
     } = useChat();
+    const { startCall } = useCall();
     const { onlineUsers, socket, refreshTrigger } = useOrderNotification();
 
     const [messages, setMessages] = useState([]);
@@ -340,8 +566,8 @@ const ChatScreen = ({ navigation }) => {
     }, [editingMsgData, showToast]);
 
     // WhatsApp-style: Optimistic message sending
-    const handleSendMessage = useCallback(async (text = '', base64Image = null) => {
-        if ((!text.trim() && !base64Image) || !activeChat) return false;
+    const handleSendMessage = useCallback(async (text = '', base64Image = null, base64Audio = null) => {
+        if ((!text.trim() && !base64Image && !base64Audio) || !activeChat) return false;
 
         // Jika sedang mode edit, panggil fungsi update
         if (isEditing && editingMsgData) {
@@ -355,9 +581,10 @@ const ChatScreen = ({ navigation }) => {
             receiver_id: activeChat.user_id,
             message: text.trim(),
             image_url: base64Image,
+            audio_url: base64Audio,
             created_at: new Date().toISOString(),
             is_read: false,
-            sending: true, // Flag for pending state
+            sending: true,
             sender_name: user?.username || 'Saya'
         };
 
@@ -374,7 +601,8 @@ const ChatScreen = ({ navigation }) => {
                 receiver_id: activeChat.user_id,
                 message: text.trim(),
                 order_id: activeOrder?.id,
-                image_url: base64Image
+                image_url: base64Image,
+                audio_url: base64Audio
             });
 
             if (res.data && res.data.data) {
@@ -898,9 +1126,39 @@ const ChatScreen = ({ navigation }) => {
                             )}
                         </View>
                     </View>
-                    <TouchableOpacity onPress={handleDeleteHistory} style={styles.moreBtn}>
-                        <Trash2 size={20} color="#EF4444" />
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <TouchableOpacity
+                            onPress={() => {
+                                console.log('[ChatScreen] Voice call pressed', activeChat);
+                                if (startCall) {
+                                    startCall(activeChat, 'voice');
+                                } else {
+                                    Alert.alert('Info', 'Fitur telepon sedang disiapkan atau library belum terpasang.');
+                                }
+                            }}
+                            style={[styles.headerActionBtn, { marginRight: 15 }]}
+                            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                        >
+                            <Phone size={22} color="#138FEA" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => {
+                                console.log('[ChatScreen] Video call pressed', activeChat);
+                                if (startCall) {
+                                    startCall(activeChat, 'video');
+                                } else {
+                                    Alert.alert('Info', 'Fitur video call sedang disiapkan atau library belum terpasang.');
+                                }
+                            }}
+                            style={[styles.headerActionBtn, { marginRight: 15 }]}
+                            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                        >
+                            <Video size={22} color="#138FEA" />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={handleDeleteHistory} style={styles.moreBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                            <Trash2 size={20} color="#EF4444" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Body & Input */}
@@ -1557,6 +1815,11 @@ const styles = StyleSheet.create({
     moreBtn: {
         padding: 8,
     },
+    headerActionBtn: {
+        padding: 5,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     orderWidget: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -1729,6 +1992,87 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: '#64748B',
         fontStyle: 'italic',
+    },
+    // --- Voice Note Styles ---
+    micBtn: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: '#138FEA',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    recordingArea: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        backgroundColor: '#FEF2F2',
+        borderTopWidth: 1,
+        borderTopColor: '#FECACA',
+        gap: 10,
+    },
+    recordCancelBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#FEE2E2',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    recordingInfo: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    recordingDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#EF4444',
+    },
+    recordingTimer: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#EF4444',
+    },
+    recordingLabel: {
+        fontSize: 13,
+        color: '#94A3B8',
+    },
+    recordSendBtn: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: '#138FEA',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    voiceNoteContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 4,
+        minWidth: 160,
+        gap: 6,
+    },
+    voiceWaveform: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+    },
+    voiceWaveformMine: {},
+    voiceBar: {
+        width: 3,
+        borderRadius: 2,
+    },
+    voiceBarMine: {
+        backgroundColor: 'rgba(255,255,255,0.8)',
+    },
+    voiceBarTheir: {
+        backgroundColor: '#94A3B8',
     },
 });
 

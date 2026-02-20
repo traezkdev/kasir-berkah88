@@ -10,6 +10,7 @@ import { ThemeProvider as LayoutThemeProvider } from './contexts/ThemeContext';
 import { DarkModeProvider } from './contexts/DarkModeContext';
 import { OrderNotificationProvider } from './contexts/OrderNotificationContext';
 import { ChatProvider } from './contexts/ChatContext';
+import { CallProvider } from './contexts/CallContext';
 import { ToastProvider } from './components/ui/ToastNotification';
 
 // Easter egg for the developer console
@@ -27,9 +28,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <LayoutThemeProvider>
             <OrderNotificationProvider>
               <ChatProvider>
-                <ToastProvider>
-                  <App />
-                </ToastProvider>
+                <CallProvider>
+                  <ToastProvider>
+                    <App />
+                  </ToastProvider>
+                </CallProvider>
               </ChatProvider>
             </OrderNotificationProvider>
           </LayoutThemeProvider>
