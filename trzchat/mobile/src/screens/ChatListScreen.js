@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, TextInput, ActivityIndicator, RefreshControl, Keyboard } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useNavigation, DrawerActions, useIsFocused } from '@react-navigation/native';
@@ -20,9 +20,9 @@ const ChatListScreen = () => {
     const isFocused = useIsFocused();
     const [socket, setSocket] = useState(null);
 
-    const fetchChats = async () => {
+    const fetchChats = useCallback(async () => {
         try {
-            await getToken(); // Ensure header is set
+            await getToken();
             const response = await axios.get(`${API_URL}/chats`);
             setChats(response.data);
         } catch (error) {
@@ -31,9 +31,9 @@ const ChatListScreen = () => {
             setLoading(false);
             setRefreshing(false);
         }
-    };
+    }, []);
 
-    const handleSearch = async (text) => {
+    const handleSearch = useCallback(async (text) => {
         setSearchQuery(text);
         if (text.length > 2) {
             setIsSearching(true);
@@ -48,115 +48,186 @@ const ChatListScreen = () => {
             setIsSearching(false);
             setSearchResults([]);
         }
-    };
+    }, []);
 
-    const startChat = async (userId) => {
+    const startChat = useCallback(async (userId) => {
         try {
             await getToken();
             const response = await axios.post(`${API_URL}/chats`, { userId });
             const { chatId } = response.data;
 
-            // Re-fetch chats and navigate to the detail
             setIsSearching(false);
             setSearchQuery('');
             await fetchChats();
 
-            // Find the chat object to pass to detail
             const chatObj = chats.find(c => c.id === chatId) || { id: chatId };
             navigation.navigate('ChatDetail', { chat: chatObj });
         } catch (error) {
             console.error('Error starting chat:', error);
         }
-    };
+    }, [chats, fetchChats, navigation]);
 
     useEffect(() => {
         if (isFocused) {
             fetchChats();
         }
-    }, [isFocused]);
+    }, [isFocused, fetchChats]);
 
     useEffect(() => {
-        const newSocket = io(SOCKET_URL, {
-            transports: ['websocket', 'polling']
-        });
-        setSocket(newSocket);
-
-        newSocket.on('connect', () => {
-            console.log('ChatList Socket Connected');
-        });
-
-        newSocket.on('new-message', (newMessage) => {
-            // Update the specific chat in the list with the new message
-            setChats(prevChats => {
-                const updatedChats = prevChats.map(chat => {
-                    if (chat.id === newMessage.chat_id) {
-                        return {
-                            ...chat,
-                            last_message: newMessage.text,
-                            last_message_time: newMessage.created_at
-                        };
-                    }
-                    return chat;
-                });
-                // Re-sort the list to put the newest at the top
-                return updatedChats.sort((a, b) => new Date(b.last_message_time) - new Date(a.last_message_time));
+        const initSocket = async () => {
+            const token = await getToken();
+            const newSocket = io(SOCKET_URL, {
+                transports: ['websocket', 'polling'],
+                auth: { token }
             });
-        });
+            setSocket(newSocket);
+
+            newSocket.on('connect', () => {
+                console.log('ChatList Socket Connected');
+            });
+
+            const decoded = JSON.parse(atob(token.split('.')[1]));
+            const currentUserId = decoded.id;
+
+            newSocket.on('new-message', (newMessage) => {
+                // When on the list screen, message is DELIVERED but not yet read
+                newSocket.emit('message-delivered', { messageId: newMessage.id, chatId: newMessage.chat_id });
+
+                const isFromOther = newMessage.sender_id !== currentUserId;
+
+                setChats(prevChats => {
+                    const updatedChats = prevChats.map(chat => {
+                        if (String(chat.id) === String(newMessage.chat_id)) {
+                            return {
+                                ...chat,
+                                last_message: newMessage.text,
+                                last_message_time: newMessage.created_at,
+                                unread_count: isFromOther ? (chat.unread_count || 0) + 1 : (chat.unread_count || 0)
+                            };
+                        }
+                        return chat;
+                    });
+                    return updatedChats.sort((a, b) => new Date(b.last_message_time) - new Date(a.last_message_time));
+                });
+            });
+
+            newSocket.on('messages-read', ({ chatId }) => {
+                setChats(prevChats => {
+                    return prevChats.map(chat => {
+                        if (chat.id === chatId) {
+                            return { ...chat, unread_count: 0 };
+                        }
+                        return chat;
+                    });
+                });
+            });
+
+            newSocket.on('user-status-changed', ({ userId, status }) => {
+                setChats(prevChats => {
+                    return prevChats.map(chat => {
+                        if (chat.otherUser && chat.otherUser.id === userId) {
+                            return {
+                                ...chat,
+                                otherUser: {
+                                    ...chat.otherUser,
+                                    online: status
+                                }
+                            };
+                        }
+                        return chat;
+                    });
+                });
+            });
+        };
+
+        initSocket();
 
         return () => {
-            newSocket.disconnect();
+            if (socket) socket.disconnect();
         };
     }, []);
 
-    // Join rooms for all chats to receive updates
+    const roomsJoined = useRef(new Set());
     useEffect(() => {
         if (socket && chats.length > 0) {
             chats.forEach(chat => {
-                socket.emit('join-chat', chat.id);
+                if (!roomsJoined.current.has(chat.id)) {
+                    socket.emit('join-chat', chat.id);
+                    roomsJoined.current.add(chat.id);
+                }
             });
         }
     }, [chats, socket]);
 
-    const onRefresh = () => {
+    const onRefresh = useCallback(() => {
         setRefreshing(true);
         fetchChats();
-    };
+    }, [fetchChats]);
 
-    const renderItem = ({ item }) => {
+    const ChatItem = memo(({ item, onNavigate }) => {
         const otherUser = item.otherUser || {};
+        const time = item.last_message_time
+            ? new Date(item.last_message_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : '';
+
         return (
             <TouchableOpacity
                 style={styles.chatItem}
-                onPress={() => navigation.navigate('ChatDetail', { chat: { ...item, name: otherUser.name, avatar: otherUser.avatar, online: otherUser.online } })}
+                onPress={() => onNavigate(item)}
             >
                 <View style={styles.avatarContainer}>
-                    <Image source={{ uri: otherUser.avatar || 'https://i.pravatar.cc/150' }} style={styles.avatar} />
+                    <Image source={{ uri: otherUser.avatar || 'https://ui-avatars.com/api/?name=' + (otherUser.name || 'User') }} style={styles.avatar} />
                     {otherUser.online === 'online' && <View style={styles.onlineBadge} />}
                 </View>
                 <View style={styles.chatInfo}>
                     <View style={styles.chatHeader}>
                         <Text style={styles.chatName}>{otherUser.name}</Text>
-                        <Text style={styles.chatTime}>{item.last_message_time ? new Date(item.last_message_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</Text>
+                        <Text style={styles.chatTime}>{time}</Text>
                     </View>
                     <View style={styles.chatFooter}>
                         <Text style={styles.lastMessage} numberOfLines={1}>
                             {item.last_message || 'Belum ada pesan'}
                         </Text>
+                        {item.unread_count > 0 && (
+                            <View style={styles.unreadBadge}>
+                                <Text style={styles.unreadText}>{item.unread_count > 99 ? '99+' : item.unread_count}</Text>
+                            </View>
+                        )}
                     </View>
                 </View>
             </TouchableOpacity>
         );
-    };
+    });
 
-    const renderSearchResult = ({ item }) => (
-        <TouchableOpacity style={styles.chatItem} onPress={() => startChat(item.id)}>
-            <Image source={{ uri: item.avatar || 'https://i.pravatar.cc/150' }} style={styles.avatar} />
+    const SearchItem = memo(({ item, onStartChat }) => (
+        <TouchableOpacity style={styles.chatItem} onPress={() => onStartChat(item.id)}>
+            <Image source={{ uri: item.avatar || 'https://ui-avatars.com/api/?name=' + (item.full_name || 'User') }} style={styles.avatar} />
             <View style={styles.chatInfo}>
                 <Text style={styles.chatName}>{item.full_name}</Text>
                 <Text style={styles.lastMessage}>@{item.username}</Text>
             </View>
         </TouchableOpacity>
-    );
+    ));
+
+    const handleNavigate = useCallback((item) => {
+        const otherUser = item.otherUser || {};
+        navigation.navigate('ChatDetail', {
+            chat: {
+                ...item,
+                name: otherUser.name,
+                avatar: otherUser.avatar,
+                online: otherUser.online
+            }
+        });
+    }, [navigation]);
+
+    const renderItem = useCallback(({ item }) => (
+        <ChatItem item={item} onNavigate={handleNavigate} />
+    ), [handleNavigate]);
+
+    const renderSearchResult = useCallback(({ item }) => (
+        <SearchItem item={item} onStartChat={startChat} />
+    ), [startChat]);
 
     return (
         <View style={styles.container}>
@@ -205,6 +276,10 @@ const ChatListScreen = () => {
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0088cc']} />
                     }
                     ListEmptyComponent={<Text style={styles.emptyText}>Belum ada percakapan</Text>}
+                    removeClippedSubviews={true}
+                    initialNumToRender={10}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
                 />
             )}
 

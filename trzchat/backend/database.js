@@ -30,7 +30,8 @@ async function initDB() {
         full_name VARCHAR(255),
         phone VARCHAR(20),
         avatar VARCHAR(255),
-        status VARCHAR(255) DEFAULT 'online',
+        status VARCHAR(20) DEFAULT 'offline',
+        last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -46,6 +47,10 @@ async function initDB() {
         if (!columnNames.includes('phone')) {
             await connection.query(`ALTER TABLE users ADD COLUMN phone VARCHAR(20) AFTER full_name`);
             console.log('Added phone column to users table');
+        }
+        if (!columnNames.includes('last_seen')) {
+            await connection.query(`ALTER TABLE users ADD COLUMN last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP AFTER status`);
+            console.log('Added last_seen column to users table');
         }
 
         await connection.query(`
@@ -65,13 +70,43 @@ async function initDB() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         chat_id INT,
         sender_id INT,
+        reply_to INT NULL,
         text TEXT,
         type ENUM('text', 'image', 'audio', 'file') DEFAULT 'text',
+        is_edited BOOLEAN DEFAULT FALSE,
+        is_deleted BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (chat_id) REFERENCES chats(id),
-        FOREIGN KEY (sender_id) REFERENCES users(id)
+        FOREIGN KEY (sender_id) REFERENCES users(id),
+        FOREIGN KEY (reply_to) REFERENCES messages(id) ON DELETE SET NULL
       )
     `);
+
+        // Migration: Add columns to messages table
+        const [existingMsgColumns] = await connection.query(`SHOW COLUMNS FROM messages`);
+        const msgColumnNames = existingMsgColumns.map(c => c.Field);
+
+        if (!msgColumnNames.includes('reply_to')) {
+            await connection.query(`ALTER TABLE messages ADD COLUMN reply_to INT NULL AFTER sender_id`);
+            await connection.query(`ALTER TABLE messages ADD CONSTRAINT fk_reply_to FOREIGN KEY (reply_to) REFERENCES messages(id) ON DELETE SET NULL`);
+            console.log('Added reply_to column to messages table');
+        }
+        if (!msgColumnNames.includes('is_edited')) {
+            await connection.query(`ALTER TABLE messages ADD COLUMN is_edited BOOLEAN DEFAULT FALSE AFTER type`);
+            console.log('Added is_edited column to messages table');
+        }
+        if (!msgColumnNames.includes('is_deleted')) {
+            await connection.query(`ALTER TABLE messages ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE AFTER is_edited`);
+            console.log('Added is_deleted column to messages table');
+        }
+        if (!msgColumnNames.includes('audio_url')) {
+            await connection.query(`ALTER TABLE messages ADD COLUMN audio_url VARCHAR(500) NULL AFTER text`);
+            console.log('Added audio_url column to messages table');
+        }
+        if (!msgColumnNames.includes('status')) {
+            await connection.query(`ALTER TABLE messages ADD COLUMN status ENUM('sent', 'delivered', 'read') DEFAULT 'sent' AFTER is_deleted`);
+            console.log('Added status column to messages table');
+        }
 
         await connection.query(`
       CREATE TABLE IF NOT EXISTS chat_participants (

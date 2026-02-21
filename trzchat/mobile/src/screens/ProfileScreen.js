@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, User, Mail, Phone, Calendar, Edit3, Camera, LogOut, Check, X } from 'lucide-react-native';
@@ -21,13 +22,13 @@ const ProfileScreen = () => {
     const [editUsername, setEditUsername] = useState('');
     const [editEmail, setEditEmail] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
-    const fetchProfile = async () => {
+    const fetchProfile = useCallback(async () => {
         try {
             await getToken();
             const response = await axios.get(`${API_URL}/users/profile`);
             setProfile(response.data);
-            // Initialize edit states
             setEditFullName(response.data.full_name);
             setEditPhone(response.data.phone || '');
             setEditUsername(response.data.username);
@@ -38,7 +39,7 @@ const ProfileScreen = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchProfile();
@@ -65,7 +66,7 @@ const ProfileScreen = () => {
         );
     };
 
-    const handleSaveProfile = async () => {
+    const handleSaveProfile = useCallback(async () => {
         if (!editFullName.trim() || !editUsername.trim() || !editEmail.trim()) {
             Alert.alert('Error', 'Nama, Username, dan Email tidak boleh kosong');
             return;
@@ -79,18 +80,81 @@ const ProfileScreen = () => {
                 phone: editPhone,
                 username: editUsername,
                 email: editEmail,
-                avatar: profile.avatar // Keep current avatar for now
+                avatar: profile?.avatar
             });
 
             Alert.alert('Sukses', 'Profil berhasil diperbarui');
             setEditModalVisible(false);
-            fetchProfile(); // Refresh data
+            fetchProfile();
         } catch (error) {
             console.error('Error saving profile:', error);
             const message = error.response?.data?.message || 'Gagal memperbarui profil';
             Alert.alert('Error', message);
         } finally {
             setIsSaving(false);
+        }
+    }, [editFullName, editUsername, editEmail, editPhone, profile?.avatar, fetchProfile]);
+
+    const handlePickImage = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permission Denied', 'Mohon izinkan akses galeri untuk mengganti foto profil.');
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+
+        if (!result.canceled) {
+            uploadAvatar(result.assets[0].uri);
+        }
+    };
+
+    const uploadAvatar = async (uri) => {
+        setIsUploadingAvatar(true);
+        try {
+            const token = await getToken();
+            const formData = new FormData();
+
+            if (Platform.OS === 'web') {
+                const response = await fetch(uri);
+                const blob = await response.blob();
+                formData.append('avatar', blob, 'avatar.jpg');
+            } else {
+                const uriParts = uri.split('/');
+                const fileName = uriParts[uriParts.length - 1];
+                const fileType = fileName.split('.').pop();
+
+                formData.append('avatar', {
+                    uri: Platform.OS === 'ios' ? uri.replace('file://', '') : uri,
+                    name: fileName,
+                    type: `image/${fileType}`,
+                });
+            }
+
+            const headers = {
+                'Authorization': `Bearer ${token}`
+            };
+
+            if (Platform.OS !== 'web') {
+                headers['Content-Type'] = 'multipart/form-data';
+            }
+
+            const response = await axios.post(`${API_URL}/users/upload-avatar`, formData, {
+                headers: headers,
+            });
+
+            Alert.alert('Sukses', 'Foto profil berhasil diperbarui');
+            fetchProfile(); // Refresh for new avatar URL
+        } catch (error) {
+            console.error('Upload error:', error);
+            Alert.alert('Error', 'Gagal mengunggah foto profil');
+        } finally {
+            setIsUploadingAvatar(false);
         }
     };
 
@@ -121,11 +185,19 @@ const ProfileScreen = () => {
                 <View style={styles.profileSection}>
                     <View style={styles.imageWrapper}>
                         <Image
-                            source={{ uri: profile?.avatar || 'https://i.pravatar.cc/300' }}
+                            source={{ uri: profile?.avatar || 'https://ui-avatars.com/api/?name=' + (profile?.full_name || 'User') }}
                             style={styles.profileImage}
                         />
-                        <TouchableOpacity style={styles.cameraIcon}>
-                            <Camera size={20} color="#fff" />
+                        <TouchableOpacity
+                            style={styles.cameraIcon}
+                            onPress={handlePickImage}
+                            disabled={isUploadingAvatar}
+                        >
+                            {isUploadingAvatar ? (
+                                <ActivityIndicator size="small" color="#fff" />
+                            ) : (
+                                <Camera size={20} color="#fff" />
+                            )}
                         </TouchableOpacity>
                     </View>
                     <Text style={styles.fullName}>{profile?.full_name}</Text>
@@ -248,7 +320,7 @@ const ProfileScreen = () => {
     );
 };
 
-const InfoItem = ({ icon, label, value }) => (
+const InfoItem = memo(({ icon, label, value }) => (
     <View style={styles.infoItem}>
         <View style={styles.infoIconWrapper}>
             {icon}
@@ -258,7 +330,7 @@ const InfoItem = ({ icon, label, value }) => (
             <Text style={styles.infoValue}>{value}</Text>
         </View>
     </View>
-);
+));
 
 const styles = StyleSheet.create({
     container: {

@@ -4,6 +4,9 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 const { initDB, pool } = require('./database');
 
@@ -17,9 +20,38 @@ const io = new Server(server, {
 });
 const PORT = process.env.PORT || 5000;
 
+// Socket.io Middleware for Authentication
+io.use((socket, next) => {
+    const token = socket.handshake.auth.token;
+    if (!token) {
+        return next(new Error('Authentication error: No token provided'));
+    }
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) return next(new Error('Authentication error: Invalid token'));
+        socket.userId = decoded.id;
+        next();
+    });
+});
+
+const onlineUsers = new Map(); // userId -> Set of socketIds
+
 // Socket.io Logic
-io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
+io.on('connection', async (socket) => {
+    const userId = socket.userId;
+    console.log(`User ${userId} connected with socket ${socket.id}`);
+
+    // Track user sockets
+    if (!onlineUsers.has(userId)) {
+        onlineUsers.set(userId, new Set());
+        // First connection for this user - set to online
+        try {
+            await pool.query('UPDATE users SET status = "online" WHERE id = ?', [userId]);
+            io.emit('user-status-changed', { userId, status: 'online' });
+        } catch (error) {
+            console.error('Error updating user status to online:', error);
+        }
+    }
+    onlineUsers.get(userId).add(socket.id);
 
     socket.on('join-chat', (chatId) => {
         const roomName = `chat_${chatId}`;
@@ -27,16 +59,112 @@ io.on('connection', (socket) => {
         console.log(`Socket ${socket.id} joined room: ${roomName}`);
     });
 
-    socket.on('disconnect', (reason) => {
-        console.log(`User disconnected: ${socket.id} (Reason: ${reason})`);
+    socket.on('mark-as-read', async ({ chatId }) => {
+        try {
+            await pool.query(
+                'UPDATE messages SET status = "read" WHERE chat_id = ? AND sender_id != ? AND status != "read"',
+                [chatId, userId]
+            );
+            io.to(`chat_${chatId}`).emit('messages-read', { chatId, readerId: userId });
+        } catch (error) {
+            console.error('Error marking messages as read:', error);
+        }
+    });
+
+    socket.on('message-delivered', async ({ messageId, chatId }) => {
+        try {
+            await pool.query(
+                'UPDATE messages SET status = "delivered" WHERE id = ? AND status = "sent"',
+                [messageId]
+            );
+            io.to(`chat_${chatId}`).emit('message-status-updated', { messageId, status: 'delivered', chatId });
+        } catch (error) {
+            console.error('Error marking message as delivered:', error);
+        }
+    });
+
+    socket.on('disconnect', async (reason) => {
+        console.log(`Socket ${socket.id} disconnected (Reason: ${reason})`);
+
+        if (onlineUsers.has(userId)) {
+            onlineUsers.get(userId).delete(socket.id);
+            if (onlineUsers.get(userId).size === 0) {
+                onlineUsers.delete(userId);
+                // No more active sockets for this user - set to offline
+                try {
+                    await pool.query('UPDATE users SET status = "offline", last_seen = CURRENT_TIMESTAMP WHERE id = ?', [userId]);
+                    io.emit('user-status-changed', { userId, status: 'offline', last_seen: new Date().toISOString() });
+                } catch (error) {
+                    console.error('Error updating user status to offline:', error);
+                }
+            }
+        }
     });
 });
 
 // Initialize Database
 initDB();
 
+// Ensure uploads directories exist
+const uploadDir = path.join(__dirname, 'uploads/avatars');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+const audioUploadDir = path.join(__dirname, 'uploads/audio');
+if (!fs.existsSync(audioUploadDir)) {
+    fs.mkdirSync(audioUploadDir, { recursive: true });
+}
+
+// Multer Storage Configuration - Avatar
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/avatars');
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (req, file, cb) => {
+        const filetypes = /jpeg|jpg|png|webp/;
+        const mimetype = filetypes.test(file.mimetype);
+        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+        if (mimetype && extname) return cb(null, true);
+        cb(new Error('Hanya file gambar (jpg, png, webp) yang diperbolehkan!'));
+    }
+});
+
+// Multer Storage Configuration - Audio
+const audioStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/audio');
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'audio-' + uniqueSuffix + '.m4a');
+    }
+});
+
+const uploadAudio = multer({
+    storage: audioStorage,
+    limits: { fileSize: 25 * 1024 * 1024 }, // 25MB limit
+    fileFilter: (req, file, cb) => {
+        const allowedMimes = /audio\/|video\/mp4|application\/octet-stream/;
+        if (allowedMimes.test(file.mimetype)) return cb(null, true);
+        // Allow if extension matches audio
+        const extname = /\.m4a$|\.mp3$|\.aac$|\.wav$|\.ogg$|\.webm$/i.test(file.originalname);
+        if (extname) return cb(null, true);
+        cb(new Error('Hanya file audio yang diperbolehkan!'));
+    }
+});
+
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static('uploads'));
 
 // Auth Endpoints
 app.post('/api/auth/register', async (req, res) => {
@@ -139,6 +267,28 @@ app.post('/api/users/profile', authenticateToken, async (req, res) => {
     }
 });
 
+// Upload Avatar
+app.post('/api/users/upload-avatar', authenticateToken, upload.single('avatar'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'Tidak ada file yang diunggah' });
+        }
+
+        const avatarUrl = `${req.protocol}://${req.get('host')}/uploads/avatars/${req.file.filename}`;
+
+        // Update database
+        await pool.query('UPDATE users SET avatar = ? WHERE id = ?', [avatarUrl, req.user.id]);
+
+        res.json({
+            message: 'Foto profil berhasil diperbarui',
+            avatarUrl: avatarUrl
+        });
+    } catch (error) {
+        console.error('Upload Error:', error);
+        res.status(500).json({ message: 'Gagal mengunggah foto profil' });
+    }
+});
+
 // Get User's Chats
 app.get('/api/chats', authenticateToken, async (req, res) => {
     try {
@@ -146,7 +296,8 @@ app.get('/api/chats', authenticateToken, async (req, res) => {
         // For private chats, we also want the other participant's info
         const query = `
             SELECT c.*, 
-            JSON_OBJECT('id', u.id, 'name', u.full_name, 'avatar', u.avatar, 'online', u.status) as otherUser
+            JSON_OBJECT('id', u.id, 'name', u.full_name, 'avatar', u.avatar, 'online', u.status) as otherUser,
+            (SELECT COUNT(*) FROM messages m WHERE m.chat_id = c.id AND m.sender_id != ? AND m.status != 'read') as unread_count
             FROM chats c
             JOIN chat_participants cp1 ON c.id = cp1.chat_id
             JOIN chat_participants cp2 ON c.id = cp2.chat_id AND cp2.user_id != cp1.user_id
@@ -154,7 +305,7 @@ app.get('/api/chats', authenticateToken, async (req, res) => {
             WHERE cp1.user_id = ?
             ORDER BY c.last_message_time DESC
         `;
-        const [rows] = await pool.query(query, [req.user.id]);
+        const [rows] = await pool.query(query, [req.user.id, req.user.id]);
         res.json(rows);
     } catch (error) {
         console.error(error);
@@ -197,11 +348,23 @@ app.post('/api/chats', authenticateToken, async (req, res) => {
 
 app.get('/api/messages/:chatId', authenticateToken, async (req, res) => {
     const { chatId } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
     try {
-        const [messages] = await pool.query(
-            'SELECT m.*, IF(m.sender_id = ?, "me", "them") as sender FROM messages m WHERE m.chat_id = ? ORDER BY m.created_at DESC',
-            [req.user.id, chatId]
-        );
+        const query = `
+            SELECT m.*, 
+            IF(m.sender_id = ?, "me", "them") as sender,
+            rm.text as reply_text,
+            ru.full_name as reply_user
+            FROM messages m 
+            LEFT JOIN messages rm ON m.reply_to = rm.id
+            LEFT JOIN users ru ON rm.sender_id = ru.id
+            WHERE m.chat_id = ? 
+            ORDER BY m.created_at DESC LIMIT ? OFFSET ?
+        `;
+        const [messages] = await pool.query(query, [req.user.id, chatId, limit, offset]);
         res.json(messages);
     } catch (error) {
         console.error(error);
@@ -209,13 +372,73 @@ app.get('/api/messages/:chatId', authenticateToken, async (req, res) => {
     }
 });
 
+// Send Audio Message
+app.post('/api/messages/audio', authenticateToken, uploadAudio.single('audio'), async (req, res) => {
+    const { chatId, replyToId, duration } = req.body;
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'Tidak ada file audio yang dikirim' });
+        }
+
+        const audioUrl = `${req.protocol}://${req.get('host')}/uploads/audio/${req.file.filename}`;
+        const audioLabel = `🎤 Pesan Suara${duration ? ` (${duration})` : ''}`;
+
+        const [result] = await pool.query(
+            'INSERT INTO messages (chat_id, sender_id, text, audio_url, type, reply_to) VALUES (?, ?, ?, ?, "audio", ?)',
+            [chatId, req.user.id, audioLabel, audioUrl, replyToId || null]
+        );
+
+        // Update last message in chat
+        await pool.query(
+            'UPDATE chats SET last_message = ?, last_message_time = CURRENT_TIMESTAMP WHERE id = ?',
+            [audioLabel, chatId]
+        );
+
+        const newMessage = {
+            id: result.insertId,
+            chat_id: chatId,
+            text: audioLabel,
+            audio_url: audioUrl,
+            type: 'audio',
+            reply_to: replyToId || null,
+            reply_text: null,
+            reply_user: null,
+            sender_id: req.user.id,
+            created_at: new Date().toISOString(),
+            is_edited: false,
+            is_deleted: false,
+            status: 'sent'
+        };
+
+        // Emit real-time message to the room
+        io.to(`chat_${chatId}`).emit('new-message', newMessage);
+
+        res.status(201).json({ ...newMessage, sender: 'me' });
+    } catch (error) {
+        console.error('Error sending audio message:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 app.post('/api/messages', authenticateToken, async (req, res) => {
-    const { chatId, text } = req.body;
+    const { chatId, text, replyToId } = req.body;
     try {
         const [result] = await pool.query(
-            'INSERT INTO messages (chat_id, sender_id, text) VALUES (?, ?, ?)',
-            [chatId, req.user.id, text]
+            'INSERT INTO messages (chat_id, sender_id, text, reply_to) VALUES (?, ?, ?, ?)',
+            [chatId, req.user.id, text, replyToId || null]
         );
+
+        // Get reply info if any
+        let replyInfo = null;
+        if (replyToId) {
+            const [replied] = await pool.query(
+                'SELECT m.text, u.full_name FROM messages m JOIN users u ON m.sender_id = u.id WHERE m.id = ?',
+                [replyToId]
+            );
+            if (replied.length > 0) {
+                replyInfo = { text: replied[0].text, user: replied[0].full_name };
+            }
+        }
 
         // Update last message in chat
         await pool.query(
@@ -223,17 +446,63 @@ app.post('/api/messages', authenticateToken, async (req, res) => {
             [text, chatId]
         );
 
-        // Emit real-time message to the room
-        io.to(`chat_${chatId}`).emit('new-message', {
+        const newMessage = {
             id: result.insertId,
             chat_id: chatId,
             text,
+            reply_to: replyToId || null,
+            reply_text: replyInfo?.text,
+            reply_user: replyInfo?.user,
             sender_id: req.user.id,
             created_at: new Date().toISOString(),
-            sender: 'them' // For other users it will be 'them'
-        });
+            is_edited: false,
+            is_deleted: false,
+            status: 'sent'
+        };
 
-        res.status(201).json({ id: result.insertId, text, sender: 'me' });
+        // Emit real-time message to the room
+        io.to(`chat_${chatId}`).emit('new-message', newMessage);
+
+        res.status(201).json({ ...newMessage, sender: 'me' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Edit Message
+app.put('/api/messages/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    const { text } = req.body;
+    try {
+        const [msg] = await pool.query('SELECT * FROM messages WHERE id = ?', [id]);
+        if (!msg.length || msg[0].sender_id !== req.user.id) {
+            return res.status(403).json({ message: 'Unauthorized or not found' });
+        }
+
+        await pool.query('UPDATE messages SET text = ?, is_edited = TRUE WHERE id = ?', [text, id]);
+
+        io.to(`chat_${msg[0].chat_id}`).emit('message-edited', { id, text, chatId: msg[0].chat_id });
+        res.json({ message: 'Message edited' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Delete Message (Soft Delete)
+app.delete('/api/messages/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [msg] = await pool.query('SELECT * FROM messages WHERE id = ?', [id]);
+        if (!msg.length || msg[0].sender_id !== req.user.id) {
+            return res.status(403).json({ message: 'Unauthorized or not found' });
+        }
+
+        await pool.query('UPDATE messages SET is_deleted = TRUE, text = "Pesan ini telah dihapus" WHERE id = ?', [id]);
+
+        io.to(`chat_${msg[0].chat_id}`).emit('message-deleted', { id, chatId: msg[0].chat_id });
+        res.json({ message: 'Message deleted' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });

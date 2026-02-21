@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { User, Users, Settings, Phone, Bookmark, Moon, Sun, LogOut } from 'lucide-react-native';
@@ -17,6 +17,13 @@ import ProfileScreen from '../screens/ProfileScreen';
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
+
+const FAST_TRANSITION = {
+    animation: 'timing',
+    config: {
+        duration: 200, // Faster than default
+    },
+};
 
 const CustomDrawerContent = (props) => {
     const [user, setUser] = React.useState(null);
@@ -45,7 +52,7 @@ const CustomDrawerContent = (props) => {
         <View style={styles.drawerContainer}>
             <View style={styles.drawerHeader}>
                 <Image
-                    source={{ uri: user?.avatar || 'https://i.pravatar.cc/150?u=me' }}
+                    source={{ uri: user?.avatar || 'https://ui-avatars.com/api/?name=' + (user?.full_name || 'User') }}
                     style={styles.profileImage}
                 />
                 <View style={styles.headerTextContainer}>
@@ -94,7 +101,9 @@ const MainDrawer = () => (
         drawerContent={(props) => <CustomDrawerContent {...props} />}
         screenOptions={{
             headerShown: false,
-            drawerStyle: { width: '80%' }
+            drawerStyle: { width: '80%' },
+            drawerType: 'front',
+            swipeEdgeWidth: 100,
         }}
     >
         <Drawer.Screen name="ChatList" component={ChatListScreen} />
@@ -108,6 +117,11 @@ const AppNavigator = () => {
                 initialRouteName="Welcome"
                 screenOptions={{
                     headerShown: false,
+                    cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+                    transitionSpec: {
+                        open: FAST_TRANSITION,
+                        close: FAST_TRANSITION,
+                    },
                 }}
             >
                 <Stack.Screen name="Welcome" component={WelcomeScreen} />
