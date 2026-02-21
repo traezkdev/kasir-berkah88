@@ -1609,6 +1609,27 @@ const setupDatabase = async () => {
       console.log('Added ignore_stock column to app_settings table.');
     }
 
+    // Check and add store_address column to app_settings if it doesn't exist
+    const [storeAddressCols] = await connection.query("SHOW COLUMNS FROM app_settings LIKE 'store_address'");
+    if (storeAddressCols.length === 0) {
+      await connection.query("ALTER TABLE app_settings ADD COLUMN store_address TEXT DEFAULT NULL");
+      console.log("Added store_address column to app_settings table.");
+    }
+
+    // Check and add open_time column to app_settings if it doesn't exist
+    const [openTimeCols] = await connection.query("SHOW COLUMNS FROM app_settings LIKE 'open_time'");
+    if (openTimeCols.length === 0) {
+      await connection.query("ALTER TABLE app_settings ADD COLUMN open_time VARCHAR(10) DEFAULT '08:00'");
+      console.log("Added open_time column to app_settings table.");
+    }
+
+    // Check and add close_time column to app_settings if it doesn't exist
+    const [closeTimeCols] = await connection.query("SHOW COLUMNS FROM app_settings LIKE 'close_time'");
+    if (closeTimeCols.length === 0) {
+      await connection.query("ALTER TABLE app_settings ADD COLUMN close_time VARCHAR(10) DEFAULT '22:00'");
+      console.log("Added close_time column to app_settings table.");
+    }
+
     // --- Optimasi: Tambahkan Indeks untuk Peningkatan Performa ---
     const addIndexIfNotExists = async (connection, tableName, indexName, columns) => {
       const checkIndexQuery = `

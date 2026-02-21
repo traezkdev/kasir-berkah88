@@ -11,6 +11,7 @@ const rateLimit = require('express-rate-limit'); // Rate limiting
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const {
     addRawMaterial,
     getRawMaterials,
@@ -45,6 +46,8 @@ app.set('io', io);
 
 // Socket.io Connection Logic
 const onlineUsers = new Map(); // userId -> { role, sockets: Set<socketId> }
+const activeCalls = new Map(); // callerId (customer) -> acceptorId (seller) — track panggilan yang sudah diangkat
+const ringingCalls = new Map(); // callerId -> { callerName, type, targetId } — track panggilan yang masih berdering
 
 io.on('connection', (socket) => {
     console.log('A client connected:', socket.id);
@@ -89,17 +92,70 @@ io.on('connection', (socket) => {
 
         // Store on socket for disconnect handling
         socket.userId = userId;
+
+        // --- PERSISTENCE CALL (Membantu UI Muncul saat Klik Notifikasi) ---
+        if (sellerRoles.includes(role)) {
+            for (let [callerId, callData] of ringingCalls) {
+                const targetIdStr = String(callData.targetId);
+                // Jika targetId adalah user ini sendiri ATAU targetId adalah '3' (Grup Seller)
+                if (targetIdStr === String(userId) || targetIdStr === '3') {
+                    socket.emit('incoming_call', {
+                        callerId: callerId,
+                        callerName: callData.callerName,
+                        type: callData.type,
+                        isGroupCall: true,
+                        targetId: callData.targetId
+                    });
+                    console.log(`[Socket] Persistence call sent to reconnected seller ${userId}`);
+                }
+            }
+        }
     });
 
     socket.on('disconnect', () => {
         console.log('Client disconnected:', socket.id);
-        if (socket.userId && onlineUsers.has(socket.userId)) {
-            const userData = onlineUsers.get(socket.userId);
+        const userId = socket.userId;
+
+        if (userId && onlineUsers.has(userId)) {
+            const userData = onlineUsers.get(userId);
             userData.sockets.delete(socket.id);
+
             if (userData.sockets.size === 0) {
                 const role = userData.role;
-                onlineUsers.delete(socket.userId);
-                io.emit('user_status', { userId: socket.userId, role, status: 'offline' });
+                onlineUsers.delete(userId);
+                io.emit('user_status', { userId: userId, role, status: 'offline' });
+
+                // --- CLEANUP CALLS ON DISCONNECT ---
+                const uIdStr = String(userId);
+
+                // 1. Jika user yang disconnect adalah PEMANGGIL (Caller)
+                if (activeCalls.has(uIdStr)) {
+                    const acceptorId = activeCalls.get(uIdStr);
+                    activeCalls.delete(uIdStr);
+                    io.to(`user_${acceptorId}`).emit('call_ended');
+                    console.log(`[Socket] Cleanup active call: Caller ${uIdStr} disconnected`);
+                }
+
+                // 2. Jika user yang disconnect adalah PENERIMA (Acceptor) - Perlu cari di values
+                for (let [callerId, acceptorId] of activeCalls.entries()) {
+                    if (String(acceptorId) === uIdStr) {
+                        activeCalls.delete(callerId);
+                        io.to(`user_${callerId}`).emit('call_ended');
+                        console.log(`[Socket] Cleanup active call: Acceptor ${uIdStr} disconnected`);
+                    }
+                }
+
+                // 3. Jika user yang disconnect sedang memanggil (Ringing)
+                if (ringingCalls.has(uIdStr)) {
+                    const callData = ringingCalls.get(uIdStr);
+                    ringingCalls.delete(uIdStr);
+                    io.to('sellers').emit('call_handled', { by: 'disconnect', callerId: uIdStr });
+                    io.to(`user_${callData.targetId}`).emit('call_ended');
+                    console.log(`[Socket] Cleanup ringing call: Caller ${uIdStr} disconnected`);
+                }
+
+                // 4. Jika user adalah seller yang mungkin sedang dituju panggilan ringing
+                // Beritahu sistem jika perlu, tapi biasanya handled oleh filter availableSellers
             }
         }
     });
@@ -108,6 +164,21 @@ io.on('connection', (socket) => {
     socket.on('start_call', async (data) => {
         const { to, from, callerName, type } = data;
         const cName = callerName || (onlineUsers.get(from)?.name) || "Pelanggan";
+
+        // Cek siapa saja yang sedang sibuk (dalam panggilan aktif)
+        const busy = new Set();
+        for (const [caller, acceptor] of activeCalls) {
+            busy.add(String(caller));
+            busy.add(String(acceptor));
+        }
+
+        // 1. Cek jika si pemanggil sendiri sedang sibuk (mencegah double call)
+        if (busy.has(String(from))) {
+            console.log(`[Socket] Caller ${from} is already in a call.`);
+            socket.emit('call_busy', { to: from, message: 'Anda sedang dalam panggilan lain.' });
+            return;
+        }
+
         console.log(`[Socket] Call started from ${from} (${cName}) to ${to} type: ${type}`);
 
         let targetRole = null;
@@ -116,12 +187,9 @@ io.on('connection', (socket) => {
         if (targetInfo) {
             targetRole = targetInfo.role;
         } else {
-            // Jika target offline, cek database untuk tahu ini seller atau bukan
             try {
                 const [rows] = await db.query('SELECT role FROM users WHERE id = ?', [to]);
-                if (rows.length > 0) {
-                    targetRole = rows[0].role;
-                }
+                if (rows.length > 0) targetRole = rows[0].role;
             } catch (err) {
                 console.error('[Socket] Error checking user role:', err);
             }
@@ -129,18 +197,69 @@ io.on('connection', (socket) => {
 
         const sellerRoles = ['admin', 'owner', 'penjual', 'kasir'];
 
+        // Catat panggilan yang sedang berdering
+        ringingCalls.set(String(from), {
+            callerName: cName,
+            type: type,
+            targetId: to
+        });
+
         if (targetRole && sellerRoles.includes(targetRole)) {
-            // Jika target adalah seller (online maupun offline), broadcast ke SEMUA seller online
-            io.to('sellers').emit('incoming_call', {
-                callerId: from,
-                callerName: cName,
-                type: type,
-                isGroupCall: true,
-                targetId: to
+            // Panggilan ke tim Seller (Group Call)
+            const sellerRoom = io.sockets.adapter.rooms.get('sellers');
+            const onlineSellers = sellerRoom ? Array.from(sellerRoom) : [];
+
+            // Filter hanya seller yang TIDAK sedang sibuk melayani orang lain
+            const availableSellers = onlineSellers.filter(sId => {
+                let uId = null;
+                for (let [userId, data] of onlineUsers) {
+                    if (data.sockets.has(sId)) {
+                        uId = userId;
+                        break;
+                    }
+                }
+                return uId && !busy.has(String(uId));
             });
-            console.log(`[Socket] Broadcasting call to all sellers room`);
+
+            if (availableSellers.length > 0) {
+                // 1. Kirim via Socket (untuk yang sedang buka aplikasi)
+                availableSellers.forEach(sId => {
+                    io.to(sId).emit('incoming_call', {
+                        callerId: from,
+                        callerName: cName,
+                        type: type,
+                        isGroupCall: true,
+                        targetId: to
+                    });
+                });
+
+                // 2. Kirim via Push Notification (BUKAN cuma yang online, tapi SEMUA seller di DB)
+                // Kita kirim null sebagai userIds agar sendUniversalNotification melakukan broadcast ke semua seller
+                sendUniversalNotification(
+                    null, // Pass null to trigger broadcast logic for 'incoming_call'
+                    `Ada panggilan ${type === 'video' ? 'Video' : 'Suara'} dari ${cName}`,
+                    'Panggilan Masuk 📞',
+                    {
+                        type: 'incoming_call',
+                        callerId: from,
+                        callerName: cName,
+                        callType: type
+                    }
+                ).catch(e => console.error('[Call Notify] Error sending push:', e));
+
+                console.log(`[Socket] Broadcasting call and push to sellers`);
+            } else {
+                // Semua seller online tapi sedang sibuk melayani pelanggan lain
+                console.log(`[Socket] All sellers are busy for caller ${from}`);
+                socket.emit('call_busy', { to: from, message: 'Semua petugas sedang sibuk melayani panggilan lain.' });
+            }
         } else {
-            // Panggilan personal biasa ke user spesifik
+            // Panggilan personal 1-to-1
+            if (busy.has(String(to))) {
+                console.log(`[Socket] Target ${to} is busy.`);
+                socket.emit('call_busy', { to: from });
+                return;
+            }
             io.to(`user_${to}`).emit('incoming_call', {
                 callerId: from,
                 callerName: cName,
@@ -150,11 +269,15 @@ io.on('connection', (socket) => {
     });
 
     socket.on('accept_call', (data) => {
-        const { to } = data;
+        const { to } = data; // to = callerId (customer)
         const acceptedBy = socket.userId;
         const acceptedName = onlineUsers.get(acceptedBy)?.name || "Staf Berkah";
 
-        console.log(`[Socket] Call accepted by ${acceptedBy} (${acceptedName}) for: ${to}`);
+        // Tandai call ini sebagai aktif agar seller lain yang menolak tidak memutus panggilan
+        activeCalls.set(String(to), String(acceptedBy));
+        ringingCalls.delete(String(to)); // Pindah dari ringing ke active
+        console.log(`[Socket] Call accepted by ${acceptedBy} (${acceptedName}) for: ${to}. activeCalls size: ${activeCalls.size}`);
+
         io.to(`user_${to}`).emit('call_accepted', {
             acceptedBy: acceptedBy,
             acceptedName: acceptedName
@@ -165,11 +288,20 @@ io.on('connection', (socket) => {
     });
 
     socket.on('reject_call', (data) => {
-        const { to } = data;
-        console.log(`[Socket] Call rejected by ${socket.userId} for: ${to}`);
-        io.to(`user_${to}`).emit('call_rejected');
+        const { to } = data; // to = callerId (customer)
+        const callAlreadyActive = activeCalls.has(String(to));
 
-        // Jika ini group call, beritahu seller lain untuk tutup popupnya
+        console.log(`[Socket] Call rejected by ${socket.userId} for: ${to}. Already active: ${callAlreadyActive}`);
+
+        if (!callAlreadyActive) {
+            // Panggilan belum diangkat siapapun → kirim penolakan ke customer
+            io.to(`user_${to}`).emit('call_rejected');
+        } else {
+            // Panggilan sudah diangkat seller lain → JANGAN putus, cukup tutup popup si penolak
+            console.log(`[Socket] Reject ignored — call already active with ${activeCalls.get(String(to))}`);
+        }
+
+        // Selalu beritahu sellers untuk tutup popup berdering
         io.to('sellers').emit('call_handled', { by: socket.userId, callerId: to });
     });
 
@@ -177,6 +309,12 @@ io.on('connection', (socket) => {
         const { to } = data;
         console.log(`[Socket] Call ended by ${socket.userId} for: ${to}`);
         io.to(`user_${to}`).emit('call_ended');
+
+        // Bersihkan tracking panggilan aktif dari kedua sisi
+        activeCalls.delete(String(socket.userId));
+        activeCalls.delete(String(to));
+        ringingCalls.delete(String(socket.userId));
+        ringingCalls.delete(String(to));
 
         // Jika pemanggil (customer) menutup, beritahu semua seller agar berhenti berdering
         io.to('sellers').emit('call_handled', { by: 'caller', callerId: socket.userId });
@@ -408,7 +546,7 @@ const sendUniversalNotification = async (userIds, message, heading, data = {}, e
             params.push(normalizedUserIds);
         } else {
             // Broadcast case (e.g. for new_order or promos)
-            if (type === 'new_order') {
+            if (type === 'new_order' || type === 'incoming_call' || type === 'call') {
                 sql += " AND role IN ('admin', 'penjual', 'owner', 'kasir', 'seller')";
             }
         }
@@ -535,6 +673,44 @@ const processBase64Audio = async (base64String, prefix = 'voice') => {
 };
 
 // API Endpoints
+
+// --- TURN Server Credentials Endpoint ---
+app.get('/api/turn-credentials', authenticateToken, (req, res) => {
+    const turnSecret = process.env.TURN_SECRET;
+    const turnHost = process.env.TURN_HOST;
+
+    if (!turnSecret || !turnHost) {
+        console.warn('[WebRTC] TURN Config missing in .env');
+        return res.status(503).json({ error: 'TURN server belum dikonfigurasi.' });
+    }
+
+    try {
+        // Credential berlaku selama 24 jam
+        const ttl = 24 * 3600;
+        const timestamp = Math.floor(Date.now() / 1000) + ttl;
+        const username = `${timestamp}:user_${req.user.userId}`;
+        const password = crypto.createHmac('sha1', turnSecret).update(username).digest('base64');
+
+        res.json({
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: `stun:${turnHost}:3478` },
+                {
+                    urls: [
+                        `turn:${turnHost}:3478?transport=udp`,
+                        `turn:${turnHost}:3478?transport=tcp`,
+                        `turns:${turnHost}:5349?transport=tcp`
+                    ],
+                    username: username,
+                    credential: password
+                }
+            ]
+        });
+    } catch (err) {
+        console.error('[WebRTC] Error generating TURN credentials:', err);
+        res.status(500).json({ error: 'Gagal generate credentials' });
+    }
+});
 
 // --- Review Management Endpoints ---
 
@@ -2469,12 +2645,17 @@ app.put('/api/settings/ppn', authenticateToken, authorizeRoles('admin'), async (
 // Get restaurant settings (public)
 app.get('/api/restaurant-settings', async (req, res) => {
     try {
-        const sql = "SELECT restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, ignore_stock FROM app_settings ORDER BY id LIMIT 1";
+        const sql = "SELECT restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, ignore_stock, store_address, open_time, close_time FROM app_settings ORDER BY id LIMIT 1";
         const [rows] = await db.query(sql);
         if (rows.length > 0) {
             res.json({
                 "message": "success",
-                "data": rows[0]
+                "data": {
+                    ...rows[0],
+                    store_address: rows[0].store_address || 'Indramayu, Jawa Barat',
+                    open_time: rows[0].open_time || '08:00',
+                    close_time: rows[0].close_time || '22:00'
+                }
             });
         } else {
             // Return default values if no settings found
@@ -2487,7 +2668,10 @@ app.get('/api/restaurant-settings', async (req, res) => {
                     owner_phone: null,
                     show_stock_alert: 1,
                     is_open: 1,
-                    ignore_stock: 0
+                    ignore_stock: 0,
+                    store_address: 'Indramayu, Jawa Barat',
+                    open_time: '08:00',
+                    close_time: '22:00'
                 }
             });
         }
@@ -2499,12 +2683,12 @@ app.get('/api/restaurant-settings', async (req, res) => {
 // Update restaurant settings (admin only)
 app.put('/api/restaurant-settings', authenticateToken, authorizeRoles('admin'), async (req, res) => {
     try {
-        const { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, ignore_stock } = req.body;
+        const { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, ignore_stock, store_address, open_time, close_time } = req.body;
         if (!restaurant_name || !restaurant_slogan) {
             return res.status(400).json({ "error": "Restaurant name and slogan are required." });
         }
 
-        const sql = `UPDATE app_settings SET restaurant_name = ?, restaurant_slogan = ?, restaurant_url = ?, owner_phone = ?, show_stock_alert = ?, is_open = ?, ignore_stock = ? WHERE id = (SELECT id FROM (SELECT id FROM app_settings ORDER BY id LIMIT 1) as t)`;
+        const sql = `UPDATE app_settings SET restaurant_name = ?, restaurant_slogan = ?, restaurant_url = ?, owner_phone = ?, show_stock_alert = ?, is_open = ?, ignore_stock = ?, store_address = ?, open_time = ?, close_time = ? WHERE id = (SELECT id FROM (SELECT id FROM app_settings ORDER BY id LIMIT 1) as t)`;
         const params = [
             restaurant_name,
             restaurant_slogan,
@@ -2512,17 +2696,20 @@ app.put('/api/restaurant-settings', authenticateToken, authorizeRoles('admin'), 
             owner_phone || null,
             show_stock_alert !== undefined ? show_stock_alert : 1,
             is_open !== undefined ? is_open : 1,
-            ignore_stock !== undefined ? ignore_stock : 0
+            ignore_stock !== undefined ? ignore_stock : 0,
+            store_address || null,
+            open_time || '08:00',
+            close_time || '22:00'
         ];
         const [result] = await db.query(sql, params);
 
         if (result.affectedRows === 0) {
             // If no rows were affected, it might mean no settings exist yet. Insert them.
-            const insertSql = 'INSERT INTO app_settings (restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, ignore_stock, og_title) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+            const insertSql = 'INSERT INTO app_settings (restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, ignore_stock, store_address, open_time, close_time, og_title) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
             await db.query(insertSql, [...params, 'Kasir Berkah 88']);
-            res.json({ message: "Restaurant settings inserted successfully!", data: { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, ignore_stock } });
+            res.json({ message: "Restaurant settings inserted successfully!", data: { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, ignore_stock, store_address, open_time, close_time } });
         } else {
-            res.json({ message: "Restaurant settings updated successfully!", data: { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, ignore_stock } });
+            res.json({ message: "Restaurant settings updated successfully!", data: { restaurant_name, restaurant_slogan, restaurant_url, owner_phone, show_stock_alert, is_open, ignore_stock, store_address, open_time, close_time } });
         }
 
     } catch (err) {

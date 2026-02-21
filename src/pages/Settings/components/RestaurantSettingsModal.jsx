@@ -12,6 +12,9 @@ const RestaurantSettingsModal = ({ isOpen, onClose, onSave, initialSettings }) =
   const [restaurantUrl, setRestaurantUrl] = useState('');
   const [ownerPhone, setOwnerPhone] = useState('');
   const [showStockAlert, setShowStockAlert] = useState(true);
+  const [storeAddress, setStoreAddress] = useState('');
+  const [openTime, setOpenTime] = useState('08:00');
+  const [closeTime, setCloseTime] = useState('22:00');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -22,6 +25,9 @@ const RestaurantSettingsModal = ({ isOpen, onClose, onSave, initialSettings }) =
       setRestaurantUrl(initialSettings.restaurant_url || '');
       setOwnerPhone(initialSettings.owner_phone || '');
       setShowStockAlert(initialSettings.show_stock_alert === 1 || initialSettings.show_stock_alert === true);
+      setStoreAddress(initialSettings.store_address || '');
+      setOpenTime(initialSettings.open_time || '08:00');
+      setCloseTime(initialSettings.close_time || '22:00');
     }
   }, [isOpen, initialSettings]);
 
@@ -44,7 +50,10 @@ const RestaurantSettingsModal = ({ isOpen, onClose, onSave, initialSettings }) =
         restaurant_slogan: restaurantSlogan.trim(),
         restaurant_url: restaurantUrl.trim() || 'www.berkah88.id',
         owner_phone: ownerPhone.trim() || null,
-        show_stock_alert: showStockAlert ? 1 : 0
+        show_stock_alert: showStockAlert ? 1 : 0,
+        store_address: storeAddress.trim(),
+        open_time: openTime.trim(),
+        close_time: closeTime.trim()
       });
       onClose();
     } catch (err) {
@@ -73,7 +82,7 @@ const RestaurantSettingsModal = ({ isOpen, onClose, onSave, initialSettings }) =
             </div>
           )}
 
-          <div className="space-y-4 mb-6">
+          <div className="space-y-4 mb-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
             <div>
               <label htmlFor="restaurant-name" className="block text-sm font-medium text-text-primary mb-1">
                 Nama Restoran
@@ -128,6 +137,49 @@ const RestaurantSettingsModal = ({ isOpen, onClose, onSave, initialSettings }) =
               />
               <p className="text-[10px] text-text-secondary mt-1">Alamat ini akan ditampilkan di bagian paling bawah pada struk transaksi.</p>
             </div>
+
+            <div>
+              <label htmlFor="store-address" className="block text-sm font-medium text-text-primary mb-1">
+                Alamat Fisik Toko
+              </label>
+              <textarea
+                id="store-address"
+                value={storeAddress}
+                onChange={(e) => setStoreAddress(e.target.value)}
+                placeholder="Contoh: Indramayu, Jawa Barat"
+                className="w-full p-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm min-h-[80px]"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="open-time" className="block text-sm font-medium text-text-primary mb-1">
+                  Jam Buka
+                </label>
+                <Input
+                  id="open-time"
+                  type="text"
+                  value={openTime}
+                  onChange={(e) => setOpenTime(e.target.value)}
+                  placeholder="08:00"
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label htmlFor="close-time" className="block text-sm font-medium text-text-primary mb-1">
+                  Jam Tutup
+                </label>
+                <Input
+                  id="close-time"
+                  type="text"
+                  value={closeTime}
+                  onChange={(e) => setCloseTime(e.target.value)}
+                  placeholder="22:00"
+                  className="w-full"
+                />
+              </div>
+            </div>
+
             <div className="flex items-center space-x-2 pt-2">
               <input
                 id="show-stock-alert"

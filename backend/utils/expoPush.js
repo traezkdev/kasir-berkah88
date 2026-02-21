@@ -21,15 +21,23 @@ const sendExpoPushNotification = async (pushTokens, title, body, data = {}) => {
 
     if (validTokens.length === 0) return;
 
-    const messages = validTokens.map(token => ({
-        to: token,
-        sound: 'default',
-        title: title,
-        body: body,
-        data: data,
-        priority: 'high',
-        channelId: 'default',
-    }));
+    const messages = validTokens.map(token => {
+        const type = data.type || 'default';
+        let channelId = 'default';
+
+        if (type === 'incoming_call') channelId = 'calls';
+        else if (type === 'orders' || type === 'new_order') channelId = 'orders';
+
+        return {
+            to: token,
+            sound: 'default',
+            title: title,
+            body: body,
+            data: data,
+            priority: 'high',
+            channelId: channelId,
+        };
+    });
 
     try {
         const response = await axios.post('https://exp.host/--/api/v2/push/send', messages, {

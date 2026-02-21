@@ -252,6 +252,16 @@ export const OrderNotificationProvider = ({ children }) => {
             }
 
             if (Platform.OS === 'android') {
+                await Notifications.setNotificationChannelAsync('calls', {
+                    name: 'Panggilan Masuk',
+                    description: 'Notifikasi untuk panggilan video dan suara',
+                    importance: Notifications.AndroidImportance.MAX,
+                    vibrationPattern: [0, 500, 500, 500],
+                    lightColor: '#FF0000',
+                    enableVibrate: true,
+                    showBadge: true,
+                });
+
                 await Notifications.setNotificationChannelAsync('orders', {
                     name: 'Pesanan Baru',
                     description: 'Notifikasi untuk pesanan baru yang masuk',
@@ -289,7 +299,14 @@ export const OrderNotificationProvider = ({ children }) => {
                 if (data) {
                     const { navigationRef } = require('../navigation/navigationRef');
                     if (navigationRef.isReady()) {
-                        if (data.type === 'info') {
+                        if (data.type === 'incoming_call') {
+                            // SUNTIKKAN DATA TELPON KE CALL CONTEXT
+                            // Karena kita butuh CallContext tapi OrderNotificationContext dibungkus berbeda,
+                            // maka kita bisa manfaatkan delay sedikit atau event emitter jika sulit.
+                            // TAPI cara termudah adalah jika aplikasi terbuka, socket akan reconnect
+                            // dan backend akan mengirim 'incoming_call' ulang jika masih ringing.
+                            console.log('[WebRTC] Handling incoming call from notification click. Caller:', data.callerName);
+                        } else if (data.type === 'info') {
                             if (data.link_type === 'product' && data.link_value) {
                                 navigationRef.navigate('Menu', { itemId: data.link_value });
                             } else {

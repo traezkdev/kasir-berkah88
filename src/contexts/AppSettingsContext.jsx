@@ -70,6 +70,17 @@ export const AppSettingsProvider = ({ children }) => {
           if (data.data.auth_ui_version) setAuthUiVersion(data.data.auth_ui_version);
         }
 
+        // Fetch Logo publically
+        const logoRes = await fetch(`${apiUrl}/api/settings/logo`);
+        const logoData = await logoRes.json();
+        if (logoRes.ok && logoData.data && logoData.data.logo_url) {
+          if (logoData.data.logo_url.startsWith('/public')) {
+            setLogoUrl(`${apiUrl}${logoData.data.logo_url}`);
+          } else {
+            setLogoUrl(logoData.data.logo_url);
+          }
+        }
+
         // Fetch Restaurant Settings (Public)
         const res2 = await fetch(`${apiUrl}/api/restaurant-settings`);
         const data2 = await res2.json();

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Icon from '../../components/AppIcon';
-import authFetch from '../../utils/authFetch';
+import Icon from '../../../components/AppIcon';
+import authFetch from '../../../utils/authFetch';
 
-const InformationCenter = () => {
+const MobileInformationCenter = () => {
     const navigate = useNavigate();
     const [infos, setInfos] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -179,4 +179,4 @@ const InformationCenter = () => {
     );
 };
 
-export default InformationCenter;
+export default MobileInformationCenter;

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiPhone, FiPhoneOff, FiVideo, FiMic, FiMicOff, FiCamera, FiX } from 'react-icons/fi';
+import { FiPhone, FiPhoneOff, FiVideo, FiMic, FiMicOff, FiCamera, FiX, FiUser } from 'react-icons/fi';
 import { useCall } from '../../contexts/CallContext';
 
 const CallOverlay = () => {
@@ -11,9 +11,13 @@ const CallOverlay = () => {
         remoteUser,
         localStream,
         remoteStream,
+        localVideoEnabled,
+        localAudioEnabled,
         acceptCall,
         rejectCall,
-        endCall
+        endCall,
+        toggleVideo,
+        toggleAudio
     } = useCall();
 
     const localVideoRef = useRef(null);
@@ -23,7 +27,7 @@ const CallOverlay = () => {
         if (localStream && localVideoRef.current) {
             localVideoRef.current.srcObject = localStream;
         }
-    }, [localStream, callStatus]);
+    }, [localStream, callStatus, localVideoEnabled]);
 
     useEffect(() => {
         if (remoteStream && remoteVideoRef.current) {
@@ -71,10 +75,10 @@ const CallOverlay = () => {
                 ) : (
                     <motion.div
                         layout
-                        className="relative w-full h-full md:w-[900px] md:h-[600px] bg-gray-900 md:rounded-[40px] overflow-hidden flex flex-col"
+                        className="relative w-full h-full md:w-[1000px] md:h-[650px] bg-slate-950 md:rounded-[3rem] overflow-hidden shadow-2xl flex flex-col border border-white/10"
                     >
-                        {/* Video Display Area */}
-                        <div className="flex-1 relative bg-black">
+                        {/* Main Video/Content Area (Background) */}
+                        <div className="absolute inset-0 z-0 bg-slate-900">
                             {callType === 'video' ? (
                                 <>
                                     {remoteStream ? (
@@ -85,56 +89,104 @@ const CallOverlay = () => {
                                             className="w-full h-full object-cover"
                                         />
                                     ) : (
-                                        <div className="w-full h-full flex flex-col items-center justify-center">
-                                            <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mb-4 animate-pulse">
-                                                <FiUser size={40} className="text-gray-600" />
+                                        <div className="w-full h-full flex flex-col items-center justify-center space-y-4">
+                                            <div className="relative">
+                                                <div className="w-24 h-24 bg-blue-500/20 rounded-full flex items-center justify-center border border-blue-500/30 animate-pulse">
+                                                    <FiUser size={40} className="text-blue-400" />
+                                                </div>
+                                                <motion.div
+                                                    animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+                                                    transition={{ repeat: Infinity, duration: 2 }}
+                                                    className="absolute -inset-4 bg-blue-500/10 rounded-full -z-10"
+                                                />
                                             </div>
-                                            <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Menunggu user...</p>
-                                        </div>
-                                    )}
-
-                                    {/* Local Mirror (Small Window) */}
-                                    {localStream && (
-                                        <div className="absolute top-6 right-6 w-40 h-56 bg-gray-800 rounded-3xl overflow-hidden border-2 border-white/10 shadow-2xl z-10">
-                                            <video
-                                                ref={localVideoRef}
-                                                autoPlay
-                                                playsInline
-                                                muted
-                                                className="w-full h-full object-cover scale-x-[-1]"
-                                            />
+                                            <p className="text-blue-400/60 font-black uppercase tracking-[0.3em] text-[10px]">Menunggu Koneksi...</p>
                                         </div>
                                     )}
                                 </>
                             ) : (
-                                <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-gray-900 to-black">
-                                    <div className="w-32 h-32 bg-gray-800 rounded-full flex items-center justify-center mb-6 border-4 border-blue-500 shadow-2xl">
-                                        <h1 className="text-5xl font-black text-white">{remoteUser?.username?.charAt(0).toUpperCase()}</h1>
+                                <div className="w-full h-full flex flex-col items-center justify-center bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-800 to-slate-950 text-center">
+                                    <div className="relative mb-8">
+                                        <div className="w-32 h-32 bg-slate-800 rounded-full flex items-center justify-center border-4 border-blue-500 shadow-[0_0_50px_-12px_rgba(59,130,246,0.5)]">
+                                            <h1 className="text-5xl font-black text-white">{remoteUser?.username?.charAt(0).toUpperCase()}</h1>
+                                        </div>
+                                        {callStatus === 'connected' && (
+                                            <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-4 border-slate-900 flex items-center justify-center">
+                                                <div className="w-2 h-2 bg-white rounded-full animate-ping" />
+                                            </div>
+                                        )}
                                     </div>
-                                    <h2 className="text-3xl font-black text-white mb-2">{remoteUser?.username}</h2>
-                                    <p className="text-blue-500 font-black uppercase tracking-[0.2em] text-sm">{callStatus === 'connected' ? 'Panggilan Aktif' : 'Menghubungkan...'}</p>
+                                    <h2 className="text-4xl font-black text-white mb-2 tracking-tight">{remoteUser?.username}</h2>
+                                    <p className="text-blue-400 font-black uppercase tracking-[0.4em] text-xs opacity-70">
+                                        {callStatus === 'connected' ? 'Panggilan Suara Aktif' : 'Menghubungkan...'}
+                                    </p>
                                 </div>
                             )}
                         </div>
 
-                        {/* Controls Bar */}
-                        <div className="p-10 md:p-12 flex justify-center items-center gap-10 bg-gray-900/80 backdrop-blur-xl border-t border-white/5">
-                            <button className="p-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl transition-all"><FiMic size={24} /></button>
-                            <button
-                                onClick={endCall}
-                                className="w-20 h-20 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all shadow-2xl shadow-red-500/40 hover:scale-110 active:scale-95"
-                            >
-                                <FiPhoneOff size={32} />
-                            </button>
-                            <button className="p-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl transition-all"><FiCamera size={24} /></button>
+                        {/* Top Info Overlay (Glassmorphism) */}
+                        <div className="absolute top-8 left-8 z-30 pointer-events-none">
+                            <div className="bg-slate-900/40 backdrop-blur-md border border-white/10 px-6 py-3 rounded-2xl">
+                                <h3 className="text-white font-black text-lg">{remoteUser?.username}</h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className={`w-2 h-2 ${callStatus === 'connected' ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'bg-yellow-500'} rounded-full`}></span>
+                                    <span className="text-white/60 text-[10px] font-black uppercase tracking-widest">
+                                        {callStatus === 'connected' ? 'TERHUBUNG' : 'MENGHUBUNGKAN'} • {callType === 'video' ? 'VIDEO HD' : 'AUDIO'}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Top Info Overlay */}
-                        <div className="absolute top-8 left-10 z-20">
-                            <h3 className="text-white font-black text-xl drop-shadow-md">{remoteUser?.username}</h3>
-                            <div className="flex items-center gap-2 mt-1">
-                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                                <span className="text-green-500 text-xs font-black uppercase tracking-tighter">HD • {callType === 'video' ? 'Video' : 'Voice'}</span>
+                        {/* Local Mirror (Floating window) */}
+                        {callType === 'video' && localStream && (
+                            <div className="absolute top-8 right-8 w-40 h-56 bg-slate-900 rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl z-20 group">
+                                {localVideoEnabled ? (
+                                    <video
+                                        ref={localVideoRef}
+                                        autoPlay
+                                        playsInline
+                                        muted
+                                        className="w-full h-full object-cover scale-x-[-1]"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-slate-800">
+                                        <FiUser size={32} className="text-slate-600" />
+                                    </div>
+                                )}
+                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center bg-gradient-to-t from-black/60 to-transparent">
+                                    <span className="text-[10px] text-white font-bold tracking-widest uppercase">Pratinjau</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Controls Bar (ABSOLUTE OVERLAY - Always on Top) */}
+                        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-40 w-full px-6 flex justify-center pointer-events-none">
+                            <div className="flex justify-center items-center gap-6 bg-slate-900/60 backdrop-blur-2xl px-10 py-6 rounded-[2.5rem] border border-white/10 shadow-2xl pointer-events-auto">
+                                <button
+                                    onClick={toggleAudio}
+                                    title={localAudioEnabled ? 'Mute Mic' : 'Unmute Mic'}
+                                    className={`w-14 h-14 flex items-center justify-center ${localAudioEnabled ? 'bg-slate-800 hover:bg-slate-700' : 'bg-red-500 hover:bg-red-600 shadow-[0_0_20px_rgba(239,68,68,0.4)]'} text-white rounded-2xl transition-all active:scale-90`}
+                                >
+                                    {localAudioEnabled ? <FiMic size={22} /> : <FiMicOff size={22} />}
+                                </button>
+
+                                <button
+                                    onClick={endCall}
+                                    title="Akhiri Panggilan"
+                                    className="w-20 h-20 bg-red-500 hover:bg-red-600 text-white rounded-[2rem] flex items-center justify-center transition-all shadow-xl shadow-red-500/40 hover:scale-110 active:scale-90"
+                                >
+                                    <FiPhoneOff size={32} />
+                                </button>
+
+                                {callType === 'video' && (
+                                    <button
+                                        onClick={toggleVideo}
+                                        title={localVideoEnabled ? 'Matikan Kamera' : 'Nyalakan Kamera'}
+                                        className={`w-14 h-14 flex items-center justify-center ${localVideoEnabled ? 'bg-slate-800 hover:bg-slate-700' : 'bg-red-500 hover:bg-red-600 shadow-[0_0_20px_rgba(239,68,68,0.4)]'} text-white rounded-2xl transition-all active:scale-90`}
+                                    >
+                                        <FiCamera size={22} />
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </motion.div>
@@ -145,3 +197,4 @@ const CallOverlay = () => {
 };
 
 export default CallOverlay;
+
