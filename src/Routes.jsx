@@ -15,6 +15,7 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
+import AuthHome from './pages/auth/AuthHome';
 import UserProfile from './pages/UserProfile';
 import Settings from './pages/Settings';
 import Credits from './pages/Credits';
@@ -76,7 +77,7 @@ import CustomerPointsHistory from './pages/customer/PointsHistory';
 import CustomerOrderDetails from './pages/customer/OrderDetails';
 import CustomerChat from './pages/customer/Chat';
 import CustomerPromo from './pages/customer/Promo';
-import InformationCenter from './pages/customer/InformationCenter';
+import InformationCenter from './pages/customer/InformationCenter/index';
 import SellerPromoManagement from './pages/customer/Dashboard/SellerPromoManagement';
 import SellerInformationManagement from './pages/customer/Dashboard/SellerInformationManagement';
 import AdminPromoManagement from './pages/admin/PromoManagement';
@@ -153,6 +154,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* Public Routes */}
+      <Route path="/auth" element={<AuthHome />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />

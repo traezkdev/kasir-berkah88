@@ -7,8 +7,10 @@ import {
 import { toast } from 'react-hot-toast';
 import { useLocation } from 'react-router-dom';
 import { useChat } from '../../contexts/ChatContext';
+import { useCall } from '../../contexts/CallContext';
 import authFetch from '../../utils/authFetch';
 import OrderPinWidget from './OrderPinWidget';
+import { FiPhone, FiVideo } from 'react-icons/fi';
 
 const ChatWidget = () => {
     const location = useLocation();
@@ -24,6 +26,7 @@ const ChatWidget = () => {
         activeOrder,
         setActiveOrder
     } = useChat();
+    const { startCall } = useCall();
 
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
@@ -244,8 +247,9 @@ const ChatWidget = () => {
     // If customer and no conversations, the list view should show "Contacts" (Sellers)
     const displayList = (userRole === 'pelanggan' && conversations.length === 0) ? otherUsers : conversations;
 
-    // Sembunyikan widget di Halaman Utama (/) dan Halaman Download (/download)
-    if (location.pathname === '/' || location.pathname === '/berkah88' || location.pathname === '/download') {
+    // Sembunyikan widget di Halaman Utama (/), Download (/download), dan halaman Auth (/auth,/guest-checkout, /login, /register)
+    const hiddenPaths = ['/', '/berkah88', '/download', '/auth', '/login', '/guest-checkout', '/register'];
+    if (hiddenPaths.includes(location.pathname)) {
         return null;
     }
 
@@ -322,10 +326,26 @@ const ChatWidget = () => {
                                     </div>
                                 )}
                                 <div className="flex items-center gap-2">
-                                    {view === 'chat' && (
-                                        <button onClick={handleDeleteChat} className="rounded-full p-1 hover:bg-white/20 text-white/70 hover:text-white transition-colors">
-                                            <FiTrash2 size={18} />
-                                        </button>
+                                    {view === 'chat' && activeChat && (
+                                        <>
+                                            <button
+                                                onClick={() => startCall(activeChat, 'voice')}
+                                                className="rounded-full p-1.5 hover:bg-white/20 text-white transition-colors"
+                                                title="Panggilan Suara"
+                                            >
+                                                <FiPhone size={18} />
+                                            </button>
+                                            <button
+                                                onClick={() => startCall(activeChat, 'video')}
+                                                className="rounded-full p-1.5 hover:bg-white/20 text-white transition-colors"
+                                                title="Panggilan Video"
+                                            >
+                                                <FiVideo size={18} />
+                                            </button>
+                                            <button onClick={handleDeleteChat} className="rounded-full p-1.5 hover:bg-white/20 text-white/70 hover:text-white transition-colors">
+                                                <FiTrash2 size={18} />
+                                            </button>
+                                        </>
                                     )}
                                     <button onClick={closeWidget} className="rounded-full p-1 hover:bg-white/20">
                                         <FiMoreVertical size={20} />

@@ -160,7 +160,7 @@ export const OrderNotificationProvider = ({ children }) => {
     }, [userId, userRole, fetchPendingCount]);
 
     return (
-        <OrderNotificationContext.Provider value={{ pendingCount, fetchPendingCount, lastSync, onlineUsers }}>
+        <OrderNotificationContext.Provider value={{ pendingCount, fetchPendingCount, lastSync, onlineUsers, socket }}>
             {children}
             {!location.pathname.startsWith('/customer') && (
                 <NewOrderPopup

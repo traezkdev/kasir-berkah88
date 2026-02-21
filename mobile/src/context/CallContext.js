@@ -3,6 +3,7 @@ import { Platform, Alert } from 'react-native';
 import { Audio } from 'expo-av';
 import { useAuth } from './AuthContext';
 import { useOrderNotification } from './OrderNotificationContext';
+import apiService from '../api/apiService';
 
 // Logic untuk membedakan WebRTC di HP vs Web
 let WebRTC;
@@ -34,13 +35,11 @@ if (Platform.OS === 'web') {
 
 const CallContext = createContext();
 
-const configuration = {
-    iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' },
-    ],
-};
+// Konfigurasi ICE default (hanya STUN, sebagai fallback sebelum TURN di-load)
+const defaultIceServers = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+];
 
 export const CallProvider = ({ children }) => {
     const { user } = useAuth();
@@ -54,8 +53,10 @@ export const CallProvider = ({ children }) => {
     const [remoteStream, setRemoteStream] = useState(null);
     const [localVideoEnabled, setLocalVideoEnabled] = useState(true);
     const [localAudioEnabled, setLocalAudioEnabled] = useState(true);
+    const [iceServers, setIceServers] = useState(defaultIceServers);
 
     const pc = useRef(null);
+    const iceServersRef = useRef(defaultIceServers);
     const localStreamRef = useRef(null);
     const callStatusRef = useRef('idle');
     const ringtoneSoundRef = useRef(null);
@@ -99,6 +100,48 @@ export const CallProvider = ({ children }) => {
         callStatusRef.current = status;
     };
 
+    // Ambil TURN credentials dari backend kita sendiri
+    const fetchIceServers = async () => {
+        try {
+            console.log('[WebRTC] Fetching TURN credentials from backend...');
+            const response = await apiService.get('/api/turn-credentials');
+            if (response.data && response.data.iceServers) {
+                console.log('[WebRTC] TURN credentials received successfully. Count:', response.data.iceServers.length);
+                setIceServers(response.data.iceServers);
+                iceServersRef.current = response.data.iceServers;
+                return response.data.iceServers;
+            }
+        } catch (err) {
+            console.warn('[WebRTC] Gagal mengambil TURN credentials, menggunakan STUN saja:', err.message);
+        }
+        return defaultIceServers;
+    };
+
+    // Fungsi untuk meminta izin di Android secara runtime
+    const requestPermissions = async () => {
+        if (Platform.OS !== 'android') return true;
+
+        const { PermissionsAndroid } = require('react-native');
+        try {
+            const granted = await PermissionsAndroid.requestMultiple([
+                PermissionsAndroid.PERMISSIONS.CAMERA,
+                PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+            ]);
+
+            const cameraGranted = granted[PermissionsAndroid.PERMISSIONS.CAMERA] === PermissionsAndroid.RESULTS.GRANTED;
+            const micGranted = granted[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO] === PermissionsAndroid.RESULTS.GRANTED;
+
+            if (!cameraGranted || !micGranted) {
+                console.warn('[WebRTC] Izin ditolak oleh pengguna');
+                return false;
+            }
+            return true;
+        } catch (err) {
+            console.warn('[WebRTC] Gagal meminta izin:', err);
+            return false;
+        }
+    };
+
     const setupMedia = async (type) => {
         console.log('[WebRTC] setupMedia started. type:', type);
 
@@ -110,6 +153,29 @@ export const CallProvider = ({ children }) => {
         if (!WebRTC.mediaDevices) {
             console.error('[WebRTC] Error: mediaDevices is undefined.');
             return null;
+        }
+
+        // Minta izin dulu di Android
+        const hasPermission = await requestPermissions();
+        if (!hasPermission) {
+            Alert.alert('Izin Dibutuhkan', 'Kamera dan Mikrofon diperlukan untuk melakukan panggilan.');
+            return null;
+        }
+
+        // Set Audio Mode agar suara keluar dari speaker (bukan earpiece) di Android
+        if (Platform.OS !== 'web') {
+            try {
+                await Audio.setAudioModeAsync({
+                    allowsRecordingIOS: true,
+                    playsInSilentModeIOS: true,
+                    staysActiveInBackground: true,
+                    shouldDuckAndroid: false,
+                    playThroughEarpieceAndroid: false, // false = speaker, true = earpiece
+                });
+                console.log('[WebRTC] Audio mode set successfully');
+            } catch (audioErr) {
+                console.warn('[WebRTC] Gagal set audio mode:', audioErr.message);
+            }
         }
 
         try {
@@ -133,14 +199,18 @@ export const CallProvider = ({ children }) => {
         if (!socket) return;
 
         const handleIncomingCall = (data) => {
-            console.log('[WebRTC] handleIncomingCall. Current status:', callStatusRef.current);
-            if (callStatusRef.current === 'idle') {
+            console.log('[WebRTC] handleIncomingCall received. Status:', callStatusRef.current, 'From:', data.callerId);
+
+            // AGRESIF: Selalu terima sinyal masuk jika kita sedang tidak dalam panggilan yang sudah TERHUBUNG (connected)
+            if (callStatusRef.current !== 'connected') {
+                console.log('[WebRTC] Forcing UI for incoming call');
                 setIncomingCall(data);
                 updateCallStatus('ringing');
                 setCallType(data.type);
-                playSound('incoming'); // Berdering!
+                playSound('incoming');
             } else {
-                console.log('[WebRTC] Busy, emitting call_busy');
+                // Hanya kirim busy jika kita benar-benar sedang ngobrol (connected)
+                console.log('[WebRTC] Truly busy (connected), emitting call_busy');
                 socket.emit('call_busy', { to: data.callerId });
             }
         };
@@ -216,7 +286,7 @@ export const CallProvider = ({ children }) => {
                 // KHUSUS PENELPON: Baru mulai handshake WebRTC sekarang ke ID pengangkat yang tepat
                 if (localStreamRef.current && !pc.current) {
                     try {
-                        const peer = createPeerConnection(data.acceptedBy);
+                        const peer = createPeerConnection(data.acceptedBy, iceServersRef.current);
                         localStreamRef.current.getTracks().forEach(track => peer.addTrack(track, localStreamRef.current));
 
                         const offer = await peer.createOffer();
@@ -233,7 +303,18 @@ export const CallProvider = ({ children }) => {
         socket.on('incoming_call', handleIncomingCall);
         socket.on('webrtc_signal', handleWebRTCSignal);
         socket.on('call_accepted', handleCallAccepted);
-        socket.on('call_rejected', endCall);
+
+        socket.on('call_rejected', () => {
+            // Hanya endCall jika sedang dalam fase memanggil (ringing)
+            // Jika sudah terhubung (connected), abaikan penolakan dari seller lain
+            if (callStatusRef.current === 'ringing') {
+                console.log('[WebRTC] Call rejected while ringing, ending call.');
+                endCall();
+            } else {
+                console.log('[WebRTC] Call rejected but already connected, ignoring.');
+            }
+        });
+
         socket.on('call_ended', endCall);
         socket.on('call_busy', () => {
             endCall();
@@ -262,10 +343,18 @@ export const CallProvider = ({ children }) => {
         };
     }, [socket]); // Hanya bergantung pada socket, tidak re-run saat status berubah
 
-    const createPeerConnection = (targetId) => {
+    const createPeerConnection = (targetId, customIceServers = null) => {
         if (!WebRTC) return null;
-        console.log('[WebRTC] Creating RTCPeerConnection for target:', targetId);
-        const peer = new WebRTC.RTCPeerConnection(configuration);
+
+        // Gunakan Ref jika state belum terupdate
+        const activeIceServers = customIceServers || iceServersRef.current || defaultIceServers;
+
+        console.log('[WebRTC] Creating RTCPeerConnection for target:', targetId, '| ICE servers count:', activeIceServers.length);
+
+        const peer = new WebRTC.RTCPeerConnection({
+            iceServers: activeIceServers,
+            iceCandidatePoolSize: 10 // Mempercepat gathering ICE candidates
+        });
 
         peer.onicecandidate = (event) => {
             if (event.candidate) {
@@ -274,21 +363,27 @@ export const CallProvider = ({ children }) => {
             }
         };
 
+        // Modern track handling
         peer.ontrack = (event) => {
-            console.log('[WebRTC] Remote track received');
+            console.log('[WebRTC] Remote track received:', event.track?.kind);
             if (event.streams && event.streams[0]) {
                 setRemoteStream(event.streams[0]);
             }
         };
 
-        // Fallback untuk versi lama atau perangkat tertentu
+        // Fallback untuk versi native webrtc tertentu (seringkali lebih stabil di Android)
         peer.onaddstream = (event) => {
-            console.log('[WebRTC] Remote stream received (legacy)');
-            setRemoteStream(event.stream);
+            console.log('[WebRTC] Remote stream added (onaddstream)');
+            if (event.stream) {
+                setRemoteStream(event.stream);
+            }
         };
 
         peer.oniceconnectionstatechange = () => {
             console.log('[WebRTC] ICE Connection State:', peer.iceConnectionState);
+            if (peer.iceConnectionState === 'failed') {
+                console.warn('[WebRTC] ICE connection failed. Potential firewall issue or TURN server unreachable.');
+            }
         };
 
         peer.onsignalingstatechange = () => {
@@ -307,6 +402,10 @@ export const CallProvider = ({ children }) => {
             Alert.alert('Error', 'Data pengguna tidak valid untuk melakukan panggilan.');
             return;
         }
+
+        // Fetch TURN credentials SEBELUM setup media
+        const activeIceServers = await fetchIceServers();
+        setIceServers(activeIceServers);
 
         const stream = await setupMedia(type);
         if (!stream) {
@@ -341,6 +440,11 @@ export const CallProvider = ({ children }) => {
 
     const acceptCall = async () => {
         if (!incomingCall) return;
+
+        // Fetch TURN credentials SEBELUM setup media
+        const activeIceServers = await fetchIceServers();
+        setIceServers(activeIceServers);
+
         const stream = await setupMedia(incomingCall.type);
         if (!stream) return;
 
@@ -349,7 +453,7 @@ export const CallProvider = ({ children }) => {
         setRemoteUser({ user_id: incomingCall.callerId, username: incomingCall.callerName });
         stopSound(); // Berhenti berdering saat kita angkat
 
-        const peer = createPeerConnection(incomingCall.callerId);
+        const peer = createPeerConnection(incomingCall.callerId, activeIceServers);
         stream.getTracks().forEach(track => peer.addTrack(track, stream));
 
         // Jika Offer sudah ada (datang duluan sebelum tombol terima ditekan)
@@ -448,7 +552,8 @@ export const CallProvider = ({ children }) => {
         <CallContext.Provider value={{
             callStatus, callType, incomingCall, remoteUser,
             localStream, remoteStream, localVideoEnabled, localAudioEnabled,
-            startCall, acceptCall, rejectCall, endCall, toggleVideo, toggleAudio
+            startCall, acceptCall, rejectCall, endCall, toggleVideo, toggleAudio,
+            setIncomingCall, updateCallStatus, setCallType
         }}>
             {children}
         </CallContext.Provider>

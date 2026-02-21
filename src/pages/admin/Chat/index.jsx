@@ -10,6 +10,8 @@ import authFetch from '../../../utils/authFetch';
 import OrderPinWidget from '../../../components/ui/OrderPinWidget';
 import { useNavigate } from 'react-router-dom';
 import { useOrderNotification } from '../../../contexts/OrderNotificationContext';
+import { useCall } from '../../../contexts/CallContext';
+import { FiPhone, FiVideo } from 'react-icons/fi';
 
 const AdminChatPage = () => {
     const navigate = useNavigate();
@@ -24,6 +26,7 @@ const AdminChatPage = () => {
         setActiveOrder
     } = useChat();
     const { onlineUsers } = useOrderNotification();
+    const { startCall } = useCall();
 
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
@@ -308,6 +311,24 @@ const AdminChatPage = () => {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
+                                    {activeChat && (
+                                        <>
+                                            <button
+                                                onClick={() => startCall(activeChat, 'voice')}
+                                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all text-gray-400 hover:text-blue-500"
+                                                title="Panggilan Suara"
+                                            >
+                                                <FiPhone size={20} />
+                                            </button>
+                                            <button
+                                                onClick={() => startCall(activeChat, 'video')}
+                                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all text-gray-400 hover:text-blue-500"
+                                                title="Panggilan Video"
+                                            >
+                                                <FiVideo size={20} />
+                                            </button>
+                                        </>
+                                    )}
                                     <button onClick={handleDeleteChat} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 rounded-full transition-colors" title="Hapus Riwayat Chat">
                                         <FiTrash2 size={18} />
                                     </button>

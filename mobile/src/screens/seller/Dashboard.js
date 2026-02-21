@@ -284,7 +284,12 @@ const SellerDashboard = ({ navigation }) => {
                 style={styles.container}
                 contentContainerStyle={[
                     styles.scrollContent,
-                    { paddingTop: (dashboardRunningTextEnabled && dashboardRunningText) ? 290 : 240 }
+                    {
+                        paddingTop: Platform.select({
+                            web: (dashboardRunningTextEnabled && dashboardRunningText) ? 280 : 230,
+                            default: (dashboardRunningTextEnabled && dashboardRunningText) ? 305 : 255
+                        })
+                    }
                 ]}
                 refreshControl={
                     <RefreshControl
@@ -646,7 +651,7 @@ const styles = StyleSheet.create({
     statsWrapper: {
         backgroundColor: '#FFFFFF',
         marginHorizontal: '4%',
-        marginTop: 35,
+        marginTop: Platform.select({ web: 30, default: 40 }),
         borderRadius: 24,
         paddingBottom: 10,
         paddingTop: 5,
