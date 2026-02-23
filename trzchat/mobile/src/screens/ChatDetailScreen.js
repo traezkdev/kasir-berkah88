@@ -50,36 +50,39 @@ import { getToken } from '../utils/auth';
 
 // --- Komponen Pembantu di Luar (Untuk Optimasi Performa) ---
 
-const WaveBar = memo(({ index, isMe, isPlaying, sharedProgress }) => {
+// Komponen Bar Statis (Sangat Ringan untuk Scroll)
+const StaticWaveBar = memo(({ index }) => {
+    const heights = [10, 16, 12, 20, 14, 24, 18, 12, 22, 16, 20, 14, 18, 12, 10];
+    const height = heights[index % heights.length];
+    return <View style={[styles.waveBar, { height }]} />;
+});
+
+// Komponen Bar Animasi (Hanya untuk yang sedang diputar)
+const AnimatedWaveBar = memo(({ index, isMe, sharedProgress }) => {
     const heights = [10, 16, 12, 20, 14, 24, 18, 12, 22, 16, 20, 14, 18, 12, 10];
     const baseHeight = heights[index % heights.length];
     const pulse = useSharedValue(1);
 
     useEffect(() => {
-        if (isPlaying) {
-            pulse.value = withRepeat(
-                withSequence(
-                    withTiming(1.2, { duration: 400 + (index * 40) }),
-                    withTiming(0.8, { duration: 400 + (index * 40) })
-                ),
-                -1,
-                true
-            );
-        } else {
-            pulse.value = withSpring(1);
-        }
-    }, [isPlaying]);
+        pulse.value = withRepeat(
+            withSequence(
+                withTiming(1.2, { duration: 400 + (index * 40) }),
+                withTiming(0.8, { duration: 400 + (index * 40) })
+            ),
+            -1,
+            true
+        );
+        return () => { pulse.value = 1; };
+    }, []);
 
     const animatedStyle = useAnimatedStyle(() => {
         const barPct = (index + 1) / 15;
         const isActive = sharedProgress.value >= barPct;
 
         return {
-            height: baseHeight * (isPlaying ? pulse.value : 1),
+            height: baseHeight * pulse.value,
             backgroundColor: withTiming(
-                isActive
-                    ? (isMe ? '#7C3AED' : '#6366F1')
-                    : 'rgba(0,0,0,0.1)',
+                isActive ? (isMe ? '#7C3AED' : '#6366F1') : 'rgba(0,0,0,0.1)',
                 { duration: 150 }
             )
         };
@@ -92,7 +95,11 @@ const Waveform = memo(({ isMe, isPlaying, sharedProgress }) => {
     return (
         <View style={styles.waveformContainer}>
             {[...Array(15)].map((_, i) => (
-                <WaveBar key={i} index={i} isMe={isMe} isPlaying={isPlaying} sharedProgress={sharedProgress} />
+                isPlaying ? (
+                    <AnimatedWaveBar key={i} index={i} isMe={isMe} sharedProgress={sharedProgress} />
+                ) : (
+                    <StaticWaveBar key={i} index={i} />
+                )
             ))}
         </View>
     );

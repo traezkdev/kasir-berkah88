@@ -330,6 +330,10 @@ const ChatListScreen = () => {
         });
     }, [navigation]);
 
+    const renderSearchResult = useCallback(({ item }) => (
+        <SearchItem item={item} onStartChat={startChat} />
+    ), [startChat]);
+
     const renderItem = useCallback(({ item }) => (
         <ChatItem item={item} onNavigate={handleNavigate} onLongPress={handleLongPress} />
     ), [handleNavigate, handleLongPress]);
