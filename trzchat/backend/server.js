@@ -417,24 +417,59 @@ const sendPushNotification = async (targetUserId, title, body, data = {}) => {
     try {
         const [users] = await pool.query('SELECT fcm_token FROM users WHERE id = ?', [targetUserId]);
         if (users.length > 0 && users[0].fcm_token) {
+            console.log(`[Push] Mencoba kirim notifikasi ke user ${targetUserId}...`);
             const message = {
                 notification: {
                     title: title,
                     body: body,
                 },
+                android: {
+                    priority: 'high',
+                    ttl: 0, // Kirim segera, jangan antre
+                    notification: {
+                        channelId: 'default',
+                        sound: 'default',
+                    }
+                },
+                apns: {
+                    headers: {
+                        'apns-priority': '10', // Prioritas tinggi untuk iOS
+                    },
+                    payload: {
+                        aps: {
+                            sound: 'default',
+                            contentAvailable: true,
+                        }
+                    }
+                },
                 data: {
                     ...data,
-                    click_action: 'FLUTTER_NOTIFICATION_CLICK', // Compatible with many libs
+                    chatId: String(data.chatId),
+                    senderName: String(title),
+                    senderAvatar: String(data.senderAvatar || ''),
+                    type: String(data.type || 'text'),
+                    experienceId: '@vira-chat/vira-chat',
                 },
                 token: users[0].fcm_token,
             };
 
             const response = await admin.messaging().send(message);
-            console.log(`Successfully sent push notification to user ${targetUserId}:`, response);
+            console.log(`[Push] Sukses kirim ke user ${targetUserId}:`, response);
             return response;
+        } else {
+            console.log(`[Push] Skip user ${targetUserId}: Token tidak ditemukan.`);
         }
     } catch (error) {
-        console.error(`Error sending push notification to user ${targetUserId}:`, error);
+        console.error(`[Push] Error kirim ke user ${targetUserId}:`, error.message);
+    }
+};
+
+const getUserAvatar = async (userId) => {
+    try {
+        const [users] = await pool.query('SELECT avatar FROM users WHERE id = ?', [userId]);
+        return users.length > 0 ? users[0].avatar : null;
+    } catch (error) {
+        return null;
     }
 };
 
@@ -634,12 +669,14 @@ app.post('/api/messages/audio', authenticateToken, uploadAudio.single('audio'), 
         // Send Push Notification
         const recipients = await getChatRecipients(chatId, req.user.id);
         const senderName = await getUserName(req.user.id);
+        const senderAvatar = await getUserAvatar(req.user.id);
         if (recipients && recipients.length > 0) {
             recipients.forEach(targetId => {
                 sendPushNotification(targetId, senderName, audioLabel, {
                     chatId: String(chatId),
                     type: 'audio',
-                    senderId: String(req.user.id)
+                    senderId: String(req.user.id),
+                    senderAvatar: senderAvatar
                 });
             });
         }
@@ -698,12 +735,14 @@ app.post('/api/messages/image', authenticateToken, uploadImage.single('image'), 
         // Send Push Notification
         const recipients = await getChatRecipients(chatId, req.user.id);
         const senderName = await getUserName(req.user.id);
+        const senderAvatar = await getUserAvatar(req.user.id);
         if (recipients && recipients.length > 0) {
             recipients.forEach(targetId => {
                 sendPushNotification(targetId, senderName, imageLabel, {
                     chatId: String(chatId),
                     type: 'image',
-                    senderId: String(req.user.id)
+                    senderId: String(req.user.id),
+                    senderAvatar: senderAvatar
                 });
             });
         }
@@ -762,12 +801,14 @@ app.post('/api/messages/video', authenticateToken, uploadVideo.single('video'), 
         // Send Push Notification
         const recipients = await getChatRecipients(chatId, req.user.id);
         const senderName = await getUserName(req.user.id);
+        const senderAvatar = await getUserAvatar(req.user.id);
         if (recipients && recipients.length > 0) {
             recipients.forEach(targetId => {
                 sendPushNotification(targetId, senderName, videoLabel, {
                     chatId: String(chatId),
                     type: 'video',
-                    senderId: String(req.user.id)
+                    senderId: String(req.user.id),
+                    senderAvatar: senderAvatar
                 });
             });
         }
@@ -824,12 +865,14 @@ app.post('/api/messages/file', authenticateToken, uploadFile.single('file'), asy
         // Send Push Notification
         const recipients = await getChatRecipients(chatId, req.user.id);
         const senderName = await getUserName(req.user.id);
+        const senderAvatar = await getUserAvatar(req.user.id);
         if (recipients && recipients.length > 0) {
             recipients.forEach(targetId => {
                 sendPushNotification(targetId, senderName, fileLabel, {
                     chatId: String(chatId),
                     type: 'file',
-                    senderId: String(req.user.id)
+                    senderId: String(req.user.id),
+                    senderAvatar: senderAvatar
                 });
             });
         }
@@ -887,12 +930,14 @@ app.post('/api/messages', authenticateToken, async (req, res) => {
         // Send Push Notification
         const recipients = await getChatRecipients(chatId, req.user.id);
         const senderName = await getUserName(req.user.id);
+        const senderAvatar = await getUserAvatar(req.user.id);
         if (recipients && recipients.length > 0) {
             recipients.forEach(targetId => {
                 sendPushNotification(targetId, senderName, text, {
                     chatId: String(chatId),
                     type: 'text',
-                    senderId: String(req.user.id)
+                    senderId: String(req.user.id),
+                    senderAvatar: senderAvatar
                 });
             });
         }

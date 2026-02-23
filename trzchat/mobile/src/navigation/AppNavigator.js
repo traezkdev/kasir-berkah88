@@ -165,8 +165,62 @@ const MainDrawer = () => (
 
 
 const AppNavigator = () => {
+    const navigationRef = React.useRef();
+
     React.useEffect(() => {
-        const subscription = setupNotificationListeners();
+        // Inisialisasi listener dasar dan handler (Heads-up display)
+        setupNotificationListeners();
+
+        const setupNotifications = async () => {
+            const Notifications = require('expo-notifications');
+
+            // Listener untuk notifikasi yang diklik
+            const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
+                const data = response.notification.request.content.data;
+                console.log('[Push] Notifikasi diklik:', data);
+
+                if (data && data.chatId) {
+                    // Beri jeda sedikit untuk memastikan navigasi siap
+                    setTimeout(() => {
+                        if (navigationRef.current) {
+                            navigationRef.current.navigate('ChatDetail', {
+                                chat: {
+                                    id: data.chatId,
+                                    name: data.senderName || 'Chat',
+                                    avatar: data.senderAvatar || null
+                                }
+                            });
+                        }
+                    }, 500);
+                }
+            });
+
+            // Cek jika ada notifikasi yang memicu pembukaan aplikasi
+            const lastResponse = await Notifications.getLastNotificationResponseAsync();
+            if (lastResponse) {
+                const data = lastResponse.notification.request.content.data;
+                if (data && data.chatId) {
+                    setTimeout(() => {
+                        if (navigationRef.current) {
+                            navigationRef.current.navigate('ChatDetail', {
+                                chat: {
+                                    id: data.chatId,
+                                    name: data.senderName || 'Chat',
+                                    avatar: data.senderAvatar || null
+                                }
+                            });
+                        }
+                    }, 1000);
+                }
+            }
+
+            return responseSubscription;
+        };
+
+        let notificationSub;
+        setupNotifications().then(sub => {
+            notificationSub = sub;
+        });
 
         const checkLoggedIn = async () => {
             const { getToken } = require('../utils/auth');
@@ -178,14 +232,14 @@ const AppNavigator = () => {
         checkLoggedIn();
 
         return () => {
-            if (subscription && subscription.remove) {
-                subscription.remove();
+            if (notificationSub && notificationSub.remove) {
+                notificationSub.remove();
             }
         };
     }, []);
 
     return (
-        <NavigationContainer>
+        <NavigationContainer ref={navigationRef}>
             <Stack.Navigator
                 initialRouteName="Welcome"
                 detachInactiveScreens={true}

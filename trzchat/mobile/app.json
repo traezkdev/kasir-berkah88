@@ -4,7 +4,12 @@
     "slug": "vira-chat",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/iconlogo.png",
+    "splash": {
+      "image": "./assets/iconlogo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "userInterfaceStyle": "light",
     "assetBundlePatterns": [
       "**/*"
@@ -18,7 +23,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/iconlogo.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.trzchat.app",
@@ -52,7 +57,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/icon.png",
+          "icon": "./assets/iconlogo.png",
           "color": "#6366F1"
         }
       ]

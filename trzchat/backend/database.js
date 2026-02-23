@@ -57,8 +57,11 @@ async function initDB() {
       console.log('Added last_seen column to users table');
     }
     if (!columnNames.includes('fcm_token')) {
-      await connection.query(`ALTER TABLE users ADD COLUMN fcm_token VARCHAR(255) NULL AFTER status`);
+      await connection.query(`ALTER TABLE users ADD COLUMN fcm_token TEXT NULL AFTER status`);
       console.log('Added fcm_token column to users table');
+    } else {
+      // Pastikan kolom cukup lebar jika sudah ada
+      await connection.query(`ALTER TABLE users MODIFY COLUMN fcm_token TEXT NULL`);
     }
 
     await connection.query(`

@@ -3,21 +3,22 @@ import axios from 'axios';
 import { API_URL } from '../config/api';
 import { getToken } from './auth';
 
-// Cek apakah native module ExpoPushTokenManager tersedia
-// Jika tidak ada (Expo Go / web), semua fungsi notifikasi akan dilewati
-const isNativeNotificationSupported = () => {
-    return Platform.OS !== 'web' && !!NativeModules.ExpoPushTokenManager;
+// Fungsi pembantu untuk cek dukungan platform
+const isSupported = () => {
+    return Platform.OS !== 'web';
 };
 
 export const registerForPushNotificationsAsync = async () => {
-    if (!isNativeNotificationSupported()) {
-        console.log('[Notifications] Native module tidak tersedia, dilewati.');
+    if (!isSupported()) {
+        console.log('[Notifications] Platform tidak didukung (Web), dilewati.');
         return null;
     }
 
     try {
         const Notifications = require('expo-notifications');
         const Device = require('expo-device');
+
+        console.log('[Notifications] Memulai pendaftaran...');
 
         if (Platform.OS === 'android') {
             await Notifications.setNotificationChannelAsync('default', {
@@ -39,23 +40,25 @@ export const registerForPushNotificationsAsync = async () => {
             const { status } = await Notifications.requestPermissionsAsync();
             finalStatus = status;
         }
+
         if (finalStatus !== 'granted') {
             console.log('[Notifications] Izin notifikasi ditolak.');
             return null;
         }
 
-        const tokenResponse = await Notifications.getExpoPushTokenAsync({
-            projectId: 'd6c9dda3-051f-48a7-a7d1-8c1b786a6764',
-        });
+        // Ganti getExpoPushTokenAsync dengan getDevicePushTokenAsync untuk mendapatkan FCM Token asli
+        // karena backend menggunakan firebase-admin (messaging().send)
+        const tokenResponse = await Notifications.getDevicePushTokenAsync();
         const token = tokenResponse.data;
-        console.log('[Notifications] Token FCM:', token);
+
+        console.log('[Notifications] Token FCM Asli:', token);
 
         if (token) {
             await saveTokenToServer(token);
         }
         return token;
     } catch (error) {
-        console.log('[Notifications] Error (dilewati):', error.message);
+        console.log('[Notifications] Error saat register:', error.message);
         return null;
     }
 };
@@ -75,8 +78,8 @@ const saveTokenToServer = async (token) => {
 };
 
 export const setupNotificationListeners = () => {
-    if (!isNativeNotificationSupported()) {
-        console.log('[Notifications] Native module tidak tersedia, listener dilewati.');
+    if (!isSupported()) {
+        console.log('[Notifications] Web tidak mendukung listener native, dilewati.');
         return null;
     }
 
