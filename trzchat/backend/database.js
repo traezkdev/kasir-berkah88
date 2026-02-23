@@ -150,6 +150,17 @@ async function initDB() {
     }
 
     await connection.query(`
+      CREATE TABLE IF NOT EXISTS message_visibility (
+        user_id INT,
+        message_id INT,
+        hidden_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (user_id, message_id),
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE
+      )
+    `);
+
+    await connection.query(`
       CREATE TABLE IF NOT EXISTS chat_participants (
         id INT AUTO_INCREMENT PRIMARY KEY,
         chat_id INT,

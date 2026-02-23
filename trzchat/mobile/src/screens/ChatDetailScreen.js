@@ -903,7 +903,6 @@ const ChatDetailScreen = () => {
     }, [chat.id, message, replyingTo, editingMessage, chat.name]);
 
     const handleLongPress = useCallback((item) => {
-        if (item.is_deleted) return;
         setSelectedMessage(item);
         setOptionsVisible(true);
     }, []);
@@ -928,16 +927,25 @@ const ChatDetailScreen = () => {
         setOptionsVisible(false);
     };
 
-    const handleDelete = async () => {
-        if (selectedMessage.sender !== 'me') return;
+    const handleDelete = async (type = 'semua') => {
+        if (!selectedMessage) return;
         const msgId = selectedMessage.id;
         setOptionsVisible(false);
         try {
             await getToken();
-            await axios.delete(`${API_URL}/messages/${msgId}`);
-            setMessages(prev => prev.map(m => m.id === msgId ? { ...m, text: 'Pesan ini telah dihapus', is_deleted: true } : m));
+            await axios.delete(`${API_URL}/messages/${msgId}?type=${type}`);
+
+            if (type === 'semua') {
+                // Hapus untuk semua orang (Hanya update teks)
+                setMessages(prev => prev.map(m => m.id === msgId ? { ...m, text: 'Pesan ini telah dihapus', is_deleted: true } : m));
+            } else {
+                // Hapus untuk saya (Hilangkan dari list)
+                setMessages(prev => prev.filter(m => m.id !== msgId));
+            }
+            setSelectedMessage(null);
         } catch (error) {
             console.error('Error deleting message:', error);
+            Alert.alert('Gagal', 'Tidak dapat menghapus pesan.');
         }
     };
 
@@ -1590,24 +1598,38 @@ const ChatDetailScreen = () => {
             {(optionsVisible && selectedMessage) ? (
                 <TouchableOpacity style={styles.optionsOverlay} activeOpacity={1} onPress={() => { setOptionsVisible(false); setSelectedMessage(null); }}>
                     <View style={[styles.optionsBox, selectedMessage.sender === 'me' ? styles.optionsBoxMe : styles.optionsBoxThem]}>
-                        <TouchableOpacity style={styles.optionItem} onPress={handleReply}>
-                            <Reply size={18} color="#6366F1" />
-                            <Text style={styles.optionText}>Balas</Text>
-                        </TouchableOpacity>
-                        {selectedMessage.sender === 'me' ? (
+                        {!selectedMessage.is_deleted && (
+                            <TouchableOpacity style={styles.optionItem} onPress={handleReply}>
+                                <Reply size={18} color="#6366F1" />
+                                <Text style={styles.optionText}>Balas</Text>
+                            </TouchableOpacity>
+                        )}
+
+                        {(selectedMessage.sender === 'me' && !selectedMessage.is_deleted) && (
                             <View>
                                 <View style={styles.optionDivider} />
                                 <TouchableOpacity style={styles.optionItem} onPress={handleEdit}>
                                     <Edit2 size={18} color="#555" />
                                     <Text style={styles.optionText}>Edit</Text>
                                 </TouchableOpacity>
+                            </View>
+                        )}
+
+                        <View style={styles.optionDivider} />
+                        <TouchableOpacity style={styles.optionItem} onPress={() => handleDelete('pribadi')}>
+                            <Trash2 size={18} color="#e53935" />
+                            <Text style={[styles.optionText, styles.dangerText]}>Hapus untuk saya</Text>
+                        </TouchableOpacity>
+
+                        {(selectedMessage.sender === 'me' && !selectedMessage.is_deleted) && (
+                            <View>
                                 <View style={styles.optionDivider} />
-                                <TouchableOpacity style={styles.optionItem} onPress={handleDelete}>
-                                    <Trash2 size={18} color="#e53935" />
-                                    <Text style={[styles.optionText, styles.dangerText]}>Hapus</Text>
+                                <TouchableOpacity style={styles.optionItem} onPress={() => handleDelete('semua')}>
+                                    <CornerUpRight size={18} color="#e53935" style={{ transform: [{ scaleX: -1 }] }} />
+                                    <Text style={[styles.optionText, styles.dangerText]}>Tarik pesan (Semua)</Text>
                                 </TouchableOpacity>
                             </View>
-                        ) : null}
+                        )}
                     </View>
                 </TouchableOpacity>
             ) : null}

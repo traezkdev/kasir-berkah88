@@ -506,9 +506,11 @@ app.get('/api/messages/:chatId', authenticateToken, async (req, res) => {
             LEFT JOIN messages rm ON m.reply_to = rm.id
             LEFT JOIN users ru ON rm.sender_id = ru.id
             WHERE m.chat_id = ? 
+            AND m.id NOT IN (SELECT message_id FROM message_visibility WHERE user_id = ?)
             ORDER BY m.created_at DESC LIMIT ? OFFSET ?
         `;
-        const [messages] = await pool.query(query, [req.user.id, chatId, limit, offset]);
+
+        const [messages] = await pool.query(query, [req.user.id, chatId, req.user.id, limit, offset]);
         res.json(messages);
     } catch (error) {
         console.error(error);
@@ -783,19 +785,30 @@ app.put('/api/messages/:id', authenticateToken, async (req, res) => {
     }
 });
 
-// Delete Message (Soft Delete)
+// Delete Message
 app.delete('/api/messages/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
+    const { type } = req.query; // 'pribadi' atau 'semua'
+
     try {
         const [msg] = await pool.query('SELECT * FROM messages WHERE id = ?', [id]);
-        if (!msg.length || msg[0].sender_id !== req.user.id) {
-            return res.status(403).json({ message: 'Unauthorized or not found' });
+        if (!msg.length) {
+            return res.status(404).json({ message: 'Message not found' });
         }
 
-        await pool.query('UPDATE messages SET is_deleted = TRUE, text = "Pesan ini telah dihapus" WHERE id = ?', [id]);
+        if (type === 'semua') {
+            // Unsend / Hapus untuk semua orang (Hanya pengirim yang bisa)
+            if (msg[0].sender_id !== req.user.id) {
+                return res.status(403).json({ message: 'Unauthorized' });
+            }
+            await pool.query('UPDATE messages SET is_deleted = TRUE, text = "Pesan ini telah dihapus" WHERE id = ?', [id]);
+            io.to(`chat_${msg[0].chat_id}`).emit('message-deleted', { id, chatId: msg[0].chat_id });
+        } else {
+            // Hapus untuk saya (Semua orang bisa pada bubble masing-masing)
+            await pool.query('INSERT IGNORE INTO message_visibility (user_id, message_id) VALUES (?, ?)', [req.user.id, id]);
+        }
 
-        io.to(`chat_${msg[0].chat_id}`).emit('message-deleted', { id, chatId: msg[0].chat_id });
-        res.json({ message: 'Message deleted' });
+        res.json({ message: 'Message deleted successfully' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
