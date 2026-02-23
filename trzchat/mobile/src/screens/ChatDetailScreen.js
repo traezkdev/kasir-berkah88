@@ -18,7 +18,8 @@ import {
     InteractionManager,
     AppState,
     Modal,
-    Dimensions
+    Dimensions,
+    Linking
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Audio, Video as ExpoVideo, ResizeMode } from 'expo-av';
@@ -545,22 +546,22 @@ const ChatDetailScreen = () => {
 
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ['images'],
-                allowsEditing: true,
-                aspect: [4, 3],
+                allowsEditing: false, // Menghilangkan crop paksa
                 quality: 0.8,
             });
 
             if (!result.canceled) {
                 // Gunakan teks di input sebagai caption jika ada
                 const caption = message.trim();
-                sendImageMessage(result.assets[0].uri, caption);
+                const { uri, width, height } = result.assets[0];
+                sendImageMessage(uri, caption, width, height);
             }
         } catch (error) {
             console.error('Error picking image:', error);
         }
     };
 
-    const sendImageMessage = async (uri, caption = '') => {
+    const sendImageMessage = async (uri, caption = '', width, height) => {
         const tempId = 'img-' + Date.now().toString();
         const displayLabel = caption || '📷 Foto';
 
@@ -569,6 +570,8 @@ const ChatDetailScreen = () => {
             text: displayLabel,
             image_url: uri,
             type: 'image',
+            width: width,
+            height: height,
             time: new Date().toISOString(),
             sender: 'me',
             reply_to: replyingTo?.id || null,
@@ -601,6 +604,8 @@ const ChatDetailScreen = () => {
             formData.append('chatId', chat.id);
             if (replyId) formData.append('replyToId', replyId);
             if (caption) formData.append('text', caption);
+            if (width) formData.append('width', width);
+            if (height) formData.append('height', height);
 
             const response = await axios.post(`${API_URL}/messages/image`, formData, {
                 headers: {
@@ -642,20 +647,21 @@ const ChatDetailScreen = () => {
 
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ['videos'],
-                allowsEditing: true,
+                allowsEditing: false, // Menghilangkan batasan editing video
                 quality: 0.8,
             });
 
             if (!result.canceled) {
                 const caption = message.trim();
-                sendVideoMessage(result.assets[0].uri, caption);
+                const { uri, width, height } = result.assets[0];
+                sendVideoMessage(uri, caption, width, height);
             }
         } catch (error) {
             console.error('Error picking video:', error);
         }
     };
 
-    const sendVideoMessage = async (uri, caption = '') => {
+    const sendVideoMessage = async (uri, caption = '', width, height) => {
         const tempId = 'vid-' + Date.now().toString();
         const displayLabel = caption || '🎥 Video';
 
@@ -664,6 +670,8 @@ const ChatDetailScreen = () => {
             text: displayLabel,
             video_url: uri,
             type: 'video',
+            width: width,
+            height: height,
             time: new Date().toISOString(),
             sender: 'me',
             reply_to: replyingTo?.id || null,
@@ -691,6 +699,8 @@ const ChatDetailScreen = () => {
             formData.append('chatId', chat.id);
             if (replyId) formData.append('replyToId', replyId);
             if (caption) formData.append('text', caption);
+            if (width) formData.append('width', width);
+            if (height) formData.append('height', height);
 
             const response = await axios.post(`${API_URL}/messages/video`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
@@ -1008,7 +1018,7 @@ const ChatDetailScreen = () => {
         );
     });
 
-    const MessageItem = memo(({ item, onLongPress, onReplyPress, isHighlighted, highlightAnim, onAudioPress, audioPlayingId, audioLoadingId, sharedProgress, onMediaPress, uploadProgress }) => {
+    const MessageItem = memo(({ item, onLongPress, onReplyPress, isHighlighted, highlightAnim, onAudioPress, audioPlayingId, audioLoadingId, sharedProgress, onMediaPress, uploadProgress, onDownloadPress }) => {
         const isMe = item.sender === 'me';
         const displayTime = dayjs(item.created_at || item.time).format('HH:mm');
         const isDeleted = item.is_deleted ? true : false;
@@ -1135,7 +1145,7 @@ const ChatDetailScreen = () => {
                         ) : isFile ? (
                             <TouchableOpacity
                                 style={styles.fileContainer}
-                                onPress={() => {/* download/open file */ }}
+                                onPress={() => onDownloadPress(item.file_url, item.file_name)}
                                 activeOpacity={0.8}
                             >
                                 <View style={styles.fileIconBox}>
@@ -1143,7 +1153,7 @@ const ChatDetailScreen = () => {
                                 </View>
                                 <View style={styles.fileInfo}>
                                     <Text style={styles.fileName} numberOfLines={1}>{item.file_name || 'Document'}</Text>
-                                    <Text style={styles.fileSize}>Buka berkas</Text>
+                                    <Text style={styles.fileSize}>Unduh berkas</Text>
                                 </View>
                                 <Download size={18} color="#888" />
                             </TouchableOpacity>
@@ -1174,6 +1184,58 @@ const ChatDetailScreen = () => {
             </View>
         );
     });
+
+    const downloadMedia = async (url, fileName = 'download') => {
+        const downloadUrl = fixUrl(url);
+        try {
+            // Lazy load modules to bypass top-level import errors
+            let ExpoFileSystem, ExpoSharing, ExpoMediaLibrary;
+            try {
+                ExpoFileSystem = require('expo-file-system');
+                ExpoSharing = require('expo-sharing');
+                ExpoMediaLibrary = require('expo-media-library');
+            } catch (e) {
+                console.log('Native modules not available');
+            }
+
+            // Check if modules were successfully loaded and have the required functions
+            const hasFileSystem = ExpoFileSystem && ExpoFileSystem.createDownloadResumable;
+            const hasMediaLibrary = ExpoMediaLibrary && ExpoMediaLibrary.requestPermissionsAsync;
+            const hasSharing = ExpoSharing && ExpoSharing.isAvailableAsync;
+
+            if (hasFileSystem && hasMediaLibrary) {
+                const { status } = await ExpoMediaLibrary.requestPermissionsAsync();
+                if (status === 'granted') {
+                    const actualFileName = fileName.includes('.') ? fileName : url.split('/').pop();
+                    const extension = actualFileName.split('.').pop().toLowerCase();
+                    const localUri = ExpoFileSystem.cacheDirectory + actualFileName;
+
+                    const downloadResumable = ExpoFileSystem.createDownloadResumable(downloadUrl, localUri, {}, () => { });
+                    Alert.alert('Mengunduh...', 'Mohon tunggu sebentar.');
+                    const { uri } = await downloadResumable.downloadAsync();
+
+                    if (['jpg', 'jpeg', 'png', 'gif', 'mp4', 'mov'].includes(extension)) {
+                        await ExpoMediaLibrary.saveToLibraryAsync(uri);
+                        Alert.alert('Berhasil', 'Media telah disimpan ke Galeri.');
+                        return;
+                    } else if (hasSharing && (await ExpoSharing.isAvailableAsync())) {
+                        await ExpoSharing.shareAsync(uri);
+                        return;
+                    }
+                }
+            }
+
+            // Default fallback to browser
+            await Linking.openURL(downloadUrl);
+        } catch (error) {
+            console.log('Bypassing download error to browser:', error.message);
+            try {
+                await Linking.openURL(downloadUrl);
+            } catch (linkError) {
+                Alert.alert('Gagal', 'Tidak dapat membuka tautan unduhan.');
+            }
+        }
+    };
 
     const openMediaViewer = (type, url) => {
         setViewerUrl(url);
@@ -1217,6 +1279,13 @@ const ChatDetailScreen = () => {
                             style={styles.viewerVideo}
                         />
                     )}
+
+                    <TouchableOpacity
+                        style={styles.viewerDownloadBtn}
+                        onPress={() => downloadMedia(viewerUrl, viewerUrl.split('/').pop())}
+                    >
+                        <Download size={30} color="#fff" />
+                    </TouchableOpacity>
                 </View>
             </Modal>
         );
@@ -1235,6 +1304,7 @@ const ChatDetailScreen = () => {
             sharedProgress={sharedProgress}
             onMediaPress={openMediaViewer}
             uploadProgress={uploadProgress}
+            onDownloadPress={downloadMedia}
         />
     ), [handleLongPress, scrollToOriginalMessage, highlightedMessageId, audioPlayingId, audioLoadingId, sharedProgress, uploadProgress]);
 
@@ -1581,7 +1651,8 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         marginVertical: verticalScale(2),
         width: scale(220),
-        height: scale(220),
+        height: scale(200), // Ukuran standar bubble
+        backgroundColor: '#f3f4f6',
     },
     messageImage: {
         width: '100%',
@@ -1974,6 +2045,16 @@ const styles = StyleSheet.create({
         width: Dimensions.get('window').width,
         height: Dimensions.get('window').width * (16 / 9),
         maxHeight: Dimensions.get('window').height,
+    },
+    viewerDownloadBtn: {
+        position: 'absolute',
+        bottom: verticalScale(50),
+        alignSelf: 'center',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        borderRadius: scale(30),
+        padding: scale(15),
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.3)',
     },
     uploadOverlay: {
         ...StyleSheet.absoluteFillObject,

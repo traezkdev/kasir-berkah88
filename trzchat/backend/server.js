@@ -554,9 +554,10 @@ app.post('/api/messages/image', authenticateToken, uploadImage.single('image'), 
         const imageUrl = `${getBaseUrl(req)}/uploads/images/${req.file.filename}`;
         const imageLabel = text || '📷 Foto';
 
+        const { width, height } = req.body;
         const [result] = await pool.query(
-            'INSERT INTO messages (chat_id, sender_id, text, image_url, type, reply_to) VALUES (?, ?, ?, ?, "image", ?)',
-            [chatId, req.user.id, imageLabel, imageUrl, replyToId || null]
+            'INSERT INTO messages (chat_id, sender_id, text, image_url, width, height, type, reply_to) VALUES (?, ?, ?, ?, ?, ?, "image", ?)',
+            [chatId, req.user.id, imageLabel, imageUrl, width || null, height || null, replyToId || null]
         );
 
         // Update last message in chat
@@ -570,6 +571,8 @@ app.post('/api/messages/image', authenticateToken, uploadImage.single('image'), 
             chat_id: chatId,
             text: imageLabel,
             image_url: imageUrl,
+            width: width || null,
+            height: height || null,
             type: 'image',
             reply_to: replyToId || null,
             reply_text: null,
@@ -602,9 +605,10 @@ app.post('/api/messages/video', authenticateToken, uploadVideo.single('video'), 
         const videoUrl = `${getBaseUrl(req)}/uploads/videos/${req.file.filename}`;
         const videoLabel = text || '🎥 Video';
 
+        const { width, height } = req.body;
         const [result] = await pool.query(
-            'INSERT INTO messages (chat_id, sender_id, text, video_url, thumbnail_url, type, reply_to) VALUES (?, ?, ?, ?, ?, "video", ?)',
-            [chatId, req.user.id, videoLabel, videoUrl, req.body.thumbnailUrl || null, replyToId || null]
+            'INSERT INTO messages (chat_id, sender_id, text, video_url, thumbnail_url, width, height, type, reply_to) VALUES (?, ?, ?, ?, ?, ?, ?, "video", ?)',
+            [chatId, req.user.id, videoLabel, videoUrl, req.body.thumbnailUrl || null, width || null, height || null, replyToId || null]
         );
 
         // Update last message in chat
@@ -619,6 +623,8 @@ app.post('/api/messages/video', authenticateToken, uploadVideo.single('video'), 
             text: videoLabel,
             video_url: videoUrl,
             thumbnail_url: req.body.thumbnailUrl || null,
+            width: width || null,
+            height: height || null,
             type: 'video',
             reply_to: replyToId || null,
             reply_text: null,

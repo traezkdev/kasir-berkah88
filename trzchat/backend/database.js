@@ -140,6 +140,14 @@ async function initDB() {
       await connection.query(`ALTER TABLE messages ADD COLUMN status ENUM('sent', 'delivered', 'read') DEFAULT 'sent' AFTER is_deleted`);
       console.log('Added status column to messages table');
     }
+    if (!msgColumnNames.includes('width')) {
+      await connection.query(`ALTER TABLE messages ADD COLUMN width INT NULL AFTER text`);
+      console.log('Added width column to messages table');
+    }
+    if (!msgColumnNames.includes('height')) {
+      await connection.query(`ALTER TABLE messages ADD COLUMN height INT NULL AFTER width`);
+      console.log('Added height column to messages table');
+    }
 
     await connection.query(`
       CREATE TABLE IF NOT EXISTS chat_participants (
