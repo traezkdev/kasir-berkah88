@@ -48,6 +48,277 @@ import Reanimated, {
 
 import { getToken } from '../utils/auth';
 
+// --- Komponen Pembantu di Luar (Untuk Optimasi Performa) ---
+
+const WaveBar = memo(({ index, isMe, isPlaying, sharedProgress }) => {
+    const heights = [10, 16, 12, 20, 14, 24, 18, 12, 22, 16, 20, 14, 18, 12, 10];
+    const baseHeight = heights[index % heights.length];
+    const pulse = useSharedValue(1);
+
+    useEffect(() => {
+        if (isPlaying) {
+            pulse.value = withRepeat(
+                withSequence(
+                    withTiming(1.2, { duration: 400 + (index * 40) }),
+                    withTiming(0.8, { duration: 400 + (index * 40) })
+                ),
+                -1,
+                true
+            );
+        } else {
+            pulse.value = withSpring(1);
+        }
+    }, [isPlaying]);
+
+    const animatedStyle = useAnimatedStyle(() => {
+        const barPct = (index + 1) / 15;
+        const isActive = sharedProgress.value >= barPct;
+
+        return {
+            height: baseHeight * (isPlaying ? pulse.value : 1),
+            backgroundColor: withTiming(
+                isActive
+                    ? (isMe ? '#7C3AED' : '#6366F1')
+                    : 'rgba(0,0,0,0.1)',
+                { duration: 150 }
+            )
+        };
+    });
+
+    return <Reanimated.View style={[styles.waveBar, animatedStyle]} />;
+});
+
+const Waveform = memo(({ isMe, isPlaying, sharedProgress }) => {
+    return (
+        <View style={styles.waveformContainer}>
+            {[...Array(15)].map((_, i) => (
+                <WaveBar key={i} index={i} isMe={isMe} isPlaying={isPlaying} sharedProgress={sharedProgress} />
+            ))}
+        </View>
+    );
+});
+
+const MessageItem = memo(({
+    item,
+    onLongPress,
+    onReplyPress,
+    isHighlighted,
+    highlightAnim,
+    onAudioPress,
+    sharedProgress,
+    isPlaying,
+    isLoading,
+    onMediaPress,
+    itemProgress,
+    onDownloadPress,
+    selectionMode,
+    isSelected,
+    onToggleSelection,
+    onEnterSelection
+}) => {
+    const isMe = item.sender === 'me';
+    const displayTime = React.useMemo(() => dayjs(item.created_at || item.time).format('HH:mm'), [item.created_at, item.time]);
+    const isDeleted = item.is_deleted ? true : false;
+    const hasReply = item.reply_to && !isDeleted;
+    const isAudio = (item.type === 'audio') && !isDeleted;
+    const isImage = (item.type === 'image') && !isDeleted;
+    const isVideo = (item.type === 'video') && !isDeleted;
+    const isFile = (item.type === 'file') && !isDeleted;
+
+    const animatedBubbleStyle = isHighlighted ? {
+        backgroundColor: highlightAnim.interpolate({
+            inputRange: [0, 0.5, 1],
+            outputRange: ['transparent', '#ffe082', 'transparent'],
+        }),
+        transform: [{
+            scale: highlightAnim.interpolate({
+                inputRange: [0, 0.3, 1],
+                outputRange: [1, 1.03, 1],
+            })
+        }],
+    } : {};
+
+    return (
+        <TouchableOpacity
+            style={[
+                styles.messageOuterContainer,
+                isSelected && styles.selectedMessageBg
+            ]}
+            activeOpacity={1}
+            onPress={() => selectionMode ? onToggleSelection(item.id) : null}
+            onLongPress={() => !selectionMode ? onEnterSelection(item.id) : null}
+            delayLongPress={400}
+        >
+            <View
+                style={[
+                    styles.messageContainer,
+                    isMe ? styles.myMessageContainer : styles.theirMessageContainer,
+                    selectionMode && { maxWidth: '85%' },
+                    selectionMode && { flexDirection: isMe ? 'row-reverse' : 'row' }
+                ]}
+            >
+                {selectionMode && (
+                    <View style={[styles.selectionIndicator, isMe ? styles.selectionIndicatorMe : styles.selectionIndicatorThem]}>
+                        <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                            {isSelected && <Check size={12} color="#fff" strokeWidth={4} />}
+                        </View>
+                    </View>
+                )}
+                <TouchableOpacity
+                    onLongPress={() => !selectionMode ? onLongPress(item) : null}
+                    onPress={() => selectionMode ? onToggleSelection(item.id) : null}
+                    delayLongPress={400}
+                    activeOpacity={0.85}
+                >
+                    <Animated.View style={[styles.bubble, isMe ? styles.myBubble : styles.theirBubble, isDeleted ? styles.deletedBubble : null, animatedBubbleStyle]}>
+                        {hasReply ? (
+                            <TouchableOpacity
+                                style={[styles.replyPreviewBubble, isMe ? styles.replyPreviewMe : styles.replyPreviewThem]}
+                                onPress={() => onReplyPress(item.reply_to)}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={styles.replyPreviewUser}>{item.reply_user || 'User'}</Text>
+                                <Text style={styles.replyPreviewText} numberOfLines={1}>{item.reply_text}</Text>
+                            </TouchableOpacity>
+                        ) : null}
+                        {isAudio ? (
+                            <TouchableOpacity
+                                style={styles.audioPlayer}
+                                onPress={() => onAudioPress(item.id, item.audio_url)}
+                                activeOpacity={0.8}
+                            >
+                                <View style={[styles.audioPlayBtn, isMe ? styles.audioPlayBtnMe : styles.audioPlayBtnThem]}>
+                                    {isLoading ? (
+                                        <ActivityIndicator size="small" color="#fff" />
+                                    ) : isPlaying ? (
+                                        <Pause size={18} color="#fff" />
+                                    ) : (
+                                        <Play size={18} color="#fff" />
+                                    )}
+                                </View>
+                                <View style={styles.audioWaveContainer}>
+                                    <Waveform isMe={isMe} isPlaying={isPlaying} sharedProgress={sharedProgress} />
+                                    <View style={styles.audioMetaRow}>
+                                        <Text style={styles.audioDurationText}>{item.text.replace('🎤 Pesan Suara', '').trim()}</Text>
+                                        <Mic size={12} color="#9CA3AF" />
+                                    </View>
+                                </View>
+                            </TouchableOpacity>
+                        ) : isImage ? (
+                            <View>
+                                <TouchableOpacity
+                                    style={styles.imageContainer}
+                                    onPress={() => onMediaPress('image', item.image_url)}
+                                    activeOpacity={0.9}
+                                >
+                                    <Image
+                                        source={{ uri: fixUrl(item.image_url) }}
+                                        style={styles.messageImage}
+                                        resizeMode="cover"
+                                    />
+                                    {itemProgress !== undefined && (
+                                        <View style={styles.uploadOverlay}>
+                                            <ActivityIndicator size="small" color="#fff" />
+                                            <Text style={styles.uploadProgressText}>{itemProgress}%</Text>
+                                        </View>
+                                    )}
+                                </TouchableOpacity>
+                                {(item.text && item.text !== '📷 Foto') && (
+                                    <View style={styles.imageCaptionContainer}>
+                                        <Text style={styles.imageCaptionText}>{item.text}</Text>
+                                    </View>
+                                )}
+                            </View>
+                        ) : isVideo ? (
+                            <View>
+                                <TouchableOpacity
+                                    style={styles.imageContainer}
+                                    onPress={() => onMediaPress('video', item.video_url)}
+                                    activeOpacity={0.9}
+                                >
+                                    <View style={styles.videoWrapper}>
+                                        <ExpoVideo
+                                            source={{ uri: fixUrl(item.video_url) }}
+                                            style={styles.messageImage}
+                                            resizeMode={ResizeMode.COVER}
+                                            shouldPlay={false}
+                                            positionMillis={100} // Mengambil frame awal untuk thumbnail
+                                            useNativeControls={false}
+                                        />
+                                        <View style={styles.playOverlay}>
+                                            <Play size={24} color="#fff" fill="#fff" />
+                                        </View>
+                                        {itemProgress !== undefined && (
+                                            <View style={styles.uploadOverlay}>
+                                                <ActivityIndicator size="small" color="#fff" />
+                                                <Text style={styles.uploadProgressText}>{itemProgress}%</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                </TouchableOpacity>
+                                {(item.text && item.text !== '🎥 Video') && (
+                                    <View style={styles.imageCaptionContainer}>
+                                        <Text style={styles.imageCaptionText}>{item.text}</Text>
+                                    </View>
+                                )}
+                            </View>
+                        ) : isFile ? (
+                            <TouchableOpacity
+                                style={styles.fileContainer}
+                                onPress={() => onDownloadPress(item.file_url, item.file_name)}
+                                activeOpacity={0.8}
+                            >
+                                <View style={styles.fileIconBox}>
+                                    <FileText size={24} color="#6366F1" />
+                                </View>
+                                <View style={styles.fileInfo}>
+                                    <Text style={styles.fileName} numberOfLines={1}>{item.file_name || 'Document'}</Text>
+                                    <Text style={styles.fileSize}>Unduh berkas</Text>
+                                </View>
+                                <Download size={18} color="#888" />
+                            </TouchableOpacity>
+                        ) : (
+                            <Text style={[styles.messageText, isDeleted ? styles.deletedText : null]}>
+                                {isDeleted ? 'Pesan ini telah dihapus' : item.text}
+                            </Text>
+                        )}
+                        <View style={styles.messageFooter}>
+                            {(item.is_edited && !isDeleted) ? (
+                                <Text style={styles.editedLabel}>diedit</Text>
+                            ) : null}
+                            <Text style={styles.messageTime}>{displayTime}</Text>
+                            {isMe && !isDeleted && (
+                                <View style={{ marginLeft: 4 }}>
+                                    {item.status === 'read' ? (
+                                        <CheckCheck size={16} color="#34B7F1" />
+                                    ) : item.status === 'delivered' ? (
+                                        <CheckCheck size={16} color="#888" />
+                                    ) : (
+                                        <Check size={16} color="#888" />
+                                    )}
+                                </View>
+                            )}
+                        </View>
+                    </Animated.View>
+                </TouchableOpacity>
+            </View>
+        </TouchableOpacity>
+    );
+}, (prevProps, nextProps) => {
+    // Custom comparison untuk memaksimalkan performa memo
+    return (
+        prevProps.item.id === nextProps.item.id &&
+        prevProps.item.text === nextProps.item.text &&
+        prevProps.item.status === nextProps.item.status &&
+        prevProps.isPlaying === nextProps.isPlaying &&
+        prevProps.isLoading === nextProps.isLoading &&
+        prevProps.isHighlighted === nextProps.isHighlighted &&
+        prevProps.isSelected === nextProps.isSelected &&
+        prevProps.selectionMode === nextProps.selectionMode &&
+        prevProps.itemProgress === nextProps.itemProgress
+    );
+});
+
 const ChatDetailScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
@@ -72,6 +343,10 @@ const ChatDetailScreen = () => {
     const [editingMessage, setEditingMessage] = useState(null);
     const [optionsVisible, setOptionsVisible] = useState(false);
     const [highlightedMessageId, setHighlightedMessageId] = useState(null);
+
+    // Multi-Selection States
+    const [selectionMode, setSelectionMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState({}); // Menggunakan object { [id]: true } agar lookup O(1)
 
     // Media Preview States
     const [mediaPreviewVisible, setMediaPreviewVisible] = useState(false);
@@ -955,6 +1230,62 @@ const ChatDetailScreen = () => {
         if (editingMessage) setMessage('');
     };
 
+    const toggleSelection = useCallback((id) => {
+        setSelectedIds(prev => {
+            const next = { ...prev };
+            if (next[id]) {
+                delete next[id];
+                const hasRemaining = Object.keys(next).length > 0;
+                if (!hasRemaining) setSelectionMode(false);
+            } else {
+                next[id] = true;
+            }
+            return next;
+        });
+    }, []);
+
+    const enterSelectionMode = useCallback((id) => {
+        setSelectionMode(true);
+        setSelectedIds({ [id]: true });
+    }, []);
+
+    const exitSelectionMode = useCallback(() => {
+        setSelectionMode(false);
+        setSelectedIds({});
+    }, []);
+
+    const handleDeleteSelected = async () => {
+        const ids = Object.keys(selectedIds);
+        if (ids.length === 0) return;
+
+        Alert.alert(
+            'Hapus Pesan',
+            `Hapus ${ids.length} pesan untuk saya?`,
+            [
+                { text: 'Batal', style: 'cancel' },
+                {
+                    text: 'Hapus',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await getToken();
+                            // Kirim request hapus massal (pribadi)
+                            await Promise.all(ids.map(id =>
+                                axios.delete(`${API_URL}/messages/${id}?type=pribadi`)
+                            ));
+
+                            setMessages(prev => prev.filter(m => !selectedIds[m.id]));
+                            exitSelectionMode();
+                        } catch (error) {
+                            console.error('Error deleting multiple messages:', error);
+                            Alert.alert('Gagal', 'Beberapa pesan gagal dihapus.');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     const scrollToOriginalMessage = useCallback((replyToId) => {
         const currentMessages = messagesRef.current;
         const index = currentMessages.findIndex(m => m.id === replyToId);
@@ -990,228 +1321,8 @@ const ChatDetailScreen = () => {
         });
     }, [highlightAnim]);
 
-    // Komponen Bar Individu - Terhubung ke SharedValue (0% Re-render)
-    const WaveBar = memo(({ index, isMe, isPlaying, sharedProgress }) => {
-        const heights = [10, 16, 12, 20, 14, 24, 18, 12, 22, 16, 20, 14, 18, 12, 10];
-        const baseHeight = heights[index % heights.length];
-        const pulse = useSharedValue(1);
 
-        useEffect(() => {
-            if (isPlaying) {
-                pulse.value = withRepeat(
-                    withSequence(
-                        withTiming(1.2, { duration: 400 + (index * 40) }),
-                        withTiming(0.8, { duration: 400 + (index * 40) })
-                    ),
-                    -1,
-                    true
-                );
-            } else {
-                pulse.value = withSpring(1);
-            }
-        }, [isPlaying]);
-
-        const animatedStyle = useAnimatedStyle(() => {
-            const barPct = (index + 1) / 15;
-            const isActive = sharedProgress.value >= barPct;
-
-            return {
-                height: baseHeight * (isPlaying ? pulse.value : 1),
-                backgroundColor: withTiming(
-                    isActive
-                        ? (isMe ? '#7C3AED' : '#6366F1')
-                        : 'rgba(0,0,0,0.1)',
-                    { duration: 150 }
-                )
-            };
-        });
-
-        return <Reanimated.View style={[styles.waveBar, animatedStyle]} />;
-    });
-
-    // Komponen Waveform Premium
-    const Waveform = memo(({ isMe, isPlaying, sharedProgress }) => {
-        return (
-            <View style={styles.waveformContainer}>
-                {[...Array(15)].map((_, i) => (
-                    <WaveBar key={i} index={i} isMe={isMe} isPlaying={isPlaying} sharedProgress={sharedProgress} />
-                ))}
-            </View>
-        );
-    });
-
-    const MessageItem = memo(({ item, onLongPress, onReplyPress, isHighlighted, highlightAnim, onAudioPress, audioPlayingId, audioLoadingId, sharedProgress, onMediaPress, uploadProgress, onDownloadPress }) => {
-        const isMe = item.sender === 'me';
-        const displayTime = dayjs(item.created_at || item.time).format('HH:mm');
-        const isDeleted = item.is_deleted ? true : false;
-        const hasReply = item.reply_to && !isDeleted;
-        const isAudio = (item.type === 'audio') && !isDeleted;
-        const isImage = (item.type === 'image') && !isDeleted;
-        const isVideo = (item.type === 'video') && !isDeleted;
-        const isFile = (item.type === 'file') && !isDeleted;
-        const isPlaying = audioPlayingId === item.id;
-        const isLoading = audioLoadingId === item.id;
-
-        const animatedBubbleStyle = isHighlighted ? {
-            backgroundColor: highlightAnim.interpolate({
-                inputRange: [0, 0.5, 1],
-                outputRange: ['transparent', '#ffe082', 'transparent'],
-            }),
-            transform: [{
-                scale: highlightAnim.interpolate({
-                    inputRange: [0, 0.3, 1],
-                    outputRange: [1, 1.03, 1],
-                })
-            }],
-        } : {};
-
-        return (
-            <View
-                style={[
-                    styles.messageContainer,
-                    isMe ? styles.myMessageContainer : styles.theirMessageContainer,
-                ]}
-            >
-                <TouchableOpacity
-                    onLongPress={() => onLongPress(item)}
-                    delayLongPress={300}
-                    activeOpacity={0.85}
-                >
-                    <Animated.View style={[styles.bubble, isMe ? styles.myBubble : styles.theirBubble, isDeleted ? styles.deletedBubble : null, animatedBubbleStyle]}>
-                        {hasReply ? (
-                            <TouchableOpacity
-                                style={[styles.replyPreviewBubble, isMe ? styles.replyPreviewMe : styles.replyPreviewThem]}
-                                onPress={() => onReplyPress(item.reply_to)}
-                                activeOpacity={0.7}
-                            >
-                                <Text style={styles.replyPreviewUser}>{item.reply_user || 'User'}</Text>
-                                <Text style={styles.replyPreviewText} numberOfLines={1}>{item.reply_text}</Text>
-                            </TouchableOpacity>
-                        ) : null}
-                        {isAudio ? (
-                            <TouchableOpacity
-                                style={styles.audioPlayer}
-                                onPress={() => onAudioPress(item.id, item.audio_url)}
-                                activeOpacity={0.8}
-                            >
-                                <View style={[styles.audioPlayBtn, isMe ? styles.audioPlayBtnMe : styles.audioPlayBtnThem]}>
-                                    {isLoading ? (
-                                        <ActivityIndicator size="small" color="#fff" />
-                                    ) : isPlaying ? (
-                                        <Pause size={18} color="#fff" />
-                                    ) : (
-                                        <Play size={18} color="#fff" />
-                                    )}
-                                </View>
-                                <View style={styles.audioWaveContainer}>
-                                    <Waveform isMe={isMe} isPlaying={isPlaying} sharedProgress={sharedProgress} />
-                                    <View style={styles.audioMetaRow}>
-                                        <Text style={styles.audioDurationText}>{item.text.replace('🎤 Pesan Suara', '').trim()}</Text>
-                                        <Mic size={12} color="#9CA3AF" />
-                                    </View>
-                                </View>
-                            </TouchableOpacity>
-                        ) : isImage ? (
-                            <View>
-                                <TouchableOpacity
-                                    style={styles.imageContainer}
-                                    onPress={() => onMediaPress('image', item.image_url)}
-                                    activeOpacity={0.9}
-                                >
-                                    <Image
-                                        source={{ uri: fixUrl(item.image_url) }}
-                                        style={styles.messageImage}
-                                        resizeMode="cover"
-                                    />
-                                    {uploadProgress && uploadProgress[item.id] !== undefined && (
-                                        <View style={styles.uploadOverlay}>
-                                            <ActivityIndicator size="small" color="#fff" />
-                                            <Text style={styles.uploadProgressText}>{uploadProgress[item.id]}%</Text>
-                                        </View>
-                                    )}
-                                </TouchableOpacity>
-                                {(item.text && item.text !== '📷 Foto') && (
-                                    <View style={styles.imageCaptionContainer}>
-                                        <Text style={styles.imageCaptionText}>{item.text}</Text>
-                                    </View>
-                                )}
-                            </View>
-                        ) : isVideo ? (
-                            <View>
-                                <TouchableOpacity
-                                    style={styles.imageContainer}
-                                    onPress={() => onMediaPress('video', item.video_url)}
-                                    activeOpacity={0.9}
-                                >
-                                    <View style={styles.videoWrapper}>
-                                        <ExpoVideo
-                                            source={{ uri: fixUrl(item.video_url) }}
-                                            style={styles.messageImage}
-                                            resizeMode={ResizeMode.COVER}
-                                            shouldPlay={false}
-                                            positionMillis={100} // Mengambil frame awal
-                                        />
-                                        <View style={styles.playOverlay}>
-                                            <Play size={24} color="#fff" fill="#fff" />
-                                        </View>
-                                        {uploadProgress && uploadProgress[item.id] !== undefined && (
-                                            <View style={styles.uploadOverlay}>
-                                                <ActivityIndicator size="small" color="#fff" />
-                                                <Text style={styles.uploadProgressText}>{uploadProgress[item.id]}%</Text>
-                                            </View>
-                                        )}
-                                    </View>
-                                </TouchableOpacity>
-                                {(item.text && item.text !== '🎥 Video') && (
-                                    <View style={styles.imageCaptionContainer}>
-                                        <Text style={styles.imageCaptionText}>{item.text}</Text>
-                                    </View>
-                                )}
-                            </View>
-                        ) : isFile ? (
-                            <TouchableOpacity
-                                style={styles.fileContainer}
-                                onPress={() => onDownloadPress(item.file_url, item.file_name)}
-                                activeOpacity={0.8}
-                            >
-                                <View style={styles.fileIconBox}>
-                                    <FileText size={24} color="#6366F1" />
-                                </View>
-                                <View style={styles.fileInfo}>
-                                    <Text style={styles.fileName} numberOfLines={1}>{item.file_name || 'Document'}</Text>
-                                    <Text style={styles.fileSize}>Unduh berkas</Text>
-                                </View>
-                                <Download size={18} color="#888" />
-                            </TouchableOpacity>
-                        ) : (
-                            <Text style={[styles.messageText, isDeleted ? styles.deletedText : null]}>
-                                {isDeleted ? 'Pesan ini telah dihapus' : item.text}
-                            </Text>
-                        )}
-                        <View style={styles.messageFooter}>
-                            {(item.is_edited && !isDeleted) ? (
-                                <Text style={styles.editedLabel}>diedit</Text>
-                            ) : null}
-                            <Text style={styles.messageTime}>{displayTime}</Text>
-                            {isMe && !isDeleted && (
-                                <View style={{ marginLeft: 4 }}>
-                                    {item.status === 'read' ? (
-                                        <CheckCheck size={16} color="#34B7F1" />
-                                    ) : item.status === 'delivered' ? (
-                                        <CheckCheck size={16} color="#888" />
-                                    ) : (
-                                        <Check size={16} color="#888" />
-                                    )}
-                                </View>
-                            )}
-                        </View>
-                    </Animated.View>
-                </TouchableOpacity>
-            </View>
-        );
-    });
-
-    const downloadMedia = async (url, fileName = 'download') => {
+    const downloadMedia = useCallback(async (url, fileName = 'download') => {
         const downloadUrl = fixUrl(url);
         try {
             // Lazy load modules to bypass top-level import errors
@@ -1261,13 +1372,13 @@ const ChatDetailScreen = () => {
                 Alert.alert('Gagal', 'Tidak dapat membuka tautan unduhan.');
             }
         }
-    };
+    }, []);
 
-    const openMediaViewer = (type, url) => {
+    const openMediaViewer = useCallback((type, url) => {
         setViewerUrl(url);
         setViewerType(type);
         setViewerVisible(true);
-    };
+    }, []);
 
     const renderViewerModal = () => {
         if (!viewerVisible) return null;
@@ -1405,22 +1516,31 @@ const ChatDetailScreen = () => {
         );
     };
 
-    const renderMessage = useCallback(({ item }) => (
-        <MessageItem
-            item={item}
-            onLongPress={handleLongPress}
-            onReplyPress={scrollToOriginalMessage}
-            isHighlighted={item.id === highlightedMessageId}
-            highlightAnim={highlightAnim}
-            onAudioPress={handleAudioPlayback}
-            audioPlayingId={audioPlayingId}
-            audioLoadingId={audioLoadingId}
-            sharedProgress={sharedProgress}
-            onMediaPress={openMediaViewer}
-            uploadProgress={uploadProgress}
-            onDownloadPress={downloadMedia}
-        />
-    ), [handleLongPress, scrollToOriginalMessage, highlightedMessageId, audioPlayingId, audioLoadingId, sharedProgress, uploadProgress]);
+    const renderMessage = useCallback(({ item }) => {
+        const isSelected = !!selectedIds[item.id];
+        const itemProgress = uploadProgress[item.id];
+
+        return (
+            <MessageItem
+                item={item}
+                onLongPress={handleLongPress}
+                onReplyPress={scrollToOriginalMessage}
+                isHighlighted={item.id === highlightedMessageId}
+                highlightAnim={highlightAnim}
+                onAudioPress={handleAudioPlayback}
+                isPlaying={audioPlayingId === item.id}
+                isLoading={audioLoadingId === item.id}
+                sharedProgress={sharedProgress}
+                onMediaPress={openMediaViewer}
+                itemProgress={itemProgress}
+                onDownloadPress={downloadMedia}
+                selectionMode={selectionMode}
+                isSelected={isSelected}
+                onToggleSelection={toggleSelection}
+                onEnterSelection={enterSelectionMode}
+            />
+        );
+    }, [handleLongPress, scrollToOriginalMessage, highlightedMessageId, audioPlayingId, audioLoadingId, sharedProgress, uploadProgress, selectionMode, selectedIds, openMediaViewer, downloadMedia, toggleSelection, enterSelectionMode]);
 
     const renderChatArea = () => (
         <View style={styles.chatBackground}>
@@ -1439,13 +1559,14 @@ const ChatDetailScreen = () => {
                         data={messages}
                         keyExtractor={(item) => item.id.toString()}
                         renderItem={renderMessage}
+                        extraData={selectedIds}
                         contentContainerStyle={styles.messageList}
                         showsVerticalScrollIndicator={true}
                         inverted={true}
                         removeClippedSubviews={true}
-                        initialNumToRender={15}
-                        maxToRenderPerBatch={10}
-                        windowSize={10}
+                        initialNumToRender={20}
+                        maxToRenderPerBatch={15}
+                        windowSize={5}
                         onEndReached={loadMoreMessages}
                         onEndReachedThreshold={0.5}
                         onScrollToIndexFailed={(info) => {
@@ -1648,30 +1769,45 @@ const ChatDetailScreen = () => {
                 end={{ x: 1, y: 0 }}
                 style={styles.header}
             >
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <ArrowLeft size={24} color="#fff" />
-                </TouchableOpacity>
-                <Image source={{ uri: fixUrl(chat.avatar) || 'https://ui-avatars.com/api/?name=' + (chat.name || 'User') }} style={styles.headerAvatar} />
-                <View style={styles.headerInfo}>
-                    <Text style={styles.headerName}>{chat.name}</Text>
-                    <Text style={styles.headerStatus}>
-                        {currentStatus === 'online'
-                            ? 'Online'
-                            : lastSeen
-                                ? `terakhir dilihat ${dayjs(lastSeen).fromNow()}`
-                                : 'offline'}
-                    </Text>
-                </View>
-                <TouchableOpacity>
-                    <MoreVertical size={24} color="#fff" />
-                </TouchableOpacity>
+                {selectionMode ? (
+                    <View style={styles.headerSelectionRow}>
+                        <TouchableOpacity onPress={exitSelectionMode} style={styles.headerActionBtn}>
+                            <X size={26} color="#fff" />
+                        </TouchableOpacity>
+                        <Text style={styles.headerSelectionCount}>{Object.keys(selectedIds).length} dipilih</Text>
+                        <View style={{ flex: 1 }} />
+                        <TouchableOpacity onPress={handleDeleteSelected} style={styles.headerActionBtn}>
+                            <Trash2 size={24} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <>
+                        <TouchableOpacity onPress={() => navigation.goBack()}>
+                            <ArrowLeft size={24} color="#fff" />
+                        </TouchableOpacity>
+                        <Image source={{ uri: fixUrl(chat.avatar) || 'https://ui-avatars.com/api/?name=' + (chat.name || 'User') }} style={styles.headerAvatar} />
+                        <View style={styles.headerInfo}>
+                            <Text style={styles.headerName}>{chat.name}</Text>
+                            <Text style={styles.headerStatus}>
+                                {currentStatus === 'online'
+                                    ? 'Online'
+                                    : lastSeen
+                                        ? `terakhir dilihat ${dayjs(lastSeen).fromNow()}`
+                                        : 'offline'}
+                            </Text>
+                        </View>
+                        <TouchableOpacity>
+                            <MoreVertical size={24} color="#fff" />
+                        </TouchableOpacity>
+                    </>
+                )}
             </LinearGradient>
 
             <View style={{ flex: 1 }}>
                 {renderChatArea()}
             </View>
 
-            {
+            {!selectionMode && (
                 Platform.OS === 'web' ? (
                     renderInputBar()
                 ) : (
@@ -1682,7 +1818,7 @@ const ChatDetailScreen = () => {
                         {renderInputBar()}
                     </KeyboardAvoidingView>
                 )
-            }
+            )}
         </View >
     );
 };
@@ -1788,6 +1924,50 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+    messageOuterContainer: {
+        width: '100%',
+        paddingHorizontal: scale(5),
+    },
+    selectedMessageBg: {
+        backgroundColor: 'rgba(99, 102, 241, 0.08)',
+    },
+    selectionIndicator: {
+        justifyContent: 'center',
+        paddingRight: scale(10),
+    },
+    selectionIndicatorMe: {
+        paddingRight: 0,
+        paddingLeft: scale(10),
+    },
+    selectionIndicatorThem: {
+        paddingRight: scale(10),
+    },
+    checkbox: {
+        width: scale(20),
+        height: scale(20),
+        borderRadius: scale(10),
+        borderWidth: 2,
+        borderColor: '#6366F1',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    checkboxSelected: {
+        backgroundColor: '#6366F1',
+    },
+    headerSelectionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    headerSelectionCount: {
+        fontSize: moderateScale(18),
+        fontWeight: 'bold',
+        color: '#fff',
+        marginLeft: scale(15),
+    },
+    headerActionBtn: {
+        padding: scale(8),
+    },
     headerName: {
         fontSize: moderateScale(18),
         fontWeight: '800',
@@ -1817,6 +1997,8 @@ const styles = StyleSheet.create({
     messageContainer: {
         marginVertical: verticalScale(4),
         maxWidth: '80%',
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     myMessageContainer: {
         alignSelf: 'flex-end',

@@ -9,6 +9,7 @@ import axios from 'axios';
 import { API_URL } from '../config/api';
 import { setToken } from '../utils/auth';
 import { scale, verticalScale, moderateScale, hp } from '../utils/responsive';
+import { registerForPushNotificationsAsync } from '../utils/notifications';
 
 const LoginScreen = () => {
     const navigation = useNavigation();
@@ -30,6 +31,10 @@ const LoginScreen = () => {
             });
             const { token, user } = response.data;
             await setToken(token);
+
+            // Register for push notifications
+            await registerForPushNotificationsAsync();
+
             if (user) {
                 const { setUser } = require('../utils/auth');
                 await setUser(user);

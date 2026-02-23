@@ -8,6 +8,7 @@ import axios from 'axios';
 import { API_URL, fixUrl } from '../config/api';
 import { removeToken } from '../utils/auth';
 import { scale, verticalScale, moderateScale } from '../utils/responsive';
+import { setupNotificationListeners, registerForPushNotificationsAsync } from '../utils/notifications';
 
 import WelcomeScreen from '../screens/WelcomeScreen';
 import LoginScreen from '../screens/LoginScreen';
@@ -161,7 +162,28 @@ const MainDrawer = () => (
     </Drawer.Navigator>
 );
 
+
+
 const AppNavigator = () => {
+    React.useEffect(() => {
+        const subscription = setupNotificationListeners();
+
+        const checkLoggedIn = async () => {
+            const { getToken } = require('../utils/auth');
+            const token = await getToken();
+            if (token) {
+                await registerForPushNotificationsAsync();
+            }
+        };
+        checkLoggedIn();
+
+        return () => {
+            if (subscription && subscription.remove) {
+                subscription.remove();
+            }
+        };
+    }, []);
+
     return (
         <NavigationContainer>
             <Stack.Navigator

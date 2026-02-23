@@ -56,6 +56,10 @@ async function initDB() {
       await connection.query(`ALTER TABLE users ADD COLUMN last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP AFTER status`);
       console.log('Added last_seen column to users table');
     }
+    if (!columnNames.includes('fcm_token')) {
+      await connection.query(`ALTER TABLE users ADD COLUMN fcm_token VARCHAR(255) NULL AFTER status`);
+      console.log('Added fcm_token column to users table');
+    }
 
     await connection.query(`
       CREATE TABLE IF NOT EXISTS chats (

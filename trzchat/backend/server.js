@@ -9,6 +9,18 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 const { initDB, pool } = require('./database');
+const admin = require('firebase-admin');
+
+// Initialize Firebase Admin
+try {
+    const serviceAccount = require('./firebase-service-account.json');
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+    });
+    console.log('Firebase Admin initialized successfully');
+} catch (error) {
+    console.error('Error initializing Firebase Admin:', error);
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -400,6 +412,66 @@ app.post('/api/users/upload-avatar', authenticateToken, upload.single('avatar'),
     }
 });
 
+// Helper function to send push notifications
+const sendPushNotification = async (targetUserId, title, body, data = {}) => {
+    try {
+        const [users] = await pool.query('SELECT fcm_token FROM users WHERE id = ?', [targetUserId]);
+        if (users.length > 0 && users[0].fcm_token) {
+            const message = {
+                notification: {
+                    title: title,
+                    body: body,
+                },
+                data: {
+                    ...data,
+                    click_action: 'FLUTTER_NOTIFICATION_CLICK', // Compatible with many libs
+                },
+                token: users[0].fcm_token,
+            };
+
+            const response = await admin.messaging().send(message);
+            console.log(`Successfully sent push notification to user ${targetUserId}:`, response);
+            return response;
+        }
+    } catch (error) {
+        console.error(`Error sending push notification to user ${targetUserId}:`, error);
+    }
+};
+
+const getUserName = async (userId) => {
+    try {
+        const [users] = await pool.query('SELECT full_name FROM users WHERE id = ?', [userId]);
+        return users.length > 0 ? users[0].full_name : 'Seseorang';
+    } catch (error) {
+        return 'Seseorang';
+    }
+};
+
+const getChatRecipients = async (chatId, senderId) => {
+    try {
+        const [participants] = await pool.query(
+            'SELECT user_id FROM chat_participants WHERE chat_id = ? AND user_id != ?',
+            [chatId, senderId]
+        );
+        return participants.map(p => p.user_id);
+    } catch (error) {
+        console.error('Error fetching chat recipients:', error);
+        return [];
+    }
+};
+
+// Endpoint to update FCM token
+app.post('/api/users/fcm-token', authenticateToken, async (req, res) => {
+    const { token } = req.body;
+    try {
+        await pool.query('UPDATE users SET fcm_token = ? WHERE id = ?', [token, req.user.id]);
+        res.json({ message: 'FCM token updated successfully' });
+    } catch (error) {
+        console.error('Error updating FCM token:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 // Get User's Chats
 app.get('/api/chats', authenticateToken, async (req, res) => {
     try {
@@ -559,6 +631,19 @@ app.post('/api/messages/audio', authenticateToken, uploadAudio.single('audio'), 
         // Emit real-time message to the room
         io.to(`chat_${chatId}`).emit('new-message', newMessage);
 
+        // Send Push Notification
+        const recipients = await getChatRecipients(chatId, req.user.id);
+        const senderName = await getUserName(req.user.id);
+        if (recipients && recipients.length > 0) {
+            recipients.forEach(targetId => {
+                sendPushNotification(targetId, senderName, audioLabel, {
+                    chatId: String(chatId),
+                    type: 'audio',
+                    senderId: String(req.user.id)
+                });
+            });
+        }
+
         res.status(201).json({ ...newMessage, sender: 'me' });
     } catch (error) {
         console.error('Error sending audio message:', error);
@@ -610,6 +695,19 @@ app.post('/api/messages/image', authenticateToken, uploadImage.single('image'), 
         // Emit real-time message to the room
         io.to(`chat_${chatId}`).emit('new-message', newMessage);
 
+        // Send Push Notification
+        const recipients = await getChatRecipients(chatId, req.user.id);
+        const senderName = await getUserName(req.user.id);
+        if (recipients && recipients.length > 0) {
+            recipients.forEach(targetId => {
+                sendPushNotification(targetId, senderName, imageLabel, {
+                    chatId: String(chatId),
+                    type: 'image',
+                    senderId: String(req.user.id)
+                });
+            });
+        }
+
         res.status(201).json({ ...newMessage, sender: 'me' });
     } catch (error) {
         console.error('Error sending image message:', error);
@@ -660,6 +758,20 @@ app.post('/api/messages/video', authenticateToken, uploadVideo.single('video'), 
         };
 
         io.to(`chat_${chatId}`).emit('new-message', newMessage);
+
+        // Send Push Notification
+        const recipients = await getChatRecipients(chatId, req.user.id);
+        const senderName = await getUserName(req.user.id);
+        if (recipients && recipients.length > 0) {
+            recipients.forEach(targetId => {
+                sendPushNotification(targetId, senderName, videoLabel, {
+                    chatId: String(chatId),
+                    type: 'video',
+                    senderId: String(req.user.id)
+                });
+            });
+        }
+
         res.status(201).json({ ...newMessage, sender: 'me' });
     } catch (error) {
         console.error('Error sending video message:', error);
@@ -708,6 +820,20 @@ app.post('/api/messages/file', authenticateToken, uploadFile.single('file'), asy
         };
 
         io.to(`chat_${chatId}`).emit('new-message', newMessage);
+
+        // Send Push Notification
+        const recipients = await getChatRecipients(chatId, req.user.id);
+        const senderName = await getUserName(req.user.id);
+        if (recipients && recipients.length > 0) {
+            recipients.forEach(targetId => {
+                sendPushNotification(targetId, senderName, fileLabel, {
+                    chatId: String(chatId),
+                    type: 'file',
+                    senderId: String(req.user.id)
+                });
+            });
+        }
+
         res.status(201).json({ ...newMessage, sender: 'me' });
     } catch (error) {
         console.error('Error sending file message:', error);
@@ -757,6 +883,19 @@ app.post('/api/messages', authenticateToken, async (req, res) => {
 
         // Emit real-time message to the room
         io.to(`chat_${chatId}`).emit('new-message', newMessage);
+
+        // Send Push Notification
+        const recipients = await getChatRecipients(chatId, req.user.id);
+        const senderName = await getUserName(req.user.id);
+        if (recipients && recipients.length > 0) {
+            recipients.forEach(targetId => {
+                sendPushNotification(targetId, senderName, text, {
+                    chatId: String(chatId),
+                    type: 'text',
+                    senderId: String(req.user.id)
+                });
+            });
+        }
 
         res.status(201).json({ ...newMessage, sender: 'me' });
     } catch (error) {
