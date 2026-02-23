@@ -1104,58 +1104,62 @@ const ChatDetailScreen = () => {
                                 </View>
                             </TouchableOpacity>
                         ) : isImage ? (
-                            <TouchableOpacity
-                                style={styles.imageContainer}
-                                onPress={() => onMediaPress('image', item.image_url)}
-                                activeOpacity={0.9}
-                            >
-                                <Image
-                                    source={{ uri: fixUrl(item.image_url) }}
-                                    style={styles.messageImage}
-                                    resizeMode="cover"
-                                />
-                                {uploadProgress && uploadProgress[item.id] !== undefined && (
-                                    <View style={styles.uploadOverlay}>
-                                        <ActivityIndicator size="small" color="#fff" />
-                                        <Text style={styles.uploadProgressText}>{uploadProgress[item.id]}%</Text>
-                                    </View>
-                                )}
-                                {(item.text && item.text !== '📷 Foto') && (
-                                    <View style={styles.imageCaptionContainer}>
-                                        <Text style={styles.imageCaptionText}>{item.text}</Text>
-                                    </View>
-                                )}
-                            </TouchableOpacity>
-                        ) : isVideo ? (
-                            <TouchableOpacity
-                                style={styles.imageContainer}
-                                onPress={() => onMediaPress('video', item.video_url)}
-                                activeOpacity={0.9}
-                            >
-                                <View style={styles.videoWrapper}>
-                                    <ExpoVideo
-                                        source={{ uri: fixUrl(item.video_url) }}
+                            <View>
+                                <TouchableOpacity
+                                    style={styles.imageContainer}
+                                    onPress={() => onMediaPress('image', item.image_url)}
+                                    activeOpacity={0.9}
+                                >
+                                    <Image
+                                        source={{ uri: fixUrl(item.image_url) }}
                                         style={styles.messageImage}
-                                        resizeMode={ResizeMode.COVER}
-                                        shouldPlay={false}
-                                        positionMillis={100} // Mengambil frame awal
+                                        resizeMode="cover"
                                     />
-                                    <View style={styles.playOverlay}>
-                                        <Play size={24} color="#fff" fill="#fff" />
-                                    </View>
                                     {uploadProgress && uploadProgress[item.id] !== undefined && (
                                         <View style={styles.uploadOverlay}>
                                             <ActivityIndicator size="small" color="#fff" />
                                             <Text style={styles.uploadProgressText}>{uploadProgress[item.id]}%</Text>
                                         </View>
                                     )}
-                                </View>
+                                </TouchableOpacity>
+                                {(item.text && item.text !== '📷 Foto') && (
+                                    <View style={styles.imageCaptionContainer}>
+                                        <Text style={styles.imageCaptionText}>{item.text}</Text>
+                                    </View>
+                                )}
+                            </View>
+                        ) : isVideo ? (
+                            <View>
+                                <TouchableOpacity
+                                    style={styles.imageContainer}
+                                    onPress={() => onMediaPress('video', item.video_url)}
+                                    activeOpacity={0.9}
+                                >
+                                    <View style={styles.videoWrapper}>
+                                        <ExpoVideo
+                                            source={{ uri: fixUrl(item.video_url) }}
+                                            style={styles.messageImage}
+                                            resizeMode={ResizeMode.COVER}
+                                            shouldPlay={false}
+                                            positionMillis={100} // Mengambil frame awal
+                                        />
+                                        <View style={styles.playOverlay}>
+                                            <Play size={24} color="#fff" fill="#fff" />
+                                        </View>
+                                        {uploadProgress && uploadProgress[item.id] !== undefined && (
+                                            <View style={styles.uploadOverlay}>
+                                                <ActivityIndicator size="small" color="#fff" />
+                                                <Text style={styles.uploadProgressText}>{uploadProgress[item.id]}%</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                </TouchableOpacity>
                                 {(item.text && item.text !== '🎥 Video') && (
                                     <View style={styles.imageCaptionContainer}>
                                         <Text style={styles.imageCaptionText}>{item.text}</Text>
                                     </View>
                                 )}
-                            </TouchableOpacity>
+                            </View>
                         ) : isFile ? (
                             <TouchableOpacity
                                 style={styles.fileContainer}
