@@ -333,6 +333,7 @@ const ChatDetailScreen = () => {
     const [currentStatus, setCurrentStatus] = useState(chat.online || 'offline');
     const [lastSeen, setLastSeen] = useState(null);
     const [keyboardPadding, setKeyboardPadding] = useState(0);
+    const [showEmojis, setShowEmojis] = useState(false);
 
     // Attachments Menu State
     const [attachmentMenuVisible, setAttachmentMenuVisible] = useState(false);
@@ -599,9 +600,13 @@ const ChatDetailScreen = () => {
             const hideSub = Keyboard.addListener('keyboardDidHide', () => {
                 setKeyboardPadding(0);
             });
+            const showSubGeneric = Keyboard.addListener('keyboardWillShow', () => {
+                setShowEmojis(false); // Sembunyikan emoji saat keyboard muncul
+            });
             return () => {
                 showSub.remove();
                 hideSub.remove();
+                showSubGeneric.remove();
             };
         }
     }, []);
@@ -1126,6 +1131,22 @@ const ChatDetailScreen = () => {
         })
     ).current;
 
+    const handleEmojiSelected = (emoji) => {
+        setMessage(prev => prev + emoji);
+    };
+
+    const toggleEmojiPicker = () => {
+        if (showEmojis) {
+            setShowEmojis(false);
+            Keyboard.dismiss();
+        } else {
+            Keyboard.dismiss();
+            setTimeout(() => {
+                setShowEmojis(true);
+            }, 100);
+        }
+    };
+
     const sendMessage = useCallback(async () => {
         if (message.trim()) {
             const now = new Date().toISOString();
@@ -1630,8 +1651,8 @@ const ChatDetailScreen = () => {
             ) : null}
             <View style={styles.inputContainer}>
                 <View style={styles.inputWrapper}>
-                    <TouchableOpacity style={styles.iconButton}>
-                        <Smile size={24} color="#888" />
+                    <TouchableOpacity style={styles.iconButton} onPress={toggleEmojiPicker}>
+                        <Smile size={24} color={showEmojis ? "#6366F1" : "#888"} />
                     </TouchableOpacity>
                     <TextInput
                         style={styles.input}
@@ -1704,6 +1725,25 @@ const ChatDetailScreen = () => {
                         </View>
                         <Text style={styles.attachmentText}>Dokumen</Text>
                     </TouchableOpacity>
+                </View>
+            )}
+            {showEmojis && (
+                <View style={styles.emojiContainer}>
+                    <FlatList
+                        data={['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '🤲', '👐', '🙌', '👏', '🤝', '👍', '👎', '👊', '✊', '🤛', '🤜', '🤞', '✌️', '🤟', '🤘', '👌', '🤏', '👈', '👉', '👆', '👇', '☝️', '✋', '🤚', '🖐', '🖖', '👋', '🤙', '💪', '🦾', '🖕', '✍️', '🙏', '💍', '💄', '💋', '👄', '👅', '👂', '🦻', '👃', '👣', '👁', '👀', '🧠', '🦴', '🦷', '🗣', '👤', '👥']}
+                        keyExtractor={(item, index) => index.toString()}
+                        numColumns={8}
+                        renderItem={({ item }) => (
+                            <TouchableOpacity
+                                style={styles.emojiItem}
+                                onPress={() => handleEmojiSelected(item)}
+                            >
+                                <Text style={styles.emojiText}>{item}</Text>
+                            </TouchableOpacity>
+                        )}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.emojiList}
+                    />
                 </View>
             )}
         </View>
@@ -2445,6 +2485,26 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(14),
         fontWeight: 'bold',
         marginTop: verticalScale(5),
+    },
+    emojiContainer: {
+        height: verticalScale(250),
+        backgroundColor: '#f8f9fa',
+        borderTopWidth: 1,
+        borderTopColor: '#eee',
+    },
+    emojiList: {
+        paddingHorizontal: scale(10),
+        paddingVertical: verticalScale(10),
+        alignItems: 'center',
+    },
+    emojiItem: {
+        width: Dimensions.get('window').width / 8.5,
+        height: scale(45),
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    emojiText: {
+        fontSize: moderateScale(26),
     },
 });
 
