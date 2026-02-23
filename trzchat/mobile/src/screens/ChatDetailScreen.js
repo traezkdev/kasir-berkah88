@@ -73,6 +73,11 @@ const ChatDetailScreen = () => {
     const [optionsVisible, setOptionsVisible] = useState(false);
     const [highlightedMessageId, setHighlightedMessageId] = useState(null);
 
+    // Media Preview States
+    const [mediaPreviewVisible, setMediaPreviewVisible] = useState(false);
+    const [selectedMedia, setSelectedMedia] = useState(null);
+    const [mediaCaption, setMediaCaption] = useState('');
+
     // Media Viewer States
     const [viewerVisible, setViewerVisible] = useState(false);
     const [viewerType, setViewerType] = useState(null); // 'image' or 'video'
@@ -551,10 +556,11 @@ const ChatDetailScreen = () => {
             });
 
             if (!result.canceled) {
-                // Gunakan teks di input sebagai caption jika ada
-                const caption = message.trim();
                 const { uri, width, height } = result.assets[0];
-                sendImageMessage(uri, caption, width, height);
+                setSelectedMedia({ uri, type: 'image', width, height });
+                setMediaCaption('');
+                setMediaPreviewVisible(true);
+                setAttachmentMenuVisible(false);
             }
         } catch (error) {
             console.error('Error picking image:', error);
@@ -652,9 +658,11 @@ const ChatDetailScreen = () => {
             });
 
             if (!result.canceled) {
-                const caption = message.trim();
                 const { uri, width, height } = result.assets[0];
-                sendVideoMessage(uri, caption, width, height);
+                setSelectedMedia({ uri, type: 'video', width, height });
+                setMediaCaption('');
+                setMediaPreviewVisible(true);
+                setAttachmentMenuVisible(false);
             }
         } catch (error) {
             console.error('Error picking video:', error);
@@ -910,7 +918,13 @@ const ChatDetailScreen = () => {
         if (selectedMessage.sender !== 'me') return;
         setEditingMessage(selectedMessage);
         setReplyingTo(null);
-        setMessage(selectedMessage.text);
+
+        let initialText = selectedMessage.text;
+        if (initialText === '📷 Foto' || initialText === '🎥 Video' || initialText === '🎤 Pesan Suara') {
+            initialText = '';
+        }
+
+        setMessage(initialText);
         setOptionsVisible(false);
     };
 
@@ -1291,6 +1305,94 @@ const ChatDetailScreen = () => {
         );
     };
 
+    const handleSendPreview = () => {
+        if (!selectedMedia) return;
+        const { uri, type, width, height } = selectedMedia;
+        if (type === 'image') {
+            sendImageMessage(uri, mediaCaption, width, height);
+        } else {
+            sendVideoMessage(uri, mediaCaption, width, height);
+        }
+        setMediaPreviewVisible(false);
+        setSelectedMedia(null);
+        setMediaCaption('');
+    };
+
+    const renderMediaPreviewModal = () => {
+        if (!mediaPreviewVisible || !selectedMedia) return null;
+
+        return (
+            <Modal
+                visible={mediaPreviewVisible}
+                transparent={false}
+                animationType="slide"
+                onRequestClose={() => setMediaPreviewVisible(false)}
+            >
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={styles.previewModalContainer}
+                >
+                    <View style={styles.previewHeader}>
+                        <TouchableOpacity
+                            style={styles.previewCloseBtn}
+                            onPress={() => {
+                                setMediaPreviewVisible(false);
+                                setSelectedMedia(null);
+                            }}
+                        >
+                            <X size={28} color="#fff" />
+                        </TouchableOpacity>
+                        <Text style={styles.previewHeaderText}>Preview</Text>
+                        <View style={{ width: 28 }} />
+                    </View>
+
+                    <View style={styles.previewContent}>
+                        {selectedMedia.type === 'image' ? (
+                            <Image
+                                source={{ uri: selectedMedia.uri }}
+                                style={styles.previewMedia}
+                                resizeMode="contain"
+                            />
+                        ) : (
+                            <ExpoVideo
+                                source={{ uri: selectedMedia.uri }}
+                                style={styles.previewMedia}
+                                resizeMode={ResizeMode.CONTAIN}
+                                shouldPlay
+                                isLooping
+                                useNativeControls={false}
+                            />
+                        )}
+                    </View>
+
+                    <View style={styles.previewFooter}>
+                        <View style={styles.previewInputWrapper}>
+                            <TextInput
+                                style={styles.previewInput}
+                                placeholder="Tambahkan pesan..."
+                                placeholderTextColor="rgba(255,255,255,0.6)"
+                                value={mediaCaption}
+                                onChangeText={setMediaCaption}
+                                multiline
+                            />
+                            <TouchableOpacity
+                                style={styles.previewSendBtn}
+                                onPress={handleSendPreview}
+                            >
+                                <LinearGradient
+                                    colors={['#6366F1', '#8B5CF6']}
+                                    style={styles.previewSendGradient}
+                                >
+                                    <Send size={24} color="#fff" />
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
+        );
+    };
+
     const renderMessage = useCallback(({ item }) => (
         <MessageItem
             item={item}
@@ -1479,6 +1581,7 @@ const ChatDetailScreen = () => {
             <StatusBar style="light" translucent />
 
             {renderViewerModal()}
+            {renderMediaPreviewModal()}
 
             {(optionsVisible && selectedMessage) ? (
                 <TouchableOpacity style={styles.optionsOverlay} activeOpacity={1} onPress={() => { setOptionsVisible(false); setSelectedMessage(null); }}>
@@ -1591,6 +1694,73 @@ const styles = StyleSheet.create({
     headerInfo: {
         flex: 1,
         marginLeft: scale(12),
+    },
+    deleteActionText: {
+        fontSize: moderateScale(16),
+        fontWeight: '700',
+        color: '#fff',
+    },
+    // Media Preview Styles
+    previewModalContainer: {
+        flex: 1,
+        backgroundColor: '#000',
+    },
+    previewHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingTop: verticalScale(50),
+        paddingBottom: verticalScale(20),
+        paddingHorizontal: scale(20),
+    },
+    previewCloseBtn: {
+        padding: scale(5),
+    },
+    previewHeaderText: {
+        color: '#fff',
+        fontSize: moderateScale(18),
+        fontWeight: 'bold',
+    },
+    previewContent: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    previewMedia: {
+        width: '100%',
+        height: '100%',
+    },
+    previewFooter: {
+        padding: scale(20),
+        paddingBottom: verticalScale(40),
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    previewInputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        borderRadius: scale(25),
+        paddingLeft: scale(20),
+        paddingRight: scale(5),
+        paddingVertical: verticalScale(5),
+    },
+    previewInput: {
+        flex: 1,
+        color: '#fff',
+        fontSize: moderateScale(16),
+        maxHeight: verticalScale(100),
+        paddingVertical: verticalScale(10),
+    },
+    previewSendBtn: {
+        marginLeft: scale(10),
+        marginBottom: verticalScale(5),
+    },
+    previewSendGradient: {
+        width: scale(45),
+        height: scale(45),
+        borderRadius: scale(22.5),
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     headerName: {
         fontSize: moderateScale(18),
