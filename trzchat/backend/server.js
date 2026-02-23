@@ -16,18 +16,33 @@ const io = new Server(server, {
     cors: {
         origin: "*",
         methods: ["GET", "POST"]
-    }
+    },
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    transports: ['websocket', 'polling'],
+    allowEIO3: true
 });
 const PORT = process.env.PORT || 5000;
+
+// Helper function for URLs
+const getBaseUrl = (req) => {
+    if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, '');
+    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    return `${protocol}://${req.get('host')}`;
+};
 
 // Socket.io Middleware for Authentication
 io.use((socket, next) => {
     const token = socket.handshake.auth.token;
     if (!token) {
+        console.error(`Socket Auth Error: No token provided from ${socket.id}`);
         return next(new Error('Authentication error: No token provided'));
     }
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) return next(new Error('Authentication error: Invalid token'));
+        if (err) {
+            console.error(`Socket Auth Error: Invalid token from ${socket.id}`, err.message);
+            return next(new Error('Authentication error: Invalid token'));
+        }
         socket.userId = decoded.id;
         next();
     });
@@ -61,11 +76,18 @@ io.on('connection', async (socket) => {
 
     socket.on('mark-as-read', async ({ chatId }) => {
         try {
+            // Update semua pesan di chat ini yang dikirim oleh orang lain (sender_id != userId)
+            // dan yang statusnya belum 'read'
             await pool.query(
                 'UPDATE messages SET status = "read" WHERE chat_id = ? AND sender_id != ? AND status != "read"',
                 [chatId, userId]
             );
-            io.to(`chat_${chatId}`).emit('messages-read', { chatId, readerId: userId });
+
+            // Selalu beritahu semua orang di room ini bahwa pesan telah dibaca (Force Sync)
+            io.to(`chat_${chatId}`).emit('messages-read', {
+                chatId: String(chatId),
+                readerId: userId
+            });
         } catch (error) {
             console.error('Error marking messages as read:', error);
         }
@@ -77,10 +99,14 @@ io.on('connection', async (socket) => {
                 'UPDATE messages SET status = "delivered" WHERE id = ? AND status = "sent"',
                 [messageId]
             );
-            io.to(`chat_${chatId}`).emit('message-status-updated', { messageId, status: 'delivered', chatId });
+            io.to(`chat_${chatId}`).emit('message-status-updated', { messageId, status: 'delivered', chatId: String(chatId) });
         } catch (error) {
             console.error('Error marking message as delivered:', error);
         }
+    });
+
+    socket.on('error', (err) => {
+        console.error(`Socket ${socket.id} error:`, err);
     });
 
     socket.on('disconnect', async (reason) => {
@@ -155,7 +181,6 @@ const uploadAudio = multer({
     fileFilter: (req, file, cb) => {
         const allowedMimes = /audio\/|video\/mp4|application\/octet-stream/;
         if (allowedMimes.test(file.mimetype)) return cb(null, true);
-        // Allow if extension matches audio
         const extname = /\.m4a$|\.mp3$|\.aac$|\.wav$|\.ogg$|\.webm$/i.test(file.originalname);
         if (extname) return cb(null, true);
         cb(new Error('Hanya file audio yang diperbolehkan!'));
@@ -168,20 +193,32 @@ app.use('/uploads', express.static('uploads'));
 
 // Auth Endpoints
 app.post('/api/auth/register', async (req, res) => {
+    console.log('--- Register Request Received ---');
+    console.log('Data:', req.body);
     const { username, email, password, fullName, phone } = req.body;
+
+    if (!username || !email || !password || !fullName) {
+        console.log('Register Failed: Missing required fields');
+        return res.status(400).json({ message: 'Data pendaftaran tidak lengkap' });
+    }
+
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        const [result] = await pool.query(
+        await pool.query(
             'INSERT INTO users (username, email, password, full_name, phone) VALUES (?, ?, ?, ?, ?)',
-            [username, email, hashedPassword, fullName, phone]
+            [username, email, hashedPassword, fullName, phone || null]
         );
-        res.status(201).json({ message: 'User registered successfully', userId: result.insertId });
+        console.log('Register Success for:', username);
+        res.status(201).json({ message: 'User registered successfully' });
     } catch (error) {
-        console.error(error);
+        console.error('Registration Database Error:', error);
         if (error.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({ message: 'Username already exists' });
+            const isEmail = error.message.toLowerCase().includes('email');
+            return res.status(400).json({
+                message: isEmail ? 'Email sudah terdaftar gunakan email lain' : 'Username sudah digunakan pilih yang lain'
+            });
         }
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Terjadi kesalahan sistem coba lagi nanti' });
     }
 });
 
@@ -274,7 +311,7 @@ app.post('/api/users/upload-avatar', authenticateToken, upload.single('avatar'),
             return res.status(400).json({ message: 'Tidak ada file yang diunggah' });
         }
 
-        const avatarUrl = `${req.protocol}://${req.get('host')}/uploads/avatars/${req.file.filename}`;
+        const avatarUrl = `${getBaseUrl(req)}/uploads/avatars/${req.file.filename}`;
 
         // Update database
         await pool.query('UPDATE users SET avatar = ? WHERE id = ?', [avatarUrl, req.user.id]);
@@ -303,12 +340,24 @@ app.get('/api/chats', authenticateToken, async (req, res) => {
             JOIN chat_participants cp2 ON c.id = cp2.chat_id AND cp2.user_id != cp1.user_id
             JOIN users u ON cp2.user_id = u.id
             WHERE cp1.user_id = ?
+            GROUP BY c.id
             ORDER BY c.last_message_time DESC
         `;
         const [rows] = await pool.query(query, [req.user.id, req.user.id]);
-        res.json(rows);
+
+        // Ensure otherUser is parsed as an object (JSON_OBJECT can return a string in some MySQL versions/drivers)
+        const processedRows = rows.map(row => {
+            if (typeof row.otherUser === 'string') {
+                try {
+                    row.otherUser = JSON.parse(row.otherUser);
+                } catch (e) { }
+            }
+            return row;
+        });
+
+        res.json(processedRows);
     } catch (error) {
-        console.error(error);
+        console.error('Error fetching chats:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -380,7 +429,7 @@ app.post('/api/messages/audio', authenticateToken, uploadAudio.single('audio'), 
             return res.status(400).json({ message: 'Tidak ada file audio yang dikirim' });
         }
 
-        const audioUrl = `${req.protocol}://${req.get('host')}/uploads/audio/${req.file.filename}`;
+        const audioUrl = `${getBaseUrl(req)}/uploads/audio/${req.file.filename}`;
         const audioLabel = `🎤 Pesan Suara${duration ? ` (${duration})` : ''}`;
 
         const [result] = await pool.query(

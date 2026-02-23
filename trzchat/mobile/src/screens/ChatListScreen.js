@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, TextInput, ActivityIndicator, RefreshControl, Keyboard } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, TextInput, ActivityIndicator, RefreshControl, Keyboard, AppState, InteractionManager } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useNavigation, DrawerActions, useIsFocused } from '@react-navigation/native';
-import { Search, Menu, Send, MessageSquarePlus } from 'lucide-react-native';
+import { Search, Menu, Send, MessageSquarePlus, MessageSquare } from 'lucide-react-native';
 import axios from 'axios';
-import { API_URL, SOCKET_URL } from '../config/api';
+import { API_URL, SOCKET_URL, fixUrl } from '../config/api';
 import { getToken } from '../utils/auth';
 import io from 'socket.io-client';
+import { LinearGradient } from 'expo-linear-gradient';
+import dayjs from 'dayjs';
 
 const ChatListScreen = () => {
     const navigation = useNavigation();
@@ -19,12 +21,28 @@ const ChatListScreen = () => {
     const [isSearching, setIsSearching] = useState(false);
     const isFocused = useIsFocused();
     const [socket, setSocket] = useState(null);
+    const [currentUser, setLocalUser] = useState(null);
 
     const fetchChats = useCallback(async () => {
         try {
             await getToken();
+            const { getUser } = require('../utils/auth');
+            const userData = await getUser();
+            setLocalUser(userData);
+
             const response = await axios.get(`${API_URL}/chats`);
-            setChats(response.data);
+            // Parse otherUser if it's a string (happens with JSON_OBJECT in some MySQL configurations)
+            const processedChats = response.data.map(chat => {
+                if (typeof chat.otherUser === 'string') {
+                    try {
+                        chat.otherUser = JSON.parse(chat.otherUser);
+                    } catch (e) {
+                        console.error('Error parsing otherUser JSON:', e);
+                    }
+                }
+                return chat;
+            });
+            setChats(processedChats);
         } catch (error) {
             console.error('Error fetching chats:', error);
         } finally {
@@ -40,7 +58,9 @@ const ChatListScreen = () => {
             try {
                 await getToken();
                 const response = await axios.get(`${API_URL}/users/search?q=${text}`);
-                setSearchResults(response.data);
+                // Ensure unique IDs in search results
+                const uniqueResults = response.data.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+                setSearchResults(uniqueResults);
             } catch (error) {
                 console.error('Error searching users:', error);
             }
@@ -50,17 +70,26 @@ const ChatListScreen = () => {
         }
     }, []);
 
-    const startChat = useCallback(async (userId) => {
+    const startChat = useCallback(async (user) => {
         try {
             await getToken();
-            const response = await axios.post(`${API_URL}/chats`, { userId });
+            const response = await axios.post(`${API_URL}/chats`, { userId: user.id });
             const { chatId } = response.data;
 
             setIsSearching(false);
             setSearchQuery('');
-            await fetchChats();
+            const freshChats = await fetchChats(); // Should return processed chats
 
-            const chatObj = chats.find(c => c.id === chatId) || { id: chatId };
+            const chatInList = (freshChats || chats).find(c => String(c.id) === String(chatId));
+            const chatObj = chatInList || {
+                id: chatId,
+                otherUser: {
+                    id: user.id,
+                    name: user.full_name,
+                    avatar: user.avatar,
+                    online: 'offline'
+                }
+            };
             navigation.navigate('ChatDetail', { chat: chatObj });
         } catch (error) {
             console.error('Error starting chat:', error);
@@ -69,32 +98,78 @@ const ChatListScreen = () => {
 
     useEffect(() => {
         if (isFocused) {
-            fetchChats();
+            const task = InteractionManager.runAfterInteractions(() => {
+                fetchChats();
+            });
+            return () => task.cancel();
         }
     }, [isFocused, fetchChats]);
 
     useEffect(() => {
+        let currentSocket = null;
+
+        const handleAppStateChange = (nextAppState) => {
+            if (nextAppState === 'active') {
+                fetchChats();
+                if (currentSocket) {
+                    currentSocket.connect();
+                }
+            }
+        };
+
+        const subscription = AppState.addEventListener('change', handleAppStateChange);
+
         const initSocket = async () => {
             const token = await getToken();
+            if (!token) return;
+
+            console.log('Attempting to connect to socket:', SOCKET_URL);
             const newSocket = io(SOCKET_URL, {
-                transports: ['websocket', 'polling'],
-                auth: { token }
+                transports: ['polling', 'websocket'], // Polling dulu baru upgrade ke websocket
+                auth: { token },
+                reconnection: true,
+                reconnectionAttempts: 10,
+                reconnectionDelay: 2000,
+                reconnectionDelayMax: 10000,
+                timeout: 30000,
+                forceNew: true,
+                secure: true,
+                rejectUnauthorized: false // Abaikan error SSL jika ada (hanya untuk debug jika perlu)
             });
+
+            currentSocket = newSocket;
             setSocket(newSocket);
+
+            newSocket.on('connect_error', (err) => {
+                console.error('ChatList Socket Connection Error Detail:', {
+                    message: err.message,
+                    description: err.description,
+                    context: err.context,
+                    type: err.type
+                });
+
+                // Jika polling gagal juga, coba bersihkan cache socket
+                if (newSocket.io.opts.transports[0] === 'polling') {
+                    console.log('Polling failed, client might be blocked by firewall or proxy');
+                }
+            });
 
             newSocket.on('connect', () => {
                 console.log('ChatList Socket Connected');
             });
 
-            const decoded = JSON.parse(atob(token.split('.')[1]));
-            const currentUserId = decoded.id;
+            newSocket.on('reconnect', (attempt) => {
+                console.log('Socket Reconnected after', attempt, 'attempts');
+                fetchChats();
+            });
+
+            const { getUser } = require('../utils/auth');
+            const currentUser = await getUser();
+            const currentUserId = currentUser?.id;
 
             newSocket.on('new-message', (newMessage) => {
-                // When on the list screen, message is DELIVERED but not yet read
                 newSocket.emit('message-delivered', { messageId: newMessage.id, chatId: newMessage.chat_id });
-
                 const isFromOther = newMessage.sender_id !== currentUserId;
-
                 setChats(prevChats => {
                     const updatedChats = prevChats.map(chat => {
                         if (String(chat.id) === String(newMessage.chat_id)) {
@@ -114,7 +189,7 @@ const ChatListScreen = () => {
             newSocket.on('messages-read', ({ chatId }) => {
                 setChats(prevChats => {
                     return prevChats.map(chat => {
-                        if (chat.id === chatId) {
+                        if (String(chat.id) === String(chatId)) {
                             return { ...chat, unread_count: 0 };
                         }
                         return chat;
@@ -140,12 +215,16 @@ const ChatListScreen = () => {
             });
         };
 
-        initSocket();
+        const task = InteractionManager.runAfterInteractions(() => {
+            initSocket();
+        });
 
         return () => {
-            if (socket) socket.disconnect();
+            task.cancel();
+            subscription.remove();
+            if (currentSocket) currentSocket.disconnect();
         };
-    }, []);
+    }, [fetchChats]);
 
     const roomsJoined = useRef(new Set());
     useEffect(() => {
@@ -166,32 +245,37 @@ const ChatListScreen = () => {
 
     const ChatItem = memo(({ item, onNavigate }) => {
         const otherUser = item.otherUser || {};
-        const time = item.last_message_time
-            ? new Date(item.last_message_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            : '';
+        const time = item.last_message_time ? dayjs(item.last_message_time).format('HH:mm') : '';
 
         return (
             <TouchableOpacity
-                style={styles.chatItem}
+                style={styles.chatCard}
                 onPress={() => onNavigate(item)}
+                activeOpacity={0.8}
             >
-                <View style={styles.avatarContainer}>
-                    <Image source={{ uri: otherUser.avatar || 'https://ui-avatars.com/api/?name=' + (otherUser.name || 'User') }} style={styles.avatar} />
-                    {otherUser.online === 'online' && <View style={styles.onlineBadge} />}
+                <View style={styles.avatarWrapper}>
+                    <Image
+                        source={{ uri: fixUrl(otherUser.avatar) || 'https://ui-avatars.com/api/?name=' + (otherUser.name || 'User') }}
+                        style={styles.avatar}
+                    />
+                    {otherUser.online === 'online' && <View style={styles.onlineDot} />}
                 </View>
-                <View style={styles.chatInfo}>
-                    <View style={styles.chatHeader}>
-                        <Text style={styles.chatName}>{otherUser.name}</Text>
+                <View style={styles.chatContent}>
+                    <View style={styles.chatHeaderRow}>
+                        <Text style={styles.chatName} numberOfLines={1}>{otherUser.name}</Text>
                         <Text style={styles.chatTime}>{time}</Text>
                     </View>
-                    <View style={styles.chatFooter}>
+                    <View style={styles.chatFooterRow}>
                         <Text style={styles.lastMessage} numberOfLines={1}>
-                            {item.last_message || 'Belum ada pesan'}
+                            {item.last_message || 'Mulai obrolan baru...'}
                         </Text>
                         {item.unread_count > 0 && (
-                            <View style={styles.unreadBadge}>
+                            <LinearGradient
+                                colors={['#6366F1', '#8B5CF6']}
+                                style={styles.unreadCountBadge}
+                            >
                                 <Text style={styles.unreadText}>{item.unread_count > 99 ? '99+' : item.unread_count}</Text>
-                            </View>
+                            </LinearGradient>
                         )}
                     </View>
                 </View>
@@ -200,11 +284,14 @@ const ChatListScreen = () => {
     });
 
     const SearchItem = memo(({ item, onStartChat }) => (
-        <TouchableOpacity style={styles.chatItem} onPress={() => onStartChat(item.id)}>
-            <Image source={{ uri: item.avatar || 'https://ui-avatars.com/api/?name=' + (item.full_name || 'User') }} style={styles.avatar} />
-            <View style={styles.chatInfo}>
+        <TouchableOpacity style={styles.searchResultCard} onPress={() => onStartChat(item)}>
+            <Image source={{ uri: fixUrl(item.avatar) || 'https://ui-avatars.com/api/?name=' + (item.full_name || 'User') }} style={styles.searchAvatar} />
+            <View style={styles.searchInfo}>
                 <Text style={styles.chatName}>{item.full_name}</Text>
-                <Text style={styles.lastMessage}>@{item.username}</Text>
+                <Text style={styles.usernameText}>@{item.username}</Text>
+            </View>
+            <View style={styles.startChatBtn}>
+                <Send size={16} color="#6366F1" />
             </View>
         </TouchableOpacity>
     ));
@@ -212,12 +299,7 @@ const ChatListScreen = () => {
     const handleNavigate = useCallback((item) => {
         const otherUser = item.otherUser || {};
         navigation.navigate('ChatDetail', {
-            chat: {
-                ...item,
-                name: otherUser.name,
-                avatar: otherUser.avatar,
-                online: otherUser.online
-            }
+            chat: { ...item, name: otherUser.name, avatar: otherUser.avatar, online: otherUser.online }
         });
     }, [navigation]);
 
@@ -231,24 +313,29 @@ const ChatListScreen = () => {
 
     return (
         <View style={styles.container}>
-            <StatusBar style="light" backgroundColor="#0088cc" />
-            <View style={styles.header}>
-                <View style={styles.headerTop}>
-                    <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.openDrawer())}>
-                        <Menu size={24} color="#fff" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Vira Chat</Text>
-                    <TouchableOpacity>
-                        <Search size={22} color="#fff" />
+            <StatusBar style="dark" />
+
+            <View style={styles.mainHeader}>
+                <View style={styles.headerTopRow}>
+                    <View>
+                        <Text style={styles.greetingText}>Halo, {currentUser?.fullName?.split(' ')[0] || 'User'}!</Text>
+                        <Text style={styles.appBrandText}>Vira Chat Messenger</Text>
+                    </View>
+                    <TouchableOpacity
+                        style={styles.menuIconButton}
+                        onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+                    >
+                        <Menu size={24} color="#1F2937" />
                     </TouchableOpacity>
                 </View>
-                <View style={styles.searchContainer}>
-                    <Search size={18} color="rgba(255,255,255,0.7)" style={styles.searchIcon} />
+
+                <View style={styles.searchBarWrapper}>
+                    <Search size={20} color="#9CA3AF" style={styles.searchIcon} />
                     <TextInput
-                        style={styles.searchInput}
                         ref={searchInputRef}
-                        placeholder="Cari user..."
-                        placeholderTextColor="rgba(255,255,255,0.6)"
+                        style={styles.searchInputField}
+                        placeholder="Cari teman atau pesan..."
+                        placeholderTextColor="#9CA3AF"
                         value={searchQuery}
                         onChangeText={handleSearch}
                     />
@@ -257,39 +344,47 @@ const ChatListScreen = () => {
 
             {loading ? (
                 <View style={styles.loaderContainer}>
-                    <ActivityIndicator size="large" color="#0088cc" />
+                    <ActivityIndicator size="large" color="#6366F1" />
                 </View>
             ) : isSearching ? (
                 <FlatList
                     data={searchResults}
                     keyExtractor={(item) => item.id.toString()}
                     renderItem={renderSearchResult}
-                    ListEmptyComponent={<Text style={styles.emptyText}>User tidak ditemukan</Text>}
+                    contentContainerStyle={styles.resultsList}
+                    ListEmptyComponent={<Text style={styles.emptyResultsText}>User tidak ditemukan</Text>}
                 />
             ) : (
                 <FlatList
                     data={chats}
                     keyExtractor={(item) => `chat_${item.id}`}
                     renderItem={renderItem}
-                    contentContainerStyle={styles.listContent}
+                    contentContainerStyle={styles.chatListContent}
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0088cc']} />
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#6366F1']} />
                     }
-                    ListEmptyComponent={<Text style={styles.emptyText}>Belum ada percakapan</Text>}
+                    ListEmptyComponent={
+                        <View style={styles.emptyStateContainer}>
+                            <MessageSquare size={60} color="#E5E7EB" />
+                            <Text style={styles.emptyTitle}>Belum Ada Percakapan</Text>
+                            <Text style={styles.emptySubtitle}>Cari teman Anda di atas untuk mulai chatting!</Text>
+                        </View>
+                    }
                     removeClippedSubviews={true}
                     initialNumToRender={10}
-                    maxToRenderPerBatch={10}
-                    windowSize={5}
                 />
             )}
 
             <TouchableOpacity
-                style={styles.fab}
-                onPress={() => {
-                    searchInputRef.current?.focus();
-                }}
+                style={styles.enhancedFab}
+                onPress={() => searchInputRef.current?.focus()}
             >
-                <MessageSquarePlus size={26} color="#fff" />
+                <LinearGradient
+                    colors={['#6366F1', '#8B5CF6']}
+                    style={styles.fabGradient}
+                >
+                    <MessageSquarePlus size={26} color="#fff" />
+                </LinearGradient>
             </TouchableOpacity>
         </View>
     );
@@ -298,146 +393,225 @@ const ChatListScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#F9FAFB',
+    },
+    mainHeader: {
         backgroundColor: '#fff',
+        paddingTop: 55,
+        paddingBottom: 25,
+        paddingHorizontal: 25,
+        borderBottomLeftRadius: 35,
+        borderBottomRightRadius: 35,
+    },
+    headerTopRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    greetingText: {
+        fontSize: 26,
+        fontWeight: '900',
+        color: '#111827',
+        letterSpacing: -0.5,
+    },
+    appBrandText: {
+        fontSize: 14,
+        color: '#6366F1',
+        fontWeight: '700',
+        marginTop: 2,
+    },
+    menuIconButton: {
+        width: 48,
+        height: 48,
+        backgroundColor: '#F3F4F6',
+        borderRadius: 15,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    searchBarWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F3F4F6',
+        borderRadius: 18,
+        paddingHorizontal: 16,
+        height: 54,
+    },
+    searchIcon: {
+        marginRight: 10,
+    },
+    searchInputField: {
+        flex: 1,
+        fontSize: 16,
+        color: '#1F2937',
+        fontWeight: '600',
+    },
+    chatListContent: {
+        paddingHorizontal: 18,
+        paddingTop: 20,
+        paddingBottom: 120,
+    },
+    chatCard: {
+        flexDirection: 'row',
+        backgroundColor: '#fff',
+        borderRadius: 28,
+        padding: 16,
+        marginBottom: 14,
+        alignItems: 'center',
+    },
+    avatarWrapper: {
+        position: 'relative',
+    },
+    avatar: {
+        width: 62,
+        height: 62,
+        borderRadius: 22,
+        backgroundColor: '#F3F4F6',
+    },
+    onlineDot: {
+        position: 'absolute',
+        bottom: -2,
+        right: -2,
+        width: 18,
+        height: 18,
+        borderRadius: 9,
+        backgroundColor: '#22C55E',
+        borderWidth: 4,
+        borderColor: '#fff',
+    },
+    chatContent: {
+        flex: 1,
+        marginLeft: 16,
+    },
+    chatHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 5,
+    },
+    chatName: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: '#111827',
+        flex: 1,
+        marginRight: 10,
+    },
+    chatTime: {
+        fontSize: 12,
+        color: '#9CA3AF',
+        fontWeight: '700',
+    },
+    chatFooterRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    lastMessage: {
+        fontSize: 14,
+        color: '#6B7280',
+        flex: 1,
+        marginRight: 10,
+        fontWeight: '500',
+    },
+    unreadCountBadge: {
+        minWidth: 24,
+        height: 24,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 7,
+    },
+    unreadText: {
+        color: '#fff',
+        fontSize: 11,
+        fontWeight: '900',
     },
     loaderContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    header: {
-        backgroundColor: '#0088cc',
-        paddingTop: 40,
-        paddingBottom: 15,
-        paddingHorizontal: 20,
-        elevation: 4,
-    },
-    headerTop: {
-        flexDirection: 'row',
+    emptyStateContainer: {
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
+        marginTop: 80,
+        paddingHorizontal: 50,
     },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#fff',
-        flex: 1,
-        marginLeft: 25,
-    },
-    searchContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.15)',
-        borderRadius: 10,
-        marginTop: 15,
-        paddingHorizontal: 10,
-        height: 40,
-    },
-    searchIcon: {
-        marginRight: 8,
-    },
-    searchInput: {
-        flex: 1,
-        color: '#fff',
-        fontSize: 15,
-    },
-    emptyText: {
+    emptyTitle: {
+        fontSize: 22,
+        fontWeight: '900',
+        color: '#374151',
+        marginTop: 20,
         textAlign: 'center',
-        marginTop: 50,
-        color: '#888',
-        fontSize: 16,
     },
-    listContent: {
-        paddingVertical: 5,
-    },
-    chatItem: {
-        flexDirection: 'row',
-        paddingHorizontal: 15,
-        paddingVertical: 12,
-        alignItems: 'center',
-    },
-    avatarContainer: {
-        position: 'relative',
-    },
-    avatar: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: '#eee',
-    },
-    onlineBadge: {
-        position: 'absolute',
-        bottom: 2,
-        right: 2,
-        width: 14,
-        height: 14,
-        borderRadius: 7,
-        backgroundColor: '#4CAF50',
-        borderWidth: 2,
-        borderColor: '#fff',
-    },
-    chatInfo: {
-        flex: 1,
-        marginLeft: 15,
-        borderBottomWidth: 0.5,
-        borderBottomColor: '#eee',
-        paddingBottom: 10,
-    },
-    chatHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 5,
-    },
-    chatName: {
-        fontSize: 17,
-        fontWeight: '600',
-        color: '#000',
-    },
-    chatTime: {
-        fontSize: 13,
-        color: '#888',
-    },
-    chatFooter: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    lastMessage: {
+    emptySubtitle: {
         fontSize: 15,
-        color: '#666',
-        flex: 1,
-        marginRight: 10,
+        color: '#9CA3AF',
+        textAlign: 'center',
+        marginTop: 12,
+        lineHeight: 22,
+        fontWeight: '500',
     },
-    unreadBadge: {
-        backgroundColor: '#0088cc',
-        borderRadius: 12,
-        minWidth: 22,
-        height: 22,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 6,
-    },
-    unreadText: {
-        color: '#fff',
-        fontSize: 12,
-        fontWeight: 'bold',
-    },
-    fab: {
+    enhancedFab: {
         position: 'absolute',
-        bottom: 25,
+        bottom: 35,
         right: 25,
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: '#0088cc',
+        elevation: 12,
+        shadowColor: '#6366F1',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.35,
+        shadowRadius: 15,
+    },
+    fabGradient: {
+        width: 70,
+        height: 70,
+        borderRadius: 24,
         justifyContent: 'center',
         alignItems: 'center',
-        elevation: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 3,
     },
+    searchResultCard: {
+        flexDirection: 'row',
+        backgroundColor: '#fff',
+        borderRadius: 22,
+        padding: 14,
+        marginHorizontal: 18,
+        marginBottom: 12,
+        alignItems: 'center',
+        elevation: 2,
+    },
+    searchAvatar: {
+        width: 54,
+        height: 54,
+        borderRadius: 20,
+    },
+    searchInfo: {
+        flex: 1,
+        marginLeft: 16,
+    },
+    usernameText: {
+        fontSize: 14,
+        color: '#6366F1',
+        fontWeight: '700',
+        marginTop: 2,
+    },
+    startChatBtn: {
+        width: 42,
+        height: 42,
+        borderRadius: 14,
+        backgroundColor: '#EEF2FF',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    resultsList: {
+        paddingTop: 25,
+    },
+    emptyResultsText: {
+        textAlign: 'center',
+        color: '#9CA3AF',
+        marginTop: 40,
+        fontSize: 16,
+        fontWeight: '600',
+    }
 });
 
 export default ChatListScreen;

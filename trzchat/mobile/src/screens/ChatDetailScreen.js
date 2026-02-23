@@ -14,20 +14,32 @@ import {
     Keyboard,
     Animated,
     Alert,
-    PanResponder
+    PanResponder,
+    InteractionManager,
+    AppState
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Audio } from 'expo-av';
 import { ArrowLeft, MoreVertical, Paperclip, Smile, Mic, Send, Reply, Edit2, Trash2, X, CornerUpRight, Play, Pause, StopCircle, Check, CheckCheck } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
-import { API_URL, SOCKET_URL } from '../config/api';
+import { API_URL, SOCKET_URL, fixUrl } from '../config/api';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/id';
 dayjs.extend(relativeTime);
 dayjs.locale('id');
 import io from 'socket.io-client';
+import Reanimated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withTiming,
+    withRepeat,
+    withSequence,
+    interpolateColor,
+    withSpring
+} from 'react-native-reanimated';
 
 import { getToken } from '../utils/auth';
 
@@ -62,18 +74,28 @@ const ChatDetailScreen = () => {
     const [recordingMode, setRecordingMode] = useState(null); // 'hold' or 'toggle'
     const [willCancel, setWillCancel] = useState(false);
     const [audioPlayingId, setAudioPlayingId] = useState(null);
-    const [soundObject, setSoundObject] = useState(null);
-    const [audioProgress, setAudioProgress] = useState({});
+    const [audioLoadingId, setAudioLoadingId] = useState(null);
+    const soundObjectRef = useRef(null);
+    const audioPlayingIdRef = useRef(null);
+    const sharedProgress = useSharedValue(0); // Progres animasi global (0-1)
     const recordingTimerRef = useRef(null);
     const micPulseAnim = useRef(new Animated.Value(1)).current;
 
     const flatListRef = useRef(null);
     const highlightAnim = useRef(new Animated.Value(0)).current;
     const messagesRef = useRef([]);
+    const lastFetchRef = useRef(0);
+    const isRecordingRef = useRef(false);
+
+    useEffect(() => {
+        isRecordingRef.current = isRecording;
+    }, [isRecording]);
 
     const fetchMessages = useCallback(async (pageNum = 1) => {
-        if (pageNum === 1) setLoading(true);
-        else setLoadingMore(true);
+        if (pageNum === 1 && messagesRef.current.length === 0) setLoading(true);
+        else if (pageNum > 1) setLoadingMore(true);
+
+        lastFetchRef.current = Date.now();
 
         try {
             await getToken();
@@ -91,7 +113,11 @@ const ChatDetailScreen = () => {
                 messagesRef.current = newMessages;
             } else {
                 setMessages(prev => {
-                    const updated = [...prev, ...newMessages];
+                    // Filter out any messages that already exist in prev state
+                    const filteredNew = newMessages.filter(
+                        newMsg => !prev.some(prevMsg => String(prevMsg.id) === String(newMsg.id))
+                    );
+                    const updated = [...prev, ...filteredNew];
                     messagesRef.current = updated;
                     return updated;
                 });
@@ -113,93 +139,161 @@ const ChatDetailScreen = () => {
     }, [loadingMore, hasMore, page, fetchMessages]);
 
     useEffect(() => {
-        fetchMessages();
+        let currentSocket = null;
+
+        const handleAppStateChange = (nextAppState) => {
+            if (nextAppState === 'active') {
+                // Jangan reload jika sedang merekam atau baru saja fetch (dalam 10 detik)
+                const recentlyFetched = Date.now() - lastFetchRef.current < 10000;
+                if (!isRecordingRef.current && !recentlyFetched) {
+                    fetchMessages();
+                }
+
+                if (currentSocket) {
+                    currentSocket.connect();
+                    currentSocket.emit('join-chat', chat.id);
+                    currentSocket.emit('mark-as-read', { chatId: chat.id });
+                }
+            }
+        };
+
+        const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+        const task = InteractionManager.runAfterInteractions(() => {
+            fetchMessages();
+            initSocket();
+        });
 
         const initSocket = async () => {
             const token = await getToken();
+            console.log('Attempting to connect to socket (Detail):', SOCKET_URL);
             const newSocket = io(SOCKET_URL, {
-                transports: ['websocket', 'polling'],
+                transports: ['polling', 'websocket'],
                 auth: { token },
                 reconnection: true,
-                reconnectionAttempts: 5
+                reconnectionAttempts: 10,
+                reconnectionDelay: 2000,
+                reconnectionDelayMax: 10000,
+                timeout: 30000,
+                forceNew: true,
+                secure: true,
+                rejectUnauthorized: false
             });
 
+            currentSocket = newSocket;
             setSocket(newSocket);
 
+            newSocket.on('connect_error', (err) => {
+                console.error('Socket Connection Error Detail:', {
+                    message: err.message,
+                    description: err.description,
+                    context: err.context,
+                    type: err.type
+                });
+                // Jika error autentikasi, mungkin token expired
+                if (err.message.includes('Authentication error')) {
+                    console.log('Auth error detected, might need to refresh token');
+                }
+            });
+
             newSocket.on('connect', () => {
+                console.log('Socket connected to room:', chat.id);
                 newSocket.emit('join-chat', chat.id);
-                // Also mark as read immediately when connecting to this chat IF focused
-                if (navigation.isFocused()) {
-                    newSocket.emit('mark-as-read', { chatId: chat.id });
+                // Langsung tandai dibaca setelah join room
+                newSocket.emit('mark-as-read', { chatId: chat.id });
+            });
+
+            newSocket.on('reconnect', () => {
+                console.log('Socket reconnected, re-joining room:', chat.id);
+                newSocket.emit('join-chat', chat.id);
+                newSocket.emit('mark-as-read', { chatId: chat.id });
+
+                const recentlyFetched = Date.now() - lastFetchRef.current < 5000;
+                if (!isRecordingRef.current && !recentlyFetched) {
+                    fetchMessages();
                 }
             });
 
             newSocket.on('new-message', (newMessage) => {
-                const isFromOther = newMessage.sender_id === chat.otherUser?.id;
+                // Gunakan String() agar perbandingan ID selalu akurat (kadangkala number vs string)
+                const isFromOther = String(newMessage.sender_id) === String(chat.otherUser?.id);
 
-                // When we receive a message from the other person
                 if (isFromOther) {
                     newSocket.emit('message-delivered', { messageId: newMessage.id, chatId: chat.id });
-
-                    // IF we are currently looking at this chat, also mark it as READ
                     if (navigation.isFocused()) {
-                        newSocket.emit('mark-as-read', { chatId: chat.id });
+                        setTimeout(() => {
+                            newSocket.emit('mark-as-read', { chatId: chat.id });
+                        }, 500);
                     }
                 }
 
                 setMessages((prev) => {
-                    const socketMsg = {
-                        ...newMessage,
-                        sender: isFromOther ? 'them' : 'me'
-                    };
+                    const socketMsg = { ...newMessage, sender: isFromOther ? 'them' : 'me' };
 
-                    if (prev.find(m => String(m.id) === String(socketMsg.id))) return prev;
+                    // 1. Cek duplikat berdasarkan ID asli
+                    if (prev.some(m => String(m.id) === String(socketMsg.id))) return prev;
 
-                    const isMyDuplicate = prev.find(m =>
-                        !isFromOther &&
-                        m.text === socketMsg.text &&
-                        (typeof m.id === 'string' && m.id.length > 10)
-                    );
+                    // 2. Cek apakah ini adalah upgrade dari pesan optimistik (pesan saya sendiri)
+                    if (!isFromOther) {
+                        const optimisticMatch = prev.find(m =>
+                            (typeof m.id === 'string' && m.id.length > 10) && // Cek ID temp (Date.now())
+                            m.text === socketMsg.text
+                        );
 
-                    if (isMyDuplicate) {
-                        return prev.map(m => m === isMyDuplicate ? { ...m, id: socketMsg.id, created_at: socketMsg.created_at, status: 'sent' } : m);
+                        if (optimisticMatch) {
+                            // Update pesan optimistik yang sudah ada dengan ID asli dari server
+                            return prev.map(m => m.id === optimisticMatch.id
+                                ? { ...socketMsg, sender: 'me' }
+                                : m
+                            );
+                        }
                     }
+
+                    // 3. Tambahkan sebagai pesan baru
                     return [socketMsg, ...prev];
                 });
             });
 
             newSocket.on('messages-read', ({ chatId, readerId }) => {
-                // If someone else read messages in this chat, update my 'me' messages status
-                setMessages(prev => prev.map(m => (m.sender === 'me' && m.status !== 'read') ? { ...m, status: 'read' } : m));
+                if (String(chatId) === String(chat.id)) {
+                    setMessages(prev => prev.map(m => (m.sender === 'me' && m.status !== 'read') ? { ...m, status: 'read' } : m));
+                }
             });
 
             newSocket.on('message-status-updated', ({ messageId, status }) => {
-                setMessages(prev => prev.map(m => m.id === messageId ? { ...m, status } : m));
+                setMessages(prev => prev.map(m => String(m.id) === String(messageId) ? { ...m, status } : m));
             });
 
             newSocket.on('message-edited', ({ id, text }) => {
-                setMessages(prev => prev.map(m => m.id === id ? { ...m, text, is_edited: true } : m));
+                setMessages(prev => prev.map(m => String(m.id) === String(id) ? { ...m, text, is_edited: true } : m));
             });
 
             newSocket.on('message-deleted', ({ id }) => {
-                setMessages(prev => prev.map(m => m.id === id ? { ...m, text: 'Pesan ini telah dihapus', is_deleted: true } : m));
+                setMessages(prev => prev.map(m => String(m.id) === String(id) ? { ...m, text: 'Pesan ini telah dihapus', is_deleted: true } : m));
             });
 
             newSocket.on('user-status-changed', ({ userId, status, last_seen }) => {
                 const otherParticipantId = chat.otherUser?.id;
-                if (userId === otherParticipantId) {
+                if (String(userId) === String(otherParticipantId)) {
                     setCurrentStatus(status);
                     if (last_seen) setLastSeen(last_seen);
                 }
             });
         };
 
-        initSocket();
+        const focusListener = navigation.addListener('focus', () => {
+            if (currentSocket) {
+                currentSocket.emit('mark-as-read', { chatId: chat.id });
+            }
+        });
 
         return () => {
-            if (socket) socket.disconnect();
+            task.cancel();
+            subscription.remove();
+            focusListener();
+            if (currentSocket) currentSocket.disconnect();
         };
-    }, [chat.id]);
+    }, [chat.id, navigation]);
 
     useEffect(() => {
         if (Platform.OS === 'android') {
@@ -219,12 +313,12 @@ const ChatDetailScreen = () => {
     // Cleanup audio on unmount
     useEffect(() => {
         return () => {
-            if (soundObject) {
-                soundObject.unloadAsync();
+            if (soundObjectRef.current) {
+                soundObjectRef.current.unloadAsync();
             }
             if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
         };
-    }, [soundObject]);
+    }, []);
 
     // Format seconds to MM:SS
     const formatDuration = (seconds) => {
@@ -390,73 +484,107 @@ const ChatDetailScreen = () => {
 
             await getToken();
             const formData = new FormData();
-            formData.append('audio', {
-                uri: uri,
-                type: 'audio/m4a',
-                name: 'voice.m4a',
-            });
+
+            // Perbaikan untuk Web Preview / Web Platform
+            if (Platform.OS === 'web') {
+                const response = await fetch(uri);
+                const blob = await response.blob();
+                formData.append('audio', blob, 'voice.m4a');
+            } else {
+                formData.append('audio', {
+                    uri: uri,
+                    type: 'audio/m4a',
+                    name: 'voice.m4a',
+                });
+            }
+
             formData.append('chatId', chat.id);
             formData.append('duration', durationLabel);
             if (replyId) formData.append('replyToId', replyId);
 
             const response = await axios.post(`${API_URL}/messages/audio`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                },
             });
             setMessages(prev => prev.map(m =>
                 m.id === tempId ? { ...m, id: response.data.id, audio_url: response.data.audio_url } : m
             ));
         } catch (error) {
             console.error('Error sending audio message:', error);
+            if (error.response) {
+                console.error('Server response data:', error.response.data);
+                console.error('Server response status:', error.response.status);
+            }
             recordingInstanceRef.current = null;
         }
     }, [replyingTo, chat.id, chat.name, stopMicPulse]);
 
     const handleAudioPlayback = useCallback(async (messageId, audioUrl) => {
         try {
-            if (audioPlayingId === messageId) {
-                // Pause or resume
-                if (soundObject) {
-                    const status = await soundObject.getStatusAsync();
-                    if (status.isPlaying) {
-                        await soundObject.pauseAsync();
-                        setAudioPlayingId(null);
-                    } else {
-                        await soundObject.playAsync();
-                        setAudioPlayingId(messageId);
-                    }
+            // 1. Jika klik pada audio yang sama saat sedang loading atau main
+            if (audioPlayingIdRef.current === messageId) {
+                setAudioPlayingId(null);
+                audioPlayingIdRef.current = null;
+                sharedProgress.value = withTiming(0);
+
+                if (soundObjectRef.current) {
+                    await soundObjectRef.current.stopAsync();
+                    await soundObjectRef.current.unloadAsync();
+                    soundObjectRef.current = null;
                 }
                 return;
             }
-            // Stop previous sound
-            if (soundObject) {
-                await soundObject.stopAsync();
-                await soundObject.unloadAsync();
-                setSoundObject(null);
-                setAudioPlayingId(null);
+
+            // 2. Berhentikan audio lain jika ada yang sedang jalan
+            if (soundObjectRef.current) {
+                try {
+                    await soundObjectRef.current.stopAsync();
+                    await soundObjectRef.current.unloadAsync();
+                } catch (e) { }
+                soundObjectRef.current = null;
             }
+
+            // 3. Set loading state
+            setAudioLoadingId(messageId);
+            sharedProgress.value = 0;
+
             await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true });
+
+            const finalAudioUrl = fixUrl(audioUrl);
             const { sound } = await Audio.Sound.createAsync(
-                { uri: audioUrl },
+                { uri: finalAudioUrl },
                 { shouldPlay: true },
                 (status) => {
                     if (status.isLoaded) {
-                        const progress = status.durationMillis > 0
-                            ? status.positionMillis / status.durationMillis
-                            : 0;
-                        setAudioProgress(prev => ({ ...prev, [messageId]: progress }));
+                        if (status.isPlaying) {
+                            // Update progres langsung ke UI Thread
+                            sharedProgress.value = status.durationMillis > 0
+                                ? status.positionMillis / status.durationMillis
+                                : 0;
+                        }
+
                         if (status.didJustFinish) {
                             setAudioPlayingId(null);
-                            setAudioProgress(prev => ({ ...prev, [messageId]: 0 }));
+                            audioPlayingIdRef.current = null;
+                            sharedProgress.value = withTiming(0);
                         }
                     }
                 }
             );
-            setSoundObject(sound);
+
+            // 4. Playback dimulai
+            soundObjectRef.current = sound;
+            setAudioLoadingId(null);
             setAudioPlayingId(messageId);
+            audioPlayingIdRef.current = messageId;
         } catch (error) {
-            console.error('Error playing audio:', error);
+            console.error('Audio Playback Error:', error);
+            setAudioLoadingId(null);
+            setAudioPlayingId(null);
+            audioPlayingIdRef.current = null;
         }
-    }, [audioPlayingId, soundObject]);
+    }, [sharedProgress]);
 
     const panResponder = useRef(
         PanResponder.create({
@@ -621,14 +749,64 @@ const ChatDetailScreen = () => {
         });
     }, [highlightAnim]);
 
-    const MessageItem = memo(({ item, onLongPress, onReplyPress, isHighlighted, highlightAnim, onAudioPress, audioPlayingId, audioProgress }) => {
+    // Komponen Bar Individu - Terhubung ke SharedValue (0% Re-render)
+    const WaveBar = memo(({ index, isMe, isPlaying, sharedProgress }) => {
+        const heights = [10, 16, 12, 20, 14, 24, 18, 12, 22, 16, 20, 14, 18, 12, 10];
+        const baseHeight = heights[index % heights.length];
+        const pulse = useSharedValue(1);
+
+        useEffect(() => {
+            if (isPlaying) {
+                pulse.value = withRepeat(
+                    withSequence(
+                        withTiming(1.2, { duration: 400 + (index * 40) }),
+                        withTiming(0.8, { duration: 400 + (index * 40) })
+                    ),
+                    -1,
+                    true
+                );
+            } else {
+                pulse.value = withSpring(1);
+            }
+        }, [isPlaying]);
+
+        const animatedStyle = useAnimatedStyle(() => {
+            const barPct = (index + 1) / 15;
+            const isActive = sharedProgress.value >= barPct;
+
+            return {
+                height: baseHeight * (isPlaying ? pulse.value : 1),
+                backgroundColor: withTiming(
+                    isActive
+                        ? (isMe ? '#7C3AED' : '#6366F1')
+                        : 'rgba(0,0,0,0.1)',
+                    { duration: 150 }
+                )
+            };
+        });
+
+        return <Reanimated.View style={[styles.waveBar, animatedStyle]} />;
+    });
+
+    // Komponen Waveform Premium
+    const Waveform = memo(({ isMe, isPlaying, sharedProgress }) => {
+        return (
+            <View style={styles.waveformContainer}>
+                {[...Array(15)].map((_, i) => (
+                    <WaveBar key={i} index={i} isMe={isMe} isPlaying={isPlaying} sharedProgress={sharedProgress} />
+                ))}
+            </View>
+        );
+    });
+
+    const MessageItem = memo(({ item, onLongPress, onReplyPress, isHighlighted, highlightAnim, onAudioPress, audioPlayingId, audioLoadingId, sharedProgress }) => {
         const isMe = item.sender === 'me';
         const displayTime = dayjs(item.created_at || item.time).format('HH:mm');
         const isDeleted = item.is_deleted ? true : false;
         const hasReply = item.reply_to && !isDeleted;
         const isAudio = (item.type === 'audio') && !isDeleted;
         const isPlaying = audioPlayingId === item.id;
-        const progress = audioProgress[item.id] || 0;
+        const isLoading = audioLoadingId === item.id;
 
         const animatedBubbleStyle = isHighlighted ? {
             backgroundColor: highlightAnim.interpolate({
@@ -673,19 +851,21 @@ const ChatDetailScreen = () => {
                                 activeOpacity={0.8}
                             >
                                 <View style={[styles.audioPlayBtn, isMe ? styles.audioPlayBtnMe : styles.audioPlayBtnThem]}>
-                                    {isPlaying ? (
+                                    {isLoading ? (
+                                        <ActivityIndicator size="small" color="#fff" />
+                                    ) : isPlaying ? (
                                         <Pause size={18} color="#fff" />
                                     ) : (
                                         <Play size={18} color="#fff" />
                                     )}
                                 </View>
                                 <View style={styles.audioWaveContainer}>
-                                    <View style={styles.audioProgressTrack}>
-                                        <View style={[styles.audioProgressFill, { width: `${Math.round(progress * 100)}%` }]} />
+                                    <Waveform isMe={isMe} isPlaying={isPlaying} sharedProgress={sharedProgress} />
+                                    <View style={styles.audioMetaRow}>
+                                        <Text style={styles.audioDurationText}>{item.text.replace('🎤 Pesan Suara', '').trim()}</Text>
+                                        <Mic size={12} color="#9CA3AF" />
                                     </View>
-                                    <Text style={styles.audioDurationText}>{item.text.replace('🎤 Pesan Suara', '').trim()}</Text>
                                 </View>
-                                <Text style={styles.audioMicIcon}>🎤</Text>
                             </TouchableOpacity>
                         ) : (
                             <Text style={[styles.messageText, isDeleted ? styles.deletedText : null]}>
@@ -724,9 +904,10 @@ const ChatDetailScreen = () => {
             highlightAnim={highlightAnim}
             onAudioPress={handleAudioPlayback}
             audioPlayingId={audioPlayingId}
-            audioProgress={audioProgress}
+            audioLoadingId={audioLoadingId}
+            sharedProgress={sharedProgress}
         />
-    ), [handleLongPress, scrollToOriginalMessage, highlightedMessageId, audioPlayingId, audioProgress]);
+    ), [handleLongPress, scrollToOriginalMessage, highlightedMessageId, audioPlayingId, audioLoadingId, sharedProgress]);
 
     const renderChatArea = () => (
         <View style={styles.chatBackground}>
@@ -874,13 +1055,13 @@ const ChatDetailScreen = () => {
 
     return (
         <View style={[styles.container, { paddingBottom: Platform.OS === 'android' ? keyboardPadding : 0 }]}>
-            <StatusBar style="light" backgroundColor="#0088cc" />
+            <StatusBar style="light" translucent />
 
             {(optionsVisible && selectedMessage) ? (
                 <TouchableOpacity style={styles.optionsOverlay} activeOpacity={1} onPress={() => setOptionsVisible(false)}>
                     <View style={[styles.optionsBox, selectedMessage.sender === 'me' ? styles.optionsBoxMe : styles.optionsBoxThem]}>
                         <TouchableOpacity style={styles.optionItem} onPress={handleReply}>
-                            <Reply size={18} color="#0088cc" />
+                            <Reply size={18} color="#6366F1" />
                             <Text style={styles.optionText}>Balas</Text>
                         </TouchableOpacity>
                         {selectedMessage.sender === 'me' ? (
@@ -901,11 +1082,16 @@ const ChatDetailScreen = () => {
                 </TouchableOpacity>
             ) : null}
 
-            <View style={styles.header}>
+            <LinearGradient
+                colors={['#6366F1', '#8B5CF6']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.header}
+            >
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <ArrowLeft size={24} color="#fff" />
                 </TouchableOpacity>
-                <Image source={{ uri: chat.avatar || 'https://ui-avatars.com/api/?name=' + (chat.name || 'User') }} style={styles.headerAvatar} />
+                <Image source={{ uri: fixUrl(chat.avatar) || 'https://ui-avatars.com/api/?name=' + (chat.name || 'User') }} style={styles.headerAvatar} />
                 <View style={styles.headerInfo}>
                     <Text style={styles.headerName}>{chat.name}</Text>
                     <Text style={styles.headerStatus}>
@@ -919,23 +1105,25 @@ const ChatDetailScreen = () => {
                 <TouchableOpacity>
                     <MoreVertical size={24} color="#fff" />
                 </TouchableOpacity>
-            </View>
+            </LinearGradient>
 
             <View style={{ flex: 1 }}>
                 {renderChatArea()}
             </View>
 
-            {Platform.OS === 'web' ? (
-                renderInputBar()
-            ) : (
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                    keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-                >
-                    {renderInputBar()}
-                </KeyboardAvoidingView>
-            )}
-        </View>
+            {
+                Platform.OS === 'web' ? (
+                    renderInputBar()
+                ) : (
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+                    >
+                        {renderInputBar()}
+                    </KeyboardAvoidingView>
+                )
+            }
+        </View >
     );
 };
 
@@ -950,36 +1138,44 @@ const styles = StyleSheet.create({
         flexDirection: 'column',
     },
     header: {
-        backgroundColor: '#0088cc',
-        paddingTop: 45,
-        paddingBottom: 10,
+        paddingTop: 50,
+        paddingBottom: 14,
         paddingHorizontal: 15,
         flexDirection: 'row',
         alignItems: 'center',
-        elevation: 3,
+        elevation: 5,
+        shadowColor: '#6366F1',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
     },
     headerAvatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        marginLeft: 15,
+        width: 42,
+        height: 42,
+        borderRadius: 14,
+        marginLeft: 14,
+        borderWidth: 2,
+        borderColor: 'rgba(255,255,255,0.5)',
     },
     headerInfo: {
         flex: 1,
-        marginLeft: 15,
+        marginLeft: 12,
     },
     headerName: {
         fontSize: 18,
-        fontWeight: 'bold',
+        fontWeight: '800',
         color: '#fff',
+        letterSpacing: 0.3,
     },
     headerStatus: {
-        fontSize: 13,
-        color: '#e0e0e0',
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.85)',
+        fontWeight: '600',
+        marginTop: 1,
     },
     chatBackground: {
         flex: 1,
-        backgroundColor: '#e5ddd5',
+        backgroundColor: '#EEF0F5',
         overflow: 'hidden',
     },
     loaderContainer: {
@@ -1002,22 +1198,26 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-start',
     },
     bubble: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 18,
-        elevation: 1,
+        paddingHorizontal: 13,
+        paddingVertical: 9,
+        borderRadius: 20,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.06,
+        shadowRadius: 4,
     },
     myBubble: {
-        backgroundColor: '#E1FEC6',
-        borderBottomRightRadius: 2,
+        backgroundColor: '#DCFCE7',
+        borderBottomRightRadius: 4,
     },
     theirBubble: {
         backgroundColor: '#fff',
-        borderBottomLeftRadius: 2,
+        borderBottomLeftRadius: 4,
     },
     messageText: {
         fontSize: 16,
-        color: '#000',
+        color: '#1F2937',
     },
     messageTime: {
         fontSize: 11,
@@ -1027,7 +1227,7 @@ const styles = StyleSheet.create({
     },
     inputContainer: {
         flexDirection: 'row',
-        paddingHorizontal: 8,
+        paddingHorizontal: 10,
         paddingVertical: 10,
         alignItems: 'flex-end',
         backgroundColor: 'transparent',
@@ -1036,10 +1236,10 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
         backgroundColor: '#fff',
-        borderRadius: 25,
-        paddingHorizontal: 5,
+        borderRadius: 28,
+        paddingHorizontal: 6,
         alignItems: 'center',
-        minHeight: 45,
+        minHeight: 50,
     },
     input: {
         flex: 1,
@@ -1047,24 +1247,25 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         fontSize: 16,
         maxHeight: 120,
-        color: '#000',
+        color: '#1F2937',
+        fontWeight: '500',
     },
     iconButton: {
         padding: 10,
     },
     sendButton: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
+        width: 50,
+        height: 50,
+        borderRadius: 18,
         justifyContent: 'center',
         alignItems: 'center',
         marginLeft: 8,
     },
     sendButtonActive: {
-        backgroundColor: '#0088cc',
+        backgroundColor: '#6366F1',
     },
     micButtonActive: {
-        backgroundColor: '#0088cc',
+        backgroundColor: '#6366F1',
     },
     // Message Options
     optionsOverlay: {
@@ -1116,9 +1317,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         paddingVertical: 8,
         borderTopWidth: 1,
-        borderTopColor: '#e0e0e0',
+        borderTopColor: '#E5E7EB',
         borderLeftWidth: 4,
-        borderLeftColor: '#0088cc',
+        borderLeftColor: '#6366F1',
     },
     replyBannerLeft: {
         flexDirection: 'row',
@@ -1129,30 +1330,30 @@ const styles = StyleSheet.create({
     replyBannerTitle: {
         fontSize: 13,
         fontWeight: 'bold',
-        color: '#0088cc',
+        color: '#6366F1',
     },
     replyBannerMessage: {
         fontSize: 13,
         color: '#555',
     },
     replyPreviewBubble: {
-        borderRadius: 8,
+        borderRadius: 10,
         padding: 7,
         marginBottom: 6,
         borderLeftWidth: 3,
     },
     replyPreviewMe: {
-        backgroundColor: 'rgba(0,0,0,0.07)',
-        borderLeftColor: '#00a651',
+        backgroundColor: 'rgba(99,102,241,0.1)',
+        borderLeftColor: '#8B5CF6',
     },
     replyPreviewThem: {
-        backgroundColor: 'rgba(0,0,0,0.07)',
-        borderLeftColor: '#0088cc',
+        backgroundColor: 'rgba(99,102,241,0.1)',
+        borderLeftColor: '#6366F1',
     },
     replyPreviewUser: {
         fontSize: 12,
         fontWeight: 'bold',
-        color: '#0088cc',
+        color: '#6366F1',
     },
     replyPreviewText: {
         fontSize: 12,
@@ -1234,45 +1435,60 @@ const styles = StyleSheet.create({
     audioPlayer: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 4,
-        paddingRight: 4,
-        minWidth: 180,
-        gap: 10,
+        paddingVertical: 8,
+        paddingHorizontal: 2,
+        minWidth: 200,
+        gap: 12,
     },
     audioPlayBtn: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         justifyContent: 'center',
         alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
     },
     audioPlayBtnMe: {
-        backgroundColor: '#25a244',
+        backgroundColor: '#7C3AED',
     },
     audioPlayBtnThem: {
-        backgroundColor: '#0088cc',
+        backgroundColor: '#6366F1',
     },
     audioWaveContainer: {
         flex: 1,
+        justifyContent: 'center',
     },
-    audioProgressTrack: {
-        height: 4,
-        backgroundColor: 'rgba(0,0,0,0.15)',
-        borderRadius: 2,
+    waveformContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        height: 30,
+        gap: 3,
         marginBottom: 4,
-        overflow: 'hidden',
     },
-    audioProgressFill: {
-        height: 4,
-        backgroundColor: '#0088cc',
-        borderRadius: 2,
+    waveBar: {
+        width: 3,
+        backgroundColor: 'rgba(0,0,0,0.1)',
+        borderRadius: 1.5,
+    },
+    waveBarActiveMe: {
+        backgroundColor: '#7C3AED',
+    },
+    waveBarActiveThem: {
+        backgroundColor: '#6366F1',
+    },
+    audioMetaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
     },
     audioDurationText: {
         fontSize: 11,
-        color: '#666',
-    },
-    audioMicIcon: {
-        fontSize: 18,
+        color: '#6B7280',
+        fontWeight: '600',
     },
 });
 

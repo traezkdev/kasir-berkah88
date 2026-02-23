@@ -10,15 +10,45 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Aplikasi ini memerlukan akses ke kamera untuk fitur video call.",
+        "NSMicrophoneUsageDescription": "Aplikasi ini memerlukan akses ke mikrofon untuk fitur telepon dan video call."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.trzchat.app"
+      "package": "com.trzchat.app",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS",
+        "ACCESS_NETWORK_STATE",
+        "BLUETOOTH",
+        "BLUETOOTH_CONNECT"
+      ]
     },
+    "plugins": [
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "Aplikasi ini memerlukan akses ke kamera untuk fitur video call.",
+          "microphonePermission": "Aplikasi ini memerlukan akses ke mikrofon untuk fitur telepon dan video call."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 24
+          }
+        }
+      ],
+      "expo-config-plugin-incall-manager"
+    ],
     "web": {
       "favicon": "./assets/favicon.png"
     },
@@ -26,6 +56,12 @@
       "eas": {
         "projectId": "d6c9dda3-051f-48a7-a7d1-8c1b786a6764"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/d6c9dda3-051f-48a7-a7d1-8c1b786a6764"
     }
   }
 }

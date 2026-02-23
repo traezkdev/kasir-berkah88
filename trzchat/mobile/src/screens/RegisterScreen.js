@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator, ToastAndroid } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, User, Mail, Lock, Eye, EyeOff, Phone } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import { API_URL } from '../config/api';
 
@@ -19,7 +20,12 @@ const RegisterScreen = () => {
 
     const handleRegister = async () => {
         if (!fullName || !username || !email || !password) {
-            Alert.alert('Error', 'Silakan isi kolom yang wajib (Nama, Username, Email, Kata Sandi)');
+            const errorMsg = 'Silakan isi kolom yang wajib (Nama, Username, Email, Kata Sandi)';
+            if (Platform.OS === 'android') {
+                ToastAndroid.show(errorMsg, ToastAndroid.SHORT);
+            } else {
+                Alert.alert('Error', errorMsg);
+            }
             return;
         }
 
@@ -33,243 +39,311 @@ const RegisterScreen = () => {
                 phone: phone
             });
 
-            Alert.alert('Sukses', 'Akun berhasil dibuat! Silakan masuk.', [
-                { text: 'OK', onPress: () => navigation.navigate('Login') }
-            ]);
-            // navigation.replace('Main'); // Jika ingin langsung masuk
+            const successMsg = 'Akun berhasil dibuat! Silakan masuk.';
+            if (Platform.OS === 'android') {
+                ToastAndroid.show(successMsg, ToastAndroid.SHORT);
+            } else {
+                Alert.alert('Sukses', successMsg);
+            }
+            navigation.navigate('Login');
         } catch (error) {
-            console.error(error);
-            const message = error.response?.data?.message || 'Gagal mendaftar. Coba lagi.';
-            Alert.alert('Gagal Daftar', message);
+            console.log('Register Error Detail:', error.response?.data);
+            const status = error.response?.status;
+            const message = error.response?.data?.message || (status ? `Error ${status}: Gagal daftar` : 'Koneksi bermasalah');
+
+            if (Platform.OS === 'android') {
+                ToastAndroid.show(message, ToastAndroid.LONG);
+            } else {
+                Alert.alert('Gagal Daftar', message);
+            }
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar style="dark" />
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={{ flex: 1 }}
-            >
-                <ScrollView contentContainerStyle={styles.scrollContent}>
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => navigation.goBack()}
-                    >
-                        <ArrowLeft size={24} color="#000" />
-                    </TouchableOpacity>
+        <View style={styles.container}>
+            <LinearGradient
+                colors={['#4F46E5', '#7C3AED']}
+                style={StyleSheet.absoluteFillObject}
+            />
+            <StatusBar style="light" translucent />
 
-                    <View style={styles.header}>
-                        <Text style={styles.title}>Daftar Akun</Text>
-                        <Text style={styles.subtitle}>Buat akun baru untuk mulai berkirim pesan dengan teman.</Text>
+            <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={{ flex: 1 }}
+                >
+                    <View style={styles.topSection}>
+                        <TouchableOpacity
+                            style={styles.backButton}
+                            onPress={() => navigation.goBack()}
+                        >
+                            <ArrowLeft size={24} color="#fff" />
+                        </TouchableOpacity>
+
+                        <View style={styles.headerInfo}>
+                            <Text style={styles.title}>Daftar Sekarang</Text>
+                            <Text style={styles.subtitle}>Bergabunglah dengan komunitas kami dan mulai mengobrol.</Text>
+                        </View>
                     </View>
 
-                    <View style={styles.form}>
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Nama Lengkap</Text>
-                            <View style={styles.inputWrapper}>
-                                <User size={20} color="#888" style={styles.inputIcon} />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Masukkan nama Anda"
-                                    value={fullName}
-                                    onChangeText={setFullName}
-                                />
-                            </View>
-                        </View>
+                    <View style={styles.bottomSheet}>
+                        <ScrollView
+                            style={{ flex: 1 }}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={styles.scrollContent}
+                        >
+                            <View style={styles.formCard}>
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.label}>Nama Lengkap</Text>
+                                    <View style={styles.inputWrapper}>
+                                        <User size={20} color="#6366F1" style={styles.inputIcon} />
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Nama Lengkap Anda"
+                                            placeholderTextColor="#9CA3AF"
+                                            value={fullName}
+                                            onChangeText={setFullName}
+                                        />
+                                    </View>
+                                </View>
 
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Username</Text>
-                            <View style={styles.inputWrapper}>
-                                <User size={20} color="#888" style={styles.inputIcon} />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Buat username unik"
-                                    autoCapitalize="none"
-                                    value={username}
-                                    onChangeText={setUsername}
-                                />
-                            </View>
-                        </View>
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.label}>Username</Text>
+                                    <View style={styles.inputWrapper}>
+                                        <User size={20} color="#6366F1" style={styles.inputIcon} />
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Pilih username unik"
+                                            placeholderTextColor="#9CA3AF"
+                                            autoCapitalize="none"
+                                            value={username}
+                                            onChangeText={setUsername}
+                                        />
+                                    </View>
+                                </View>
 
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Email</Text>
-                            <View style={styles.inputWrapper}>
-                                <Mail size={20} color="#888" style={styles.inputIcon} />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="contoh@mail.com"
-                                    keyboardType="email-address"
-                                    autoCapitalize="none"
-                                    value={email}
-                                    onChangeText={setEmail}
-                                />
-                            </View>
-                        </View>
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.label}>Email</Text>
+                                    <View style={styles.inputWrapper}>
+                                        <Mail size={20} color="#6366F1" style={styles.inputIcon} />
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="contoh@mail.com"
+                                            placeholderTextColor="#9CA3AF"
+                                            keyboardType="email-address"
+                                            autoCapitalize="none"
+                                            value={email}
+                                            onChangeText={setEmail}
+                                        />
+                                    </View>
+                                </View>
 
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Nomor Telepon</Text>
-                            <View style={styles.inputWrapper}>
-                                <Phone size={20} color="#888" style={styles.inputIcon} />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="+62 8xx xxxx xxxx"
-                                    keyboardType="phone-pad"
-                                    value={phone}
-                                    onChangeText={setPhone}
-                                />
-                            </View>
-                        </View>
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.label}>Nomor Telepon</Text>
+                                    <View style={styles.inputWrapper}>
+                                        <Phone size={20} color="#6366F1" style={styles.inputIcon} />
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="08xxxxxxxx"
+                                            placeholderTextColor="#9CA3AF"
+                                            keyboardType="phone-pad"
+                                            value={phone}
+                                            onChangeText={setPhone}
+                                        />
+                                    </View>
+                                </View>
 
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Kata Sandi</Text>
-                            <View style={styles.inputWrapper}>
-                                <Lock size={20} color="#888" style={styles.inputIcon} />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Minimal 6 karakter"
-                                    secureTextEntry={!showPassword}
-                                    value={password}
-                                    onChangeText={setPassword}
-                                />
-                                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                                    {showPassword ? <EyeOff size={20} color="#888" /> : <Eye size={20} color="#888" />}
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.label}>Kata Sandi</Text>
+                                    <View style={styles.inputWrapper}>
+                                        <Lock size={20} color="#6366F1" style={styles.inputIcon} />
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Minimal 6 karakter"
+                                            placeholderTextColor="#9CA3AF"
+                                            secureTextEntry={!showPassword}
+                                            value={password}
+                                            onChangeText={setPassword}
+                                        />
+                                        <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                                            {showPassword ? <EyeOff size={20} color="#6366F1" /> : <Eye size={20} color="#6366F1" />}
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+
+                                <Text style={styles.termsText}>
+                                    Dengan mendaftar, Anda menyetujui <Text style={styles.termsLink}>Syarat & Ketentuan</Text> kami.
+                                </Text>
+                            </View>
+                        </ScrollView>
+
+                        <View style={styles.actionFooter}>
+                            <TouchableOpacity
+                                activeOpacity={0.8}
+                                onPress={handleRegister}
+                                disabled={loading}
+                            >
+                                <LinearGradient
+                                    colors={['#6366F1', '#8B5CF6']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={styles.submitButton}
+                                >
+                                    {loading ? (
+                                        <ActivityIndicator color="#fff" />
+                                    ) : (
+                                        <Text style={styles.submitButtonText}>DAFTAR SEKARANG</Text>
+                                    )}
+                                </LinearGradient>
+                            </TouchableOpacity>
+
+                            <View style={styles.footer}>
+                                <Text style={styles.footerText}>Sudah punya akun? </Text>
+                                <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                                    <Text style={styles.registerText}>Masuk Disini</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
 
-                        <Text style={styles.termsText}>
-                            Dengan mendaftar, Anda menyetujui <Text style={styles.termsLink}>Ketentuan Layanan</Text> dan <Text style={styles.termsLink}>Kebijakan Privasi</Text> kami.
-                        </Text>
-
-                        <TouchableOpacity
-                            style={[styles.submitButton, loading && { opacity: 0.7 }]}
-                            onPress={handleRegister}
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                <ActivityIndicator color="#fff" />
-                            ) : (
-                                <Text style={styles.submitButtonText}>DAFTAR SEKARANG</Text>
-                            )}
-                        </TouchableOpacity>
                     </View>
-
-                    <View style={styles.footer}>
-                        <Text style={styles.footerText}>Sudah punya akun? </Text>
-                        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                            <Text style={styles.registerText}>Masuk</Text>
-                        </TouchableOpacity>
-                    </View>
-                </ScrollView>
-            </KeyboardAvoidingView>
-        </SafeAreaView>
+                </KeyboardAvoidingView>
+            </SafeAreaView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#4F46E5',
+    },
+    topSection: {
+        paddingHorizontal: 25,
+        paddingTop: Platform.OS === 'android' ? 20 : 0,
+        height: '25%',
+        justifyContent: 'space-between',
+        paddingBottom: 30,
+    },
+    backButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    headerInfo: {
+        marginTop: 5,
+    },
+    title: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        color: '#fff',
+        letterSpacing: -0.5,
+    },
+    subtitle: {
+        fontSize: 15,
+        color: 'rgba(255,255,255,0.8)',
+        marginTop: 8,
+        lineHeight: 22,
+    },
+    bottomSheet: {
+        flex: 1,
+        backgroundColor: '#F9FAFB',
+        borderTopLeftRadius: 35,
+        borderTopRightRadius: 35,
+        overflow: 'hidden',
     },
     scrollContent: {
         paddingHorizontal: 25,
-        paddingBottom: 40,
+        paddingTop: 30,
+        paddingBottom: 20,
     },
-    backButton: {
-        marginTop: 20,
-        width: 40,
-        height: 40,
-        justifyContent: 'center',
+    actionFooter: {
+        paddingHorizontal: 25,
+        paddingBottom: Platform.OS === 'ios' ? 35 : 25,
+        paddingTop: 15,
+        backgroundColor: '#F9FAFB',
+        borderTopWidth: 1,
+        borderColor: '#E5E7EB',
     },
-    header: {
-        marginTop: 20,
-        marginBottom: 30,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#000',
-    },
-    subtitle: {
-        fontSize: 16,
-        color: '#777',
-        marginTop: 10,
-        lineHeight: 22,
-    },
-    form: {
+    formCard: {
         width: '100%',
     },
     inputGroup: {
-        marginBottom: 15,
+        marginBottom: 20,
     },
     label: {
         fontSize: 14,
-        fontWeight: '600',
-        color: '#333',
-        marginBottom: 8,
+        fontWeight: '700',
+        color: '#374151',
+        marginBottom: 12,
     },
     inputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f8f8f8',
-        borderRadius: 12,
-        paddingHorizontal: 15,
-        height: 55,
-        borderWidth: 1,
-        borderColor: '#eee',
+        backgroundColor: '#fff',
+        borderRadius: 18,
+        paddingHorizontal: 16,
+        height: 60,
+        borderWidth: 1.5,
+        borderColor: '#E5E7EB',
     },
     inputIcon: {
-        marginRight: 10,
+        marginRight: 12,
     },
     input: {
         flex: 1,
         fontSize: 16,
-        color: '#000',
+        color: '#111827',
+        fontWeight: '500',
     },
     termsText: {
         fontSize: 12,
-        color: '#777',
+        color: '#6B7280',
         textAlign: 'center',
         marginVertical: 20,
         lineHeight: 18,
     },
     termsLink: {
-        color: '#0088cc',
-        fontWeight: '700',
+        color: '#6366F1',
+        fontWeight: 'bold',
     },
     submitButton: {
-        backgroundColor: '#0088cc',
-        height: 55,
-        borderRadius: 12,
+        height: 60,
+        borderRadius: 18,
         justifyContent: 'center',
         alignItems: 'center',
-        elevation: 3,
-        shadowColor: '#0088cc',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 5,
+        shadowColor: '#6366F1',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 8,
     },
     submitButtonText: {
         color: '#fff',
         fontSize: 16,
-        fontWeight: 'bold',
+        fontWeight: '800',
+        letterSpacing: 1,
     },
     footer: {
         flexDirection: 'row',
         justifyContent: 'center',
-        marginTop: 30,
+        marginTop: 20,
+        alignItems: 'center',
     },
     footerText: {
-        color: '#777',
+        color: '#6B7280',
         fontSize: 15,
+        fontWeight: '500',
     },
     registerText: {
-        color: '#0088cc',
+        color: '#6366F1',
         fontSize: 15,
-        fontWeight: 'bold',
+        fontWeight: '800',
     }
 });
 
