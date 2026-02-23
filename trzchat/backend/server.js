@@ -422,13 +422,15 @@ const sendPushNotification = async (targetUserId, title, body, data = {}) => {
                 notification: {
                     title: title,
                     body: body,
+                    ...(data.senderAvatar ? { image: String(data.senderAvatar) } : {}),
                 },
                 android: {
                     priority: 'high',
-                    ttl: 0, // Kirim segera, jangan antre
+                    ttl: 0,
                     notification: {
                         channelId: 'default',
                         sound: 'default',
+                        ...(data.senderAvatar ? { imageUrl: String(data.senderAvatar) } : {}),
                     }
                 },
                 apns: {
