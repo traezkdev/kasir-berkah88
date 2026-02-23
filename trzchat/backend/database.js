@@ -76,7 +76,7 @@ async function initDB() {
         sender_id INT,
         reply_to INT NULL,
         text TEXT,
-        type ENUM('text', 'image', 'audio', 'file') DEFAULT 'text',
+        type ENUM('text', 'image', 'audio', 'video', 'file') DEFAULT 'text',
         is_edited BOOLEAN DEFAULT FALSE,
         is_deleted BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -95,6 +95,10 @@ async function initDB() {
     const [existingMsgColumns] = await connection.query(`SHOW COLUMNS FROM messages`);
     const msgColumnNames = existingMsgColumns.map(c => c.Field);
 
+    // Migration: Update ENUM for type column
+    await connection.query(`ALTER TABLE messages MODIFY COLUMN type ENUM('text', 'image', 'audio', 'video', 'file') DEFAULT 'text'`);
+    console.log('Updated type column ENUM in messages table');
+
     if (!msgColumnNames.includes('reply_to')) {
       await connection.query(`ALTER TABLE messages ADD COLUMN reply_to INT NULL AFTER sender_id`);
       await connection.query(`ALTER TABLE messages ADD CONSTRAINT fk_reply_to FOREIGN KEY (reply_to) REFERENCES messages(id) ON DELETE SET NULL`);
@@ -111,6 +115,22 @@ async function initDB() {
     if (!msgColumnNames.includes('audio_url')) {
       await connection.query(`ALTER TABLE messages ADD COLUMN audio_url VARCHAR(500) NULL AFTER text`);
       console.log('Added audio_url column to messages table');
+    }
+    if (!msgColumnNames.includes('image_url')) {
+      await connection.query(`ALTER TABLE messages ADD COLUMN image_url VARCHAR(500) NULL AFTER audio_url`);
+      console.log('Added image_url column to messages table');
+    }
+    if (!msgColumnNames.includes('video_url')) {
+      await connection.query(`ALTER TABLE messages ADD COLUMN video_url VARCHAR(500) NULL AFTER image_url`);
+      console.log('Added video_url column to messages table');
+    }
+    if (!msgColumnNames.includes('file_url')) {
+      await connection.query(`ALTER TABLE messages ADD COLUMN file_url VARCHAR(500) NULL AFTER video_url`);
+      console.log('Added file_url column to messages table');
+    }
+    if (!msgColumnNames.includes('file_name')) {
+      await connection.query(`ALTER TABLE messages ADD COLUMN file_name VARCHAR(255) NULL AFTER file_url`);
+      console.log('Added file_name column to messages table');
     }
     if (!msgColumnNames.includes('status')) {
       await connection.query(`ALTER TABLE messages ADD COLUMN status ENUM('sent', 'delivered', 'read') DEFAULT 'sent' AFTER is_deleted`);

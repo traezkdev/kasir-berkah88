@@ -16,13 +16,16 @@ import {
     Alert,
     PanResponder,
     InteractionManager,
-    AppState
+    AppState,
+    Modal,
+    Dimensions
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Audio } from 'expo-av';
-import { ArrowLeft, MoreVertical, Paperclip, Smile, Mic, Send, Reply, Edit2, Trash2, X, CornerUpRight, Play, Pause, StopCircle, Check, CheckCheck } from 'lucide-react-native';
+import { Audio, Video as ExpoVideo, ResizeMode } from 'expo-av';
+import { ArrowLeft, MoreVertical, Paperclip, Smile, Mic, Send, Reply, Edit2, Trash2, X, CornerUpRight, Play, Pause, StopCircle, Check, CheckCheck, Video as VideoIcon, FileText, Download, File, Maximize2 } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import { API_URL, SOCKET_URL, fixUrl } from '../config/api';
 import { scale, verticalScale, moderateScale } from '../utils/responsive';
@@ -59,12 +62,20 @@ const ChatDetailScreen = () => {
     const [lastSeen, setLastSeen] = useState(null);
     const [keyboardPadding, setKeyboardPadding] = useState(0);
 
+    // Attachments Menu State
+    const [attachmentMenuVisible, setAttachmentMenuVisible] = useState(false);
+
     // Message Actions States
     const [selectedMessage, setSelectedMessage] = useState(null);
     const [replyingTo, setReplyingTo] = useState(null);
     const [editingMessage, setEditingMessage] = useState(null);
     const [optionsVisible, setOptionsVisible] = useState(false);
     const [highlightedMessageId, setHighlightedMessageId] = useState(null);
+
+    // Media Viewer States
+    const [viewerVisible, setViewerVisible] = useState(false);
+    const [viewerType, setViewerType] = useState(null); // 'image' or 'video'
+    const [viewerUrl, setViewerUrl] = useState(null);
 
     // Voice Message States
     const [isRecording, setIsRecording] = useState(false);
@@ -521,6 +532,170 @@ const ChatDetailScreen = () => {
         }
     }, [replyingTo, chat.id, chat.name, stopMicPulse]);
 
+    const pickImage = async () => {
+        try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Izin Ditolak', 'Maaf, kami butuh izin galeri untuk mengirim foto.');
+                return;
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images'],
+                allowsEditing: true,
+                aspect: [4, 3],
+                quality: 0.8,
+            });
+
+            if (!result.canceled) {
+                // Gunakan teks di input sebagai caption jika ada
+                const caption = message.trim();
+                sendImageMessage(result.assets[0].uri, caption);
+            }
+        } catch (error) {
+            console.error('Error picking image:', error);
+        }
+    };
+
+    const sendImageMessage = async (uri, caption = '') => {
+        const tempId = 'img-' + Date.now().toString();
+        const displayLabel = caption || '📷 Foto';
+
+        const optimisticMessage = {
+            id: tempId,
+            text: displayLabel,
+            image_url: uri,
+            type: 'image',
+            time: new Date().toISOString(),
+            sender: 'me',
+            reply_to: replyingTo?.id || null,
+            reply_text: replyingTo?.text,
+            reply_user: replyingTo?.sender === 'me' ? 'Anda' : (replyingTo?.reply_user || chat.name),
+            status: 'sent'
+        };
+
+        setMessages(prev => [optimisticMessage, ...prev]);
+        const replyId = replyingTo?.id;
+        setReplyingTo(null);
+        setMessage(''); // Clear input
+
+        try {
+            await getToken();
+            const formData = new FormData();
+
+            if (Platform.OS === 'web') {
+                const response = await fetch(uri);
+                const blob = await response.blob();
+                formData.append('image', blob, 'image.jpg');
+            } else {
+                formData.append('image', {
+                    uri: uri,
+                    type: 'image/jpeg',
+                    name: 'image.jpg',
+                });
+            }
+
+            formData.append('chatId', chat.id);
+            if (replyId) formData.append('replyToId', replyId);
+            if (caption) formData.append('text', caption);
+
+            const response = await axios.post(`${API_URL}/messages/image`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                },
+            });
+
+            setMessages(prev => prev.map(m =>
+                m.id === tempId ? { ...m, id: response.data.id, image_url: response.data.image_url } : m
+            ));
+        } catch (error) {
+            console.error('Error sending image message:', error);
+            Alert.alert('Gagal', 'Gagal mengirim gambar. Silakan coba lagi.');
+        }
+    };
+
+    const pickVideo = async () => {
+        try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Izin Ditolak', 'Maaf, kami butuh izin galeri untuk mengirim video.');
+                return;
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['videos'],
+                allowsEditing: true,
+                quality: 0.8,
+            });
+
+            if (!result.canceled) {
+                const caption = message.trim();
+                sendVideoMessage(result.assets[0].uri, caption);
+            }
+        } catch (error) {
+            console.error('Error picking video:', error);
+        }
+    };
+
+    const sendVideoMessage = async (uri, caption = '') => {
+        const tempId = 'vid-' + Date.now().toString();
+        const displayLabel = caption || '🎥 Video';
+
+        const optimisticMessage = {
+            id: tempId,
+            text: displayLabel,
+            video_url: uri,
+            type: 'video',
+            time: new Date().toISOString(),
+            sender: 'me',
+            reply_to: replyingTo?.id || null,
+            reply_text: replyingTo?.text,
+            reply_user: replyingTo?.sender === 'me' ? 'Anda' : (replyingTo?.reply_user || chat.name),
+            status: 'sent'
+        };
+
+        setMessages(prev => [optimisticMessage, ...prev]);
+        const replyId = replyingTo?.id;
+        setReplyingTo(null);
+        setMessage('');
+        setAttachmentMenuVisible(false);
+
+        try {
+            await getToken();
+            const formData = new FormData();
+            if (Platform.OS === 'web') {
+                const response = await fetch(uri);
+                const blob = await response.blob();
+                formData.append('video', blob, 'video.mp4');
+            } else {
+                formData.append('video', { uri, type: 'video/mp4', name: 'video.mp4' });
+            }
+            formData.append('chatId', chat.id);
+            if (replyId) formData.append('replyToId', replyId);
+            if (caption) formData.append('text', caption);
+
+            const response = await axios.post(`${API_URL}/messages/video`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            setMessages(prev => prev.map(m =>
+                m.id === tempId ? { ...m, id: response.data.id, video_url: response.data.video_url } : m
+            ));
+        } catch (error) {
+            console.error('Error sending video message:', error);
+            Alert.alert('Gagal', 'Gagal mengirim video.');
+        }
+    };
+
+    const pickDocument = async () => {
+        try {
+            Alert.alert('Segera Hadir', 'Fitur pemilihan dokumen akan segera ditambahkan.');
+            setAttachmentMenuVisible(false);
+        } catch (error) {
+            console.error('Error picking document:', error);
+        }
+    };
+
     const handleAudioPlayback = useCallback(async (messageId, audioUrl) => {
         try {
             // 1. Jika klik pada audio yang sama saat sedang loading atau main
@@ -800,12 +975,15 @@ const ChatDetailScreen = () => {
         );
     });
 
-    const MessageItem = memo(({ item, onLongPress, onReplyPress, isHighlighted, highlightAnim, onAudioPress, audioPlayingId, audioLoadingId, sharedProgress }) => {
+    const MessageItem = memo(({ item, onLongPress, onReplyPress, isHighlighted, highlightAnim, onAudioPress, audioPlayingId, audioLoadingId, sharedProgress, onMediaPress }) => {
         const isMe = item.sender === 'me';
         const displayTime = dayjs(item.created_at || item.time).format('HH:mm');
         const isDeleted = item.is_deleted ? true : false;
         const hasReply = item.reply_to && !isDeleted;
         const isAudio = (item.type === 'audio') && !isDeleted;
+        const isImage = (item.type === 'image') && !isDeleted;
+        const isVideo = (item.type === 'video') && !isDeleted;
+        const isFile = (item.type === 'file') && !isDeleted;
         const isPlaying = audioPlayingId === item.id;
         const isLoading = audioLoadingId === item.id;
 
@@ -868,6 +1046,56 @@ const ChatDetailScreen = () => {
                                     </View>
                                 </View>
                             </TouchableOpacity>
+                        ) : isImage ? (
+                            <TouchableOpacity
+                                style={styles.imageContainer}
+                                onPress={() => onMediaPress('image', item.image_url)}
+                                activeOpacity={0.9}
+                            >
+                                <Image
+                                    source={{ uri: fixUrl(item.image_url) }}
+                                    style={styles.messageImage}
+                                    resizeMode="cover"
+                                />
+                                {(item.text && item.text !== '📷 Foto') && (
+                                    <View style={styles.imageCaptionContainer}>
+                                        <Text style={styles.imageCaptionText}>{item.text}</Text>
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+                        ) : isVideo ? (
+                            <TouchableOpacity
+                                style={styles.imageContainer}
+                                onPress={() => onMediaPress('video', item.video_url)}
+                                activeOpacity={0.9}
+                            >
+                                <View style={styles.videoPlaceholder}>
+                                    <VideoIcon size={48} color="#fff" />
+                                    <View style={styles.playOverlay}>
+                                        <Play size={24} color="#fff" fill="#fff" />
+                                    </View>
+                                </View>
+                                {(item.text && item.text !== '🎥 Video') && (
+                                    <View style={styles.imageCaptionContainer}>
+                                        <Text style={styles.imageCaptionText}>{item.text}</Text>
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+                        ) : isFile ? (
+                            <TouchableOpacity
+                                style={styles.fileContainer}
+                                onPress={() => {/* download/open file */ }}
+                                activeOpacity={0.8}
+                            >
+                                <View style={styles.fileIconBox}>
+                                    <FileText size={24} color="#6366F1" />
+                                </View>
+                                <View style={styles.fileInfo}>
+                                    <Text style={styles.fileName} numberOfLines={1}>{item.file_name || 'Document'}</Text>
+                                    <Text style={styles.fileSize}>Buka berkas</Text>
+                                </View>
+                                <Download size={18} color="#888" />
+                            </TouchableOpacity>
                         ) : (
                             <Text style={[styles.messageText, isDeleted ? styles.deletedText : null]}>
                                 {isDeleted ? 'Pesan ini telah dihapus' : item.text}
@@ -896,6 +1124,53 @@ const ChatDetailScreen = () => {
         );
     });
 
+    const openMediaViewer = (type, url) => {
+        setViewerUrl(url);
+        setViewerType(type);
+        setViewerVisible(true);
+    };
+
+    const renderViewerModal = () => {
+        if (!viewerVisible) return null;
+
+        return (
+            <Modal
+                visible={viewerVisible}
+                transparent={false}
+                animationType="fade"
+                onRequestClose={() => setViewerVisible(false)}
+            >
+                <View style={styles.viewerContainer}>
+                    <TouchableOpacity
+                        style={styles.viewerCloseBtn}
+                        onPress={() => setViewerVisible(false)}
+                    >
+                        <X size={30} color="#fff" />
+                    </TouchableOpacity>
+
+                    {viewerType === 'image' ? (
+                        <Image
+                            source={{ uri: fixUrl(viewerUrl) }}
+                            style={styles.viewerImage}
+                            resizeMode="contain"
+                        />
+                    ) : (
+                        <ExpoVideo
+                            source={{ uri: fixUrl(viewerUrl) }}
+                            rate={1.0}
+                            volume={1.0}
+                            isMuted={false}
+                            resizeMode={ResizeMode.CONTAIN}
+                            shouldPlay
+                            useNativeControls
+                            style={styles.viewerVideo}
+                        />
+                    )}
+                </View>
+            </Modal>
+        );
+    };
+
     const renderMessage = useCallback(({ item }) => (
         <MessageItem
             item={item}
@@ -907,6 +1182,7 @@ const ChatDetailScreen = () => {
             audioPlayingId={audioPlayingId}
             audioLoadingId={audioLoadingId}
             sharedProgress={sharedProgress}
+            onMediaPress={openMediaViewer}
         />
     ), [handleLongPress, scrollToOriginalMessage, highlightedMessageId, audioPlayingId, audioLoadingId, sharedProgress]);
 
@@ -1008,8 +1284,8 @@ const ChatDetailScreen = () => {
                         onChangeText={setMessage}
                         multiline
                     />
-                    <TouchableOpacity style={styles.iconButton}>
-                        <Paperclip size={24} color="#888" />
+                    <TouchableOpacity style={styles.iconButton} onPress={() => setAttachmentMenuVisible(!attachmentMenuVisible)}>
+                        <Paperclip size={24} color={attachmentMenuVisible ? "#6366F1" : "#888"} />
                     </TouchableOpacity>
                 </View>
                 <TouchableOpacity
@@ -1051,6 +1327,28 @@ const ChatDetailScreen = () => {
                     )}
                 </TouchableOpacity>
             </View>
+            {attachmentMenuVisible && (
+                <View style={styles.attachmentMenu}>
+                    <TouchableOpacity style={styles.attachmentItem} onPress={pickImage}>
+                        <View style={[styles.attachmentIcon, { backgroundColor: '#8B5CF6' }]}>
+                            <Image style={{ width: 24, height: 24, tintColor: '#fff' }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/1375/1375106.png' }} />
+                        </View>
+                        <Text style={styles.attachmentText}>Galeri</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.attachmentItem} onPress={pickVideo}>
+                        <View style={[styles.attachmentIcon, { backgroundColor: '#F43F5E' }]}>
+                            <VideoIcon size={22} color="#fff" />
+                        </View>
+                        <Text style={styles.attachmentText}>Video</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.attachmentItem} onPress={pickDocument}>
+                        <View style={[styles.attachmentIcon, { backgroundColor: '#0EA5E9' }]}>
+                            <File size={22} color="#fff" />
+                        </View>
+                        <Text style={styles.attachmentText}>Dokumen</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
         </View>
     );
 
@@ -1058,8 +1356,10 @@ const ChatDetailScreen = () => {
         <View style={[styles.container, { paddingBottom: Platform.OS === 'android' ? keyboardPadding : 0 }]}>
             <StatusBar style="light" translucent />
 
+            {renderViewerModal()}
+
             {(optionsVisible && selectedMessage) ? (
-                <TouchableOpacity style={styles.optionsOverlay} activeOpacity={1} onPress={() => setOptionsVisible(false)}>
+                <TouchableOpacity style={styles.optionsOverlay} activeOpacity={1} onPress={() => { setOptionsVisible(false); setSelectedMessage(null); }}>
                     <View style={[styles.optionsBox, selectedMessage.sender === 'me' ? styles.optionsBoxMe : styles.optionsBoxThem]}>
                         <TouchableOpacity style={styles.optionItem} onPress={handleReply}>
                             <Reply size={18} color="#6366F1" />
@@ -1082,6 +1382,14 @@ const ChatDetailScreen = () => {
                     </View>
                 </TouchableOpacity>
             ) : null}
+
+            {attachmentMenuVisible && (
+                <TouchableOpacity
+                    style={StyleSheet.absoluteFillObject}
+                    activeOpacity={1}
+                    onPress={() => setAttachmentMenuVisible(false)}
+                />
+            )}
 
             <LinearGradient
                 colors={['#6366F1', '#8B5CF6']}
@@ -1215,6 +1523,25 @@ const styles = StyleSheet.create({
     theirBubble: {
         backgroundColor: '#fff',
         borderBottomLeftRadius: scale(4),
+    },
+    imageContainer: {
+        borderRadius: scale(12),
+        overflow: 'hidden',
+        marginVertical: verticalScale(2),
+        width: scale(220),
+        height: scale(220),
+    },
+    messageImage: {
+        width: '100%',
+        height: '100%',
+    },
+    imageCaptionContainer: {
+        paddingTop: verticalScale(6),
+        paddingHorizontal: scale(4),
+    },
+    imageCaptionText: {
+        fontSize: moderateScale(15),
+        color: '#1F2937',
     },
     messageText: {
         fontSize: moderateScale(16),
@@ -1486,6 +1813,106 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(11),
         color: '#6B7280',
         fontWeight: '600',
+    },
+    attachmentMenu: {
+        flexDirection: 'row',
+        backgroundColor: '#fff',
+        paddingVertical: verticalScale(15),
+        paddingHorizontal: scale(20),
+        borderTopWidth: 1,
+        borderTopColor: '#f0f0f0',
+        justifyContent: 'space-around',
+    },
+    attachmentItem: {
+        alignItems: 'center',
+        gap: verticalScale(6),
+    },
+    attachmentIcon: {
+        width: scale(50),
+        height: scale(50),
+        borderRadius: scale(25),
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+    },
+    attachmentText: {
+        fontSize: moderateScale(12),
+        color: '#4B5563',
+        fontWeight: '600',
+    },
+    videoPlaceholder: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#1F2937',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    playOverlay: {
+        position: 'absolute',
+        width: scale(50),
+        height: scale(50),
+        borderRadius: scale(25),
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#fff',
+    },
+    fileContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F3F4F6',
+        padding: scale(10),
+        borderRadius: scale(12),
+        width: scale(220),
+        gap: scale(12),
+    },
+    fileIconBox: {
+        width: scale(40),
+        height: scale(40),
+        borderRadius: scale(10),
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    fileInfo: {
+        flex: 1,
+    },
+    fileName: {
+        fontSize: moderateScale(14),
+        fontWeight: 'bold',
+        color: '#1F2937',
+    },
+    fileSize: {
+        fontSize: moderateScale(11),
+        color: '#6B7280',
+    },
+    viewerContainer: {
+        flex: 1,
+        backgroundColor: '#000',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    viewerCloseBtn: {
+        position: 'absolute',
+        top: verticalScale(50),
+        right: scale(20),
+        zIndex: 10,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        borderRadius: scale(25),
+        padding: scale(8),
+    },
+    viewerImage: {
+        width: Dimensions.get('window').width,
+        height: Dimensions.get('window').height,
+    },
+    viewerVideo: {
+        width: Dimensions.get('window').width,
+        height: Dimensions.get('window').width * (16 / 9),
+        maxHeight: Dimensions.get('window').height,
     },
 });
 

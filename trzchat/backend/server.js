@@ -140,6 +140,18 @@ const audioUploadDir = path.join(__dirname, 'uploads/audio');
 if (!fs.existsSync(audioUploadDir)) {
     fs.mkdirSync(audioUploadDir, { recursive: true });
 }
+const imageUploadDir = path.join(__dirname, 'uploads/images');
+if (!fs.existsSync(imageUploadDir)) {
+    fs.mkdirSync(imageUploadDir, { recursive: true });
+}
+const videoUploadDir = path.join(__dirname, 'uploads/videos');
+if (!fs.existsSync(videoUploadDir)) {
+    fs.mkdirSync(videoUploadDir, { recursive: true });
+}
+const fileUploadDir = path.join(__dirname, 'uploads/files');
+if (!fs.existsSync(fileUploadDir)) {
+    fs.mkdirSync(fileUploadDir, { recursive: true });
+}
 
 // Multer Storage Configuration - Avatar
 const storage = multer.diskStorage({
@@ -185,6 +197,68 @@ const uploadAudio = multer({
         if (extname) return cb(null, true);
         cb(new Error('Hanya file audio yang diperbolehkan!'));
     }
+});
+
+// Multer Storage Configuration - Images
+const imageStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/images');
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'img-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const uploadImage = multer({
+    storage: imageStorage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    fileFilter: (req, file, cb) => {
+        const filetypes = /jpeg|jpg|png|webp|gif/;
+        const mimetype = filetypes.test(file.mimetype);
+        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+        if (mimetype && extname) return cb(null, true);
+        cb(new Error('Hanya file gambar yang diperbolehkan!'));
+    }
+});
+
+// Multer Storage Configuration - Videos
+const videoStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/videos');
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'vid-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const uploadVideo = multer({
+    storage: videoStorage,
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+    fileFilter: (req, file, cb) => {
+        const filetypes = /mp4|mov|avi|mkv|webm/;
+        const mimetype = filetypes.test(file.mimetype) || file.mimetype.startsWith('video/');
+        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+        if (mimetype && extname) return cb(null, true);
+        cb(new Error('Hanya file video yang diperbolehkan!'));
+    }
+});
+
+// Multer Storage Configuration - Documents
+const fileStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/files');
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'file-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const uploadFile = multer({
+    storage: fileStorage,
+    limits: { fileSize: 25 * 1024 * 1024 }, // 25MB limit
 });
 
 app.use(cors());
@@ -466,6 +540,148 @@ app.post('/api/messages/audio', authenticateToken, uploadAudio.single('audio'), 
     } catch (error) {
         console.error('Error sending audio message:', error);
         res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Send Image Message
+app.post('/api/messages/image', authenticateToken, uploadImage.single('image'), async (req, res) => {
+    const { chatId, replyToId, text } = req.body;
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'Tidak ada file gambar yang dikirim' });
+        }
+
+        const imageUrl = `${getBaseUrl(req)}/uploads/images/${req.file.filename}`;
+        const imageLabel = text || '📷 Foto';
+
+        const [result] = await pool.query(
+            'INSERT INTO messages (chat_id, sender_id, text, image_url, type, reply_to) VALUES (?, ?, ?, ?, "image", ?)',
+            [chatId, req.user.id, imageLabel, imageUrl, replyToId || null]
+        );
+
+        // Update last message in chat
+        await pool.query(
+            'UPDATE chats SET last_message = ?, last_message_time = CURRENT_TIMESTAMP WHERE id = ?',
+            [imageLabel, chatId]
+        );
+
+        const newMessage = {
+            id: result.insertId,
+            chat_id: chatId,
+            text: imageLabel,
+            image_url: imageUrl,
+            type: 'image',
+            reply_to: replyToId || null,
+            reply_text: null,
+            reply_user: null,
+            sender_id: req.user.id,
+            created_at: new Date().toISOString(),
+            is_edited: false,
+            is_deleted: false,
+            status: 'sent'
+        };
+
+        // Emit real-time message to the room
+        io.to(`chat_${chatId}`).emit('new-message', newMessage);
+
+        res.status(201).json({ ...newMessage, sender: 'me' });
+    } catch (error) {
+        console.error('Error sending image message:', error);
+        res.status(500).json({ message: 'Server error', detail: error.message });
+    }
+});
+
+// Send Video Message
+app.post('/api/messages/video', authenticateToken, uploadVideo.single('video'), async (req, res) => {
+    const { chatId, replyToId, text } = req.body;
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'Tidak ada file video yang dikirim' });
+        }
+
+        const videoUrl = `${getBaseUrl(req)}/uploads/videos/${req.file.filename}`;
+        const videoLabel = text || '🎥 Video';
+
+        const [result] = await pool.query(
+            'INSERT INTO messages (chat_id, sender_id, text, video_url, type, reply_to) VALUES (?, ?, ?, ?, "video", ?)',
+            [chatId, req.user.id, videoLabel, videoUrl, replyToId || null]
+        );
+
+        // Update last message in chat
+        await pool.query(
+            'UPDATE chats SET last_message = ?, last_message_time = CURRENT_TIMESTAMP WHERE id = ?',
+            [videoLabel, chatId]
+        );
+
+        const newMessage = {
+            id: result.insertId,
+            chat_id: chatId,
+            text: videoLabel,
+            video_url: videoUrl,
+            type: 'video',
+            reply_to: replyToId || null,
+            reply_text: null,
+            reply_user: null,
+            sender_id: req.user.id,
+            created_at: new Date().toISOString(),
+            is_edited: false,
+            is_deleted: false,
+            status: 'sent'
+        };
+
+        io.to(`chat_${chatId}`).emit('new-message', newMessage);
+        res.status(201).json({ ...newMessage, sender: 'me' });
+    } catch (error) {
+        console.error('Error sending video message:', error);
+        res.status(500).json({ message: 'Server error', detail: error.message });
+    }
+});
+
+// Send Document/File Message
+app.post('/api/messages/file', authenticateToken, uploadFile.single('file'), async (req, res) => {
+    const { chatId, replyToId, text } = req.body;
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'Tidak ada file yang dikirim' });
+        }
+
+        const fileUrl = `${getBaseUrl(req)}/uploads/files/${req.file.filename}`;
+        const fileName = req.file.originalname;
+        const fileLabel = text || `📄 ${fileName}`;
+
+        const [result] = await pool.query(
+            'INSERT INTO messages (chat_id, sender_id, text, file_url, file_name, type, reply_to) VALUES (?, ?, ?, ?, ?, "file", ?)',
+            [chatId, req.user.id, fileLabel, fileUrl, fileName, replyToId || null]
+        );
+
+        // Update last message in chat
+        await pool.query(
+            'UPDATE chats SET last_message = ?, last_message_time = CURRENT_TIMESTAMP WHERE id = ?',
+            [fileLabel, chatId]
+        );
+
+        const newMessage = {
+            id: result.insertId,
+            chat_id: chatId,
+            text: fileLabel,
+            file_url: fileUrl,
+            file_name: fileName,
+            type: 'file',
+            reply_to: replyToId || null,
+            reply_text: null,
+            reply_user: null,
+            sender_id: req.user.id,
+            created_at: new Date().toISOString(),
+            is_edited: false,
+            is_deleted: false,
+            status: 'sent'
+        };
+
+        io.to(`chat_${chatId}`).emit('new-message', newMessage);
+        res.status(201).json({ ...newMessage, sender: 'me' });
+    } catch (error) {
+        console.error('Error sending file message:', error);
+        res.status(500).json({ message: 'Server error', detail: error.message });
     }
 });
 
