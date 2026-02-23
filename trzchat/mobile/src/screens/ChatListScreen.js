@@ -46,6 +46,7 @@ const ChatListScreen = () => {
                 return chat;
             });
             setChats(processedChats);
+            return processedChats;
         } catch (error) {
             console.error('Error fetching chats:', error);
         } finally {
@@ -81,9 +82,9 @@ const ChatListScreen = () => {
 
             setIsSearching(false);
             setSearchQuery('');
-            const freshChats = await fetchChats(); // Should return processed chats
-
+            const freshChats = await fetchChats();
             const chatInList = (freshChats || chats).find(c => String(c.id) === String(chatId));
+
             const chatObj = chatInList || {
                 id: chatId,
                 otherUser: {
@@ -93,7 +94,15 @@ const ChatListScreen = () => {
                     online: 'offline'
                 }
             };
-            navigation.navigate('ChatDetail', { chat: chatObj });
+
+            const finalChat = {
+                ...chatObj,
+                name: chatObj.otherUser?.name || user.full_name,
+                avatar: chatObj.otherUser?.avatar || user.avatar,
+                online: chatObj.otherUser?.online || 'offline'
+            };
+
+            navigation.navigate('ChatDetail', { chat: finalChat });
         } catch (error) {
             console.error('Error starting chat:', error);
         }
@@ -194,21 +203,45 @@ const ChatListScreen = () => {
             const currentUserId = currentUser?.id;
 
             newSocket.on('new-message', (newMessage) => {
+                console.log('Realtime message received in list:', newMessage.id);
                 newSocket.emit('message-delivered', { messageId: newMessage.id, chatId: newMessage.chat_id });
-                const isFromOther = newMessage.sender_id !== currentUserId;
+
                 setChats(prevChats => {
+                    const chatIndex = prevChats.findIndex(chat => String(chat.id) === String(newMessage.chat_id));
+
+                    // Jika chat tidak ada di list (chat baru), fetch ulang semua chat
+                    if (chatIndex === -1) {
+                        fetchChats();
+                        return prevChats;
+                    }
+
+                    const isFromOther = String(newMessage.sender_id) !== String(currentUserId);
+
+                    // Format preview teks untuk media
+                    let previewText = newMessage.text;
+                    if (newMessage.is_audio || newMessage.voice_url || newMessage.audio_url) previewText = '🎤 Pesan Suara';
+                    else if (newMessage.is_image || newMessage.image_url) previewText = '📷 Foto';
+                    else if (newMessage.is_video || newMessage.video_url) previewText = '🎥 Video';
+                    else if (!previewText) previewText = 'Pesan baru';
+
                     const updatedChats = prevChats.map(chat => {
                         if (String(chat.id) === String(newMessage.chat_id)) {
                             return {
                                 ...chat,
-                                last_message: newMessage.text,
+                                last_message: previewText,
                                 last_message_time: newMessage.created_at,
                                 unread_count: isFromOther ? (chat.unread_count || 0) + 1 : (chat.unread_count || 0)
                             };
                         }
                         return chat;
                     });
-                    return updatedChats.sort((a, b) => new Date(b.last_message_time) - new Date(a.last_message_time));
+
+                    // Urutkan berdasarkan waktu pesan terbaru
+                    return [...updatedChats].sort((a, b) => {
+                        const timeA = new Date(a.last_message_time || 0).getTime();
+                        const timeB = new Date(b.last_message_time || 0).getTime();
+                        return timeB - timeA;
+                    });
                 });
             });
 
