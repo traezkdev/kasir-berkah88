@@ -77,6 +77,9 @@ const ChatDetailScreen = () => {
     const [viewerType, setViewerType] = useState(null); // 'image' or 'video'
     const [viewerUrl, setViewerUrl] = useState(null);
 
+    // Upload Progress State
+    const [uploadProgress, setUploadProgress] = useState({}); // { tempId: percentage }
+
     // Voice Message States
     const [isRecording, setIsRecording] = useState(false);
     const [recordingDuration, setRecordingDuration] = useState(0);
@@ -603,6 +606,16 @@ const ChatDetailScreen = () => {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 },
+                onUploadProgress: (progressEvent) => {
+                    const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                    setUploadProgress(prev => ({ ...prev, [tempId]: progress }));
+                }
+            });
+
+            setUploadProgress(prev => {
+                const newProgress = { ...prev };
+                delete newProgress[tempId];
+                return newProgress;
             });
 
             setMessages(prev => prev.map(m =>
@@ -610,6 +623,11 @@ const ChatDetailScreen = () => {
             ));
         } catch (error) {
             console.error('Error sending image message:', error);
+            setUploadProgress(prev => {
+                const newProgress = { ...prev };
+                delete newProgress[tempId];
+                return newProgress;
+            });
             Alert.alert('Gagal', 'Gagal mengirim gambar. Silakan coba lagi.');
         }
     };
@@ -675,7 +693,17 @@ const ChatDetailScreen = () => {
             if (caption) formData.append('text', caption);
 
             const response = await axios.post(`${API_URL}/messages/video`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                headers: { 'Content-Type': 'multipart/form-data' },
+                onUploadProgress: (progressEvent) => {
+                    const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                    setUploadProgress(prev => ({ ...prev, [tempId]: progress }));
+                }
+            });
+
+            setUploadProgress(prev => {
+                const newProgress = { ...prev };
+                delete newProgress[tempId];
+                return newProgress;
             });
 
             setMessages(prev => prev.map(m =>
@@ -683,6 +711,11 @@ const ChatDetailScreen = () => {
             ));
         } catch (error) {
             console.error('Error sending video message:', error);
+            setUploadProgress(prev => {
+                const newProgress = { ...prev };
+                delete newProgress[tempId];
+                return newProgress;
+            });
             Alert.alert('Gagal', 'Gagal mengirim video.');
         }
     };
@@ -975,7 +1008,7 @@ const ChatDetailScreen = () => {
         );
     });
 
-    const MessageItem = memo(({ item, onLongPress, onReplyPress, isHighlighted, highlightAnim, onAudioPress, audioPlayingId, audioLoadingId, sharedProgress, onMediaPress }) => {
+    const MessageItem = memo(({ item, onLongPress, onReplyPress, isHighlighted, highlightAnim, onAudioPress, audioPlayingId, audioLoadingId, sharedProgress, onMediaPress, uploadProgress }) => {
         const isMe = item.sender === 'me';
         const displayTime = dayjs(item.created_at || item.time).format('HH:mm');
         const isDeleted = item.is_deleted ? true : false;
@@ -1057,6 +1090,12 @@ const ChatDetailScreen = () => {
                                     style={styles.messageImage}
                                     resizeMode="cover"
                                 />
+                                {uploadProgress && uploadProgress[item.id] !== undefined && (
+                                    <View style={styles.uploadOverlay}>
+                                        <ActivityIndicator size="small" color="#fff" />
+                                        <Text style={styles.uploadProgressText}>{uploadProgress[item.id]}%</Text>
+                                    </View>
+                                )}
                                 {(item.text && item.text !== '📷 Foto') && (
                                     <View style={styles.imageCaptionContainer}>
                                         <Text style={styles.imageCaptionText}>{item.text}</Text>
@@ -1069,11 +1108,23 @@ const ChatDetailScreen = () => {
                                 onPress={() => onMediaPress('video', item.video_url)}
                                 activeOpacity={0.9}
                             >
-                                <View style={styles.videoPlaceholder}>
-                                    <VideoIcon size={48} color="#fff" />
+                                <View style={styles.videoWrapper}>
+                                    <ExpoVideo
+                                        source={{ uri: fixUrl(item.video_url) }}
+                                        style={styles.messageImage}
+                                        resizeMode={ResizeMode.COVER}
+                                        shouldPlay={false}
+                                        positionMillis={100} // Mengambil frame awal
+                                    />
                                     <View style={styles.playOverlay}>
                                         <Play size={24} color="#fff" fill="#fff" />
                                     </View>
+                                    {uploadProgress && uploadProgress[item.id] !== undefined && (
+                                        <View style={styles.uploadOverlay}>
+                                            <ActivityIndicator size="small" color="#fff" />
+                                            <Text style={styles.uploadProgressText}>{uploadProgress[item.id]}%</Text>
+                                        </View>
+                                    )}
                                 </View>
                                 {(item.text && item.text !== '🎥 Video') && (
                                     <View style={styles.imageCaptionContainer}>
@@ -1183,8 +1234,9 @@ const ChatDetailScreen = () => {
             audioLoadingId={audioLoadingId}
             sharedProgress={sharedProgress}
             onMediaPress={openMediaViewer}
+            uploadProgress={uploadProgress}
         />
-    ), [handleLongPress, scrollToOriginalMessage, highlightedMessageId, audioPlayingId, audioLoadingId, sharedProgress]);
+    ), [handleLongPress, scrollToOriginalMessage, highlightedMessageId, audioPlayingId, audioLoadingId, sharedProgress, uploadProgress]);
 
     const renderChatArea = () => (
         <View style={styles.chatBackground}>
@@ -1850,16 +1902,25 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+    videoWrapper: {
+        flex: 1,
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative',
+    },
     playOverlay: {
         position: 'absolute',
         width: scale(50),
         height: scale(50),
         borderRadius: scale(25),
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(0,0,0,0.4)',
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 2,
         borderColor: '#fff',
+        alignSelf: 'center',
     },
     fileContainer: {
         flexDirection: 'row',
@@ -1913,6 +1974,18 @@ const styles = StyleSheet.create({
         width: Dimensions.get('window').width,
         height: Dimensions.get('window').width * (16 / 9),
         maxHeight: Dimensions.get('window').height,
+    },
+    uploadOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    uploadProgressText: {
+        color: '#fff',
+        fontSize: moderateScale(14),
+        fontWeight: 'bold',
+        marginTop: verticalScale(5),
     },
 });
 

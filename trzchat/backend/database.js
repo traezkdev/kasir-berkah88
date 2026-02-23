@@ -132,6 +132,10 @@ async function initDB() {
       await connection.query(`ALTER TABLE messages ADD COLUMN file_name VARCHAR(255) NULL AFTER file_url`);
       console.log('Added file_name column to messages table');
     }
+    if (!msgColumnNames.includes('thumbnail_url')) {
+      await connection.query(`ALTER TABLE messages ADD COLUMN thumbnail_url VARCHAR(500) NULL AFTER video_url`);
+      console.log('Added thumbnail_url column to messages table');
+    }
     if (!msgColumnNames.includes('status')) {
       await connection.query(`ALTER TABLE messages ADD COLUMN status ENUM('sent', 'delivered', 'read') DEFAULT 'sent' AFTER is_deleted`);
       console.log('Added status column to messages table');

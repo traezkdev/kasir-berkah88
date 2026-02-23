@@ -603,8 +603,8 @@ app.post('/api/messages/video', authenticateToken, uploadVideo.single('video'), 
         const videoLabel = text || '🎥 Video';
 
         const [result] = await pool.query(
-            'INSERT INTO messages (chat_id, sender_id, text, video_url, type, reply_to) VALUES (?, ?, ?, ?, "video", ?)',
-            [chatId, req.user.id, videoLabel, videoUrl, replyToId || null]
+            'INSERT INTO messages (chat_id, sender_id, text, video_url, thumbnail_url, type, reply_to) VALUES (?, ?, ?, ?, ?, "video", ?)',
+            [chatId, req.user.id, videoLabel, videoUrl, req.body.thumbnailUrl || null, replyToId || null]
         );
 
         // Update last message in chat
@@ -618,6 +618,7 @@ app.post('/api/messages/video', authenticateToken, uploadVideo.single('video'), 
             chat_id: chatId,
             text: videoLabel,
             video_url: videoUrl,
+            thumbnail_url: req.body.thumbnailUrl || null,
             type: 'video',
             reply_to: replyToId || null,
             reply_text: null,
