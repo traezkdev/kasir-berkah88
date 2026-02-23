@@ -1751,7 +1751,7 @@ const ChatDetailScreen = () => {
 
     return (
         <View style={[styles.container, { paddingBottom: Platform.OS === 'android' ? keyboardPadding : 0 }]}>
-            <StatusBar style="light" translucent />
+            <StatusBar style="dark" translucent />
 
             {renderViewerModal()}
             {renderMediaPreviewModal()}
@@ -1803,27 +1803,22 @@ const ChatDetailScreen = () => {
                 />
             )}
 
-            <LinearGradient
-                colors={['#6366F1', '#8B5CF6']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.header}
-            >
+            <View style={styles.header}>
                 {selectionMode ? (
                     <View style={styles.headerSelectionRow}>
                         <TouchableOpacity onPress={exitSelectionMode} style={styles.headerActionBtn}>
-                            <X size={26} color="#fff" />
+                            <X size={26} color="#1F2937" />
                         </TouchableOpacity>
                         <Text style={styles.headerSelectionCount}>{Object.keys(selectedIds).length} dipilih</Text>
                         <View style={{ flex: 1 }} />
                         <TouchableOpacity onPress={handleDeleteSelected} style={styles.headerActionBtn}>
-                            <Trash2 size={24} color="#fff" />
+                            <Trash2 size={24} color="#1F2937" />
                         </TouchableOpacity>
                     </View>
                 ) : (
                     <>
                         <TouchableOpacity onPress={() => navigation.goBack()}>
-                            <ArrowLeft size={24} color="#fff" />
+                            <ArrowLeft size={24} color="#1F2937" />
                         </TouchableOpacity>
                         <Image source={{ uri: fixUrl(chat.avatar) || 'https://ui-avatars.com/api/?name=' + (chat.name || 'User') }} style={styles.headerAvatar} />
                         <View style={styles.headerInfo}>
@@ -1837,11 +1832,11 @@ const ChatDetailScreen = () => {
                             </Text>
                         </View>
                         <TouchableOpacity>
-                            <MoreVertical size={24} color="#fff" />
+                            <MoreVertical size={24} color="#1F2937" />
                         </TouchableOpacity>
                     </>
                 )}
-            </LinearGradient>
+            </View>
 
             <View style={{ flex: 1 }}>
                 {renderChatArea()}
@@ -1879,19 +1874,22 @@ const styles = StyleSheet.create({
         paddingHorizontal: scale(15),
         flexDirection: 'row',
         alignItems: 'center',
-        elevation: 5,
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: verticalScale(4) },
-        shadowOpacity: 0.3,
-        shadowRadius: scale(8),
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: verticalScale(2) },
+        shadowOpacity: 0.05,
+        shadowRadius: scale(4),
     },
     headerAvatar: {
         width: scale(42),
         height: scale(42),
         borderRadius: scale(14),
         marginLeft: scale(14),
-        borderWidth: 2,
-        borderColor: 'rgba(255,255,255,0.5)',
+        borderWidth: 1,
+        borderColor: '#eee',
     },
     headerInfo: {
         flex: 1,
@@ -2002,7 +2000,7 @@ const styles = StyleSheet.create({
     headerSelectionCount: {
         fontSize: moderateScale(18),
         fontWeight: 'bold',
-        color: '#fff',
+        color: '#1F2937',
         marginLeft: scale(15),
     },
     headerActionBtn: {
@@ -2011,12 +2009,12 @@ const styles = StyleSheet.create({
     headerName: {
         fontSize: moderateScale(18),
         fontWeight: '800',
-        color: '#fff',
+        color: '#1F2937',
         letterSpacing: 0.3,
     },
     headerStatus: {
         fontSize: moderateScale(12),
-        color: 'rgba(255,255,255,0.85)',
+        color: '#6B7280',
         fontWeight: '600',
         marginTop: verticalScale(1),
     },
