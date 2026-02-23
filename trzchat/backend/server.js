@@ -469,6 +469,27 @@ app.post('/api/chats', authenticateToken, async (req, res) => {
     }
 });
 
+// Delete Chat (Hapus Percakapan)
+app.delete('/api/chats/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Hapus partisipan saat ini
+        await pool.query('DELETE FROM chat_participants WHERE chat_id = ? AND user_id = ?', [id, req.user.id]);
+
+        // Opsional: Jika tidak ada peserta lagi, hapus chat dan pesannya
+        const [remaining] = await pool.query('SELECT COUNT(*) as count FROM chat_participants WHERE chat_id = ?', [id]);
+        if (remaining[0].count === 0) {
+            await pool.query('DELETE FROM messages WHERE chat_id = ?', [id]);
+            await pool.query('DELETE FROM chats WHERE id = ?', [id]);
+        }
+
+        res.json({ message: 'Chat deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting chat:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 app.get('/api/messages/:chatId', authenticateToken, async (req, res) => {
     const { chatId } = req.params;
     const page = parseInt(req.query.page) || 1;

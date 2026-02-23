@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, TextInput, ActivityIndicator, RefreshControl, Keyboard, AppState, InteractionManager } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, TextInput, ActivityIndicator, RefreshControl, Keyboard, AppState, InteractionManager, Alert, Modal } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useNavigation, DrawerActions, useIsFocused } from '@react-navigation/native';
-import { Search, Menu, Send, MessageSquarePlus, MessageSquare } from 'lucide-react-native';
+import { Search, Menu, Send, MessageSquarePlus, MessageSquare, Trash2, AlertCircle } from 'lucide-react-native';
 import axios from 'axios';
 import { API_URL, SOCKET_URL, fixUrl } from '../config/api';
 import { getToken } from '../utils/auth';
@@ -23,6 +23,8 @@ const ChatListScreen = () => {
     const isFocused = useIsFocused();
     const [socket, setSocket] = useState(null);
     const [currentUser, setLocalUser] = useState(null);
+    const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+    const [selectedChat, setSelectedChat] = useState(null);
 
     const fetchChats = useCallback(async () => {
         try {
@@ -96,6 +98,29 @@ const ChatListScreen = () => {
             console.error('Error starting chat:', error);
         }
     }, [chats, fetchChats, navigation]);
+
+    const deleteChat = useCallback(async (chatId) => {
+        try {
+            await getToken();
+            await axios.delete(`${API_URL}/chats/${chatId}`);
+            setChats(prevChats => prevChats.filter(chat => chat.id !== chatId));
+        } catch (error) {
+            console.error('Error deleting chat:', error);
+            Alert.alert('Gagal', 'Tidak dapat menghapus percakapan.');
+        }
+    }, []);
+
+    const handleLongPress = useCallback((item) => {
+        setSelectedChat(item);
+        setDeleteModalVisible(true);
+    }, []);
+
+    const confirmDelete = async () => {
+        if (!selectedChat) return;
+        setDeleteModalVisible(false);
+        await deleteChat(selectedChat.id);
+        setSelectedChat(null);
+    };
 
     useEffect(() => {
         if (isFocused) {
@@ -244,7 +269,7 @@ const ChatListScreen = () => {
         fetchChats();
     }, [fetchChats]);
 
-    const ChatItem = memo(({ item, onNavigate }) => {
+    const ChatItem = memo(({ item, onNavigate, onLongPress }) => {
         const otherUser = item.otherUser || {};
         const time = item.last_message_time ? dayjs(item.last_message_time).format('HH:mm') : '';
 
@@ -252,6 +277,7 @@ const ChatListScreen = () => {
             <TouchableOpacity
                 style={styles.chatCard}
                 onPress={() => onNavigate(item)}
+                onLongPress={() => onLongPress(item)}
                 activeOpacity={0.8}
             >
                 <View style={styles.avatarWrapper}>
@@ -305,16 +331,60 @@ const ChatListScreen = () => {
     }, [navigation]);
 
     const renderItem = useCallback(({ item }) => (
-        <ChatItem item={item} onNavigate={handleNavigate} />
-    ), [handleNavigate]);
+        <ChatItem item={item} onNavigate={handleNavigate} onLongPress={handleLongPress} />
+    ), [handleNavigate, handleLongPress]);
 
-    const renderSearchResult = useCallback(({ item }) => (
-        <SearchItem item={item} onStartChat={startChat} />
-    ), [startChat]);
+    const renderDeleteModal = () => (
+        <Modal
+            visible={deleteModalVisible}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setDeleteModalVisible(false)}
+        >
+            <TouchableOpacity
+                style={styles.modalOverlay}
+                activeOpacity={1}
+                onPress={() => setDeleteModalVisible(false)}
+            >
+                <View style={styles.confirmModalWrapper}>
+                    <View style={styles.alertIconBg}>
+                        <AlertCircle size={32} color="#EF4444" />
+                    </View>
+                    <Text style={styles.confirmTitle}>Hapus Chat?</Text>
+                    <Text style={styles.confirmSubtitle}>
+                        Pesan dan riwayat chat dengan <Text style={{ fontWeight: '700' }}>{selectedChat?.otherUser?.name || 'User'}</Text> akan dihapus permanen.
+                    </Text>
+
+                    <View style={styles.confirmActionRow}>
+                        <TouchableOpacity
+                            style={styles.cancelActionBtn}
+                            onPress={() => setDeleteModalVisible(false)}
+                        >
+                            <Text style={styles.cancelActionText}>Batal</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.deleteActionBtn}
+                            onPress={confirmDelete}
+                        >
+                            <LinearGradient
+                                colors={['#EF4444', '#DC2626']}
+                                style={styles.deleteGradientBtn}
+                            >
+                                <Trash2 size={18} color="#fff" style={{ marginRight: 6 }} />
+                                <Text style={styles.deleteActionText}>Hapus</Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </TouchableOpacity>
+        </Modal>
+    );
 
     return (
         <View style={styles.container}>
             <StatusBar style="dark" />
+            {renderDeleteModal()}
 
             <View style={styles.mainHeader}>
                 <View style={styles.headerTopRow}>
@@ -612,6 +682,78 @@ const styles = StyleSheet.create({
         marginTop: verticalScale(40),
         fontSize: moderateScale(16),
         fontWeight: '600',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: scale(30),
+    },
+    confirmModalWrapper: {
+        backgroundColor: '#fff',
+        borderRadius: scale(25),
+        padding: scale(25),
+        width: '100%',
+        alignItems: 'center',
+        elevation: 10,
+    },
+    alertIconBg: {
+        width: scale(64),
+        height: scale(64),
+        borderRadius: scale(32),
+        backgroundColor: '#FEF2F2',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: verticalScale(16),
+    },
+    confirmTitle: {
+        fontSize: moderateScale(22),
+        fontWeight: '800',
+        color: '#111827',
+        marginBottom: verticalScale(8),
+    },
+    confirmSubtitle: {
+        fontSize: moderateScale(15),
+        color: '#6B7280',
+        textAlign: 'center',
+        lineHeight: moderateScale(22),
+        marginBottom: verticalScale(25),
+    },
+    confirmActionRow: {
+        flexDirection: 'row',
+        width: '100%',
+        gap: scale(12),
+    },
+    cancelActionBtn: {
+        flex: 1,
+        height: verticalScale(50),
+        borderRadius: scale(15),
+        backgroundColor: '#F3F4F6',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    cancelActionText: {
+        fontSize: moderateScale(16),
+        fontWeight: '700',
+        color: '#4B5563',
+    },
+    deleteActionBtn: {
+        flex: 1,
+        height: verticalScale(50),
+        borderRadius: scale(15),
+        overflow: 'hidden',
+    },
+    deleteGradientBtn: {
+        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    deleteActionText: {
+        fontSize: moderateScale(16),
+        fontWeight: '700',
+        color: '#fff',
     }
 });
 
