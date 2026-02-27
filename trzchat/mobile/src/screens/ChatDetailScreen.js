@@ -2038,7 +2038,7 @@ const ChatDetailScreen = () => {
                                             <Paperclip size={24} color="#888" />
                                         </TouchableOpacity>
                                         {!message.trim() && (
-                                            <TouchableOpacity style={styles.inputActionIcon} onPress={pickImage}>
+                                            <TouchableOpacity style={styles.inputActionIcon} onPress={takePhoto}>
                                                 <VideoIcon size={24} color="#888" />
                                             </TouchableOpacity>
                                         )}
