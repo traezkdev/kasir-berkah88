@@ -1236,7 +1236,6 @@ const ChatDetailScreen = () => {
     }, [chat.id, message, replyingTo, editingMessage, chat.name]);
 
     const handleLongPress = useCallback((item) => {
-        if (item.is_deleted) return;
         setSelectedMessage(item);
         setOptionsVisible(true);
     }, []);
@@ -1586,6 +1585,7 @@ const ChatDetailScreen = () => {
         if (!optionsVisible || !selectedMessage) return null;
 
         const isMe = selectedMessage.sender === 'me';
+        const isDeletedMsg = selectedMessage.is_deleted;
 
         return (
             <Modal
@@ -1600,40 +1600,52 @@ const ChatDetailScreen = () => {
                     onPress={() => setOptionsVisible(false)}
                 >
                     <View style={styles.optionsContainer}>
-                        <TouchableOpacity style={styles.optionItem} onPress={handleReply}>
-                            <CornerUpRight size={22} color="#555" />
-                            <Text style={styles.optionText}>Balas</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.optionItem} onPress={handleCopy}>
-                            <Copy size={22} color="#555" />
-                            <Text style={styles.optionText}>Salin</Text>
-                        </TouchableOpacity>
-
-                        {isMe && (
-                            <TouchableOpacity style={styles.optionItem} onPress={handleEdit}>
-                                <Edit2 size={22} color="#555" />
-                                <Text style={styles.optionText}>Edit</Text>
+                        {isDeletedMsg ? (
+                            <TouchableOpacity
+                                style={styles.optionItem}
+                                onPress={() => handleDelete('pribadi')}
+                            >
+                                <Trash2 size={22} color="#e53935" />
+                                <Text style={[styles.optionText, { color: '#e53935' }]}>Hapus untuk saya</Text>
                             </TouchableOpacity>
-                        )}
+                        ) : (
+                            <>
+                                <TouchableOpacity style={styles.optionItem} onPress={handleReply}>
+                                    <CornerUpRight size={22} color="#555" />
+                                    <Text style={styles.optionText}>Balas</Text>
+                                </TouchableOpacity>
 
-                        <TouchableOpacity
-                            style={styles.optionItem}
-                            onPress={() => {
-                                Alert.alert(
-                                    'Hapus Pesan?',
-                                    'Pilih jenis penghapusan',
-                                    [
-                                        { text: 'Batal', style: 'cancel' },
-                                        { text: 'Hapus untuk saya', onPress: () => handleDelete('pribadi') },
-                                        isMe ? { text: 'Hapus untuk semua orang', style: 'destructive', onPress: () => handleDelete('semua') } : null
-                                    ].filter(Boolean)
-                                );
-                            }}
-                        >
-                            <Trash2 size={22} color="#e53935" />
-                            <Text style={[styles.optionText, { color: '#e53935' }]}>Hapus</Text>
-                        </TouchableOpacity>
+                                <TouchableOpacity style={styles.optionItem} onPress={handleCopy}>
+                                    <Copy size={22} color="#555" />
+                                    <Text style={styles.optionText}>Salin</Text>
+                                </TouchableOpacity>
+
+                                {isMe && (
+                                    <TouchableOpacity style={styles.optionItem} onPress={handleEdit}>
+                                        <Edit2 size={22} color="#555" />
+                                        <Text style={styles.optionText}>Edit</Text>
+                                    </TouchableOpacity>
+                                )}
+
+                                <TouchableOpacity
+                                    style={styles.optionItem}
+                                    onPress={() => {
+                                        Alert.alert(
+                                            'Hapus Pesan?',
+                                            'Pilih jenis penghapusan',
+                                            [
+                                                { text: 'Batal', style: 'cancel' },
+                                                { text: 'Hapus untuk saya', onPress: () => handleDelete('pribadi') },
+                                                isMe ? { text: 'Hapus untuk semua orang', style: 'destructive', onPress: () => handleDelete('semua') } : null
+                                            ].filter(Boolean)
+                                        );
+                                    }}
+                                >
+                                    <Trash2 size={22} color="#e53935" />
+                                    <Text style={[styles.optionText, { color: '#e53935' }]}>Hapus</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
                     </View>
                 </TouchableOpacity>
             </Modal>
