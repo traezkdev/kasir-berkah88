@@ -1356,6 +1356,7 @@ const ChatDetailScreen = () => {
         );
     };
 
+
     const scrollToOriginalMessage = useCallback((replyToId) => {
         const currentMessages = messagesRef.current;
         const index = currentMessages.findIndex(m => m.id === replyToId);
@@ -1677,192 +1678,6 @@ const ChatDetailScreen = () => {
         );
     }, [handleLongPress, scrollToOriginalMessage, highlightedMessageId, audioPlayingId, audioLoadingId, sharedProgress, uploadProgress, selectionMode, selectedIds, openMediaViewer, downloadMedia, toggleSelection, enterSelectionMode]);
 
-    const renderChatArea = () => (
-        <View style={styles.chatBackground}>
-            <ImageBackground
-                source={{ uri: 'https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png' }}
-                style={StyleSheet.absoluteFillObject}
-            />
-            <View style={{ flex: 1 }}>
-                {loading ? (
-                    <View style={styles.loaderContainer}>
-                        <ActivityIndicator size="large" color="#0088cc" />
-                    </View>
-                ) : (
-                    <FlatList
-                        ref={flatListRef}
-                        data={messages}
-                        keyExtractor={(item) => item.id.toString()}
-                        renderItem={renderMessage}
-                        extraData={selectedIds}
-                        contentContainerStyle={styles.messageList}
-                        showsVerticalScrollIndicator={true}
-                        inverted={true}
-                        removeClippedSubviews={true}
-                        initialNumToRender={20}
-                        maxToRenderPerBatch={15}
-                        windowSize={5}
-                        onEndReached={loadMoreMessages}
-                        onEndReachedThreshold={0.5}
-                        onScrollToIndexFailed={(info) => {
-                            if (flatListRef.current) {
-                                flatListRef.current.scrollToOffset({
-                                    offset: info.averageItemLength * info.index,
-                                    animated: true,
-                                });
-                            }
-                        }}
-                        ListFooterComponent={loadingMore ? (
-                            <ActivityIndicator size="small" color="#0088cc" style={{ marginVertical: 10 }} />
-                        ) : null}
-                    />
-                )}
-            </View>
-        </View>
-    );
-
-    const renderInputBar = () => (
-        <View>
-            {isRecording ? (
-                <View style={[styles.recordingBanner, willCancel && styles.recordingBannerCancel]}>
-                    <Animated.View style={[
-                        styles.recordingPulse,
-                        { transform: [{ scale: micPulseAnim }] },
-                        willCancel && { backgroundColor: '#e53935' }
-                    ]} />
-                    <View style={{ flex: 1 }}>
-                        <Text style={[styles.recordingText, willCancel && { color: '#e53935' }]}>
-                            🎤 {willCancel ? 'Lepas untuk batal' : (recordingMode === 'hold' ? 'Geser ke atas untuk batal' : 'Merekam')}... {formatDuration(recordingDuration)}
-                        </Text>
-                    </View>
-                    <TouchableOpacity onPress={cancelRecording} style={styles.recordingCancelBtn}>
-                        <X size={16} color="#e53935" />
-                        <Text style={styles.recordingCancelText}>Batal</Text>
-                    </TouchableOpacity>
-                </View>
-            ) : null}
-            {(replyingTo || editingMessage) ? (
-                <View style={styles.replyBanner}>
-                    <View style={styles.replyBannerLeft}>
-                        {editingMessage ? (
-                            <Edit2 size={16} color="#0088cc" />
-                        ) : (
-                            <CornerUpRight size={16} color="#0088cc" />
-                        )}
-                        <View style={styles.replyBannerText}>
-                            <Text style={styles.replyBannerTitle}>
-                                {editingMessage ? 'Edit Pesan' : ('Balas ' + (replyingTo && replyingTo.sender === 'me' ? 'Anda' : chat.name))}
-                            </Text>
-                            <Text style={styles.replyBannerMessage} numberOfLines={1}>
-                                {editingMessage ? editingMessage.text : (replyingTo ? replyingTo.text : '')}
-                            </Text>
-                        </View>
-                    </View>
-                    <TouchableOpacity onPress={cancelAction}>
-                        <X size={20} color="#888" />
-                    </TouchableOpacity>
-                </View>
-            ) : null}
-            <View style={styles.inputContainer}>
-                <View style={styles.inputWrapper}>
-                    <TouchableOpacity style={styles.iconButton} onPress={toggleEmojiPicker}>
-                        <Smile size={24} color={showEmojis ? "#6366F1" : "#888"} />
-                    </TouchableOpacity>
-                    <TextInput
-                        style={styles.input}
-                        placeholder={editingMessage ? 'Edit pesan...' : 'Message'}
-                        placeholderTextColor="#999"
-                        value={message}
-                        onChangeText={setMessage}
-                        multiline
-                    />
-                    <TouchableOpacity style={styles.iconButton} onPress={() => setAttachmentMenuVisible(!attachmentMenuVisible)}>
-                        <Paperclip size={24} color={attachmentMenuVisible ? "#6366F1" : "#888"} />
-                    </TouchableOpacity>
-                </View>
-                <TouchableOpacity
-                    {...panResponderRef.panHandlers}
-                    style={[styles.sendButton, message.trim() ? styles.sendButtonActive : (willCancel ? styles.recordingCancelBtnRaw : styles.micButtonActive)]}
-                    onPress={() => {
-                        if (message.trim()) {
-                            sendMessage();
-                        } else {
-                            if (!isRecording) {
-                                startRecording('toggle');
-                            } else if (recordingMode === 'toggle') {
-                                stopRecordingAndSend();
-                            }
-                        }
-                    }}
-                    onLongPress={() => {
-                        if (!message.trim() && !isRecording) {
-                            startRecording('hold');
-                        }
-                    }}
-                    onPressOut={() => {
-                        if (isRecording && recordingMode === 'hold') {
-                            if (willCancel) {
-                                cancelRecording();
-                            } else {
-                                stopRecordingAndSend();
-                            }
-                        }
-                    }}
-                    delayLongPress={300}
-                >
-                    {(message.trim() || isRecording) ? (
-                        <Send size={22} color={willCancel ? "#ff4d4f" : "#fff"} />
-                    ) : (
-                        <Animated.View style={{ transform: [{ scale: micPulseAnim }] }}>
-                            <Mic size={22} color="#fff" />
-                        </Animated.View>
-                    )}
-                </TouchableOpacity>
-            </View>
-            {attachmentMenuVisible && (
-                <View style={styles.attachmentMenu}>
-                    <TouchableOpacity style={styles.attachmentItem} onPress={pickImage}>
-                        <View style={[styles.attachmentIcon, { backgroundColor: '#8B5CF6' }]}>
-                            <Image style={{ width: 24, height: 24, tintColor: '#fff' }} source={{ uri: 'https://cdn-icons-png.flaticon.com/512/1375/1375106.png' }} />
-                        </View>
-                        <Text style={styles.attachmentText}>Galeri</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.attachmentItem} onPress={pickVideo}>
-                        <View style={[styles.attachmentIcon, { backgroundColor: '#F43F5E' }]}>
-                            <VideoIcon size={22} color="#fff" />
-                        </View>
-                        <Text style={styles.attachmentText}>Video</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.attachmentItem} onPress={pickDocument}>
-                        <View style={[styles.attachmentIcon, { backgroundColor: '#0EA5E9' }]}>
-                            <File size={22} color="#fff" />
-                        </View>
-                        <Text style={styles.attachmentText}>Dokumen</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
-            {showEmojis && (
-                <View style={styles.emojiContainer}>
-                    <FlatList
-                        data={['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '🤲', '👐', '🙌', '👏', '🤝', '👍', '👎', '👊', '✊', '🤛', '🤜', '🤞', '✌️', '🤟', '🤘', '👌', '🤏', '👈', '👉', '👆', '👇', '☝️', '✋', '🤚', '🖐', '🖖', '👋', '🤙', '💪', '🦾', '🖕', '✍️', '🙏', '💍', '💄', '💋', '👄', '👅', '👂', '🦻', '👃', '👣', '👁', '👀', '🧠', '🦴', '🦷', '🗣', '👤', '👥']}
-                        keyExtractor={(item, index) => index.toString()}
-                        numColumns={8}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity
-                                style={styles.emojiItem}
-                                onPress={() => handleEmojiSelected(item)}
-                            >
-                                <Text style={styles.emojiText}>{item}</Text>
-                            </TouchableOpacity>
-                        )}
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.emojiList}
-                    />
-                </View>
-            )}
-        </View>
-    );
-
     return (
         <View style={styles.container}>
             <StatusBar style="dark" />
@@ -1914,7 +1729,6 @@ const ChatDetailScreen = () => {
                         source={{ uri: 'https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png' }}
                         style={StyleSheet.absoluteFillObject}
                         resizeMode="repeat"
-                        imageStyle={{ opacity: 0.08 }}
                     />
 
                     <View style={{ flex: 1 }}>
