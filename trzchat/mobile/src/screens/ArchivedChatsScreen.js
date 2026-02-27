@@ -17,6 +17,10 @@ const ArchivedChatsScreen = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
 
+    // Multi-Selection States
+    const [selectionMode, setSelectionMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState({});
+
     const fetchArchivedChats = useCallback(async () => {
         try {
             await getToken();
@@ -51,7 +55,47 @@ const ArchivedChatsScreen = () => {
             await axios.post(`${API_URL}/chats/${chatId}/archive`, { archive: false });
             setChats(prev => prev.filter(c => c.id !== chatId));
         } catch (error) {
-            console.error('Error unarchiving chat:', error);
+            console.error('Error ununarchive chat:', error);
+            Alert.alert('Gagal', 'Tidak dapat membatalkan arsip chat.');
+        }
+    };
+
+    const toggleSelection = useCallback((id) => {
+        setSelectedIds(prev => {
+            const next = { ...prev };
+            if (next[id]) {
+                delete next[id];
+                const hasRemaining = Object.keys(next).length > 0;
+                if (!hasRemaining) setSelectionMode(false);
+            } else {
+                next[id] = true;
+            }
+            return next;
+        });
+    }, []);
+
+    const enterSelectionMode = useCallback((id) => {
+        setSelectionMode(true);
+        setSelectedIds({ [id]: true });
+    }, []);
+
+    const exitSelectionMode = useCallback(() => {
+        setSelectionMode(false);
+        setSelectedIds({});
+    }, []);
+
+    const handleUnarchiveSelected = async () => {
+        const ids = Object.keys(selectedIds);
+        try {
+            await getToken();
+            await Promise.all(ids.map(id =>
+                axios.post(`${API_URL}/chats/${id}/archive`, { archive: false })
+            ));
+            exitSelectionMode();
+            fetchArchivedChats();
+            Alert.alert('Berhasil', `${ids.length} chat telah dipindahkan ke daftar utama.`);
+        } catch (error) {
+            console.error('Error unarchiving chats:', error);
             Alert.alert('Gagal', 'Tidak dapat membatalkan arsip chat.');
         }
     };
@@ -75,17 +119,18 @@ const ArchivedChatsScreen = () => {
 
         return (
             <TouchableOpacity
-                style={styles.chatRow}
-                onPress={() => navigation.navigate('ChatDetail', { chat: { ...item, name: otherUser.name, avatar: otherUser.avatar, online: otherUser.online } })}
+                style={[styles.chatRow, selectedIds[item.id] && styles.selectedRow]}
+                onPress={() => {
+                    if (selectionMode) {
+                        toggleSelection(item.id);
+                    } else {
+                        navigation.navigate('ChatDetail', { chat: { ...item, name: otherUser.name, avatar: otherUser.avatar, online: otherUser.online } });
+                    }
+                }}
                 onLongPress={() => {
-                    Alert.alert(
-                        'Buka Arsip?',
-                        'Apakah Anda ingin memindahkan chat ini ke daftar utama?',
-                        [
-                            { text: 'Batal', style: 'cancel' },
-                            { text: 'Buka Arsip', onPress: () => unarchiveChat(item.id) }
-                        ]
-                    );
+                    if (!selectionMode) {
+                        enterSelectionMode(item.id);
+                    }
                 }}
                 activeOpacity={0.7}
             >
@@ -94,6 +139,11 @@ const ArchivedChatsScreen = () => {
                         source={{ uri: fixUrl(otherUser.avatar) || 'https://ui-avatars.com/api/?name=' + (otherUser.name || 'User') }}
                         style={styles.waAvatar}
                     />
+                    {selectionMode && selectedIds[item.id] && (
+                        <View style={styles.selectionIndicator}>
+                            <Check size={12} color="#fff" />
+                        </View>
+                    )}
                 </View>
                 <View style={styles.chatInfo}>
                     <View style={styles.chatTopLine}>
@@ -124,14 +174,27 @@ const ArchivedChatsScreen = () => {
         <SafeAreaView style={styles.container}>
             <StatusBar style="dark" backgroundColor="#fff" />
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                <TouchableOpacity
+                    onPress={() => selectionMode ? exitSelectionMode() : navigation.goBack()}
+                    style={styles.backBtn}
+                >
                     <ArrowLeft size={24} color="#111B21" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Diarsipkan</Text>
+                <Text style={styles.headerTitle}>
+                    {selectionMode ? Object.keys(selectedIds).length : 'Diarsipkan'}
+                </Text>
                 <View style={styles.headerIcons}>
-                    <TouchableOpacity style={styles.headerIconBtn}>
-                        <MoreVertical size={24} color="#111B21" />
-                    </TouchableOpacity>
+                    {selectionMode ? (
+                        <>
+                            <TouchableOpacity style={styles.headerIconBtn} onPress={handleUnarchiveSelected}>
+                                <Archive size={24} color="#111B21" />
+                            </TouchableOpacity>
+                        </>
+                    ) : (
+                        <TouchableOpacity style={styles.headerIconBtn}>
+                            <MoreVertical size={24} color="#111B21" />
+                        </TouchableOpacity>
+                    )}
                 </View>
             </View>
 
@@ -178,6 +241,22 @@ const styles = StyleSheet.create({
         paddingTop: Platform.OS === 'android' ? (NativeStatusBar.currentHeight + verticalScale(10)) : verticalScale(10),
         paddingBottom: verticalScale(10),
         backgroundColor: '#fff',
+    },
+    selectedRow: {
+        backgroundColor: '#F0F2F5',
+    },
+    selectionIndicator: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        backgroundColor: '#25D366',
+        borderRadius: 10,
+        width: 20,
+        height: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#fff',
     },
     backBtn: {
         marginRight: scale(16),
