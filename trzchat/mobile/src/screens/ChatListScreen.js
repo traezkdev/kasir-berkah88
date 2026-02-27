@@ -120,16 +120,20 @@ const ChatListScreen = () => {
     }, []);
 
     const handleLongPress = useCallback((item) => {
-        setSelectedChat(item);
-        setDeleteModalVisible(true);
-    }, []);
-
-    const confirmDelete = async () => {
-        if (!selectedChat) return;
-        setDeleteModalVisible(false);
-        await deleteChat(selectedChat.id);
-        setSelectedChat(null);
-    };
+        Alert.alert(
+            'Hapus Chat?',
+            `Apakah Anda ingin menghapus chat dengan ${item.otherUser?.name || 'User'}?`,
+            [
+                { text: 'BATAL', style: 'cancel' },
+                {
+                    text: 'HAPUS CHAT',
+                    style: 'destructive',
+                    onPress: () => deleteChat(item.id)
+                }
+            ],
+            { cancelable: true }
+        );
+    }, [deleteChat]);
 
     useEffect(() => {
         if (isFocused) {
@@ -302,9 +306,9 @@ const ChatListScreen = () => {
                 style={styles.chatRow}
                 onPress={() => onNavigate(item)}
                 onLongPress={() => onLongPress(item)}
-                activeOpacity={0.6}
+                activeOpacity={0.7}
             >
-                <View style={styles.avatarContainer}>
+                <View style={styles.avatarWrapper}>
                     <Image
                         source={{ uri: fixUrl(otherUser.avatar) || 'https://ui-avatars.com/api/?name=' + (otherUser.name || 'User') }}
                         style={styles.waAvatar}
@@ -313,13 +317,13 @@ const ChatListScreen = () => {
                 <View style={styles.chatInfo}>
                     <View style={styles.chatTopLine}>
                         <Text style={styles.waChatName} numberOfLines={1}>{otherUser.name}</Text>
-                        <Text style={[styles.waChatTime, item.unread_count > 0 && { color: '#25D366' }]}>{timeDisplay}</Text>
+                        <Text style={[styles.waChatTime, item.unread_count > 0 && { color: '#25D366', fontWeight: 'bold' }]}>{timeDisplay}</Text>
                     </View>
                     <View style={styles.chatBottomLine}>
-                        <View style={styles.msgPreviewContainer}>
+                        <View style={styles.msgPreviewWrapper}>
                             {item.sender_id === currentUser?.id && (
                                 <View style={styles.statusIcon}>
-                                    <CheckCheck size={14} color={item.status === 'read' ? '#34B7F1' : '#888'} />
+                                    <CheckCheck size={16} color={item.status === 'read' ? '#34B7F1' : '#888'} />
                                 </View>
                             )}
                             <Text style={styles.waLastMessage} numberOfLines={1}>
@@ -372,30 +376,28 @@ const ChatListScreen = () => {
             animationType="fade"
             onRequestClose={() => setDeleteModalVisible(false)}
         >
-            <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setDeleteModalVisible(false)}>
+            <TouchableOpacity
+                style={styles.modalOverlay}
+                activeOpacity={1}
+                onPress={() => setDeleteModalVisible(false)}
+            >
                 <View style={styles.confirmModalWrapper}>
-                    <View style={styles.alertIconBg}>
-                        <AlertCircle size={32} color="#EF4444" />
-                    </View>
                     <Text style={styles.confirmTitle}>Hapus Chat?</Text>
                     <Text style={styles.confirmSubtitle}>
-                        Pesan dan riwayat chat dengan <Text style={{ fontWeight: '700' }}>{selectedChat?.otherUser?.name || 'User'}</Text> akan dihapus permanen.
+                        Apakah Anda ingin menghapus chat dengan <Text style={{ fontWeight: 'bold', color: '#111B21' }}>{selectedChat?.otherUser?.name || 'User'}</Text>?
                     </Text>
                     <View style={styles.confirmActionRow}>
-                        <TouchableOpacity style={styles.cancelActionBtn} onPress={() => setDeleteModalVisible(false)}>
-                            <Text style={styles.cancelActionText}>Batal</Text>
+                        <TouchableOpacity style={styles.actionBtn} onPress={() => setDeleteModalVisible(false)}>
+                            <Text style={styles.cancelText}>BATAL</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.deleteActionBtn} onPress={confirmDelete}>
-                            <LinearGradient colors={['#EF4444', '#DC2626']} style={styles.deleteGradientBtn}>
-                                <Text style={styles.deleteActionText}>Hapus</Text>
-                            </LinearGradient>
+                        <TouchableOpacity style={styles.actionBtn} onPress={confirmDelete}>
+                            <Text style={styles.deleteText}>HAPUS CHAT</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
             </TouchableOpacity>
         </Modal>
     );
-
     const renderWhatsAppHeader = () => (
         <View style={styles.waHeader}>
             <View style={styles.waHeaderTop}>
@@ -481,7 +483,6 @@ const ChatListScreen = () => {
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar style="dark" backgroundColor="#fff" />
-            {renderDeleteModal()}
             {renderWhatsAppHeader()}
 
             {loading ? (
@@ -624,24 +625,27 @@ const styles = StyleSheet.create({
     },
     chatRow: {
         flexDirection: 'row',
-        paddingHorizontal: scale(16),
-        paddingVertical: verticalScale(12),
+        paddingLeft: scale(14), // Padding sesuai gaya WA
         alignItems: 'center',
+        backgroundColor: '#fff',
     },
-    avatarContainer: {
-        marginRight: scale(16),
+    avatarWrapper: {
+        paddingVertical: verticalScale(10),
+        marginRight: scale(14),
     },
     waAvatar: {
-        width: scale(56),
-        height: scale(56),
-        borderRadius: scale(28),
+        width: scale(52), // Sedikit diperkecil agar lebih proporsional
+        height: scale(52),
+        borderRadius: scale(26),
         backgroundColor: '#F0F2F5',
     },
     chatInfo: {
         flex: 1,
-        borderBottomWidth: 0.5,
+        borderBottomWidth: 0.8, // Garis yang lebih tegas di sisi info saja
         borderBottomColor: '#F0F2F5',
-        paddingBottom: verticalScale(12),
+        paddingVertical: verticalScale(14), // Konsisten atas-bawah
+        paddingRight: scale(14),
+        justifyContent: 'center',
     },
     chatTopLine: {
         flexDirection: 'row',
@@ -649,9 +653,9 @@ const styles = StyleSheet.create({
         marginBottom: verticalScale(4),
     },
     waChatName: {
-        fontSize: moderateScale(16),
-        fontWeight: 'bold',
-        color: '#000',
+        fontSize: moderateScale(16.5),
+        fontWeight: '600',
+        color: '#111B21', // Warna teks gelap WA
         flex: 1,
     },
     waChatTime: {
@@ -663,7 +667,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
     },
-    msgPreviewContainer: {
+    msgPreviewWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
         flex: 1,
@@ -834,56 +838,47 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'center',
-        padding: scale(20),
+        alignItems: 'center',
     },
     confirmModalWrapper: {
         backgroundColor: '#fff',
-        borderRadius: 20,
-        padding: 20,
-        alignItems: 'center',
-    },
-    alertIconBg: {
-        backgroundColor: '#fff1f1',
-        padding: 15,
-        borderRadius: 40,
-        marginBottom: 10,
+        borderRadius: scale(3), // Gaya kotak Android
+        width: '85%',
+        paddingTop: verticalScale(22),
+        paddingHorizontal: scale(24),
+        paddingBottom: verticalScale(15),
+        elevation: 10,
     },
     confirmTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 10,
+        fontSize: moderateScale(19),
+        fontWeight: '700',
+        color: '#111B21',
+        marginBottom: verticalScale(15),
     },
     confirmSubtitle: {
-        textAlign: 'center',
-        color: '#666',
-        marginBottom: 20,
+        fontSize: moderateScale(16),
+        color: '#667781',
+        lineHeight: verticalScale(22),
+        marginBottom: verticalScale(25),
     },
     confirmActionRow: {
         flexDirection: 'row',
-        gap: 10,
+        justifyContent: 'flex-end',
+        gap: scale(10),
     },
-    cancelActionBtn: {
-        flex: 1,
-        padding: 15,
-        backgroundColor: '#f0f0f0',
-        borderRadius: 10,
-        alignItems: 'center',
+    actionBtn: {
+        paddingVertical: verticalScale(10),
+        paddingHorizontal: scale(12),
     },
-    cancelActionText: {
+    cancelText: {
+        fontSize: moderateScale(14),
         fontWeight: 'bold',
+        color: '#008069', // Hijau WA
     },
-    deleteActionBtn: {
-        flex: 1,
-        borderRadius: 10,
-        overflow: 'hidden',
-    },
-    deleteGradientBtn: {
-        padding: 15,
-        alignItems: 'center',
-    },
-    deleteActionText: {
-        color: '#fff',
+    deleteText: {
+        fontSize: moderateScale(14),
         fontWeight: 'bold',
+        color: '#008069',
     },
     emptyResultsText: {
         textAlign: 'center',
