@@ -1903,6 +1903,9 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
+        height: Platform.OS === 'web' ? '100vh' : '100%',
+        maxHeight: Platform.OS === 'web' ? '100vh' : '100%',
+        overflow: 'hidden',
     },
     header: {
         flexDirection: 'row',
