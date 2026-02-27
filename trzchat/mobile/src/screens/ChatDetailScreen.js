@@ -24,7 +24,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Audio, Video as ExpoVideo, ResizeMode } from 'expo-av';
-import { ArrowLeft, MoreVertical, Paperclip, Smile, Mic, Send, Reply, Edit2, Trash2, X, CornerUpRight, Play, Pause, StopCircle, Check, CheckCheck, Video as VideoIcon, FileText, Download, File, Maximize2, Phone, User, Image as ImageIcon, MapPin, Copy } from 'lucide-react-native';
+import { ArrowLeft, MoreVertical, Paperclip, Smile, Mic, Send, Reply, Edit2, Trash2, X, CornerUpRight, Play, Pause, StopCircle, Check, CheckCheck, Video as VideoIcon, FileText, Download, File, Maximize2, Phone, User, Image as ImageIcon, MapPin, Copy, Camera } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -1533,9 +1533,8 @@ const ChatDetailScreen = () => {
                                 setSelectedMedia(null);
                             }}
                         >
-                            <X size={28} color="#fff" />
+                            <ArrowLeft size={28} color="#fff" />
                         </TouchableOpacity>
-                        <Text style={styles.previewHeaderText}>Preview</Text>
                         <View style={{ width: 28 }} />
                     </View>
 
@@ -1563,7 +1562,7 @@ const ChatDetailScreen = () => {
                             <TextInput
                                 style={styles.previewInput}
                                 placeholder="Tambahkan pesan..."
-                                placeholderTextColor="rgba(255,255,255,0.6)"
+                                placeholderTextColor="#999"
                                 value={mediaCaption}
                                 onChangeText={setMediaCaption}
                                 multiline
@@ -1572,12 +1571,7 @@ const ChatDetailScreen = () => {
                                 style={styles.previewSendBtn}
                                 onPress={handleSendPreview}
                             >
-                                <LinearGradient
-                                    colors={['#6366F1', '#8B5CF6']}
-                                    style={styles.previewSendGradient}
-                                >
-                                    <Send size={24} color="#fff" />
-                                </LinearGradient>
+                                <Send size={24} color="#fff" />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -1975,7 +1969,7 @@ const ChatDetailScreen = () => {
                                         </TouchableOpacity>
                                         <TouchableOpacity style={styles.attachmentItem} onPress={() => { takePhoto(); setAttachmentMenuVisible(false); }}>
                                             <View style={[styles.attachmentIcon, { backgroundColor: '#EC407A' }]}>
-                                                <VideoIcon size={24} color="#fff" />
+                                                <Camera size={24} color="#fff" />
                                             </View>
                                             <Text style={styles.attachmentText}>Kamera</Text>
                                         </TouchableOpacity>
@@ -2039,7 +2033,7 @@ const ChatDetailScreen = () => {
                                         </TouchableOpacity>
                                         {!message.trim() && (
                                             <TouchableOpacity style={styles.inputActionIcon} onPress={takePhoto}>
-                                                <VideoIcon size={24} color="#888" />
+                                                <Camera size={24} color="#888" />
                                             </TouchableOpacity>
                                         )}
                                     </View>
@@ -2545,6 +2539,64 @@ const styles = StyleSheet.create({
     optionText: {
         fontSize: moderateScale(16),
         color: '#333',
+    },
+    // Media Preview Styles
+    previewModalContainer: {
+        flex: 1,
+        backgroundColor: '#000',
+    },
+    previewHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingTop: Platform.OS === 'ios' ? verticalScale(50) : verticalScale(20),
+        paddingHorizontal: scale(15),
+        zIndex: 10,
+    },
+    previewCloseBtn: {
+        padding: scale(5),
+    },
+    previewHeaderText: {
+        color: '#fff',
+        fontSize: moderateScale(18),
+        fontWeight: 'bold',
+    },
+    previewContent: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    previewMedia: {
+        width: '100%',
+        height: '100%',
+    },
+    previewFooter: {
+        paddingHorizontal: scale(10),
+        paddingBottom: Platform.OS === 'ios' ? verticalScale(30) : verticalScale(15),
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    previewInputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        gap: scale(10),
+    },
+    previewInput: {
+        flex: 1,
+        backgroundColor: '#fff',
+        borderRadius: scale(25),
+        paddingHorizontal: scale(15),
+        paddingVertical: verticalScale(10),
+        fontSize: moderateScale(16),
+        color: '#000',
+        maxHeight: verticalScale(100),
+    },
+    previewSendBtn: {
+        width: scale(50),
+        height: scale(50),
+        borderRadius: scale(25),
+        backgroundColor: '#075e54',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 });
 
